@@ -26,7 +26,20 @@ Official Repository of the Crazyhouse-Bot CrazyAra which is powered by a Deep Co
 
 ## Installation Guide
 Please follow the instructions in the wiki-page at:
-* 
+* https://github.com/QueensGambit/CrazyAra/wiki/Installation-Guide
+
+## Documentation
+For more details about the training procedure visit:
+* https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training
+* https://github.com/QueensGambit/CrazyAra/wiki/Model-architecture
+* https://github.com/QueensGambit/CrazyAra/wiki/Input-and-output-representation
+
+You can also find our original project proposal document as well as our presentation about CrazyAra 0.1:
+* https://github.com/QueensGambit/CrazyAra/tree/master/etc/doc
+
+## How strong is CrazyAra 0.2.0?
+CrazyAra played all open-source crazyhouse engines. More details can be found here:
+* https://github.com/QueensGambit/CrazyAra/wiki/Strength-Evaluation
 
 ## License
 This source-code including all project files is licensed under the GPLv3-License if not stated otherwise.
