@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>DeepCrazyHouse</title>
+
+    <link rel="stylesheet" type="text/css" href="content/css/main.css">
+    <script src="content/js/libs/jquery-3.3.1.min.js"></script>
+    <script src="content/js/main.js"></script>
+</head>
+<body onload="init()">
+    <h1>DeepCrazyHouse</h1>
+
+    <div id="board_container">
+        <div id="board"></div>
+        <div id="board_labels_x_top"></div>
+        <div id="board_labels_x_bottom"></div>
+        <div id="board_labels_y_left"></div>
+        <div id="board_labels_y_right"></div>
+
+        <div id="pocket_a"></div>
+        <div id="pocket_b"></div>
+
+        <div id="board_promotion" class="greyed_out"></div>
+    </div>
+    <div>
+        <button onclick="perform_new_game()">New Game</button>
+    </div>
+    <br><br>
+    <hr>
+    <div id="messages"></div>
+</body>
+</html>
