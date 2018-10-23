@@ -279,7 +279,7 @@ while True:
                 set_options(cmd_list)
             elif main_cmd == 'go':
                 perform_action(cmd_list)
-            elif main_cmd == 'quit':
+            elif main_cmd == 'quit' or 'exit':
                 sys.exit(0)
         except:
             # log the error message to the log-file and exit the script

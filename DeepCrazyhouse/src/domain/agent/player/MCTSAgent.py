@@ -340,8 +340,7 @@ class MCTSAgent(_Agent):
             value = -1
 
         # check if you can claim a draw - its assumed that the draw is always claimed
-        #if state.is_draw() is True:
-        elif state.get_pythonchess_board().can_claim_draw():
+        if state.is_draw() is True:
             value = 0.
 
         elif node is None:
