@@ -30,9 +30,6 @@ class RawNetAgent(_Agent):
         t_start_eval = time()
         pred_value, pred_policy = self._net.predict_single(state.get_state_planes())
 
-        if state.is_white_to_move() is False:
-            pred_value *= -1
-
         legal_moves = list(state.get_legal_moves())
         p_vec_small = get_probs_of_move_list(pred_policy, legal_moves, state.is_white_to_move())
 

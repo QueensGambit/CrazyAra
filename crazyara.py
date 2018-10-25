@@ -74,16 +74,16 @@ print(INTRO_PT1, end="")
 print(INTRO_PT2, end="")
 
 # GLOBAL VARIABLES
-MCTSAGENT = None
-RAWNETAGENT = None
-GAMESTATE = None
+mcts_agent = None
+rawnet_agent = None
+gamestate = None
 
-SWITCHED_TO_RAW_NET = False
+switched_to_raw_net = False
 
-SETUP_DONE = False
+setup_done = False
 
 # SETTINGS
-S = {
+s = {
     'UCI_Variant': 'crazyhouse',
     # set the context in which the neural networks calculation will be done
     # choose 'gpu' using the settings if there is one available
@@ -111,32 +111,32 @@ def setup_network():
     :return:
     """
 
-    global GAMESTATE
-    global SETUP_DONE
-    global RAWNETAGENT
-    global MCTSAGENT
-    global S
+    global gamestate
+    global setup_done
+    global rawnet_agent
+    global mcts_agent
+    global s
 
-    if SETUP_DONE is False:
+    if setup_done is False:
         from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
         from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
         from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
         from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
 
-        net = NeuralNetAPI(ctx=S['context'])
+        net = NeuralNetAPI(ctx=s['context'])
 
-        RAWNETAGENT = RawNetAgent(net, temperature=S['centi_temperature'], clip_quantil=S['centi_clip_quantil'])
+        rawnet_agent = RawNetAgent(net, temperature=s['centi_temperature'], clip_quantil=s['centi_clip_quantil'])
 
-        MCTSAGENT = MCTSAgent(net, cpuct=S['centi_cpuct']/100, nb_playouts_empty_pockets=S['playouts_empty_pockets'],
-                              nb_playouts_filled_pockets=S['playouts_filled_pockets'], max_search_depth=S['max_search_depth'],
-                              nb_playouts_update=S['playouts_update_stats'], max_search_time_s=S['max_search_time_s'],
-                              dirichlet_alpha=S['centi_dirichlet_alpha']/100, dirichlet_epsilon=S['centi_dirichlet_epsilon']/100,
-                              virtual_loss=S['virtual_loss'], threads=S['threads'], temperature=S['centi_temperature']/100,
-                              clip_quantil=S['centi_clip_quantil']/100)
+        mcts_agent = MCTSAgent(net, cpuct=s['centi_cpuct'] / 100, playouts_empty_pockets=s['playouts_empty_pockets'],
+                               playouts_filled_pockets=s['playouts_filled_pockets'], max_search_depth=s['max_search_depth'],
+                               playouts_update=s['playouts_update_stats'], max_search_time_s=s['max_search_time_s'],
+                               dirichlet_alpha=s['centi_dirichlet_alpha'] / 100, dirichlet_epsilon=s['centi_dirichlet_epsilon'] / 100,
+                               virtual_loss=s['virtual_loss'], threads=s['threads'], temperature=s['centi_temperature'] / 100,
+                               clip_quantil=s['centi_clip_quantil'] / 100)
 
-        GAMESTATE = GameState()
+        gamestate = GameState()
 
-        SETUP_DONE = True
+        setup_done = True
 
 
 def perform_action(cmd_list):
@@ -145,11 +145,11 @@ def perform_action(cmd_list):
     :return: 
     """
 
-    global SWITCHED_TO_RAW_NET
+    global switched_to_raw_net
     global AGENT
-    global GAMESTATE
-    global MCTSAGENT
-    global RAWNETAGENT
+    global gamestate
+    global mcts_agent
+    global rawnet_agent
 
     if len(cmd_list) >= 5:
         if cmd_list[1] == 'wtime' and cmd_list[3] == 'btime':
@@ -157,25 +157,25 @@ def perform_action(cmd_list):
             wtime = int(cmd_list[2])
             btime = int(cmd_list[4])
 
-            if GAMESTATE.is_white_to_move() is True:
+            if gamestate.is_white_to_move() is True:
                 my_time = wtime
             else:
                 my_time = btime
 
-            if SWITCHED_TO_RAW_NET is False and int(my_time) < S['threshold_time_for_raw_net_ms']:
+            if switched_to_raw_net is False and int(my_time) < s['threshold_time_for_raw_net_ms']:
                 log_print('Switching to raw network for fast mode...')
                 # switch to RawNetwork-Agent
-                SWITCHED_TO_RAW_NET = True
+                switched_to_raw_net = True
 
-            elif SWITCHED_TO_RAW_NET is True and my_time >= S['threshold_time_for_raw_net_ms']:
+            elif switched_to_raw_net is True and my_time >= s['threshold_time_for_raw_net_ms']:
                 log_print('Switching back to MCTS network for slow mode...')
                 # switch to RawNetwork-Agent
-                SWITCHED_TO_RAW_NET = False
+                switched_to_raw_net = False
 
-    if SWITCHED_TO_RAW_NET is True or S['use_raw_network'] is True:
-        value, selected_move, confidence, _ = RAWNETAGENT.perform_action(GAMESTATE)
+    if switched_to_raw_net is True or s['use_raw_network'] is True:
+        value, selected_move, confidence, _ = rawnet_agent.perform_action(gamestate)
     else:
-        value, selected_move, confidence, _ = MCTSAGENT.perform_action(GAMESTATE)
+        value, selected_move, confidence, _ = mcts_agent.perform_action(gamestate)
 
     log_print('bestmove %s' % selected_move.uci())
 
@@ -184,17 +184,17 @@ def setup_gamestate(cmd_list):
 
     position_type = cmd_list[1]
     if position_type == "startpos":
-        GAMESTATE.new_game()
+        gamestate.new_game()
 
     elif position_type == "fen":
         sub_command_offset = cmd_list.index("moves") if "moves" in cmd_list else len(cmd_list)
         fen = " ".join(cmd_list[2:sub_command_offset])
 
-        GAMESTATE.set_fen(fen)
+        gamestate.set_fen(fen)
 
     mv_list = cmd_list[3:]
     for move in mv_list:
-        GAMESTATE.apply_move(chess.Move.from_uci(move))
+        gamestate.apply_move(chess.Move.from_uci(move))
 
 
 def set_options(cmd_list):
@@ -205,12 +205,12 @@ def set_options(cmd_list):
     :return:
     """
     # SETTINGS
-    global S
+    global s
 
     if cmd_list[1] == 'name' and cmd_list[3] == 'value':
         option_name = cmd_list[2]
 
-        if option_name not in S:
+        if option_name not in s:
             raise Exception("The given option %s wasn't found in the settings list" % option_name)
 
         if option_name in ['UCI_Variant', 'context', 'use_raw_network']:
@@ -220,11 +220,11 @@ def set_options(cmd_list):
 
         if option_name == 'use_raw_network':
             if value == 'true':
-                S['use_raw_network'] = True
+                s['use_raw_network'] = True
             else:
-                S['use_raw_network'] = False
+                s['use_raw_network'] = False
         else:
-            S[option_name] = value
+            s[option_name] = value
 
         log_print('Updated option %s to %s' % (option_name, value))
 
@@ -235,7 +235,6 @@ while True:
 
     # wait for an std-in input command
     if line:
-        try:
             # split the line to a list which makes parsing easier
             cmd_list = line.rstrip().split(' ')
             # extract the first command from the list for evaluation
@@ -278,11 +277,22 @@ while True:
             elif main_cmd == "setoption":
                 set_options(cmd_list)
             elif main_cmd == 'go':
-                perform_action(cmd_list)
+                try:
+                    perform_action(cmd_list)
+                except:
+                    # log the error message to the log-file and exit the script
+                    traceback_text = traceback.format_exc()
+                    log_print(traceback_text)
+                    sys.exit(-1)
             elif main_cmd == 'quit' or 'exit':
                 sys.exit(0)
-        except:
-            # log the error message to the log-file and exit the script
-            traceback_text = traceback.format_exc()
-            log_print(traceback_text)
-            sys.exit(-1)
+            else:
+                # give the user a message that the command was ignored
+                print("Unknown command: %s" % line)
+
+
+# TODO: Fix missleading text for exception text
+#       describe the parameters more
+#       add network visualization
+#       correct link for lichess-Account
+#       check why threads number doesn't give as much

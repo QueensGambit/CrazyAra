@@ -27,7 +27,6 @@ class GameState(_GameState):
 
     def is_draw(self):
         # check if you can claim a draw - its assumed that the draw is always claimed
-        print('check for draw')
         return self.board.can_claim_draw()
 
     def is_won(self):

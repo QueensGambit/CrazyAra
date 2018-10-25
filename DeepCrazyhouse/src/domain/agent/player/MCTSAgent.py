@@ -20,11 +20,76 @@ from time import time
 from DeepCrazyhouse.src.domain.agent.player._Agent import _Agent
 from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
 
+import cProfile, pstats, io
+
+
+def profile(fnc):
+    """A decorator that uses cProfile to profile a function"""
+
+    def inner(*args, **kwargs):
+        pr = cProfile.Profile()
+        pr.enable()
+        retval = fnc(*args, **kwargs)
+        pr.disable()
+        s = io.StringIO()
+        sortby = 'cumulative'
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
+        return retval
+
+    return inner
+
 
 class MCTSAgent(_Agent):
 
-    def __init__(self, net: NeuralNetAPI, virtual_loss=3, threads=8, cpuct=1, nb_playouts_empty_pockets=256, nb_playouts_filled_pockets=256, dirichlet_alpha=0.2, dirichlet_epsilon=.25,
-                 temperature=0., clip_quantil=0., verbose=True, max_search_depth=15, nb_playouts_update=256, max_search_time_s=300):
+    def __init__(self, net: NeuralNetAPI, threads=8, playouts_empty_pockets=256, playouts_filled_pockets=512,
+                 playouts_update=256, cpuct=1, dirichlet_epsilon=.25, dirichlet_alpha=0.2, max_search_time_s=300,
+                 max_search_depth=15, temperature=0., clip_quantil=0., virtual_loss=3, verbose=True):
+        """
+        Constructor of the MCTSAgent.
+        The MCTSAgent runs playouts/simulations in the search tree and updates the node statistics.
+        The final move is chosen according to the visit count of each direct child node.
+        One playout is defined as expanding one new node in the tree. In the case of chess this means evaluating a new board position.
+
+        If the evaluation for one move takes too long on your hardware you can decrease the value for:
+         nb_playouts_empty_pockets and nb_playouts_filled_pockets.
+
+        For more details and the mathematical equations please take a look at src/domain/agent/README.md as well as the
+        official DeepMind-papers.
+
+        :param net: NeuralNetAPI handle which is used to communicate with the neural network
+        :param threads: Number of threads to evaluate the nodes in parallel
+        :param playouts_empty_pockets: Number of playouts/simulations which will be done if the Crazyhouse-Pockets of
+                                        both players are empty.
+        :param playouts_filled_pockets: Number of playouts/simulations which will be done if at least one player has a
+                                        piece in their pocket. The number of legal-moves is higher when drop
+                                        moves are available.
+        :param playouts_update: Number of playouts to process for updating the statistics like current_search_depth,
+                                   current_serach_time_s.
+        :param cpuct: CPUCT-value which weights the balance between the policy/action and value term.
+                     The playstyle depends strongly on this value.
+        :param dirichlet_epsilon: Weigh value for the dirichlet noise. If 0. -> no noise. If 1. -> complete noise.
+                                The dirichlet noise ensures that unlikely nodes can be explored
+        :param dirichlet_alpha: Alpha parameter of the dirichlet noise which is applied to the prior policy for the
+                                current root node: https://en.wikipedia.org/wiki/Dirichlet_process
+        :param max_search_time_s: Maximum number of seconds for which the network will evaluate the given position.
+        :param max_search_depth: Maximum search depth to reach in the current search tree. If the depth has been reached
+                                the evaluation stops.
+        :param temperature: The temperature parameters is an exponential scaling factor which is applied to the
+                            posterior policy. Afterwards the chosen move to play is sampled from this policy.
+                            Range: [0.,1.]:
+                            If 0. -> Deterministic policy. The move is chosen with the highest probability
+                            If 1. -> Pure random sampling policy. The move is sampled from the posterior without any
+                                    scaling being applied.
+        :param clip_quantil: A quantil clipping parameter with range [0., 1.]. All cummulated low percentages for moves
+                            are set to 0. This makes sure that very unlikely moves (blunders) are clipped after
+                            the exponential scaling.
+        :param virtual_loss: An artificial loss term which is applied to each node which is currently being visited.
+                             This term make it look like that the current visit of this node led to +X losses where X
+                             is the virtual loss. This prevents that every thread will evaluate the same node.
+        :param verbose: Defines weather to print out info messages for the current calculated line
+        """
 
         super().__init__(temperature, clip_quantil, verbose)
 
@@ -44,7 +109,7 @@ class MCTSAgent(_Agent):
         self.cpuct_init = cpuct
         self.cpuct = cpuct
         self.max_search_depth = max_search_depth
-        self.nb_playouts_update = nb_playouts_update
+        self.nb_playouts_update = min(playouts_update, playouts_empty_pockets)
         self.max_search_time_s = max_search_time_s
         self.nb_workers = threads
 
@@ -58,18 +123,18 @@ class MCTSAgent(_Agent):
 
         self.net_pred_service = NetPredService(pip_endings_external, self.net)
 
-        self.nb_playouts_empty_pockets = nb_playouts_empty_pockets
-        self.nb_playouts_filled_pockets = nb_playouts_filled_pockets
+        self.nb_playouts_empty_pockets = playouts_empty_pockets
+        self.nb_playouts_filled_pockets = playouts_filled_pockets
 
         self.dirichlet_alpha = dirichlet_alpha
         self.dirichlet_epsilon = dirichlet_epsilon
 
+    #@profile
     def evaluate_board_state(self, state_in: GameState):
         """
         Analyzes the current board state
 
-        :param state:
-        :param nb_playouts:
+        :param state_in: Actual game state to evaluate for the MCTS
         :return:
         """
 
@@ -77,14 +142,6 @@ class MCTSAgent(_Agent):
         t_start_eval = time()
 
         state = deepcopy(state_in)
-
-        # test about using a decaying cpuct value
-        """
-        if self.cpuct_decay != 0:
-            # update the cpuct number accordingly
-            sub = (state_in.get_pythonchess_board().fullmove_number-1) * self.cpuct_decay
-            self.cpuct = max(self.cpuct_init - sub, self.cpuct_min)
-        """
 
         # check if the net prediction service has already been started
         if self.net_pred_service.running is False:
@@ -105,6 +162,8 @@ class MCTSAgent(_Agent):
         # check for fast way out
         if len(legal_moves) == 1:
 
+            # set value 0 as a dummy value
+            value = 0
             p_vec_small = np.array([1], np.float32)
 
             board_fen = state.get_pythonchess_board().fen()
@@ -118,7 +177,7 @@ class MCTSAgent(_Agent):
                 logging.debug("Starting a brand new search tree...")
 
                 # create a new root node
-                self.root_node = Node(p_vec_small, legal_moves, str(state.get_legal_moves()))
+                self.root_node = Node(value, p_vec_small, legal_moves, str(state.get_legal_moves()))
 
                 # check a child node if it doesn't exists already
                 if self.root_node.child_nodes[0] is None:
@@ -129,13 +188,13 @@ class MCTSAgent(_Agent):
 
                     # start a brand new prediction for the child
                     state_planes = state_child.get_state_planes()
-                    [_, policy_vec] = self.net.predict_single(state_planes)
+                    [value, policy_vec] = self.net.predict_single(state_planes)
 
                     # extract a sparse policy vector with normalized probabilities
                     p_vec_small_child = get_probs_of_move_list(policy_vec, legal_moves_child, state_child.is_white_to_move())
 
                     # create a new child node
-                    child_node = Node(p_vec_small_child, legal_moves_child, str(state_child.get_legal_moves()))
+                    child_node = Node(value, p_vec_small_child, legal_moves_child, str(state_child.get_legal_moves()))
 
                     # connect the child to the root
                     self.root_node.child_nodes[0] = child_node
@@ -152,18 +211,19 @@ class MCTSAgent(_Agent):
                 logging.debug("Starting a brand new search tree...")
                 # start a brand new tree
                 state_planes = state.get_state_planes()
-                [_, policy_vec] = self.net.predict_single(state_planes)
+                [value, policy_vec] = self.net.predict_single(state_planes)
 
                 # extract a sparse policy vector with normalized probabilities
                 p_vec_small = get_probs_of_move_list(policy_vec, legal_moves, state.is_white_to_move())
 
                 # create a new root node
-                self.root_node = Node(p_vec_small, legal_moves, str(state.get_legal_moves()))
+                self.root_node = Node(value, p_vec_small, legal_moves, str(state.get_legal_moves()))
 
             # clear the look up table
             self.node_lookup = {}
 
-            # apply dirichlet noise to the prior probabilities in order to ensure that every move can possibly be visited
+            # apply dirichlet noise to the prior probabilities in order to ensure
+            #  that every move can possibly be visited
             self.root_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon, alpha=self.dirichlet_alpha)
 
             futures = []
@@ -178,13 +238,15 @@ class MCTSAgent(_Agent):
             t_elapsed = 0
             cur_playouts = 0
 
-            while max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and t_elapsed < self.max_search_time_s:
+            while max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and\
+                    t_elapsed < self.max_search_time_s:
 
                 # start searching
                 with ThreadPoolExecutor(max_workers=self.nb_workers) as executor:
                     for i in range(self.nb_playouts_update):
                         # calculate the thread id based on the current playout
-                        futures.append(executor.submit(self._run_single_playout, state=deepcopy(state), parent_node=self.root_node, depth=1, mv_list=[])) #, id=thread_id)
+                        futures.append(executor.submit(self._run_single_playout, state=deepcopy(state),
+                                                       parent_node=self.root_node, depth=1, mv_list=[]))
 
                 modulo = len(futures) // 10
                 cur_playouts += self.nb_playouts_update
@@ -196,9 +258,6 @@ class MCTSAgent(_Agent):
                         max_depth_reached = cur_depth
 
                     if i % modulo == 0:
-
-                        if state_in.is_white_to_move() is False:
-                            cur_value *= -1
 
                         if self.verbose is True:
                             str_moves = self._mv_list_to_str(mv_list)
@@ -223,9 +282,6 @@ class MCTSAgent(_Agent):
             lst_best_moves, _ = self.get_calclated_line()
 
             str_moves = self._mv_list_to_str(lst_best_moves)
-
-            if state_in.is_white_to_move() is False:
-                value *= -1
 
             # show the best calculated line
             print('info score cp %d depth %d nodes %d time %d pv%s' % (
@@ -287,17 +343,20 @@ class MCTSAgent(_Agent):
         """
         This function works recursively until a terminal node is reached
 
-        :param state:
-        :param parent_node:
-        :return:
+        :param state: Current game-state for the evaluation. This state differs between the treads
+        :param parent_node: Current parent-node of the selected node. In the first expansion this is the root node.
+        :param depth: Current depth for the evaluation. Depth is increased by 1 for every recusive call
+        :param mv_list: List of moves which have been taken in the current path. For each selected child node this list
+                        is expanded by one move recursively.
+        :return: -value: The inverse value prediction of the current board state. The flipping by -1 each turn is needed
+                        because the point of view changes each half-move
+                depth: Current depth reach by this evaluation
+                mv_list: List of moves which have been selected
         """
 
         # select a legal move on the chess board
         node, move, child_idx = self._select_node(parent_node)
 
-        #logging.debug('selected move: %s' % move)
-
-        #logging.error('Selected Move: %s' % move)
         if move is None:
             raise Exception("Illegal tree setup. A 'None' move was selected which souldn't be possible")
 
@@ -312,11 +371,22 @@ class MCTSAgent(_Agent):
         # append the selected move to the move list
         mv_list.append(move)
 
-        board_fen = None
-        if node is None:
+        # check if the current player has won the game
+        # (we don't need to check for is_lost() because the game is already over
+        #  if the current player checkmated his opponent)
+        if state.is_won() is True:
+            value = -1
+
+        # check if you can claim a draw - its assumed that the draw is always claimed
+        elif state.is_draw() is True:
+            value = 0
+
+        elif node is None:
+
+            # get the board-fen which is used as an identifier for the board positions in the look-up table
             board_fen = state.get_board_fen()
 
-            # iterate over all links if they exist in the look-up table
+            # check if the addressed fen exist in the look-up table
             if board_fen in self.node_lookup:
                 # get the node from the look-up list
                 node = self.node_lookup[board_fen]
@@ -325,66 +395,51 @@ class MCTSAgent(_Agent):
                     # setup a new connection from the parent to the child
                     parent_node.child_nodes[child_idx] = node
 
-                # get the value from the leaf node (the current function is called recursively)
-                value, depth, mv_list = self._run_single_playout(state, node, depth + 1, mv_list)
+                # get the prior value from the leaf node which has already been expanded
+                value = node.v
 
-                # revert the virtual loss and apply the predicted value by the network to the node
-                parent_node.revert_virtual_loss_and_update(child_idx, self.virtual_loss, -value)
+            else:
+                # expand and evaluate the new board state (the node wasn't found in the look-up table)
+                # its value will be backpropagated through the tree and flipped after every layer
 
-                # we invert the value prediction for the parent of the above node layer because the player's turn is flipped every turn
-                return -value, depth, mv_list
+                # receive a free available pipe
+                my_pipe = self.my_pipe_endings.pop()
+                my_pipe.send(state.get_state_planes())
+                # this pipe waits for the predictions of the network inference service
+                [value, policy_vec] = my_pipe.recv()
+                # put the used pipe back into the list
+                self.my_pipe_endings.append(my_pipe)
 
-        # check if the current player has won the game
-        # (we don't need to check for is_lost() because the game is already over if the current player checkmated his opponent)
-        if state.is_won() is True:
-            value = -1
+                # get the current legal move of its board state
+                legal_moves = list(state.get_legal_moves())
 
-        # check if you can claim a draw - its assumed that the draw is always claimed
-        if state.is_draw() is True:
-            value = 0.
+                if len(legal_moves) < 1:
+                    raise Exception('No legal move is available for state: %s' % state)
 
-        elif node is None:
-            # expand and evaluate the new board state (the node wasn't found in the look-up table)
-            # its value will be backpropagated through the tree and flipped after every layer
+                # extract a sparse policy vector with normalized probabilities
+                try:
+                    p_vec_small = get_probs_of_move_list(policy_vec, legal_moves,
+                                                         is_white_to_move=state.is_white_to_move(), normalize=True)
 
-            # receive a free available pipe
-            my_pipe = self.my_pipe_endings.pop()
-            my_pipe.send(state.get_state_planes())
-            # this pipe waits for the predictions of the network inference service
-            [value, policy_vec] = my_pipe.recv()
-            # put the used pipe back into the list
-            self.my_pipe_endings.append(my_pipe)
+                except KeyError:
+                    raise Exception('Key Error for state: %s' % state)
 
-            # get the current legal move of its board state
-            legal_moves = list(state.get_legal_moves())
+                # create a new node
+                new_node = Node(value, p_vec_small, legal_moves, str(state.get_legal_moves()))
 
-            if len(legal_moves) < 1:
-                raise Exception('No legal move is available for state: %s' % state)
+                # test of adding dirichlet noise to a new node
+                #new_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon/8, alpha=self.dirichlet_alpha)
 
-            # extract a sparse policy vector with normalized probabilities
-            try:
-                p_vec_small = get_probs_of_move_list(policy_vec, legal_moves,
-                                                     is_white_to_move=state.is_white_to_move(), normalize=True)
+                # include a reference to the new node in the look-up table
+                self.node_lookup[board_fen] = new_node
 
-            except KeyError:
-                raise Exception('Key Error for state: %s' % state)
+                with parent_node.lock:
+                    # add the new node to its parent
+                    parent_node.child_nodes[child_idx] = new_node
 
-            # create a new node
-            new_node = Node(p_vec_small, legal_moves, str(state.get_legal_moves()))
-
-            # test of adding dirichlet noise to a new node
-            #new_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon/8, alpha=self.dirichlet_alpha)
-
-            # include a reference to the new node in the look-up table
-            self.node_lookup[board_fen] = new_node
-
-            with parent_node.lock:
-                # add the new node to its parent
-                parent_node.child_nodes[child_idx] = new_node
-
-            # check if the new node has a mate_in_one connection (if yes overwrite the network prediction)
-            if new_node.mate_child_idx is not None:
-                value = 1
+                # check if the new node has a mate_in_one connection (if yes overwrite the network prediction)
+                if new_node.mate_child_idx is not None:
+                    value = 1
         else:
             # get the value from the leaf node (the current function is called recursively)
             value, depth, mv_list = self._run_single_playout(state, node, depth+1, mv_list)

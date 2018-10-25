@@ -18,13 +18,13 @@ class Node:
     Helper Class which stores the statistics of all child nodes of this node in the search tree
     """
 
-    def __init__(self, p_vec_small: np.ndarray, legal_moves: [chess.Move], str_legal_moves: str):
+    def __init__(self, value, p_vec_small: np.ndarray, legal_moves: [chess.Move], str_legal_moves: str):
 
         # lock object for this node to protect its member variables
         self.lock = Lock()
 
         # store the initial value prediction of the current board position
-        #self.v = v
+        self.v = value
         # specify the number of direct child nodes from this node
         self.nb_direct_child_nodes = np.array(len(p_vec_small)) #, np.uint32)
         # prior probability selecting each child, which is estimated by the neural network
