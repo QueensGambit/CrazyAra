@@ -28,7 +28,7 @@ class _Agent:
 
     def perform_action(self, state: _GameState):
 
-        # the first step is to call you policy agent to evaluate teh given position
+        # the first step is to call you policy agent to evaluate the given position
         value, legal_moves, self.p_vec_small = self.evaluate_board_state(state)
 
         if len(legal_moves) != len(self.p_vec_small):

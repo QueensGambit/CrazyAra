@@ -2,7 +2,7 @@ import chess
 from chess.variant import CrazyhouseBoard
 from DeepCrazyhouse.src.domain.crazyhouse.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
-
+import numpy as np
 
 class GameState(_GameState):
 
@@ -21,6 +21,7 @@ class GameState(_GameState):
 
     def get_state_planes(self):
         return board_to_planes(self.board, board_occ=self._board_occ, normalize=True)
+        #return np.random.random((34, 8, 8))
 
     def get_pythonchess_board(self):
         return self.board

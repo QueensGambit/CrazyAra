@@ -43,7 +43,7 @@ def profile(fnc):
 
 class MCTSAgent(_Agent):
 
-    def __init__(self, net: NeuralNetAPI, threads=8, playouts_empty_pockets=256, playouts_filled_pockets=512,
+    def __init__(self, net: NeuralNetAPI, threads=16, batch_size=8, playouts_empty_pockets=256, playouts_filled_pockets=512,
                  playouts_update=256, cpuct=1, dirichlet_epsilon=.25, dirichlet_alpha=0.2, max_search_time_s=300,
                  max_search_depth=15, temperature=0., clip_quantil=0., virtual_loss=3, verbose=True):
         """
@@ -112,6 +112,8 @@ class MCTSAgent(_Agent):
         self.nb_playouts_update = min(playouts_update, playouts_empty_pockets)
         self.max_search_time_s = max_search_time_s
         self.nb_workers = threads
+        logging.debug('batch_size: %d' % batch_size)
+        self.batch_size = batch_size
 
         # create pip endings for itself and the prediction service
         self.my_pipe_endings = []
@@ -121,7 +123,7 @@ class MCTSAgent(_Agent):
             self.my_pipe_endings.append(ending1)
             pip_endings_external.append(ending2)
 
-        self.net_pred_service = NetPredService(pip_endings_external, self.net)
+        self.net_pred_service = NetPredService(pip_endings_external, self.net, batch_size)
 
         self.nb_playouts_empty_pockets = playouts_empty_pockets
         self.nb_playouts_filled_pockets = playouts_filled_pockets
@@ -129,7 +131,6 @@ class MCTSAgent(_Agent):
         self.dirichlet_alpha = dirichlet_alpha
         self.dirichlet_epsilon = dirichlet_epsilon
 
-    #@profile
     def evaluate_board_state(self, state_in: GameState):
         """
         Analyzes the current board state
@@ -248,7 +249,7 @@ class MCTSAgent(_Agent):
                         futures.append(executor.submit(self._run_single_playout, state=deepcopy(state),
                                                        parent_node=self.root_node, depth=1, mv_list=[]))
 
-                modulo = len(futures) // 10
+                modulo = max(len(futures) // 10, 1)
                 cur_playouts += self.nb_playouts_update
 
                 for i, f in enumerate(futures):
@@ -320,10 +321,6 @@ class MCTSAgent(_Agent):
         # select the q value for the child which leads to the best calculated line
         value = self.root_node.q[selected_child_idx]
 
-        # invert the value to the view of the white player if needed
-        if state.is_white_to_move() is False:
-            value = -value
-
         # select the next node
         node = self.root_node.child_nodes[selected_child_idx]
 
@@ -332,19 +329,19 @@ class MCTSAgent(_Agent):
             state_future = deepcopy(state)
             state_future.apply_move(mv)
 
-            #try:
             # store the current child node with it's board fen as the hash-key if the child node has already been expanded
             if node.child_nodes[idx] is not None:
                 self.node_lookup[state_future.get_board_fen()] = node.child_nodes[idx]
 
         return value, selected_move, confidence, selected_child_idx
 
+    #@profile
     def _run_single_playout(self, state: GameState, parent_node: Node, depth=1, mv_list=[]): #, pipe_id):
         """
         This function works recursively until a terminal node is reached
 
         :param state: Current game-state for the evaluation. This state differs between the treads
-        :param parent_node: Current parent-node of the selected node. In the first expansion this is the root node.
+        :param parent_node: Current parent-node of the selected node. In the first  expansion this is the root node.
         :param depth: Current depth for the evaluation. Depth is increased by 1 for every recusive call
         :param mv_list: List of moves which have been taken in the current path. For each selected child node this list
                         is expanded by one move recursively.
@@ -396,7 +393,10 @@ class MCTSAgent(_Agent):
                     parent_node.child_nodes[child_idx] = node
 
                 # get the prior value from the leaf node which has already been expanded
-                value = node.v
+                #value = node.v
+
+                # get the value from the leaf node (the current function is called recursively)
+                value, depth, mv_list = self._run_single_playout(state, node, depth+1, mv_list)
 
             else:
                 # expand and evaluate the new board state (the node wasn't found in the look-up table)

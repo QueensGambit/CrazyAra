@@ -143,8 +143,8 @@ class Node:
             self.n[child_idx] -= virtual_loss - 1
             self.w[child_idx] += virtual_loss + value
 
-            self.q[child_idx] = self.w[child_idx] / self.n[child_idx]
-            #parent_node.update_u_for_child(child_idx, self.cpuct)
-            self.nb_total_expanded_child_nodes += 1
-            self.nb_expandable_child_nodes += self.nb_direct_child_nodes
+        self.q[child_idx] = self.w[child_idx] / self.n[child_idx]
+        #parent_node.update_u_for_child(child_idx, self.cpuct)
+        self.nb_total_expanded_child_nodes += 1
+        self.nb_expandable_child_nodes += self.nb_direct_child_nodes
 

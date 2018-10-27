@@ -289,10 +289,3 @@ while True:
             else:
                 # give the user a message that the command was ignored
                 print("Unknown command: %s" % line)
-
-
-# TODO: Fix missleading text for exception text
-#       describe the parameters more
-#       add network visualization
-#       correct link for lichess-Account
-#       check why threads number doesn't give as much
