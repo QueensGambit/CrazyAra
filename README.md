@@ -34,6 +34,7 @@ For more details about the training procedure visit the wiki pages:
 * [Supervised-training](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training)
 * [Model architecture](https://github.com/QueensGambit/CrazyAra/wiki/Model-architecture)
 * [Input and output representation](https://github.com/QueensGambit/CrazyAra/wiki/Input-and-output-representation)
+* [Network visualization](https://github.com/QueensGambit/CrazyAra/wiki/Network-visualization)
 * [Engine settings](https://github.com/QueensGambit/CrazyAra/wiki/Engine-settings)
 
 You can also find our original project proposal document as well as our presentation about CrazyAra 0.1:
