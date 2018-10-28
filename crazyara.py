@@ -153,7 +153,6 @@ def perform_action(cmd_list):
     :return: 
     """
 
-    global AGENT
     global gamestate
     global mcts_agent
     global rawnet_agent

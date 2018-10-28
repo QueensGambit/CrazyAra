@@ -50,7 +50,7 @@ This source-code including all project files is licensed under the GPLv3-License
 See [LICENSE](https://github.com/QueensGambit/CrazyAra/blob/master/LICENSE) for more details.
 
 ## Project Links:
-* [Project website]()http://www.crazyara.org/)
+* [Project website](http://www.crazyara.org/)
 * [CrazyAra's lichess-org account](https://lichess.org/@/CrazyAra)
 * [Project management plattform on taiga.io](https://tree.taiga.io/project/queensgambit-deep-learning-project-crazyhouse/)
 
