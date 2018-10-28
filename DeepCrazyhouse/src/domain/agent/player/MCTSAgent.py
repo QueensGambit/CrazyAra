@@ -43,9 +43,10 @@ def profile(fnc):
 
 class MCTSAgent(_Agent):
 
-    def __init__(self, net: NeuralNetAPI, threads=16, batch_size=8, playouts_empty_pockets=256, playouts_filled_pockets=512,
-                 playouts_update=256, cpuct=1, dirichlet_epsilon=.25, dirichlet_alpha=0.2, max_search_time_s=300,
-                 max_search_depth=15, temperature=0., clip_quantil=0., virtual_loss=3, verbose=True):
+    def __init__(self, net: NeuralNetAPI, threads=16, batch_size=8, playouts_empty_pockets=256,
+                 playouts_filled_pockets=512, playouts_update=256, cpuct=1, dirichlet_epsilon=.25,
+                 dirichlet_alpha=0.2, max_search_depth=15, temperature=0., clip_quantil=0.,
+                 virtual_loss=3, verbose=True, min_movetime=100):
         """
         Constructor of the MCTSAgent.
         The MCTSAgent runs playouts/simulations in the search tree and updates the node statistics.
@@ -73,7 +74,6 @@ class MCTSAgent(_Agent):
                                 The dirichlet noise ensures that unlikely nodes can be explored
         :param dirichlet_alpha: Alpha parameter of the dirichlet noise which is applied to the prior policy for the
                                 current root node: https://en.wikipedia.org/wiki/Dirichlet_process
-        :param max_search_time_s: Maximum number of seconds for which the network will evaluate the given position.
         :param max_search_depth: Maximum search depth to reach in the current search tree. If the depth has been reached
                                 the evaluation stops.
         :param temperature: The temperature parameters is an exponential scaling factor which is applied to the
@@ -89,6 +89,7 @@ class MCTSAgent(_Agent):
                              This term make it look like that the current visit of this node led to +X losses where X
                              is the virtual loss. This prevents that every thread will evaluate the same node.
         :param verbose: Defines weather to print out info messages for the current calculated line
+        :param min_movetime: Minimum time in milliseconds to search for the best move
         """
 
         super().__init__(temperature, clip_quantil, verbose)
@@ -110,7 +111,6 @@ class MCTSAgent(_Agent):
         self.cpuct = cpuct
         self.max_search_depth = max_search_depth
         self.nb_playouts_update = min(playouts_update, playouts_empty_pockets)
-        self.max_search_time_s = max_search_time_s
         self.nb_workers = threads
         logging.debug('batch_size: %d' % batch_size)
         self.batch_size = batch_size
@@ -130,6 +130,8 @@ class MCTSAgent(_Agent):
 
         self.dirichlet_alpha = dirichlet_alpha
         self.dirichlet_epsilon = dirichlet_epsilon
+
+        self.movetime_ms = min_movetime
 
     def evaluate_board_state(self, state_in: GameState):
         """
@@ -235,12 +237,13 @@ class MCTSAgent(_Agent):
             else:
                 nb_playouts = self.nb_playouts_filled_pockets
 
-            t_s = time()
             t_elapsed = 0
             cur_playouts = 0
+            old_time = time()
 
-            while max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and\
-                    t_elapsed < self.max_search_time_s:
+            while max_depth_reached < self.max_search_depth and\
+                       cur_playouts < nb_playouts and\
+                     t_elapsed*1000 < self.movetime_ms:
 
                 # start searching
                 with ThreadPoolExecutor(max_workers=self.nb_workers) as executor:
@@ -249,8 +252,8 @@ class MCTSAgent(_Agent):
                         futures.append(executor.submit(self._run_single_playout, state=deepcopy(state),
                                                        parent_node=self.root_node, depth=1, mv_list=[]))
 
-                modulo = max(len(futures) // 10, 1)
                 cur_playouts += self.nb_playouts_update
+                time_show_info = time() - old_time
 
                 for i, f in enumerate(futures):
                     cur_value, cur_depth, mv_list = f.result()
@@ -258,20 +261,22 @@ class MCTSAgent(_Agent):
                     if cur_depth > max_depth_reached:
                         max_depth_reached = cur_depth
 
-                    if i % modulo == 0:
-
-                        if self.verbose is True:
-                            str_moves = self._mv_list_to_str(mv_list)
-                            logging.debug('Update: %d' % cur_depth)
-                            print('info score cp %d depth %d nodes %d pv%s' % (
-                                value_to_centipawn(cur_value), cur_depth, self.root_node.n_sum, str_moves))
+                    # Print every second if verbose is true
+                    if self.verbose and time_show_info > 1:
+                        str_moves = self._mv_list_to_str(mv_list)
+                        logging.debug('Update: %d' % cur_depth)
+                        print('info score cp %d depth %d nodes %d pv%s' % (
+                            value_to_centipawn(cur_value), cur_depth, self.root_node.n_sum, str_moves))
+                        old_time = time()
 
                 # update the current search time
                 t_elapsed = time() - t_start_eval
-                print('info nps %d time %d' % ((self.nb_playouts_update / t_elapsed), t_elapsed * 1000))
+                if time_show_info > 1:
+                    print('info nps %d time %d' % ((self.root_node.n_sum / t_elapsed), t_elapsed * 1000))
 
             # receive the policy vector based on the MCTS search
             p_vec_small = self.root_node.get_mcts_policy()
+            print('info string move overhead is %dms' % (t_elapsed*1000 - self.movetime_ms))
 
         # store the current root in the lookup table
         self.node_lookup[state.get_board_fen()] = self.root_node
@@ -330,7 +335,7 @@ class MCTSAgent(_Agent):
             state_future.apply_move(mv)
 
             # store the current child node with it's board fen as the hash-key if the child node has already been expanded
-            if node.child_nodes[idx] is not None:
+            if node is not None and node.child_nodes[idx] is not None:
                 self.node_lookup[state_future.get_board_fen()] = node.child_nodes[idx]
 
         return value, selected_move, confidence, selected_child_idx
@@ -527,3 +532,7 @@ class MCTSAgent(_Agent):
         for mv in lst_moves:
             str_moves += " " + mv.uci()
         return str_moves
+
+    def update_movetime(self, time_ms_per_move):
+        """ Update move time allocation """
+        self.movetime_ms = time_ms_per_move
