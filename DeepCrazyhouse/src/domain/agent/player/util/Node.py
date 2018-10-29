@@ -92,21 +92,28 @@ class Node:
         self.q_u[child_idx] = cpuct * self.p[child_idx] * (np.sqrt(self.n_sum) / (1 + self.n[child_idx]))
     '''
 
-    def get_mcts_policy(self):
+    def get_mcts_policy(self, use_q_values=True):
         """
         Calculates the finetuned policies based on the MCTS search.
         These policies should be better than the initial policy predicted by a the raw network.
         THe policy values are ordered in the same way as list(board.legal_moves)
 
+        :param: use_q_values: Boolean indicating if for the final selected move also the q-values should be
+                                taken into account. By default use the average of the q-value and the visit count.
         :return: Pruned policy vector based on the MCTS search
         """
 
-        if max(self.n) == 1:
-            policy = (self.n + 0.05 * self.p) #/ self.n_sum
+        if use_q_values is True:
+            # we add +1 to the q values to avoid negative values
+            policy = (self.n / self.n_sum) + (self.q + 1)
+            return policy / sum(policy)
         else:
-            policy = (self.n - 0.05 * self.p) #/ self.n_sum
-        return policy / sum(policy)
-        #return self.n / self.n_sum
+            if max(self.n) == 1:
+                policy = (self.n + 0.05 * self.p)#/ self.n_sum
+            else:
+                policy = (self.n - 0.05 * self.p) #/ self.n_sum
+
+            return policy / sum(policy)
 
     def apply_dirichlet_noise_to_prior_policy(self, epsilon=0.25, alpha=0.15):
         """
