@@ -105,7 +105,7 @@ class Node:
 
         if use_q_values is True:
             # we add +1 to the q values to avoid negative values
-            policy = (self.n / self.n_sum) + (self.q + 1)
+            policy = (self.n / self.n_sum) + (self.q + 1) * 0.5
             return policy / sum(policy)
         else:
             if max(self.n) == 1:
