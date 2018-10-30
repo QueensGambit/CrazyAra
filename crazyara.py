@@ -11,7 +11,6 @@ http://wbec-ridderkerk.nl/html/UCIProtocol.html
 
 from __future__ import print_function
 import sys
-from DeepCrazyhouse.src.domain.agent.player.util.NetPredService import NetPredService
 import chess.pgn
 
 import traceback
