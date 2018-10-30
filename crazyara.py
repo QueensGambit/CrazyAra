@@ -240,10 +240,9 @@ def setup_gamestate(cmd_list):
     elif position_type == "fen":
         sub_command_offset = cmd_list.index("moves") if "moves" in cmd_list else len(cmd_list)
         fen = " ".join(cmd_list[2:sub_command_offset])
-        log_print("fen: %s" % fen)
         gamestate.set_fen(fen)
 
-    if cmd_list[2] == 'moves':
+    if 'moves' in cmd_list:
         mv_list = cmd_list[3:]
         for move in mv_list:
             gamestate.apply_move(chess.Move.from_uci(move))
