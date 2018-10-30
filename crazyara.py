@@ -99,7 +99,6 @@ s = {
     "threads": 8,
     "playouts_empty_pockets": 8192,
     "playouts_filled_pockets": 8192,
-    "playouts_update_stats": 1,
     "centi_cpuct": 100,
     "centi_dirichlet_epsilon": 10,
     "centi_dirichlet_alpha": 20,
@@ -107,9 +106,11 @@ s = {
     "centi_temperature": 0,
     "centi_clip_quantil": 0,
     "virtual_loss": 3,
-    "threshold_time_for_raw_net_ms": 50,
-    "move_overhead_ms": 50,
-    "moves_left": MOVES_LEFT
+    "use_q_values":True,
+    "threshold_time_for_raw_net_ms": 100,
+    "move_overhead_ms": 300,
+    "moves_left": MOVES_LEFT,
+    "extend_time_on_bad_position": True
 }
 
 
@@ -137,7 +138,7 @@ def setup_network():
 
         mcts_agent = MCTSAgent(net, cpuct=s['centi_cpuct'] / 100, playouts_empty_pockets=s['playouts_empty_pockets'],
                                playouts_filled_pockets=s['playouts_filled_pockets'], max_search_depth=s['max_search_depth'],
-                               playouts_update=s['playouts_update_stats'], dirichlet_alpha=s['centi_dirichlet_alpha'] / 100,
+                               dirichlet_alpha=s['centi_dirichlet_alpha'] / 100, use_q_values=s['use_q_values'],
                                dirichlet_epsilon=s['centi_dirichlet_epsilon'] / 100, virtual_loss=s['virtual_loss'],
                                threads=s['threads'], temperature=s['centi_temperature'] / 100,
                                clip_quantil=s['centi_clip_quantil'] / 100, min_movetime=MIN_SEARCH_TIME_MS)
@@ -159,6 +160,7 @@ def perform_action(cmd_list):
     global bestmove_value
 
     movetime_ms = MIN_SEARCH_TIME_MS
+    tc_type = None
 
     if len(cmd_list) >= 5:
         if cmd_list[1] == 'wtime' and cmd_list[3] == 'btime':
@@ -179,12 +181,32 @@ def perform_action(cmd_list):
                 my_time = btime
                 my_inc = binc
 
-            moves_left = s['moves_left']
+            # TC with period (traditional) like 40/60 or 40 moves in 60 sec repeating
+            if 'movestogo' in cmd_list:
+                tc_type = 'traditional'
+                if 'winc' in cmd_list and 'binc' in cmd_list:
+                    moves_left = int(cmd_list[10])
+                else:
+                    moves_left = int(cmd_list[6])
+                # If we are close to the period limit, save extra time to avoid time forfeit
+                if moves_left <= 3:
+                    moves_left += 1
+            else:
+                tc_type = 'blitz'
+                moves_left = s['moves_left']
+
+            print('info string Using %s TC' % tc_type)
 
             # Increase movetime by reducing the moves left if our prev bestmove value is below 0.0
-            if bestmove_value is not None and bestmove_value <= MAX_BAD_POS_VALUE:
-                moves_left -= abs(bestmove_value) * MOVES_LEFT
-                moves_left = max(moves_left, MIN_MOVES_LEFT)
+            if s['extend_time_on_bad_position'] and bestmove_value is not None and bestmove_value <= MAX_BAD_POS_VALUE:
+                if tc_type == 'blitz':
+                    # The more the bad position is, the more that we extend the search time
+                    moves_left -= abs(bestmove_value) * MOVES_LEFT
+                    moves_left = max(moves_left, MIN_MOVES_LEFT)
+                elif moves_left > 4:
+                    # We extend with more time if we have more time left
+                    moves_left = moves_left - moves_left//8
+
                 print('info string Reduce moves left to %d' % moves_left)
 
             movetime_ms = max(my_time/moves_left + INC_FACTOR*my_inc//INC_DIV - s['move_overhead_ms'], MIN_SEARCH_TIME_MS)
@@ -197,7 +219,7 @@ def perform_action(cmd_list):
     mcts_agent.update_movetime(movetime_ms)
     log_print('info string Time for this move is %dms' % movetime_ms)
 
-    if s['use_raw_network'] or movetime_ms < s['threshold_time_for_raw_net_ms']:
+    if s['use_raw_network'] or movetime_ms <= s['threshold_time_for_raw_net_ms']:
         log_print('info string Using raw network for fast mode...')
         value, selected_move, confidence, _ = rawnet_agent.perform_action(gamestate)
     else:
@@ -242,16 +264,17 @@ def set_options(cmd_list):
         if option_name not in s:
             raise Exception("The given option %s wasn't found in the settings list" % option_name)
 
-        if option_name in ['UCI_Variant', 'context', 'use_raw_network']:
+        if option_name in ['UCI_Variant', 'context', 'use_raw_network', 'use_q_values', 'extend_time_on_bad_position']:
             value = cmd_list[4]
         else:
             value = int(cmd_list[4])
 
         if option_name == 'use_raw_network':
-            if value == 'true':
-                s['use_raw_network'] = True
-            else:
-                s['use_raw_network'] = False
+            s['use_raw_network'] = True if value == 'true' else False
+        elif option_name == 'use_q_values':
+            s['use_q_values'] = True if value == 'true' else False
+        elif option_name == 'extend_time_on_bad_position':
+            s['extend_time_on_bad_position'] = True if value == 'true' else False
         else:
             s[option_name] = value
 
@@ -282,7 +305,6 @@ while True:
                 log_print('option name threads type spin default %d min 1 max 4096' % s['threads'])
                 log_print('option name playouts_empty_pockets type spin default %d min 56 max 8192' % s['playouts_empty_pockets'])
                 log_print('option name playouts_filled_pockets type spin default %d min 56 max 8192' % s['playouts_filled_pockets'])
-                log_print('option name playouts_update_stats type spin default %d min 1 max 8192' % s['playouts_update_stats'])
                 log_print('option name centi_cpuct type spin default 100 min 1 max 500')
                 log_print('option name centi_dirichlet_epsilon type spin default 10 min 0 max 100')
                 log_print('option name centi_dirichlet_alpha type spin default 20 min 0 max 100')
@@ -290,9 +312,11 @@ while True:
                 log_print('option name centi_temperature type spin default 0 min 0 max 100')
                 log_print('option name centi_clip_quantil type spin default 0 min 0 max 100')
                 log_print('option name virtual_loss type spin default 3 min 0 max 10')
+                log_print('option name use_q_values type check default true')
                 log_print('option name threshold_time_for_raw_net_ms type spin default %d min 1 max 999999999' % s['threshold_time_for_raw_net_ms'])
                 log_print('option name move_overhead_ms type spin default %d min 0 max 60000' % s['move_overhead_ms'])
                 log_print('option name moves_left type spin default %d min 10 max 320' % s['moves_left'])
+                log_print('option name extend_time_on_bad_position type check default true')
 
                 # verify that all options have been sent
                 log_print('uciok')
