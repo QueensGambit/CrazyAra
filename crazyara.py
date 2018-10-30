@@ -11,6 +11,7 @@ http://wbec-ridderkerk.nl/html/UCIProtocol.html
 
 from __future__ import print_function
 import sys
+from DeepCrazyhouse.src.domain.agent.player.util.NetPredService import NetPredService
 import chess.pgn
 
 import traceback
@@ -99,7 +100,6 @@ s = {
     "threads": 8,
     "playouts_empty_pockets": 8192,
     "playouts_filled_pockets": 8192,
-    "playouts_update_stats": 1,
     "centi_cpuct": 100,
     "centi_dirichlet_epsilon": 10,
     "centi_dirichlet_alpha": 20,
@@ -107,8 +107,9 @@ s = {
     "centi_temperature": 0,
     "centi_clip_quantil": 0,
     "virtual_loss": 3,
+    "use_q_values":True,
     "threshold_time_for_raw_net_ms": 50,
-    "move_overhead_ms": 50,
+    "move_overhead_ms": 300,
     "moves_left": MOVES_LEFT
 }
 
@@ -137,7 +138,7 @@ def setup_network():
 
         mcts_agent = MCTSAgent(net, cpuct=s['centi_cpuct'] / 100, playouts_empty_pockets=s['playouts_empty_pockets'],
                                playouts_filled_pockets=s['playouts_filled_pockets'], max_search_depth=s['max_search_depth'],
-                               playouts_update=s['playouts_update_stats'], dirichlet_alpha=s['centi_dirichlet_alpha'] / 100,
+                               dirichlet_alpha=s['centi_dirichlet_alpha'] / 100, use_q_values=s['use_q_values'],
                                dirichlet_epsilon=s['centi_dirichlet_epsilon'] / 100, virtual_loss=s['virtual_loss'],
                                threads=s['threads'], temperature=s['centi_temperature'] / 100,
                                clip_quantil=s['centi_clip_quantil'] / 100, min_movetime=MIN_SEARCH_TIME_MS)
@@ -242,16 +243,15 @@ def set_options(cmd_list):
         if option_name not in s:
             raise Exception("The given option %s wasn't found in the settings list" % option_name)
 
-        if option_name in ['UCI_Variant', 'context', 'use_raw_network']:
+        if option_name in ['UCI_Variant', 'context', 'use_raw_network', 'use_q_values']:
             value = cmd_list[4]
         else:
             value = int(cmd_list[4])
 
         if option_name == 'use_raw_network':
-            if value == 'true':
-                s['use_raw_network'] = True
-            else:
-                s['use_raw_network'] = False
+            s['use_raw_network'] = True if value == 'true' else False
+        elif option_name == 'use_q_values':
+            s['use_q_values'] = True if value == 'true' else False
         else:
             s[option_name] = value
 
@@ -282,7 +282,6 @@ while True:
                 log_print('option name threads type spin default %d min 1 max 4096' % s['threads'])
                 log_print('option name playouts_empty_pockets type spin default %d min 56 max 8192' % s['playouts_empty_pockets'])
                 log_print('option name playouts_filled_pockets type spin default %d min 56 max 8192' % s['playouts_filled_pockets'])
-                log_print('option name playouts_update_stats type spin default %d min 1 max 8192' % s['playouts_update_stats'])
                 log_print('option name centi_cpuct type spin default 100 min 1 max 500')
                 log_print('option name centi_dirichlet_epsilon type spin default 10 min 0 max 100')
                 log_print('option name centi_dirichlet_alpha type spin default 20 min 0 max 100')
@@ -290,6 +289,7 @@ while True:
                 log_print('option name centi_temperature type spin default 0 min 0 max 100')
                 log_print('option name centi_clip_quantil type spin default 0 min 0 max 100')
                 log_print('option name virtual_loss type spin default 3 min 0 max 10')
+                log_print('option name use_q_values type check default true')
                 log_print('option name threshold_time_for_raw_net_ms type spin default %d min 1 max 999999999' % s['threshold_time_for_raw_net_ms'])
                 log_print('option name move_overhead_ms type spin default %d min 0 max 60000' % s['move_overhead_ms'])
                 log_print('option name moves_left type spin default %d min 10 max 320' % s['moves_left'])
