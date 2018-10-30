@@ -107,9 +107,10 @@ s = {
     "centi_clip_quantil": 0,
     "virtual_loss": 3,
     "use_q_values":True,
-    "threshold_time_for_raw_net_ms": 50,
+    "threshold_time_for_raw_net_ms": 100,
     "move_overhead_ms": 300,
-    "moves_left": MOVES_LEFT
+    "moves_left": MOVES_LEFT,
+    "extend_time_on_bad_position": True
 }
 
 
@@ -159,6 +160,7 @@ def perform_action(cmd_list):
     global bestmove_value
 
     movetime_ms = MIN_SEARCH_TIME_MS
+    tc_type = None
 
     if len(cmd_list) >= 5:
         if cmd_list[1] == 'wtime' and cmd_list[3] == 'btime':
@@ -179,12 +181,32 @@ def perform_action(cmd_list):
                 my_time = btime
                 my_inc = binc
 
-            moves_left = s['moves_left']
+            # TC with period (traditional) like 40/60 or 40 moves in 60 sec repeating
+            if 'movestogo' in cmd_list:
+                tc_type = 'traditional'
+                if 'winc' in cmd_list and 'binc' in cmd_list:
+                    moves_left = int(cmd_list[10])
+                else:
+                    moves_left = int(cmd_list[6])
+                # If we are close to the period limit, save extra time to avoid time forfeit
+                if moves_left <= 3:
+                    moves_left += 1
+            else:
+                tc_type = 'blitz'
+                moves_left = s['moves_left']
+
+            print('info string Using %s TC' % tc_type)
 
             # Increase movetime by reducing the moves left if our prev bestmove value is below 0.0
-            if bestmove_value is not None and bestmove_value <= MAX_BAD_POS_VALUE:
-                moves_left -= abs(bestmove_value) * MOVES_LEFT
-                moves_left = max(moves_left, MIN_MOVES_LEFT)
+            if s['extend_time_on_bad_position'] and bestmove_value is not None and bestmove_value <= MAX_BAD_POS_VALUE:
+                if tc_type == 'blitz':
+                    # The more the bad position is, the more that we extend the search time
+                    moves_left -= abs(bestmove_value) * MOVES_LEFT
+                    moves_left = max(moves_left, MIN_MOVES_LEFT)
+                elif moves_left > 4:
+                    # We extend with more time if we have more time left
+                    moves_left = moves_left - moves_left//8
+
                 print('info string Reduce moves left to %d' % moves_left)
 
             movetime_ms = max(my_time/moves_left + INC_FACTOR*my_inc//INC_DIV - s['move_overhead_ms'], MIN_SEARCH_TIME_MS)
@@ -197,7 +219,7 @@ def perform_action(cmd_list):
     mcts_agent.update_movetime(movetime_ms)
     log_print('info string Time for this move is %dms' % movetime_ms)
 
-    if s['use_raw_network'] or movetime_ms < s['threshold_time_for_raw_net_ms']:
+    if s['use_raw_network'] or movetime_ms <= s['threshold_time_for_raw_net_ms']:
         log_print('info string Using raw network for fast mode...')
         value, selected_move, confidence, _ = rawnet_agent.perform_action(gamestate)
     else:
@@ -242,7 +264,7 @@ def set_options(cmd_list):
         if option_name not in s:
             raise Exception("The given option %s wasn't found in the settings list" % option_name)
 
-        if option_name in ['UCI_Variant', 'context', 'use_raw_network', 'use_q_values']:
+        if option_name in ['UCI_Variant', 'context', 'use_raw_network', 'use_q_values', 'extend_time_on_bad_position']:
             value = cmd_list[4]
         else:
             value = int(cmd_list[4])
@@ -251,6 +273,8 @@ def set_options(cmd_list):
             s['use_raw_network'] = True if value == 'true' else False
         elif option_name == 'use_q_values':
             s['use_q_values'] = True if value == 'true' else False
+        elif option_name == 'extend_time_on_bad_position':
+            s['extend_time_on_bad_position'] = True if value == 'true' else False
         else:
             s[option_name] = value
 
@@ -292,6 +316,7 @@ while True:
                 log_print('option name threshold_time_for_raw_net_ms type spin default %d min 1 max 999999999' % s['threshold_time_for_raw_net_ms'])
                 log_print('option name move_overhead_ms type spin default %d min 0 max 60000' % s['move_overhead_ms'])
                 log_print('option name moves_left type spin default %d min 10 max 320' % s['moves_left'])
+                log_print('option name extend_time_on_bad_position type check default true')
 
                 # verify that all options have been sent
                 log_print('uciok')
