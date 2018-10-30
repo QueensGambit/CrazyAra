@@ -44,9 +44,9 @@ def profile(fnc):
 class MCTSAgent(_Agent):
 
     def __init__(self, net: NeuralNetAPI, threads=16, batch_size=8, playouts_empty_pockets=256,
-                 playouts_filled_pockets=512, playouts_update=256, cpuct=1, dirichlet_epsilon=.25,
+                 playouts_filled_pockets=512, cpuct=1, dirichlet_epsilon=.25,
                  dirichlet_alpha=0.2, max_search_depth=15, temperature=0., clip_quantil=0.,
-                 virtual_loss=3, verbose=True, min_movetime=100):
+                 use_q_values=True, virtual_loss=3, verbose=True, min_movetime=100):
         """
         Constructor of the MCTSAgent.
         The MCTSAgent runs playouts/simulations in the search tree and updates the node statistics.
@@ -66,8 +66,6 @@ class MCTSAgent(_Agent):
         :param playouts_filled_pockets: Number of playouts/simulations which will be done if at least one player has a
                                         piece in their pocket. The number of legal-moves is higher when drop
                                         moves are available.
-        :param playouts_update: Number of playouts to process for updating the statistics like current_search_depth,
-                                   current_serach_time_s.
         :param cpuct: CPUCT-value which weights the balance between the policy/action and value term.
                      The playstyle depends strongly on this value.
         :param dirichlet_epsilon: Weigh value for the dirichlet noise. If 0. -> no noise. If 1. -> complete noise.
@@ -90,6 +88,7 @@ class MCTSAgent(_Agent):
                              is the virtual loss. This prevents that every thread will evaluate the same node.
         :param verbose: Defines weather to print out info messages for the current calculated line
         :param min_movetime: Minimum time in milliseconds to search for the best move
+        :param use_q_values: Use q values in policy calculation
         """
 
         super().__init__(temperature, clip_quantil, verbose)
@@ -110,7 +109,6 @@ class MCTSAgent(_Agent):
         self.cpuct_init = cpuct
         self.cpuct = cpuct
         self.max_search_depth = max_search_depth
-        self.nb_playouts_update = min(playouts_update, playouts_empty_pockets)
         self.nb_workers = threads
         logging.debug('batch_size: %d' % batch_size)
         self.batch_size = batch_size
@@ -132,6 +130,7 @@ class MCTSAgent(_Agent):
         self.dirichlet_epsilon = dirichlet_epsilon
 
         self.movetime_ms = min_movetime
+        self.use_q_values = use_q_values
 
     def evaluate_board_state(self, state_in: GameState):
         """
@@ -247,12 +246,12 @@ class MCTSAgent(_Agent):
 
                 # start searching
                 with ThreadPoolExecutor(max_workers=self.nb_workers) as executor:
-                    for i in range(self.nb_playouts_update):
+                    for i in range(self.nb_workers):
                         # calculate the thread id based on the current playout
                         futures.append(executor.submit(self._run_single_playout, state=deepcopy(state),
                                                        parent_node=self.root_node, depth=1, mv_list=[]))
 
-                cur_playouts += self.nb_playouts_update
+                cur_playouts += self.nb_workers
                 time_show_info = time() - old_time
 
                 for i, f in enumerate(futures):
@@ -275,7 +274,7 @@ class MCTSAgent(_Agent):
                     print('info nps %d time %d' % ((self.root_node.n_sum / t_elapsed), t_elapsed * 1000))
 
             # receive the policy vector based on the MCTS search
-            p_vec_small = self.root_node.get_mcts_policy()
+            p_vec_small = self.root_node.get_mcts_policy(self.use_q_values)
             print('info string move overhead is %dms' % (t_elapsed*1000 - self.movetime_ms))
 
         # store the current root in the lookup table
@@ -487,7 +486,7 @@ class MCTSAgent(_Agent):
 
         #child_idx = parent_node.n.argmax()
 
-        child_idx = parent_node.get_mcts_policy().argmax()
+        child_idx = parent_node.get_mcts_policy(self.use_q_values).argmax()
 
         nb_visits = parent_node.n[child_idx]
         move = parent_node.legal_moves[child_idx]
