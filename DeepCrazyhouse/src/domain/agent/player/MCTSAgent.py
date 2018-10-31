@@ -270,7 +270,7 @@ class MCTSAgent(_Agent):
 
                 # update the current search time
                 t_elapsed = time() - t_start_eval
-                if time_show_info > 1:
+                if self.verbose and time_show_info > 1:
                     print('info nps %d time %d' % ((self.root_node.n_sum / t_elapsed), t_elapsed * 1000))
 
             # receive the policy vector based on the MCTS search
@@ -282,15 +282,14 @@ class MCTSAgent(_Agent):
 
         # select the q value which would score the highest value
         value = self.root_node.q.max()
+        lst_best_moves, _ = self.get_calclated_line()
+        str_moves = self._mv_list_to_str(lst_best_moves)
 
-        if self.verbose is True:
-            lst_best_moves, _ = self.get_calclated_line()
-
-            str_moves = self._mv_list_to_str(lst_best_moves)
-
-            # show the best calculated line
-            print('info score cp %d depth %d nodes %d time %d pv%s' % (
-            value_to_centipawn(value), max_depth_reached, self.root_node.n_sum, (time() - t_start_eval) * 1000, str_moves))
+        # show the best calculated line
+        time_e = time() - t_start_eval
+        node_searched = self.root_node.n_sum
+        print('info score cp %d depth %d nodes %d time %d nps %d pv%s' % (
+            value_to_centipawn(value), max_depth_reached, node_searched, time_e*1000, node_searched/max(1, time_e), str_moves))
 
         if len(legal_moves) != len(p_vec_small):
             print('Legal move list %s with length %s is uncompatible to policy vector %s with shape %s for board state %s' % (legal_moves, len(legal_moves), p_vec_small, p_vec_small.shape, state_in))
