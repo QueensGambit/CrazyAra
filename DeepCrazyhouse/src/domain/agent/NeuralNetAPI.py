@@ -10,6 +10,7 @@ from mxnet import gluon
 from multiprocessing import Process, Queue
 from DeepCrazyhouse.configs.main_config import main_config
 import os
+from DeepCrazyhouse.src.domain.crazyhouse.input_representation import NB_CHANNELS_FULL, BOARD_WIDTH, BOARD_HEIGHT
 
 
 class NeuralNetAPI:
@@ -72,6 +73,18 @@ class NeuralNetAPI:
         for param in aux_params:
             if param in net_params:
                 net_params[param]._load_init(aux_params[param], ctx=self.ctx)
+
+        # define the executor object which is used for inference
+        self.executor = sym.simple_bind(ctx=self.ctx, data=(batch_size, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
+                                        grad_req='null', force_rebind=True)
+        self.executor.copy_params_from(arg_params, aux_params)
+
+    def get_executor(self):
+        """
+        Returns the executor object used for inference
+        :return:
+        """
+        return self.executor
 
     def predict_single(self, x):
         """

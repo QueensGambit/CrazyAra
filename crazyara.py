@@ -31,7 +31,7 @@ client = {
 }
 
 
-INTRO_PT1 = "" \
+INTRO_PART1 = "" \
         "                                  _                                           \n" \
         "                   _..           /   ._   _.  _        /\   ._   _.           \n" \
         "                 .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|           \n" \
@@ -45,7 +45,7 @@ INTRO_PT1 = "" \
         "     .'`-'_     /_.'))).-` \         3 ////__////__////__////__/              \n" \
         "    / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////               \n" \
 
-INTRO_PT2 = "" \
+INTRO_PART2 = "" \
             "   (__.'/   /` .'`                 1 ////__////__////__////__/                \n" \
             "    (_.'/ /` /`                       a  b  c  d  e  f  g  h                  \n" \
             "      _|.' /`                                                                 \n" \
@@ -79,8 +79,8 @@ def log(text: str):
         log_file.flush()
 
 
-print(INTRO_PT1, end="")
-print(INTRO_PT2, end="")
+print(INTRO_PART1, end="")
+print(INTRO_PART2, end="")
 
 # GLOBAL VARIABLES
 mcts_agent = None
@@ -97,17 +97,18 @@ s = {
     # choose 'gpu' using the settings if there is one available
     "context": 'cpu',
     "use_raw_network": False,
-    "threads": 1,
+    "threads": 16,
+    "batch_size": 8,
     "playouts_empty_pockets": 8192,
     "playouts_filled_pockets": 8192,
-    "centi_cpuct": 100,
+    "centi_cpuct": 300,
     "centi_dirichlet_epsilon": 10,
     "centi_dirichlet_alpha": 20,
     "max_search_depth": 40,
     "centi_temperature": 0,
     "centi_clip_quantil": 0,
     "virtual_loss": 3,
-    "use_q_values": False,
+    "centi_q_value_weight": 65,
     "threshold_time_for_raw_net_ms": 100,
     "move_overhead_ms": 300,
     "moves_left": 40,
@@ -136,16 +137,17 @@ def setup_network():
         from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
         from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
 
-        net = NeuralNetAPI(ctx=s['context'])
+        net = NeuralNetAPI(ctx=s['context'], batch_size=s['batch_size'])
 
         rawnet_agent = RawNetAgent(net, temperature=s['centi_temperature'], clip_quantil=s['centi_clip_quantil'])
 
         mcts_agent = MCTSAgent(net, cpuct=s['centi_cpuct'] / 100, playouts_empty_pockets=s['playouts_empty_pockets'],
                                playouts_filled_pockets=s['playouts_filled_pockets'], max_search_depth=s['max_search_depth'],
-                               dirichlet_alpha=s['centi_dirichlet_alpha'] / 100, use_q_values=s['use_q_values'],
+                               dirichlet_alpha=s['centi_dirichlet_alpha'] / 100, q_value_weight=s['centi_q_value_weight'] / 100,
                                dirichlet_epsilon=s['centi_dirichlet_epsilon'] / 100, virtual_loss=s['virtual_loss'],
                                threads=s['threads'], temperature=s['centi_temperature'] / 100, verbose=s['verbose'],
-                               clip_quantil=s['centi_clip_quantil'] / 100, min_movetime=MIN_SEARCH_TIME_MS)
+                               clip_quantil=s['centi_clip_quantil'] / 100, min_movetime=MIN_SEARCH_TIME_MS,
+                               batch_size=s['batch_size'])
 
         gamestate = GameState()
 
@@ -154,7 +156,8 @@ def setup_network():
 
 def perform_action(cmd_list):
     """
-    
+    Computes the 'best move' according to the engine and the given settings.
+    After the search is done it will print out ' bestmove e2e4' for example on std-out.
     :return: 
     """
 
@@ -225,6 +228,13 @@ def perform_action(cmd_list):
 
 
 def setup_gamestate(cmd_list):
+    """
+    Prepare the gamestate according to the user's wishes.
+
+    :param cmd_list: Input-command lists arguments
+    :return:
+    """
+    #artificial_max_game_len = 30
 
     position_type = cmd_list[1]
     if position_type == "startpos":
@@ -241,6 +251,10 @@ def setup_gamestate(cmd_list):
             mv_list = cmd_list[9:]
         for move in mv_list:
             gamestate.apply_move(chess.Move.from_uci(move))
+
+        #if len(mv_list)//2 > artificial_max_game_len:
+        #    log_print('info string Setting fullmove_number to %d' % artificial_max_game_len)
+        #    gamestate.get_pythonchess_board().fullmove_number = artificial_max_game_len
 
 
 def set_options(cmd_list):
@@ -260,15 +274,14 @@ def set_options(cmd_list):
             raise Exception("The given option %s wasn't found in the settings list" % option_name)
 
         if option_name in ['UCI_Variant', 'context', 'use_raw_network',
-                     'use_q_values', 'extend_time_on_bad_position', 'verbose']:
+                           'extend_time_on_bad_position', 'verbose']:
+          
             value = cmd_list[4]
         else:
             value = int(cmd_list[4])
 
         if option_name == 'use_raw_network':
             s['use_raw_network'] = True if value == 'true' else False
-        elif option_name == 'use_q_values':
-            s['use_q_values'] = True if value == 'true' else False
         elif option_name == 'extend_time_on_bad_position':
             s['extend_time_on_bad_position'] = True if value == 'true' else False
         elif option_name == 'verbose':
@@ -325,6 +338,7 @@ def uci_reply():
     log_print('option name use_raw_network type check default %s' %\
               ('false' if not s['use_raw_network'] else 'true'))
     log_print('option name threads type spin default %d min 1 max 4096' % s['threads'])
+    log_print('option name batch_size type spin default %d min 1 max 4096' % s['batch_size'])    
     log_print('option name playouts_empty_pockets type spin default %d min 56 max 8192' %\
               s['playouts_empty_pockets'])
     log_print('option name playouts_filled_pockets type spin default %d min 56 max 8192' %\
@@ -336,8 +350,7 @@ def uci_reply():
     log_print('option name centi_temperature type spin default 0 min 0 max 100')
     log_print('option name centi_clip_quantil type spin default 0 min 0 max 100')
     log_print('option name virtual_loss type spin default 3 min 0 max 10')
-    log_print('option name use_q_values type check default %s' %\
-              ('false' if not s['use_q_values'] else 'true'))
+    log_print('option name centi_q_value_weight type spin default %d min 0 max 100' % s['centi_q_value_weight'])
     log_print('option name threshold_time_for_raw_net_ms type spin default %d min 1 max 300000' %\
               s['threshold_time_for_raw_net_ms'])
     log_print('option name move_overhead_ms type spin default %d min 0 max 60000' % s['move_overhead_ms'])

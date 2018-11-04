@@ -4,7 +4,7 @@ Created on 13.10.18
 @project: crazy_ara_refactor
 @author: queensgambit
 
-Please describe what the content of this file is about
+Helper class which stores the statistics of all nodes and in the search tree.
 """
 
 from threading import Lock
@@ -14,19 +14,21 @@ import logging
 
 
 class Node:
-    """
-    Helper Class which stores the statistics of all child nodes of this node in the search tree
-    """
 
-    def __init__(self, value, p_vec_small: np.ndarray, legal_moves: [chess.Move], str_legal_moves: str):
+    def __init__(self, value, p_vec_small: np.ndarray, legal_moves: [chess.Move], str_legal_moves: str, is_leaf=False):
 
         # lock object for this node to protect its member variables
         self.lock = Lock()
 
         # store the initial value prediction of the current board position
         self.v = value
-        # specify the number of direct child nodes from this node
-        self.nb_direct_child_nodes = np.array(len(p_vec_small)) #, np.uint32)
+
+        if is_leaf is True:
+            self.nb_direct_child_nodes = 0
+        else:
+            # specify the number of direct child nodes from this node
+            self.nb_direct_child_nodes = np.array(len(p_vec_small)) #, np.uint32)
+
         # prior probability selecting each child, which is estimated by the neural network
         self.p = p_vec_small #np.zeros(self.nb_direct_child_nodes, np.float32)
         # possible legal moves from this node on which represents the edges
@@ -67,24 +69,25 @@ class Node:
             #self.nb_direct_child_nodes = np.array(1) #, np.uint32)
             #logging.debug('set mate in one connection')
         else:
-
             # no direct mate move is possible so set the reference to None
             self.mate_child_idx = None
 
         # stores the number of all possible expandable child nodes
         self.nb_expandable_child_nodes = np.array(self.nb_direct_child_nodes) #, np.uint32)
 
-        assert self.nb_direct_child_nodes > 0
+        #assert self.nb_direct_child_nodes > 0
 
         # list of all child nodes which are described by each board position
         # the children are ordered in the same way as the legal_move generator output
         self.child_nodes = [None] * int(self.nb_direct_child_nodes)
 
+        # determine if the node is a leaf node this avoids checking for state.is_draw() or .state.is_won()
+        self.is_leaf = is_leaf
+
     ''' TODO: Delete
     def update_u_for_child(self, child_idx, cpuct):
         """
         Updates the u parameter via the formula given in the AlphaZero paper for a given child index
-
         :param child_idx: Child index to update
         :param cpuct: cpuct constant to apply (cpuct manages the amount of exploration)
         :return:
@@ -92,21 +95,25 @@ class Node:
         self.q_u[child_idx] = cpuct * self.p[child_idx] * (np.sqrt(self.n_sum) / (1 + self.n[child_idx]))
     '''
 
-    def get_mcts_policy(self, use_q_values=True):
+    def get_mcts_policy(self, q_value_weight=.65):
         """
         Calculates the finetuned policies based on the MCTS search.
         These policies should be better than the initial policy predicted by a the raw network.
-        THe policy values are ordered in the same way as list(board.legal_moves)
-
-        :param: use_q_values: Boolean indicating if for the final selected move also the q-values should be
+        The policy values are ordered in the same way as list(board.legal_moves)
+        :param: q_value_weight: Float indicating how the number of visits and the q-values should be mixed.
+                                Expected to be in range [0.,1.]
+        :param: q_value_weight: Boolean indicating if for the final selected move also the q-values should be
                                 taken into account. By default use the average of the q-value and the visit count.
         :return: Pruned policy vector based on the MCTS search
         """
 
-        if use_q_values is True:
-            # we add +1 to the q values to avoid negative values
-            policy = (self.n / self.n_sum) + (self.q + 1) * 0.5
-            return policy / sum(policy)
+        assert 0 <= q_value_weight <= 1.
+
+        if q_value_weight > 0:
+            # we add +1 to the q values to avoid negative values, then the q values are normalized to [0,1] before
+            # the q_value_weight is applied.
+            policy = (self.n / self.n_sum) * (1-q_value_weight) + ((self.q + 1) * .5) * q_value_weight
+            return policy
         else:
             if max(self.n) == 1:
                 policy = (self.n + 0.05 * self.p)#/ self.n_sum
@@ -119,7 +126,6 @@ class Node:
         """
         # Promote exploration from the root node child nodes by adding dirichlet noise
         # This ensures that every can be possibly be explored in the distant future
-
         :param epsilon: Percentage amount of the dirichlet noise to apply to the priors
         :param alpha: Dirichlet strength - This is a hyperparameter which depends on the typical amount of moves in the current game type
         :return:
@@ -154,4 +160,3 @@ class Node:
         #parent_node.update_u_for_child(child_idx, self.cpuct)
         self.nb_total_expanded_child_nodes += 1
         self.nb_expandable_child_nodes += self.nb_direct_child_nodes
-
