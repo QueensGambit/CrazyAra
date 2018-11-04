@@ -270,7 +270,7 @@ class MCTSAgent(_Agent):
 
             while max_depth_reached < self.max_search_depth and\
                        cur_playouts < nb_playouts and\
-                     t_elapsed*1000 < self.movetime_ms: #and np.abs(self.root_node.q.mean()) < 0.99:
+                     t_elapsed*1000 < self.movetime_ms and np.abs(self.root_node.q.mean()) < 0.99:
 
                 # start searching
                 with ThreadPoolExecutor(max_workers=self.nb_workers) as executor:
@@ -481,7 +481,7 @@ class MCTSAgent(_Agent):
                 new_node = Node(value, p_vec_small, legal_moves, '', is_leaf)
 
                 #if is_leaf is False:
-                #    # test of adding dirichlet noise to a new node
+                    # test of adding dirichlet noise to a new node
                 #    new_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon/4, alpha=self.dirichlet_alpha)
 
                 # include a reference to the new node in the look-up table
