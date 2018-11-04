@@ -13,7 +13,7 @@ import logging
 from threading import Thread
 import mxnet as mx
 import numpy as np
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import NB_LABELS
+from DeepCrazyhouse.src.domain.crazyhouse.output_representation import NB_LABELS, LABELS
 
 
 class NetPredService:
@@ -36,19 +36,20 @@ class NetPredService:
 
             filled_pipes = connection.wait(pipe_endings)
 
-            if filled_pipes: #and len(filled_pipes) >= self.batch_size:
+            if filled_pipes and len(filled_pipes) >= self.batch_size:
 
                 planes_batch = []
                 pipes_pred_output = []
 
-                for pipe in filled_pipes: #[:self.batch_size]:
+                for pipe in filled_pipes[:self.batch_size]:
                     while pipe.poll():
                         planes_batch.append(pipe.recv())
                         pipes_pred_output.append(pipe)
 
                 #logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
                 planes_batch = mx.nd.array(planes_batch, ctx=self.net.get_ctx())
-                pred = self.net.get_net()(planes_batch)
+                #pred = self.net.get_net()(planes_batch)
+                pred = self.net.get_executor().forward(is_train=False, data=planes_batch)
 
                 value_preds = pred[0].asnumpy()
 
