@@ -19,6 +19,12 @@ from DeepCrazyhouse.src.domain.crazyhouse.output_representation import NB_LABELS
 class NetPredService:
 
     def __init__(self, pipe_endings: [connection], net: NeuralNetAPI, batch_size):
+        """
+
+        :param pipe_endings: List of pip endings which are for communicating with the thread workers.
+        :param net: Neural Network API object which provides the reference for the neural network.
+        :param batch_size: Constant batch_size used for inference.
+        """
         self.net = net
         self.my_pipe_endings = pipe_endings
 
@@ -53,7 +59,8 @@ class NetPredService:
 
                 value_preds = pred[0].asnumpy()
 
-                # for the policy prediction we still have to apply the softmax activation because it's not done by the neural net
+                # for the policy prediction we still have to apply the softmax activation
+                #  because it's not done by the neural net
                 policy_preds = pred[1].softmax().asnumpy()
 
                 if use_random is True:

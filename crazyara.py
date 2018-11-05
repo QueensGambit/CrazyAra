@@ -62,7 +62,7 @@ except:
     log_file = None
     # print out the error message
     traceback_text = traceback.format_exc()
-    print("! An error occured while trying to open the log_file %s !" % log_file_path)
+    print("info string An error occured while trying to open the log_file %s" % log_file_path)
     print(traceback_text)
 
 
@@ -384,35 +384,34 @@ def main():
 
             # write the given command to the log-file
             log(line)
-
-            if main_cmd == 'uci':
-                uci_reply()
-            elif main_cmd == 'isready':
-                setup_network()
-                log_print('readyok')
-            elif main_cmd == 'ucinewgame':
-                bestmove_value = None
-                engine_played_move = 0
-            elif main_cmd == "position":
-                setup_gamestate(cmd_list)
-            elif main_cmd == "setoption":
-                set_options(cmd_list)
-            elif main_cmd == 'go':
-                try:
-                    perform_action(cmd_list)
-                except:
-                    # log the error message to the log-file and exit the script
+            try:
+                if main_cmd == 'uci':
+                    uci_reply()
+                elif main_cmd == 'isready':
+                    setup_network()
+                    log_print('readyok')
+                elif main_cmd == 'ucinewgame':
+                    bestmove_value = None
+                    engine_played_move = 0
+                elif main_cmd == "position":
+                    setup_gamestate(cmd_list)
+                elif main_cmd == "setoption":
+                    set_options(cmd_list)
+                elif main_cmd == 'go':
+                        perform_action(cmd_list)
+                elif main_cmd == 'quit' or main_cmd == 'exit':
+                    if log_file:
+                        log_file.close()
+                    sys.exit(0)
+                else:
+                    # give the user a message that the command was ignored
+                    print("info string Unknown command: %s" % line)
+            except:
+                # log the error message to the log-file and exit the script
+                if main_cmd != 'quit' or main_cmd != 'exit':
                     traceback_text = traceback.format_exc()
                     log_print(traceback_text)
-                    sys.exit(-1)
-            elif main_cmd == 'quit' or main_cmd == 'exit':
-                if log_file:
-                    log_file.close()
-                sys.exit(0)
-            else:
-                # give the user a message that the command was ignored
-                print("info string Unknown command: %s" % line)
-
+                sys.exit(-1)
 
 if __name__ == "__main__":
     main()

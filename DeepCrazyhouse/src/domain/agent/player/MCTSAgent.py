@@ -65,6 +65,10 @@ class MCTSAgent(_Agent):
 
         :param net: NeuralNetAPI handle which is used to communicate with the neural network
         :param threads: Number of threads to evaluate the nodes in parallel
+        :param batch_size: Fixed batch_size which is used in the network prediction service.
+                           The batch_size coordinates the prediction flow for the network-prediction service.
+                           Using a mxnet executor object which uses a fixed batch_size is faster than accepting
+                           arbitrary batch_sizes.
         :param playouts_empty_pockets: Number of playouts/simulations which will be done if the Crazyhouse-Pockets of
                                         both players are empty.
         :param playouts_filled_pockets: Number of playouts/simulations which will be done if at least one player has a
@@ -115,6 +119,22 @@ class MCTSAgent(_Agent):
         self.cpuct = cpuct
         self.max_search_depth = max_search_depth
         self.nb_workers = threads
+
+        # handle some possible issues when giving an illegal batch_size and number of threads combination
+        if batch_size > threads:
+            print('info string The given batch_size %d is higher than the number of threads %d. '
+                            'The maximum legal batch_size is the same as the number of threads (here: %d) '
+                            % (batch_size, threads, threads))
+            batch_size = threads
+            print('info string The batch_size was reduced to %d' % batch_size)
+
+        if threads % batch_size != 0:
+            print('info string You requested an illegal combination of threads %d and batch_size %d.'
+                            ' The batch_size must be a divisor of the number of threads' % (threads, batch_size))
+            divisor = threads // batch_size
+            batch_size = threads // divisor
+            print('info string The batch_size was changed to %d' % batch_size)
+
         self.batch_size = batch_size
 
         # create pip endings for itself and the prediction service
