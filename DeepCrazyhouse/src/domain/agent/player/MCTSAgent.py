@@ -50,7 +50,7 @@ class MCTSAgent(_Agent):
     def __init__(self, net: NeuralNetAPI, threads=16, batch_size=8, playouts_empty_pockets=256,
                  playouts_filled_pockets=512, cpuct=1, dirichlet_epsilon=.25,
                  dirichlet_alpha=0.2, max_search_depth=15, temperature=0., clip_quantil=0.,
-                 q_value_weight=0., virtual_loss=3, verbose=True, min_movetime=100):
+                 q_value_weight=0., virtual_loss=3, verbose=True, min_movetime=100, check_mate_in_one=False):
         """
         Constructor of the MCTSAgent.
         The MCTSAgent runs playouts/simulations in the search tree and updates the node statistics.
@@ -98,6 +98,9 @@ class MCTSAgent(_Agent):
                              is the virtual loss. This prevents that every thread will evaluate the same node.
         :param verbose: Defines weather to print out info messages for the current calculated line
         :param min_movetime: Minimum time in milliseconds to search for the best move
+        :param check_mate_in_one: Decide whether to check for every leaf node if a there is a mate in one move then
+                                  create a mate in one short cut which prioritzes this move. Currently by default this
+                                  option is disabled because it takes costs too much nps regarding its benefit.
         """
 
         super().__init__(temperature, clip_quantil, verbose)
@@ -118,22 +121,17 @@ class MCTSAgent(_Agent):
         self.cpuct_init = cpuct
         self.cpuct = cpuct
         self.max_search_depth = max_search_depth
-        self.nb_workers = threads
+        self.threads = threads
 
-        # handle some possible issues when giving an illegal batch_size and number of threads combination
+        # check for possible issues when giving an illegal batch_size and number of threads combination
         if batch_size > threads:
-            print('info string The given batch_size %d is higher than the number of threads %d. '
+            raise Exception('info string The given batch_size %d is higher than the number of threads %d. '
                             'The maximum legal batch_size is the same as the number of threads (here: %d) '
                             % (batch_size, threads, threads))
-            batch_size = threads
-            print('info string The batch_size was reduced to %d' % batch_size)
 
         if threads % batch_size != 0:
-            print('info string You requested an illegal combination of threads %d and batch_size %d.'
+            raise Exception('You requested an illegal combination of threads %d and batch_size %d.'
                             ' The batch_size must be a divisor of the number of threads' % (threads, batch_size))
-            divisor = threads // batch_size
-            batch_size = threads // divisor
-            print('info string The batch_size was changed to %d' % batch_size)
 
         self.batch_size = batch_size
 
@@ -155,6 +153,8 @@ class MCTSAgent(_Agent):
 
         self.movetime_ms = min_movetime
         self.q_value_weight = q_value_weight
+
+        self.check_mate_in_one = check_mate_in_one
 
     def evaluate_board_state(self, state_in: GameState):
         """
@@ -290,16 +290,16 @@ class MCTSAgent(_Agent):
 
             while max_depth_reached < self.max_search_depth and\
                        cur_playouts < nb_playouts and\
-                     t_elapsed*1000 < self.movetime_ms and np.abs(self.root_node.q.mean()) < 0.99:
+                     t_elapsed*1000 < self.movetime_ms: #and np.abs(self.root_node.q.mean()) < 0.99:
 
                 # start searching
-                with ThreadPoolExecutor(max_workers=self.nb_workers) as executor:
-                    for i in range(self.nb_workers):
+                with ThreadPoolExecutor(max_workers=self.threads) as executor:
+                    for i in range(self.threads):
                         # calculate the thread id based on the current playout
                         futures.append(executor.submit(self._run_single_playout, state=deepcopy(state),
                                                        parent_node=self.root_node, depth=1, mv_list=[]))
 
-                cur_playouts += self.nb_workers
+                cur_playouts += self.threads
                 time_show_info = time() - old_time
 
                 # store the mean of all value predictions in this variable
@@ -496,12 +496,17 @@ class MCTSAgent(_Agent):
                     except KeyError:
                         raise Exception('Key Error for state: %s' % state)
 
+                # convert all legal moves to a string if the option check_mate_in_one was enabled
+                if self.check_mate_in_one is True:
+                    str_legal_moves = str(state.get_legal_moves())
+                else:
+                    str_legal_moves = ''
+
                 # create a new node
-                #new_node = Node(value, p_vec_small, legal_moves, str(state.get_legal_moves()), is_leaf)
-                new_node = Node(value, p_vec_small, legal_moves, '', is_leaf)
+                new_node = Node(value, p_vec_small, legal_moves, str_legal_moves, is_leaf)
 
                 #if is_leaf is False:
-                    # test of adding dirichlet noise to a new node
+                # test of adding dirichlet noise to a new node
                 #    new_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon/4, alpha=self.dirichlet_alpha)
 
                 # include a reference to the new node in the look-up table

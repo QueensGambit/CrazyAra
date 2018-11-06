@@ -114,6 +114,7 @@ s = {
     "moves_left": 40,
     "extend_time_on_bad_position": True,
     "max_move_num_to_reduce_movetime": 0,
+    "check_mate_in_one": False,
     "verbose": False
 }
 
@@ -137,8 +138,10 @@ def setup_network():
         from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
         from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
 
-        net = NeuralNetAPI(ctx=s['context'], batch_size=s['batch_size'])
+        # check for valid parameter setup and do auto-corrections if possible
+        param_validity_check()
 
+        net = NeuralNetAPI(ctx=s['context'], batch_size=s['batch_size'])
         rawnet_agent = RawNetAgent(net, temperature=s['centi_temperature'], clip_quantil=s['centi_clip_quantil'])
 
         mcts_agent = MCTSAgent(net, cpuct=s['centi_cpuct'] / 100, playouts_empty_pockets=s['playouts_empty_pockets'],
@@ -147,11 +150,31 @@ def setup_network():
                                dirichlet_epsilon=s['centi_dirichlet_epsilon'] / 100, virtual_loss=s['virtual_loss'],
                                threads=s['threads'], temperature=s['centi_temperature'] / 100, verbose=s['verbose'],
                                clip_quantil=s['centi_clip_quantil'] / 100, min_movetime=MIN_SEARCH_TIME_MS,
-                               batch_size=s['batch_size'])
+                               batch_size=s['batch_size'], check_mate_in_one=s['check_mate_in_one'])
 
         gamestate = GameState()
 
         setup_done = True
+
+
+def param_validity_check():
+    """
+    Handles some possible issues when giving an illegal batch_size and number of threads combination.
+    :return:
+    """
+    if s['batch_size'] > s['threads']:
+        log_print('info string The given batch_size %d is higher than the number of threads %d. '
+              'The maximum legal batch_size is the same as the number of threads (here: %d) '
+              % (s['batch_size'], s['threads'], s['threads']))
+        s['batch_size'] = s['threads']
+        log_print('info string The batch_size was reduced to %d' % s['batch_size'])
+
+    if s['threads'] % s['batch_size'] != 0:
+        log_print('info string You requested an illegal combination of threads %d and batch_size %d.'
+              ' The batch_size must be a divisor of the number of threads' % (s['threads'], s['batch_size']))
+        divisor = s['threads'] // s['batch_size']
+        s['batch_size'] = s['threads'] // divisor
+        log_print('info string The batch_size was changed to %d' % s['batch_size'])
 
 
 def perform_action(cmd_list):
@@ -274,8 +297,8 @@ def set_options(cmd_list):
             raise Exception("The given option %s wasn't found in the settings list" % option_name)
 
         if option_name in ['UCI_Variant', 'context', 'use_raw_network',
-                           'extend_time_on_bad_position', 'verbose']:
-          
+                           'extend_time_on_bad_position', 'verbose', 'check_mate_in_one']:
+
             value = cmd_list[4]
         else:
             value = int(cmd_list[4])
@@ -286,7 +309,10 @@ def set_options(cmd_list):
             s['extend_time_on_bad_position'] = True if value == 'true' else False
         elif option_name == 'verbose':
             s['verbose'] = True if value == 'true' else False
+        elif option_name == 'check_mate_in_one':
+            s['check_mate_in_one'] = True if value == 'true' else False
         else:
+            # by default all options are treated as integers
             s[option_name] = value
 
             # Guard threads limits
@@ -359,6 +385,8 @@ def uci_reply():
               ('false' if not s['extend_time_on_bad_position'] else 'true'))
     log_print('option name max_move_num_to_reduce_movetime type spin default %d min 0 max 120' %\
               s['max_move_num_to_reduce_movetime'])
+    log_print('option name check_mate_in_one type check default %s' %\
+              ('false' if not s['check_mate_in_one'] else 'true'))
     log_print('option name verbose type check default %s' %\
               ('false' if not s['verbose'] else 'true'))
 
@@ -384,6 +412,7 @@ def main():
 
             # write the given command to the log-file
             log(line)
+
             try:
                 if main_cmd == 'uci':
                     uci_reply()
@@ -398,20 +427,20 @@ def main():
                 elif main_cmd == "setoption":
                     set_options(cmd_list)
                 elif main_cmd == 'go':
-                        perform_action(cmd_list)
+                    perform_action(cmd_list)
                 elif main_cmd == 'quit' or main_cmd == 'exit':
                     if log_file:
                         log_file.close()
-                    sys.exit(0)
+                    return 0
                 else:
                     # give the user a message that the command was ignored
                     print("info string Unknown command: %s" % line)
             except:
                 # log the error message to the log-file and exit the script
-                if main_cmd != 'quit' or main_cmd != 'exit':
-                    traceback_text = traceback.format_exc()
-                    log_print(traceback_text)
-                sys.exit(-1)
+                traceback_text = traceback.format_exc()
+                log_print(traceback_text)
+                return -1
+
 
 if __name__ == "__main__":
     main()

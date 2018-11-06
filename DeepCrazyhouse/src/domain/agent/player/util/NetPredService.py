@@ -14,7 +14,7 @@ from threading import Thread
 import mxnet as mx
 import numpy as np
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import NB_LABELS, LABELS
-
+from time import time
 
 class NetPredService:
 
@@ -32,53 +32,68 @@ class NetPredService:
         self.thread_inference = Thread(target=self._provide_inference, args=(pipe_endings,), daemon=True)
         self.batch_size = batch_size
 
+        self.time_start = None
+        self.timeout_second = 1
+
     def _provide_inference(self, pipe_endings):
 
         print('provide inference...')
         use_random = False
-        self.running = True
 
         while self.running is True:
 
             filled_pipes = connection.wait(pipe_endings)
 
-            if filled_pipes and len(filled_pipes) >= self.batch_size:
+            if filled_pipes:
 
-                planes_batch = []
-                pipes_pred_output = []
+                # use a 1 second timeout to prevent possible deadlocks
+                time_eps = time() - self.time_start
 
-                for pipe in filled_pipes[:self.batch_size]:
-                    while pipe.poll():
-                        planes_batch.append(pipe.recv())
-                        pipes_pred_output.append(pipe)
+                if len(filled_pipes) >= self.batch_size or time_eps > self.timeout_second:
 
-                #logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
-                planes_batch = mx.nd.array(planes_batch, ctx=self.net.get_ctx())
-                #pred = self.net.get_net()(planes_batch)
-                pred = self.net.get_executor().forward(is_train=False, data=planes_batch)
+                    planes_batch = []
+                    pipes_pred_output = []
 
-                value_preds = pred[0].asnumpy()
+                    for pipe in filled_pipes[:self.batch_size]:
+                        while pipe.poll():
+                            planes_batch.append(pipe.recv())
+                            pipes_pred_output.append(pipe)
 
-                # for the policy prediction we still have to apply the softmax activation
-                #  because it's not done by the neural net
-                policy_preds = pred[1].softmax().asnumpy()
+                    # check if the length is consistent
+                    if len(pipes_pred_output) < self.batch_size:
+                        # a dummy planes if the batch wasn't properly filled in time
+                        nb_missing_planes = self.batch_size - len(pipes_pred_output)
+                        #raise Exception('Timeout was triggered. nb_missing_planes: %d' % nb_missing_planes)
 
-                if use_random is True:
-                    value_preds = np.random.random(len(filled_pipes))
-                    policy_preds = np.random.random((len(filled_pipes), NB_LABELS))
+                        for i in range(nb_missing_planes):
+                            planes_batch.append(np.zeros_like(planes_batch[0]))
 
-                # send the predictions back to the according workers
-                for i, pipe in enumerate(pipes_pred_output):
-                    pipe.send([value_preds[i], policy_preds[i]])
+                    #logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
+                    planes_batch = mx.nd.array(planes_batch, ctx=self.net.get_ctx())
+
+                    #pred = self.net.get_net()(planes_batch)
+                    pred = self.net.get_executor().forward(is_train=False, data=planes_batch)
+
+                    value_preds = pred[0].asnumpy()
+
+                    # for the policy prediction we still have to apply the softmax activation
+                    #  because it's not done by the neural net
+                    policy_preds = pred[1].softmax().asnumpy()
+
+                    if use_random is True:
+                        value_preds = np.random.random(len(filled_pipes))
+                        policy_preds = np.random.random((len(filled_pipes), NB_LABELS))
+
+                    # send the predictions back to the according workers
+                    for i, pipe in enumerate(pipes_pred_output):
+                        pipe.send([value_preds[i], policy_preds[i]])
+
+                    # reset the timer
+                    self.time_start = time()
 
     def start(self):
         print('start inference thread...')
         self.running = True
+        self.time_start = time()
         self.thread_inference.start()
         print('self.thread_inference.isAlive()', self.thread_inference.isAlive())
-
-    def stop(self):
-
-        logging.info('Send quit message to infernce thread...')
-        self.pipe_controller_parent.send('quit')
-
