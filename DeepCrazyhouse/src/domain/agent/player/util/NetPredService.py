@@ -16,14 +16,16 @@ import numpy as np
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import NB_LABELS, LABELS
 from time import time
 
+
 class NetPredService:
 
-    def __init__(self, pipe_endings: [connection], net: NeuralNetAPI, batch_size):
+    def __init__(self, pipe_endings: [connection], net: NeuralNetAPI, batch_size, enable_timeout=False):
         """
 
         :param pipe_endings: List of pip endings which are for communicating with the thread workers.
         :param net: Neural Network API object which provides the reference for the neural network.
         :param batch_size: Constant batch_size used for inference.
+        :param enable_timeout: Decides wether to enable a timout if a batch didn't occur under 1 second.
         """
         self.net = net
         self.my_pipe_endings = pipe_endings
@@ -34,6 +36,7 @@ class NetPredService:
 
         self.time_start = None
         self.timeout_second = 1
+        self.enable_timeout = enable_timeout
 
     def _provide_inference(self, pipe_endings):
 
@@ -46,50 +49,53 @@ class NetPredService:
 
             if filled_pipes:
 
-                # use a 1 second timeout to prevent possible deadlocks
-                time_eps = time() - self.time_start
+                if self.enable_timeout is True:
+                    # use a 1 second timeout to prevent possible deadlocks
+                    time_eps = time() - self.time_start
 
-                if len(filled_pipes) >= self.batch_size or time_eps > self.timeout_second:
+                if len(filled_pipes) >= self.batch_size:
+                    if self.enable_timeout is False or time_eps > self.timeout_second:
 
-                    planes_batch = []
-                    pipes_pred_output = []
+                        planes_batch = []
+                        pipes_pred_output = []
 
-                    for pipe in filled_pipes[:self.batch_size]:
-                        while pipe.poll():
-                            planes_batch.append(pipe.recv())
-                            pipes_pred_output.append(pipe)
+                        for pipe in filled_pipes[:self.batch_size]:
+                            while pipe.poll():
+                                planes_batch.append(pipe.recv())
+                                pipes_pred_output.append(pipe)
 
-                    # check if the length is consistent
-                    if len(pipes_pred_output) < self.batch_size:
-                        # a dummy planes if the batch wasn't properly filled in time
-                        nb_missing_planes = self.batch_size - len(pipes_pred_output)
-                        #raise Exception('Timeout was triggered. nb_missing_planes: %d' % nb_missing_planes)
+                        if self.enable_timeout is True:
+                            # check if the length is consistent
+                            if len(pipes_pred_output) < self.batch_size:
+                                # a dummy planes if the batch wasn't properly filled in time
+                                nb_missing_planes = self.batch_size - len(pipes_pred_output)
+                                #raise Exception('Timeout was triggered. nb_missing_planes: %d' % nb_missing_planes)
 
-                        for i in range(nb_missing_planes):
-                            planes_batch.append(np.zeros_like(planes_batch[0]))
+                                for i in range(nb_missing_planes):
+                                    planes_batch.append(np.zeros_like(planes_batch[0]))
 
-                    #logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
-                    planes_batch = mx.nd.array(planes_batch, ctx=self.net.get_ctx())
+                        #logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
+                        planes_batch = mx.nd.array(planes_batch, ctx=self.net.get_ctx())
 
-                    #pred = self.net.get_net()(planes_batch)
-                    pred = self.net.get_executor().forward(is_train=False, data=planes_batch)
+                        #pred = self.net.get_net()(planes_batch)
+                        pred = self.net.get_executor().forward(is_train=False, data=planes_batch)
 
-                    value_preds = pred[0].asnumpy()
+                        value_preds = pred[0].asnumpy()
 
-                    # for the policy prediction we still have to apply the softmax activation
-                    #  because it's not done by the neural net
-                    policy_preds = pred[1].softmax().asnumpy()
+                        # for the policy prediction we still have to apply the softmax activation
+                        #  because it's not done by the neural net
+                        policy_preds = pred[1].softmax().asnumpy()
 
-                    if use_random is True:
-                        value_preds = np.random.random(len(filled_pipes))
-                        policy_preds = np.random.random((len(filled_pipes), NB_LABELS))
+                        if use_random is True:
+                            value_preds = np.random.random(len(filled_pipes))
+                            policy_preds = np.random.random((len(filled_pipes), NB_LABELS))
 
-                    # send the predictions back to the according workers
-                    for i, pipe in enumerate(pipes_pred_output):
-                        pipe.send([value_preds[i], policy_preds[i]])
+                        # send the predictions back to the according workers
+                        for i, pipe in enumerate(pipes_pred_output):
+                            pipe.send([value_preds[i], policy_preds[i]])
 
-                    # reset the timer
-                    self.time_start = time()
+                        # reset the timer
+                        self.time_start = time()
 
     def start(self):
         print('start inference thread...')

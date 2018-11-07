@@ -115,6 +115,7 @@ s = {
     "extend_time_on_bad_position": True,
     "max_move_num_to_reduce_movetime": 0,
     "check_mate_in_one": False,
+    "enable_timeout": False,
     "verbose": False
 }
 
@@ -150,7 +151,8 @@ def setup_network():
                                dirichlet_epsilon=s['centi_dirichlet_epsilon'] / 100, virtual_loss=s['virtual_loss'],
                                threads=s['threads'], temperature=s['centi_temperature'] / 100, verbose=s['verbose'],
                                clip_quantil=s['centi_clip_quantil'] / 100, min_movetime=MIN_SEARCH_TIME_MS,
-                               batch_size=s['batch_size'], check_mate_in_one=s['check_mate_in_one'])
+                               batch_size=s['batch_size'], check_mate_in_one=s['check_mate_in_one'],
+                               enable_timeout=s['enable_timeout'])
 
         gamestate = GameState()
 
@@ -290,14 +292,17 @@ def set_options(cmd_list):
     # SETTINGS
     global s
 
-    if cmd_list[1] == 'name' and cmd_list[3] == 'value':
+    if cmd_list[1] != 'name' or cmd_list[3] != 'value':
+        log_print("info string The given setoption command wasn't understood")
+        log_print('info string An example call could be: "setoption name threads value 4"')
+    else:
         option_name = cmd_list[2]
 
         if option_name not in s:
             raise Exception("The given option %s wasn't found in the settings list" % option_name)
 
         if option_name in ['UCI_Variant', 'context', 'use_raw_network',
-                           'extend_time_on_bad_position', 'verbose', 'check_mate_in_one']:
+                           'extend_time_on_bad_position', 'verbose', 'check_mate_in_one', 'enable_timeout']:
 
             value = cmd_list[4]
         else:
@@ -311,6 +316,8 @@ def set_options(cmd_list):
             s['verbose'] = True if value == 'true' else False
         elif option_name == 'check_mate_in_one':
             s['check_mate_in_one'] = True if value == 'true' else False
+        elif option_name == 'enable_timeout':
+            s['enable_timeout'] = True if value == 'true' else False
         else:
             # by default all options are treated as integers
             s[option_name] = value
@@ -386,6 +393,8 @@ def uci_reply():
     log_print('option name max_move_num_to_reduce_movetime type spin default %d min 0 max 120' %\
               s['max_move_num_to_reduce_movetime'])
     log_print('option name check_mate_in_one type check default %s' %\
+              ('false' if not s['check_mate_in_one'] else 'true'))
+    log_print('option name enable_timeout type check default %s' %\
               ('false' if not s['check_mate_in_one'] else 'true'))
     log_print('option name verbose type check default %s' %\
               ('false' if not s['verbose'] else 'true'))

@@ -50,7 +50,8 @@ class MCTSAgent(_Agent):
     def __init__(self, net: NeuralNetAPI, threads=16, batch_size=8, playouts_empty_pockets=256,
                  playouts_filled_pockets=512, cpuct=1, dirichlet_epsilon=.25,
                  dirichlet_alpha=0.2, max_search_depth=15, temperature=0., clip_quantil=0.,
-                 q_value_weight=0., virtual_loss=3, verbose=True, min_movetime=100, check_mate_in_one=False):
+                 q_value_weight=0., virtual_loss=3, verbose=True, min_movetime=100, check_mate_in_one=False,
+                 enable_timeout=False):
         """
         Constructor of the MCTSAgent.
         The MCTSAgent runs playouts/simulations in the search tree and updates the node statistics.
@@ -101,6 +102,8 @@ class MCTSAgent(_Agent):
         :param check_mate_in_one: Decide whether to check for every leaf node if a there is a mate in one move then
                                   create a mate in one short cut which prioritzes this move. Currently by default this
                                   option is disabled because it takes costs too much nps regarding its benefit.
+        :param enable_timeout: Decides weather to enable a timout if a batch didn't occur under 1 second for the
+                               NetPredService.
         """
 
         super().__init__(temperature, clip_quantil, verbose)
@@ -143,7 +146,7 @@ class MCTSAgent(_Agent):
             self.my_pipe_endings.append(ending1)
             pip_endings_external.append(ending2)
 
-        self.net_pred_service = NetPredService(pip_endings_external, self.net, batch_size)
+        self.net_pred_service = NetPredService(pip_endings_external, self.net, batch_size, enable_timeout)
 
         self.nb_playouts_empty_pockets = playouts_empty_pockets
         self.nb_playouts_filled_pockets = playouts_filled_pockets
