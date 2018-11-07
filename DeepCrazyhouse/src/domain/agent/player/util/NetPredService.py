@@ -69,7 +69,7 @@ class NetPredService:
                             if len(pipes_pred_output) < self.batch_size:
                                 # a dummy planes if the batch wasn't properly filled in time
                                 nb_missing_planes = self.batch_size - len(pipes_pred_output)
-                                #raise Exception('Timeout was triggered. nb_missing_planes: %d' % nb_missing_planes)
+                                raise Exception('Timeout was triggered. nb_missing_planes: %d' % nb_missing_planes)
 
                                 for i in range(nb_missing_planes):
                                     planes_batch.append(np.zeros_like(planes_batch[0]))

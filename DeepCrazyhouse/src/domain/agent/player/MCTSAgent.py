@@ -318,12 +318,24 @@ class MCTSAgent(_Agent):
                         max_depth_reached = cur_depth
 
                     # Print every second if verbose is true
-                    if self.verbose and time_show_info > 1:
-                        str_moves = self._mv_list_to_str(mv_list)
-                        logging.debug('Update: %d' % cur_depth)
-                        print('info score cp %d depth %d nodes %d pv%s' % (
-                            value_to_centipawn(cur_value), cur_depth, self.root_node.n_sum, str_moves))
-                        old_time = time()
+                    #if self.verbose and time_show_info > 1:
+                    #    str_moves = self._mv_list_to_str(mv_list)
+                    #    logging.debug('Update: %d' % cur_depth)
+                    #    print('info score cp %d depth %d nodes %d pv%s' % (
+                    #        value_to_centipawn(cur_value), cur_depth, self.root_node.n_sum, str_moves))
+                    #    old_time = time()
+
+                # Print every second if verbose is true
+                if self.verbose and time_show_info > 1:
+                    # select the q-value according to the mcts best child value
+                    best_child_idx = self.root_node.get_mcts_policy(self.q_value_weight).argmax()
+                    cur_value = self.root_node.q[best_child_idx]
+
+                    lst_best_moves, _ = self.get_calculated_line()
+                    str_moves = self._mv_list_to_str(lst_best_moves)
+                    print('info score cp %d depth %d nodes %d pv%s' % (
+                        value_to_centipawn(cur_value), len(lst_best_moves), self.root_node.n_sum, str_moves))
+                    old_time = time()
 
                 # update the current search time
                 t_elapsed = time() - t_start_eval
@@ -346,7 +358,6 @@ class MCTSAgent(_Agent):
         value = self.root_node.q[best_child_idx]
 
         lst_best_moves, _ = self.get_calculated_line()
-
         str_moves = self._mv_list_to_str(lst_best_moves)
 
         # show the best calculated line
@@ -356,7 +367,7 @@ class MCTSAgent(_Agent):
             value_to_centipawn(value), max_depth_reached, node_searched, time_e*1000, node_searched/max(1, time_e), str_moves))
 
         if len(legal_moves) != len(p_vec_small):
-            print('Legal move list %s with length %s is uncompatible to policy vector %s with shape %s for board state %s' % (legal_moves, len(legal_moves), p_vec_small, p_vec_small.shape, state_in))
+            raise  Exception('Legal move list %s with length %s is uncompatible to policy vector %s with shape %s for board state %s' % (legal_moves, len(legal_moves), p_vec_small, p_vec_small.shape, state_in))
             self.node_lookup = {}
             # restart the search TODO: Fix this error
             """
@@ -374,7 +385,7 @@ class MCTSAgent(_Agent):
                      0.0038994  0.0038994  0.00585398 0.00194482 0.00389942 0.00389942
                      0.00389942 0.00389942] with shape (68,) for board state r4rk1/ppp2pp1/3p1q1p/n1bPp3/2B1B1b1/3P1N2/PPP2PPP/R2Q1RK1[Nn] w - - 2 13
              """
-            return self.evaluate_board_state(state_in)
+            #return self.evaluate_board_state(state_in)
 
         return value, legal_moves, p_vec_small
 

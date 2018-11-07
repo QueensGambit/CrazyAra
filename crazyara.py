@@ -376,7 +376,7 @@ def uci_reply():
               s['playouts_empty_pockets'])
     log_print('option name playouts_filled_pockets type spin default %d min 56 max 8192' %\
               s['playouts_filled_pockets'])
-    log_print('option name centi_cpuct type spin default 100 min 1 max 500')
+    log_print('option name centi_cpuct type spin default %d min 1 max 500' % s['centi_cpuct'])
     log_print('option name centi_dirichlet_epsilon type spin default 10 min 0 max 100')
     log_print('option name centi_dirichlet_alpha type spin default 20 min 0 max 100')
     log_print('option name max_search_depth type spin default 40 min 1 max 100')
