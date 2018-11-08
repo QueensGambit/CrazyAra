@@ -300,7 +300,7 @@ class MCTSAgent(_Agent):
                     for i in range(self.threads):
                         # calculate the thread id based on the current playout
                         futures.append(executor.submit(self._run_single_playout, state=deepcopy(state),
-                                                       parent_node=self.root_node, depth=1, mv_list=[]))
+                                                       parent_node=self.root_node, pipe_id=i, depth=1, mv_list=[]))
 
                 cur_playouts += self.threads
                 time_show_info = time() - old_time
@@ -318,7 +318,7 @@ class MCTSAgent(_Agent):
                         max_depth_reached = cur_depth
 
                     # Print every second if verbose is true
-                    #if self.verbose and time_show_info > 1:
+                    #if self.verbose and time_show_info > 0.5:
                     #    str_moves = self._mv_list_to_str(mv_list)
                     #    logging.debug('Update: %d' % cur_depth)
                     #    print('info score cp %d depth %d nodes %d pv%s' % (
@@ -414,7 +414,7 @@ class MCTSAgent(_Agent):
         return value, selected_move, confidence, selected_child_idx
 
     #@profile
-    def _run_single_playout(self, state: GameState, parent_node: Node, depth=1, mv_list=[]): #, pipe_id):
+    def _run_single_playout(self, state: GameState, parent_node: Node, pipe_id=0, depth=1, mv_list=[]):
         """
         This function works recursively until a terminal node is reached
 
@@ -462,21 +462,26 @@ class MCTSAgent(_Agent):
 
                 # get the prior value from the leaf node which has already been expanded
                 #value = node.v
+                ## receive a free available pipe
+                #my_pipe = self.my_pipe_endings.pop()
+                #my_pipe.send(state.get_state_planes())
+                # this pipe waits for the predictions of the network inference service
+                #[_, _] = my_pipe.recv()
+                # put the used pipe back into the list
+                #self.my_pipe_endings.append(my_pipe)
 
                 # get the value from the leaf node (the current function is called recursively)
-                value, depth, mv_list = self._run_single_playout(state, node, depth+1, mv_list)
+                value, depth, mv_list = self._run_single_playout(state, node, pipe_id, depth+1, mv_list)
 
             else:
                 # expand and evaluate the new board state (the node wasn't found in the look-up table)
                 # its value will be backpropagated through the tree and flipped after every layer
 
                 # receive a free available pipe
-                my_pipe = self.my_pipe_endings.pop()
+                my_pipe = self.my_pipe_endings[pipe_id] #.pop()
                 my_pipe.send(state.get_state_planes())
                 # this pipe waits for the predictions of the network inference service
                 [value, policy_vec] = my_pipe.recv()
-                # put the used pipe back into the list
-                self.my_pipe_endings.append(my_pipe)
 
                 # initialize is_leaf by default to false
                 is_leaf = False
@@ -538,16 +543,14 @@ class MCTSAgent(_Agent):
         elif node.is_leaf is True:
             value = node.v
             # receive a free available pipe
-            my_pipe = self.my_pipe_endings.pop()
+            my_pipe = self.my_pipe_endings[pipe_id] #.pop()
             my_pipe.send(state.get_state_planes())
             # this pipe waits for the predictions of the network inference service
             [_, _] = my_pipe.recv()
-            # put the used pipe back into the list
-            self.my_pipe_endings.append(my_pipe)
 
         else:
             # get the value from the leaf node (the current function is called recursively)
-            value, depth, mv_list = self._run_single_playout(state, node, depth+1, mv_list)
+            value, depth, mv_list = self._run_single_playout(state, node, pipe_id, depth+1, mv_list)
 
         # revert the virtual loss and apply the predicted value by the network to the node
         parent_node.revert_virtual_loss_and_update(child_idx, self.virtual_loss, -value)

@@ -110,6 +110,10 @@ class Node:
         assert 0 <= q_value_weight <= 1.
 
         if q_value_weight > 0:
+            # disable the q values if there's at least one child which wasn't explored
+            if None in self.child_nodes:
+                q_value_weight = 0
+
             # we add +1 to the q values to avoid negative values, then the q values are normalized to [0,1] before
             # the q_value_weight is applied.
             policy = (self.n / self.n_sum) * (1-q_value_weight) + ((self.q + 1) * .5) * q_value_weight
