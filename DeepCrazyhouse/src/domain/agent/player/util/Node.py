@@ -108,8 +108,15 @@ class Node:
         """
 
         assert 0 <= q_value_weight <= 1.
+        use_q_mult = False
 
-        if q_value_weight > 0:
+        if use_q_mult is True:
+            visit = self.n / self.n.max()
+            value = (self.q + 1) / 2
+            policy = (visit * value) + (0.3 * visit + 0.7 * value)
+            return policy / sum(policy)
+
+        elif q_value_weight > 0:
             # disable the q values if there's at least one child which wasn't explored
             if None in self.child_nodes:
                 q_value_weight = 0

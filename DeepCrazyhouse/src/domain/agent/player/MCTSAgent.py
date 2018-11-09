@@ -299,7 +299,7 @@ class MCTSAgent(_Agent):
                 with ThreadPoolExecutor(max_workers=self.threads) as executor:
                     for i in range(self.threads):
                         # calculate the thread id based on the current playout
-                        futures.append(executor.submit(self._run_single_playout, state=deepcopy(state),
+                        futures.append(executor.submit(self._run_single_playout, state=state,
                                                        parent_node=self.root_node, pipe_id=i, depth=1, mv_list=[]))
 
                 cur_playouts += self.threads
@@ -317,14 +317,16 @@ class MCTSAgent(_Agent):
                     if cur_depth > max_depth_reached:
                         max_depth_reached = cur_depth
 
-                    # Print every second if verbose is true
-                    #if self.verbose and time_show_info > 0.5:
-                    #    str_moves = self._mv_list_to_str(mv_list)
-                    #    logging.debug('Update: %d' % cur_depth)
-                    #    print('info score cp %d depth %d nodes %d pv%s' % (
-                    #        value_to_centipawn(cur_value), cur_depth, self.root_node.n_sum, str_moves))
-                    #    old_time = time()
+                    # Print the explored line of the last line for every x seconds if verbose is true
+                    if self.verbose and time_show_info > 0.5 and i == len(futures)-1:
+                        str_moves = self._mv_list_to_str(mv_list)
+                        logging.debug('Update: %d' % cur_depth)
+                        print('info score cp %d depth %d nodes %d pv%s' % (
+                            value_to_centipawn(cur_value), cur_depth, self.root_node.n_sum, str_moves))
+                        old_time = time()
 
+                """
+                # Show only current best line
                 # Print every second if verbose is true
                 if self.verbose and time_show_info > 1:
                     # select the q-value according to the mcts best child value
@@ -336,6 +338,7 @@ class MCTSAgent(_Agent):
                     print('info score cp %d depth %d nodes %d pv%s' % (
                         value_to_centipawn(cur_value), len(lst_best_moves), self.root_node.n_sum, str_moves))
                     old_time = time()
+                """
 
                 # update the current search time
                 t_elapsed = time() - t_start_eval
@@ -429,6 +432,11 @@ class MCTSAgent(_Agent):
                 mv_list: List of moves which have been selected
         """
 
+        # create a deepcopy of the state for all future recursive calls if it's the first of function
+        #  call of _run_single_playout()
+        if depth == 1:
+            state = deepcopy(state)
+
         # select a legal move on the chess board
         node, move, child_idx = self._select_node(parent_node)
 
@@ -461,17 +469,15 @@ class MCTSAgent(_Agent):
                     parent_node.child_nodes[child_idx] = node
 
                 # get the prior value from the leaf node which has already been expanded
-                #value = node.v
-                ## receive a free available pipe
-                #my_pipe = self.my_pipe_endings.pop()
-                #my_pipe.send(state.get_state_planes())
-                # this pipe waits for the predictions of the network inference service
-                #[_, _] = my_pipe.recv()
-                # put the used pipe back into the list
-                #self.my_pipe_endings.append(my_pipe)
+                value = node.v
+                # receive a free available pipe
+                my_pipe = self.my_pipe_endings[pipe_id]
+                my_pipe.send(state.get_state_planes())
+                #this pipe waits for the predictions of the network inference service
+                [_, _] = my_pipe.recv()
 
                 # get the value from the leaf node (the current function is called recursively)
-                value, depth, mv_list = self._run_single_playout(state, node, pipe_id, depth+1, mv_list)
+                #value, depth, mv_list = self._run_single_playout(state, node, pipe_id, depth+1, mv_list)
 
             else:
                 # expand and evaluate the new board state (the node wasn't found in the look-up table)
@@ -479,6 +485,7 @@ class MCTSAgent(_Agent):
 
                 # receive a free available pipe
                 my_pipe = self.my_pipe_endings[pipe_id] #.pop()
+                #logging.debug('thread %d request' % pipe_id)
                 my_pipe.send(state.get_state_planes())
                 # this pipe waits for the predictions of the network inference service
                 [value, policy_vec] = my_pipe.recv()
@@ -544,6 +551,7 @@ class MCTSAgent(_Agent):
             value = node.v
             # receive a free available pipe
             my_pipe = self.my_pipe_endings[pipe_id] #.pop()
+            #logging.debug('thread %d request' % pipe_id)
             my_pipe.send(state.get_state_planes())
             # this pipe waits for the predictions of the network inference service
             [_, _] = my_pipe.recv()
