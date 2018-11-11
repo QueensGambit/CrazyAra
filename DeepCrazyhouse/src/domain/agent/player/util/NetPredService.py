@@ -36,7 +36,7 @@ class NetPredService:
 
         self.time_start = None
         self.timeout_second = 1
-        self.enable_timeout = enable_timeout
+        #self.enable_timeout = enable_timeout
 
     def _provide_inference(self, pipe_endings):
 
@@ -49,12 +49,7 @@ class NetPredService:
 
             if filled_pipes:
 
-                if self.enable_timeout is True:
-                    # use a 1 second timeout to prevent possible deadlocks
-                    time_eps = time() - self.time_start
-
-                if len(filled_pipes) >= self.batch_size:
-                    if self.enable_timeout is False or time_eps > self.timeout_second:
+                if True or len(filled_pipes) >= self.batch_size:
 
                         planes_batch = []
                         pipes_pred_output = []
@@ -64,21 +59,11 @@ class NetPredService:
                                 planes_batch.append(pipe.recv())
                                 pipes_pred_output.append(pipe)
 
-                        if self.enable_timeout is True:
-                            # check if the length is consistent
-                            if len(pipes_pred_output) < self.batch_size:
-                                # a dummy planes if the batch wasn't properly filled in time
-                                nb_missing_planes = self.batch_size - len(pipes_pred_output)
-                                raise Exception('Timeout was triggered. nb_missing_planes: %d' % nb_missing_planes)
-
-                                for i in range(nb_missing_planes):
-                                    planes_batch.append(np.zeros_like(planes_batch[0]))
-
                         #logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
                         planes_batch = mx.nd.array(planes_batch, ctx=self.net.get_ctx())
 
-                        #pred = self.net.get_net()(planes_batch)
-                        pred = self.net.get_executor().forward(is_train=False, data=planes_batch)
+                        #pred = self.net.get_executor().forward(is_train=False, data=planes_batch)
+                        pred = self.net.get_net()(planes_batch)
 
                         value_preds = pred[0].asnumpy()
 

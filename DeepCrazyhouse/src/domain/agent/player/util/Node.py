@@ -11,7 +11,7 @@ from threading import Lock
 import chess
 import numpy as np
 import logging
-
+from copy import deepcopy
 
 class Node:
 
@@ -108,13 +108,29 @@ class Node:
         """
 
         assert 0 <= q_value_weight <= 1.
-        use_q_mult = False
+        clip_low_visit_nodes = True
 
-        if use_q_mult is True:
-            visit = self.n / self.n.max()
-            value = (self.q + 1) / 2
-            policy = (visit * value) + (0.3 * visit + 0.7 * value)
-            return policy / sum(policy)
+        if clip_low_visit_nodes is True:
+
+            visit = deepcopy(self.n)
+            value = deepcopy((self.q + 1))
+
+            if visit.max() > 0:
+                visit = self.n / self.n.sum()
+                max_visits = visit.max()
+
+                # mask out nodes that haven't been visited much
+                thresh_idces = visit < max_visits * 0.33 #0.5 #.33
+                # normalize to sum of 1
+                value /= value.sum()
+                value[thresh_idces] = 0
+
+                policy = ((1-q_value_weight) * visit + q_value_weight * value)
+
+                return policy / sum(policy)
+            else:
+                return visit
+
 
         elif q_value_weight > 0:
             # disable the q values if there's at least one child which wasn't explored
@@ -142,8 +158,9 @@ class Node:
         :return:
         """
 
-        dirichlet_noise = np.random.dirichlet([alpha] * self.nb_direct_child_nodes)
-        self.p = (1 - epsilon) * self.p + epsilon * dirichlet_noise
+        if self.is_leaf is False:
+            dirichlet_noise = np.random.dirichlet([alpha] * self.nb_direct_child_nodes)
+            self.p = (1 - epsilon) * self.p + epsilon * dirichlet_noise
 
     def apply_virtual_loss_to_child(self, child_idx, virtual_loss):
 

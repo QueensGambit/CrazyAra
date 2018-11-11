@@ -108,7 +108,7 @@ s = {
     "centi_temperature": 0,
     "centi_clip_quantil": 0,
     "virtual_loss": 3,
-    "centi_q_value_weight": 65,
+    "centi_q_value_weight": 70,
     "threshold_time_for_raw_net_ms": 100,
     "move_overhead_ms": 300,
     "moves_left": 40,
