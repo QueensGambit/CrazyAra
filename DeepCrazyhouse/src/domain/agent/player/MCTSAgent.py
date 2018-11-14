@@ -21,6 +21,7 @@ from DeepCrazyhouse.src.domain.agent.player._Agent import _Agent
 from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
 
 import cProfile, pstats, io
+from numba import jit
 
 
 def profile(fnc):
@@ -241,11 +242,11 @@ class MCTSAgent(_Agent):
 
         # show the best calculated line
         node_searched = int(self.root_node.n_sum - self.total_nodes_pre_search)
-        # In uci the depth is given using full moves notation
+        # In uci the depth is given using half-moves notation also called plies
         logging.debug('Update info')
         time_e = time() - self.t_start_eval
         print('info score cp %d depth %d nodes %d time %d nps %d pv%s' % ( value_to_centipawn(value),
-                                                                           int(max_depth_reached/2),
+                                                                            max_depth_reached,
                                                                            node_searched, time_e*1000,
                                                                            node_searched/max(1,time_e), str_moves))
 
@@ -256,6 +257,7 @@ class MCTSAgent(_Agent):
 
         return value, legal_moves, p_vec_small
 
+    @jit
     def _expand_root_node_multiple_moves(self, state, legal_moves):
         """
         Checks if the current root node can be found in the look-up table.
@@ -284,6 +286,7 @@ class MCTSAgent(_Agent):
         # create a new root node
         self.root_node = Node(value, p_vec_small, legal_moves, str_legal_moves, is_leaf)
 
+    @jit
     def _expand_root_node_single_move(self, state, legal_moves):
         """
         Expands the current root in the case if there's only a single move available.
@@ -382,9 +385,9 @@ class MCTSAgent(_Agent):
                 t_elapsed * 1000 < self.movetime_ms:  # and np.abs(self.root_node.q.mean()) < 0.99:
 
             # Test about decreasing CPUCT value
-            #self.cpuct -= 0.01
-            #if self.cpuct < 2:
-            #    self.cpuct = 2
+            self.cpuct -= 0.005 #2 #5 #1 #np.random.randint(1,5) #0.005
+            if self.cpuct < 1.3: # 5:
+                self.cpuct = 1.3 # 5
 
             # start searching
             with ThreadPoolExecutor(max_workers=self.threads) as executor:
@@ -565,7 +568,7 @@ class MCTSAgent(_Agent):
                     p_vec_small = None
 
                 # check if you can claim a draw - its assumed that the draw is always claimed
-                elif state.is_draw() is True:
+                elif False: #state.is_draw() is True: TODO: Create more performant implementation
                     value = 0
                     is_leaf = True
                     legal_moves = []

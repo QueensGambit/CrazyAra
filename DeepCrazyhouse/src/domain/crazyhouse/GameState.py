@@ -28,7 +28,8 @@ class GameState(_GameState):
 
     def is_draw(self):
         # check if you can claim a draw - its assumed that the draw is always claimed
-        return self.board.can_claim_draw()
+        return self.board.can_claim_fifty_moves() #can_claim_draw()
+        #return self.board.can_claim_threefold_repetition()
 
     def is_won(self):
         # only a is_won() and no is_lost() function is needed because the game is over

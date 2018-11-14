@@ -82,8 +82,9 @@ def board_to_planes(board, board_occ=0, normalize=True):
         board = board.mirror()
 
     # Fill in the piece positions
-    for pos in board.piece_map():
-        p_char = str(board.piece_map()[pos])
+    board_piece_map = board.piece_map()
+    for pos in board_piece_map:
+        p_char = str(board_piece_map[pos])
         channel = P_MAP[p_char]
         row, col = get_row_col(pos)
 
@@ -117,8 +118,9 @@ def board_to_planes(board, board_occ=0, normalize=True):
     bb_pos = chess.BB_A1
 
     # iterate over all board field and check if there is a positive result for the binary & operation
+    board_promoted = board.promoted
     for pos in range(0, 64):
-        if board.promoted & bb_pos > 0:
+        if board_promoted & bb_pos > 0:
             ch = CHANNEL_MAPPING_POS['promo']
             row, col = get_row_col(pos)
 

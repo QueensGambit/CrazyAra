@@ -7,11 +7,13 @@ Created on 13.10.18
 Helper class which stores the statistics of all nodes and in the search tree.
 """
 
+from numba import jit
 from threading import Lock
 import chess
 import numpy as np
 import logging
 from copy import deepcopy
+
 
 class Node:
 
@@ -120,7 +122,7 @@ class Node:
                 max_visits = visit.max()
 
                 # mask out nodes that haven't been visited much
-                thresh_idces = visit < max_visits * 0.33 #0.5 #.33
+                thresh_idces = visit < max_visits * 0.5 #0.33 #0.5 #.33
                 # normalize to sum of 1
                 value /= value.sum()
                 value[thresh_idces] = 0

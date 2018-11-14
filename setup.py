@@ -11,5 +11,6 @@ from distutils.core import setup
 from Cython.Build import cythonize
 
 setup(
-    ext_modules = cythonize("DeepCrazyhouse/src/domain/agent/player/MCTSAgent.pyx", annotate=True)
+    ext_modules = cythonize(["DeepCrazyhouse/src/domain/agent/player/MCTSAgent.pyx",
+                             "DeepCrazyhouse/src/domain/agent/player/Node.pyx"], annotate=True)
 )

@@ -1,0 +1,196 @@
+> uci
+< id name CrazyAra 0.2.0
+< id author Johannes Czech, Moritz Willig, Alena Beyer et al.
+< option name UCI_Variant type combo default crazyhouse var crazyhouse
+< option name context type combo default cpu var cpu var gpu
+< option name use_raw_network type check default false
+< option name threads type spin default 16 min 1 max 4096
+< option name batch_size type spin default 8 min 1 max 4096
+< option name playouts_empty_pockets type spin default 8192 min 56 max 8192
+< option name playouts_filled_pockets type spin default 8192 min 56 max 8192
+< option name centi_cpuct type spin default 300 min 1 max 500
+< option name centi_dirichlet_epsilon type spin default 10 min 0 max 100
+< option name centi_dirichlet_alpha type spin default 20 min 0 max 100
+< option name max_search_depth type spin default 40 min 1 max 100
+< option name centi_temperature type spin default 0 min 0 max 100
+< option name centi_clip_quantil type spin default 0 min 0 max 100
+< option name virtual_loss type spin default 3 min 0 max 10
+< option name centi_q_value_weight type spin default 70 min 0 max 100
+< option name threshold_time_for_raw_net_ms type spin default 100 min 1 max 300000
+< option name move_overhead_ms type spin default 300 min 0 max 60000
+< option name moves_left type spin default 40 min 10 max 320
+< option name extend_time_on_bad_position type check default true
+< option name max_move_num_to_reduce_movetime type spin default 0 min 0 max 120
+< option name check_mate_in_one type check default false
+< option name enable_timeout type check default false
+< option name verbose type check default false
+< uciok
+> setoption name batch_size value 8
+< info string Updated option batch_size to 8
+> setoption name centi_clip_quantil value 0
+< info string Updated option centi_clip_quantil to 0
+> setoption name centi_cpuct value 300
+< info string Updated option centi_cpuct to 300
+> setoption name centi_dirichlet_alpha value 20
+< info string Updated option centi_dirichlet_alpha to 20
+> setoption name centi_dirichlet_epsilon value 10
+< info string Updated option centi_dirichlet_epsilon to 10
+> setoption name centi_q_value_weight value 70
+< info string Updated option centi_q_value_weight to 70
+> setoption name centi_temperature value 0
+< info string Updated option centi_temperature to 0
+> setoption name check_mate_in_one value false
+< info string Updated option check_mate_in_one to false
+> setoption name context value gpu
+< info string Updated option context to gpu
+> setoption name enable_timeout value false
+< info string Updated option enable_timeout to false
+> setoption name extend_time_on_bad_position value true
+< info string Updated option extend_time_on_bad_position to true
+> setoption name max_move_num_to_reduce_movetime value 0
+< info string Updated option max_move_num_to_reduce_movetime to 0
+> setoption name max_search_depth value 40
+< info string Updated option max_search_depth to 40
+> setoption name move_overhead_ms value 300
+< info string Updated option move_overhead_ms to 300
+> setoption name moves_left value 40
+< info string Updated option moves_left to 40
+> setoption name playouts_empty_pockets value 8192
+< info string Updated option playouts_empty_pockets to 8192
+> setoption name playouts_filled_pockets value 8192
+< info string Updated option playouts_filled_pockets to 8192
+> setoption name threads value 16
+< info string Updated option threads to 16
+> setoption name threshold_time_for_raw_net_ms value 100
+< info string Updated option threshold_time_for_raw_net_ms to 100
+> setoption name use_raw_network value false
+< info string Updated option use_raw_network to false
+> setoption name verbose value true
+< info string Updated option verbose to true
+> setoption name virtual_loss value 3
+< info string Updated option virtual_loss to 3
+> isready
+< readyok
+> setoption name UCI_Variant value crazyhouse
+< info string Updated option UCI_Variant to crazyhouse
+> ucinewgame
+> position startpos
+> isready
+< readyok
+> go wtime 300000 btime 300000 movestogo 40
+< info string Time for this move is 7200ms
+< bestmove e2e4
+> position startpos moves e2e4 e7e5
+> isready
+< readyok
+> go wtime 292680 btime 288064 movestogo 39
+< info string Time for this move is 7204ms
+< bestmove g1f3
+> position startpos moves e2e4 e7e5 g1f3 b8c6
+> isready
+< readyok
+> go wtime 285363 btime 286437 movestogo 38
+< info string Time for this move is 7209ms
+< bestmove f1c4
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5
+> isready
+< readyok
+> go wtime 278047 btime 262495 movestogo 37
+< info string Time for this move is 7214ms
+< bestmove e1g1
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6
+> isready
+< readyok
+> go wtime 270797 btime 245488 movestogo 36
+< info string Time for this move is 7222ms
+< bestmove b1c3
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8
+> isready
+< readyok
+> go wtime 263465 btime 230545 movestogo 35
+< info string Time for this move is 7227ms
+< bestmove d2d3
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6
+> isready
+< readyok
+> go wtime 256190 btime 228919 movestogo 34
+< info string Time for this move is 7235ms
+< bestmove c1g5
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6 c1g5 h7h6
+> isready
+< readyok
+> go wtime 248913 btime 191137 movestogo 33
+< info string Time for this move is 7242ms
+< bestmove g5f6
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6 c1g5 h7h6 g5f6 d8f6
+> isready
+< readyok
+> go wtime 241565 btime 189984 movestogo 32
+< info string Time for this move is 7248ms
+< bestmove c3d5
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6 c1g5 h7h6 g5f6 d8f6 c3d5 f6d8
+> isready
+< readyok
+> go wtime 234288 btime 183547 movestogo 31
+< info string Time for this move is 7257ms
+< bestmove c2c3
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6 c1g5 h7h6 g5f6 d8f6 c3d5 f6d8 c2c3 c8g4
+> isready
+< readyok
+> go wtime 226947 btime 150603 movestogo 30
+< info string Time for this move is 7264ms
+< bestmove h2h3
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6 c1g5 h7h6 g5f6 d8f6 c3d5 f6d8 c2c3 c8g4 h2h3 g4e6
+> isready
+< readyok
+> go wtime 219609 btime 143635 movestogo 29
+< info string Time for this move is 7272ms
+< bestmove b2b4
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6 c1g5 h7h6 g5f6 d8f6 c3d5 f6d8 c2c3 c8g4 h2h3 g4e6 b2b4 e6d5
+> isready
+< readyok
+> go wtime 212223 btime 142247 movestogo 28
+< info string Time for this move is 7279ms
+< bestmove c4d5
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6 c1g5 h7h6 g5f6 d8f6 c3d5 f6d8 c2c3 c8g4 h2h3 g4e6 b2b4 e6d5 c4d5 c5f2
+> isready
+< readyok
+> go wtime 204863 btime 138200 movestogo 27
+< info string Time for this move is 7287ms
+< bestmove f1f2
+> position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 b1c3 e8g8 d2d3 d7d6 c1g5 h7h6 g5f6 d8f6 c3d5 f6d8 c2c3 c8g4 h2h3 g4e6 b2b4 e6d5 c4d5 c5f2 f1f2 P@e3
+> isready
+< readyok
+> go wtime 197514 btime 130432 movestogo 26
+< info string Time for this move is 7296ms
+< Traceback (most recent call last):
+  File "./crazyara.py", line 439, in main
+    perform_action(cmd_list)
+  File "./crazyara.py", line 246, in perform_action
+    value, selected_move, confidence, _ = mcts_agent.perform_action(gamestate)
+  File "/media/queensgambit/Volume/Deep_Learning/projects/CrazyAra/DeepCrazyhouse/src/domain/agent/player/MCTSAgent.py", line 461, in perform_action
+    value, selected_move, confidence, selected_child_idx = super().perform_action(state)
+  File "/media/queensgambit/Volume/Deep_Learning/projects/CrazyAra/DeepCrazyhouse/src/domain/agent/player/_Agent.py", line 32, in perform_action
+    value, legal_moves, self.p_vec_small = self.evaluate_board_state(state)
+  File "/media/queensgambit/Volume/Deep_Learning/projects/CrazyAra/DeepCrazyhouse/src/domain/agent/player/MCTSAgent.py", line 256, in evaluate_board_state
+    p_vec_small, p_vec_small.shape, state_in))
+Exception: Legal move list [Move.from_uci('d5f7'), Move.from_uci('d5e6'), Move.from_uci('d5c6'), Move.from_uci('d5c4'), Move.from_uci('d5b3'), Move.from_uci('f3g5'), Move.from_uci('f3e5'), Move.from_uci('f3h4'), Move.from_uci('f3d4'), Move.from_uci('f3h2'), Move.from_uci('f3d2'), Move.from_uci('f3e1'), Move.from_uci('f2e2'), Move.from_uci('f2d2'), Move.from_uci('f2c2'), Move.from_uci('f2b2'), Move.from_uci('f2f1'), Move.from_uci('g1h2'), Move.from_uci('g1h1'), Move.from_uci('g1f1'), Move.from_uci('d1a4'), Move.from_uci('d1b3'), Move.from_uci('d1e2'), Move.from_uci('d1d2'), Move.from_uci('d1c2'), Move.from_uci('d1f1'), Move.from_uci('d1e1'), Move.from_uci('d1c1'), Move.from_uci('d1b1'), Move.from_uci('a1c1'), Move.from_uci('a1b1'), Move.from_uci('b4b5'), Move.from_uci('h3h4'), Move.from_uci('d3d4'), Move.from_uci('c3c4'), Move.from_uci('g2g3'), Move.from_uci('a2a3'), Move.from_uci('g2g4'), Move.from_uci('a2a4'), Move.from_uci('N@b1'), Move.from_uci('B@b1'), Move.from_uci('N@c1'), Move.from_uci('B@c1'), Move.from_uci('N@e1'), Move.from_uci('B@e1'), Move.from_uci('N@f1'), Move.from_uci('B@f1'), Move.from_uci('N@h1'), Move.from_uci('B@h1'), Move.from_uci('N@b2'), Move.from_uci('B@b2'), Move.from_uci('N@c2'), Move.from_uci('B@c2'), Move.from_uci('N@d2'), Move.from_uci('B@d2'), Move.from_uci('N@e2'), Move.from_uci('B@e2'), Move.from_uci('N@h2'), Move.from_uci('B@h2'), Move.from_uci('N@a3'), Move.from_uci('B@a3'), Move.from_uci('N@b3'), Move.from_uci('B@b3'), Move.from_uci('N@g3'), Move.from_uci('B@g3'), Move.from_uci('N@a4'), Move.from_uci('B@a4'), Move.from_uci('N@c4'), Move.from_uci('B@c4'), Move.from_uci('N@d4'), Move.from_uci('B@d4'), Move.from_uci('N@f4'), Move.from_uci('B@f4'), Move.from_uci('N@g4'), Move.from_uci('B@g4'), Move.from_uci('N@h4'), Move.from_uci('B@h4'), Move.from_uci('N@a5'), Move.from_uci('B@a5'), Move.from_uci('N@b5'), Move.from_uci('B@b5'), Move.from_uci('N@c5'), Move.from_uci('B@c5'), Move.from_uci('N@f5'), Move.from_uci('B@f5'), Move.from_uci('N@g5'), Move.from_uci('B@g5'), Move.from_uci('N@h5'), Move.from_uci('B@h5'), Move.from_uci('N@a6'), Move.from_uci('B@a6'), Move.from_uci('N@b6'), Move.from_uci('B@b6'), Move.from_uci('N@e6'), Move.from_uci('B@e6'), Move.from_uci('N@f6'), Move.from_uci('B@f6'), Move.from_uci('N@g6'), Move.from_uci('B@g6'), Move.from_uci('N@d7'), Move.from_uci('B@d7'), Move.from_uci('N@e7'), Move.from_uci('B@e7'), Move.from_uci('N@h7'), Move.from_uci('B@h7'), Move.from_uci('N@b8'), Move.from_uci('B@b8'), Move.from_uci('N@c8'), Move.from_uci('B@c8'), Move.from_uci('N@e8'), Move.from_uci('B@e8'), Move.from_uci('N@h8'), Move.from_uci('B@h8')] with length 113 is uncompatible to policy vector [0.01185716 0.00592858 0.00790477 0.00691667 0.00691667 0.00592858
+ 0.00592858 0.00592858 0.00592858 0.00592858 0.00592858 0.00592858
+ 0.01284525 0.00988096 0.01383335 0.01185716 0.01284525 0.00790477
+ 0.00790477 0.00691667 0.00988096 0.11762996 0.01580954 0.00988096
+ 0.00988096 0.01086906 0.00790477 0.00691667 0.00691667 0.00691667
+ 0.00691667 0.00691667 0.00691667 0.00592858 0.00790477 0.00691667
+ 0.00691667 0.00691667 0.00592858 0.00592858 0.00691667 0.00889287
+ 0.00691667 0.01185716 0.00790477 0.00691667 0.00790477 0.00691667
+ 0.00691667 0.00691667 0.00691667 0.00691667 0.00691667 0.00988096
+ 0.00691667 0.00691667 0.00691667 0.00889287 0.00592858 0.00691667
+ 0.00691667 0.01086906 0.00790477 0.01086906 0.00691667 0.00691667
+ 0.00790477 0.00988096 0.00592858 0.00592858 0.00592858 0.00592858
+ 0.00988096 0.00790477 0.00691667 0.01482145 0.00691667 0.00691667
+ 0.00592858 0.00691667 0.00691667 0.00691667 0.01086906 0.00988096
+ 0.00790477 0.00691667 0.00889287 0.01086906 0.00691667 0.00691667
+ 0.00691667 0.00790477 0.00790477 0.01185716 0.00592858 0.00691667
+ 0.01086906 0.01482145 0.00691667 0.00691667 0.00691667 0.00691667
+ 0.00691667 0.00790477 0.00691667 0.00790477 0.00691667 0.00691667
+ 0.00691667 0.00790477 0.00691667 0.00691667] with shape (112,) for board state r2q1rk1/ppp2pp1/2np3p/3Bp3/1P2P3/2PPpN1P/P4RP1/R2Q2K1[BBNbn] w - - 1 15
+

@@ -41,7 +41,7 @@ class NetPredService:
     def _provide_inference(self, pipe_endings):
 
         print('provide inference...')
-        use_random = False
+        #use_random = False
 
         while self.running is True:
 
@@ -71,9 +71,9 @@ class NetPredService:
                         #  because it's not done by the neural net
                         policy_preds = pred[1].softmax().asnumpy()
 
-                        if use_random is True:
-                            value_preds = np.random.random(len(filled_pipes))
-                            policy_preds = np.random.random((len(filled_pipes), NB_LABELS))
+                        #if use_random is True:
+                        #    value_preds = np.random.random(len(filled_pipes))
+                        #    policy_preds = np.random.random((len(filled_pipes), NB_LABELS))
 
                         # send the predictions back to the according workers
                         for i, pipe in enumerate(pipes_pred_output):
