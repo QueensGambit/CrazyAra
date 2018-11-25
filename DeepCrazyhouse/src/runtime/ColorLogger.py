@@ -1,8 +1,5 @@
 """
 @file: Colorer.py
-Created on 10.06.18
-@project: DeepCrazyhouse
-@author: queensgambit
 
 Script which allows are colored logging output multiplattform.
 The script is based on this post and was slightly adjusted:
@@ -127,26 +124,27 @@ def add_coloring_to_emit_ansi(fn):
     return new
 
 
-if platform.system() == 'Windows':
-    # Windows does not support ANSI escapes and we are using API calls to set the console color
-    logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
-else:
-    # all non-Windows platforms are supporting ANSI escapes so we use them
-    logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+def enable_color_logging(debug_lvl=logging.DEBUG):
+    if platform.system() == 'Windows':
+        # Windows does not support ANSI escapes and we are using API calls to set the console color
+        logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
+    else:
+        # all non-Windows platforms are supporting ANSI escapes so we use them
+        logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
 
-root = logging.getLogger()
-root.setLevel(logging.DEBUG)
+    root = logging.getLogger()
+    root.setLevel(debug_lvl)
 
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.DEBUG)
-# FORMAT = '[%(asctime)-s][%(name)-s][\033[1m%(levelname)-7s\033[0m] %(message)-s'
-# FORMAT='%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(debug_lvl)
+    # FORMAT = '[%(asctime)-s][%(name)-s][\033[1m%(levelname)-7s\033[0m] %(message)-s'
+    # FORMAT='%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 
-# FORMAT from https://github.com/xolox/python-coloredlogs
-FORMAT = '%(asctime)s %(name)s[%(process)d] \033[1m%(levelname)s\033[0m %(message)s'
+    # FORMAT from https://github.com/xolox/python-coloredlogs
+    FORMAT = '%(asctime)s %(name)s[%(process)d] \033[1m%(levelname)s\033[0m %(message)s'
 
-# FORMAT="%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
-formatter = logging.Formatter(FORMAT, "%Y-%m-%d %H:%M:%S")
+    # FORMAT="%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+    formatter = logging.Formatter(FORMAT, "%Y-%m-%d %H:%M:%S")
 
-ch.setFormatter(formatter)
-root.addHandler(ch)
+    ch.setFormatter(formatter)
+    root.addHandler(ch)

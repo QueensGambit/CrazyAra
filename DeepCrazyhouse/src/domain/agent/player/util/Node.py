@@ -7,17 +7,16 @@ Created on 13.10.18
 Helper class which stores the statistics of all nodes and in the search tree.
 """
 
-from numba import jit
 from threading import Lock
 import chess
 import numpy as np
-import logging
 from copy import deepcopy
 
 
 class Node:
 
-    def __init__(self, value, p_vec_small: np.ndarray, legal_moves: [chess.Move], str_legal_moves: str, is_leaf=False):
+    def __init__(self, value, p_vec_small: np.ndarray, legal_moves: [chess.Move], str_legal_moves: str, is_leaf=False,
+                 transposition_key=None, clip_low_visit=True):
 
         # lock object for this node to protect its member variables
         self.lock = Lock()
@@ -29,55 +28,48 @@ class Node:
             self.nb_direct_child_nodes = 0
         else:
             # specify the number of direct child nodes from this node
-            self.nb_direct_child_nodes = np.array(len(p_vec_small)) #, np.uint32)
+            self.nb_direct_child_nodes = np.array(len(p_vec_small))
 
         # prior probability selecting each child, which is estimated by the neural network
-        self.p = p_vec_small #np.zeros(self.nb_direct_child_nodes, np.float32)
+        self.p = p_vec_small
         # possible legal moves from this node on which represents the edges
         self.legal_moves = legal_moves
 
         # stores the number of all direct children and all grand children which have already been expanded
-        self.nb_total_expanded_child_nodes = np.array(0) #, np.uint32)
+        self.nb_total_expanded_child_nodes = np.array(0)
 
         # visit count of all its child nodes
-        self.n = np.zeros(self.nb_direct_child_nodes) #, np.int32)
+        self.n = np.zeros(self.nb_direct_child_nodes)
         # total action value estimated by MCTS for each child node
-        self.w = np.zeros(self.nb_direct_child_nodes) #, np.float32)
+        self.w = np.zeros(self.nb_direct_child_nodes)
         # q: combined action value which is calculated by the averaging over all action values
         # u: exploration metric for each child node
         # (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
 
-        self.q = np.zeros(self.nb_direct_child_nodes) #, np.float32)
-        #self.q_u = np.stack((q, u))
+        self.q = np.zeros(self.nb_direct_child_nodes)
 
-        #np.concatenate((q, u))
+        if is_leaf is False and clip_low_visit is True:
+            self.q[p_vec_small < 1e-3] = -9999
 
         # number of total visits to this node
         # we initialize with 1 because if the node was created it must have been visited
-        self.n_sum = np.array(1) #, #np.int32)
+        self.n_sum = 1
 
         # check if there's a possible mate on the board if yes create a quick link to the mate move
         mate_mv_idx_str = str_legal_moves.find('#')
-        #logging.debug('legal_moves: %s' % str(str_legal_moves))
-        #logging.debug('mate_mv_idx_str: %d' % mate_mv_idx_str)
         if mate_mv_idx_str != -1:
             # -1 means that no mate move has been found
             # find the according index of the move in the legal_moves generator list
             # here we count the ',' which represent the move index
             mate_mv_idx = str_legal_moves[:mate_mv_idx_str].count(',')
             # quick reference path to a child node which leads to mate
-            self.mate_child_idx = mate_mv_idx #legal_moves[mate_mv_idx]
-            # overwrite the number of direct child nodes to 1
-            #self.nb_direct_child_nodes = np.array(1) #, np.uint32)
-            #logging.debug('set mate in one connection')
+            self.mate_child_idx = mate_mv_idx
         else:
             # no direct mate move is possible so set the reference to None
             self.mate_child_idx = None
 
         # stores the number of all possible expandable child nodes
-        self.nb_expandable_child_nodes = np.array(self.nb_direct_child_nodes) #, np.uint32)
-
-        #assert self.nb_direct_child_nodes > 0
+        self.nb_expandable_child_nodes = np.array(self.nb_direct_child_nodes)
 
         # list of all child nodes which are described by each board position
         # the children are ordered in the same way as the legal_move generator output
@@ -86,18 +78,10 @@ class Node:
         # determine if the node is a leaf node this avoids checking for state.is_draw() or .state.is_won()
         self.is_leaf = is_leaf
 
-    ''' TODO: Delete
-    def update_u_for_child(self, child_idx, cpuct):
-        """
-        Updates the u parameter via the formula given in the AlphaZero paper for a given child index
-        :param child_idx: Child index to update
-        :param cpuct: cpuct constant to apply (cpuct manages the amount of exploration)
-        :return:
-        """
-        self.q_u[child_idx] = cpuct * self.p[child_idx] * (np.sqrt(self.n_sum) / (1 + self.n[child_idx]))
-    '''
+        # store a unique identifier for the board state excluding the move counter for this node
+        self.transposition_key = transposition_key
 
-    def get_mcts_policy(self, q_value_weight=.65):
+    def get_mcts_policy(self, q_value_weight=.65, clip_low_visit_nodes=True):
         """
         Calculates the finetuned policies based on the MCTS search.
         These policies should be better than the initial policy predicted by a the raw network.
@@ -110,29 +94,29 @@ class Node:
         """
 
         assert 0 <= q_value_weight <= 1.
-        clip_low_visit_nodes = True
 
-        if clip_low_visit_nodes is True:
+        if clip_low_visit_nodes is True and q_value_weight > 0:
 
             visit = deepcopy(self.n)
             value = deepcopy((self.q + 1))
 
             if visit.max() > 0:
-                visit = self.n / self.n.sum()
                 max_visits = visit.max()
 
                 # mask out nodes that haven't been visited much
-                thresh_idces = visit < max_visits * 0.5 #0.33 #0.5 #.33
+                thresh_idces = visit < max_visits * 0.33
                 # normalize to sum of 1
-                value /= value.sum()
                 value[thresh_idces] = 0
+                #visit[thresh_idces] = 0
 
+                # renormalize ot 1
+                visit /= visit.sum()
+                value /= value.sum()
                 policy = ((1-q_value_weight) * visit + q_value_weight * value)
 
                 return policy / sum(policy)
             else:
                 return visit
-
 
         elif q_value_weight > 0:
             # disable the q values if there's at least one child which wasn't explored
@@ -145,9 +129,9 @@ class Node:
             return policy
         else:
             if max(self.n) == 1:
-                policy = (self.n + 0.05 * self.p)#/ self.n_sum
+                policy = (self.n + 0.05 * self.p)
             else:
-                policy = (self.n - 0.05 * self.p) #/ self.n_sum
+                policy = (self.n - 0.05 * self.p)
 
             return policy / sum(policy)
 
@@ -161,8 +145,9 @@ class Node:
         """
 
         if self.is_leaf is False:
-            dirichlet_noise = np.random.dirichlet([alpha] * self.nb_direct_child_nodes)
-            self.p = (1 - epsilon) * self.p + epsilon * dirichlet_noise
+            with self.lock:
+                dirichlet_noise = np.random.dirichlet([alpha] * self.nb_direct_child_nodes)
+                self.p = (1 - epsilon) * self.p + epsilon * dirichlet_noise
 
     def apply_virtual_loss_to_child(self, child_idx, virtual_loss):
 
@@ -177,7 +162,6 @@ class Node:
             # make it look like if one has lost X games from this node forward where X is the virtual loss value
             self.w[child_idx] -= virtual_loss
             self.q[child_idx] = self.w[child_idx] / self.n[child_idx]
-            #parent_node.update_u_for_child(child_idx, self.cpuct)
 
     def revert_virtual_loss_and_update(self, child_idx, virtual_loss, value):
         # revert the virtual loss effect and apply the backpropagated value of its child node
@@ -186,7 +170,6 @@ class Node:
             self.n[child_idx] -= virtual_loss - 1
             self.w[child_idx] += virtual_loss + value
 
-        self.q[child_idx] = self.w[child_idx] / self.n[child_idx]
-        #parent_node.update_u_for_child(child_idx, self.cpuct)
-        self.nb_total_expanded_child_nodes += 1
-        self.nb_expandable_child_nodes += self.nb_direct_child_nodes
+            self.q[child_idx] = self.w[child_idx] / self.n[child_idx]
+            self.nb_total_expanded_child_nodes += 1
+            self.nb_expandable_child_nodes += self.nb_direct_child_nodes

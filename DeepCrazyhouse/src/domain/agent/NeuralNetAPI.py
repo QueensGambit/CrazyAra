@@ -1,6 +1,5 @@
 import logging
 import numpy as np
-import DeepCrazyhouse.src.runtime.Colorer
 import time
 import json
 import glob
@@ -78,6 +77,13 @@ class NeuralNetAPI:
         self.executor = sym.simple_bind(ctx=self.ctx, data=(batch_size, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
                                         grad_req='null', force_rebind=True)
         self.executor.copy_params_from(arg_params, aux_params)
+
+        #self.executors = []
+        #for i in range(batch_size):
+        #    executor = sym.simple_bind(ctx=self.ctx, data=(1, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
+        #                                    grad_req='null', force_rebind=True)
+        #    executor.copy_params_from(arg_params, aux_params)
+        #    self.executors.append(executor)
 
     def get_executor(self):
         """

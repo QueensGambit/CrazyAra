@@ -69,6 +69,8 @@ def board_to_planes(board, board_occ=0, normalize=True):
     :return: planes - the plane representation of the current board state
     """
 
+    # TODO: Remove board.mirror() for black by addressing the according color channel
+
     # (I) Define the Input Representation for one position
     planes_pos = np.zeros((NB_CHANNELS_POS, BOARD_HEIGHT, BOARD_WIDTH))
     planes_const = np.zeros((NB_CHANNELS_CONST, BOARD_HEIGHT, BOARD_WIDTH))
@@ -82,14 +84,20 @@ def board_to_planes(board, board_occ=0, normalize=True):
         board = board.mirror()
 
     # Fill in the piece positions
-    board_piece_map = board.piece_map()
-    for pos in board_piece_map:
-        p_char = str(board_piece_map[pos])
-        channel = P_MAP[p_char]
-        row, col = get_row_col(pos)
 
-        # set the bit at the right position
-        planes_pos[channel, row, col] = 1
+    # Iterate over both color starting with WHITE
+    for z, color in enumerate(chess.COLORS):
+        # the PIECE_TYPE is an integer list in python-chess
+        for piece_type in chess.PIECE_TYPES:
+            # define the channel by the piecetype (the input representation uses the same ordering as python-chess)
+            # we add an offset for the black pieces
+            # note that we subtract 1 because in python chess the PAWN has index 1 and not 0
+            channel = (piece_type-1) + z * len(chess.PIECE_TYPES)
+            # iterate over the piece mask and receive every position square of it
+            for pos in board.pieces(piece_type, color):
+                row, col = get_row_col(pos)
+                # set the bit at the right position
+                planes_pos[channel, row, col] = 1
 
     # (II) Fill in the Repetition Data
     # a game to test out if everything is working correctly is: https://lichess.org/jkItXBWy#73
@@ -114,22 +122,15 @@ def board_to_planes(board, board_occ=0, normalize=True):
         planes_pos[ch + 5, :, :] = board.pockets[chess.BLACK].count(p_type)
 
     # (III) Fill in the promoted pieces
+    # iterate over all promoted pieces according to the mask and set the according bit
+    ch = CHANNEL_MAPPING_POS['promo']
+    for pos in chess.SquareSet(board.promoted):
+        row, col = get_row_col(pos)
 
-    bb_pos = chess.BB_A1
-
-    # iterate over all board field and check if there is a positive result for the binary & operation
-    board_promoted = board.promoted
-    for pos in range(0, 64):
-        if board_promoted & bb_pos > 0:
-            ch = CHANNEL_MAPPING_POS['promo']
-            row, col = get_row_col(pos)
-
-            if board.piece_at(pos).color == chess.WHITE:
-                planes_pos[ch, row, col] = 1
-            else:
-                planes_pos[ch + 1, row, col] = 1
-        # for each new square the value is doubled
-        bb_pos *= 2
+        if board.piece_at(pos).color == chess.WHITE:
+            planes_pos[ch, row, col] = 1
+        else:
+            planes_pos[ch + 1, row, col] = 1
 
     # (III.2) En Passant Square
     # mark the square where an en-passant capture is possible
@@ -189,7 +190,8 @@ def board_to_planes(board, board_occ=0, normalize=True):
         board = board.mirror()
 
     if normalize is True:
-        planes = normalize_input_planes(planes)
+        planes *= MATRIX_NORMALIZER
+        #planes = normalize_input_planes(planes)
 
     # return the plane representation of the given board
     return planes

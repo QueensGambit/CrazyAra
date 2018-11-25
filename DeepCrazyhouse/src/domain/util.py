@@ -147,6 +147,11 @@ def normalize_input_planes(x):
     return x
 
 
+# use a constant matrix for normalization to allow broad cast operations
+MATRIX_NORMALIZER = np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH))
+MATRIX_NORMALIZER = normalize_input_planes(MATRIX_NORMALIZER)
+
+
 def unnormalize_input_planes(x):
     """
     Reverts normalization back to integer values. Works in place.

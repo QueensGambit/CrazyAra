@@ -208,7 +208,7 @@ def value_to_centipawn(value):
     :return:
     """
 
-    if np.absolute(value) == 1.:
+    if np.absolute(value) >= 1.:
         # return a constant if the given value is 1 (otherwise log will result in infinity)
         return np.sign(value) * 9999
     else:
