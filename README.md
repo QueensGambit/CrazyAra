@@ -55,6 +55,12 @@ See [LICENSE](https://github.com/QueensGambit/CrazyAra/blob/master/LICENSE) for 
 * [Project management plattform on taiga.io](https://tree.taiga.io/project/queensgambit-deep-learning-project-crazyhouse/)
 
 
+## Main libraries used in this project
+* [python-chess](https://python-chess.readthedocs.io/en/latest/index.html): A pure Python chess library
+* [MXNet](https://mxnet.incubator.apache.org/): A flexible and efficient library for deep learning
+* [numpy](http://www.numpy.org/): The fundamental package for scientific computing with Python
+* [zarr](https://zarr.readthedocs.io/en/stable/): An implementation of chunked, compressed, N-dimensional arrays
+
 ## Links to other similar projects
 
 ### chess-alpha-zero

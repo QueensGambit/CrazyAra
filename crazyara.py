@@ -22,6 +22,7 @@ enable_color_logging()
 
 # Constants
 MIN_SEARCH_TIME_MS = 100
+MAX_SEARCH_TIME_MS = 10e10
 INC_FACTOR = 7
 INC_DIV = 8
 MIN_MOVES_LEFT = 10
@@ -126,8 +127,6 @@ bestmove_value = None
 constant_move_time = None
 engine_played_move = 0
 score = None
-# transposition table for future 3-fold-repetition check
-transposition_table = collections.Counter()
 
 # SETTINGS
 s = {
@@ -145,7 +144,7 @@ s = {
     "centi_dirichlet_epsilon": 25,
     "centi_dirichlet_alpha": 20,
     "max_search_depth": 40,
-    "centi_temperature": 10,
+    "centi_temperature": 5,
     "temperature_moves": 0,
     "centi_clip_quantil": 0,
     "virtual_loss": 3,
@@ -188,7 +187,7 @@ def setup_network():
         for i in range(s['neural_net_services']):
             nets.append(NeuralNetAPI(ctx=s['context'], batch_size=s['batch_size']))
 
-        rawnet_agent = RawNetAgent(nets[0], temperature=s['centi_temperature'], temperature_moves=s['temperature_moves'])
+        rawnet_agent = RawNetAgent(nets[0], temperature=s['centi_temperature'] / 100, temperature_moves=s['temperature_moves'])
 
         mcts_agent = MCTSAgent(nets, cpuct=s['centi_cpuct'] / 100, playouts_empty_pockets=s['playouts_empty_pockets'],
                                playouts_filled_pockets=s['playouts_filled_pockets'], max_search_depth=s['max_search_depth'],
@@ -310,6 +309,18 @@ def perform_action(cmd_list):
     log_print('info string Time for this move is %dms' % movetime_ms)
     log_print('info string Requested pos: %s' % gamestate)
 
+    # assign search depth
+    try:
+        # we try to extract the search depth from the cmd list
+        depth_idx = cmd_list.index("depth") + 1
+        mcts_agent.set_max_search_depth(int(cmd_list[depth_idx]))
+        # increase the movetime to maximum to make sure to reach the given depth
+        movetime_ms = MAX_SEARCH_TIME_MS
+        mcts_agent.update_movetime(movetime_ms)
+    except ValueError:
+        # the given command wasn't found in the command list
+        pass
+
     if s['use_raw_network'] or movetime_ms <= s['threshold_time_for_raw_net_ms']:
         log_print('info string Using raw network for fast mode...')
         value, selected_move, confidence, _, cp, depth, nodes, time_elapsed_s, nps, pv = rawnet_agent.perform_action(gamestate)
@@ -318,7 +329,10 @@ def perform_action(cmd_list):
 
     score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (cp, depth, nodes, time_elapsed_s, nps, pv)
     if ENABLE_LICHESS_DEBUG_MSG:
-        write_score_to_file(score)
+        try:
+            write_score_to_file(score)
+        except Exception:
+            pass
     # print out the search information
     log_print('info %s' % score)
 
@@ -344,7 +358,6 @@ def setup_gamestate(cmd_list):
     :param cmd_list: Input-command lists arguments
     :return:
     """
-    #artificial_max_game_len = 30
 
     global gamestate
     global mcts_agent
@@ -367,7 +380,7 @@ def setup_gamestate(cmd_list):
             opponent_last_move = chess.Move.from_uci(mv_list[-1])
             if gamestate.get_pythonchess_board().is_legal(opponent_last_move):
                 # apply the last move the opponent played
-                gamestate.apply_move(opponent_last_move) #, remember_state=True)
+                gamestate.apply_move(opponent_last_move)
                 mcts_agent.transposition_table.update((gamestate.get_transposition_key(),))
             else:
                 log_print('info string  all_ok is false! - opponent_last_move %s' % opponent_last_move)
@@ -530,14 +543,6 @@ def uci_reply():
     log_print('uciok')
 
 
-def handle_uci(line):
-    #new_game()
-    print("id name " + client["name"])  # + client["version"])
-    print("id author " + client["authors"])
-    # print("option name OwnBook, type true")
-    # print("option variation crazyhouse")
-    print("uciok")
-
 # main waiting loop for processing command line inputs
 def main():
     global bestmove_value
@@ -547,7 +552,6 @@ def main():
     while True:
         line = input()
         print_if_debug("waiting ...")
-        #line = sys.stdin.readline()
         print_if_debug(line)
 
         # wait for an std-in input command

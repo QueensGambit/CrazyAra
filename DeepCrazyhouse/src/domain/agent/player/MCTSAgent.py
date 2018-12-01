@@ -332,8 +332,10 @@ class MCTSAgent(_Agent):
         :return:
         """
 
-        # set value 0 as a dummy value
-        value = 0
+        # request the value prediction for the current position
+        state_planes = state.get_state_planes()
+        [value, _] = self.nets[0].predict_single(state_planes)
+        # we can create the move probability vector without the NN this time
         p_vec_small = np.array([1], np.float32)
 
         # create a new root node
@@ -381,6 +383,10 @@ class MCTSAgent(_Agent):
 
             # connect the child to the root
             self.root_node.child_nodes[0] = child_node
+
+            # assign the value of the root node as the q-value for the child
+            # here we must invert the invert the value because it's the value prediction of the next state
+            self.root_node.q[0] = -value
 
     def _run_mcts_search(self, state):
         """
@@ -785,3 +791,11 @@ class MCTSAgent(_Agent):
         :return:
         """
         self.movetime_ms = time_ms_per_move
+
+    def set_max_search_depth(self, max_search_depth: int):
+        """
+        Assigns a new maximum search depth for the next search
+        :param max_search_depth: Specifier of the search depth
+        :return:
+        """
+        self.max_search_depth = max_search_depth
