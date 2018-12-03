@@ -665,11 +665,24 @@ class MCTSAgent(_Agent):
         return -value, depth, chosen_nodes
 
     def can_claim_threefold_repetition(self, transposition_key, chosen_nodes):
+        """
+        Checks if a three fold repetition event can be claimed in the current search path.
+        This method makes use of the class transposition table and checks for board occurrences in the local search path
+        of the current thread as well.
 
+        :param transposition_key: Transposition key which defines the board state by all it's pieces and pocket state.
+                                  The move counter is disregarded.
+        :param chosen_nodes: List of integer indices which correspond to the child node indices chosen from the
+                            root node downwards.
+        :return: True, if threefold repetition can be claimed, else False
+        """
+
+        # set the number of occurrences by default to 0
         search_occurrence_counter = 0
 
         node = self.root_node.child_nodes[chosen_nodes[0]]
 
+        # iterate over all accessed nodes during the current search of the thread and check for same transposition key
         for node_idx in chosen_nodes[1:-1]:
             if node.transposition_key == transposition_key:
                 search_occurrence_counter += 1
@@ -677,6 +690,7 @@ class MCTSAgent(_Agent):
             if node is None:
                 break
 
+        # use all occurrences in the class transposition table as well as the locally found equalities
         return self.transposition_table[transposition_key] + search_occurrence_counter >= 2
 
     def _select_node(self, parent_node: Node):
