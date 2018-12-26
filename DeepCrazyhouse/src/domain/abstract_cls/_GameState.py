@@ -17,7 +17,7 @@ class _GameState:
         self.board = board
         self._fen_dic = {}
 
-    def apply_move(self, move: chess.Move, remember_state=False):
+    def apply_move(self, move: chess.Move): #, remember_state=False):
         self.board.push(move)
 
     def get_state_planes(self):
@@ -52,5 +52,19 @@ class _GameState:
         return self.board.fen()
         #return self.board.fen().rsplit(' ', 1)[0]
 
+    def get_transposition_key(self):
+        """
+        Returns an identifier key for the current board state excluding move counters.
+        Calling ._transposition_key() is faster than .fen()
+        :return:
+        """
+        return self.board._transposition_key()
+
     def new_game(self):
         raise NotImplementedError
+
+    def get_halfmove_counter(self):
+        return self.board.halfmove_clock
+
+    def get_fullmove_number(self):
+        return self.board.fullmove_number
