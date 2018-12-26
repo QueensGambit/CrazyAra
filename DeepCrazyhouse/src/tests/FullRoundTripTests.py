@@ -7,8 +7,8 @@ Created on 22.08.18
 Loads the plane representation for the test dataset and iterates through all board positions and moves.
 """
 
-from src.domain.util import *
-from src.domain.crazyhouse.input_representation import planes_to_board
+from DeepCrazyhouse.src.domain.util import *
+from DeepCrazyhouse.src.domain.crazyhouse.input_representation import planes_to_board
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import policy_to_move
 import chess
 import chess.pgn
@@ -17,8 +17,11 @@ import logging
 from DeepCrazyhouse.src.preprocessing.PGN2PlanesConverter import PGN2PlanesConverter
 from multiprocessing import Pool
 from copy import deepcopy
+from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 # import the Colorer to have a nicer logging printout
+from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
+enable_color_logging()
 
 
 def board_single_game(params_inp):

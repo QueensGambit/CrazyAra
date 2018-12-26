@@ -261,6 +261,37 @@ class PGN2PlanesConverter(object):
         queue.put(batch_black_won)
         queue.put(batch_draw)
 
+    def filter_all_pgns(self):
+        """
+        Filters out all games based on the given conditions in the constructor and returns all games in
+        :return: lst_all_pgn_sel: List of selected games in String-IO format
+                 lst_nb_games_sel: Number of selected games for each pgn file
+                 lst_batch_white_won: Number of white wins in each pgn file
+                 lst_black_won: Number of black wins in each pgn file
+                 lst_draw_won: Number of draws in each pgn file
+        """
+
+        total_games_exported = 0
+
+        lst_all_pgn_sel = []
+        lst_nb_games_sel = []
+        lst_batch_white_won = []
+        lst_batch_black_won = []
+        lst_batch_draw = []
+
+        pgns = os.listdir(self._import_dir)
+        for pgn_name in pgns:
+            self._pgn_name = pgn_name
+            all_pgn_sel, nb_games_sel, batch_white_won, batch_black_won, batch_draw = self.filter_pgn()
+            lst_all_pgn_sel.append(all_pgn_sel)
+            lst_nb_games_sel.append(nb_games_sel)
+            lst_batch_white_won.append(batch_white_won)
+            lst_batch_black_won.append(batch_black_won)
+            lst_batch_draw.append(batch_draw)
+
+        return lst_all_pgn_sel, lst_nb_games_sel, lst_batch_white_won, lst_batch_black_won, lst_batch_draw
+
+
     def convert_all_pgns_to_planes(self):
         """
         Master function which calls convert_pgn_to_planes() for all available pgns in the import directory
