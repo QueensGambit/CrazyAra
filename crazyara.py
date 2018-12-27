@@ -39,7 +39,7 @@ MV_TIME_OPENING_PORTION = 0.7
 RANDOM_MV_TIME_PORTION = 0.1
 
 # enable this variable if you want to see debug messages in certain environments, like the lichess.org api
-ENABLE_LICHESS_DEBUG_MSG = True
+ENABLE_LICHESS_DEBUG_MSG = False
 
 client = {
     'name': 'CrazyAra',
@@ -146,7 +146,7 @@ s = {
     "centi_dirichlet_alpha": 20,
     "max_search_depth": 40,
     "centi_temperature": 7,
-    "temperature_moves": 4,
+    "temperature_moves": 0,
     "opening_guard_moves": 7,
     "centi_clip_quantil": 0,
     "virtual_loss": 3,
