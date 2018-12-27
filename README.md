@@ -36,6 +36,7 @@ For more details about the training procedure visit the wiki pages:
 * [Input and output representation](https://github.com/QueensGambit/CrazyAra/wiki/Input-and-output-representation)
 * [Network visualization](https://github.com/QueensGambit/CrazyAra/wiki/Network-visualization)
 * [Engine settings](https://github.com/QueensGambit/CrazyAra/wiki/Engine-settings)
+* [FAQ](https://github.com/QueensGambit/CrazyAra/wiki/FAQ)
 
 You can also find our original project proposal document as well as our presentation about CrazyAra 0.1:
 * https://github.com/QueensGambit/CrazyAra/tree/master/etc/doc
@@ -47,7 +48,7 @@ You can find a detailed report about the past event published by [okei](https://
 * https://zhchess.blogspot.com/2018/12/crazyara-plays-jannlee-for-christmas.html
 
 CrazyAra 0.3.1 was also put to the test against known crazyhouse engines:
-* [Strength evaluation  v0.3.1](https://github.com/QueensGambit/CrazyAra/wiki/Strength-Evaluation)
+* [Strength evaluation  v0.3.1](https://github.com/QueensGambit/CrazyAra/wiki/v0.3.1)
 
 ## License
 This source-code including all project files is licensed under the GPLv3-License if not stated otherwise.
