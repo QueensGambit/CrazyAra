@@ -13,7 +13,7 @@
            .'        ;  /  \_/__/   as part of the course "Deep Learning: Architectures & Methods" held by   
          .'`-'_     /_.'))).-` \    Prof. Kristian Kersting, Prof. Johannes Fürnkranz et al. in summer 2018. 
         / -'_.'---;`'-))).-'`\_/                                                                             
-       (__.'/   /` .'`              Developers:           Johannes Czech, Moritz Willig, Alena Beyer et al.  
+       (__.'/   /` .'`              Developers:           Johannes Czech, Moritz Willig, Alena Beyer  
         (_.'/ /` /`                 Source Code (GitHub): QueensGambit/CrazyAra-AI (GPLv3-License)            
           _|.' /`                   Website:              http://www.crazyara.org/                           
     jgs.-` __.'|                    Lichess:              https://lichess.org/@/CrazyAra                           
@@ -40,9 +40,14 @@ For more details about the training procedure visit the wiki pages:
 You can also find our original project proposal document as well as our presentation about CrazyAra 0.1:
 * https://github.com/QueensGambit/CrazyAra/tree/master/etc/doc
 
-## How strong is CrazyAra 0.2.0?
-CrazyAra played all open-source crazyhouse engines. More details can be found here:
-* [Strength evaluation](https://github.com/QueensGambit/CrazyAra/wiki/Strength-Evaluation)
+## How strong is CrazyAra 0.3.1?
+CrazyAra 0.3.1 played multiple world champion Justin Tan (LM [JannLee](https://lichess.org/@/JannLee)) at 18:00 GMT
+ on 21st December in five official matches and won 4-1.
+You can find a detailed report about the past event published by [okei](https://lichess.org/@/okei) here:
+* https://zhchess.blogspot.com/2018/12/crazyara-plays-jannlee-for-christmas.html
+
+CrazyAra 0.3.1 was also put to the test against known crazyhouse engines:
+* [Strength evaluation  v0.3.1](https://github.com/QueensGambit/CrazyAra/wiki/Strength-Evaluation)
 
 ## License
 This source-code including all project files is licensed under the GPLv3-License if not stated otherwise.
@@ -60,6 +65,25 @@ See [LICENSE](https://github.com/QueensGambit/CrazyAra/blob/master/LICENSE) for 
 * [MXNet](https://mxnet.incubator.apache.org/): A flexible and efficient library for deep learning
 * [numpy](http://www.numpy.org/): The fundamental package for scientific computing with Python
 * [zarr](https://zarr.readthedocs.io/en/stable/): An implementation of chunked, compressed, N-dimensional arrays
+
+## Human influence
+CrazyAra's knowledge in the game of crazhyouse is only based on human played games of
+[lichess.org database](https://database.lichess.org/).
+
+The most active players which influence the playstyle of CrazyAra the most are:
+1. [**mathace**](https://lichess.org/@/mathace)
+2. [**ciw**](https://lichess.org/@/ciw)
+3. [**retardedplatypus123**](https://lichess.org/@/retardedplatypus123)
+4. [**xuanet**](https://lichess.org/@/xuanet)
+5. [**dovijanic**](https://lichess.org/@/dovijanic)
+6. [KyleLegion](https://lichess.org/@/KyleLegion)
+7. [LM JannLee](https://lichess.org/@/JannLee)
+8. [crosky](https://lichess.org/@/crosky)
+9. [mariorton](https://lichess.org/@/mariorton)
+10. [IM opperwezen](https://lichess.org/@/opperwezen)
+
+Please have a look at [Supervised training](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training)
+for more detailed information.
 
 ## Links to other similar projects
 
