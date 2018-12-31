@@ -61,11 +61,11 @@ def main():
 
     parser.add_argument('--cutechess_cli_path',
                         default=def_cutechess_cli, type=str,
-                        help='cutechess executable path (default: %s' % def_cutechess_cli)
+                        help='cutechess executable path (default: %s)' % def_cutechess_cli)
 
     parser.add_argument('--sf_path',
                         default=def_sf_path, type=str,
-                        help='cutechess executable path (default: %s' % def_sf_path)
+                        help='cutechess executable path (default: %s)' % def_sf_path)
 
     parser.add_argument('--opening_book_path',
                         default='1k_cz_lichess_startpos.pgn', type=str,
@@ -75,11 +75,11 @@ def main():
     def_pgnout_path ='sf_vs_sf_' + username + '.pgn'
     parser.add_argument('--pgnout_path',
                         default=def_pgnout_path, type=str,
-                        help='filepath where the games will be stored (default: %s' % def_pgnout_path)
+                        help='filepath where the games will be stored (default: %s)' % def_pgnout_path)
 
     parser.add_argument('--threads', type=int,
                         default=max(multiprocessing.cpu_count()-1, 1),
-                        help='number of threads for generating games (default: %d number of cores-1 detected by python, '
+                        help='number of threads for generating games (default: %d number of cores-1 detected by python)'
                              % max(multiprocessing.cpu_count()-1, 1))
 
     parser.add_argument('--hash', type=int,
@@ -127,7 +127,6 @@ def main():
 
         nodes.append(current_nodes_white)
         nodes.append(current_nodes_white)
-
 
         sf_engine_cmd = []
 
