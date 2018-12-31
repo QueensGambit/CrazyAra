@@ -147,7 +147,7 @@ def main():
         cmd_str = args.cutechess_cli_path + sf_engine_cmd[0] + sf_engine_cmd[1] + game_cmd
 
         # print the current game description
-        print('%s - %s Threasd: %d' % (time.asctime(t), event, args.threads))
+        print('%s - %s - Threads: %d' % (time.asctime(t), event, args.threads))
 
         # start the game with the cutechess-cli
         p = subprocess.Popen(cmd_str, shell=True)
