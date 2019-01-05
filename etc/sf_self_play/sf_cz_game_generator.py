@@ -21,7 +21,7 @@ import getpass
 import time
 import subprocess
 
-version = 1.0
+version = 1.1
 
 # Fixed Settings
 # --------------
@@ -138,7 +138,8 @@ def main():
 
         for current_nodes in [current_nodes_white, current_nodes_black]:
             sf_engine_cmd.append(' -engine cmd=' + args.sf_path + ' tc=inf nodes=' + str(current_nodes) +
-                                 ' option.Hash=' + str(args.hash) + ' depth=' + str(MAX_DEPTH) + ' proto=uci')
+                                 ' option.Hash=' + str(args.hash) + ' option.Threads=' + str(args.threads) +
+                                 ' depth=' + str(MAX_DEPTH) + ' proto=uci')
 
         game_cmd = ' -variant ' + str(args.variant) + ' -event ' + '"' + event + '"' + \
                    ' -openings file=' + args.opening_book_path + ' order=random -pgnout ' + args.pgnout_path
@@ -146,7 +147,7 @@ def main():
         cmd_str = args.cutechess_cli_path + sf_engine_cmd[0] + sf_engine_cmd[1] + game_cmd
 
         # print the current game description
-        print('%s - %s' % (time.asctime(t), event))
+        print('%s - %s - Threads: %d' % (time.asctime(t), event, args.threads))
 
         # start the game with the cutechess-cli
         p = subprocess.Popen(cmd_str, shell=True)
