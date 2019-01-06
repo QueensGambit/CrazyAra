@@ -21,7 +21,7 @@ On our 10,000 games benchmark dataset it achieved a lower validation error.
 
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Activation, Flatten, Dense
 from mxnet.gluon import HybridBlock
-from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import *
+from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
 from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _SqueezeExcitation
 from DeepCrazyhouse.src.domain.neural_net.architectures.AlphaZeroResnet import (
     _StemAlphaZero,

@@ -6,15 +6,22 @@ Created on 22.10.18
 
 Please describe what the content of this file is about
 """
-
-from DeepCrazyhouse.src.domain.crazyhouse.constants import *
-from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.util import get_numpy_arrays
+import glob
 import logging
+import chess
 import numpy as np
 import zarr
-import chess
-import glob
+from DeepCrazyhouse.configs.main_config_sample import main_config
+from DeepCrazyhouse.src.domain.crazyhouse.constants import (
+    CHANNEL_MAPPING_CONST,
+    CHANNEL_MAPPING_POS,
+    MAX_NB_MOVES,
+    MAX_NB_NO_PROGRESS,
+    MAX_NB_PRISONERS,
+    NB_CHANNELS_POS,
+    POCKETS_SIZE_PIECE_TYPE,
+)
+from DeepCrazyhouse.src.domain.util import get_numpy_arrays
 
 
 def _load_dataset_file(dataset_filepath):

@@ -8,7 +8,19 @@ Utility functions which are use by the converter scripts
 """
 
 import numpy as np
-from DeepCrazyhouse.src.domain.crazyhouse.constants import *
+from DeepCrazyhouse.src.domain.crazyhouse.constants import (
+    BOARD_HEIGHT,
+    BOARD_WIDTH,
+    CHANNEL_MAPPING_CONST,
+    CHANNEL_MAPPING_POS,
+    MAX_NB_MOVES,
+    MAX_NB_NO_PROGRESS,
+    MAX_NB_PRISONERS,
+    NB_CHANNELS_FULL,
+    NB_CHANNELS_POS,
+    POCKETS_SIZE_PIECE_TYPE,
+    chess,
+)
 
 
 def get_row_col(position, mirror=False):
