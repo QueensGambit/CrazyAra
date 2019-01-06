@@ -138,6 +138,7 @@ class Node:
 
                 # normalize to sum of 1
                 value[thresh_idces] = 0
+                value[value < 0] = 0
                 # visit[thresh_idces] = 0
 
                 # renormalize ot 1
