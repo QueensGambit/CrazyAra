@@ -37,6 +37,7 @@ For more details about the training procedure visit the wiki pages:
 * [Network visualization](https://github.com/QueensGambit/CrazyAra/wiki/Network-visualization)
 * [Engine settings](https://github.com/QueensGambit/CrazyAra/wiki/Engine-settings)
 * [FAQ](https://github.com/QueensGambit/CrazyAra/wiki/FAQ)
+* [Stockfish-10:-Crazyhouse-Self-Play](https://github.com/QueensGambit/CrazyAra/wiki/Stockfish-10:-Crazyhouse-Self-Play)
 
 You can also find our original project proposal document as well as our presentation about CrazyAra 0.1:
 * https://github.com/QueensGambit/CrazyAra/tree/master/etc/doc
