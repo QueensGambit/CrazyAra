@@ -15,9 +15,9 @@ from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs
 from time import time
 import sys
 
-class RawNetAgent(_Agent):
 
-    def __init__(self, net: NeuralNetAPI, temperature=0., temperature_moves=4, verbose=True):
+class RawNetAgent(_Agent):
+    def __init__(self, net: NeuralNetAPI, temperature=0.0, temperature_moves=4, verbose=True):
         super().__init__(temperature, temperature_moves, verbose)
         self._net = net
 
@@ -39,12 +39,12 @@ class RawNetAgent(_Agent):
         instinct_move = legal_moves[p_vec_small.argmax()]
 
         # define the remaining return variables
-        time_e = (time() - t_start_eval)
+        time_e = time() - t_start_eval
         cp = value_to_centipawn(pred_value)
         depth = 1
         nodes = 1
         time_elapsed_s = time_e * 1000
-        nps = nodes/time_e
+        nps = nodes / time_e
         pv = instinct_move.uci()
 
         return pred_value, legal_moves, p_vec_small, cp, depth, nodes, time_elapsed_s, nps, pv

@@ -8,26 +8,8 @@ from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
 from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
 import logging
 
-file_lookup = {
-    "A": 0,
-    "B": 1,
-    "C": 2,
-    "D": 3,
-    "E": 4,
-    "F": 5,
-    "G": 6,
-    "H": 7
-}
-rank_lookup = {
-    "1": 0,
-    "2": 1,
-    "3": 2,
-    "4": 3,
-    "5": 4,
-    "6": 5,
-    "7": 6,
-    "8": 7
-}
+file_lookup = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7}
+rank_lookup = {"1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 6, "8": 7}
 
 
 def get_square_index_from_name(name):
@@ -44,6 +26,7 @@ def get_square_index_from_name(name):
 
     return chess.square(col, row)
 
+
 batch_size = 8
 nb_playouts = 16
 cpuct = 1
@@ -52,7 +35,6 @@ nb_workers = 64
 
 
 class ChessServer(object):
-
     def __init__(self, name):
         self.app = Flask(name)
 
@@ -70,12 +52,14 @@ class ChessServer(object):
 
         player_agents = {
             "raw_net": RawNetAgent(net),
-            "mcts": MCTSAgent(net, virtual_loss=3, threads=batch_size, cpuct=cpuct, dirichlet_epsilon=dirichlet_epsilon)
+            "mcts": MCTSAgent(
+                net, virtual_loss=3, threads=batch_size, cpuct=cpuct, dirichlet_epsilon=dirichlet_epsilon
+            ),
         }
 
         # Setting up agent
         self.agent = player_agents["raw_net"]
-        #self.agent = player_agents["mcts"]
+        # self.agent = player_agents["mcts"]
 
     def _wrap_endpoint(self, func):
         def wrapper(kwargs):
@@ -90,23 +74,23 @@ class ChessServer(object):
     def serve_client(self, path=None):
         if path is None:
             path = "index.html"
-        return send_from_directory('./client', path)
+        return send_from_directory("./client", path)
 
     def serve_state(self):
         return self.serialize_game_state()
 
     def serve_new_game(self):
-        logging.debug('staring new game()')
+        logging.debug("staring new game()")
         self.perform_new_game()
         return self.serialize_game_state()
 
     def serve_move(self):
 
         # read move data
-        drop_piece = request.args.get('drop')
-        from_square = request.args.get('from')
-        to_square = request.args.get('to')
-        promotion_piece = request.args.get('promotion')
+        drop_piece = request.args.get("drop")
+        from_square = request.args.get("from")
+        to_square = request.args.get("to")
+        promotion_piece = request.args.get("promotion")
         from_square_idx = get_square_index_from_name(from_square)
         to_square_idx = get_square_index_from_name(to_square)
         if (from_square_idx is None and drop_piece is None) or to_square_idx is None:
@@ -133,7 +117,7 @@ class ChessServer(object):
         try:
             self.perform_move(move)
         except ValueError as e:
-            logging.error('ValueError %s', e)
+            logging.error("ValueError %s", e)
             return self.serialize_game_state(e.args[0])
 
         # calculate agent response
@@ -146,7 +130,7 @@ class ChessServer(object):
         self._gamestate = GameState()
 
     def perform_move(self, move):
-        logging.debug('perform_move(): %s', move)
+        logging.debug("perform_move(): %s", move)
 
         # check if move is valid
         if move not in list(self._gamestate.board.legal_moves):
@@ -154,13 +138,13 @@ class ChessServer(object):
         self._gamestate.apply_move(move)
 
         if self._gamestate.is_won():
-            logging.debug('Checkmate')
+            logging.debug("Checkmate")
             return False
 
     def perform_agent_move(self):
 
         if self._gamestate.is_won():
-            logging.debug('Checkmate')
+            logging.debug("Checkmate")
             return False
 
         value, move, confidence, _ = self.agent.perform_action(self._gamestate)
@@ -168,10 +152,10 @@ class ChessServer(object):
         if self._gamestate.is_white_to_move() is False:
             value = -value
 
-        logging.debug('Value %.4f' % value)
+        logging.debug("Value %.4f" % value)
 
         if move is None:
-            logging.error('None move proposed!')
+            logging.error("None move proposed!")
             return False
 
         self.perform_move(move)
@@ -183,11 +167,7 @@ class ChessServer(object):
 
         board_str = "" + self._gamestate.board.__str__()
         pocket_str = "" + self._gamestate.board.pockets[1].__str__() + "|" + self._gamestate.board.pockets[0].__str__()
-        state = {
-            "board": board_str,
-            "pocket": pocket_str,
-            "message": message
-        }
+        state = {"board": board_str, "pocket": pocket_str, "message": message}
         if finished is not None:
             state["finished"] = finished
         return json.dumps(state)

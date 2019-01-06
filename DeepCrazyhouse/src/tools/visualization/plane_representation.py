@@ -16,7 +16,7 @@ scale_vec = np.zeros(len(chess.PIECE_TYPES))
 
 def fill_scale_vec():
     global scale_vec
-    for i, p_char in enumerate(PIECES[:len(chess.PIECE_TYPES)]):
+    for i, p_char in enumerate(PIECES[: len(chess.PIECE_TYPES)]):
         scale_vec[i] = PIECES_VALUE[p_char] * 2
 
 
@@ -32,17 +32,18 @@ def get_plane_vis(mat, normalize=False):
     :param normalize: True if the outputs should be normalized to [0,1]
     :return: 8x8 numpy array which represents the piece positions
     """
-    color_ch = CHANNEL_MAPPING_CONST['color'] + NB_CHANNELS_POS
+    color_ch = CHANNEL_MAPPING_CONST["color"] + NB_CHANNELS_POS
 
     color_bit = int(mat[color_ch][0][0])
     if color_bit != 0 and color_bit != 1:
-        raise Exception('Invalid setting of color bit: ', color_bit)
+        raise Exception("Invalid setting of color bit: ", color_bit)
 
-    sign_bit = -1 if chess.COLOR_NAMES[color_bit] == 'black' else 1
+    sign_bit = -1 if chess.COLOR_NAMES[color_bit] == "black" else 1
     x_vis = np.zeros((BOARD_HEIGHT, BOARD_WIDTH))
-    x_vis += sign_bit * mult_axis_by_vec(mat[:len(chess.PIECE_TYPES)], scale_vec, axis=0).max(axis=0)
-    x_vis += -sign_bit * mult_axis_by_vec(mat[len(chess.PIECE_TYPES):2 * len(chess.PIECE_TYPES)], scale_vec, axis=0) \
-        .max(axis=0)
+    x_vis += sign_bit * mult_axis_by_vec(mat[: len(chess.PIECE_TYPES)], scale_vec, axis=0).max(axis=0)
+    x_vis += -sign_bit * mult_axis_by_vec(
+        mat[len(chess.PIECE_TYPES) : 2 * len(chess.PIECE_TYPES)], scale_vec, axis=0
+    ).max(axis=0)
 
     # in real life the board isn't flipped but rotated instead
     x_vis = np.flipud(x_vis)
@@ -50,6 +51,6 @@ def get_plane_vis(mat, normalize=False):
     if normalize is True:
         sc_max = scale_vec.max()
         x_vis += sc_max
-        x_vis /= (2 * sc_max)
+        x_vis /= 2 * sc_max
 
     return x_vis

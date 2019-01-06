@@ -62,7 +62,7 @@ def show_promask(bin_mask):
     :return: nothing
     """
     for i, c in enumerate(bin_mask):
-        print(c, end=' ')
+        print(c, end=" ")
         if i % 8 == 7:
             print()
 
@@ -105,11 +105,11 @@ def get_numpy_arrays(pgn_dataset):
     """
     # Get the data
 
-    s_idcs = np.array(pgn_dataset['start_indices'])
+    s_idcs = np.array(pgn_dataset["start_indices"])
 
-    x = np.array(pgn_dataset['x'])
-    yv = np.array(pgn_dataset['y_value'])
-    yp = np.array(pgn_dataset['y_policy'])
+    x = np.array(pgn_dataset["x"])
+    yv = np.array(pgn_dataset["y_value"])
+    yp = np.array(pgn_dataset["y_policy"])
 
     return s_idcs, x, yv, yp
 
@@ -131,7 +131,7 @@ def normalize_input_planes(x):
     # iterate over all pieces except the king, (because the king can't be in a pocket)
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS['prisoners'] + p_type - 1
+        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
         mat_pos[ch, :, :] /= MAX_NB_PRISONERS
         # the prison for black begins 5 channels later
@@ -139,10 +139,10 @@ def normalize_input_planes(x):
 
     ### Total Move Count
     # 500 was set as the max number of total moves
-    mat_const[CHANNEL_MAPPING_CONST['total_mv_cnt'], :, :] /= MAX_NB_MOVES
+    mat_const[CHANNEL_MAPPING_CONST["total_mv_cnt"], :, :] /= MAX_NB_MOVES
     ### No progress count
     # after 40 moves of no progress the 40 moves rule for draw applies
-    mat_const[CHANNEL_MAPPING_CONST['no_progress_cnt'], :, :] /= MAX_NB_NO_PROGRESS
+    mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
 
     return x
 
@@ -164,7 +164,7 @@ def unnormalize_input_planes(x):
     # iterate over all pieces except the king
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS['prisoners'] + p_type - 1
+        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
         mat_pos[ch, :, :] /= MAX_NB_PRISONERS
         # the prison for black begins 5 channels later
@@ -172,11 +172,11 @@ def unnormalize_input_planes(x):
 
     ### Total Move Count
     # 500 was set as the max number of total moves
-    mat_const[CHANNEL_MAPPING_CONST['total_mv_cnt'], :, :] *= MAX_NB_MOVES
+    mat_const[CHANNEL_MAPPING_CONST["total_mv_cnt"], :, :] *= MAX_NB_MOVES
     # apply rounding before converting to integer
     ### No progress count
     # after 40 moves of no progress the 40 moves rule for draw applies
-    mat_const[CHANNEL_MAPPING_CONST['no_progress_cnt'], :, :] *= MAX_NB_NO_PROGRESS
+    mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] *= MAX_NB_NO_PROGRESS
 
     np.round(x, decimals=0, out=x)
 

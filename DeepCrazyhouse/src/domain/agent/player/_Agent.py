@@ -21,7 +21,7 @@ class _Agent:
         self.temperature = temperature
         self.temperature_current = temperature
         self.temperature_moves = temperature_moves
-        #self.p_vec_small = None
+        # self.p_vec_small = None
         self.verbose = verbose
 
     def evaluate_board_state(self, state: _GameState):
@@ -33,7 +33,7 @@ class _Agent:
         value, legal_moves, p_vec_small, cp, depth, nodes, time_elapsed_s, nps, pv = self.evaluate_board_state(state)
 
         if len(legal_moves) != len(p_vec_small):
-            raise Exception('Legal move list %s is uncompatible to policy vector %s' % (legal_moves, p_vec_small))
+            raise Exception("Legal move list %s is uncompatible to policy vector %s" % (legal_moves, p_vec_small))
 
         if state.get_fullmove_number() <= self.temperature_moves:
             self.temperature_current = self.temperature
@@ -42,7 +42,7 @@ class _Agent:
 
         if len(legal_moves) == 1:
             selected_move = legal_moves[0]
-            confidence = 1.
+            confidence = 1.0
             idx = 0
         else:
             if self.temperature_current <= 0.01:
@@ -74,13 +74,12 @@ class _Agent:
         # treat very small temperature value as a deterministic policy
         if self.temperature_current <= 0.01:
             p_vec_one_hot = np.zeros_like(p_vec_small)
-            p_vec_one_hot[np.argmax(p_vec_small)] = 1.
+            p_vec_one_hot[np.argmax(p_vec_small)] = 1.0
             p_vec_small = p_vec_one_hot
         else:
             # apply exponential scaling
-            p_vec_small = p_vec_small ** (1/self.temperature_current)
+            p_vec_small = p_vec_small ** (1 / self.temperature_current)
             # renormalize the values to probabilities again
             p_vec_small /= p_vec_small.sum()
 
         return p_vec_small
-

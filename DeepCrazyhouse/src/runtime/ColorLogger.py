@@ -26,6 +26,7 @@ def add_coloring_to_emit_windows(fn):
     # add methods we need to the class
     def _out_handle(self):
         import ctypes
+
         return ctypes.windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
 
     # noinspection PyUnusedLocal
@@ -33,12 +34,13 @@ def add_coloring_to_emit_windows(fn):
 
     def _set_color(self, code):
         import ctypes
+
         # Constants from the Windows API
         self.STD_OUTPUT_HANDLE = -11
         hdl = ctypes.windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
         ctypes.windll.kernel32.SetConsoleTextAttribute(hdl, code)
 
-    setattr(logging.StreamHandler, '_set_color', _set_color)
+    setattr(logging.StreamHandler, "_set_color", _set_color)
 
     # noinspection PyPep8Naming,PyUnusedLocal
     def new(*args):
@@ -103,21 +105,21 @@ def add_coloring_to_emit_ansi(fn):
     def new(*args):
         levelno = args[1].levelno
         if levelno >= 50:
-            color = '\x1b[31m'  # red
+            color = "\x1b[31m"  # red
         elif levelno >= 40:
-            color = '\x1b[31m'  # red
+            color = "\x1b[31m"  # red
         elif levelno >= 30:
-            color = '\x1b[33m'  # yellow
+            color = "\x1b[33m"  # yellow
         elif levelno >= 20:
-            color = '\x1b[94m'  # light blue
+            color = "\x1b[94m"  # light blue
         elif levelno >= 10:
-            color = '\x1b[32m'  # green
+            color = "\x1b[32m"  # green
             # color = '\x1b[90m' # bright black
             #
             # #'\x1b[35m' # pink
         else:
-            color = '\x1b[0m'  # normal
-        args[1].msg = color + args[1].msg + '\x1b[0m'  # normal
+            color = "\x1b[0m"  # normal
+        args[1].msg = color + args[1].msg + "\x1b[0m"  # normal
         # print "after"
         return fn(*args)
 
@@ -125,7 +127,7 @@ def add_coloring_to_emit_ansi(fn):
 
 
 def enable_color_logging(debug_lvl=logging.DEBUG):
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
     else:
@@ -141,7 +143,7 @@ def enable_color_logging(debug_lvl=logging.DEBUG):
     # FORMAT='%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 
     # FORMAT from https://github.com/xolox/python-coloredlogs
-    FORMAT = '%(asctime)s %(name)s[%(process)d] \033[1m%(levelname)s\033[0m %(message)s'
+    FORMAT = "%(asctime)s %(name)s[%(process)d] \033[1m%(levelname)s\033[0m %(message)s"
 
     # FORMAT="%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
     formatter = logging.Formatter(FORMAT, "%Y-%m-%d %H:%M:%S")

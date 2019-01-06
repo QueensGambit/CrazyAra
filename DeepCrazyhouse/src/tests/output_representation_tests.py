@@ -1,8 +1,11 @@
 import unittest
 import chess
 import numpy as np
-from DeepCrazyhouse.src.model.crazy_house.output_representation import \
-    get_plane_offset_id_from_queen_movement_vector, get_move_planes, get_board_position_index
+from DeepCrazyhouse.src.model.crazy_house.output_representation import (
+    get_plane_offset_id_from_queen_movement_vector,
+    get_move_planes,
+    get_board_position_index,
+)
 
 
 class OutputRepresentationTests(unittest.TestCase):
@@ -55,10 +58,7 @@ class OutputRepresentationTests(unittest.TestCase):
         for x in [-1, 1]:
             for y in [-1, 1]:
                 for x_dominates in [True, False]:
-                    movement_vector = [
-                        y * (1 if x_dominates else 2),
-                        x * (2 if x_dominates else 1)
-                    ]
+                    movement_vector = [y * (1 if x_dominates else 2), x * (2 if x_dominates else 1)]
 
                     from_idx = get_board_position_index(row, col)
                     to_idx = get_board_position_index(row + movement_vector[0], col + movement_vector[1])
@@ -78,10 +78,7 @@ class OutputRepresentationTests(unittest.TestCase):
 
         for piece in ["n", "b", "r"]:
             for x_direction in [-1, 0, 1]:
-                movement_vector = [
-                    1,
-                    x_direction
-                ]
+                movement_vector = [1, x_direction]
 
                 from_idx = get_board_position_index(row, col)
                 to_idx = get_board_position_index(row + movement_vector[0], col + movement_vector[1])
@@ -100,10 +97,7 @@ class OutputRepresentationTests(unittest.TestCase):
         aggregated_selected_boards = np.zeros(56)
 
         for x_direction in [-1, 0, 1]:
-            movement_vector = [
-                1,
-                x_direction
-            ]
+            movement_vector = [1, x_direction]
 
             from_idx = get_board_position_index(row, col)
             to_idx = get_board_position_index(row + movement_vector[0], col + movement_vector[1])
@@ -125,8 +119,9 @@ class OutputRepresentationTests(unittest.TestCase):
         for piece in ["p", "n", "b", "r", "q"]:
             from_idx = get_board_position_index(4, 4)
             to_idx = get_board_position_index(4, 4)
-            selected_boards = np.sum(get_move_planes(chess.Move(from_idx, to_idx, None, piece))[73:78, :, :],
-                                     axis=(1, 2))
+            selected_boards = np.sum(
+                get_move_planes(chess.Move(from_idx, to_idx, None, piece))[73:78, :, :], axis=(1, 2)
+            )
 
             # test that only a single position is selected
             self.assertTrue(np.sum(selected_boards) == 1, "more than one board was selected")
