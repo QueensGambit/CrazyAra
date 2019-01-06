@@ -21,7 +21,7 @@ import getpass
 import time
 import subprocess
 
-version = 1.0
+version = 1.1
 
 # Fixed Settings
 # --------------
@@ -159,7 +159,6 @@ def main():
                 + str(MAX_DEPTH)
                 + " proto=uci"
             )
-
         game_cmd = (
             " -variant "
             + str(args.variant)
@@ -172,12 +171,9 @@ def main():
             + " order=random -pgnout "
             + args.pgnout_path
         )
-
         cmd_str = args.cutechess_cli_path + sf_engine_cmd[0] + sf_engine_cmd[1] + game_cmd
-
         # print the current game description
-        print("%s - %s" % (time.asctime(t), event))
-
+        print('%s - %s - Threads: %d' % (time.asctime(t), event, args.threads))
         # start the game with the cutechess-cli
         p = subprocess.Popen(cmd_str, shell=True)
         p.wait()
