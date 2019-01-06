@@ -6,8 +6,16 @@ Created on 24.09.18
 
 Please describe what the content of this file is about
 """
+from DeepCrazyhouse.src.domain.crazyhouse.input_representation import (
+    BOARD_HEIGHT,
+    BOARD_WIDTH,
+    CHANNEL_MAPPING_CONST,
+    NB_CHANNELS_POS,
+    PIECES,
+    chess,
+    np,
+)
 
-from DeepCrazyhouse.src.domain.crazyhouse.input_representation import *
 
 # create vector which scales the piece values according to their crazyhouse value
 # (used in get_x_vis())

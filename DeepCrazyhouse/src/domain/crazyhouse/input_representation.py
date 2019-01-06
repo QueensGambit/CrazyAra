@@ -8,8 +8,20 @@ Input representation for the Crazyhouse board state which is passed to the neura
 """
 
 from chess.variant import CrazyhouseBoard
-from DeepCrazyhouse.src.domain.util import *
-from DeepCrazyhouse.src.domain.crazyhouse.constants import *
+from DeepCrazyhouse.src.domain.crazyhouse.constants import (
+    BOARD_HEIGHT,
+    BOARD_WIDTH,
+    CHANNEL_MAPPING_CONST,
+    CHANNEL_MAPPING_POS,
+    MAX_NB_MOVES,
+    MAX_NB_NO_PROGRESS,
+    MAX_NB_PRISONERS,
+    NB_CHANNELS_CONST,
+    NB_CHANNELS_POS,
+    PIECES,
+    chess,
+)
+from DeepCrazyhouse.src.domain.util import MATRIX_NORMALIZER, get_board_position_index, get_row_col, np
 
 
 def board_to_planes(board, board_occ=0, normalize=True):

@@ -7,10 +7,15 @@ Created on 24.09.18
 Provides all methods to convert a move to policy representation and back
 Loads all needed constants for the Crazyhouse game internally.
 """
-
-import numpy as np
 import chess.variant
-from DeepCrazyhouse.src.domain.crazyhouse.constants import *
+import numpy as np
+from DeepCrazyhouse.src.domain.crazyhouse.constants import (
+    LABELS,
+    LABELS_MIRRORED,
+    MV_LOOKUP,
+    MV_LOOKUP_MIRRORED,
+    NB_LABELS,
+)
 
 
 def move_to_policy(move, is_white_to_move=True):

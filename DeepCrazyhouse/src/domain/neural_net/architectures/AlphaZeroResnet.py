@@ -69,7 +69,7 @@ available.'
 
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Activation, Flatten, Dense
 from mxnet.gluon import HybridBlock
-from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import *
+from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
 
 
 class ResidualBlock(HybridBlock):
