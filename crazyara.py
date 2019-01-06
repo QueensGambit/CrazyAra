@@ -18,7 +18,7 @@ import collections
 import numpy as np
 
 # import the Colorer to have a nicer logging printout
-from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
+from deep_crazy_house.src.runtime.ColorLogger import enable_color_logging
 
 enable_color_logging()
 
@@ -179,10 +179,10 @@ def setup_network():
     global engine_played_move
 
     if setup_done is False:
-        from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
-        from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
-        from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
-        from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
+        from deep_crazy_house.src.domain.crazyhouse.GameState import GameState
+        from deep_crazy_house.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+        from deep_crazy_house.src.domain.agent.player.RawNetAgent import RawNetAgent
+        from deep_crazy_house.src.domain.agent.player.MCTSAgent import MCTSAgent
 
         # check for valid parameter setup and do auto-corrections if possible
         param_validity_check()
