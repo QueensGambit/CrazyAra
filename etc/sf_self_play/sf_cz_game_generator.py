@@ -44,47 +44,56 @@ variant = None
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Sf self play game generator v%.1f' % version)
+    parser = argparse.ArgumentParser(description="Sf self play game generator v%.1f" % version)
 
     username = getpass.getuser()
 
     # check for os
-    if os.name == 'nt':
+    if os.name == "nt":
         # add .exe for windows
-        def_cutechess_cli = 'cutechess-cli.exe'
-        def_sf_path = 'C:/Programs/crazyhouse_engines/stockfish/stockfish-x86_64-modern.exe'
+        def_cutechess_cli = "cutechess-cli.exe"
+        def_sf_path = "C:/Programs/crazyhouse_engines/stockfish/stockfish-x86_64-modern.exe"
     else:
         # linux or mac
-        def_cutechess_cli = 'cutechess-cli'
-        def_sf_path = '/home/%s/Programs/crazyhouse_engines/stockfish/stockfish-x86_64-modern' % username
+        def_cutechess_cli = "cutechess-cli"
+        def_sf_path = "/home/%s/Programs/crazyhouse_engines/stockfish/stockfish-x86_64-modern" % username
 
+    parser.add_argument(
+        "--cutechess_cli_path",
+        default=def_cutechess_cli,
+        type=str,
+        help="cutechess executable path (default: %s)" % def_cutechess_cli,
+    )
 
-    parser.add_argument('--cutechess_cli_path',
-                        default=def_cutechess_cli, type=str,
-                        help='cutechess executable path (default: %s)' % def_cutechess_cli)
+    parser.add_argument(
+        "--sf_path", default=def_sf_path, type=str, help="cutechess executable path (default: %s)" % def_sf_path
+    )
 
-    parser.add_argument('--sf_path',
-                        default=def_sf_path, type=str,
-                        help='cutechess executable path (default: %s)' % def_sf_path)
-
-    parser.add_argument('--opening_book_path',
-                        default='1k_cz_lichess_startpos.pgn', type=str,
-                        help='opening book path (default: 1k_cz_lichess_startpos.pgn')
+    parser.add_argument(
+        "--opening_book_path",
+        default="1k_cz_lichess_startpos.pgn",
+        type=str,
+        help="opening book path (default: 1k_cz_lichess_startpos.pgn",
+    )
 
     # create the output file based on the username
-    def_pgnout_path ='sf_vs_sf_' + username + '.pgn'
-    parser.add_argument('--pgnout_path',
-                        default=def_pgnout_path, type=str,
-                        help='filepath where the games will be stored (default: %s)' % def_pgnout_path)
+    def_pgnout_path = "sf_vs_sf_" + username + ".pgn"
+    parser.add_argument(
+        "--pgnout_path",
+        default=def_pgnout_path,
+        type=str,
+        help="filepath where the games will be stored (default: %s)" % def_pgnout_path,
+    )
 
-    parser.add_argument('--threads', type=int,
-                        default=max(multiprocessing.cpu_count()-1, 1),
-                        help='number of threads for generating games (default: %d number of cores-1 detected by python)'
-                             % max(multiprocessing.cpu_count()-1, 1))
+    parser.add_argument(
+        "--threads",
+        type=int,
+        default=max(multiprocessing.cpu_count() - 1, 1),
+        help="number of threads for generating games (default: %d number of cores-1 detected by python)"
+        % max(multiprocessing.cpu_count() - 1, 1),
+    )
 
-    parser.add_argument('--hash', type=int,
-                        default=def_hash,
-                        help='hash size in mb (default: %d)' % def_hash)
+    parser.add_argument("--hash", type=int, default=def_hash, help="hash size in mb (default: %d)" % def_hash)
 
     available_variants = "'3check': Three-check Chess\
                         '5check': Five-check Chess\
@@ -107,9 +116,12 @@ def main():
                         'racingkings': Racing Kings Chess\
                         'standard': Standard Chess."
 
-    parser.add_argument('--variant',
-                        default='crazyhouse', type=str,
-                        help="define the chess variant (default: crazyhouse)" + available_variants)
+    parser.add_argument(
+        "--variant",
+        default="crazyhouse",
+        type=str,
+        help="define the chess variant (default: crazyhouse)" + available_variants,
+    )
 
     args = parser.parse_args()
 
@@ -119,8 +131,8 @@ def main():
     # start the self play learning loop
     while True:
         # use a random fixed number of nodes for white and black on every move
-        random_nodes_white = NB_NODES * random.random() * RANDOM_FACTOR_NODES * random.choice([-1,1])
-        random_nodes_black = NB_NODES * random.random() * RANDOM_FACTOR_NODES * random.choice([-1,1])
+        random_nodes_white = NB_NODES * random.random() * RANDOM_FACTOR_NODES * random.choice([-1, 1])
+        random_nodes_black = NB_NODES * random.random() * RANDOM_FACTOR_NODES * random.choice([-1, 1])
 
         current_nodes_white = int(NB_NODES + random_nodes_white)
         current_nodes_black = int(NB_NODES + random_nodes_black)
@@ -133,22 +145,35 @@ def main():
         t = time.localtime()
 
         # description of the current game
-        event = 'Game %d - Nodes: %d-%d - Hash: %d' % (
-            i + 1, current_nodes_white, current_nodes_black, args.hash)
+        event = "Game %d - Nodes: %d-%d - Hash: %d" % (i + 1, current_nodes_white, current_nodes_black, args.hash)
 
         for current_nodes in [current_nodes_white, current_nodes_black]:
-            sf_engine_cmd.append(' -engine cmd=' + args.sf_path + ' tc=inf nodes=' + str(current_nodes) +
-                                 ' option.Hash=' + str(args.hash) + ' option.Threads=' + str(args.threads) +
-                                 ' depth=' + str(MAX_DEPTH) + ' proto=uci')
-
-        game_cmd = ' -variant ' + str(args.variant) + ' -event ' + '"' + event + '"' + \
-                   ' -openings file=' + args.opening_book_path + ' order=random -pgnout ' + args.pgnout_path
-
+            sf_engine_cmd.append(
+                " -engine cmd="
+                + args.sf_path
+                + " tc=inf nodes="
+                + str(current_nodes)
+                + " option.Hash="
+                + str(args.hash)
+                + " depth="
+                + str(MAX_DEPTH)
+                + " proto=uci"
+            )
+        game_cmd = (
+            " -variant "
+            + str(args.variant)
+            + " -event "
+            + '"'
+            + event
+            + '"'
+            + " -openings file="
+            + args.opening_book_path
+            + " order=random -pgnout "
+            + args.pgnout_path
+        )
         cmd_str = args.cutechess_cli_path + sf_engine_cmd[0] + sf_engine_cmd[1] + game_cmd
-
         # print the current game description
         print('%s - %s - Threads: %d' % (time.asctime(t), event, args.threads))
-
         # start the game with the cutechess-cli
         p = subprocess.Popen(cmd_str, shell=True)
         p.wait()

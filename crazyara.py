@@ -16,8 +16,10 @@ import chess.pgn
 import traceback
 import collections
 import numpy as np
+
 # import the Colorer to have a nicer logging printout
-from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
+from deep_crazy_house.src.runtime.ColorLogger import enable_color_logging
+
 enable_color_logging()
 
 # Constants
@@ -41,41 +43,40 @@ RANDOM_MV_TIME_PORTION = 0.1
 # enable this variable if you want to see debug messages in certain environments, like the lichess.org api
 ENABLE_LICHESS_DEBUG_MSG = False
 
-client = {
-    'name': 'CrazyAra',
-    'version': '0.3.1',
-    'authors': 'Johannes Czech, Moritz Willig, Alena Beyer'
-}
+client = {"name": "CrazyAra", "version": "0.3.1", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
 
 
-INTRO_PART1 = "" \
-        "                                  _                                           \n" \
-        "                   _..           /   ._   _.  _        /\   ._   _.           \n" \
-        "                 .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|           \n" \
-        "                /  /e)-,\                         /                           \n" \
-        "               /  |  ,_ |                    __    __    __    __             \n" \
-        "              /   '-(-.)/          bw     8 /__////__////__////__////         \n" \
-        "            .'--.   \  `                 7 ////__////__////__////__/          \n" \
-        "           /    `\   |                  6 /__////__////__////__////           \n" \
-        "         /`       |  / /`\.-.          5 ////__////__////__////__/            \n" \
-        "       .'        ;  /  \_/__/         4 /__////__////__////__////             \n" \
-        "     .'`-'_     /_.'))).-` \         3 ////__////__////__////__/              \n" \
-        "    / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////               \n" \
-
-INTRO_PART2 = "" \
-            "   (__.'/   /` .'`                 1 ////__////__////__////__/                \n" \
-            "    (_.'/ /` /`                       a  b  c  d  e  f  g  h                  \n" \
-            "      _|.' /`                                                                 \n" \
-            "jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          \n" \
-            "    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              \n" \
-            "       \_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.  \n" \
-            "              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n"
+INTRO_PART1 = (
+    ""
+    "                                  _                                           \n"
+    "                   _..           /   ._   _.  _        /\   ._   _.           \n"
+    "                 .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|           \n"
+    "                /  /e)-,\                         /                           \n"
+    "               /  |  ,_ |                    __    __    __    __             \n"
+    "              /   '-(-.)/          bw     8 /__////__////__////__////         \n"
+    "            .'--.   \  `                 7 ////__////__////__////__/          \n"
+    "           /    `\   |                  6 /__////__////__////__////           \n"
+    "         /`       |  / /`\.-.          5 ////__////__////__////__/            \n"
+    "       .'        ;  /  \_/__/         4 /__////__////__////__////             \n"
+    "     .'`-'_     /_.'))).-` \         3 ////__////__////__////__/              \n"
+    "    / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////               \n"
+)
+INTRO_PART2 = (
+    ""
+    "   (__.'/   /` .'`                 1 ////__////__////__////__/                \n"
+    "    (_.'/ /` /`                       a  b  c  d  e  f  g  h                  \n"
+    "      _|.' /`                                                                 \n"
+    "jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          \n"
+    "    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              \n"
+    "       \_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.  \n"
+    "              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n"
+)
 
 log_file_path = "CrazyAra-log.txt"
 score_file_path = "score-log.txt"
 
 try:
-    log_file = open(log_file_path, 'w')
+    log_file = open(log_file_path, "w")
 except:
     log_file = None
     # print out the error message
@@ -102,9 +103,9 @@ def log_print(text: str):
 
 
 def write_score_to_file(score: str):
-    #score_file = open(score_file_path, 'w')
+    # score_file = open(score_file_path, 'w')
 
-    with open(score_file_path, 'w') as f:
+    with open(score_file_path, "w") as f:
         f.seek(0)
         f.write(score)
         f.truncate()
@@ -131,10 +132,10 @@ score = None
 
 # SETTINGS
 s = {
-    'UCI_Variant': 'crazyhouse',
+    "UCI_Variant": "crazyhouse",
     # set the context in which the neural networks calculation will be done
     # choose 'gpu' using the settings if there is one available
-    "context": 'cpu',
+    "context": "cpu",
     "use_raw_network": False,
     "threads": 16,
     "batch_size": 8,
@@ -160,7 +161,7 @@ s = {
     "use_pruning": True,
     "use_oscillating_cpuct": False,
     "use_time_management": True,
-    "verbose": False
+    "verbose": False,
 }
 
 
@@ -178,30 +179,44 @@ def setup_network():
     global engine_played_move
 
     if setup_done is False:
-        from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
-        from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
-        from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
-        from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
+        from deep_crazy_house.src.domain.crazyhouse.GameState import GameState
+        from deep_crazy_house.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+        from deep_crazy_house.src.domain.agent.player.RawNetAgent import RawNetAgent
+        from deep_crazy_house.src.domain.agent.player.MCTSAgent import MCTSAgent
 
         # check for valid parameter setup and do auto-corrections if possible
         param_validity_check()
 
         nets = []
-        for i in range(s['neural_net_services']):
-            nets.append(NeuralNetAPI(ctx=s['context'], batch_size=s['batch_size']))
+        for i in range(s["neural_net_services"]):
+            nets.append(NeuralNetAPI(ctx=s["context"], batch_size=s["batch_size"]))
 
-        rawnet_agent = RawNetAgent(nets[0], temperature=s['centi_temperature'] / 100, temperature_moves=s['temperature_moves'])
+        rawnet_agent = RawNetAgent(
+            nets[0], temperature=s["centi_temperature"] / 100, temperature_moves=s["temperature_moves"]
+        )
 
-        mcts_agent = MCTSAgent(nets, cpuct=s['centi_cpuct'] / 100, playouts_empty_pockets=s['playouts_empty_pockets'],
-                               playouts_filled_pockets=s['playouts_filled_pockets'], max_search_depth=s['max_search_depth'],
-                               dirichlet_alpha=s['centi_dirichlet_alpha'] / 100, q_value_weight=s['centi_q_value_weight'] / 100,
-                               dirichlet_epsilon=s['centi_dirichlet_epsilon'] / 100, virtual_loss=s['virtual_loss'],
-                               threads=s['threads'], temperature=s['centi_temperature'] / 100,
-                               temperature_moves=s['temperature_moves'], verbose=s['verbose'],
-                               min_movetime=MIN_SEARCH_TIME_MS,
-                               batch_size=s['batch_size'], check_mate_in_one=s['check_mate_in_one'],
-                               use_pruning=s['use_pruning'], use_oscillating_cpuct=s['use_oscillating_cpuct'],
-                               use_time_management=s['use_time_management'], opening_guard_moves=s['opening_guard_moves'])
+        mcts_agent = MCTSAgent(
+            nets,
+            cpuct=s["centi_cpuct"] / 100,
+            playouts_empty_pockets=s["playouts_empty_pockets"],
+            playouts_filled_pockets=s["playouts_filled_pockets"],
+            max_search_depth=s["max_search_depth"],
+            dirichlet_alpha=s["centi_dirichlet_alpha"] / 100,
+            q_value_weight=s["centi_q_value_weight"] / 100,
+            dirichlet_epsilon=s["centi_dirichlet_epsilon"] / 100,
+            virtual_loss=s["virtual_loss"],
+            threads=s["threads"],
+            temperature=s["centi_temperature"] / 100,
+            temperature_moves=s["temperature_moves"],
+            verbose=s["verbose"],
+            min_movetime=MIN_SEARCH_TIME_MS,
+            batch_size=s["batch_size"],
+            check_mate_in_one=s["check_mate_in_one"],
+            use_pruning=s["use_pruning"],
+            use_oscillating_cpuct=s["use_oscillating_cpuct"],
+            use_time_management=s["use_time_management"],
+            opening_guard_moves=s["opening_guard_moves"],
+        )
 
         gamestate = GameState()
 
@@ -215,19 +230,23 @@ def validity_with_threads(optname: str):
     :return:
     """
 
-    if s[optname] > s['threads']:
-        log_print('info string The given batch_size %d is higher than the number of threads %d. '
-              'The maximum legal batch_size is the same as the number of threads (here: %d) '
-              % (s[optname], s['threads'], s['threads']))
-        s[optname] = s['threads']
-        log_print('info string The batch_size was reduced to %d' % s[optname])
+    if s[optname] > s["threads"]:
+        log_print(
+            "info string The given batch_size %d is higher than the number of threads %d. "
+            "The maximum legal batch_size is the same as the number of threads (here: %d) "
+            % (s[optname], s["threads"], s["threads"])
+        )
+        s[optname] = s["threads"]
+        log_print("info string The batch_size was reduced to %d" % s[optname])
 
-    if s['threads'] % s[optname] != 0:
-        log_print('info string You requested an illegal combination of threads %d and batch_size %d.'
-              ' The batch_size must be a divisor of the number of threads' % (s['threads'], s[optname]))
-        divisor = s['threads'] // s[optname]
-        s[optname] = s['threads'] // divisor
-        log_print('info string The batch_size was changed to %d' % s[optname])
+    if s["threads"] % s[optname] != 0:
+        log_print(
+            "info string You requested an illegal combination of threads %d and batch_size %d."
+            " The batch_size must be a divisor of the number of threads" % (s["threads"], s[optname])
+        )
+        divisor = s["threads"] // s[optname]
+        s[optname] = s["threads"] // divisor
+        log_print("info string The batch_size was changed to %d" % s[optname])
 
 
 def param_validity_check():
@@ -236,8 +255,8 @@ def param_validity_check():
     :return:
     """
 
-    validity_with_threads('batch_size')
-    validity_with_threads('neural_net_services')
+    validity_with_threads("batch_size")
+    validity_with_threads("neural_net_services")
 
 
 def perform_action(cmd_list):
@@ -259,15 +278,15 @@ def perform_action(cmd_list):
     tc_type = None
 
     if len(cmd_list) >= 5:
-        if cmd_list[1] == 'wtime' and cmd_list[3] == 'btime':
+        if cmd_list[1] == "wtime" and cmd_list[3] == "btime":
 
             wtime = int(cmd_list[2])
             btime = int(cmd_list[4])
 
             my_inc, winc, binc = 0, 0, 0
-            if 'winc' in cmd_list:
+            if "winc" in cmd_list:
                 winc = int(cmd_list[6])
-            if 'binc' in cmd_list:
+            if "binc" in cmd_list:
                 binc = int(cmd_list[8])
 
             if gamestate.is_white_to_move():
@@ -281,9 +300,9 @@ def perform_action(cmd_list):
                 constant_move_time = (my_time + BLITZ_GAME_LENGTH * my_inc) / BLITZ_GAME_LENGTH
 
             # TC with period (traditional) like 40/60 or 40 moves in 60 sec repeating
-            if 'movestogo' in cmd_list:
-                tc_type = 'traditional'
-                if 'winc' in cmd_list and 'binc' in cmd_list:
+            if "movestogo" in cmd_list:
+                tc_type = "traditional"
+                if "winc" in cmd_list and "binc" in cmd_list:
                     moves_left = int(cmd_list[10])
                 else:
                     moves_left = int(cmd_list[6])
@@ -291,27 +310,31 @@ def perform_action(cmd_list):
                 if moves_left <= 3:
                     moves_left += 1
             else:
-                tc_type = 'blitz'
-                moves_left = s['moves_left']
+                tc_type = "blitz"
+                moves_left = s["moves_left"]
 
             moves_left = adjust_moves_left(moves_left, tc_type, bestmove_value)
-            if tc_type == 'blitz' and engine_played_move < BLITZ_GAME_LENGTH * .8:
-                movetime_ms = constant_move_time + (np.random.rand()-0.5) * RANDOM_MV_TIME_PORTION * constant_move_time
+            if tc_type == "blitz" and engine_played_move < BLITZ_GAME_LENGTH * 0.8:
+                movetime_ms = (
+                    constant_move_time + (np.random.rand() - 0.5) * RANDOM_MV_TIME_PORTION * constant_move_time
+                )
 
-                if engine_played_move < s['max_move_num_to_reduce_movetime']:
+                if engine_played_move < s["max_move_num_to_reduce_movetime"]:
                     # avoid spending too much time in the opening
                     movetime_ms *= MV_TIME_OPENING_PORTION
             else:
-                movetime_ms = max(my_time/moves_left + INC_FACTOR*my_inc//INC_DIV - s['move_overhead_ms'], MIN_SEARCH_TIME_MS)
+                movetime_ms = max(
+                    my_time / moves_left + INC_FACTOR * my_inc // INC_DIV - s["move_overhead_ms"], MIN_SEARCH_TIME_MS
+                )
 
     # movetime in UCI protocol, go movetime x, search exactly x mseconds
     # UCI protocol: http://wbec-ridderkerk.nl/html/UCIProtocol.html
-    elif len(cmd_list) == 3 and cmd_list[1] == 'movetime':
-        movetime_ms = max(int(cmd_list[2]) - s['move_overhead_ms'], MIN_SEARCH_TIME_MS)
+    elif len(cmd_list) == 3 and cmd_list[1] == "movetime":
+        movetime_ms = max(int(cmd_list[2]) - s["move_overhead_ms"], MIN_SEARCH_TIME_MS)
 
     mcts_agent.update_movetime(movetime_ms)
-    log_print('info string Time for this move is %dms' % movetime_ms)
-    log_print('info string Requested pos: %s' % gamestate)
+    log_print("info string Time for this move is %dms" % movetime_ms)
+    log_print("info string Requested pos: %s" % gamestate)
 
     # assign search depth
     try:
@@ -330,13 +353,17 @@ def perform_action(cmd_list):
         mcts_agent.dirichlet_epsilon = 0.1
     elif movetime_ms < 7000:
         # reduce noise for very short move times
-        mcts_agent.dirichlet_epsilon = .2
+        mcts_agent.dirichlet_epsilon = 0.2
 
-    if s['use_raw_network'] or movetime_ms <= s['threshold_time_for_raw_net_ms']:
-        log_print('info string Using raw network for fast mode...')
-        value, selected_move, confidence, _, cp, depth, nodes, time_elapsed_s, nps, pv = rawnet_agent.perform_action(gamestate)
+    if s["use_raw_network"] or movetime_ms <= s["threshold_time_for_raw_net_ms"]:
+        log_print("info string Using raw network for fast mode...")
+        value, selected_move, confidence, _, cp, depth, nodes, time_elapsed_s, nps, pv = rawnet_agent.perform_action(
+            gamestate
+        )
     else:
-        value, selected_move, confidence, _, cp, depth, nodes, time_elapsed_s, nps, pv = mcts_agent.perform_action(gamestate)
+        value, selected_move, confidence, _, cp, depth, nodes, time_elapsed_s, nps, pv = mcts_agent.perform_action(
+            gamestate
+        )
 
     score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (cp, depth, nodes, time_elapsed_s, nps, pv)
     if ENABLE_LICHESS_DEBUG_MSG:
@@ -345,7 +372,7 @@ def perform_action(cmd_list):
         except Exception:
             pass
     # print out the search information
-    log_print('info %s' % score)
+    log_print("info %s" % score)
 
     # Save the bestmove value [-1.0 to 1.0] to modify the next movetime
     bestmove_value = float(value)
@@ -356,9 +383,9 @@ def perform_action(cmd_list):
         # apply the last move CrazyAra played
         _apply_move(selected_move)
     else:
-        raise Exception('all_ok is false! - crazyara_last_move')
+        raise Exception("all_ok is false! - crazyara_last_move")
 
-    log_print('bestmove %s' % selected_move.uci())
+    log_print("bestmove %s" % selected_move.uci())
 
 
 def setup_gamestate(cmd_list):
@@ -374,9 +401,9 @@ def setup_gamestate(cmd_list):
 
     position_type = cmd_list[1]
 
-    if 'moves' in cmd_list:
+    if "moves" in cmd_list:
         # position startpos moves e2e4 g8f6
-        if position_type == 'startpos':
+        if position_type == "startpos":
             mv_list = cmd_list[3:]
         else:
             # position fen rn2N2k/pp5p/3pp1pN/3p4/3q1P2/3P1p2/PP3PPP/RN3RK1/Qrbbpbb b - - 3 27 moves d4f2 f1f2
@@ -392,7 +419,7 @@ def setup_gamestate(cmd_list):
                 _apply_move(opponent_last_move)
                 mv_compatible = True
             else:
-                log_print('info string  all_ok is false! - opponent_last_move %s' % opponent_last_move)
+                log_print("info string  all_ok is false! - opponent_last_move %s" % opponent_last_move)
                 mv_compatible = False
         else:
             mv_compatible = False
@@ -413,15 +440,15 @@ def setup_gamestate(cmd_list):
         else:
             log_print("info string Move Compatible")
     else:
-        if position_type == 'fen':
+        if position_type == "fen":
             fen = " ".join(cmd_list[2:8])
             gamestate.set_fen(fen)
             mcts_agent.update_tranposition_table((gamestate.get_transposition_key(),))
-            #log_print("info string Added %s - count %d" % (gamestate.get_board_fen(),
+            # log_print("info string Added %s - count %d" % (gamestate.get_board_fen(),
             #                                               mcts_agent.transposition_table[gamestate.get_transposition_key()]))
 
 
-def _apply_move(selected_move : chess.Move):
+def _apply_move(selected_move: chess.Move):
     """
     Applies the given move on the gamestate and updates the transposition table of the environment
     :param selected_move: Move in python chess format
@@ -436,6 +463,7 @@ def _apply_move(selected_move : chess.Move):
     #                                               mcts_agent.transposition_table[
     #                                                   gamestate.get_transposition_key()]))
 
+
 def new_game():
     global gamestate
     global mcts_agent
@@ -444,7 +472,8 @@ def new_game():
     gamestate.new_game()
     mcts_agent.transposition_table = collections.Counter()
     mcts_agent.time_buffer_ms = 0
-    mcts_agent.dirichlet_epsilon = s['centi_dirichlet_epsilon'] / 100
+    mcts_agent.dirichlet_epsilon = s["centi_dirichlet_epsilon"] / 100
+
 
 def set_options(cmd_list):
     """
@@ -458,7 +487,7 @@ def set_options(cmd_list):
 
     # make sure there exists enough items in the given command list like "setoption name nb_threads value 1"
     if len(cmd_list) >= 5:
-        if cmd_list[1] != 'name' or cmd_list[3] != 'value':
+        if cmd_list[1] != "name" or cmd_list[3] != "value":
             log_print("info string The given setoption command wasn't understood")
             log_print('info string An example call could be: "setoption name threads value 4"')
         else:
@@ -468,37 +497,45 @@ def set_options(cmd_list):
                 log_print("info string The given option %s wasn't found in the settings list" % option_name)
             else:
 
-                if option_name in ['UCI_Variant', 'context', 'use_raw_network',
-                                   'extend_time_on_bad_position', 'verbose', 'check_mate_in_one', 'use_pruning',
-                                   'use_oscillating_cpuct', 'use_time_management']:
+                if option_name in [
+                    "UCI_Variant",
+                    "context",
+                    "use_raw_network",
+                    "extend_time_on_bad_position",
+                    "verbose",
+                    "check_mate_in_one",
+                    "use_pruning",
+                    "use_oscillating_cpuct",
+                    "use_time_management",
+                ]:
 
                     value = cmd_list[4]
                 else:
                     value = int(cmd_list[4])
 
-                if option_name == 'use_raw_network':
-                    s['use_raw_network'] = True if value == 'true' else False
-                elif option_name == 'extend_time_on_bad_position':
-                    s['extend_time_on_bad_position'] = True if value == 'true' else False
-                elif option_name == 'verbose':
-                    s['verbose'] = True if value == 'true' else False
-                elif option_name == 'check_mate_in_one':
-                    s['check_mate_in_one'] = True if value == 'true' else False
-                elif option_name == 'use_pruning':
-                    s['use_pruning'] = True if value == 'true' else False
-                elif option_name == 'use_oscillating_cpuct':
-                    s['use_oscillating_cpuct'] = True if value == 'true' else False
-                elif option_name == 'use_time_management':
-                    s['use_time_management'] = True if value == 'true' else False
+                if option_name == "use_raw_network":
+                    s["use_raw_network"] = True if value == "true" else False
+                elif option_name == "extend_time_on_bad_position":
+                    s["extend_time_on_bad_position"] = True if value == "true" else False
+                elif option_name == "verbose":
+                    s["verbose"] = True if value == "true" else False
+                elif option_name == "check_mate_in_one":
+                    s["check_mate_in_one"] = True if value == "true" else False
+                elif option_name == "use_pruning":
+                    s["use_pruning"] = True if value == "true" else False
+                elif option_name == "use_oscillating_cpuct":
+                    s["use_oscillating_cpuct"] = True if value == "true" else False
+                elif option_name == "use_time_management":
+                    s["use_time_management"] = True if value == "true" else False
                 else:
                     # by default all options are treated as integers
                     s[option_name] = value
 
                     # Guard threads limits
-                    if option_name == 'threads':
+                    if option_name == "threads":
                         s[option_name] = min(4096, max(1, s[option_name]))
 
-                log_print('info string Updated option %s to %s' % (option_name, value))
+                log_print("info string Updated option %s to %s" % (option_name, value))
 
 
 def adjust_moves_left(moves_left, tc_type, prev_bm_value):
@@ -517,69 +554,73 @@ def adjust_moves_left(moves_left, tc_type, prev_bm_value):
     # Don't spend too much time in the opening, we increase the moves_left
     # so that the movetime is reduced. engine_played_move is the actual moves
     # made by the engine excluding the book moves input from a GUI.
-    if engine_played_move < s['max_move_num_to_reduce_movetime']:
+    if engine_played_move < s["max_move_num_to_reduce_movetime"]:
         moves_left += MOVES_LEFT_INCREMENT
 
     # Increase movetime by reducing the moves left if our prev bestmove value is below 0.0
-    elif s['extend_time_on_bad_position'] and prev_bm_value is not None and\
-                                prev_bm_value <= MAX_BAD_POS_VALUE:
-        if tc_type == 'blitz':
+    elif s["extend_time_on_bad_position"] and prev_bm_value is not None and prev_bm_value <= MAX_BAD_POS_VALUE:
+        if tc_type == "blitz":
             # The more the bad position is, the more that we extend the search time
-            moves_left -= abs(prev_bm_value) * s['moves_left']
+            moves_left -= abs(prev_bm_value) * s["moves_left"]
             moves_left = max(moves_left, MIN_MOVES_LEFT)
         # Else if TC is traditional, we extend with more time if we have more time left
         elif moves_left > 4:
-            moves_left = moves_left - moves_left//8
+            moves_left = moves_left - moves_left // 8
 
     return moves_left
 
 
 def uci_reply():
-    log_print('id name %s %s' % (client['name'], client['version']))
-    log_print('id author %s' % client['authors'])
+    log_print("id name %s %s" % (client["name"], client["version"]))
+    log_print("id author %s" % client["authors"])
     # tell the GUI all possible options
-    log_print('option name UCI_Variant type combo default crazyhouse var crazyhouse')
-    log_print('option name context type combo default %s var cpu var gpu' % s['context'])
-    log_print('option name use_raw_network type check default %s' %\
-              ('false' if not s['use_raw_network'] else 'true'))
-    log_print('option name threads type spin default %d min 1 max 4096' % s['threads'])
-    log_print('option name batch_size type spin default %d min 1 max 4096' % s['batch_size'])
-    log_print('option name neural_net_services type spin default %d min 1 max 10' % s['neural_net_services'])
-    log_print('option name playouts_empty_pockets type spin default %d min 56 max 8192' %\
-              s['playouts_empty_pockets'])
-    log_print('option name playouts_filled_pockets type spin default %d min 56 max 8192' %\
-              s['playouts_filled_pockets'])
-    log_print('option name centi_cpuct type spin default %d min 1 max 500' % s['centi_cpuct'])
-    log_print('option name centi_dirichlet_epsilon type spin default %d min 0 max 100' % s['centi_dirichlet_epsilon'])
-    log_print('option name centi_dirichlet_alpha type spin default %d min 0 max 100' % s['centi_dirichlet_alpha'])
-    log_print('option name max_search_depth type spin default %d min 1 max 100' % s['max_search_depth'])
-    log_print('option name centi_temperature type spin default %d min 0 max 100' % s['centi_temperature'])
-    log_print('option name temperature_moves type spin default %d min 0 max 99999' % s['temperature_moves'])
-    log_print('option name opening_guard_moves type spin default %d min 0 max 99999' % s['opening_guard_moves'])
-    log_print('option name centi_clip_quantil type spin default 0 min 0 max 100')
-    log_print('option name virtual_loss type spin default 3 min 0 max 10')
-    log_print('option name centi_q_value_weight type spin default %d min 0 max 100' % s['centi_q_value_weight'])
-    log_print('option name threshold_time_for_raw_net_ms type spin default %d min 1 max 300000' %\
-              s['threshold_time_for_raw_net_ms'])
-    log_print('option name move_overhead_ms type spin default %d min 0 max 60000' % s['move_overhead_ms'])
-    log_print('option name moves_left type spin default %d min 10 max 320' % s['moves_left'])
-    log_print('option name extend_time_on_bad_position type check default %s' %\
-              ('false' if not s['extend_time_on_bad_position'] else 'true'))
-    log_print('option name max_move_num_to_reduce_movetime type spin default %d min 0 max 120' %\
-              s['max_move_num_to_reduce_movetime'])
-    log_print('option name check_mate_in_one type check default %s' %\
-              ('false' if not s['check_mate_in_one'] else 'true'))
-    log_print('option name use_pruning type check default %s' %\
-              ('false' if not s['use_pruning'] else 'true'))
-    log_print('option name use_oscillating_cpuct type check default %s' %\
-              ('false' if not s['use_oscillating_cpuct'] else 'true'))
-    log_print('option name use_time_management type check default %s' %\
-              ('false' if not s['use_time_management'] else 'true'))
-    log_print('option name verbose type check default %s' %\
-              ('false' if not s['verbose'] else 'true'))
+    log_print("option name UCI_Variant type combo default crazyhouse var crazyhouse")
+    log_print("option name context type combo default %s var cpu var gpu" % s["context"])
+    log_print("option name use_raw_network type check default %s" % ("false" if not s["use_raw_network"] else "true"))
+    log_print("option name threads type spin default %d min 1 max 4096" % s["threads"])
+    log_print("option name batch_size type spin default %d min 1 max 4096" % s["batch_size"])
+    log_print("option name neural_net_services type spin default %d min 1 max 10" % s["neural_net_services"])
+    log_print("option name playouts_empty_pockets type spin default %d min 56 max 8192" % s["playouts_empty_pockets"])
+    log_print("option name playouts_filled_pockets type spin default %d min 56 max 8192" % s["playouts_filled_pockets"])
+    log_print("option name centi_cpuct type spin default %d min 1 max 500" % s["centi_cpuct"])
+    log_print("option name centi_dirichlet_epsilon type spin default %d min 0 max 100" % s["centi_dirichlet_epsilon"])
+    log_print("option name centi_dirichlet_alpha type spin default %d min 0 max 100" % s["centi_dirichlet_alpha"])
+    log_print("option name max_search_depth type spin default %d min 1 max 100" % s["max_search_depth"])
+    log_print("option name centi_temperature type spin default %d min 0 max 100" % s["centi_temperature"])
+    log_print("option name temperature_moves type spin default %d min 0 max 99999" % s["temperature_moves"])
+    log_print("option name opening_guard_moves type spin default %d min 0 max 99999" % s["opening_guard_moves"])
+    log_print("option name centi_clip_quantil type spin default 0 min 0 max 100")
+    log_print("option name virtual_loss type spin default 3 min 0 max 10")
+    log_print("option name centi_q_value_weight type spin default %d min 0 max 100" % s["centi_q_value_weight"])
+    log_print(
+        "option name threshold_time_for_raw_net_ms type spin default %d min 1 max 300000"
+        % s["threshold_time_for_raw_net_ms"]
+    )
+    log_print("option name move_overhead_ms type spin default %d min 0 max 60000" % s["move_overhead_ms"])
+    log_print("option name moves_left type spin default %d min 10 max 320" % s["moves_left"])
+    log_print(
+        "option name extend_time_on_bad_position type check default %s"
+        % ("false" if not s["extend_time_on_bad_position"] else "true")
+    )
+    log_print(
+        "option name max_move_num_to_reduce_movetime type spin default %d min 0 max 120"
+        % s["max_move_num_to_reduce_movetime"]
+    )
+    log_print(
+        "option name check_mate_in_one type check default %s" % ("false" if not s["check_mate_in_one"] else "true")
+    )
+    log_print("option name use_pruning type check default %s" % ("false" if not s["use_pruning"] else "true"))
+    log_print(
+        "option name use_oscillating_cpuct type check default %s"
+        % ("false" if not s["use_oscillating_cpuct"] else "true")
+    )
+    log_print(
+        "option name use_time_management type check default %s" % ("false" if not s["use_time_management"] else "true")
+    )
+    log_print("option name verbose type check default %s" % ("false" if not s["verbose"] else "true"))
 
     # verify that all options have been sent
-    log_print('uciok')
+    log_print("uciok")
 
 
 # main waiting loop for processing command line inputs
@@ -596,7 +637,7 @@ def main():
         # wait for an std-in input command
         if line:
             # split the line to a list which makes parsing easier
-            cmd_list = line.rstrip().split(' ')
+            cmd_list = line.rstrip().split(" ")
             # extract the first command from the list for evaluation
             main_cmd = cmd_list[0]
 
@@ -604,12 +645,12 @@ def main():
             log(line)
 
             try:
-                if main_cmd == 'uci':
+                if main_cmd == "uci":
                     uci_reply()
-                elif main_cmd == 'isready':
+                elif main_cmd == "isready":
                     setup_network()
-                    log_print('readyok')
-                elif main_cmd == 'ucinewgame':
+                    log_print("readyok")
+                elif main_cmd == "ucinewgame":
                     bestmove_value = None
                     engine_played_move = 0
                     new_game()
@@ -617,9 +658,9 @@ def main():
                     setup_gamestate(cmd_list)
                 elif main_cmd == "setoption":
                     set_options(cmd_list)
-                elif main_cmd == 'go':
+                elif main_cmd == "go":
                     perform_action(cmd_list)
-                elif main_cmd == 'quit' or main_cmd == 'exit':
+                elif main_cmd == "quit" or main_cmd == "exit":
                     if log_file:
                         log_file.close()
                     return 0
