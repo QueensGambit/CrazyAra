@@ -53,17 +53,17 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu())
         [value_out, policy_out] = net(data)
 
         # update the metrics
-        metrics['value_loss'].update(preds=value_out, labels=value_label)
-        metrics['policy_loss'].update(preds=nd.SoftmaxActivation(policy_out), labels=policy_label)
-        metrics['value_acc_sign'].update(preds=value_out, labels=value_label)
-        metrics['policy_acc'].update(preds=nd.argmax(policy_out, axis=1), labels=policy_label)
+        metrics["value_loss"].update(preds=value_out, labels=value_label)
+        metrics["policy_loss"].update(preds=nd.SoftmaxActivation(policy_out), labels=policy_label)
+        metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
+        metrics["policy_acc"].update(preds=nd.argmax(policy_out, axis=1), labels=policy_label)
 
         # stop after evaluating x batches (only recommeded to use this for the train set evaluation)
         if nb_batches is not None and i == nb_batches:
             break
 
     metric_values = {}
-    metric_values['loss'] = 0.01 * metrics['value_loss'].get()[1] + 0.99 * metrics['policy_loss'].get()[1]
+    metric_values["loss"] = 0.01 * metrics["value_loss"].get()[1] + 0.99 * metrics["policy_loss"].get()[1]
 
     for metric in metrics.values():
         metric_values[metric.get()[0]] = metric.get()[1]
@@ -82,12 +82,33 @@ def reset_metrics(metrics):
 
 
 class TrainerAgent:
-
-    def __init__(self, net, val_data, nb_parts, lr_schedule, momentum_schedule, total_it, wd=0.0001, batch_steps=1000,
-                 k_steps_initial=0, cpu_count=16, batch_size=2048, normalize=True, export_weights=True,
-                 export_grad_histograms=True, log_metrics_to_tensorboard=True, ctx=mx.gpu(), metrics={},  #clip_gradient=60,
-                 use_spike_recovery=True, max_spikes=5, spike_thresh=1.5, seed=42, val_loss_factor=0.01, policy_loss_factor=0.99):
-        #, lr_warmup_k_steps=30, lr_warmup_init=0.01):
+    def __init__(
+        self,
+        net,
+        val_data,
+        nb_parts,
+        lr_schedule,
+        momentum_schedule,
+        total_it,
+        wd=0.0001,
+        batch_steps=1000,
+        k_steps_initial=0,
+        cpu_count=16,
+        batch_size=2048,
+        normalize=True,
+        export_weights=True,
+        export_grad_histograms=True,
+        log_metrics_to_tensorboard=True,
+        ctx=mx.gpu(),
+        metrics={},  # clip_gradient=60,
+        use_spike_recovery=True,
+        max_spikes=5,
+        spike_thresh=1.5,
+        seed=42,
+        val_loss_factor=0.01,
+        policy_loss_factor=0.99,
+    ):
+        # , lr_warmup_k_steps=30, lr_warmup_init=0.01):
         # patience=25, nb_lr_drops=3, nb_k_steps=200,
 
         self._log_metrics_to_tensorboard = log_metrics_to_tensorboard
@@ -95,19 +116,19 @@ class TrainerAgent:
         # lr_drop_fac=0.1,
         self._metrics = metrics
         self._net = net
-        self._graph_exported =False
-        #self._lr = lr
+        self._graph_exported = False
+        # self._lr = lr
         self._normalize = normalize
-        #self._nb_k_steps = nb_k_steps
-        #self._patience = patience
-        #self._nb_lr_droups = nb_lr_drops
+        # self._nb_k_steps = nb_k_steps
+        # self._patience = patience
+        # self._nb_lr_droups = nb_lr_drops
         self._lr_schedule = lr_schedule
         self._momentum_schedule = momentum_schedule
         self._total_it = total_it
         self._batch_size = batch_size
         self._export_grad_histograms = export_grad_histograms
         self._cpu_count = cpu_count
-        #self._lr_drop_fac = lr_drop_fac
+        # self._lr_drop_fac = lr_drop_fac
         self._k_steps_initial = k_steps_initial
         self._val_data = val_data
         self._export_weights = export_weights
@@ -119,22 +140,28 @@ class TrainerAgent:
         self._val_loss_factor = val_loss_factor
         self._policy_loss_factor = policy_loss_factor
 
-        #self._nb_lr_drops = nb_lr_drops
-        #self._warmup_k_steps = lr_warmup_k_steps
-        #self._lr_warmup_init = lr_warmup_init
+        # self._nb_lr_drops = nb_lr_drops
+        # self._warmup_k_steps = lr_warmup_k_steps
+        # self._lr_warmup_init = lr_warmup_init
 
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if log_metrics_to_tensorboard is True:
-            self.sw = SummaryWriter(logdir='./logs', flush_secs=5, verbose=False)
+            self.sw = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
 
         # Define the two loss functions
         self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
         self._l2_loss = gluon.loss.L2Loss()
 
-        self._trainer = gluon.Trainer(self._net.collect_params(), 'nag', {'learning_rate': lr_schedule(0),
-                                                                          'momentum': momentum_schedule(0),
-                                                                          #'clip_gradient': clip_gradient,
-                                                                          'wd': wd, })
+        self._trainer = gluon.Trainer(
+            self._net.collect_params(),
+            "nag",
+            {
+                "learning_rate": lr_schedule(0),
+                "momentum": momentum_schedule(0),
+                #'clip_gradient': clip_gradient,
+                "wd": wd,
+            },
+        )
 
         # collect parameter names for logging the gradients of parameters in each epoch
         self._params = self._net.collect_params()
@@ -143,7 +170,7 @@ class TrainerAgent:
         # define a list which describes the order of the processed batches
         self.ordering = list(range(nb_parts))
 
-    def _log_metrics(self, metric_values, global_step, prefix='train_'):
+    def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
         Logs a dictionary object of metric vlaue to the console and to tensorboard if _log_metrics_to_tensorboard is set to true
         :param metric_values: Dictionary object storing the current metrics
@@ -152,11 +179,11 @@ class TrainerAgent:
         :return:
         """
         for name in metric_values.keys():  # show the metric stats
-            print(' - %s%s: %.4f' % (prefix, name, metric_values[name]), end="")
+            print(" - %s%s: %.4f" % (prefix, name, metric_values[name]), end="")
             # add the metrics to the tensorboard event file
 
             if self._log_metrics_to_tensorboard is True:
-                self.sw.add_scalar(name, [prefix.replace('_', ''), metric_values[name]], global_step)
+                self.sw.add_scalar(name, [prefix.replace("_", ""), metric_values[name]], global_step)
 
     def _process_on_data_plane_file(self, train_data, batch_proc_tmp):
 
@@ -167,10 +194,10 @@ class TrainerAgent:
 
             # update a dummy metric to see a proper progress bar
             #  (the metrics will get evaluated at the end of 100k steps)
-            #if self.batch_proc_tmp > 0:
+            # if self.batch_proc_tmp > 0:
             #    self._metrics['value_loss'].update(old_label, value_out)
 
-            #old_label = value_label
+            # old_label = value_label
 
             with autograd.record():
                 [value_out, policy_out] = self._net(data)
@@ -180,13 +207,13 @@ class TrainerAgent:
                 combined_loss = self._val_loss_factor * value_loss.sum() + self._policy_loss_factor * policy_loss.sum()
 
                 # update a dummy metric to see a proper progress bar
-                self._metrics['value_loss'].update(preds=value_out, labels=value_label)
+                self._metrics["value_loss"].update(preds=value_out, labels=value_label)
 
             combined_loss.backward()
             self._trainer.step(data.shape[0])
             batch_proc_tmp += 1
 
-        return batch_proc_tmp, self._metrics['value_loss'].get()[1]
+        return batch_proc_tmp, self._metrics["value_loss"].get()[1]
 
     def train(self):
         """
@@ -241,16 +268,15 @@ class TrainerAgent:
         # initialize the loss to compare with, with a very high value
         old_val_loss = 9000
 
-        #self._lr = self._lr_warmup_init
-        #logging.info('Warmup-Schedule')
-        #logging.info('Initial learning rate: lr = %.5f', self._lr)
-        #logging.info('=========================================')
-
+        # self._lr = self._lr_warmup_init
+        # logging.info('Warmup-Schedule')
+        # logging.info('Initial learning rate: lr = %.5f', self._lr)
+        # logging.info('=========================================')
 
         # set initial lr
-        #self._trainer.set_learning_rate(self._lr)
+        # self._trainer.set_learning_rate(self._lr)
         # log the current learning rate
-        #self.sw.add_scalar(tag='lr', value=self._lr, global_step=k_steps)
+        # self.sw.add_scalar(tag='lr', value=self._lr, global_step=k_steps)
 
         # create a state variable to check if the net architecture has been reported yet
         graph_exported = False
@@ -260,7 +286,7 @@ class TrainerAgent:
 
         # safety check to prevent eternal loop
         if len(self.ordering) == 0:
-            raise Exception('You must have at least one part file in your planes-dataset directory!')
+            raise Exception("You must have at least one part file in your planes-dataset directory!")
 
         while True:
             # reshuffle the ordering of the training game batches (shuffle works in place)
@@ -274,15 +300,17 @@ class TrainerAgent:
             for part_id in tqdm_notebook(self.ordering):
 
                 # load one chunk of the dataset from memory
-                s_idcs_train, x_train, yv_train, yp_train, pgn_datasets_train = load_pgn_dataset(dataset_type='train', part_id=part_id,
-                                                                                                 normalize=self._normalize,
-                                                                                                 verbose=False)
+                s_idcs_train, x_train, yv_train, yp_train, pgn_datasets_train = load_pgn_dataset(
+                    dataset_type="train", part_id=part_id, normalize=self._normalize, verbose=False
+                )
                 # update the train_data object
-                train_dataset = gluon.data.ArrayDataset(nd.array(x_train), nd.array(yv_train),
-                                                        nd.array(yp_train.argmax(axis=1)))
-                train_data = gluon.data.DataLoader(train_dataset, batch_size=self._batch_size, shuffle=True,
-                                                   num_workers=self._cpu_count)
-                #batch_proc_tmp, dummy = self._process_on_data_plane_file(train_data, batch_proc_tmp)
+                train_dataset = gluon.data.ArrayDataset(
+                    nd.array(x_train), nd.array(yv_train), nd.array(yp_train.argmax(axis=1))
+                )
+                train_data = gluon.data.DataLoader(
+                    train_dataset, batch_size=self._batch_size, shuffle=True, num_workers=self._cpu_count
+                )
+                # batch_proc_tmp, dummy = self._process_on_data_plane_file(train_data, batch_proc_tmp)
 
                 for i, (data, value_label, policy_label) in enumerate(train_data):
                     data = data.as_in_context(self._ctx)
@@ -292,7 +320,7 @@ class TrainerAgent:
                     # update a dummy metric to see a proper progress bar
                     #  (the metrics will get evaluated at the end of 100k steps)
                     if batch_proc_tmp > 0:
-                        self._metrics['value_loss'].update(old_label, value_out)
+                        self._metrics["value_loss"].update(old_label, value_out)
 
                     old_label = value_label
                     with autograd.record():
@@ -300,10 +328,12 @@ class TrainerAgent:
                         value_loss = self._l2_loss(value_out, value_label)
                         policy_loss = self._softmax_cross_entropy(policy_out, policy_label)
                         # weight the components of the combined loss
-                        combined_loss = self._val_loss_factor * value_loss.sum() + self._policy_loss_factor * policy_loss.sum()
+                        combined_loss = (
+                            self._val_loss_factor * value_loss.sum() + self._policy_loss_factor * policy_loss.sum()
+                        )
 
                         # update a dummy metric to see a proper progress bar
-                        #self._metrics['value_loss'].update(preds=value_out, labels=value_label)
+                        # self._metrics['value_loss'].update(preds=value_out, labels=value_label)
 
                     combined_loss.backward()
 
@@ -327,12 +357,12 @@ class TrainerAgent:
                     # show metrics every thousands steps
                     if batch_proc_tmp >= self._batch_steps:
 
-                        #if k_steps < self._warmup_k_steps:
-                            # update the learning rate
-                            #self._lr *= k_steps * ((self._lr_first - self._lr_warmup_init) / self._warmup_k_steps) + self._lr_warmup_init #self._lr_drop_fac
-                            #self._trainer.set_learning_rate(self._lr)
-                            #logging.info('Learning rate update: lr = %.5f', self._lr)
-                            #logging.info('=========================================')
+                        # if k_steps < self._warmup_k_steps:
+                        # update the learning rate
+                        # self._lr *= k_steps * ((self._lr_first - self._lr_warmup_init) / self._warmup_k_steps) + self._lr_warmup_init #self._lr_drop_fac
+                        # self._trainer.set_learning_rate(self._lr)
+                        # logging.info('Learning rate update: lr = %.5f', self._lr)
+                        # logging.info('=========================================')
 
                         # log the current learning rate
 
@@ -348,46 +378,62 @@ class TrainerAgent:
                         logging.info("Step %dK/%dK - %dms/step", k_steps, k_steps_end, ms_step)
                         logging.info("-------------------------")
                         logging.debug("Iteration %d/%d", cur_it, self._total_it)
-                        logging.debug('lr: %.7f - momentum: %.7f', lr, momentum)
+                        logging.debug("lr: %.7f - momentum: %.7f", lr, momentum)
 
-                        train_metric_values = evaluate_metrics(self._metrics, train_data, self._net, nb_batches=25, ctx=self._ctx)
+                        train_metric_values = evaluate_metrics(
+                            self._metrics, train_data, self._net, nb_batches=25, ctx=self._ctx
+                        )
 
-                        val_metric_values = evaluate_metrics(self._metrics, self._val_data, self._net, nb_batches=None, ctx=self._ctx)
+                        val_metric_values = evaluate_metrics(
+                            self._metrics, self._val_data, self._net, nb_batches=None, ctx=self._ctx
+                        )
 
-                        #spike_detected = False
-                        #spike_detected = old_val_loss * 1.5 < val_metric_values['loss']
-                        #if np.isnan(val_metric_values['loss']):
+                        # spike_detected = False
+                        # spike_detected = old_val_loss * 1.5 < val_metric_values['loss']
+                        # if np.isnan(val_metric_values['loss']):
                         #    spike_detected = True
 
                         # check for spikes
-                        if self._use_spike_recovery is True and (old_val_loss * self._spike_thresh < val_metric_values['loss'] or np.isnan(val_metric_values['loss'])):
+                        if self._use_spike_recovery is True and (
+                            old_val_loss * self._spike_thresh < val_metric_values["loss"]
+                            or np.isnan(val_metric_values["loss"])
+                        ):
                             nb_spikes += 1
-                            logging.warning('Spike %d/%d occurred - val_loss: %.3f', nb_spikes, self._max_spikes,
-                                            val_metric_values['loss'])
+                            logging.warning(
+                                "Spike %d/%d occurred - val_loss: %.3f",
+                                nb_spikes,
+                                self._max_spikes,
+                                val_metric_values["loss"],
+                            )
                             if nb_spikes >= self._max_spikes:
 
-                                val_loss = val_metric_values['loss']
-                                val_p_acc = val_metric_values['policy_acc']
+                                val_loss = val_metric_values["loss"]
+                                val_p_acc = val_metric_values["policy_acc"]
 
-                                logging.debug('The maximum number of spikes has been reached. Stop training.')
+                                logging.debug("The maximum number of spikes has been reached. Stop training.")
                                 # finally stop training because the number of lr drops has been achieved
                                 print()
-                                print('Elapsed time for training(hh:mm:ss): ' + str(
-                                    datetime.timedelta(seconds=round(time() - t_s))))
+                                print(
+                                    "Elapsed time for training(hh:mm:ss): "
+                                    + str(datetime.timedelta(seconds=round(time() - t_s)))
+                                )
 
                                 if self._log_metrics_to_tensorboard is True:
                                     self.sw.close()
 
                                 return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)
 
-                            logging.debug('Recover to latest checkpoint')
+                            logging.debug("Recover to latest checkpoint")
                             # ## Load the best model once again
                             model_path = "./weights/model-%.5f-%.3f-%04d.params" % (
-                                val_loss_best, val_p_acc_best, k_steps_best)
-                            logging.debug('load current best model:%s' % model_path)
+                                val_loss_best,
+                                val_p_acc_best,
+                                k_steps_best,
+                            )
+                            logging.debug("load current best model:%s" % model_path)
                             self._net.load_parameters(model_path, ctx=self._ctx)
                             k_steps = k_steps_best
-                            logging.debug('k_step is back at %d', k_steps_best)
+                            logging.debug("k_step is back at %d", k_steps_best)
 
                             # print the elapsed time
                             t_delta = time() - t_s_steps
@@ -397,25 +443,25 @@ class TrainerAgent:
                         else:
 
                             # update the val_loss_value to compare with using spike recovery
-                            old_val_loss = val_metric_values['loss']
+                            old_val_loss = val_metric_values["loss"]
 
                             # log the metric values to tensorboard
-                            self._log_metrics(train_metric_values, global_step=k_steps, prefix='train_')
-                            self._log_metrics(val_metric_values, global_step=k_steps, prefix='val_')
+                            self._log_metrics(train_metric_values, global_step=k_steps, prefix="train_")
+                            self._log_metrics(val_metric_values, global_step=k_steps, prefix="val_")
 
                             if self._export_grad_histograms is True:
                                 grads = []
                                 # logging the gradients of parameters for checking convergence
                                 for i_p, name in enumerate(self._param_names):
-                                    if 'bn' not in name and 'batch' not in name:
+                                    if "bn" not in name and "batch" not in name:
                                         grads.append(self._params[name].grad())
                                         self.sw.add_histogram(tag=name, values=grads[-1], global_step=k_steps, bins=20)
 
                             # check if a new checkpoint shall be created
-                            if val_loss_best is None or val_metric_values['loss'] < val_loss_best:
+                            if val_loss_best is None or val_metric_values["loss"] < val_loss_best:
                                 # update val_loss_best
-                                val_loss_best = val_metric_values['loss']
-                                val_p_acc_best = val_metric_values['policy_acc']
+                                val_loss_best = val_metric_values["loss"]
+                                val_p_acc_best = val_metric_values["policy_acc"]
                                 k_steps_best = k_steps
 
                                 if self._export_weights is True:
@@ -423,7 +469,7 @@ class TrainerAgent:
                                     # the export function saves both the architecture and the weights
                                     self._net.export(prefix, epoch=k_steps_best)
                                     print()
-                                    logging.info('Saved checkpoint to %s-%04d.params' % (prefix, k_steps_best))
+                                    logging.info("Saved checkpoint to %s-%04d.params" % (prefix, k_steps_best))
 
                                 # reset the patience counter
                                 patience_cnt = 0
@@ -434,26 +480,32 @@ class TrainerAgent:
                             t_s_steps = time()
 
                             # log the samples per second metric to tensorbaord
-                            self.sw.add_scalar(tag='samples_per_second',
-                                               value={'hybrid_sync': data.shape[0] * self._batch_steps / t_delta},
-                                               global_step=k_steps)
+                            self.sw.add_scalar(
+                                tag="samples_per_second",
+                                value={"hybrid_sync": data.shape[0] * self._batch_steps / t_delta},
+                                global_step=k_steps,
+                            )
 
                             # log the current learning rate
-                            self.sw.add_scalar(tag='lr', value=self._lr_schedule(cur_it), global_step=k_steps)
+                            self.sw.add_scalar(tag="lr", value=self._lr_schedule(cur_it), global_step=k_steps)
 
                             # log the current momentum value
-                            self.sw.add_scalar(tag='momentum', value=self._momentum_schedule(cur_it), global_step=k_steps)
+                            self.sw.add_scalar(
+                                tag="momentum", value=self._momentum_schedule(cur_it), global_step=k_steps
+                            )
 
                             if cur_it >= self._total_it:
 
-                                val_loss = val_metric_values['loss']
-                                val_p_acc = val_metric_values['policy_acc']
+                                val_loss = val_metric_values["loss"]
+                                val_p_acc = val_metric_values["policy_acc"]
 
-                                logging.debug('The number of given iterations has been reached')
+                                logging.debug("The number of given iterations has been reached")
                                 # finally stop training because the number of lr drops has been achieved
                                 print()
-                                print('Elapsed time for training(hh:mm:ss): ' + str(
-                                    datetime.timedelta(seconds=round(time() - t_s))))
+                                print(
+                                    "Elapsed time for training(hh:mm:ss): "
+                                    + str(datetime.timedelta(seconds=round(time() - t_s)))
+                                )
 
                                 if self._log_metrics_to_tensorboard is True:
                                     self.sw.close()

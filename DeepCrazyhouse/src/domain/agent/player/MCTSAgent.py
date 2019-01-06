@@ -33,6 +33,7 @@ from DeepCrazyhouse.src.domain.crazyhouse.constants import NB_CHANNELS_FULL, BOA
 import math
 
 import cProfile, pstats, io
+
 DTYPE = np.float
 
 
@@ -49,7 +50,7 @@ def profile(fnc):
         retval = fnc(*args, **kwargs)
         pr.disable()
         s = io.StringIO()
-        sortby = 'cumulative'
+        sortby = "cumulative"
         ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
         ps.print_stats()
         print(s.getvalue())
@@ -59,12 +60,29 @@ def profile(fnc):
 
 
 class MCTSAgent(_Agent):
-
-    def __init__(self, nets: [NeuralNetAPI], threads=16, batch_size=8, playouts_empty_pockets=256,
-                 playouts_filled_pockets=512, cpuct=1, dirichlet_epsilon=.25,
-                 dirichlet_alpha=0.2, max_search_depth=15, temperature=0., temperature_moves=4,
-                 q_value_weight=0., virtual_loss=3, verbose=True, min_movetime=100, check_mate_in_one=False,
-                 use_pruning=True, use_oscillating_cpuct=True, use_time_management=True, opening_guard_moves=0):
+    def __init__(
+        self,
+        nets: [NeuralNetAPI],
+        threads=16,
+        batch_size=8,
+        playouts_empty_pockets=256,
+        playouts_filled_pockets=512,
+        cpuct=1,
+        dirichlet_epsilon=0.25,
+        dirichlet_alpha=0.2,
+        max_search_depth=15,
+        temperature=0.0,
+        temperature_moves=4,
+        q_value_weight=0.0,
+        virtual_loss=3,
+        verbose=True,
+        min_movetime=100,
+        check_mate_in_one=False,
+        use_pruning=True,
+        use_oscillating_cpuct=True,
+        use_time_management=True,
+        opening_guard_moves=0,
+    ):
         """
         Constructor of the MCTSAgent.
 
@@ -135,8 +153,10 @@ class MCTSAgent(_Agent):
         self.cpuct_init = cpuct
 
         if cpuct < 0.01 or cpuct > 10:
-            raise Exception('You might have confused centi-cpuct with cpuct.'
-                            'The requested cpuct is beyond reasonable range: cpuct should be around > 0.01 and < 10.')
+            raise Exception(
+                "You might have confused centi-cpuct with cpuct."
+                "The requested cpuct is beyond reasonable range: cpuct should be around > 0.01 and < 10."
+            )
 
         self.cpuct = cpuct
         self.max_search_depth = max_search_depth
@@ -144,13 +164,17 @@ class MCTSAgent(_Agent):
 
         # check for possible issues when giving an illegal batch_size and number of threads combination
         if batch_size > threads:
-            raise Exception('info string The given batch_size %d is higher than the number of threads %d. '
-                            'The maximum legal batch_size is the same as the number of threads (here: %d) '
-                            % (batch_size, threads, threads))
+            raise Exception(
+                "info string The given batch_size %d is higher than the number of threads %d. "
+                "The maximum legal batch_size is the same as the number of threads (here: %d) "
+                % (batch_size, threads, threads)
+            )
 
         if threads % batch_size != 0:
-            raise Exception('You requested an illegal combination of threads %d and batch_size %d.'
-                            ' The batch_size must be a divisor of the number of threads' % (threads, batch_size))
+            raise Exception(
+                "You requested an illegal combination of threads %d and batch_size %d."
+                " The batch_size must be a divisor of the number of threads" % (threads, batch_size)
+            )
 
         self.batch_size = batch_size
 
@@ -190,8 +214,14 @@ class MCTSAgent(_Agent):
 
         # create multiple gpu-access points
         for i, net in enumerate(nets):
-            net_pred_service = NetPredService(pip_endings_external[i*nb_pipes:(i+1)*nb_pipes], net, batch_size, self.batch_state_planes,
-                                                self.batch_value_results, self.batch_policy_results)
+            net_pred_service = NetPredService(
+                pip_endings_external[i * nb_pipes : (i + 1) * nb_pipes],
+                net,
+                batch_size,
+                self.batch_state_planes,
+                self.batch_value_results,
+                self.batch_policy_results,
+            )
             self.net_pred_services.append(net_pred_service)
 
         self.transposition_table = collections.Counter()
@@ -227,18 +257,20 @@ class MCTSAgent(_Agent):
 
         # consistency check
         if len(legal_moves) == 0:
-            raise Exception('The given board state has no legal move available')
+            raise Exception("The given board state has no legal move available")
 
         # check first if the the current tree can be reused
         key = state.get_transposition_key() + (state.get_fullmove_number(),)
 
         if self.use_pruning is False and key in self.node_lookup:
-        #if key in self.node_lookup:
+            # if key in self.node_lookup:
 
             self.root_node = self.node_lookup[key]
 
-            logging.debug('Reuse the search tree. Number of nodes in search tree: %d',
-                          self.root_node.nb_total_expanded_child_nodes)
+            logging.debug(
+                "Reuse the search tree. Number of nodes in search tree: %d",
+                self.root_node.nb_total_expanded_child_nodes,
+            )
             self.total_nodes_pre_search = deepcopy(self.root_node.n_sum)
 
             # reset potential good nodes for the root
@@ -266,22 +298,21 @@ class MCTSAgent(_Agent):
                 self._expand_root_node_multiple_moves(state, legal_moves)
 
             # opening guard
-            if state.get_fullmove_number() <= self.opening_guard_moves: #100: #7: #10:
+            if state.get_fullmove_number() <= self.opening_guard_moves:  # 100: #7: #10:
                 self.root_node.q[self.root_node.p < 5e-2] = -9999
-            #elif len(legal_moves) > 50:
+            # elif len(legal_moves) > 50:
             #    self.root_node.q[self.root_node.p < 1e-3] = -9999
 
             # conduct the mcts-search based on the given settings
             max_depth_reached = self._run_mcts_search(state)
 
             t_elapsed = time() - self.t_start_eval
-            print('info string move overhead is %dms' % (t_elapsed*1000 - self.movetime_ms))
+            print("info string move overhead is %dms" % (t_elapsed * 1000 - self.movetime_ms))
 
-        #xth_n_max = self.get_xth_max(10)
-        #print('xth_n-max: ', xth_n_max)
+        # xth_n_max = self.get_xth_max(10)
+        # print('xth_n-max: ', xth_n_max)
         # receive the policy vector based on the MCTS search
-        p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight) #, xth_n_max=xth_n_max, is_root=True)
-
+        p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
 
         # experimental
         """
@@ -323,27 +354,27 @@ class MCTSAgent(_Agent):
             p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight) #, xth_n_max=xth_n_max, is_root=True)
         """
 
-        #max_n = self.root_node.n.max()
-        #latest[self.root_node.n < max_n / 2] = -1
-        #latest += 1
-        #latest /= sum(latest)
-        #if latest.max() > 0:
+        # max_n = self.root_node.n.max()
+        # latest[self.root_node.n < max_n / 2] = -1
+        # latest += 1
+        # latest /= sum(latest)
+        # if latest.max() > 0:
         #    p_vec_small[latest < 0] = 0
 
-        #p_vec_small = p_vec_small + latest
-        #p_vec_small[p_vec_small < 0] = 0
-        #p_vec_small[p_vec_small > 1] = 1
+        # p_vec_small = p_vec_small + latest
+        # p_vec_small[p_vec_small < 0] = 0
+        # p_vec_small[p_vec_small > 1] = 1
 
-        #p_vec_small /= sum(p_vec_small)
+        # p_vec_small /= sum(p_vec_small)
 
-        #if self.use_pruning is False:
+        # if self.use_pruning is False:
         # store the current root in the lookup table
         self.node_lookup[key] = self.root_node
 
         # select the q-value according to the mcts best child value
         best_child_idx = p_vec_small.argmax()
         value = self.root_node.q[best_child_idx]
-        #value = orig_q[best_child_idx]
+        # value = orig_q[best_child_idx]
 
         lst_best_moves, _ = self.get_calculated_line()
         str_moves = self._mv_list_to_str(lst_best_moves)
@@ -354,25 +385,25 @@ class MCTSAgent(_Agent):
         time_e = time() - self.t_start_eval
 
         if len(legal_moves) != len(p_vec_small):
-            raise Exception('Legal move list %s with length %s is uncompatible to policy vector %s'
-                             ' with shape %s for board state %s and nodes legal move list: %s' %
-                             (legal_moves, len(legal_moves),
-                                p_vec_small, p_vec_small.shape, state,
-                                self.root_node.legal_moves))
+            raise Exception(
+                "Legal move list %s with length %s is uncompatible to policy vector %s"
+                " with shape %s for board state %s and nodes legal move list: %s"
+                % (legal_moves, len(legal_moves), p_vec_small, p_vec_small.shape, state, self.root_node.legal_moves)
+            )
 
         # define the remaining return variables
         cp = value_to_centipawn(value)
         depth = max_depth_reached
         nodes = node_searched
-        time_elapsed_s = time_e*1000
-        nps = node_searched/time_e
+        time_elapsed_s = time_e * 1000
+        nps = node_searched / time_e
         pv = str_moves
 
         # print out the score as a debug message if verbose it set to true
         # the file crazyara.py will print the chosen line to the std output
         if self.verbose is True:
             score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (cp, depth, nodes, time_elapsed_s, nps, pv)
-            logging.info('info string %s' % score)
+            logging.info("info string %s" % score)
 
         return value, legal_moves, p_vec_small, cp, depth, nodes, time_elapsed_s, nps, pv
 
@@ -399,7 +430,7 @@ class MCTSAgent(_Agent):
         if self.check_mate_in_one is True:
             str_legal_moves = str(state.get_legal_moves())
         else:
-            str_legal_moves = ''
+            str_legal_moves = ""
 
         # create a new root node
         self.root_node = Node(value, p_vec_small, legal_moves, str_legal_moves, is_leaf, clip_low_visit=False)
@@ -441,8 +472,10 @@ class MCTSAgent(_Agent):
                 p_vec_small_child = None
 
             # check if you can claim a draw - its assumed that the draw is always claimed
-            elif self.can_claim_threefold_repetition(state.get_transposition_key(), [0]) or\
-                    state.get_pythonchess_board().can_claim_fifty_moves() is True:
+            elif (
+                self.can_claim_threefold_repetition(state.get_transposition_key(), [0])
+                or state.get_pythonchess_board().can_claim_fifty_moves() is True
+            ):
                 value = 0
                 is_leaf = True
                 legal_moves_child = []
@@ -456,12 +489,12 @@ class MCTSAgent(_Agent):
                 [value, policy_vec] = self.nets[0].predict_single(state_planes)
 
                 # extract a sparse policy vector with normalized probabilities
-                p_vec_small_child = get_probs_of_move_list(policy_vec, legal_moves_child,
-                                                           state_child.is_white_to_move())
+                p_vec_small_child = get_probs_of_move_list(
+                    policy_vec, legal_moves_child, state_child.is_white_to_move()
+                )
 
             # create a new child node
-            child_node = Node(value, p_vec_small_child, legal_moves_child, str(state_child.get_legal_moves()),
-                              is_leaf)
+            child_node = Node(value, p_vec_small_child, legal_moves_child, str(state_child.get_legal_moves()), is_leaf)
 
             # connect the child to the root
             self.root_node.child_nodes[0] = child_node
@@ -486,8 +519,7 @@ class MCTSAgent(_Agent):
 
         # apply dirichlet noise to the prior probabilities in order to ensure
         #  that every move can possibly be visited
-        self.root_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon,
-                                                             alpha=self.dirichlet_alpha)
+        self.root_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon, alpha=self.dirichlet_alpha)
 
         # store what depth has been reached at maximum in the current search tree
         # default is 1, in case only 1 move is available
@@ -500,19 +532,20 @@ class MCTSAgent(_Agent):
             nb_playouts = self.nb_playouts_empty_pockets
         else:
             nb_playouts = self.nb_playouts_filled_pockets
-            #self.temperature_current = 0
+            # self.temperature_current = 0
 
-        #if self.root_node.v > 0.65:
+        # if self.root_node.v > 0.65:
         #    fac = 0.1
-        #else:
+        # else:
         #    fac = 0.02 #2
         # iterate through all children and add dirichlet if there exists any
         for child_node in self.root_node.child_nodes:
             if child_node is not None:
                 # add dirichlet noise to a the child nodes of the root node
-                child_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon * 0.05, #02,
-                                                                 alpha=self.dirichlet_alpha)
-                #child_node.q[child_node.q < 0] = child_node.q.max() - 0.25
+                child_node.apply_dirichlet_noise_to_prior_policy(
+                    epsilon=self.dirichlet_epsilon * 0.05, alpha=self.dirichlet_alpha  # 02,
+                )
+                # child_node.q[child_node.q < 0] = child_node.q.max() - 0.25
 
         t_elapsed_ms = 0
 
@@ -527,10 +560,10 @@ class MCTSAgent(_Agent):
         move_update = move_step
         move_update_2 = self.movetime_ms * 0.9
 
-        #nb_playouts_update_step = 4000
-        #nb_playouts_update = 4000
+        # nb_playouts_update_step = 4000
+        # nb_playouts_update = 4000
 
-        #self.hard_clipping = True
+        # self.hard_clipping = True
 
         if self.use_time_management is True:
             time_checked = False
@@ -539,12 +572,12 @@ class MCTSAgent(_Agent):
             time_checked = True
             time_checked_early = True
 
-        consistent_check = False #False
+        consistent_check = False  # False
         consistent_check_playouts = 2048
 
-        while max_depth_reached < self.max_search_depth and \
-                cur_playouts < nb_playouts and \
-                t_elapsed_ms < self.movetime_ms:  # and np.abs(self.root_node.q.mean()) < 0.99:
+        while (
+            max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and t_elapsed_ms < self.movetime_ms
+        ):  # and np.abs(self.root_node.q.mean()) < 0.99:
 
             if self.use_oscillating_cpuct is True:
                 # Test about decreasing CPUCT value
@@ -552,7 +585,7 @@ class MCTSAgent(_Agent):
                     self.cpuct -= 0.01
                 else:
                     self.cpuct += 0.01
-                if self.cpuct < cpuct_init * .5:
+                if self.cpuct < cpuct_init * 0.5:
                     decline = False
                 elif self.cpuct > cpuct_init:
                     decline = True
@@ -576,8 +609,16 @@ class MCTSAgent(_Agent):
             with ThreadPoolExecutor(max_workers=self.threads) as executor:
                 for i in range(self.threads):
                     # calculate the thread id based on the current playout
-                    futures.append(executor.submit(self._run_single_playout, state=state,
-                                                   parent_node=self.root_node, pipe_id=i, depth=1, chosen_nodes=[]))
+                    futures.append(
+                        executor.submit(
+                            self._run_single_playout,
+                            state=state,
+                            parent_node=self.root_node,
+                            pipe_id=i,
+                            depth=1,
+                            chosen_nodes=[],
+                        )
+                    )
 
             cur_playouts += self.threads
             time_show_info = time() - old_time
@@ -592,9 +633,11 @@ class MCTSAgent(_Agent):
                 if self.verbose and time_show_info > 0.5 and i == len(futures) - 1:
                     mv_list = self._create_mv_list(chosen_nodes)
                     str_moves = self._mv_list_to_str(mv_list)
-                    print('info score cp %d depth %d nodes %d pv %s' % (
-                        value_to_centipawn(cur_value), cur_depth, self.root_node.n_sum, str_moves))
-                    logging.debug('Update info')
+                    print(
+                        "info score cp %d depth %d nodes %d pv %s"
+                        % (value_to_centipawn(cur_value), cur_depth, self.root_node.n_sum, str_moves)
+                    )
+                    logging.debug("Update info")
                     old_time = time()
 
             # update the current search time
@@ -602,30 +645,40 @@ class MCTSAgent(_Agent):
             t_elapsed_ms = t_elapsed * 1000
             if time_show_info > 1:
                 node_searched = int(self.root_node.n_sum - self.total_nodes_pre_search)
-                print('info nps %d time %d' % (int((node_searched / t_elapsed)), t_elapsed_ms))
+                print("info nps %d time %d" % (int((node_searched / t_elapsed)), t_elapsed_ms))
 
             if time_checked_early is False and t_elapsed_ms > move_update:
-                #node, _, _, child_idx = self._select_node_based_on_mcts_policy(self.root_node)
+                # node, _, _, child_idx = self._select_node_based_on_mcts_policy(self.root_node)
                 if self.root_node.p.max() > 0.9 and self.root_node.p.argmax() == self.root_node.q.argmax():
                     self.time_buffer_ms += (self.movetime_ms - t_elapsed_ms) * 0.9
-                    print('info early break up')
+                    print("info early break up")
                     break
                 else:
                     time_checked_early = True
 
-            if consistent_check is False and cur_playouts > consistent_check_playouts and self.root_node_prior_policy.max() > np.partition(self.root_node_prior_policy.flatten(), -2)[-2] + 0.3:
-                print('Consistency check')
+            if (
+                consistent_check is False
+                and cur_playouts > consistent_check_playouts
+                and self.root_node_prior_policy.max()
+                > np.partition(self.root_node_prior_policy.flatten(), -2)[-2] + 0.3
+            ):
+                print("Consistency check")
                 if self.root_node.get_mcts_policy(self.q_value_weight).argmax() == self.root_node_prior_policy.argmax():
                     self.time_buffer_ms += (self.movetime_ms - t_elapsed_ms) * 0.9
-                    print('info early break up')
+                    print("info early break up")
                     break
                 else:
                     consistent_check = True
 
-            if self.time_buffer_ms > 2500 and time_checked is False and t_elapsed_ms > move_update_2 and self.root_node.q[self.root_node.n.argmax()] < self.root_node.v + 0.01:
-                print('info increase time')
+            if (
+                self.time_buffer_ms > 2500
+                and time_checked is False
+                and t_elapsed_ms > move_update_2
+                and self.root_node.q[self.root_node.n.argmax()] < self.root_node.v + 0.01
+            ):
+                print("info increase time")
                 time_checked = True
-                #for child_node in self.root_node.child_nodes:
+                # for child_node in self.root_node.child_nodes:
                 #    if child_node is not None:
                 #        # test of adding dirichlet noise to a new node
                 #        child_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon * .5,
@@ -638,7 +691,7 @@ class MCTSAgent(_Agent):
                 if self.time_buffer_ms < 0:
                     self.movetime_ms += self.time_buffer_ms
                     self.time_buffer_ms = 0
-                    #if self.root_node.q[child_idx] < 0:
+                    # if self.root_node.q[child_idx] < 0:
                     #    self.hard_clipping = False
         self.cpuct = cpuct_init
 
@@ -713,7 +766,7 @@ class MCTSAgent(_Agent):
 
             node_varified = False
             if use_tran_table is True and key in self.node_lookup:
-                #if self.check_for_duplicate(transposition_key, chosen_nodes) is False:
+                # if self.check_for_duplicate(transposition_key, chosen_nodes) is False:
                 # get the node from the look-up list
                 node = self.node_lookup[key]
 
@@ -727,15 +780,15 @@ class MCTSAgent(_Agent):
                     # setup a new connection from the parent to the child
                     parent_node.child_nodes[child_idx] = node
 
-                #logging.debug('found key: %s' % state.get_board_fen())
+                # logging.debug('found key: %s' % state.get_board_fen())
                 # get the prior value from the leaf node which has already been expanded
                 value = node.v
 
                 # receive a free available pipe
-                #my_pipe = self.my_pipe_endings[pipe_id]
-                #my_pipe.send(state.get_state_planes())
+                # my_pipe = self.my_pipe_endings[pipe_id]
+                # my_pipe.send(state.get_state_planes())
                 # this pipe waits for the predictions of the network inference service
-                #[_, _] = my_pipe.recv()
+                # [_, _] = my_pipe.recv()
 
                 # get the value from the leaf node (the current function is called recursively)
                 # value, depth, mv_list = self._run_single_playout(state, node, pipe_id, depth+1, mv_list)
@@ -763,37 +816,38 @@ class MCTSAgent(_Agent):
                 # initialize is_leaf by default to false
                 is_leaf = False
 
-
                 # check if the current player has won the game
                 # (we don't need to check for is_lost() because the game is already over
                 #  if the current player checkmated his opponent)
                 is_won = False
-                #is_check = False
+                # is_check = False
 
                 if state.is_check() is True:
                     # enhance checking nodes
-                    #if depth == 1:
+                    # if depth == 1:
                     #    parent_node.p.mean()
                     #    with parent_node.lock:
                     #        if parent_node.p[child_idx] < 0.1:
                     #            parent_node.p[child_idx] = 0.1
-                    #is_check = True
+                    # is_check = True
                     if state.is_won() is True:
                         is_won = True
 
                 if is_won is True:
-                        value = -1
-                        is_leaf = True
-                        legal_moves = []
-                        p_vec_small = None
-                        # establish a mate in one connection in order to stop exploring different alternatives
-                        parent_node.mate_child_idx = child_idx
+                    value = -1
+                    is_leaf = True
+                    legal_moves = []
+                    p_vec_small = None
+                    # establish a mate in one connection in order to stop exploring different alternatives
+                    parent_node.mate_child_idx = child_idx
 
                 # get the value from the leaf node (the current function is called recursively)
                 # check if you can claim a draw - its assumed that the draw is always claimed
-                elif self.can_claim_threefold_repetition(transposition_key, chosen_nodes) or \
-                        state.get_pythonchess_board().can_claim_fifty_moves() is True:
-                    #raise Exception('Threefold!')
+                elif (
+                    self.can_claim_threefold_repetition(transposition_key, chosen_nodes)
+                    or state.get_pythonchess_board().can_claim_fifty_moves() is True
+                ):
+                    # raise Exception('Threefold!')
                     value = 0
                     is_leaf = True
                     legal_moves = []
@@ -803,30 +857,33 @@ class MCTSAgent(_Agent):
                     legal_moves = state.get_legal_moves()
 
                     if len(legal_moves) < 1:
-                        raise Exception('No legal move is available for state: %s' % state)
+                        raise Exception("No legal move is available for state: %s" % state)
 
                     # extract a sparse policy vector with normalized probabilities
                     try:
-                        p_vec_small = get_probs_of_move_list(policy_vec, legal_moves,
-                                                             is_white_to_move=state.is_white_to_move(), normalize=True)
+                        p_vec_small = get_probs_of_move_list(
+                            policy_vec, legal_moves, is_white_to_move=state.is_white_to_move(), normalize=True
+                        )
 
                     except KeyError:
-                        raise Exception('Key Error for state: %s' % state)
+                        raise Exception("Key Error for state: %s" % state)
 
-                #if state.get_board_fen() == 'r1b3k1/ppq2pP1/3n1Ppp/4Q2N/4B3/P1P3bP/2P1nPPr/4rB1K/PRPNp w - - 0 36':
+                # if state.get_board_fen() == 'r1b3k1/ppq2pP1/3n1Ppp/4Q2N/4B3/P1P3bP/2P1nPPr/4rB1K/PRPNp w - - 0 36':
                 #    print('found it! > is won %d' % is_won)
 
                 # convert all legal moves to a string if the option check_mate_in_one was enabled
                 if self.check_mate_in_one is True:
                     str_legal_moves = str(state.get_legal_moves())
                 else:
-                    str_legal_moves = ''
+                    str_legal_moves = ""
 
                 # clip the visit nodes for all nodes in the search tree except the director opp. move
                 clip_low_visit = self.use_pruning and depth != 1
 
                 # create a new node
-                new_node = Node(value, p_vec_small, legal_moves, str_legal_moves, is_leaf, transposition_key, clip_low_visit)
+                new_node = Node(
+                    value, p_vec_small, legal_moves, str_legal_moves, is_leaf, transposition_key, clip_low_visit
+                )
 
                 if depth == 1:
 
@@ -837,17 +894,19 @@ class MCTSAgent(_Agent):
                                 value = 99
 
                     if parent_node.v > 0.65:  # and state.are_pocket_empty(): #and pipe_id == 0:
-                    # test of adding dirichlet noise to a new node
+                        # test of adding dirichlet noise to a new node
                         fac = 0.25
                         if len(parent_node.legal_moves) < 20:
                             fac *= 5
-                        new_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon*fac,
-                                                                       alpha=self.dirichlet_alpha)
+                        new_node.apply_dirichlet_noise_to_prior_policy(
+                            epsilon=self.dirichlet_epsilon * fac, alpha=self.dirichlet_alpha
+                        )
 
                     if value < 0:  # and state.are_pocket_empty(): #and pipe_id == 0:
                         # test of adding dirichlet noise to a new node
-                        new_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon * .02,
-                                                                       alpha=self.dirichlet_alpha)
+                        new_node.apply_dirichlet_noise_to_prior_policy(
+                            epsilon=self.dirichlet_epsilon * 0.02, alpha=self.dirichlet_alpha
+                        )
 
                 if self.use_pruning is False:
                     # include a reference to the new node in the look-up table
@@ -878,14 +937,13 @@ class MCTSAgent(_Agent):
         # iterate over all accessed nodes during the current search of the thread and check for same transposition key
         for node_idx in chosen_nodes[1:-1]:
             if node.transposition_key == transposition_key:
-                #print('DUPLICATE CHECK = TRUE! ')
+                # print('DUPLICATE CHECK = TRUE! ')
                 return True
             node = node.child_nodes[node_idx]
             if node is None:
                 break
 
         return False
-
 
     def can_claim_threefold_repetition(self, transposition_key, chosen_nodes):
         """
@@ -937,8 +995,7 @@ class MCTSAgent(_Agent):
                 pb_c_base = 19652
                 pb_c_init = self.cpuct
 
-                cpuct = math.log((parent_node.n_sum + pb_c_base + 1) /
-                                pb_c_base) + pb_c_init
+                cpuct = math.log((parent_node.n_sum + pb_c_base + 1) / pb_c_base) + pb_c_init
             else:
                 cpuct = self.cpuct
 
@@ -946,9 +1003,9 @@ class MCTSAgent(_Agent):
             # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
             u = cpuct * parent_node.p * (np.sqrt(parent_node.n_sum) / (1 + parent_node.n))
 
-            #if depth == 1 and self.hard_clipping is True and self.use_pruning is True: # and id <= (self.threads//2+1): #and id % 2 != 0:
+            # if depth == 1 and self.hard_clipping is True and self.use_pruning is True: # and id <= (self.threads//2+1): #and id % 2 != 0:
             #    u[parent_node.thresh_idcs_root] = -9999 #1
-            #if self.use_pruning is True and depth >= 2:  # and depth >= 2:  and id % 3 != 0:
+            # if self.use_pruning is True and depth >= 2:  # and depth >= 2:  and id % 3 != 0:
             #    u[parent_node.thresh_idcs] = -9999
 
             child_idx = (parent_node.q + u).argmax()
@@ -1012,16 +1069,16 @@ class MCTSAgent(_Agent):
 
         indices = []
         for i in range(self.root_node.nb_direct_child_nodes):
-            if self.root_node.n[i] >= self.root_node.n.max() * 0.33:  #i == second_max: # #second_max:
+            if self.root_node.n[i] >= self.root_node.n.max() * 0.33:  # i == second_max: # #second_max:
                 node = self.root_node.child_nodes[i]
-                print(self.root_node.legal_moves[i].uci(), end=' ')
+                print(self.root_node.legal_moves[i].uci(), end=" ")
                 turn = 1
                 final_node = node
                 move = self.root_node.legal_moves[i]
 
                 while node is not None and node.is_leaf is False and node.n_sum > 3:
                     final_node = node
-                    print(move.uci() + ' ', end='')
+                    print(move.uci() + " ", end="")
                     node, move, _, _ = self._select_node_based_on_mcts_policy(node)
                     turn *= -1
 
@@ -1040,7 +1097,7 @@ class MCTSAgent(_Agent):
         """
 
         if self.root_node is None:
-            logging.warning('You must run an evaluation first in order to get the calculated line')
+            logging.warning("You must run an evaluation first in order to get the calculated line")
 
         lst_best_moves = []
         lst_nb_visits = []

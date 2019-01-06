@@ -13,34 +13,39 @@ from DeepCrazyhouse.src.domain.crazyhouse.input_representation import NB_CHANNEL
 
 
 class NeuralNetAPI:
-
-    def __init__(self, ctx='cpu', batch_size=1):
+    def __init__(self, ctx="cpu", batch_size=1):
 
         self.batch_size = batch_size
 
-        if os.path.isdir(main_config['model_architecture_dir']) is False:
-            raise Exception('The given model_architecture_dir at: ' + main_config['model_architecture_dir'] + " wasn't found.")
-        if os.path.isdir(main_config['model_weights_dir']) is False:
-            raise Exception('The given model_weights_dir at: ' + main_config['model_weights_dir'] + " wasn't found.")
+        if os.path.isdir(main_config["model_architecture_dir"]) is False:
+            raise Exception(
+                "The given model_architecture_dir at: " + main_config["model_architecture_dir"] + " wasn't found."
+            )
+        if os.path.isdir(main_config["model_weights_dir"]) is False:
+            raise Exception("The given model_weights_dir at: " + main_config["model_weights_dir"] + " wasn't found.")
 
-        self.symbol_path = glob.glob(main_config['model_architecture_dir'] + '*')[0]
-        self.params_path = glob.glob(main_config['model_weights_dir'] + '*')[0]
+        self.symbol_path = glob.glob(main_config["model_architecture_dir"] + "*")[0]
+        self.params_path = glob.glob(main_config["model_weights_dir"] + "*")[0]
 
         # make sure the needed files have been found
-        if self.symbol_path is None or '.json' not in self.symbol_path:
-            raise Exception('No symbol file (.json) was found in your given model_architecture_dir: ' +
-                            main_config["model_architecture_dir"] +
-                            '. Please make sure that the path has a "/" at the end of the path.')
-        if self.params_path is None or '.params' not in self.params_path:
-            raise Exception('No params file (.params) was found in your given model_weights_dir: ' +
-                            main_config["model_weights_dir"] +
-                            '. Please make sure that the path has a "/" at the end of the path.')
+        if self.symbol_path is None or ".json" not in self.symbol_path:
+            raise Exception(
+                "No symbol file (.json) was found in your given model_architecture_dir: "
+                + main_config["model_architecture_dir"]
+                + '. Please make sure that the path has a "/" at the end of the path.'
+            )
+        if self.params_path is None or ".params" not in self.params_path:
+            raise Exception(
+                "No params file (.params) was found in your given model_weights_dir: "
+                + main_config["model_weights_dir"]
+                + '. Please make sure that the path has a "/" at the end of the path.'
+            )
 
-        print('self.symbol_path:', self.symbol_path)
-        print('self.params_path:', self.params_path)
+        print("self.symbol_path:", self.symbol_path)
+        print("self.params_path:", self.params_path)
 
         # construct the model name based on the parameter file
-        self.model_name = self.params_path.split('/')[-1].replace('.params', '')
+        self.model_name = self.params_path.split("/")[-1].replace(".params", "")
 
         sym = mx.sym.load(self.symbol_path)
         # https://github.com/apache/incubator-mxnet/issues/6951
@@ -48,22 +53,22 @@ class NeuralNetAPI:
         arg_params = {}
         aux_params = {}
         for k, v in save_dict.items():
-            tp, name = k.split(':', 1)
-            if tp == 'arg':
+            tp, name = k.split(":", 1)
+            if tp == "arg":
                 arg_params[name] = v
-            if tp == 'aux':
+            if tp == "aux":
                 aux_params[name] = v
 
         # set the context on CPU, switch to GPU if there is one available
-        if ctx == 'cpu':
+        if ctx == "cpu":
             self.ctx = mx.cpu()
-        elif ctx == 'gpu':
+        elif ctx == "gpu":
             self.ctx = mx.gpu()
         else:
             raise Exception("Unavailable ctx mode given %s. You must either select 'cpu' or 'gpu'" % ctx)
 
         # construct a net in gluon style
-        self.net = gluon.nn.SymbolBlock(outputs=sym, inputs=mx.sym.var('data'))
+        self.net = gluon.nn.SymbolBlock(outputs=sym, inputs=mx.sym.var("data"))
         # Set the params
         net_params = self.net.collect_params()
         for param in arg_params:
@@ -74,14 +79,22 @@ class NeuralNetAPI:
                 net_params[param]._load_init(aux_params[param], ctx=self.ctx)
 
         # define the executor object which is used for inference
-        self.executor = sym.simple_bind(ctx=self.ctx, data=(batch_size, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
-                                        grad_req='null', force_rebind=True)
+        self.executor = sym.simple_bind(
+            ctx=self.ctx,
+            data=(batch_size, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
+            grad_req="null",
+            force_rebind=True,
+        )
         self.executor.copy_params_from(arg_params, aux_params)
 
         self.executors = []
         for i in range(batch_size):
-            executor = sym.simple_bind(ctx=self.ctx, data=(i+1, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
-                                            grad_req='null', force_rebind=True)
+            executor = sym.simple_bind(
+                ctx=self.ctx,
+                data=(i + 1, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
+                grad_req="null",
+                force_rebind=True,
+            )
             executor.copy_params_from(arg_params, aux_params)
             self.executors.append(executor)
 

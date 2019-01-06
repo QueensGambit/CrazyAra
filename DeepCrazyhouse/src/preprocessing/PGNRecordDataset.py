@@ -23,7 +23,6 @@ def __getitem__(self, idx):
 
 
 class PGNRecordDataset(dataset.Dataset):
-
     def __init__(self, dataset_type, input_shape, normalize=True):
         """
         Constructor of the PGNRecordDataset class
@@ -35,18 +34,19 @@ class PGNRecordDataset(dataset.Dataset):
 
         # make sure that correct dataset_type has been selected
         # note that dataset type is stored in a folder with its time stamp
-        dataset_types = ['train', 'val', 'test', 'mate_in_one']
-        if dataset_type not in ['train', 'val', 'test', 'mate_in_one']:
-            raise Exception('Invalid dataset type "%s" given. It must be one of those: %s'
-                            % (dataset_type, dataset_types))
+        dataset_types = ["train", "val", "test", "mate_in_one"]
+        if dataset_type not in ["train", "val", "test", "mate_in_one"]:
+            raise Exception(
+                'Invalid dataset type "%s" given. It must be one of those: %s' % (dataset_type, dataset_types)
+            )
 
-        filename = main_config['rec_dir'] + dataset_type + '.rec'
+        filename = main_config["rec_dir"] + dataset_type + ".rec"
 
-        self.idx_file = os.path.splitext(filename)[0] + '.idx'
+        self.idx_file = os.path.splitext(filename)[0] + ".idx"
         self.filename = filename
 
-        #super(PGNRecordDataset, self).__init__(filename)
-        self._record = recordio.MXIndexedRecordIO(self.idx_file, self.filename, 'r')
+        # super(PGNRecordDataset, self).__init__(filename)
+        self._record = recordio.MXIndexedRecordIO(self.idx_file, self.filename, "r")
 
         self.input_shape = input_shape
         self.input_shape_flatten = input_shape[0] * input_shape[1] * input_shape[2]
@@ -69,7 +69,7 @@ class PGNRecordDataset(dataset.Dataset):
 
         data = np.frombuffer(buf, dtype=np.int16)
 
-        x = data[:self.input_shape_flatten]
+        x = data[: self.input_shape_flatten]
         x = x.reshape(self.input_shape)
         x = x.astype(np.float32)
 

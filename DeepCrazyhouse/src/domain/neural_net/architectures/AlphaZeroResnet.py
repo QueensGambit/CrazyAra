@@ -91,12 +91,16 @@ class ResidualBlock(HybridBlock):
 
         self.body = HybridSequential()
 
-        self.body.add(Conv2D(channels=channels, kernel_size=(3, 3), padding=(1, 1), use_bias=False, prefix='%s_conv0' % unit_name))
-        self.body.add(BatchNorm(momentum=bn_mom, prefix='%s_bn0' % self.unit_name))
-        self.body.add(Activation(self.act_type, prefix='%s_%s0' % (self.unit_name, self.act_type)))
+        self.body.add(
+            Conv2D(channels=channels, kernel_size=(3, 3), padding=(1, 1), use_bias=False, prefix="%s_conv0" % unit_name)
+        )
+        self.body.add(BatchNorm(momentum=bn_mom, prefix="%s_bn0" % self.unit_name))
+        self.body.add(Activation(self.act_type, prefix="%s_%s0" % (self.unit_name, self.act_type)))
 
-        self.body.add(Conv2D(channels=channels, kernel_size=(3, 3), padding=(1, 1), use_bias=False, prefix='%s_conv1' % unit_name))
-        self.body.add(BatchNorm(momentum=bn_mom, prefix='%s_bn1' % self.unit_name))
+        self.body.add(
+            Conv2D(channels=channels, kernel_size=(3, 3), padding=(1, 1), use_bias=False, prefix="%s_conv1" % unit_name)
+        )
+        self.body.add(BatchNorm(momentum=bn_mom, prefix="%s_bn1" % self.unit_name))
 
     def hybrid_forward(self, F, x):
         """
@@ -108,13 +112,15 @@ class ResidualBlock(HybridBlock):
         """
         shortcut = x
         out = self.body(shortcut)
-        out = F.Activation(shortcut + out, act_type=self.act_type, name='%s_BroadcastAdd_%s' % (self.unit_name, self.act_type))
+        out = F.Activation(
+            shortcut + out, act_type=self.act_type, name="%s_BroadcastAdd_%s" % (self.unit_name, self.act_type)
+        )
 
         return out
 
 
 class _PolicyHeadAlphaZero(HybridBlock):
-    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type='relu'):
+    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu"):
         """
         Definition of the value head proposed by the alpha zero authors
 
@@ -124,9 +130,9 @@ class _PolicyHeadAlphaZero(HybridBlock):
         :param act_type: Activation type to use
         """
 
-        super(_PolicyHeadAlphaZero, self).__init__(prefix=name+'_')
+        super(_PolicyHeadAlphaZero, self).__init__(prefix=name + "_")
 
-        self.body = HybridSequential(prefix='')
+        self.body = HybridSequential(prefix="")
 
         with self.name_scope():
             self.body.add(Conv2D(channels=channels, kernel_size=(1, 1), use_bias=False))
@@ -149,7 +155,7 @@ class _PolicyHeadAlphaZero(HybridBlock):
 
 
 class _ValueHeadAlphaZero(HybridBlock):
-    def __init__(self, name, channels=1, fc0=256, bn_mom=0.9, act_type='relu'):
+    def __init__(self, name, channels=1, fc0=256, bn_mom=0.9, act_type="relu"):
         """
         Definition of the value head proposed by the alpha zero authors
 
@@ -160,9 +166,9 @@ class _ValueHeadAlphaZero(HybridBlock):
         :param act_type: Activation type to use
         """
 
-        super(_ValueHeadAlphaZero, self).__init__(prefix=name+'_')
+        super(_ValueHeadAlphaZero, self).__init__(prefix=name + "_")
 
-        self.body = HybridSequential(prefix='')
+        self.body = HybridSequential(prefix="")
 
         with self.name_scope():
             self.body.add(Conv2D(channels=channels, kernel_size=(1, 1), use_bias=False))
@@ -172,7 +178,7 @@ class _ValueHeadAlphaZero(HybridBlock):
             self.body.add(Dense(units=fc0))
             self.body.add(get_act(act_type))
             self.body.add(Dense(units=1))
-            self.body.add(get_act('tanh'))
+            self.body.add(get_act("tanh"))
 
     def hybrid_forward(self, F, x):
         """
@@ -188,8 +194,7 @@ class _ValueHeadAlphaZero(HybridBlock):
 
 
 class _StemAlphaZero(HybridBlock):
-
-    def __init__(self, name, channels, bn_mom=0.9, act_type='relu'):
+    def __init__(self, name, channels, bn_mom=0.9, act_type="relu"):
         """
         Definition of the stem proposed by the alpha zero authors
 
@@ -199,9 +204,9 @@ class _StemAlphaZero(HybridBlock):
         :param act_type: Activation type to use
         """
 
-        super(_StemAlphaZero, self).__init__(prefix=name+'_')
+        super(_StemAlphaZero, self).__init__(prefix=name + "_")
 
-        self.body = HybridSequential(prefix='')
+        self.body = HybridSequential(prefix="")
 
         with self.name_scope():
             # add all layers to the stem
@@ -223,7 +228,9 @@ class _StemAlphaZero(HybridBlock):
 
 
 class AlphaZeroResnet(HybridBlock):
-    def __init__(self, n_labels=2272, channels=256, num_res_blocks=19, value_fc_size=256,  bn_mom=0.9, act_type='relu', **kwargs):
+    def __init__(
+        self, n_labels=2272, channels=256, num_res_blocks=19, value_fc_size=256, bn_mom=0.9, act_type="relu", **kwargs
+    ):
         """
         Creates the alpha zero gluon net description based on the given parameters.
 
@@ -235,20 +242,20 @@ class AlphaZeroResnet(HybridBlock):
         :return: gluon net description
         """
 
-        super(AlphaZeroResnet, self).__init__(**kwargs, prefix='')
+        super(AlphaZeroResnet, self).__init__(**kwargs, prefix="")
 
-        self.body = HybridSequential(prefix='')
+        self.body = HybridSequential(prefix="")
 
         with self.name_scope():
-            self.body.add(_StemAlphaZero(name='stem', channels=channels, bn_mom=bn_mom, act_type=act_type))
+            self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
 
         for i in range(num_res_blocks):
-            unit_name = 'unit%d' % (i + 1)
+            unit_name = "unit%d" % (i + 1)
             self.body.add(ResidualBlock(channels, bn_mom, act_type, unit_name=unit_name))
 
         # create the two heads which will be used in the hybrid fwd pass
-        self.value_head = _ValueHeadAlphaZero('value', 1, value_fc_size, bn_mom, act_type)
-        self.policy_head = _PolicyHeadAlphaZero('policy', 2, n_labels, bn_mom, act_type)
+        self.value_head = _ValueHeadAlphaZero("value", 1, value_fc_size, bn_mom, act_type)
+        self.policy_head = _PolicyHeadAlphaZero("policy", 2, n_labels, bn_mom, act_type)
 
     def hybrid_forward(self, F, x):
         """

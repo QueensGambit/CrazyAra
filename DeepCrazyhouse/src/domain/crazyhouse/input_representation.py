@@ -92,7 +92,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
             # define the channel by the piecetype (the input representation uses the same ordering as python-chess)
             # we add an offset for the black pieces
             # note that we subtract 1 because in python chess the PAWN has index 1 and not 0
-            channel = (piece_type-1) + z * len(chess.PIECE_TYPES)
+            channel = (piece_type - 1) + z * len(chess.PIECE_TYPES)
             # iterate over the piece mask and receive every position square of it
             for pos in board.pieces(piece_type, color):
                 row, col = get_row_col(pos)
@@ -101,7 +101,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
 
     # (II) Fill in the Repetition Data
     # a game to test out if everything is working correctly is: https://lichess.org/jkItXBWy#73
-    ch = CHANNEL_MAPPING_POS['repetitions']
+    ch = CHANNEL_MAPPING_POS["repetitions"]
 
     # set how often the position has already occurred in the game (default 0 times)
     # this is used to check for claiming the 3 fold repetition rule
@@ -115,7 +115,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
     # iterate over all pieces except the king
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS['prisoners'] + p_type - 1
+        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
         planes_pos[ch, :, :] = board.pockets[chess.WHITE].count(p_type)
         # the prison for black begins 5 channels later
@@ -123,7 +123,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
 
     # (III) Fill in the promoted pieces
     # iterate over all promoted pieces according to the mask and set the according bit
-    ch = CHANNEL_MAPPING_POS['promo']
+    ch = CHANNEL_MAPPING_POS["promo"]
     for pos in chess.SquareSet(board.promoted):
         row, col = get_row_col(pos)
 
@@ -134,7 +134,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
 
     # (III.2) En Passant Square
     # mark the square where an en-passant capture is possible
-    ch = CHANNEL_MAPPING_POS['ep_square']
+    ch = CHANNEL_MAPPING_POS["ep_square"]
     if board.ep_square is not None:
         row, col = get_row_col(board.ep_square)
         planes_pos[ch, row, col] = 1
@@ -142,15 +142,15 @@ def board_to_planes(board, board_occ=0, normalize=True):
     # (IV) Constant Value Inputs
     # (IV.1) Color
     if board_turn == chess.WHITE:
-        planes_const[CHANNEL_MAPPING_CONST['color'], :, :] = 1
+        planes_const[CHANNEL_MAPPING_CONST["color"], :, :] = 1
     # otherwise the mat will remain zero
 
     # (IV.2) Total Move Count
-    planes_const[CHANNEL_MAPPING_CONST['total_mv_cnt'], :, :] = board.fullmove_number
+    planes_const[CHANNEL_MAPPING_CONST["total_mv_cnt"], :, :] = board.fullmove_number
     # alternatively, you could use the half-moves-counter: len(board.move_stack)
 
     # (IV.3) Castling Rights
-    ch = CHANNEL_MAPPING_CONST['castling']
+    ch = CHANNEL_MAPPING_CONST["castling"]
 
     # WHITE
     # check for King Side Castling
@@ -179,7 +179,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
     no_progress_cnt = board.halfmove_clock
 
     # check how often the position has already occurred in the game
-    planes_const[CHANNEL_MAPPING_CONST['no_progress_cnt'], :, :] = no_progress_cnt
+    planes_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] = no_progress_cnt
 
     # (V) Merge the Matrix-Stack
     planes = np.concatenate((planes_pos, planes_const), axis=0)
@@ -191,7 +191,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
 
     if normalize is True:
         planes *= MATRIX_NORMALIZER
-        #planes = normalize_input_planes(planes)
+        # planes = normalize_input_planes(planes)
 
     # return the plane representation of the given board
     return planes
@@ -224,12 +224,15 @@ def planes_to_board(planes, normalized_input=False):
                 if mat_pos[idx, row, col] == 1:
                     # check if the piece was promoted
                     promoted = False
-                    ch = CHANNEL_MAPPING_POS['promo']
-                    if mat_pos[ch, row, col] == 1 or mat_pos[ch+1, row, col] == 1:
+                    ch = CHANNEL_MAPPING_POS["promo"]
+                    if mat_pos[ch, row, col] == 1 or mat_pos[ch + 1, row, col] == 1:
                         promoted = True
 
-                    board.set_piece_at(square=get_board_position_index(row, col),
-                                       piece=chess.Piece.from_symbol(piece), promoted=promoted)
+                    board.set_piece_at(
+                        square=get_board_position_index(row, col),
+                        piece=chess.Piece.from_symbol(piece),
+                        promoted=promoted,
+                    )
 
     # (I) Fill in the Repetition Data
     # check how often the position has already occurred in the game
@@ -243,7 +246,7 @@ def planes_to_board(planes, normalized_input=False):
     # iterate over all pieces except the king
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS['prisoners'] + p_type - 1
+        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
         # the full board is filled with the same value
         # it's sufficient to take only the first value
@@ -259,7 +262,7 @@ def planes_to_board(planes, normalized_input=False):
             board.pockets[chess.WHITE].add(p_type)
 
         # add prisoners for the opponent
-        nb_prisoners = mat_pos[ch+5, 0, 0]
+        nb_prisoners = mat_pos[ch + 5, 0, 0]
         if normalized_input is True:
             nb_prisoners *= MAX_NB_PRISONERS
             nb_prisoners = int(round(nb_prisoners))
@@ -269,7 +272,7 @@ def planes_to_board(planes, normalized_input=False):
 
     # (I.5) En Passant Square
     # mark the square where an en-passant capture is possible
-    ch = CHANNEL_MAPPING_POS['ep_square']
+    ch = CHANNEL_MAPPING_POS["ep_square"]
     ep_square = np.argmax(mat_pos[ch])
     if ep_square != 0:
         # if no entry 'one' exists, index 0 will be returned
@@ -277,7 +280,7 @@ def planes_to_board(planes, normalized_input=False):
 
     # (II) Constant Value Inputs
     # (II.1) Total Move Count
-    ch = CHANNEL_MAPPING_CONST['total_mv_cnt']
+    ch = CHANNEL_MAPPING_CONST["total_mv_cnt"]
     total_mv_cnt = mat_const[ch, 0, 0]
 
     if normalized_input is True:
@@ -287,7 +290,7 @@ def planes_to_board(planes, normalized_input=False):
     board.fullmove_number = total_mv_cnt
 
     # (II.2) Castling Rights
-    ch = CHANNEL_MAPPING_CONST['castling']
+    ch = CHANNEL_MAPPING_CONST["castling"]
 
     # reset the castling_rights for initialization
     board.castling_rights = chess.BB_VOID
@@ -312,7 +315,7 @@ def planes_to_board(planes, normalized_input=False):
         board.castling_rights |= chess.BB_A8
 
     # (II.3) No Progress Count
-    ch = CHANNEL_MAPPING_CONST['no_progress_cnt']
+    ch = CHANNEL_MAPPING_CONST["no_progress_cnt"]
     no_progress_cnt = mat_const[ch, 0, 0]
     if normalized_input is True:
         no_progress_cnt *= MAX_NB_NO_PROGRESS
@@ -321,7 +324,7 @@ def planes_to_board(planes, normalized_input=False):
     board.halfmove_clock = no_progress_cnt
 
     # (II.4) Color
-    ch = CHANNEL_MAPPING_CONST['color']
+    ch = CHANNEL_MAPPING_CONST["color"]
 
     if mat_const[ch, 0, 0] == 1:
         board.board_turn = chess.WHITE

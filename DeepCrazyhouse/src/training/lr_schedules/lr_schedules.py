@@ -16,9 +16,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_schedule(schedule_fn, iterations=1500, ylabel='Learning Rate', ylim=None):
+def plot_schedule(schedule_fn, iterations=1500, ylabel="Learning Rate", ylim=None):
     # Iteration count starting at 1
-    iterations = [i+1 for i in range(iterations)]
+    iterations = [i + 1 for i in range(iterations)]
     lrs = [schedule_fn(i) for i in iterations]
     plt.scatter(iterations, lrs)
     plt.xlabel("Iteration")
@@ -28,7 +28,7 @@ def plot_schedule(schedule_fn, iterations=1500, ylabel='Learning Rate', ylim=Non
     plt.show()
 
 
-class TriangularSchedule():
+class TriangularSchedule:
     def __init__(self, min_lr, max_lr, cycle_length, inc_fraction=0.5):
         """
         min_lr: lower bound for learning rate (float)
@@ -52,7 +52,7 @@ class TriangularSchedule():
         return adjusted_cycle
 
 
-class LinearWarmUp():
+class LinearWarmUp:
     def __init__(self, schedule, start_lr, length):
         """
         schedule: a pre-initialized schedule (e.g. TriangularSchedule(min_lr=0.5, max_lr=2, cycle_length=500))
@@ -72,7 +72,7 @@ class LinearWarmUp():
             return self.schedule(iteration - self.length)
 
 
-class CyclicalSchedule():
+class CyclicalSchedule:
     def __init__(self, schedule_class, cycle_length, cycle_length_decay=1, cycle_magnitude_decay=1, **kwargs):
         """
         schedule_class: class of schedule, expected to take `cycle_length` argument
@@ -101,7 +101,7 @@ class CyclicalSchedule():
         return schedule(cycle_offset) * self.magnitude_decay ** cycle_idx
 
 
-class CosineAnnealingSchedule():
+class CosineAnnealingSchedule:
     def __init__(self, min_lr, max_lr, cycle_length):
         """
         min_lr: lower bound for learning rate (float)
@@ -121,7 +121,7 @@ class CosineAnnealingSchedule():
             return self.min_lr
 
 
-class LinearCoolDown():
+class LinearCoolDown:
     def __init__(self, schedule, finish_lr, start_idx, length):
         """
         schedule: a pre-initialized schedule (e.g. TriangularSchedule(min_lr=0.5, max_lr=2, cycle_length=500))
@@ -146,7 +146,7 @@ class LinearCoolDown():
             return self.finish_lr
 
 
-class OneCycleSchedule():
+class OneCycleSchedule:
     def __init__(self, start_lr, max_lr, cycle_length, cooldown_length=0, finish_lr=None):
         """
         start_lr: lower bound for learning rate in triangular cycle (float)
@@ -168,7 +168,7 @@ class OneCycleSchedule():
         return self.schedule(iteration)
 
 
-class OneCycleMomentumSchedule():
+class OneCycleMomentumSchedule:
     def __init__(self, start_momentum, max_momentum, cycle_length, warmup_length=0, finish_momentum=None):
         """
         start_lr: lower bound for learning rate in triangular cycle (float)
@@ -190,7 +190,7 @@ class OneCycleMomentumSchedule():
         return self.schedule(iteration)
 
 
-class MomentumSchedule():
+class MomentumSchedule:
     def __init__(self, lr_schedule, min_lr, max_lr, min_momentum, max_momentum):
         self.lr_schedule = lr_schedule
         self.max_lr = max_lr

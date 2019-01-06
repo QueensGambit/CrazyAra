@@ -21,6 +21,7 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 # import the Colorer to have a nicer logging printout
 from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
+
 enable_color_logging()
 
 
@@ -51,9 +52,9 @@ def board_single_game(params_inp):
         all_ok = all_ok and cur_ok
 
         if not cur_ok:
-            logging.error('mat_board != board: - idx: %d', i)
-            logging.error('%s -> mat_board.fen', mat_board.fen)
-            logging.error('%s -> board.fen', board.fen)
+            logging.error("mat_board != board: - idx: %d", i)
+            logging.error("%s -> mat_board.fen", mat_board.fen)
+            logging.error("%s -> board.fen", board.fen)
 
         board.push(move)
 
@@ -87,7 +88,7 @@ def moves_single_game(params_inp):
         all_ok = all_ok and cur_ok
 
         if not cur_ok:
-            logging.error('mat_move != move: %s - %s', converted_move, move)
+            logging.error("mat_move != move: %s - %s", converted_move, move)
 
         board.push(move)
 
@@ -98,23 +99,29 @@ class FullRoundTripTests(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(FullRoundTripTests, self).__init__(*args, **kwargs)
 
-        logging.info('loading test dataset...')
+        logging.info("loading test dataset...")
         self._s_idcs_test, self._x_test, self._yv_test, self._yp_test, self._pgn_datasets_test = load_pgn_dataset(
-            dataset_type='test', part_id=0,
-            print_statistics=True, normalize=False,
-            print_parameters=True)
+            dataset_type="test", part_id=0, print_statistics=True, normalize=False, print_parameters=True
+        )
 
-        logging.info('loading test pgn file...')
-        self._pgn_filename = self._pgn_datasets_test['parameters/pgn_name'][0].decode('UTF8')
-        self._batch_size = self._pgn_datasets_test['parameters/batch_size'][0]
+        logging.info("loading test pgn file...")
+        self._pgn_filename = self._pgn_datasets_test["parameters/pgn_name"][0].decode("UTF8")
+        self._batch_size = self._pgn_datasets_test["parameters/batch_size"][0]
 
-        self._min_elo_both = self._pgn_datasets_test['parameters/min_elo_both'][0]
-        self._start_indices = self._pgn_datasets_test['start_indices']
+        self._min_elo_both = self._pgn_datasets_test["parameters/min_elo_both"][0]
+        self._start_indices = self._pgn_datasets_test["start_indices"]
 
-        converter = PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=self._batch_size,
-                                        max_nb_files=1, min_elo_both=self._min_elo_both,
-                                        termination_conditions=["Normal"], log_lvl=logging.DEBUG, compression='lz4',
-                                        clevel=5, dataset_type='test')
+        converter = PGN2PlanesConverter(
+            limit_nb_games_to_analyze=0,
+            nb_games_per_file=self._batch_size,
+            max_nb_files=1,
+            min_elo_both=self._min_elo_both,
+            termination_conditions=["Normal"],
+            log_lvl=logging.DEBUG,
+            compression="lz4",
+            clevel=5,
+            dataset_type="test",
+        )
         self._all_pgn_sel, nb_games_sel, batch_white_won, batch_black_won, batch_draw = converter.filter_pgn()
         print(len(self._all_pgn_sel))
 
@@ -124,18 +131,18 @@ class FullRoundTripTests(unittest.TestCase):
 
         :return:
         """
-        logging.info('start board test...')
-        logging.info('preparing input parameter...')
+        logging.info("start board test...")
+        logging.info("preparing input parameter...")
         # create a param input list which will concatenate the pgn with it's corresponding game index
         params_inp = []
         for i in range(self._batch_size):
             pgn = self._all_pgn_sel[i]
-            if i < self._batch_size-1:
+            if i < self._batch_size - 1:
                 # select all board positions given by the start index to the start index of the next game
-                x_test = self._x_test[self._start_indices[i]:self._start_indices[i+1], :, :, :]
+                x_test = self._x_test[self._start_indices[i] : self._start_indices[i + 1], :, :, :]
             else:
                 # for the last batch only take the remaining items in the vector
-                x_test = self._x_test[self._start_indices[i]:, :, :, :]
+                x_test = self._x_test[self._start_indices[i] :, :, :, :]
 
             start_idx = self._start_indices[i]
 
@@ -144,19 +151,19 @@ class FullRoundTripTests(unittest.TestCase):
         p = Pool()
 
         games_ok = []
-        logging.info('start board test...')
+        logging.info("start board test...")
         for game_ok, start_idx in p.map(board_single_game, params_inp):
             self.assertTrue(game_ok)
             if game_ok is True:
-                logging.debug('Board States - Game StartIdx %d [OK]', start_idx)
+                logging.debug("Board States - Game StartIdx %d [OK]", start_idx)
             else:
-                logging.error('Board States - Game StartIdx %d [NOK]', start_idx)
+                logging.error("Board States - Game StartIdx %d [NOK]", start_idx)
 
             games_ok.append(games_ok)
 
         p.close()
         p.join()
-        logging.info('board test done...')
+        logging.info("board test done...")
 
     def test_moves(self):
         """
@@ -164,16 +171,16 @@ class FullRoundTripTests(unittest.TestCase):
 
         :return:
         """
-        logging.info('start move comparision test...')
-        logging.info('preparing input parameter...')
+        logging.info("start move comparision test...")
+        logging.info("preparing input parameter...")
         # create a param input list which will concatenate the pgn with it's corresponding game index
         params_inp = []
         for i in range(self._batch_size):
             pgn = self._all_pgn_sel[i]
             if i < self._batch_size - 1:
-                yp_test = self._yp_test[self._start_indices[i]:self._start_indices[i + 1], :]
+                yp_test = self._yp_test[self._start_indices[i] : self._start_indices[i + 1], :]
             else:
-                yp_test = self._yp_test[self._start_indices[i]:, :]
+                yp_test = self._yp_test[self._start_indices[i] :, :]
 
             start_idx = self._start_indices[i]
 
@@ -182,20 +189,21 @@ class FullRoundTripTests(unittest.TestCase):
         p = Pool()
 
         games_ok = []
-        logging.info('start board test...')
+        logging.info("start board test...")
         for game_ok, start_idx in p.map(moves_single_game, params_inp):
             self.assertTrue(game_ok)
             if game_ok is True:
-                logging.debug('Moves - Game StartIdx %d [OK]', start_idx)
+                logging.debug("Moves - Game StartIdx %d [OK]", start_idx)
             else:
-                logging.error('Moves - Game StartIdx %d [NOK]', start_idx)
+                logging.error("Moves - Game StartIdx %d [NOK]", start_idx)
 
             games_ok.append(games_ok)
 
         p.close()
         p.join()
-        logging.info('move comparision test done...')
+        logging.info("move comparision test done...")
 
-#t = FullRoundTripTests()
-#t.test_board_states()
-#t.test_moves()
+
+# t = FullRoundTripTests()
+# t.test_board_states()
+# t.test_moves()

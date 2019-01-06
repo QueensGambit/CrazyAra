@@ -23,7 +23,11 @@ from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Activation, Flat
 from mxnet.gluon import HybridBlock
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import *
 from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _SqueezeExcitation
-from DeepCrazyhouse.src.domain.neural_net.architectures.AlphaZeroResnet import _StemAlphaZero, _PolicyHeadAlphaZero, _ValueHeadAlphaZero
+from DeepCrazyhouse.src.domain.neural_net.architectures.AlphaZeroResnet import (
+    _StemAlphaZero,
+    _PolicyHeadAlphaZero,
+    _ValueHeadAlphaZero,
+)
 
 
 class ResidualBlockX(HybridBlock):
@@ -39,11 +43,11 @@ class ResidualBlockX(HybridBlock):
         :param act_type: Activation function to use
         :param unit_name: Unit name of the residual block (only used for description (string))
         """
-        super(ResidualBlockX, self).__init__(unit_name + '_')
+        super(ResidualBlockX, self).__init__(unit_name + "_")
         self.act_type = act_type
         self.unit_name = unit_name
         self.res_scale_fac = res_scale_fac
-        self.body = HybridSequential(prefix='')
+        self.body = HybridSequential(prefix="")
 
         with self.name_scope():
             self.body.add(Conv2D(channels=channels, kernel_size=3, padding=1, use_bias=False))
@@ -55,7 +59,7 @@ class ResidualBlockX(HybridBlock):
 
             if use_se is True:
                 # apply squeeze excitation
-                self.body.add(_SqueezeExcitation('se0', channels, 16, act_type))
+                self.body.add(_SqueezeExcitation("se0", channels, 16, act_type))
 
             self.act0 = get_act(act_type)
 
@@ -89,7 +93,17 @@ class _ResidualBlockXBottleneck(HybridBlock):
     Definition of a residual block without any pooling operation
     """
 
-    def __init__(self, unit_name, cardinality, channels, bn_mom=0.9, act_type='relu', use_se=True, res_scale_fac=0.2, dim_match=True):
+    def __init__(
+        self,
+        unit_name,
+        cardinality,
+        channels,
+        bn_mom=0.9,
+        act_type="relu",
+        use_se=True,
+        res_scale_fac=0.2,
+        dim_match=True,
+    ):
         """
 
         :param channels: Number of channels used in the conv-operations
@@ -97,20 +111,20 @@ class _ResidualBlockXBottleneck(HybridBlock):
         :param act_type: Activation function to use
         :param unit_name: Unit name of the residual block (only used for description (string))
         """
-        super(_ResidualBlockXBottleneck, self).__init__(prefix=unit_name + '_')
+        super(_ResidualBlockXBottleneck, self).__init__(prefix=unit_name + "_")
         self.unit_name = unit_name
         self.res_scale_fac = res_scale_fac
 
         self.use_se = use_se
         self.dim_match = dim_match
-        self.body = HybridSequential(prefix='')
+        self.body = HybridSequential(prefix="")
 
         with self.name_scope():
             self.body.add(get_act(act_type))
-            self.body.add(Conv2D(int(channels//2), kernel_size=1, padding=0, use_bias=False))
+            self.body.add(Conv2D(int(channels // 2), kernel_size=1, padding=0, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
             self.body.add(get_act(act_type))
-            self.body.add(Conv2D(int(channels//2), kernel_size=3, padding=1, groups=cardinality, use_bias=False))
+            self.body.add(Conv2D(int(channels // 2), kernel_size=3, padding=1, groups=cardinality, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
             self.body.add(get_act(act_type))
 
@@ -120,13 +134,13 @@ class _ResidualBlockXBottleneck(HybridBlock):
 
             if use_se is True:
                 # apply squeeze excitation
-                self.body.add(_SqueezeExcitation('se0', channels, 16, act_type))
+                self.body.add(_SqueezeExcitation("se0", channels, 16, act_type))
 
-            self.act0 = get_act(act_type, prefix='%s1' % act_type)
+            self.act0 = get_act(act_type, prefix="%s1" % act_type)
 
             if self.dim_match is False:
-                self.expander = HybridSequential(prefix='')
-                self.expander.add(Conv2D(channels=channels, kernel_size=1, use_bias=False, prefix='expander_conv'))
+                self.expander = HybridSequential(prefix="")
+                self.expander.add(Conv2D(channels=channels, kernel_size=1, use_bias=False, prefix="expander_conv"))
                 self.expander.add(BatchNorm())
 
     def hybrid_forward(self, F, x):
@@ -159,8 +173,7 @@ class _ResidualBlockXBottleneck(HybridBlock):
 
 
 class _StemRise(HybridBlock):
-
-    def __init__(self, name, channels, bn_mom=0.9, act_type='relu', use_se=False):
+    def __init__(self, name, channels, bn_mom=0.9, act_type="relu", use_se=False):
         """
         Definition of the stem proposed by the alpha zero authors
 
@@ -170,9 +183,9 @@ class _StemRise(HybridBlock):
         :param act_type: Activation type to use
         """
 
-        super(_StemRise, self).__init__(prefix=name+'_')
+        super(_StemRise, self).__init__(prefix=name + "_")
 
-        self.body = HybridSequential(prefix='')
+        self.body = HybridSequential(prefix="")
 
         with self.name_scope():
             # add all layers to the stem
@@ -206,7 +219,24 @@ class _StemRise(HybridBlock):
 
 
 class Rise(HybridBlock):
-    def __init__(self, n_labels=2272, channels=256, channels_value_head=8, channels_policy_head=16, nb_res_blocksX=7, nb_res_blocksX_neck=12, cardinality=1, cardinality_neck=2, value_fc_size=256, bn_mom=0.9, act_type='lrelu', use_se=True, res_scale_fac=0.2, use_rise_stem=False, **kwargs):
+    def __init__(
+        self,
+        n_labels=2272,
+        channels=256,
+        channels_value_head=8,
+        channels_policy_head=16,
+        nb_res_blocksX=7,
+        nb_res_blocksX_neck=12,
+        cardinality=1,
+        cardinality_neck=2,
+        value_fc_size=256,
+        bn_mom=0.9,
+        act_type="lrelu",
+        use_se=True,
+        res_scale_fac=0.2,
+        use_rise_stem=False,
+        **kwargs
+    ):
         """
         Creates the alpha zero gluon net description based on the given parameters.
 
@@ -218,38 +248,59 @@ class Rise(HybridBlock):
         :return: gluon net description
         """
 
-        super(Rise, self).__init__(**kwargs, prefix='')
+        super(Rise, self).__init__(**kwargs, prefix="")
 
-        self.body = HybridSequential(prefix='')
+        self.body = HybridSequential(prefix="")
 
         with self.name_scope():
             if use_rise_stem is True:
-                self.body.add(_StemRise(name='stem', channels=channels, bn_mom=bn_mom, act_type=act_type, use_se=False))
+                self.body.add(_StemRise(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type, use_se=False))
             else:
-                self.body.add(_StemAlphaZero(name='stem', channels=channels, bn_mom=bn_mom, act_type=act_type))
+                self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
 
         for i in range(nb_res_blocksX):
-            unit_name = 'unit%d' % i
-            self.body.add(ResidualBlockX(unit_name, cardinality=cardinality, channels=channels, bn_mom=0.9, act_type=act_type, res_scale_fac=res_scale_fac, use_se=False))
+            unit_name = "unit%d" % i
+            self.body.add(
+                ResidualBlockX(
+                    unit_name,
+                    cardinality=cardinality,
+                    channels=channels,
+                    bn_mom=0.9,
+                    act_type=act_type,
+                    res_scale_fac=res_scale_fac,
+                    use_se=False,
+                )
+            )
 
         for i in range(nb_res_blocksX_neck):
-            unit_name = 'unitX%d' % i
+            unit_name = "unitX%d" % i
 
             dim_match = True
 
             # deactivate the SE for the last two blocks
-            if i == nb_res_blocksX_neck-2 or i == nb_res_blocksX_neck-1:
+            if i == nb_res_blocksX_neck - 2 or i == nb_res_blocksX_neck - 1:
                 cur_use_se = False
                 cur_res_scale_fac = res_scale_fac
             else:
                 cur_use_se = use_se
                 cur_res_scale_fac = res_scale_fac
 
-            self.body.add(_ResidualBlockXBottleneck(unit_name, cardinality_neck, channels, dim_match=dim_match, bn_mom=0.9, act_type=act_type, use_se=cur_use_se, res_scale_fac=cur_res_scale_fac))
+            self.body.add(
+                _ResidualBlockXBottleneck(
+                    unit_name,
+                    cardinality_neck,
+                    channels,
+                    dim_match=dim_match,
+                    bn_mom=0.9,
+                    act_type=act_type,
+                    use_se=cur_use_se,
+                    res_scale_fac=cur_res_scale_fac,
+                )
+            )
 
         # create the two heads which will be used in the hybrid fwd pass
-        self.value_head = _ValueHeadAlphaZero('value', channels_value_head, value_fc_size, bn_mom, act_type)
-        self.policy_head = _PolicyHeadAlphaZero('policy', channels_policy_head, n_labels, bn_mom, act_type)
+        self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, bn_mom, act_type)
+        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, bn_mom, act_type)
 
     def hybrid_forward(self, F, x):
         """

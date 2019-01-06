@@ -12,17 +12,16 @@ import chess.variant
 
 
 class _GameState:
-
     def __init__(self, board):
         self.board = board
         self._fen_dic = {}
 
-    def apply_move(self, move: chess.Move): #, remember_state=False):
+    def apply_move(self, move: chess.Move):  # , remember_state=False):
         self.board.push(move)
 
     def get_state_planes(self):
 
-        raise NotImplementedError('get_state_planes() should return board_to_planes(self.board, 0, normalize=True)')
+        raise NotImplementedError("get_state_planes() should return board_to_planes(self.board, 0, normalize=True)")
         return board_to_planes(self.board, 0, normalize=True)
 
     def get_pythonchess_board(self):
@@ -50,7 +49,7 @@ class _GameState:
     def get_board_fen(self):
         # create an identifier string for the board state by dropping the move clock
         return self.board.fen()
-        #return self.board.fen().rsplit(' ', 1)[0]
+        # return self.board.fen().rsplit(' ', 1)[0]
 
     def get_transposition_key(self):
         """

@@ -38,9 +38,18 @@ class PGN2PlanesConverter(object):
     Networks. The representation will be exported in parallel, using compression to a dataset file (e.g. .zip)
     """
 
-    def __init__(self, limit_nb_games_to_analyze=4096, nb_games_per_file=1000,
-                 max_nb_files=2, min_elo_both=1700, termination_conditions=None, compression='lz4', clevel=5,
-                 log_lvl=logging.DEBUG, dataset_type='train'):
+    def __init__(
+        self,
+        limit_nb_games_to_analyze=4096,
+        nb_games_per_file=1000,
+        max_nb_files=2,
+        min_elo_both=1700,
+        termination_conditions=None,
+        compression="lz4",
+        clevel=5,
+        log_lvl=logging.DEBUG,
+        dataset_type="train",
+    ):
         """
         Set the member variables and loads the config file
 
@@ -80,41 +89,43 @@ class PGN2PlanesConverter(object):
         root = logging.getLogger()
         root.setLevel(log_lvl)
 
-        plt.style.use('seaborn-paper')
+        plt.style.use("seaborn-paper")
 
-        logging.info('SCRIPT START')
+        logging.info("SCRIPT START")
 
-        logging.info('reading in config.json file...')
+        logging.info("reading in config.json file...")
 
         # show the contents of the config file
         logging.debug("%s", main_config)
 
-        if dataset_type == 'train':
-            self._import_dir = main_config['pgn_train_dir']
-            self._export_dir = main_config['planes_train_dir']
+        if dataset_type == "train":
+            self._import_dir = main_config["pgn_train_dir"]
+            self._export_dir = main_config["planes_train_dir"]
             self._mate_in_one = False
-        elif dataset_type == 'val':
-            self._import_dir = main_config['pgn_val_dir']
-            self._export_dir = main_config['planes_val_dir']
+        elif dataset_type == "val":
+            self._import_dir = main_config["pgn_val_dir"]
+            self._export_dir = main_config["planes_val_dir"]
             self._mate_in_one = False
-        elif dataset_type == 'test':
-            self._import_dir = main_config['pgn_test_dir']
-            self._export_dir = main_config['planes_test_dir']
+        elif dataset_type == "test":
+            self._import_dir = main_config["pgn_test_dir"]
+            self._export_dir = main_config["planes_test_dir"]
             self._mate_in_one = False
-        elif dataset_type == 'mate_in_one':
-            self._import_dir = main_config['pgn_mate_in_one_dir']
-            self._export_dir = main_config['planes_mate_in_one_dir']
+        elif dataset_type == "mate_in_one":
+            self._import_dir = main_config["pgn_mate_in_one_dir"]
+            self._export_dir = main_config["planes_mate_in_one_dir"]
             self._mate_in_one = True
         else:
-            raise Exception('Invalid dataset type "%s" given. It must be either "train", "val", "test" or "mate_in_one"'
-                            % dataset_type)
+            raise Exception(
+                'Invalid dataset type "%s" given. It must be either "train", "val", "test" or "mate_in_one"'
+                % dataset_type
+            )
 
         # initialize the png_name to the first pgn file in the import directory
         self._pgn_name = os.listdir(self._import_dir)[0]
 
         # include current timestamp in dataset export file
-        timestmp = datetime.datetime.fromtimestamp(time()).strftime('%Y-%m-%d-%H-%M-%S')
-        self._timestmp_dir = self._export_dir + timestmp + '/'
+        timestmp = datetime.datetime.fromtimestamp(time()).strftime("%Y-%m-%d-%H-%M-%S")
+        self._timestmp_dir = self._export_dir + timestmp + "/"
 
         # https://stackoverflow.com/questions/15455048/releasing-memory-in-python
         self._proc = psutil.Process(os.getpid())
@@ -127,16 +138,16 @@ class PGN2PlanesConverter(object):
         :return:
         """
 
-        logging.info('loading pgn file into memory...')
+        logging.info("loading pgn file into memory...")
         # load the pgn file
-        pgn = open(self._import_dir + self._pgn_name, 'r')
+        pgn = open(self._import_dir + self._pgn_name, "r")
 
         # start a subprocess to be memory efficient
         q = Queue()
         p = Process(target=self._filter_pgn_thread, args=(q, pgn))
 
         # filter the according pgns
-        logging.debug('start subprocess')
+        logging.debug("start subprocess")
         p.start()
 
         # receive the return arguments
@@ -147,7 +158,7 @@ class PGN2PlanesConverter(object):
         batch_draw = q.get()
 
         p.join()  # this blocks until the process terminates
-        logging.debug('subprocess finished')
+        logging.debug("subprocess finished")
 
         return all_pgn_sel, nb_games_sel, batch_white_won, batch_black_won, batch_draw
 
@@ -165,9 +176,9 @@ class PGN2PlanesConverter(object):
         """
         # read the pgn content into a string
         content = pgn.read()
-        nb_games = content.count('Crazy')
+        nb_games = content.count("Crazy")
 
-        logging.debug('nb_games: %d', nb_games)
+        logging.debug("nb_games: %d", nb_games)
 
         # split the content for each single game
         all_games = content.split("[Event")
@@ -179,28 +190,28 @@ class PGN2PlanesConverter(object):
         del all_games[0]
 
         if self._limit_nb_games != 0:
-            games = all_games[:self._limit_nb_games]
+            games = all_games[: self._limit_nb_games]
         else:
             games = all_games
 
         for game in games:
 
             # only add game with at least one move played
-            if '1. ' in game:
+            if "1. " in game:
                 # for mate in one make sure the game ended in a checkmate
                 if self._mate_in_one is False:
                     pgns.append(io.StringIO(game))
                 else:
                     # look for '#' as soon as the move history begins
-                    mv_hist_start = game.find('1. ', 0, len(game))
+                    mv_hist_start = game.find("1. ", 0, len(game))
                     # only searching for '#' lead to the problem that one event was called "Crazyhouse Revolution #1"
                     # also some games are annotated and contain # in the evaluation
                     # \S Matches any non-whitespace character; this is equivalent to the class [^ \t\n\r\f\v].
-                    m = re.search(r'\S#', game[mv_hist_start:])
+                    m = re.search(r"\S#", game[mv_hist_start:])
                     if m is not None:
                         pgns.append(io.StringIO(game))
 
-        logging.info('select games based on given conditions...')
+        logging.info("select games based on given conditions...")
         # only select games according to the conditions
 
         all_pgn_sel = []
@@ -219,8 +230,10 @@ class PGN2PlanesConverter(object):
             for offset, headers in chess.pgn.scan_headers(game_pgn_copy):
                 for term_cond in self._termination_conditions:
                     if term_cond in headers["Termination"]:
-                        if int(headers["WhiteElo"]) >= self._min_elo_both and \
-                                int(headers["BlackElo"]) >= self._min_elo_both:
+                        if (
+                            int(headers["WhiteElo"]) >= self._min_elo_both
+                            and int(headers["BlackElo"]) >= self._min_elo_both
+                        ):
                             if headers["Result"] == "1-0":
                                 nb_white_won += 1
                             elif headers["Result"] == "0-1":
@@ -228,7 +241,7 @@ class PGN2PlanesConverter(object):
                             elif headers["Result"] == "1/2-1/2":
                                 nb_draws += 1
                             else:
-                                raise Exception('Illegal Game Result: ', headers["Result"])
+                                raise Exception("Illegal Game Result: ", headers["Result"])
 
                             all_pgn_sel.append(game_pgn)
 
@@ -251,8 +264,13 @@ class PGN2PlanesConverter(object):
 
         nb_games_sel = len(all_pgn_sel)
 
-        logging.debug('Number of selected games: %d [1-0: %d, 0-1: %d, 1/2-1/2: %d]',
-                      nb_games_sel, sum(batch_white_won), sum(batch_black_won), sum(batch_draw))
+        logging.debug(
+            "Number of selected games: %d [1-0: %d, 0-1: %d, 1/2-1/2: %d]",
+            nb_games_sel,
+            sum(batch_white_won),
+            sum(batch_black_won),
+            sum(batch_draw),
+        )
 
         # add the results to the queue
         queue.put(all_pgn_sel)
@@ -291,7 +309,6 @@ class PGN2PlanesConverter(object):
 
         return lst_all_pgn_sel, lst_nb_games_sel, lst_batch_white_won, lst_batch_black_won, lst_batch_draw
 
-
     def convert_all_pgns_to_planes(self):
         """
         Master function which calls convert_pgn_to_planes() for all available pgns in the import directory
@@ -303,7 +320,7 @@ class PGN2PlanesConverter(object):
         for pgn_name in pgns:
             cur_games_exported = self.convert_pgn_to_planes(pgn_name)
             total_games_exported += cur_games_exported
-            logging.info('Total Games Exported: %d', total_games_exported)
+            logging.info("Total Games Exported: %d", total_games_exported)
         return total_games_exported
 
     def convert_pgn_to_planes(self, pgn_name):
@@ -312,10 +329,9 @@ class PGN2PlanesConverter(object):
         :param pgn_name: pgn file to load
         :return:
         """
-        logging.info('PGN-Name: %s', pgn_name)
+        logging.info("PGN-Name: %s", pgn_name)
         q = Queue()
-        p = Process(target=self._convert_pgn_to_planes_thread,
-                    args=(pgn_name, q))
+        p = Process(target=self._convert_pgn_to_planes_thread, args=(pgn_name, q))
         # export one batch of pgn games
         p.start()
         games_exported = q.get()  # receive the return argument from the Queue()
@@ -350,8 +366,13 @@ class PGN2PlanesConverter(object):
 
         game_idx_end = None
         for cur_part in range(max_nb_files):
-            logging.info('PART: %d [1-0: %d, 0-1: %d, 1/2-1/2: %d]',
-                         cur_part, batch_white_won[cur_part], batch_black_won[cur_part], batch_draw[cur_part])
+            logging.info(
+                "PART: %d [1-0: %d, 0-1: %d, 1/2-1/2: %d]",
+                cur_part,
+                batch_white_won[cur_part],
+                batch_black_won[cur_part],
+                batch_draw[cur_part],
+            )
 
             # select only a subset of games to analyze
             game_idx_start = cur_part * self._batch_size
@@ -369,18 +390,20 @@ class PGN2PlanesConverter(object):
             nb_black_wins = batch_black_won[cur_part]
             nb_draws = batch_draw[cur_part]
 
-            logging.debug('processing games: [%d, %d]', game_idx_start, game_idx_end)
+            logging.debug("processing games: [%d, %d]", game_idx_start, game_idx_end)
 
             # We create a new subprocess for each function call to ensure
             #  that not too much memory will get allocated over time
             # https://stackoverflow.com/questions/2046603/is-it-possible-to-run-function-in-a-subprocess-without-threading-or-writing-a-se
-            logging.debug('start subprocess')
-            p = Process(target=self.export_pgn_batch, args=(cur_part, game_idx_start, game_idx_end, pgn_sel,
-                                                            nb_white_wins, nb_black_wins, nb_draws))
+            logging.debug("start subprocess")
+            p = Process(
+                target=self.export_pgn_batch,
+                args=(cur_part, game_idx_start, game_idx_end, pgn_sel, nb_white_wins, nb_black_wins, nb_draws),
+            )
             # export one batch of pgn games
             p.start()
             p.join()  # this blocks until the process terminates
-            logging.debug('subprocess finished')
+            logging.debug("subprocess finished")
 
             # https://stackoverflow.com/questions/15455048/releasing-memory-in-python
             mem_cur = self._proc.memory_info().rss
@@ -388,7 +411,7 @@ class PGN2PlanesConverter(object):
             # pd = lambda x2, x1: 100.0 * (mem_cur - self._mem0) / self._mem0
             logging.debug("memory usage: %0.2f mb", mem_cur / (1024 * 1024))
 
-        logging.info('SCRIPT END')
+        logging.info("SCRIPT END")
 
         # store the return argument in the queue
         queue.put(game_idx_end)
@@ -417,7 +440,7 @@ class PGN2PlanesConverter(object):
 
             params_inp.append((pgn, game_idx, self._mate_in_one))
 
-        logging.info('starting conversion to planes...')
+        logging.info("starting conversion to planes...")
         t_s = time()
         p = Pool()
 
@@ -429,17 +452,17 @@ class PGN2PlanesConverter(object):
 
         if not os.path.exists(self._export_dir):
             os.makedirs(self._export_dir)
-            logging.info('the dataset_export directory was created at: %s', self._export_dir)
+            logging.info("the dataset_export directory was created at: %s", self._export_dir)
 
         # create a directory of the current timestmp
         if not os.path.exists(self._timestmp_dir):
             os.makedirs(self._timestmp_dir)
 
         # http://machinelearninguru.com/deep_learning/data_preparation/hdf5/hdf5.html
-        zarr_path = self._timestmp_dir + self._pgn_name.replace('.pgn', '_' + str(cur_part) + '.zip')
+        zarr_path = self._timestmp_dir + self._pgn_name.replace(".pgn", "_" + str(cur_part) + ".zip")
 
         # open a dataset file and create arrays
-        store = zarr.ZipStore(zarr_path, mode='w')
+        store = zarr.ZipStore(zarr_path, mode="w")
 
         zarr_file = zarr.group(store=store, overwrite=True)
 
@@ -454,9 +477,9 @@ class PGN2PlanesConverter(object):
         p.close()
         p.join()
         t_e = time() - t_s
-        logging.debug('elapsed time: %fs', t_e)
+        logging.debug("elapsed time: %fs", t_e)
         t_mean = t_e / self._batch_size
-        logging.debug('mean time for 1 game: %f ms', t_mean * 1000)
+        logging.debug("mean time for 1 game: %f ms", t_mean * 1000)
         # logging.debug('approx time for whole file (nb_games: %d): %fs', self._nb_games, t_mean * self._nb_games)
 
         # now we can convert the dictionary to a list
@@ -476,93 +499,168 @@ class PGN2PlanesConverter(object):
         y_value = np.concatenate(y_value, axis=0)
         y_policy = np.concatenate(y_policy, axis=0)
 
-        logging.debug('metadata.shape %s', metadata.shape)
-        logging.debug('x.shape %s', x.shape)
-        logging.debug('y_value.shape %s', y_value.shape)
-        logging.debug('y_policy.shape %s', y_policy.shape)
+        logging.debug("metadata.shape %s", metadata.shape)
+        logging.debug("x.shape %s", x.shape)
+        logging.debug("y_value.shape %s", y_value.shape)
+        logging.debug("y_policy.shape %s", y_policy.shape)
 
         # Save the dataset to a file
-        logging.info('saving the dataset to a file...')
+        logging.info("saving the dataset to a file...")
 
         # define the compressor object
         compressor = Blosc(cname=self._compression, clevel=self._clevel, shuffle=Blosc.SHUFFLE)
 
         # export the metadata
-        zarr_file.create_dataset(name='metadata', data=metadata, shape=metadata.shape, dtype=metadata.dtype,
-                                 synchronizer=zarr.ThreadSynchronizer(), compression=compressor)
+        zarr_file.create_dataset(
+            name="metadata",
+            data=metadata,
+            shape=metadata.shape,
+            dtype=metadata.dtype,
+            synchronizer=zarr.ThreadSynchronizer(),
+            compression=compressor,
+        )
 
         # export the images
-        zarr_file.create_dataset(name='x', data=x, shape=x.shape, dtype=np.int16,
-                                 chunks=(128, x.shape[1], x.shape[2], x.shape[3]),
-                                 synchronizer=zarr.ThreadSynchronizer(), compression=compressor)
+        zarr_file.create_dataset(
+            name="x",
+            data=x,
+            shape=x.shape,
+            dtype=np.int16,
+            chunks=(128, x.shape[1], x.shape[2], x.shape[3]),
+            synchronizer=zarr.ThreadSynchronizer(),
+            compression=compressor,
+        )
 
         # create the label arrays and copy the labels data in them
-        zarr_file.create_dataset(name='y_value', shape=y_value.shape, dtype=np.int16, data=y_value,
-                                 synchronizer=zarr.ThreadSynchronizer())
-        zarr_file.create_dataset(name='y_policy', shape=y_policy.shape, dtype=np.int16, data=y_policy,
-                                 chunks=(128, y_policy.shape[1]), synchronizer=zarr.ThreadSynchronizer(),
-                                 compression=compressor)
+        zarr_file.create_dataset(
+            name="y_value", shape=y_value.shape, dtype=np.int16, data=y_value, synchronizer=zarr.ThreadSynchronizer()
+        )
+        zarr_file.create_dataset(
+            name="y_policy",
+            shape=y_policy.shape,
+            dtype=np.int16,
+            data=y_policy,
+            chunks=(128, y_policy.shape[1]),
+            synchronizer=zarr.ThreadSynchronizer(),
+            compression=compressor,
+        )
 
-        zarr_file.create_dataset(name='start_indices', shape=start_indices.shape, dtype=np.int32, data=start_indices,
-                                 synchronizer=zarr.ThreadSynchronizer(), compression=compressor)
+        zarr_file.create_dataset(
+            name="start_indices",
+            shape=start_indices.shape,
+            dtype=np.int32,
+            data=start_indices,
+            synchronizer=zarr.ThreadSynchronizer(),
+            compression=compressor,
+        )
 
         # export the parameter settings and statistics of the file
-        zarr_file.create_group('/parameters')
+        zarr_file.create_group("/parameters")
 
-        zarr_file.create_dataset(name='/parameters/pgn_name', shape=(1,), dtype='S' + str(len(self._pgn_name) + 1),
-                                 data=[self._pgn_name.encode("ascii", "ignore")], compression=compressor)
+        zarr_file.create_dataset(
+            name="/parameters/pgn_name",
+            shape=(1,),
+            dtype="S" + str(len(self._pgn_name) + 1),
+            data=[self._pgn_name.encode("ascii", "ignore")],
+            compression=compressor,
+        )
 
-        zarr_file.create_dataset(name='/parameters/limit_nb_games', data=[self._limit_nb_games], shape=(1,),
-                                 dtype=np.int16,
-                                 compression=compressor)
-        zarr_file.create_dataset(name='/parameters/batch_size', shape=(1,), dtype=np.int16, data=[self._batch_size],
-                                 compression=compressor)
-        zarr_file.create_dataset(name='/parameters/max_nb_files', shape=(1,), dtype=np.int16, data=[self._max_nb_files],
-                                 compression=compressor)
-        zarr_file.create_dataset(name='/parameters/min_elo_both', shape=(1,), dtype=np.int16, data=[self._min_elo_both],
-                                 compression=compressor)
+        zarr_file.create_dataset(
+            name="/parameters/limit_nb_games",
+            data=[self._limit_nb_games],
+            shape=(1,),
+            dtype=np.int16,
+            compression=compressor,
+        )
+        zarr_file.create_dataset(
+            name="/parameters/batch_size", shape=(1,), dtype=np.int16, data=[self._batch_size], compression=compressor
+        )
+        zarr_file.create_dataset(
+            name="/parameters/max_nb_files",
+            shape=(1,),
+            dtype=np.int16,
+            data=[self._max_nb_files],
+            compression=compressor,
+        )
+        zarr_file.create_dataset(
+            name="/parameters/min_elo_both",
+            shape=(1,),
+            dtype=np.int16,
+            data=[self._min_elo_both],
+            compression=compressor,
+        )
         if self._compression is not None:
-            zarr_file.create_dataset('/parameters/compression', shape=(1,), dtype='S' + str(len(self._compression) + 1),
-                                     data=[self._compression.encode("ascii", "ignore")], compression=compressor)
+            zarr_file.create_dataset(
+                "/parameters/compression",
+                shape=(1,),
+                dtype="S" + str(len(self._compression) + 1),
+                data=[self._compression.encode("ascii", "ignore")],
+                compression=compressor,
+            )
         # https://stackoverflow.com/questions/23220513/storing-a-list-of-strings-to-a-hdf5-dataset-from-python
         ascii_list = [n.encode("ascii", "ignore") for n in self._termination_conditions]
         max_length = max(len(s) for s in self._termination_conditions)
-        zarr_file.create_dataset('/parameters/termination_conditions', shape=(1, 1), dtype='S' + str(max_length),
-                                 data=ascii_list, compression=compressor)
+        zarr_file.create_dataset(
+            "/parameters/termination_conditions",
+            shape=(1, 1),
+            dtype="S" + str(max_length),
+            data=ascii_list,
+            compression=compressor,
+        )
 
-        zarr_file.create_group('/statistics')
-        zarr_file.create_dataset('/statistics/number_selected_games', shape=(1,), dtype=np.int16, data=[len(pgn_sel)],
-                                 compression=compressor)
-        zarr_file.create_dataset('/statistics/game_idx_start', shape=(1,), dtype=np.int16, data=[game_idx_start],
-                                 compression=compressor)
-        zarr_file.create_dataset('/statistics/game_idx_end', shape=(1,), dtype=np.int16, data=[game_idx_end],
-                                 compression=compressor)
-        zarr_file.create_dataset('/statistics/white_wins', shape=(1,), dtype=np.int16, data=[nb_white_wins],
-                                 compression=compressor)
-        zarr_file.create_dataset('/statistics/black_wins', shape=(1,), dtype=np.int16, data=[nb_black_wins],
-                                 compression=compressor)
-        zarr_file.create_dataset('/statistics/draws', shape=(1,), dtype=np.int16, data=[nb_draws],
-                                 compression=compressor)
+        zarr_file.create_group("/statistics")
+        zarr_file.create_dataset(
+            "/statistics/number_selected_games", shape=(1,), dtype=np.int16, data=[len(pgn_sel)], compression=compressor
+        )
+        zarr_file.create_dataset(
+            "/statistics/game_idx_start", shape=(1,), dtype=np.int16, data=[game_idx_start], compression=compressor
+        )
+        zarr_file.create_dataset(
+            "/statistics/game_idx_end", shape=(1,), dtype=np.int16, data=[game_idx_end], compression=compressor
+        )
+        zarr_file.create_dataset(
+            "/statistics/white_wins", shape=(1,), dtype=np.int16, data=[nb_white_wins], compression=compressor
+        )
+        zarr_file.create_dataset(
+            "/statistics/black_wins", shape=(1,), dtype=np.int16, data=[nb_black_wins], compression=compressor
+        )
+        zarr_file.create_dataset(
+            "/statistics/draws", shape=(1,), dtype=np.int16, data=[nb_draws], compression=compressor
+        )
 
         store.close()
 
-        logging.debug('dataset was exported to: %s', zarr_path)
+        logging.debug("dataset was exported to: %s", zarr_path)
 
         return True
 
 
 def export_pgn_to_datasetfile():
-    PGN2PlanesConverter(limit_nb_games_to_analyze=10000, nb_games_per_file=1000,
-                        max_nb_files=3, min_elo_both=1700, termination_conditions=["Normal"], log_lvl=logging.DEBUG,
-                        compression='lz4', clevel=5, dataset_type='train').convert_pgn_to_planes(
-        pgn_name="lichess_db_crazyhouse_rated_2016-01.pgn")
+    PGN2PlanesConverter(
+        limit_nb_games_to_analyze=10000,
+        nb_games_per_file=1000,
+        max_nb_files=3,
+        min_elo_both=1700,
+        termination_conditions=["Normal"],
+        log_lvl=logging.DEBUG,
+        compression="lz4",
+        clevel=5,
+        dataset_type="train",
+    ).convert_pgn_to_planes(pgn_name="lichess_db_crazyhouse_rated_2016-01.pgn")
 
 
 def export_mate_in_one_scenarios():
-    PGN2PlanesConverter(limit_nb_games_to_analyze=10024, nb_games_per_file=1000,
-                        max_nb_files=1, min_elo_both=1700, termination_conditions=["Normal"], log_lvl=logging.DEBUG,
-                        compression='lz4', clevel=5, dataset_type='mate_in_one').convert_pgn_to_planes(
-        pgn_name="lichess_db_crazyhouse_rated_2018-04.pgn")
+    PGN2PlanesConverter(
+        limit_nb_games_to_analyze=10024,
+        nb_games_per_file=1000,
+        max_nb_files=1,
+        min_elo_both=1700,
+        termination_conditions=["Normal"],
+        log_lvl=logging.DEBUG,
+        compression="lz4",
+        clevel=5,
+        dataset_type="mate_in_one",
+    ).convert_pgn_to_planes(pgn_name="lichess_db_crazyhouse_rated_2018-04.pgn")
 
 
 if __name__ == "__main__":

@@ -33,15 +33,15 @@ def get_planes_from_pgn(params):
     game = chess.pgn.read_game(pgn)
 
     if game is None:
-        print('game is None!')
+        print("game is None!")
 
     # store the meta-data of the game in a buffer
-    metadata = np.zeros((1, NB_ITEMS_METADATA), dtype='S128')
+    metadata = np.zeros((1, NB_ITEMS_METADATA), dtype="S128")
     row = 0
 
     # add the header to the metadata dictionary for the first game
     if game_idx == 0:
-        metadata = np.zeros((2, NB_ITEMS_METADATA), dtype='S128')
+        metadata = np.zeros((2, NB_ITEMS_METADATA), dtype="S128")
 
         for i, key in enumerate(game.headers):
             metadata[row, i] = key.encode("ascii", "ignore")
@@ -51,7 +51,7 @@ def get_planes_from_pgn(params):
     for i, key in enumerate(game.headers):
         metadata[row, i] = game.headers[key].encode("ascii", "ignore")
         # only save the first 17 metadata attributes
-        if i == NB_ITEMS_METADATA-1:
+        if i == NB_ITEMS_METADATA - 1:
             break
 
     # get the image planes and targets
@@ -92,12 +92,12 @@ def get_planes_from_game(game, mate_in_one=False):
     y_init = 0
 
     # update the y value accordingly
-    if game.headers["Result"] == '1-0':
+    if game.headers["Result"] == "1-0":
         if board.turn == chess.WHITE:
             y_init = 1
         else:
             y_init = -1
-    elif game.headers["Result"] == '0-1':
+    elif game.headers["Result"] == "0-1":
         if board.turn == chess.WHITE:
             y_init = -1
         else:
@@ -120,7 +120,7 @@ def get_planes_from_game(game, mate_in_one=False):
 
         fen = board.fen()
         # remove the halfmove counter & move counter from this fen to make repetitions possible
-        fen = fen[:fen.find(' ') + 2]
+        fen = fen[: fen.find(" ") + 2]
 
         # save the board state to the fen dictionary
         if fen in list(fen_dic.keys()):
@@ -158,11 +158,11 @@ def get_planes_from_game(game, mate_in_one=False):
 
     # check if there has been any moves
     if len(x) > 0 and len(y_value) > 0 and len(y_policy) > 0:
-            x = np.stack(x, axis=0)
-            y_value = np.stack(y_value, axis=0)
-            y_policy = np.stack(y_policy, axis=0)
+        x = np.stack(x, axis=0)
+        y_value = np.stack(y_value, axis=0)
+        y_policy = np.stack(y_policy, axis=0)
     else:
-        print('game.headers:')
+        print("game.headers:")
         print(game.headers)
         raise Exception("The given pgn file's mainline is empty!")
 
