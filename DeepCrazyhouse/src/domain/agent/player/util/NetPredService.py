@@ -6,13 +6,12 @@ Created on 13.10.18
 
 Please describe what the content of this file is about
 """
-
-from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
 from multiprocessing import connection
 from threading import Thread
+from time import time
 import mxnet as mx
 import numpy as np
-from time import time
+from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
 
 
 class NetPredService:

@@ -7,12 +7,11 @@ Created on 14.10.18
 The raw network uses the the single network prediction for it's evaluation.
 No mcts search is being done.
 """
-
-from DeepCrazyhouse.src.domain.agent.player._Agent import _Agent
+from time import time
 from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
 from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+from DeepCrazyhouse.src.domain.agent.player._Agent import _Agent
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
-from time import time
 
 
 class RawNetAgent(_Agent):
