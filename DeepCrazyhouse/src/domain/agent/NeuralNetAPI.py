@@ -9,7 +9,7 @@ from mxnet import gluon
 from multiprocessing import Process, Queue
 from DeepCrazyhouse.configs.main_config import main_config
 import os
-from DeepCrazyhouse.src.domain.crazyhouse.input_representation import NB_CHANNELS_FULL, BOARD_WIDTH, BOARD_HEIGHT
+from DeepCrazyhouse.src.domain.crazyhouse.constants import NB_CHANNELS_FULL, BOARD_WIDTH, BOARD_HEIGHT
 
 
 class NeuralNetAPI:
