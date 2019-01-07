@@ -11,7 +11,6 @@ from threading import Lock
 import chess
 import numpy as np
 from copy import deepcopy
-from collections import deque
 
 QSIZE = 100
 

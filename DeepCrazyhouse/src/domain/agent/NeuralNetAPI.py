@@ -1,12 +1,8 @@
-import logging
 import numpy as np
-import time
-import json
 import glob
-import re
 import mxnet as mx
 from mxnet import gluon
-from multiprocessing import Process, Queue
+from multiprocessing import  Queue
 from DeepCrazyhouse.configs.main_config_sample import main_config
 import os
 from DeepCrazyhouse.src.domain.crazyhouse.constants import NB_CHANNELS_FULL, BOARD_WIDTH, BOARD_HEIGHT

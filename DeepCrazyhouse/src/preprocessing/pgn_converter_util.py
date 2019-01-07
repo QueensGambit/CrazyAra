@@ -7,12 +7,9 @@ Created on 09.06.18
 Converts a given board state defined by a python-chess object to the plane representation which can be learned by a CNN
 """
 
-from collections import deque
-
 import numpy as np
 import chess.pgn
-
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import move_to_policy, mirror_move
+from DeepCrazyhouse.src.domain.crazyhouse.output_representation import move_to_policy
 from DeepCrazyhouse.src.domain.crazyhouse.input_representation import board_to_planes
 
 # constant which defines how many meta data items will be stored in a matrix

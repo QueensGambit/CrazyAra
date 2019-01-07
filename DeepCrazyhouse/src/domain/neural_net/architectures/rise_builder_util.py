@@ -11,16 +11,8 @@ from mxnet.gluon.nn import (
     HybridSequential,
     Conv2D,
     BatchNorm,
-    Activation,
-    Flatten,
     Dense,
     AvgPool2D,
-    MaxPool2D,
-    PReLU,
-    SELU,
-    Swish,
-    LeakyReLU,
-    GlobalAvgPool2D,
 )
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.contrib.nn import HybridConcurrent
