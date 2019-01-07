@@ -6,18 +6,16 @@ Created on 27.09.18
 
 Definition of the main training loop done in keras.
 """
-
+import datetime
 import logging
 import random
 from time import time
-from tqdm import tqdm_notebook
-from DeepCrazyhouse.src.domain.preprocessing.util import load_pgn_dataset
 import mxnet as mx
-from mxnet import gluon
-from mxnet import nd, autograd
-import datetime
-from mxboard import SummaryWriter
+from mxnet import autograd, gluon, nd
 import numpy as np
+from mxboard import SummaryWriter
+from tqdm import tqdm_notebook
+from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
 def acc_sign(y_true, y_pred):

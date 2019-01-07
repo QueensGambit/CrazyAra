@@ -7,29 +7,25 @@ Created on 09.06.18
 Loads the pgn-file and calls the pgn_converter functions to create a plane represenation.
 Multiprocessing is used for loading, computing and saving.
 """
-
+import datetime
+import gc
+import io
+import logging
+import math
+import os
+import re
+from copy import deepcopy
+from multiprocessing import Pool, Process, Queue
+from time import time
 import chess.pgn
 import matplotlib.pyplot as plt
-from time import time
-import io
-from multiprocessing import Process, Pool, Queue
-from copy import deepcopy
-
-from DeepCrazyhouse.src.preprocessing.pgn_converter_util import get_planes_from_pgn
-from DeepCrazyhouse.src.domain.util import get_dic_sorted_by_key
-from DeepCrazyhouse.configs.main_config import main_config
-import math
-
 import numpy as np
-import json
-import logging
-import os
+import psutil
 import zarr
 from numcodecs import Blosc
-import gc
-import psutil
-import datetime
-import re
+from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.src.domain.util import get_dic_sorted_by_key
+from DeepCrazyhouse.src.preprocessing.pgn_converter_util import get_planes_from_pgn
 
 
 class PGN2PlanesConverter(object):

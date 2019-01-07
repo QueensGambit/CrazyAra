@@ -21,14 +21,12 @@ for i in range(3):
 record.close()
 ```
 """
-
-import DeepCrazyhouse.src.runtime.Colorer
-from DeepCrazyhouse.configs.main_config import main_config
-import mxnet as mx
 import logging
-from time import time
 import zlib
 from glob import glob
+from time import time
+import mxnet as mx
+from DeepCrazyhouse.configs.main_config import main_config
 
 
 class Planes2RecConverter:

@@ -1,15 +1,11 @@
-import logging
-import numpy as np
-import time
-import json
 import glob
-import re
+import os
+from multiprocessing import Queue
 import mxnet as mx
 from mxnet import gluon
-from multiprocessing import Process, Queue
+import numpy as np
 from DeepCrazyhouse.configs.main_config import main_config
-import os
-from DeepCrazyhouse.src.domain.crazyhouse.constants import NB_CHANNELS_FULL, BOARD_WIDTH, BOARD_HEIGHT
+from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL
 
 
 class NeuralNetAPI:

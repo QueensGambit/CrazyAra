@@ -6,12 +6,11 @@ Created on 13.10.18
 
 Helper class which stores the statistics of all nodes and in the search tree.
 """
-
+from copy import deepcopy
 from threading import Lock
 import chess
 import numpy as np
-from copy import deepcopy
-from collections import deque
+
 
 QSIZE = 100
 

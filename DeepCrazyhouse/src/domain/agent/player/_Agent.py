@@ -6,10 +6,9 @@ Created on 14.10.18
 
 Please describe what the content of this file is about
 """
-
-from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
-import numpy as np
 from copy import deepcopy
+import numpy as np
+from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
 
 
 class _Agent:

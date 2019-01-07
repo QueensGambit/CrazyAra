@@ -1,12 +1,12 @@
-from flask import Flask, send_from_directory, request
-import chess
 import json
-
-from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
-from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
-from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
-from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
 import logging
+import chess
+from flask import Flask, request, send_from_directory
+from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
+from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
+from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
+
 
 file_lookup = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7}
 rank_lookup = {"1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 6, "8": 7}

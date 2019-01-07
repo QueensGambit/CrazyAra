@@ -7,21 +7,7 @@ Created on 26.09.18
 Please describe what the content of this file is about
 """
 
-from mxnet.gluon.nn import (
-    HybridSequential,
-    Conv2D,
-    BatchNorm,
-    Activation,
-    Flatten,
-    Dense,
-    AvgPool2D,
-    MaxPool2D,
-    PReLU,
-    SELU,
-    Swish,
-    LeakyReLU,
-    GlobalAvgPool2D,
-)
+from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Dense, AvgPool2D
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.contrib.nn import HybridConcurrent
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act

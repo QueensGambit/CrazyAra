@@ -14,25 +14,25 @@ If the evaluation for one move takes too long on your hardware you can decrease 
 For more details and the mathematical equations please take a look at src/domain/agent/README.md as well as the
 official DeepMind-papers.
 """
-
-import numpy as np
-
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
-from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+import collections
+import cProfile
+import io
+import logging
+import math
+import pstats
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from multiprocessing import Pipe
-import logging
+from time import time
+import numpy as np
+from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+from DeepCrazyhouse.src.domain.agent.player._Agent import _Agent
 from DeepCrazyhouse.src.domain.agent.player.util.NetPredService import NetPredService
 from DeepCrazyhouse.src.domain.agent.player.util.Node import Node
-from concurrent.futures import ThreadPoolExecutor
-from time import time
-from DeepCrazyhouse.src.domain.agent.player._Agent import _Agent
+from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
 from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
-import collections
-from DeepCrazyhouse.src.domain.crazyhouse.constants import NB_CHANNELS_FULL, BOARD_WIDTH, BOARD_HEIGHT, NB_LABELS
-import math
+from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
 
-import cProfile, pstats, io
 
 DTYPE = np.float
 

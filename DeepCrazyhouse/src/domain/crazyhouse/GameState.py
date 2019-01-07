@@ -2,8 +2,6 @@ import chess
 from chess.variant import CrazyhouseBoard
 from DeepCrazyhouse.src.domain.crazyhouse.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
-import numpy as np
-import collections
 
 
 class GameState(_GameState):
