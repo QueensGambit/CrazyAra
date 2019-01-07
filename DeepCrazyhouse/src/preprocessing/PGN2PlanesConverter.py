@@ -23,7 +23,7 @@ import numpy as np
 import psutil
 import zarr
 from numcodecs import Blosc
-from DeepCrazyhouse.configs.main_config_sample import main_config
+from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.domain.util import get_dic_sorted_by_key
 from DeepCrazyhouse.src.preprocessing.pgn_converter_util import get_planes_from_pgn
 

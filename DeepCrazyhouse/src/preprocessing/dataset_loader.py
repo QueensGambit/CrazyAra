@@ -11,7 +11,7 @@ import logging
 import chess
 import numpy as np
 import zarr
-from DeepCrazyhouse.configs.main_config_sample import main_config
+from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.domain.crazyhouse.constants import (
     CHANNEL_MAPPING_CONST,
     CHANNEL_MAPPING_POS,

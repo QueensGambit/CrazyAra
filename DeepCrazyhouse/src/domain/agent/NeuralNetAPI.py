@@ -4,7 +4,7 @@ from multiprocessing import Queue
 import mxnet as mx
 from mxnet import gluon
 import numpy as np
-from DeepCrazyhouse.configs.main_config_sample import main_config
+from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL
 
 
