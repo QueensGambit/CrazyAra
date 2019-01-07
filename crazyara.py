@@ -12,7 +12,6 @@ http://wbec-ridderkerk.nl/html/UCIProtocol.html
 from __future__ import print_function
 import sys
 import chess.pgn
-
 import traceback
 import collections
 import numpy as np
