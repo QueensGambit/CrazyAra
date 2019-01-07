@@ -256,7 +256,7 @@ class MCTSAgent(_Agent):
         legal_moves = state.get_legal_moves()
 
         # consistency check
-        if len(legal_moves) == 0:
+        if not legal_moves:
             raise Exception("The given board state has no legal move available")
 
         # check first if the the current tree can be reused
@@ -856,7 +856,7 @@ class MCTSAgent(_Agent):
                     # get the current legal move of its board state
                     legal_moves = state.get_legal_moves()
 
-                    if len(legal_moves) < 1:
+                    if not legal_moves:
                         raise Exception("No legal move is available for state: %s" % state)
 
                     # extract a sparse policy vector with normalized probabilities

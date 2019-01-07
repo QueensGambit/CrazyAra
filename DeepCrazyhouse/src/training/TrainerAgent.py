@@ -283,7 +283,7 @@ class TrainerAgent:
         value_out = None
 
         # safety check to prevent eternal loop
-        if len(self.ordering) == 0:
+        if not self.ordering:
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
         while True:
