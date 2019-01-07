@@ -14,14 +14,11 @@ from time import time
 import io
 from multiprocessing import Process, Pool, Queue
 from copy import deepcopy
-
 from DeepCrazyhouse.src.preprocessing.pgn_converter_util import get_planes_from_pgn
 from DeepCrazyhouse.src.domain.util import get_dic_sorted_by_key
-from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.configs.main_config_sample import main_config
 import math
-
 import numpy as np
-import json
 import logging
 import os
 import zarr

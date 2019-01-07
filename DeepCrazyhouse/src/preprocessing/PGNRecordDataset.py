@@ -7,12 +7,11 @@ Created on 25.09.18
 Utility class to load the rec dataset in the training loop of the CNN
 """
 
-from mxnet.gluon.data.dataset import RecordFileDataset
 import zlib
 from DeepCrazyhouse.src.domain.util import normalize_input_planes
 import numpy as np
 import mxnet as mx
-from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.configs.main_config_sample import main_config
 from mxnet.gluon.data import dataset
 from mxnet.gluon.data.dataset import recordio
 import os

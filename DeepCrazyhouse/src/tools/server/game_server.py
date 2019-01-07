@@ -1,7 +1,6 @@
 from flask import Flask, send_from_directory, request
 import chess
 import json
-
 from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
 from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
 from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent

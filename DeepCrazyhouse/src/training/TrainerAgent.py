@@ -11,7 +11,7 @@ import logging
 import random
 from time import time
 from tqdm import tqdm_notebook
-from DeepCrazyhouse.src.domain.preprocessing.util import load_pgn_dataset
+from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 import mxnet as mx
 from mxnet import gluon
 from mxnet import nd, autograd
