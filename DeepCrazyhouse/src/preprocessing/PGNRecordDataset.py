@@ -10,8 +10,7 @@ import os
 import zlib
 import mxnet as mx
 import numpy as np
-from mxnet.gluon.data import dataset
-from mxnet.gluon.data.dataset import recordio
+from mxnet.gluon.data.dataset import recordio, Dataset
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.domain.util import normalize_input_planes
 
@@ -20,7 +19,7 @@ def __getitem__(self, idx):
     return self._record.read_idx(self._record.keys[idx])
 
 
-class PGNRecordDataset(dataset.Dataset):
+class PGNRecordDataset(Dataset):
     def __init__(self, dataset_type, input_shape, normalize=True):
         """
         Constructor of the PGNRecordDataset class
