@@ -8,14 +8,11 @@ Please describe what the content of this file is about
 """
 
 from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
-from multiprocessing import Barrier, Pipe, connection
-import logging
+from multiprocessing import  connection
 from threading import Thread
 import mxnet as mx
 import numpy as np
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import NB_LABELS, LABELS
 from time import time
-import cython
 
 
 class NetPredService:

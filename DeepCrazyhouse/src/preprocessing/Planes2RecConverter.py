@@ -22,8 +22,7 @@ record.close()
 ```
 """
 
-import DeepCrazyhouse.src.runtime.Colorer
-from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.configs.main_config_sample import main_config
 import mxnet as mx
 import logging
 from time import time

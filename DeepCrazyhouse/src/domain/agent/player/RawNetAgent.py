@@ -13,7 +13,7 @@ from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
 from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
 from time import time
-import sys
+
 
 
 class RawNetAgent(_Agent):
