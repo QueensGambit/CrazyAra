@@ -27,6 +27,7 @@ from glob import glob
 from time import time
 import mxnet as mx
 from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
 class Planes2RecConverter:
@@ -99,7 +100,7 @@ class Planes2RecConverter:
                 idx += 1
 
             # log the elapsed time for a single dataset part file
-            logging.debug("elapsed time %.2fs" % (time() - t_s))
+            logging.debug("elapsed time %.2fs", (time() - t_s))
 
         # close the record file
         record.close()

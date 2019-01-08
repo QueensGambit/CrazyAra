@@ -79,10 +79,10 @@ def load_pgn_dataset(
     # load the zarr-files
     pgn_datasets = zarr_filepaths
     if verbose is True:
-        logging.debug("loading: %s...", zarr_filepaths[part_id])
+        logging.debug("loading: %s...", pgn_datasets[part_id])
         logging.debug("")
 
-    store = zarr.ZipStore(zarr_filepaths[part_id], mode="r")
+    store = zarr.ZipStore(pgn_datasets[part_id], mode="r")
     pgn_dataset = zarr.group(store=store)
 
     # Get the data
