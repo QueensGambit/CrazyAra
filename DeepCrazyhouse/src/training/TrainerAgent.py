@@ -283,7 +283,7 @@ class TrainerAgent:
         value_out = None
 
         # safety check to prevent eternal loop
-        if len(self.ordering) == 0:
+        if not self.ordering:
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
         while True:
@@ -428,7 +428,7 @@ class TrainerAgent:
                                 val_p_acc_best,
                                 k_steps_best,
                             )
-                            logging.debug("load current best model:%s" % model_path)
+                            logging.debug("load current best model:%s", model_path)
                             self._net.load_parameters(model_path, ctx=self._ctx)
                             k_steps = k_steps_best
                             logging.debug("k_step is back at %d", k_steps_best)
@@ -467,7 +467,7 @@ class TrainerAgent:
                                     # the export function saves both the architecture and the weights
                                     self._net.export(prefix, epoch=k_steps_best)
                                     print()
-                                    logging.info("Saved checkpoint to %s-%04d.params" % (prefix, k_steps_best))
+                                    logging.info("Saved checkpoint to %s-%04d.params", (prefix, k_steps_best))
 
                                 # reset the patience counter
                                 patience_cnt = 0

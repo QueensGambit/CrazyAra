@@ -154,7 +154,7 @@ def get_planes_from_game(game, mate_in_one=False):
         board.push(move)
 
     # check if there has been any moves
-    if len(x) > 0 and len(y_value) > 0 and len(y_policy) > 0:
+    if x and y_value and y_policy:
         x = np.stack(x, axis=0)
         y_value = np.stack(y_value, axis=0)
         y_policy = np.stack(y_policy, axis=0)

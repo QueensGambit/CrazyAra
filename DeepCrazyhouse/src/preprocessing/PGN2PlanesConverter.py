@@ -223,7 +223,7 @@ class PGN2PlanesConverter(object):
         for game_pgn in pgns:
             # we need to create a deep copy, otherwise the end of the file is reached for later
             game_pgn_copy = deepcopy(game_pgn)
-            for offset, headers in chess.pgn.scan_headers(game_pgn_copy):
+            for offset, headers in chess.pgn.read_headers(game_pgn_copy):
                 for term_cond in self._termination_conditions:
                     if term_cond in headers["Termination"]:
                         if (
@@ -284,8 +284,6 @@ class PGN2PlanesConverter(object):
                  lst_black_won: Number of black wins in each pgn file
                  lst_draw_won: Number of draws in each pgn file
         """
-
-        total_games_exported = 0
 
         lst_all_pgn_sel = []
         lst_nb_games_sel = []
