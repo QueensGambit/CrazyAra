@@ -158,10 +158,9 @@ class Node:
                 #    policy[indices] = 0
 
                 return policy / sum(policy)
-            else:
-                return visit
+            return visit
 
-        elif q_value_weight > 0:
+        if q_value_weight > 0:
             # disable the q values if there's at least one child which wasn't explored
             if None in self.child_nodes:
                 q_value_weight = 0
@@ -170,13 +169,12 @@ class Node:
             # the q_value_weight is applied.
             policy = (self.n / self.n_sum) * (1 - q_value_weight) + ((self.q + 1) * 0.5) * q_value_weight
             return policy
-        else:
-            if max(self.n) == 1:
-                policy = self.n + 0.05 * self.p
-            else:
-                policy = self.n - 0.05 * self.p
 
-            return policy / sum(policy)
+        if max(self.n) == 1:
+            policy = self.n + 0.05 * self.p
+        else:
+            policy = self.n - 0.05 * self.p
+        return policy / sum(policy)
 
     def apply_dirichlet_noise_to_prior_policy(self, epsilon=0.25, alpha=0.15):
         """

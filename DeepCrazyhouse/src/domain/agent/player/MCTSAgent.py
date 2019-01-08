@@ -1055,8 +1055,7 @@ class MCTSAgent(_Agent):
     def get_xth_max(self, xth_node):
         if len(self.root_node.n) < xth_node:
             return self.root_node.n.min()
-        else:
-            return np.sort(self.root_node.n)[-xth_node]
+        return np.sort(self.root_node.n)[-xth_node]
 
     def get_last_q_values(self, second_max=0, clip_fac=0.25):
         """
