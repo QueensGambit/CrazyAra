@@ -48,18 +48,9 @@ class NetPredService:
         self.batch_value_results = batch_value_results
         self.batch_policy_results = batch_policy_results
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
     def _provide_inference(self, pipe_endings):
 
-        print("provide inference...")
-        # use_random = True
-
-        # cdef double[:, :, :, ::1] batch_state_planes_view = self.batch_state_planes
-        # cdef double[::1] batch_value_results_view = self.batch_value_results
-        # cdef double[:, ::1] batch_policy_results = self.batch_policy_results
-
-        send_batches = False  # True
+        send_batches = False
 
         while self.running is True:
 
@@ -67,7 +58,7 @@ class NetPredService:
 
             if filled_pipes:
 
-                if True or len(filled_pipes) >= self.batch_size:  # 1
+                if True or len(filled_pipes) >= self.batch_size:
 
                     if send_batches is True:
                         planes_batch = []
@@ -101,18 +92,9 @@ class NetPredService:
 
                     value_preds = pred[0].asnumpy()
 
-                    # renormalize to [0,1]
-                    # value_preds += 1
-                    # value_preds /= 2
-
                     # for the policy prediction we still have to apply the softmax activation
                     #  because it's not done by the neural net
-                    # policy_preds = pred[1].softmax().asnumpy()
                     policy_preds = pred[1].softmax().asnumpy()
-
-                    # if use_random is True:
-                    #    value_preds = np.random.random(len(filled_pipes))
-                    #    policy_preds = np.random.random((len(filled_pipes), NB_LABELS))
 
                     # send the predictions back to the according workers
                     for i, pipe in enumerate(pipes_pred_output):

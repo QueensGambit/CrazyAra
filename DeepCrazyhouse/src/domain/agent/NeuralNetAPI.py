@@ -63,43 +63,20 @@ class NeuralNetAPI:
         else:
             raise Exception("Unavailable ctx mode given %s. You must either select 'cpu' or 'gpu'" % ctx)
 
-        # construct a net in gluon style
-        self.net = gluon.nn.SymbolBlock(outputs=sym, inputs=mx.sym.var("data"))
-        # Set the params
-        net_params = self.net.collect_params()
-        for param in arg_params:
-            if param in net_params:
-                net_params[param]._load_init(arg_params[param], ctx=self.ctx)
-        for param in aux_params:
-            if param in net_params:
-                net_params[param]._load_init(aux_params[param], ctx=self.ctx)
-
-        # define the executor object which is used for inference
-        self.executor = sym.simple_bind(
-            ctx=self.ctx,
-            data=(batch_size, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
-            grad_req="null",
-            force_rebind=True,
-        )
-        self.executor.copy_params_from(arg_params, aux_params)
-
+        # define batch_size times executor objects which are used for inference
+        # one executor object is used for the currently requested batch batch length
+        # the requested batch length is variable and at maximum the given batch_size
         self.executors = []
         for i in range(batch_size):
             executor = sym.simple_bind(
                 ctx=self.ctx,
+                # add a new length for each size starting with 1
                 data=(i + 1, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
                 grad_req="null",
                 force_rebind=True,
             )
             executor.copy_params_from(arg_params, aux_params)
             self.executors.append(executor)
-
-    def get_executor(self):
-        """
-        Returns the executor object used for inference
-        :return:
-        """
-        return self.executor
 
     def predict_single(self, x):
         """
@@ -125,17 +102,15 @@ class NeuralNetAPI:
         :return: [Value Prediction, Policy Prediction] as a list of numpy arrays
         """
         out = [None, None]
-        # gluon style
-        pred = self.net(mx.nd.array(np.expand_dims(x, axis=0), ctx=self.ctx))
+
+        # choose the first executor object which support length 1
+        pred = self.executors[0].forward(is_train=False, data=np.expand_dims(x, axis=0))
 
         out[0] = pred[0].asnumpy()[0]
         # when using a gluon model you still have to apply a softmax activation after the forward pass
         out[1] = pred[1].softmax().asnumpy()[0]
 
         queue.put(out)
-
-    def get_net(self):
-        return self.net
 
     def get_batch_size(self):
         return self.batch_size
