@@ -90,11 +90,11 @@ class Planes2RecConverter:
             )
 
             # iterate over all board states aka. data samples in the file
-            for i in range(len(x)):
-                data = x[i].flatten()
+            for position, value in enumerate(x):
+                data = value.flatten()
                 buf = zlib.compress(data.tobytes())
                 # we only store the integer idx of the highest output
-                header = mx.recordio.IRHeader(0, [yv[i], yp[i].argmax()], idx, 0)
+                header = mx.recordio.IRHeader(0, [yv[position], yp[position].argmax()], idx, 0)
                 s = mx.recordio.pack(header, buf)
                 record.write_idx(idx, s)
                 idx += 1

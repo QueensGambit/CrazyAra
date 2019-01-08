@@ -278,7 +278,7 @@ class Rise(HybridBlock):
             dim_match = True
 
             # deactivate the SE for the last two blocks
-            if i == nb_res_blocksX_neck - 2 or i == nb_res_blocksX_neck - 1:
+            if i in (nb_res_blocksX_neck - 2, nb_res_blocksX_neck - 1):
                 cur_use_se = False
                 cur_res_scale_fac = res_scale_fac
             else:

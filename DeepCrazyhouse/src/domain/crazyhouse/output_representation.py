@@ -216,9 +216,8 @@ def value_to_centipawn(value):
     if np.absolute(value) >= 1.0:
         # return a constant if the given value is 1 (otherwise log will result in infinity)
         return np.sign(value) * 9999
-    else:
-        # use logaritmic scaling with basis 1.1 as a pseudo centipawn conversion
-        return -(np.sign(value) * np.log(1.0 - np.absolute(value)) / np.log(1.2)) * 100
+    # use logaritmic scaling with basis 1.1 as a pseudo centipawn conversion
+    return -(np.sign(value) * np.log(1.0 - np.absolute(value)) / np.log(1.2)) * 100
 
 
 if __name__ == "__main__":
