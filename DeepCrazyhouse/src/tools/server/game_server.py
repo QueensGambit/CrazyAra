@@ -152,7 +152,7 @@ class ChessServer(object):
         if self._gamestate.is_white_to_move() is False:
             value = -value
 
-        logging.debug("Value %.4f" % value)
+        logging.debug("Value %.4f", value)
 
         if move is None:
             logging.error("None move proposed!")

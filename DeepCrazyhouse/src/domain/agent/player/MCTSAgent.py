@@ -403,7 +403,7 @@ class MCTSAgent(_Agent):
         # the file crazyara.py will print the chosen line to the std output
         if self.verbose is True:
             score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (cp, depth, nodes, time_elapsed_s, nps, pv)
-            logging.info("info string %s" % score)
+            logging.info("info string %s", score)
 
         return value, legal_moves, p_vec_small, cp, depth, nodes, time_elapsed_s, nps, pv
 

@@ -20,9 +20,8 @@ class _GameState:
         self.board.push(move)
 
     def get_state_planes(self):
-
         raise NotImplementedError("get_state_planes() should return board_to_planes(self.board, 0, normalize=True)")
-        return board_to_planes(self.board, 0, normalize=True)
+         # return board_to_planes(self.board, 0, normalize=True)
 
     def get_pythonchess_board(self):
         return self.board
@@ -35,7 +34,7 @@ class _GameState:
         raise NotImplementedError()
         # only a is_won() and no is_lost() function is needed because the game is over
         #  after the player found checkmate successfully
-        return self.board.is_checkmate()
+        # return self.board.is_checkmate()
 
     def get_legal_moves(self):
         return self.board.legal_moves
