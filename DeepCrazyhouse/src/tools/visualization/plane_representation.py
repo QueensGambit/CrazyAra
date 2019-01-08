@@ -43,7 +43,7 @@ def get_plane_vis(mat, normalize=False):
     color_ch = CHANNEL_MAPPING_CONST["color"] + NB_CHANNELS_POS
 
     color_bit = int(mat[color_ch][0][0])
-    if color_bit != 0 and color_bit != 1:
+    if color_bit not in (0, 1):
         raise Exception("Invalid setting of color bit: ", color_bit)
 
     sign_bit = -1 if chess.COLOR_NAMES[color_bit] == "black" else 1

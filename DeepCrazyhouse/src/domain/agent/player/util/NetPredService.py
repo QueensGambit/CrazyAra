@@ -39,11 +39,10 @@ class NetPredService:
         """
         self.net = net
         self.my_pipe_endings = pipe_endings
-
         self.running = False
+        self.time_start = None
         self.thread_inference = Thread(target=self._provide_inference, args=(pipe_endings,), daemon=True)
         self.batch_size = batch_size
-
         self.batch_state_planes = batch_state_planes
         self.batch_value_results = batch_value_results
         self.batch_policy_results = batch_policy_results
