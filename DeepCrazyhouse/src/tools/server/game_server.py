@@ -102,12 +102,12 @@ class ChessServer:
         if drop_piece is not None:
             from_square_idx = to_square_idx
 
-            if not (drop_piece in chess.PIECE_SYMBOLS):
+            if not drop_piece in chess.PIECE_SYMBOLS:
                 return self.serialize_game_state("drop piece name is invalid")
             drop = chess.PIECE_SYMBOLS.index(drop_piece)
 
         if promotion_piece is not None:
-            if not (promotion_piece in chess.PIECE_SYMBOLS):
+            if not promotion_piece in chess.PIECE_SYMBOLS:
                 return self.serialize_game_state("promotion piece name is invalid")
             promotion = chess.PIECE_SYMBOLS.index(promotion_piece)
 
