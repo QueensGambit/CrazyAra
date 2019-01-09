@@ -6,29 +6,24 @@ Created on 24.09.18
 
 Please describe what the content of this file is about
 """
-from DeepCrazyhouse.src.domain.crazyhouse.input_representation import (
+import numpy as np
+from DeepCrazyhouse.src.domain.util import mult_axis_by_vec
+from DeepCrazyhouse.src.domain.crazyhouse.constants import (
     BOARD_HEIGHT,
     BOARD_WIDTH,
     CHANNEL_MAPPING_CONST,
     NB_CHANNELS_POS,
     PIECES,
+    PIECES_VALUE,
     chess,
-    np,
 )
 
 
 # create vector which scales the piece values according to their crazyhouse value
 # (used in get_x_vis())
 scale_vec = np.zeros(len(chess.PIECE_TYPES))
-
-
-def fill_scale_vec():
-    global scale_vec
-    for i, p_char in enumerate(PIECES[: len(chess.PIECE_TYPES)]):
-        scale_vec[i] = PIECES_VALUE[p_char] * 2
-
-
-fill_scale_vec()
+for i, p_char in enumerate(PIECES[: len(chess.PIECE_TYPES)]):
+    scale_vec[i] = PIECES_VALUE[p_char] * 2
 
 
 def get_plane_vis(mat, normalize=False):
