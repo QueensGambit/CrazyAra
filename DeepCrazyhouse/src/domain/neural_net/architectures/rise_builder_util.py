@@ -92,7 +92,7 @@ class _InceptionResnetBlock(HybridBlock):
 
 class _UpsampleBlock(HybridBlock):
     def __init__(self, name, scale=2, sample_type="nearest"):
-        super(HybridBlock, self).__init__(prefix=name)
+        super().__init__(prefix=name)
         self.scale = scale
         self.sample_type = sample_type
 
