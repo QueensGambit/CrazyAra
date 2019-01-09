@@ -28,7 +28,7 @@ from DeepCrazyhouse.src.domain.util import get_dic_sorted_by_key
 from DeepCrazyhouse.src.preprocessing.pgn_converter_util import get_planes_from_pgn
 
 
-class PGN2PlanesConverter(object):
+class PGN2PlanesConverter:
     """
     Class which enables the conversion from pgn-text files to a plane representation which can be used for Neural
     Networks. The representation will be exported in parallel, using compression to a dataset file (e.g. .zip)

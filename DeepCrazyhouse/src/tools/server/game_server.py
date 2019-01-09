@@ -34,7 +34,7 @@ dirichlet_epsilon = 0.25
 nb_workers = 64
 
 
-class ChessServer(object):
+class ChessServer:
     def __init__(self, name):
         self.app = Flask(name)
 
@@ -102,12 +102,12 @@ class ChessServer(object):
         if drop_piece is not None:
             from_square_idx = to_square_idx
 
-            if not (drop_piece in chess.PIECE_SYMBOLS):
+            if not drop_piece in chess.PIECE_SYMBOLS:
                 return self.serialize_game_state("drop piece name is invalid")
             drop = chess.PIECE_SYMBOLS.index(drop_piece)
 
         if promotion_piece is not None:
-            if not (promotion_piece in chess.PIECE_SYMBOLS):
+            if not promotion_piece in chess.PIECE_SYMBOLS:
                 return self.serialize_game_state("promotion piece name is invalid")
             promotion = chess.PIECE_SYMBOLS.index(promotion_piece)
 
@@ -131,15 +131,14 @@ class ChessServer(object):
 
     def perform_move(self, move):
         logging.debug("perform_move(): %s", move)
-
         # check if move is valid
         if move not in list(self._gamestate.board.legal_moves):
             raise ValueError("The given move %s is invalid for the current position" % move)
         self._gamestate.apply_move(move)
-
         if self._gamestate.is_won():
             logging.debug("Checkmate")
             return False
+        return None
 
     def perform_agent_move(self):
 
