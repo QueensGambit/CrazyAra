@@ -34,7 +34,7 @@ dirichlet_epsilon = 0.25
 nb_workers = 64
 
 
-class ChessServer(object):
+class ChessServer:
     def __init__(self, name):
         self.app = Flask(name)
 
