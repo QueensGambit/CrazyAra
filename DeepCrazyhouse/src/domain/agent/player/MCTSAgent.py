@@ -1018,7 +1018,7 @@ class MCTSAgent(_Agent):
 
         return node, move, child_idx
 
-    def _select_node_based_on_mcts_policy(self, parent_node: Node, is_root=False):
+    def _select_node_based_on_mcts_policy(self, parent_node: Node):
         """
         Selects the next node based on the mcts policy which is used to predict the final best move.
 
@@ -1026,7 +1026,7 @@ class MCTSAgent(_Agent):
         :return:
         """
 
-        child_idx = parent_node.get_mcts_policy(self.q_value_weight, is_root=is_root).argmax()
+        child_idx = parent_node.get_mcts_policy(self.q_value_weight).argmax()
 
         nb_visits = parent_node.n[child_idx]
         move = parent_node.legal_moves[child_idx]
@@ -1104,12 +1104,10 @@ class MCTSAgent(_Agent):
         lst_nb_visits = []
         # start at the root node
         node = self.root_node
-        is_root = True
 
         while node is not None and node.is_leaf is False:
             # go deep through the tree by always selecting the best move for both players
-            node, move, nb_visits, _ = self._select_node_based_on_mcts_policy(node, is_root)
-            is_root = False
+            node, move, nb_visits, _ = self._select_node_based_on_mcts_policy(node)
             lst_best_moves.append(move)
             lst_nb_visits.append(nb_visits)
         return lst_best_moves, lst_nb_visits
