@@ -59,7 +59,7 @@ class GameState(_GameState):
         self.board = CrazyhouseBoard()
         self._fen_dic = {}
 
-    def set_fen(self, fen): # , remember_state=True
+    def set_fen(self, fen):  # , remember_state=True
         self.board.set_fen(fen)
 
         # if remember_state is True:

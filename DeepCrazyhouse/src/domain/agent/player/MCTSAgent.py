@@ -715,7 +715,7 @@ class MCTSAgent(_Agent):
 
         return super().perform_action(state)
 
-    def _run_single_playout(self, state: GameState, parent_node: Node, pipe_id=0, depth=1, chosen_nodes=[]):
+    def _run_single_playout(self, state: GameState, parent_node: Node, pipe_id=0, depth=1, chosen_nodes=None):
         """
         This function works recursively until a leaf or terminal node is reached.
         It ends by backpropagating the value of the new expanded node or by propagating the value of a terminal state.
@@ -733,6 +733,8 @@ class MCTSAgent(_Agent):
         """
 
         # select a legal move on the chess board
+        if chosen_nodes is None:
+            chosen_nodes = []
         node, move, child_idx = self._select_node(parent_node)
 
         if move is None:
@@ -1057,7 +1059,7 @@ class MCTSAgent(_Agent):
             return self.root_node.n.min()
         return np.sort(self.root_node.n)[-xth_node]
 
-    def get_last_q_values(self): # , second_max=0, clip_fac=0.25
+    def get_last_q_values(self):  # , second_max=0, clip_fac=0.25
         """
         Returns the values of the last node in the caluclated lines according to the mcts search for the most
          visited nodes

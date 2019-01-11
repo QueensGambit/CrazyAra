@@ -98,7 +98,7 @@ class TrainerAgent:
         export_grad_histograms=True,
         log_metrics_to_tensorboard=True,
         ctx=mx.gpu(),
-        metrics={},  # clip_gradient=60,
+        metrics=None,  # clip_gradient=60,
         use_spike_recovery=True,
         max_spikes=5,
         spike_thresh=1.5,
@@ -109,6 +109,8 @@ class TrainerAgent:
         # , lr_warmup_k_steps=30, lr_warmup_init=0.01):
         # patience=25, nb_lr_drops=3, nb_k_steps=200,
 
+        if metrics is None:
+            metrics = {}
         self._log_metrics_to_tensorboard = log_metrics_to_tensorboard
         self._ctx = ctx
         # lr_drop_fac=0.1,
@@ -467,7 +469,7 @@ class TrainerAgent:
                                     # the export function saves both the architecture and the weights
                                     self._net.export(prefix, epoch=k_steps_best)
                                     print()
-                                    logging.info("Saved checkpoint to %s-%04d.params", (prefix, k_steps_best))
+                                    logging.info("Saved checkpoint to %s-%04d.params", prefix, k_steps_best)
 
                                 # reset the patience counter
                                 patience_cnt = 0

@@ -254,7 +254,7 @@ class Rise(HybridBlock):
 
         with self.name_scope():
             if use_rise_stem is True:
-                self.body.add(_StemRise(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type, use_se=False))
+                self.body.add(_StemRise(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
             else:
                 self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
 
