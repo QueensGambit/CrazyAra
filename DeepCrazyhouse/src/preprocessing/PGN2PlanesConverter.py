@@ -82,8 +82,8 @@ class PGN2PlanesConverter:
         self._clevel = clevel
         self._log_lvl = log_lvl
 
-        root = logging.getLogger()
-        root.setLevel(log_lvl)
+        local_root = logging.getLogger()
+        local_root.setLevel(log_lvl)
 
         plt.style.use("seaborn-paper")
 
