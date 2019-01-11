@@ -4,8 +4,8 @@
 This project uses MXNet. To install MXNet look at
 [https://mxnet.incubator.apache.org/install/index.html](https://mxnet.incubator.apache.org/install/index.html)
 
-Copy and rename the `main_config_sample.py` to `main_config.py`. Adjust the `dataset`
-property to the correct location on your file system.
+Copy and rename `DeepCrazyhouse/configs/main_config_sample.py` to `DeepCrazyhouse/configs/main_config.py`. Adjust the paths
+ to the correct location on your file system. The most important entries to change are `model_architecture_dir` and `model_weights_dir`.
 
 ## General project structure
 The source code is divided into four main parts: model, training, experiments and

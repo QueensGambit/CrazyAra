@@ -36,6 +36,7 @@ For more details about the training procedure visit the wiki pages:
 * [Input and output representation](https://github.com/QueensGambit/CrazyAra/wiki/Input-and-output-representation)
 * [Network visualization](https://github.com/QueensGambit/CrazyAra/wiki/Network-visualization)
 * [Engine settings](https://github.com/QueensGambit/CrazyAra/wiki/Engine-settings)
+* [Programmer's guide](https://github.com/QueensGambit/CrazyAra/wiki/Programmer's-guide)
 * [FAQ](https://github.com/QueensGambit/CrazyAra/wiki/FAQ)
 * [Stockfish-10:-Crazyhouse-Self-Play](https://github.com/QueensGambit/CrazyAra/wiki/Stockfish-10:-Crazyhouse-Self-Play)
 
