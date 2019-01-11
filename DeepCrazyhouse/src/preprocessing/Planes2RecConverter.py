@@ -81,7 +81,7 @@ class Planes2RecConverter:
 
             logging.info("PART: %d", part_id)
             # load one chunk of the dataset from memory
-            s_ids_train, x, yv, yp, pgn_datasets = load_pgn_dataset(
+            _, x, yv, yp, _ = load_pgn_dataset(
                 dataset_type=self._dataset_type,
                 part_id=part_id,
                 print_statistics=True,

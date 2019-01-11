@@ -146,7 +146,7 @@ class ChessServer:
             logging.debug("Checkmate")
             return False
 
-        value, move, confidence, _ = self.agent.perform_action(self._gamestate)
+        value, move, _, _ = self.agent.perform_action(self._gamestate)
 
         if self._gamestate.is_white_to_move() is False:
             value = -value

@@ -100,7 +100,7 @@ class Node:
         # self.q_freash = np.zeros(self.nb_direct_child_nodes)
         # self.w_freash = np.zeros(self.nb_direct_child_nodes)
 
-    def get_mcts_policy(self, q_value_weight=0.65, clip_low_visit_nodes=True, is_root=False, xth_n_max=0):
+    def get_mcts_policy(self, q_value_weight=0.65, clip_low_visit_nodes=True): # , is_root=False, xth_n_max=0
         """
         Calculates the finetuned policies based on the MCTS search.
         These policies should be better than the initial policy predicted by a the raw network.

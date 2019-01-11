@@ -1038,7 +1038,7 @@ class MCTSAgent(_Agent):
 
         while node is not None:
             # go deep through the tree by always selecting the best move for both players
-            node, move, child_idx = self._select_node(node)
+            node, move, _ = self._select_node(node)
             best_moves.append(move)
         return best_moves
 
@@ -1057,7 +1057,7 @@ class MCTSAgent(_Agent):
             return self.root_node.n.min()
         return np.sort(self.root_node.n)[-xth_node]
 
-    def get_last_q_values(self, second_max=0, clip_fac=0.25):
+    def get_last_q_values(self): # , second_max=0, clip_fac=0.25
         """
         Returns the values of the last node in the caluclated lines according to the mcts search for the most
          visited nodes

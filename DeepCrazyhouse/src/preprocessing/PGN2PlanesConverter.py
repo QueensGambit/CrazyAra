@@ -223,7 +223,7 @@ class PGN2PlanesConverter:
         for game_pgn in pgns:
             # we need to create a deep copy, otherwise the end of the file is reached for later
             game_pgn_copy = deepcopy(game_pgn)
-            for offset, headers in chess.pgn.read_headers(game_pgn_copy):
+            for _, headers in chess.pgn.read_headers(game_pgn_copy):
                 for term_cond in self._termination_conditions:
                     if term_cond in headers["Termination"]:
                         if (

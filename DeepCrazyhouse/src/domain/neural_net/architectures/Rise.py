@@ -173,7 +173,7 @@ class _ResidualBlockXBottleneck(HybridBlock):
 
 
 class _StemRise(HybridBlock):
-    def __init__(self, name, channels, bn_mom=0.9, act_type="relu", use_se=False):
+    def __init__(self, name, channels, bn_mom=0.9, act_type="relu"):  # , use_se=False
         """
         Definition of the stem proposed by the alpha zero authors
 

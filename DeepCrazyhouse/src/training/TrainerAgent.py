@@ -298,7 +298,7 @@ class TrainerAgent:
             for part_id in tqdm_notebook(self.ordering):
 
                 # load one chunk of the dataset from memory
-                s_idcs_train, x_train, yv_train, yp_train, pgn_datasets_train = load_pgn_dataset(
+                _, x_train, yv_train, yp_train, _ = load_pgn_dataset(
                     dataset_type="train", part_id=part_id, normalize=self._normalize, verbose=False
                 )
                 # update the train_data object
@@ -450,7 +450,7 @@ class TrainerAgent:
                             if self._export_grad_histograms is True:
                                 grads = []
                                 # logging the gradients of parameters for checking convergence
-                                for i_p, name in enumerate(self._param_names):
+                                for _, name in enumerate(self._param_names):
                                     if "bn" not in name and "batch" not in name:
                                         grads.append(self._params[name].grad())
                                         self.sw.add_histogram(tag=name, values=grads[-1], global_step=k_steps, bins=20)
