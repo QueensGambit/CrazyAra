@@ -173,7 +173,7 @@ class _ResidualBlockXBottleneck(HybridBlock):
 
 
 class _StemRise(HybridBlock):
-    def __init__(self, name, channels, bn_mom=0.9, act_type="relu", use_se=False):
+    def __init__(self, name, channels, bn_mom=0.9, act_type="relu"):  # , use_se=False
         """
         Definition of the stem proposed by the alpha zero authors
 
@@ -254,7 +254,7 @@ class Rise(HybridBlock):
 
         with self.name_scope():
             if use_rise_stem is True:
-                self.body.add(_StemRise(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type, use_se=False))
+                self.body.add(_StemRise(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
             else:
                 self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
 

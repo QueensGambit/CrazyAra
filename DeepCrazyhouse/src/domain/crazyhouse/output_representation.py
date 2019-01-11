@@ -75,7 +75,7 @@ def policy_to_best_move(board: chess.variant.CrazyhouseBoard, policy_vec, normal
              prob - Probability value for the selected move
     """
 
-    policy_vec_clean, nb_legal_moves = set_illegal_moves_to_zero(board, policy_vec, normalize)
+    policy_vec_clean, _ = set_illegal_moves_to_zero(board, policy_vec, normalize)
 
     mv_idx = np.argmax(policy_vec_clean)
     prob = np.max(policy_vec_clean)

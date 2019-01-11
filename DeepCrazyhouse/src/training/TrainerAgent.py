@@ -98,7 +98,7 @@ class TrainerAgent:
         export_grad_histograms=True,
         log_metrics_to_tensorboard=True,
         ctx=mx.gpu(),
-        metrics={},  # clip_gradient=60,
+        metrics=None,  # clip_gradient=60,
         use_spike_recovery=True,
         max_spikes=5,
         spike_thresh=1.5,
@@ -109,6 +109,8 @@ class TrainerAgent:
         # , lr_warmup_k_steps=30, lr_warmup_init=0.01):
         # patience=25, nb_lr_drops=3, nb_k_steps=200,
 
+        if metrics is None:
+            metrics = {}
         self._log_metrics_to_tensorboard = log_metrics_to_tensorboard
         self._ctx = ctx
         # lr_drop_fac=0.1,
@@ -298,7 +300,7 @@ class TrainerAgent:
             for part_id in tqdm_notebook(self.ordering):
 
                 # load one chunk of the dataset from memory
-                s_idcs_train, x_train, yv_train, yp_train, pgn_datasets_train = load_pgn_dataset(
+                _, x_train, yv_train, yp_train, _ = load_pgn_dataset(
                     dataset_type="train", part_id=part_id, normalize=self._normalize, verbose=False
                 )
                 # update the train_data object
@@ -450,7 +452,7 @@ class TrainerAgent:
                             if self._export_grad_histograms is True:
                                 grads = []
                                 # logging the gradients of parameters for checking convergence
-                                for i_p, name in enumerate(self._param_names):
+                                for _, name in enumerate(self._param_names):
                                     if "bn" not in name and "batch" not in name:
                                         grads.append(self._params[name].grad())
                                         self.sw.add_histogram(tag=name, values=grads[-1], global_step=k_steps, bins=20)
@@ -467,7 +469,7 @@ class TrainerAgent:
                                     # the export function saves both the architecture and the weights
                                     self._net.export(prefix, epoch=k_steps_best)
                                     print()
-                                    logging.info("Saved checkpoint to %s-%04d.params", (prefix, k_steps_best))
+                                    logging.info("Saved checkpoint to %s-%04d.params", prefix, k_steps_best)
 
                                 # reset the patience counter
                                 patience_cnt = 0

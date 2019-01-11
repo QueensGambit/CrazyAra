@@ -82,8 +82,8 @@ class PGN2PlanesConverter:
         self._clevel = clevel
         self._log_lvl = log_lvl
 
-        root = logging.getLogger()
-        root.setLevel(log_lvl)
+        local_root = logging.getLogger()
+        local_root.setLevel(log_lvl)
 
         plt.style.use("seaborn-paper")
 
@@ -223,7 +223,7 @@ class PGN2PlanesConverter:
         for game_pgn in pgns:
             # we need to create a deep copy, otherwise the end of the file is reached for later
             game_pgn_copy = deepcopy(game_pgn)
-            for offset, headers in chess.pgn.read_headers(game_pgn_copy):
+            for _, headers in chess.pgn.read_headers(game_pgn_copy):
                 for term_cond in self._termination_conditions:
                     if term_cond in headers["Termination"]:
                         if (

@@ -21,7 +21,7 @@ class _GameState:
 
     def get_state_planes(self):
         raise NotImplementedError("get_state_planes() should return board_to_planes(self.board, 0, normalize=True)")
-         # return board_to_planes(self.board, 0, normalize=True)
+        # return board_to_planes(self.board, 0, normalize=True)
 
     def get_pythonchess_board(self):
         return self.board

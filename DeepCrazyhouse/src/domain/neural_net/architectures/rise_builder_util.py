@@ -10,7 +10,7 @@ Please describe what the content of this file is about
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Dense, AvgPool2D
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.contrib.nn import HybridConcurrent
-from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
+from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act, get_pool
 
 
 class _SqueezeExcitation(HybridBlock):
@@ -47,7 +47,7 @@ class _InceptionResnetBlock(HybridBlock):
         super(_InceptionResnetBlock, self).__init__(prefix=name)
 
         self.shortcut = shortcut
-        self.body = None
+        self.body = HybridSequential(prefix="")
         self.bn0 = None
         self.act0 = None
         self.se0 = None
