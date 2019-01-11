@@ -47,7 +47,7 @@ class _InceptionResnetBlock(HybridBlock):
         super(_InceptionResnetBlock, self).__init__(prefix=name)
 
         self.shortcut = shortcut
-        self.body = self.body = HybridSequential(prefix="")
+        self.body = HybridSequential(prefix="")
         self.bn0 = None
         self.act0 = None
         self.se0 = None

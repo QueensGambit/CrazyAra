@@ -1114,7 +1114,8 @@ class MCTSAgent(_Agent):
             lst_nb_visits.append(nb_visits)
         return lst_best_moves, lst_nb_visits
 
-    def _mv_list_to_str(self, lst_moves):
+    @staticmethod
+    def _mv_list_to_str(lst_moves):
         """
         Converts a given list of chess moves to a single string seperated by spaces.
         :param lst_moves: List chess.Moves objects

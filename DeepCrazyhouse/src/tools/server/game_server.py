@@ -70,8 +70,8 @@ class ChessServer:
     def run(self):
         self.app.run()
 
-    # noinspection PyMethodMayBeStatic
-    def serve_client(self, path=None):
+    @staticmethod
+    def serve_client(path=None):
         if path is None:
             path = "index.html"
         return send_from_directory("./client", path)
