@@ -442,7 +442,7 @@ def setup_gamestate(cmd_list):
         if position_type == "fen":
             fen = " ".join(cmd_list[2:8])
             gamestate.set_fen(fen)
-            mcts_agent.update_tranposition_table((gamestate.get_transposition_key(),))
+            mcts_agent.update_transposition_table((gamestate.get_transposition_key(),))
             # log_print("info string Added %s - count %d" % (gamestate.get_board_fen(),
             #                                               mcts_agent.transposition_table[gamestate.get_transposition_key()]))
 
@@ -457,7 +457,7 @@ def _apply_move(selected_move: chess.Move):
     global mcts_agent
 
     gamestate.apply_move(selected_move)
-    mcts_agent.update_tranposition_table((gamestate.get_transposition_key(),))
+    mcts_agent.update_transposition_table((gamestate.get_transposition_key(),))
     # log_print("info string Added %s - count %d" % (gamestate.get_board_fen(),
     #                                               mcts_agent.transposition_table[
     #                                                   gamestate.get_transposition_key()]))
