@@ -96,10 +96,6 @@ class Node:
         # store a unique identifier for the board state excluding the move counter for this node
         self.transposition_key = transposition_key
 
-        # self.replay_buffer = deque([0] * 512)
-        # self.q_freash = np.zeros(self.nb_direct_child_nodes)
-        # self.w_freash = np.zeros(self.nb_direct_child_nodes)
-
     def get_mcts_policy(self, q_value_weight=0.65, clip_low_visit_nodes=True):  # , is_root=False, xth_n_max=0
         """
         Calculates the finetuned policies based on the MCTS search.
@@ -114,48 +110,26 @@ class Node:
 
         if clip_low_visit_nodes is True and q_value_weight > 0:
 
-            # q_value_weight -= 1e-4 * self.n_sum
-            # q_value_weight = max(q_value_weight, 0.01)
-
             visit = deepcopy(self.n)
             value = deepcopy((self.q + 1))
 
-            # values_confident = self.p[]
             if visit.max() > 0:
 
                 max_visits = visit.max()
 
-                # if is_root is True:
-                #    if self.n_sum > 2000 and self.thresh_idcs_root.max() == 1:
-                #        if visit[self.thresh_idcs_root].max() < visit[np.invert(self.thresh_idcs_root)].max() * 1.5:
-                #            visit[self.thresh_idcs_root] = 0
-                #            #print('clipped nodes')
-
                 # mask out nodes that haven't been visited much
-                # thresh_idces = visit < max(max_visits * 0.33, xth_n_max)
-                thresh_idces = visit < max_visits * 0.33  # , xth_n_max)
+                thresh_idces = visit < max_visits * 0.33
 
                 # normalize to sum of 1
                 value[thresh_idces] = 0
                 value[value < 0] = 0
-                # visit[thresh_idces] = 0
 
                 # renormalize ot 1
                 visit /= visit.sum()
 
-                # value *= self.p
                 value /= value.sum()
 
-                # use prior policy
-                # init_p = deepcopy(self.p)
-                # init_p[value < value.max() * 0.2] = 0
-                # visit += self.p
-
                 policy = (1 - q_value_weight) * visit + q_value_weight * value
-
-                # if is_root is True:
-                #    indices = (self.q < self.v) * self.thresh_idcs_root
-                #    policy[indices] = 0
 
                 return policy / sum(policy)
             return visit
@@ -204,29 +178,14 @@ class Node:
             self.w[child_idx] -= virtual_loss
             self.q[child_idx] = self.w[child_idx] / self.n[child_idx]
 
-            # use queue
-            # self.q[child_idx] = self.w[child_idx] / min(self.n[child_idx], QSIZE)
-
     def revert_virtual_loss_and_update(self, child_idx, virtual_loss, value):
         # revert the virtual loss effect and apply the backpropagated value of its child node
         with self.lock:
 
             self.n_sum -= virtual_loss - 1
-            # factor = max(self.n[child_idx] // 1000, 1)
-            # fac = (self.n[child_idx]+1) ** 0.2
 
             self.n[child_idx] -= virtual_loss - 1
 
             self.w[child_idx] += virtual_loss + value
 
             self.q[child_idx] = self.w[child_idx] / self.n[child_idx]
-
-            # self.nb_total_expanded_child_nodes += 1
-            # self.nb_expandable_child_nodes += self.nb_direct_child_nodes
-
-            # last_value = self.child_nodes[child_idx].replay_buffer.popleft()
-            # self.child_nodes[child_idx].replay_buffer.append(value)
-
-            # use queue
-            # self.w_freash[child_idx] += virtual_loss + value - last_value
-            # self.q_freash[child_idx] = self.w[child_idx] / QSIZE # min(self.n[child_idx], QSIZE)

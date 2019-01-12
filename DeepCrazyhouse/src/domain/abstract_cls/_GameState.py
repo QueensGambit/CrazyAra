@@ -46,9 +46,8 @@ class _GameState:
         return self.board.fen()
 
     def get_board_fen(self):
-        # create an identifier string for the board state by dropping the move clock
+        # create an identifier string for the board state
         return self.board.fen()
-        # return self.board.fen().rsplit(' ', 1)[0]
 
     def get_transposition_key(self):
         """

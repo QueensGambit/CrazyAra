@@ -25,7 +25,7 @@ from multiprocessing import Pipe
 from time import time
 import numpy as np
 from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
-from DeepCrazyhouse.src.domain.agent.player.Agent import Agent
+from DeepCrazyhouse.src.domain.abstract_cls._Agent import _Agent
 from DeepCrazyhouse.src.domain.agent.player.util.NetPredService import NetPredService
 from DeepCrazyhouse.src.domain.agent.player.util.Node import Node
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
@@ -57,7 +57,7 @@ def profile(fnc):
     return inner
 
 
-class MCTSAgent(Agent):
+class MCTSAgent(_Agent):
     def __init__(
         self,
         nets: [NeuralNetAPI],
@@ -238,7 +238,6 @@ class MCTSAgent(Agent):
             )
             self.total_nodes_pre_search = deepcopy(self.root_node.n_sum)
             # reset potential good nodes for the root
-            # self.root_node.q[self.root_node.q < 1.1] = 0
             self.root_node.q[self.root_node.q < 0] = self.root_node.q.max() - 0.25
 
         else:
@@ -264,55 +263,10 @@ class MCTSAgent(Agent):
             max_depth_reached = self._run_mcts_search(state)
             t_elapsed = time() - self.t_start_eval
             print("info string move overhead is %dms" % (t_elapsed * 1000 - self.movetime_ms))
-        # xth_n_max = self.get_xth_max(10)
-        # print('xth_n-max: ', xth_n_max)
+
         # receive the policy vector based on the MCTS search
         p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
-        # experimental
-        """
-        orig_q = np.array(self.root_node.q)
-        #indices = self.root_node.n.max() > clip_fac
-        candidate_child = p_vec_small.argmax() #self.get_2nd_max()
-        latest, indices = self.get_last_q_values(candidate_child)
-        # ensure that the q value for the end node are properly set
-        #if len(indices) > 0:
-        #self.root_node.w[indices] += (self.root_node.n[indices]/1) * latest[indices]
-        #self.root_node.q[indices] = self.root_node.w[indices] / (self.root_node.n[indices] ---
-        -->+ (self.root_node.n[indices]/1))
-        if True: #self.root_node.q[candidate_child] < 0: # and latest[candidate_child] ---
-        --->+ 0.5 < self.root_node.q[candidate_child]:
-            #self.root_node.q[candidate_child] = (self.root_node.q[candidate_child] + latest[candidate_child])
-            #self.root_node.q[latest[self.root_node.thresh_idcs_root]
-            < self.root_node.q[self.root_node.thresh_idcs_root]] = -1
-            #print('q - shape', self.root_node.q.shape)
-            #print('latest  - shape', latest.shape)
-            #print('thresh - shape', self.root_node.thresh_idcs_root.shape)
-            sel_indices = latest < self.root_node.q
-            sel_indices[np.invert(self.root_node.thresh_idcs_root)] = False
-            #print('sel indices -shape', len(sel_indices))
-            self.root_node.q[sel_indices] = (latest[sel_indices] + self.root_node.q[sel_indices]) / 2 #-1
-            sel_indices = np.invert(sel_indices)
-            sel_indices[self.root_node.thresh_idcs_root] = False
-            self.root_node.q[sel_indices] = (latest[sel_indices] + self.root_node.q[sel_indices]) / 2
-            #prior_child = self.root_node.p.argmax()
-            #if latest[prior_child] > self.root_node.q[prior_child]:
-            #    self.root_node.q[prior_child] = (latest[prior_child] + self.root_node.q[prior_child])
-             /  2 #latest[prior_child]
-            #self.root_node.q[indices] = self.root_node.q[indices] * (latest[indices] + 1)
-            #self.root_node.q[indices] += latest[indices]
-            # receive the policy vector based on the MCTS search
-            p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight) #, xth_n_max=xth_n_max, is_root=True)
-        """
-        # max_n = self.root_node.n.max()
-        # latest[self.root_node.n < max_n / 2] = -1
-        # latest += 1
-        # latest /= sum(latest)
-        # if latest.max() > 0:
-        #    p_vec_small[latest < 0] = 0
-        # p_vec_small = p_vec_small + latest
-        # p_vec_small[p_vec_small < 0] = 0
-        # p_vec_small[p_vec_small > 1] = 1
-        # p_vec_small /= sum(p_vec_small)
+
         # if self.use_pruning is False:
         self.node_lookup[key] = self.root_node  # store the current root in the lookup table
         best_child_idx = p_vec_small.argmax()  # select the q-value according to the mcts best child value
@@ -438,11 +392,7 @@ class MCTSAgent(Agent):
             nb_playouts = self.nb_playouts_empty_pockets
         else:
             nb_playouts = self.nb_playouts_filled_pockets
-            # self.temperature_current = 0
-        # if self.root_node.v > 0.65:
-        #    fac = 0.1
-        # else:
-        #    fac = 0.02 #2
+
         # iterate through all children and add dirichlet if there exists any
         for child_node in self.root_node.child_nodes:
             if child_node is not None:
@@ -455,9 +405,7 @@ class MCTSAgent(Agent):
         old_time = time()
         cpuct_init = self.cpuct
         decline = True
-        # nb_playouts_update_step = 4000
-        # nb_playouts_update = 4000
-        # self.hard_clipping = True
+
         if self.use_time_management is True:
             time_checked = time_checked_early = False
         else:
@@ -481,20 +429,6 @@ class MCTSAgent(Agent):
                 elif self.cpuct > cpuct_init:
                     decline = True
 
-            """
-            if cur_playouts >= nb_playouts_update:
-                #print('UPDATE')
-                self.root_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon,
-                                                                     alpha=self.dirichlet_alpha)
-                # iterate through all children and add dirichlet if there exists any
-                for child_node in self.root_node.child_nodes:
-                    if child_node is not None:
-                        # test of adding dirichlet noise to a new node
-                        child_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon * fac,
-                                                                         alpha=self.dirichlet_alpha)
-                nb_playouts_update += nb_playouts_update_step
-                #move_update += move_step
-            """
             # start searching
             with ThreadPoolExecutor(max_workers=self.threads) as executor:
                 for i in range(self.threads):
@@ -566,11 +500,6 @@ class MCTSAgent(Agent):
             ):
                 print("info increase time")
                 time_checked = True
-                # for child_node in self.root_node.child_nodes:
-                #    if child_node is not None:
-                #        # test of adding dirichlet noise to a new node
-                #        child_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon * .5,
-                #                                                         alpha=self.dirichlet_alpha)
                 time_bonus = self.time_buffer_ms / 4
                 self.time_buffer_ms -= time_bonus  # increase the movetime
                 self.movetime_ms += time_bonus * 0.75
@@ -579,8 +508,6 @@ class MCTSAgent(Agent):
                 if self.time_buffer_ms < 0:
                     self.movetime_ms += self.time_buffer_ms
                     self.time_buffer_ms = 0
-                    # if self.root_node.q[child_idx] < 0:
-                    #    self.hard_clipping = False
         self.cpuct = cpuct_init
         return max_depth_reached
 
@@ -657,13 +584,6 @@ class MCTSAgent(Agent):
                 # logging.debug('found key: %s' % state.get_board_fen())
                 # get the prior value from the leaf node which has already been expanded
                 value = node.v
-                # receive a free available pipe
-                # my_pipe = self.my_pipe_endings[pipe_id]
-                # my_pipe.send(state.get_state_planes())
-                # this pipe waits for the predictions of the network inference service
-                # [_, _] = my_pipe.recv()
-                # get the value from the leaf node (the current function is called recursively)
-                # value, depth, mv_list = self._run_single_playout(state, node, pipe_id, depth+1, mv_list)
             else:
                 # expand and evaluate the new board state (the node wasn't found in the look-up table)
                 # its value will be back-propagated through the tree and flipped after every layer
@@ -685,15 +605,7 @@ class MCTSAgent(Agent):
                 # check if the current player has won the game
                 # (we don't need to check for is_lost() because the game is already over
                 #  if the current player checkmated his opponent)
-                # is_check = False
                 if state.is_check() is True:
-                    # enhance checking nodes
-                    # if depth == 1:
-                    #    parent_node.p.mean()
-                    #    with parent_node.lock:
-                    #        if parent_node.p[child_idx] < 0.1:
-                    #            parent_node.p[child_idx] = 0.1
-                    # is_check = True
                     if state.is_won() is True:
                         is_won = True
 
@@ -726,8 +638,6 @@ class MCTSAgent(Agent):
                         )
                     except KeyError:
                         raise Exception("Key Error for state: %s" % state)
-                # if state.get_board_fen() == 'r1b3k1/ppq2pP1/3n1Ppp/4Q2N/4B3/P1P3bP/2P1nPPr/4rB1K/PRPNp w - - 0 36':
-                #    print('found it! > is won %d' % is_won)
                 # convert all legal moves to a string if the option check_mate_in_one was enabled
                 if self.check_mate_in_one is True:
                     str_legal_moves = str(state.get_legal_moves())
@@ -755,7 +665,7 @@ class MCTSAgent(Agent):
                             epsilon=self.dirichlet_epsilon * fac, alpha=self.dirichlet_alpha
                         )
 
-                    if value < 0:  # and state.are_pocket_empty(): #and pipe_id == 0:
+                    if value < 0:
                         # test of adding dirichlet noise to a new node
                         new_node.apply_dirichlet_noise_to_prior_policy(
                             epsilon=self.dirichlet_epsilon * 0.02, alpha=self.dirichlet_alpha
@@ -838,11 +748,6 @@ class MCTSAgent(Agent):
             # calculate the current u values
             # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
             u_value = cpuct * parent_node.p * (np.sqrt(parent_node.n_sum) / (1 + parent_node.n))
-            # if depth == 1 and self.hard_clipping is True and self.use_pruning is True:---
-            # ---> and id <= (self.threads//2+1): #and id % 2 != 0:
-            #    u[parent_node.thresh_idcs_root] = -9999 #1
-            # if self.use_pruning is True and depth >= 2:  # and depth >= 2:  and id % 3 != 0:
-            #    u[parent_node.thresh_idcs] = -9999
             child_idx = (parent_node.q + u_value).argmax()
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
 
@@ -880,7 +785,7 @@ class MCTSAgent(Agent):
             return self.root_node.n.min()
         return np.sort(self.root_node.n)[-xth_node]
 
-    def get_last_q_values(self):  # , second_max=0, clip_fac=0.25
+    def get_last_q_values(self):
         """
         Returns the values of the last node in the calculated lines according to the mcts search for the most
          visited nodes
@@ -892,7 +797,7 @@ class MCTSAgent(Agent):
 
         for i in range(self.root_node.nb_direct_child_nodes):
 
-            if self.root_node.n[i] >= self.root_node.n.max() * 0.33:  # i == second_max: # #second_max:
+            if self.root_node.n[i] >= self.root_node.n.max() * 0.33:
                 node = self.root_node.child_nodes[i]
                 print(self.root_node.legal_moves[i].uci(), end=" ")
                 turn = 1
