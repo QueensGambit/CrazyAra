@@ -73,9 +73,9 @@ def show_promask(bin_mask):
     :param bin_mask: Binary which are used by python-chess
     :return: nothing
     """
-    for i, c in enumerate(bin_mask):
-        print(c, end=" ")
-        if i % 8 == 7:
+    for idx, char in enumerate(bin_mask):
+        print(char, end=" ")
+        if idx % 8 == 7:
             print()
 
 
@@ -109,45 +109,44 @@ def get_numpy_arrays(pgn_dataset):
 
     :param pgn_dataset: dataset file handle
     :return: numpy-arrays:
-            s_idcs - defines the index where each game starts
-            x - the board representation for all games
-            yv - the game outcome (-1,0,1) for each board position
-            yp - the movement policy for the next_move played
+            starting_idx - defines the index where each game starts
+            board_representation - the board representation for all games
+            outcome - the game outcome (-1,0,1) for each board position
+            move_policy - the movement policy for the next_move played
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
     """
     # Get the data
 
-    s_idcs = np.array(pgn_dataset["start_indices"])
+    starting_idx = np.array(pgn_dataset["start_indices"])
+    board_representation = np.array(pgn_dataset["x"])
+    outcome = np.array(pgn_dataset["y_value"])
+    move_policy = np.array(pgn_dataset["y_policy"])
 
-    x = np.array(pgn_dataset["x"])
-    yv = np.array(pgn_dataset["y_value"])
-    yp = np.array(pgn_dataset["y_policy"])
-
-    return s_idcs, x, yv, yp
+    return starting_idx, board_representation, outcome, move_policy
 
 
-def normalize_input_planes(x):
+def normalize_input_planes(input_data):
     """
     Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
-    :param x: Input planes representation
+    :param input_data: Input planes representation
     :return: The normalized planes
     """
 
     # convert the input planes to float32 assuming that the datatype is int
-    if x.dtype != np.float32:
-        x = x.astype(np.float32)
+    if input_data.dtype != np.float32:
+        input_data = input_data.astype(np.float32)
 
-    mat_pos = x[:NB_CHANNELS_POS, :, :]
-    mat_const = x[NB_CHANNELS_POS:, :, :]
+    mat_pos = input_data[:NB_CHANNELS_POS, :, :]
+    mat_const = input_data[NB_CHANNELS_POS:, :, :]
 
     # iterate over all pieces except the king, (because the king can't be in a pocket)
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+        channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-        mat_pos[ch, :, :] /= MAX_NB_PRISONERS
+        mat_pos[channel, :, :] /= MAX_NB_PRISONERS
         # the prison for black begins 5 channels later
-        mat_pos[ch + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
+        mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
 
     ### Total Move Count
     # 500 was set as the max number of total moves
@@ -156,7 +155,7 @@ def normalize_input_planes(x):
     # after 40 moves of no progress the 40 moves rule for draw applies
     mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
 
-    return x
+    return input_data
 
 
 # use a constant matrix for normalization to allow broad cast operations
@@ -164,23 +163,23 @@ MATRIX_NORMALIZER = np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH))
 MATRIX_NORMALIZER = normalize_input_planes(MATRIX_NORMALIZER)
 
 
-def unnormalize_input_planes(x):
+def customize_input_planes(input_data):
     """
     Reverts normalization back to integer values. Works in place.
-    :param x: Input Planes Represenation
-    :return: The unnormalized planes (covnerted back to integer)
+    :param input_data: Input Planes Representation
+    :return: The customized planes (converted back to integer)
     """
-    mat_pos = x[:NB_CHANNELS_POS, :, :]
-    mat_const = x[NB_CHANNELS_POS:, :, :]
+    mat_pos = input_data[:NB_CHANNELS_POS, :, :]
+    mat_const = input_data[NB_CHANNELS_POS:, :, :]
 
     # iterate over all pieces except the king
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+        channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-        mat_pos[ch, :, :] /= MAX_NB_PRISONERS
+        mat_pos[channel, :, :] /= MAX_NB_PRISONERS
         # the prison for black begins 5 channels later
-        mat_pos[ch + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
+        mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
 
     ### Total Move Count
     # 500 was set as the max number of total moves
@@ -190,9 +189,9 @@ def unnormalize_input_planes(x):
     # after 40 moves of no progress the 40 moves rule for draw applies
     mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] *= MAX_NB_NO_PROGRESS
 
-    np.round(x, decimals=0, out=x)
+    np.round(input_data, decimals=0, out=input_data)
 
-    return x
+    return input_data
 
 
 def mult_axis_by_vec(mat, vec, axis=0):

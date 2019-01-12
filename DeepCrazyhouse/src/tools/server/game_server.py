@@ -8,8 +8,8 @@ from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
 from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
 
 
-file_lookup = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7}
-rank_lookup = {"1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 6, "8": 7}
+FILE_LOOKUP = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7}
+RANK_LOOKUP = {"1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 6, "8": 7}
 
 
 def get_square_index_from_name(name):
@@ -19,19 +19,19 @@ def get_square_index_from_name(name):
     if len(name) != 2:
         return None
 
-    col = file_lookup[name[0]] if name[0] in file_lookup else None
-    row = rank_lookup[name[1]] if name[1] in rank_lookup else None
+    col = FILE_LOOKUP[name[0]] if name[0] in FILE_LOOKUP else None
+    row = RANK_LOOKUP[name[1]] if name[1] in RANK_LOOKUP else None
     if col is None or row is None:
         return None
 
     return chess.square(col, row)
 
 
-batch_size = 8
-nb_playouts = 16
-cpuct = 1
-dirichlet_epsilon = 0.25
-nb_workers = 64
+BATCH_SIZE = 8
+NB_PLAYOUTS = 16
+CPUCT = 1
+DIRICHLET_EPSILON = 0.25
+NB_WORKERS = 64
 
 
 class ChessServer:
@@ -53,7 +53,7 @@ class ChessServer:
         player_agents = {
             "raw_net": RawNetAgent(net),
             "mcts": MCTSAgent(
-                net, virtual_loss=3, threads=batch_size, cpuct=cpuct, dirichlet_epsilon=dirichlet_epsilon
+                net, virtual_loss=3, threads=BATCH_SIZE, cpuct=CPUCT, dirichlet_epsilon=DIRICHLET_EPSILON
             ),
         }
 
@@ -116,9 +116,9 @@ class ChessServer:
         # perform move
         try:
             self.perform_move(move)
-        except ValueError as e:
-            logging.error("ValueError %s", e)
-            return self.serialize_game_state(e.args[0])
+        except ValueError as err:
+            logging.error("ValueError %s", err)
+            return self.serialize_game_state(err.args[0])
 
         # calculate agent response
         if not self.perform_agent_move():
@@ -173,8 +173,7 @@ class ChessServer:
 
 
 print("Setting up server")
-server = ChessServer("DeepCrazyHouse")
-
+SERVER = ChessServer("DeepCrazyHouse")
 print("RUN")
-server.run()
+SERVER.run()
 print("SHUTDOWN")

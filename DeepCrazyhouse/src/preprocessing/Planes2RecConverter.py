@@ -81,7 +81,7 @@ class Planes2RecConverter:
 
             logging.info("PART: %d", part_id)
             # load one chunk of the dataset from memory
-            _, x, yv, yp, _ = load_pgn_dataset(
+            _, board_representation, outcome, move_policy, _ = load_pgn_dataset(
                 dataset_type=self._dataset_type,
                 part_id=part_id,
                 print_statistics=True,
@@ -90,11 +90,11 @@ class Planes2RecConverter:
             )
 
             # iterate over all board states aka. data samples in the file
-            for position, value in enumerate(x):
+            for position, value in enumerate(board_representation):
                 data = value.flatten()
                 buf = zlib.compress(data.tobytes())
                 # we only store the integer idx of the highest output
-                header = mx.recordio.IRHeader(0, [yv[position], yp[position].argmax()], idx, 0)
+                header = mx.recordio.IRHeader(0, [outcome[position], move_policy[position].argmax()], idx, 0)
                 s = mx.recordio.pack(header, buf)
                 record.write_idx(idx, s)
                 idx += 1
@@ -105,5 +105,5 @@ class Planes2RecConverter:
         # close the record file
         record.close()
 
-        logging.debug("created %s sucessfully", idx_filepath)
-        logging.debug("created %s sucessfully", rec_filepath)
+        logging.debug("created %s successfully", idx_filepath)
+        logging.debug("created %s successfully", rec_filepath)

@@ -52,9 +52,9 @@ def get_planes_from_pgn(params):
             break
 
     # get the image planes and targets
-    x, y_value, y_policy = get_planes_from_game(game, mate_in_one)
+    board_representation, y_value, y_policy = get_planes_from_game(game, mate_in_one)
 
-    return metadata, game_idx, x, y_value, y_policy
+    return metadata, game_idx, board_representation, y_value, y_policy
 
 
 def get_planes_from_game(game, mate_in_one=False):
@@ -67,19 +67,19 @@ def get_planes_from_game(game, mate_in_one=False):
     (e.g. mv_hist_len = 8 means that the current position and the 7 previous positions are exported)
     :param mate_in_one: Decide weather only to export the position before the last mate-in-one move
                         (this option is for evaluation and DEBUG purposes)
-    :return: x - the position description of all moves in the game
-             y_value - the target values of the scene description. Here the game outcome.
+    :return: pos_desc - the position description of all moves in the game
+             outcome - the target values of the scene description. Here the game outcome.
                   returns -1 if the current player lost, +1 if the current player won, 0 for draw
-             y_policy - the policy vector one-hot encoded indicating the next move the player current player chose in
-                        this position
+             next_move - the policy vector one-hot encoded indicating the next move the player current player chose
+              in this position
     """
 
     # fen dic is a dictionary which maps the fen description to its number of occurrences
     fen_dic = {}
 
-    x = []
-    y_value = []
-    y_policy = []
+    pos_desc = []
+    outcome = []
+    next_move = []
 
     # get the initial board state
     board = game.board()
@@ -139,13 +139,13 @@ def get_planes_from_game(game, mate_in_one=False):
             x_cur = board_to_planes(board, board_occ, normalize=False)
 
             # add the evaluation of 1 position to the list
-            x.append(x_cur)
+            pos_desc.append(x_cur)
 
-            y_value.append(y_init)
+            outcome.append(y_init)
 
             # add the next move defined in policy vector notation to the policy list
             # the network always sees the board as if he's the white player, that's the move is mirrored fro black
-            y_policy.append(move_to_policy(next_move, is_white_to_move=board.turn))
+            next_move.append(move_to_policy(next_move, is_white_to_move=board.turn))
 
         # flip the y_init value after each move
         y_init *= -1
@@ -154,13 +154,13 @@ def get_planes_from_game(game, mate_in_one=False):
         board.push(move)
 
     # check if there has been any moves
-    if x and y_value and y_policy:
-        x = np.stack(x, axis=0)
-        y_value = np.stack(y_value, axis=0)
-        y_policy = np.stack(y_policy, axis=0)
+    if pos_desc and outcome and next_move:
+        pos_desc = np.stack(pos_desc, axis=0)
+        outcome = np.stack(outcome, axis=0)
+        next_move = np.stack(next_move, axis=0)
     else:
         print("game.headers:")
         print(game.headers)
         raise Exception("The given pgn file's mainline is empty!")
 
-    return x, y_value, y_policy
+    return pos_desc, outcome, next_move

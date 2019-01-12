@@ -33,9 +33,9 @@ def _load_dataset_file(dataset_filepath):
     store = zarr.ZipStore(dataset_filepath, mode="r")
     pgn_dataset = zarr.group(store=store)
 
-    s_idcs, x, yv, yp = get_numpy_arrays(pgn_dataset)
+    starting_idx, board_representation, outcome, move_policy = get_numpy_arrays(pgn_dataset)
 
-    return s_idcs, x, yv, yp
+    return starting_idx, board_representation, outcome, move_policy
 
 
 def load_pgn_dataset(
@@ -45,18 +45,18 @@ def load_pgn_dataset(
     Loads one part of the pgn dataset in form of planes / multidimensional numpy array.
     It reads all files which are located either in the main_config['test_dir'] or main_config['test_dir']
 
-    :param config_path: Define where your config file is located
     :param dataset_type: either ['train', 'test', 'mate_in_one']
     :param part_id: Decides which part of the data set will be loaded
     :param print_statistics: Decides whether to print file statistics
     :param print_parameters: Decide whether to print the parameters with which the dataset was generated
     :param verbose: True if the log message shall be shown
-    :param normalize: True if the inputs shall be normalized to 0-1 ! Note this only supported for hist-length=1 at the moment
+    :param normalize: True if the inputs shall be normalized to 0-1
+    ! Note this only supported for hist-length=1 at the moment
     :return: numpy-arrays:
-            s_idcs - defines the index where each game starts
-            x - the board representation for all games
-            yv - the game outcome (-1,0,1) for each board position
-            yp - the movement policy for the next_move played
+            starting_idx - defines the index where each game starts
+            board_representation - the board representation for all games
+            outcome - the game outcome (-1,0,1) for each board position
+            move_policy - the movement policy for the next_move played
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
     """
 
@@ -86,7 +86,7 @@ def load_pgn_dataset(
     pgn_dataset = zarr.group(store=store)
 
     # Get the data
-    s_idcs, x, yv, yp = get_numpy_arrays(pgn_dataset)
+    starting_idx, board_representation, outcome, move_policy = get_numpy_arrays(pgn_dataset)
 
     if print_statistics is True:
         logging.info("STATISTICS:")
@@ -99,24 +99,24 @@ def load_pgn_dataset(
             print(member, list(pgn_dataset["parameters"][member]))
 
     if normalize is True:
-        x = x.astype(np.float32)
+        board_representation = board_representation.astype(np.float32)
 
         # the y-vectors need to be casted as well in order to be accepted by the network
-        yv = yv.astype(np.float32)
-        yp = yp.astype(np.float32)
+        outcome = outcome.astype(np.float32)
+        move_policy = move_policy.astype(np.float32)
 
         # !TODO replace this by function normalize_input_planes()
-        mat_pos = x[:, :NB_CHANNELS_POS, :, :]
-        mat_const = x[:, NB_CHANNELS_POS:, :, :]
+        mat_pos = board_representation[:, :NB_CHANNELS_POS, :, :]
+        mat_const = board_representation[:, NB_CHANNELS_POS:, :, :]
 
         # iterate over all pieces except the king
         for p_type in chess.PIECE_TYPES[:-1]:
             # p_type -1 because p_type starts with 1
-            ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-            mat_pos[:, ch, :, :] /= MAX_NB_PRISONERS
+            mat_pos[:, channel, :, :] /= MAX_NB_PRISONERS
             # the prison for black begins 5 channels later
-            mat_pos[:, ch + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
+            mat_pos[:, channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
 
         ### Total Move Count
         # 500 was set as the max number of total moves
@@ -125,4 +125,4 @@ def load_pgn_dataset(
         #  after 40 moves of no progress the 40 moves rule for draw applies
         mat_const[:, CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
 
-    return s_idcs, x, yv, yp, pgn_dataset
+    return starting_idx, board_representation, outcome, move_policy, pgn_dataset

@@ -146,7 +146,7 @@ class TrainerAgent:
 
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if log_metrics_to_tensorboard is True:
-            self.sw = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
+            self.s_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
 
         # Define the two loss functions
         self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
@@ -172,7 +172,8 @@ class TrainerAgent:
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
-        Logs a dictionary object of metric vlaue to the console and to tensorboard if _log_metrics_to_tensorboard is set to true
+        Logs a dictionary object of metric value to the console and to tensorboard
+        if _log_metrics_to_tensorboard is set to true
         :param metric_values: Dictionary object storing the current metrics
         :param global_step: X-Position point of all metric entries
         :param prefix: Used for labelling the metrics
@@ -183,7 +184,7 @@ class TrainerAgent:
             # add the metrics to the tensorboard event file
 
             if self._log_metrics_to_tensorboard is True:
-                self.sw.add_scalar(name, [prefix.replace("_", ""), metric_values[name]], global_step)
+                self.s_writer.add_scalar(name, [prefix.replace("_", ""), metric_values[name]], global_step)
 
     def _process_on_data_plane_file(self, train_data, batch_proc_tmp):
 
@@ -216,30 +217,6 @@ class TrainerAgent:
         return batch_proc_tmp, self._metrics["value_loss"].get()[1]
 
     def train(self):
-        """
-
-        :param net: Gluon network object
-        :param val_data: Gluon dataloader object
-        :param nb_parts: Sets how many different part files exist in the train directory
-        :param lr: Initial learning rate
-        :param momentum:
-        :param wd:
-        :param nb_k_steps: Number of steps in after which to drop the learning rate (assuming the patience counter
-        early dropping hasn't activated beforehand)
-
-        :param patience: Number of batches to wait until no progress on validation loss has been achieved.
-        If the no progress has been done the learning rate is multiplied by the drop factor.
-        :param nb_lr_drops: Number of time to drop the learning rate in total. This defines the end of the train loop
-        :param batch_steps: Number of batches after which the validation loss is evaluated
-        :param k_steps_initial: Initial starting point of the network in terms of process k batches (default 0)
-        :param lr_drop_fac: Dropping factor to the learning rate to apply
-        :param cpu_count: How many cpu threads on the current are available
-        :param batch_size: Batch size to train the network with
-        :param normalize: Weather to use data normalization after loading the data (recommend to set to True)
-        :param export_weights: Sets if network checkpoints should be exported
-        :param export_grad_histograms: Sets if the gradient updates of the weights should be logged to tensorboard
-        :return:
-        """
 
         # set a custom seed for reproducibility
         random.seed(self._seed)
@@ -338,8 +315,8 @@ class TrainerAgent:
                     combined_loss.backward()
 
                     # update the learning rate
-                    lr = self._lr_schedule(cur_it)
-                    self._trainer.set_learning_rate(lr)
+                    learning_rate = self._lr_schedule(cur_it)
+                    self._trainer.set_learning_rate(learning_rate)
 
                     # update the momentum
                     momentum = self._momentum_schedule(cur_it)
@@ -351,7 +328,7 @@ class TrainerAgent:
 
                     # add the graph representation of the network to the tensorboard log file
                     if graph_exported is False and self._log_metrics_to_tensorboard is True:
-                        self.sw.add_graph(self._net)
+                        self.s_writer.add_graph(self._net)
                         graph_exported = True
 
                     # show metrics every thousands steps
@@ -359,7 +336,8 @@ class TrainerAgent:
 
                         # if k_steps < self._warmup_k_steps:
                         # update the learning rate
-                        # self._lr *= k_steps * ((self._lr_first - self._lr_warmup_init) / self._warmup_k_steps) + self._lr_warmup_init #self._lr_drop_fac
+                        # self._lr *= k_steps * ((self._lr_first - self._lr_warmup_init) / self._warmup_k_steps)
+                        # + self._lr_warmup_init #self._lr_drop_fac
                         # self._trainer.set_learning_rate(self._lr)
                         # logging.info('Learning rate update: lr = %.5f', self._lr)
                         # logging.info('=========================================')
@@ -378,7 +356,7 @@ class TrainerAgent:
                         logging.info("Step %dK/%dK - %dms/step", k_steps, k_steps_end, ms_step)
                         logging.info("-------------------------")
                         logging.debug("Iteration %d/%d", cur_it, self._total_it)
-                        logging.debug("lr: %.7f - momentum: %.7f", lr, momentum)
+                        logging.debug("lr: %.7f - momentum: %.7f", learning_rate, momentum)
 
                         train_metric_values = evaluate_metrics(
                             self._metrics, train_data, self._net, nb_batches=25, ctx=self._ctx
@@ -419,7 +397,7 @@ class TrainerAgent:
                                 )
 
                                 if self._log_metrics_to_tensorboard is True:
-                                    self.sw.close()
+                                    self.s_writer.close()
 
                                 return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)
 
@@ -455,7 +433,9 @@ class TrainerAgent:
                                 for _, name in enumerate(self._param_names):
                                     if "bn" not in name and "batch" not in name:
                                         grads.append(self._params[name].grad())
-                                        self.sw.add_histogram(tag=name, values=grads[-1], global_step=k_steps, bins=20)
+                                        self.s_writer.add_histogram(
+                                            tag=name, values=grads[-1], global_step=k_steps, bins=20
+                                        )
 
                             # check if a new checkpoint shall be created
                             if val_loss_best is None or val_metric_values["loss"] < val_loss_best:
@@ -480,17 +460,17 @@ class TrainerAgent:
                             t_s_steps = time()
 
                             # log the samples per second metric to tensorbaord
-                            self.sw.add_scalar(
+                            self.s_writer.add_scalar(
                                 tag="samples_per_second",
                                 value={"hybrid_sync": data.shape[0] * self._batch_steps / t_delta},
                                 global_step=k_steps,
                             )
 
                             # log the current learning rate
-                            self.sw.add_scalar(tag="lr", value=self._lr_schedule(cur_it), global_step=k_steps)
+                            self.s_writer.add_scalar(tag="lr", value=self._lr_schedule(cur_it), global_step=k_steps)
 
                             # log the current momentum value
-                            self.sw.add_scalar(
+                            self.s_writer.add_scalar(
                                 tag="momentum", value=self._momentum_schedule(cur_it), global_step=k_steps
                             )
 
@@ -508,7 +488,7 @@ class TrainerAgent:
                                 )
 
                                 if self._log_metrics_to_tensorboard is True:
-                                    self.sw.close()
+                                    self.s_writer.close()
 
                                 return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)
 

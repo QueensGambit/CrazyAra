@@ -47,12 +47,12 @@ class NeuralNetAPI:
         save_dict = mx.nd.load(self.params_path)
         arg_params = {}
         aux_params = {}
-        for k, v in save_dict.items():
-            tp, name = k.split(":", 1)
+        for key, val in save_dict.items():
+            tp, name = key.split(":", 1)
             if tp == "arg":
-                arg_params[name] = v
+                arg_params[name] = val
             if tp == "aux":
-                aux_params[name] = v
+                aux_params[name] = val
 
         # set the context on CPU, switch to GPU if there is one available
         if ctx == "cpu":
@@ -77,33 +77,33 @@ class NeuralNetAPI:
             executor.copy_params_from(arg_params, aux_params)
             self.executors.append(executor)
 
-    def predict_single(self, x):
+    def predict_single(self, board_state):
         """
         Gets the model prediction of a single input sample.
         This function supports the 'keras' and 'mxnet' as its model type.
-        :param x: Plane representation of a single board state
+        :param board_state: Plane representation of a single board state
         :return: [Value Prediction, Policy Prediction] as a list of numpy arrays
         """
 
         # start a subprocess
-        q = Queue()
-        self.predict_single_thread(q, x)
-        out = q.get()
+        queue = Queue()
+        self.predict_single_thread(queue, board_state)
+        out = queue.get()
 
         return out
 
-    def predict_single_thread(self, queue, x):
+    def predict_single_thread(self, queue, board_state):
         """
         Gets the model prediction of a single input sample.
         This function supports the 'keras' and 'mxnet' as its model type.
-        :param x: Plane representation of a single board state
+        :param board_state: Plane representation of a single board state
         :param queue: Stores the return values
         :return: [Value Prediction, Policy Prediction] as a list of numpy arrays
         """
         out = [None, None]
 
         # choose the first executor object which support length 1
-        pred = self.executors[0].forward(is_train=False, data=np.expand_dims(x, axis=0))
+        pred = self.executors[0].forward(is_train=False, data=np.expand_dims(board_state, axis=0))
 
         out[0] = pred[0].asnumpy()[0]
         # when using a gluon model you still have to apply a softmax activation after the forward pass

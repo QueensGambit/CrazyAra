@@ -8,7 +8,6 @@ Utility class to load the rec dataset in the training loop of the CNN
 """
 import os
 import zlib
-import mxnet as mx
 from mxnet.gluon.data.dataset import recordio, Dataset
 import numpy as np
 from DeepCrazyhouse.configs.main_config import main_config
@@ -24,7 +23,6 @@ class PGNRecordDataset(Dataset):
         """
         Constructor of the PGNRecordDataset class
 
-        :param filename: Name of the .rec file to load (the .rec file must be stored in main_config['rec_dir']
         :param input_shape: Data shape of the plane representation
         :param normalize: If true the inputs will be normalized to [0., 1.]
         """
@@ -55,28 +53,26 @@ class PGNRecordDataset(Dataset):
         Each threads loads an individual datasample from the .rec file
 
         :param idx: String buffer index to load
-        :return: x - plane representation
-                yv - value output (between -1, 1)
-                yp - policy vector
+        :return: board_representation - plane representation
+                output - value output (between -1, 1)
+                policy_vec - policy vector
         """
         item = self._record.read_idx(self._record.keys[idx])
 
-        header, s = mx.recordio.unpack(item)
-        buf = zlib.decompress(s)
+        header, game = recordio.unpack(item)
+        buf = zlib.decompress(game)
 
         data = np.frombuffer(buf, dtype=np.int16)
 
-        x = data[: self.input_shape_flatten]
-        x = x.reshape(self.input_shape)
-        x = x.astype(np.float32)
+        board_representation = data[: self.input_shape_flatten].reshape(self.input_shape).astype(np.float32)
 
         if self.normalize is True:
-            normalize_input_planes(x)
+            normalize_input_planes(board_representation)
 
-        yv = header[1][0]
-        yp = header[1][1]
+        output = header[1][0]
+        policy_vec = header[1][1]
 
-        return x, yv, yp
+        return board_representation, output, policy_vec
 
     def __len__(self):
         return len(self._record.keys)

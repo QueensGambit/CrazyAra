@@ -28,8 +28,8 @@ class RawNetAgent(_Agent):
         value - Value prediction in the current players view from [-1,1]: -1 -> 100% lost, +1 100% won
         selected_move - Python chess move object of the selected move
         confidence - Probability value for the selected move in the probability distribution
-        idx - Integer index of the move which was retuned
-        cp - Centi pawn evaluation which is converted from the value prediction in currents player view
+        idx - Integer index of the move which was returned
+        centipawn - Centi pawn evaluation which is converted from the value prediction in currents player view
         depth - Depth which was reached after the search
         nodes - Number of nodes which have been evaluated in the search
         time_elapsed_s - Elapsed time in seconds for the full search
@@ -49,11 +49,11 @@ class RawNetAgent(_Agent):
 
         # define the remaining return variables
         time_e = time() - t_start_eval
-        cp = value_to_centipawn(pred_value)
+        centipawn = value_to_centipawn(pred_value)
         depth = 1
         nodes = 1
         time_elapsed_s = time_e * 1000
         nps = nodes / time_e
         pv = instinct_move.uci()
 
-        return pred_value, legal_moves, p_vec_small, cp, depth, nodes, time_elapsed_s, nps, pv
+        return pred_value, legal_moves, p_vec_small, centipawn, depth, nodes, time_elapsed_s, nps, pv

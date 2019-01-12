@@ -477,12 +477,14 @@ class _InceptionResnetB(_InceptionResnetBlock):
         self.b_1 = HybridSequential()
         self.b_1.add(Conv2D(channels=ch_1_0, kernel_size=(1, 1), prefix="%s_1_conv0" % name, in_channels=in_ch))
         self.b_1.add(get_act(act_type, prefix="%s_2_%s0" % (name, act_type)))
-        # self.b_1.add(Conv2D(channels=ch_1_1, kernel_size=(1, 7), padding=(0, 3), prefix='%s_1_conv1' % name, in_channels=ch_1_0))
+        # self.b_1.add(Conv2D(channels=ch_1_1, kernel_size=(1, 7),
+        #  padding=(0, 3), prefix='%s_1_conv1' % name, in_channels=ch_1_0))
         self.b_1.add(
             Conv2D(channels=ch_1_1, kernel_size=(1, 5), padding=(0, 2), prefix="%s_1_conv1" % name, in_channels=ch_1_0)
         )
         self.b_1.add(get_act(act_type, prefix="%s_2_%s1" % (name, act_type)))
-        # self.b_1.add(Conv2D(channels=ch_1_2, kernel_size=(7, 1), padding=(3, 0), prefix='%s_1_conv2' % name, in_channels=ch_1_1))
+        # self.b_1.add(Conv2D(channels=ch_1_2, kernel_size=(7, 1),
+        #  padding=(3, 0), prefix='%s_1_conv2' % name, in_channels=ch_1_1))
         self.b_1.add(
             Conv2D(channels=ch_1_2, kernel_size=(5, 1), padding=(2, 0), prefix="%s_1_conv2" % name, in_channels=ch_1_1)
         )
