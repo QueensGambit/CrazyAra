@@ -11,7 +11,7 @@ import numpy as np
 from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
 
 
-class _Agent:
+class Agent:
     """
     The greedy agent always performs the first legal move with the highest move probability
     """
