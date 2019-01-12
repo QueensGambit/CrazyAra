@@ -12,7 +12,6 @@ from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
 
 
 class _Agent:
-
     def __init__(self, temperature=0, temperature_moves=4, verbose=True):
         self.temperature = temperature
         self.temperature_current = temperature
