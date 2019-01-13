@@ -36,13 +36,11 @@ class PGNRecordDataset(Dataset):
             )
 
         filename = main_config["rec_dir"] + dataset_type + ".rec"
-
         self.idx_file = os.path.splitext(filename)[0] + ".idx"
         self.filename = filename
 
         # super(PGNRecordDataset, self).__init__(filename)
         self._record = recordio.MXIndexedRecordIO(self.idx_file, self.filename, "r")
-
         self.input_shape = input_shape
         self.input_shape_flatten = input_shape[0] * input_shape[1] * input_shape[2]
         self.normalize = normalize
@@ -54,8 +52,8 @@ class PGNRecordDataset(Dataset):
 
         :param idx: String buffer index to load
         :return: x - plane representation
-                output - value output (between -1, 1)
-                policy_vec - policy vector
+                y_value - value output (between -1, 1)
+                y_policy - policy vector
         """
         item = self._record.read_idx(self._record.keys[idx])
 
@@ -69,10 +67,10 @@ class PGNRecordDataset(Dataset):
         if self.normalize is True:
             normalize_input_planes(x)
 
-        output = header[1][0]
-        policy_vec = header[1][1]
+        y_value = header[1][0]
+        y_policy = header[1][1]
 
-        return x, output, policy_vec
+        return x, y_value, y_policy
 
     def __len__(self):
         return len(self._record.keys)

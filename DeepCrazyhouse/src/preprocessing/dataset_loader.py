@@ -33,9 +33,9 @@ def _load_dataset_file(dataset_filepath):
     store = zarr.ZipStore(dataset_filepath, mode="r")
     pgn_dataset = zarr.group(store=store)
 
-    starting_idx, x, y_value, move_policy = get_numpy_arrays(pgn_dataset)
+    starting_idx, x, y_value, y_policy = get_numpy_arrays(pgn_dataset)
 
-    return starting_idx, x, y_value, move_policy
+    return starting_idx, x, y_value, y_policy
 
 
 def load_pgn_dataset(
@@ -56,7 +56,7 @@ def load_pgn_dataset(
             starting_idx - defines the index where each game starts
             x - the board representation for all games
             y_value - the game outcome (-1,0,1) for each board position
-            move_policy - the movement policy for the next_move played
+            y_policy - the movement policy for the next_move played
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
     """
 
@@ -86,7 +86,7 @@ def load_pgn_dataset(
     pgn_dataset = zarr.group(store=store)
 
     # Get the data
-    starting_idx, x, y_value, move_policy = get_numpy_arrays(pgn_dataset)
+    starting_idx, x, y_value, y_policy = get_numpy_arrays(pgn_dataset)
 
     if print_statistics is True:
         logging.info("STATISTICS:")
@@ -103,7 +103,7 @@ def load_pgn_dataset(
 
         # the y-vectors need to be casted as well in order to be accepted by the network
         y_value = y_value.astype(np.float32)
-        move_policy = move_policy.astype(np.float32)
+        y_policy = y_policy.astype(np.float32)
 
         # !TODO replace this by function normalize_input_planes()
         mat_pos = x[:, :NB_CHANNELS_POS, :, :]
@@ -125,4 +125,4 @@ def load_pgn_dataset(
         #  after 40 moves of no progress the 40 moves rule for draw applies
         mat_const[:, CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
 
-    return starting_idx, x, y_value, move_policy, pgn_dataset
+    return starting_idx, x, y_value, y_policy, pgn_dataset

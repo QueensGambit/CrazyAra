@@ -112,7 +112,7 @@ def get_numpy_arrays(pgn_dataset):
             starting_idx - defines the index where each game starts
             x - the board representation for all games
             y_value - the game outcome (-1,0,1) for each board position
-            move_policy - the movement policy for the next_move played
+            y_policy - the movement policy for the next_move played
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
     """
     # Get the data
@@ -120,9 +120,9 @@ def get_numpy_arrays(pgn_dataset):
     starting_idx = np.array(pgn_dataset["start_indices"])
     x = np.array(pgn_dataset["x"])
     y_value = np.array(pgn_dataset["y_value"])
-    move_policy = np.array(pgn_dataset["y_policy"])
+    y_policy = np.array(pgn_dataset["y_policy"])
 
-    return starting_idx, x, y_value, move_policy
+    return starting_idx, x, y_value, y_policy
 
 
 def normalize_input_planes(x):
