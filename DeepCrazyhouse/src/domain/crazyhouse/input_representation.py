@@ -101,7 +101,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
     for idx, color in enumerate(chess.COLORS):
         # the PIECE_TYPE is an integer list in python-chess
         for piece_type in chess.PIECE_TYPES:
-            # define the channel by the piecetype (the input representation uses the same ordering as python-chess)
+            # define the channel by the piece_type (the input representation uses the same ordering as python-chess)
             # we add an offset for the black pieces
             # note that we subtract 1 because in python chess the PAWN has index 1 and not 0
             channel = (piece_type - 1) + idx * len(chess.PIECE_TYPES)

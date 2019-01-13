@@ -95,7 +95,7 @@ class MCTSAgent(_Agent):
                                         piece in their pocket. The number of legal-moves is higher when drop
                                         moves are available.
         :param cpuct: CPUCT-value which weights the balance between the policy/action and value term.
-                     The playstyle depends strongly on this value.
+                     The play style depends strongly on this value.
         :param dirichlet_epsilon: Weigh value for the dirichlet noise. If 0. -> no noise. If 1. -> complete noise.
                                 The dirichlet noise ensures that unlikely nodes can be explored
         :param dirichlet_alpha: Alpha parameter of the dirichlet noise which is applied to the prior policy for the

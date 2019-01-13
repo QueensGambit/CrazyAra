@@ -68,7 +68,7 @@ class ResidualBlockX(HybridBlock):
 
     def hybrid_forward(self, F, x):
         """
-        Implemntation of the forward pass of the residual block.
+        Implementation of the forward pass of the residual block.
         Uses a broadcast add operation for the shortcut and the output of the residual block
         :param F: Abstract Function handle which works for gluon & mxnet
         :param x: Input to the ResidualBlock
@@ -307,7 +307,7 @@ class Rise(HybridBlock):
 
     def hybrid_forward(self, F, x):
         """
-        Implemntation of the forward pass of the full network
+        Implementation of the forward pass of the full network
         Uses a broadcast add operation for the shortcut and the output of the residual block
         :param F: Abstract Function handle which works for gluon & mxnet
         :param x: Input to the ResidualBlock

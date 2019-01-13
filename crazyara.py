@@ -80,7 +80,7 @@ except:
     log_file = None
     # print out the error message
     traceback_text = traceback.format_exc()
-    print("info string An error occured while trying to open the log_file %s" % log_file_path)
+    print("info string An error occurred while trying to open the log_file %s" % log_file_path)
     print(traceback_text)
 
 
@@ -476,7 +476,7 @@ def new_game():
 
 def set_options(cmd_list):
     """
-    Updates the internal options as requested by the use via the uci-protocoll
+    Updates the internal options as requested by the use via the uci-protocol
     An example call could be: "setoption name nb_threads value 1"
     :param cmd_list: List of received of commands
     :return:

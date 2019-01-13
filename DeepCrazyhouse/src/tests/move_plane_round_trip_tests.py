@@ -24,7 +24,7 @@ class MovePlaneRoundTripTests(unittest.TestCase):
     Tests the conversion from moves to planes and back
     Queen moves | 56     ->  0..55
     Knight moves | 8     -> 56..63
-    Underpromotions | 9  -> 64..72
+    Under promotions | 9  -> 64..72
     Drop | 5             -> 73..77
     """
 
@@ -79,13 +79,13 @@ class MovePlaneRoundTripTests(unittest.TestCase):
         board = CrazyhouseBoard()
 
         move = construct_move_from_positions([6, 4], [7, 4], promotion=3)
-        assert_round_trip(self, board, move, comment="underpromotion (straight)")
+        assert_round_trip(self, board, move, comment="under promotion (straight)")
 
         move = construct_move_from_positions([6, 4], [7, 3], promotion=3)
-        assert_round_trip(self, board, move, comment="underpromotion (left)")
+        assert_round_trip(self, board, move, comment="under promotion (left)")
 
         move = construct_move_from_positions([6, 4], [7, 5], promotion=3)
-        assert_round_trip(self, board, move, comment="underpromotion (right)")
+        assert_round_trip(self, board, move, comment="under promotion (right)")
 
     def test_move_planes_round_trip_given_drop_expect_round_trip(self):
         board = CrazyhouseBoard()

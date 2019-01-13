@@ -8,19 +8,10 @@ Please describe what the content of this file is about
 """
 import glob
 import logging
-import chess
 import numpy as np
 import zarr
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.crazyhouse.constants import (
-    CHANNEL_MAPPING_CONST,
-    CHANNEL_MAPPING_POS,
-    MAX_NB_MOVES,
-    MAX_NB_NO_PROGRESS,
-    MAX_NB_PRISONERS,
-    NB_CHANNELS_POS,
-    POCKETS_SIZE_PIECE_TYPE,
-)
+from DeepCrazyhouse.src.domain.util import normalize_input_planes
 from DeepCrazyhouse.src.domain.util import get_numpy_arrays
 
 
@@ -100,29 +91,9 @@ def load_pgn_dataset(
 
     if normalize is True:
         x = x.astype(np.float32)
-
         # the y-vectors need to be casted as well in order to be accepted by the network
         y_value = y_value.astype(np.float32)
         y_policy = y_policy.astype(np.float32)
-
-        # !TODO replace this by function normalize_input_planes()
-        mat_pos = x[:, :NB_CHANNELS_POS, :, :]
-        mat_const = x[:, NB_CHANNELS_POS:, :, :]
-
-        # iterate over all pieces except the king
-        for p_type in chess.PIECE_TYPES[:-1]:
-            # p_type -1 because p_type starts with 1
-            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
-
-            mat_pos[:, channel, :, :] /= MAX_NB_PRISONERS
-            # the prison for black begins 5 channels later
-            mat_pos[:, channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
-
-        ### Total Move Count
-        # 500 was set as the max number of total moves
-        mat_const[:, CHANNEL_MAPPING_CONST["total_mv_cnt"], :, :] /= MAX_NB_MOVES
-        ### No progress count
-        #  after 40 moves of no progress the 40 moves rule for draw applies
-        mat_const[:, CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
+        normalize_input_planes(x)
 
     return starting_idx, x, y_value, y_policy, pgn_dataset

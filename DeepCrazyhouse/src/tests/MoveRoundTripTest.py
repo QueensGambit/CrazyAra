@@ -83,11 +83,11 @@ class MoveRoundTripTest(unittest.TestCase):
 
         self.assertEqual(prob, 1, msg="The policy vector has to be one hot encoded.")
 
-        selected_moves, move_probabilites = policy_to_moves(board, yp_val[1])
+        selected_moves, move_probabilities = policy_to_moves(board, yp_val[1])
         mv_conv2 = selected_moves[0]
 
-        self.assertGreater(move_probabilites[0], 0, msg="The move probability must be greater 0")
-        self.assertEqual(move_probabilites[0], 1, msg="The policy vector has to be one hot encoded.")
+        self.assertGreater(move_probabilities[0], 0, msg="The move probability must be greater 0")
+        self.assertEqual(move_probabilities[0], 1, msg="The policy vector has to be one hot encoded.")
 
         converted_moves = [mv_conv0, mv_conv1, mv_conv2]
 
@@ -120,11 +120,11 @@ class MoveRoundTripTest(unittest.TestCase):
 
         self.assertEqual(prob, 1, msg="The policy vector has to be one hot encoded.")
 
-        selected_moves, move_probabilites = policy_to_moves(board, yp_val[1])
+        selected_moves, move_probabilities = policy_to_moves(board, yp_val[1])
         mv_conv2 = selected_moves[0]
 
-        self.assertGreater(move_probabilites[0], 0, msg="The move probability must be greater 0")
-        self.assertEqual(move_probabilites[0], 1, msg="The policy vector has to be one hot encoded.")
+        self.assertGreater(move_probabilities[0], 0, msg="The move probability must be greater 0")
+        self.assertEqual(move_probabilities[0], 1, msg="The policy vector has to be one hot encoded.")
 
         converted_moves = [mv_conv0, mv_conv1, mv_conv2]
 

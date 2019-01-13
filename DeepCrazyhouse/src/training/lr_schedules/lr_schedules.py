@@ -5,7 +5,7 @@ Created on 30.09.18
 @author: queensgambit
 
 This file contains the description of the common Advanced Learning rates.
-Code is basde from:
+Code is based on:
 https://mxnet.incubator.apache.org/tutorials/gluon/learning_rate_schedules_advanced.html
 """
 

@@ -97,7 +97,7 @@ def get_dic_sorted_by_key(dic):
     Returns the values of a dictionary based on its sorted keys ordering
 
     :param dic: dictionary with typically an integer as key type
-    :return: list: sorted values based on key orderung
+    :return: list: sorted values by key ordering
     """
 
     return [dic[key] for key in sorted(dic)]
@@ -197,12 +197,12 @@ def customize_input_planes(x):
 def mult_axis_by_vec(mat, vec):
     # https://stackoverflow.com/questions/30031828/multiply-numpy-ndarray-with-1d-array-along-a-given-axis
     """
-    Multiplies a matrix by a given vectory elementwise along a given axis
+    Multiplies a matrix by a given vector element-wise along a given axis
     :param mat: Numpy matrix to perform the operation on
     :param vec: Numpy array which is a single vector (must have same dim as desired axis)
-    :return Elementwise multiplied matrix across axis
+    :return Element-wise multiplied matrix across axis
     """
-    # Given axis along which elementwise multiplication with broadcasting
+    # Given axis along which element-wise multiplication with broadcasting
     # is to be performed
     axis = 0
 
@@ -212,7 +212,7 @@ def mult_axis_by_vec(mat, vec):
     dim_array = np.ones((1, mat.ndim), np.int16).ravel()
     dim_array[axis] = -1
 
-    # Reshape b with dim_array and perform elementwise multiplication with
+    # Reshape b with dim_array and perform element-wise multiplication with
     # broadcasting along the singleton dimensions for the final output
     b_reshaped = vec.reshape(dim_array)
     return mat * b_reshaped
