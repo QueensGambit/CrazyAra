@@ -122,7 +122,7 @@ def get_planes_from_game(game, mate_in_one=False):
             # create a new entry
             fen_dic[fen] = 1
         # we insert the move i (and not i+1), because the start is the empty board position
-        y_policy = all_moves[i]
+        next_move = all_moves[i]
 
         # check if you need to export a mate_in_one_scenario
         if mate_in_one is False or i == len(all_moves) - 1:
@@ -135,7 +135,7 @@ def get_planes_from_game(game, mate_in_one=False):
             y_value.append(y_init)
             # add the next move defined in policy vector notation to the policy list
             # the network always sees the board as if he's the white player, that's the move is mirrored fro black
-            y_policy.append(move_to_policy(y_policy, is_white_to_move=board.turn))
+            y_policy.append(move_to_policy(next_move, is_white_to_move=board.turn))
 
         # flip the y_init value after each move
         y_init *= -1

@@ -6,6 +6,14 @@ Created on 09.06.18
 
 Loads the pgn-file and calls the pgn_converter functions to create a plane represenation.
 Multiprocessing is used for loading, computing and saving.
+
+IMPORTANT NOTICE: This file is only compatible with python-chess v0.23.11 at the moment.
+Due to major changes in reading pgn files in the python-chess library most of the loading pipeline broke!
+    For the moment use:
+    $ pip uninstall python-chess
+    $ pip install python-chess==0.23.11
+    Later change back to the newest version again:
+    $ pip install python-chess
 """
 import datetime
 import gc
@@ -45,6 +53,7 @@ class PGN2PlanesConverter:
         clevel=5,
         log_lvl=logging.DEBUG,
         dataset_type="train",
+        use_all_games=False,
     ):
         """
         Set the member variables and loads the config file
@@ -68,6 +77,9 @@ class PGN2PlanesConverter:
             root = logging.getLogger()
             root.setLevel(logging.INFO) # root.setLevel(logging.DEBUG)...
         :param dataset_type: either ['train', 'val', 'test', 'mate_in_one']
+        :param use_all_games: A boolean if set to true all conditions are ignored and all games are converted in the
+                              pgn files. This has the condition that the pgns have been properly preprocessed before.
+                              (This was option was added for the Stockfish self play dataset).
         :return:
         """
         if termination_conditions is None:
@@ -81,6 +93,7 @@ class PGN2PlanesConverter:
         self._compression = compression
         self._clevel = clevel
         self._log_lvl = log_lvl
+        self.use_all_games = use_all_games
 
         local_root = logging.getLogger()
         local_root.setLevel(log_lvl)
@@ -223,10 +236,10 @@ class PGN2PlanesConverter:
         for game_pgn in pgns:
             # we need to create a deep copy, otherwise the end of the file is reached for later
             game_pgn_copy = deepcopy(game_pgn)
-            for _, headers in chess.pgn.read_headers(game_pgn_copy):
+            for _, headers in chess.pgn.scan_headers(game_pgn_copy):
                 for term_cond in self._termination_conditions:
-                    if term_cond in headers["Termination"]:
-                        if (
+                    if self.use_all_games or term_cond in headers["Termination"]:
+                        if self.use_all_games or (
                             int(headers["WhiteElo"]) >= self._min_elo_both
                             and int(headers["BlackElo"]) >= self._min_elo_both
                         ):
