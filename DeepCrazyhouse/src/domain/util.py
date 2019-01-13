@@ -97,7 +97,7 @@ def get_dic_sorted_by_key(dic):
     Returns the values of a dictionary based on its sorted keys ordering
 
     :param dic: dictionary with typically an integer as key type
-    :return: list: sorted values by key ordering
+    :return: list: sorted values based on key ordering
     """
 
     return [dic[key] for key in sorted(dic)]

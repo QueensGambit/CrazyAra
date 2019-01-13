@@ -13,7 +13,7 @@ class OutputRepresentationTests(unittest.TestCase):
     Tests the correct behaviour for converting Move objects into their corresponding plane representation
     Queen moves | 56     ->  0..55
     Knight moves | 8     -> 56..63
-    Under-promotions | 9  -> 64..72
+    Under promotions | 9  -> 64..72
     Drop | 5             -> 73..77
     """
 

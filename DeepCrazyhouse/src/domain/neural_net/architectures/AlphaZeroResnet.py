@@ -28,7 +28,7 @@ computing the policy and value. The policy head applies the following modules:
 (2) Batch normalization
 (3) A rectifier nonlinearity
 (4) A fully connected linear layer that outputs a vector of size 192 +​ 1 =​ 362,
-corresponding to logic probabilities for all intersections and the pass move
+corresponding to logistic probabilities for all intersections and the pass move
 The value head applies the following modules:
 (1) A convolution of 1 filter of kernel size 1 ×​1 with stride 1
 (2) Batch normalization

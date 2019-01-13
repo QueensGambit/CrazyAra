@@ -124,7 +124,7 @@ class Node:
                 value[thresh_idces] = 0
                 value[value < 0] = 0
 
-                # re-normalize ot 1
+                # re-normalize to 1
                 visit /= visit.sum()
 
                 value /= value.sum()
