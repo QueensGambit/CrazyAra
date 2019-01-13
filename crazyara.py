@@ -167,7 +167,7 @@ def setup_network():
         param_validity_check()
 
         nets = []
-        for i in range(S["neural_net_services"]):
+        for _ in range(S["neural_net_services"]):
             nets.append(NeuralNetAPI(ctx=S["context"], batch_size=S["batch_size"]))
 
         RAWNET_AGENT = RawNetAgent(
@@ -334,15 +334,22 @@ def perform_action(cmd_list):
 
     if S["use_raw_network"] or movetime_ms <= S["threshold_time_for_raw_net_ms"]:
         log_print("info string Using raw network for fast mode...")
-        value, selected_move, confidence, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = RAWNET_AGENT.perform_action(
+        value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = RAWNET_AGENT.perform_action(
             GAMESTATE
         )
     else:
-        value, selected_move, confidence, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = MCTS_AGENT.perform_action(
+        value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = MCTS_AGENT.perform_action(
             GAMESTATE
         )
 
-    SCORE = "score centipawn %d depth %d nodes %d time %d nps %d pv %s" % (centipawn, depth, nodes, time_elapsed_s, nps, pv)
+    SCORE = "score centipawn %d depth %d nodes %d time %d nps %d pv %s" % (
+        centipawn,
+        depth,
+        nodes,
+        time_elapsed_s,
+        nps,
+        pv,
+    )
     if ENABLE_LICHESS_DEBUG_MSG:
         try:
             write_score_to_file(SCORE)
