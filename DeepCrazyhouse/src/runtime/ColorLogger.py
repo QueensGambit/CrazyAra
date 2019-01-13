@@ -44,56 +44,56 @@ def add_coloring_to_emit_windows(fn):
 
     # noinspection PyPep8Naming,PyUnusedLocal
     def new(*args):
-        FOREGROUND_BLUE = 0x0001  # text color contains blue.
-        FOREGROUND_GREEN = 0x0002  # text color contains green.
-        FOREGROUND_RED = 0x0004  # text color contains red.
-        FOREGROUND_INTENSITY = 0x0008  # text color is intensified.
-        FOREGROUND_WHITE = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED
+        foreground_blue = 0x0001  # text color contains blue.
+        foreground_green = 0x0002  # text color contains green.
+        foreground_red = 0x0004  # text color contains red.
+        foreground_intensity = 0x0008  # text color is intensified.
+        foreground_white = foreground_blue | foreground_green | foreground_red
         # winbase.h
-        STD_INPUT_HANDLE = -10
-        STD_OUTPUT_HANDLE = -11
-        STD_ERROR_HANDLE = -12
+        std_input_handle = -10
+        std_output_handle = -11
+        std_error_handle = -12
 
         # wincon.h
-        FOREGROUND_BLACK = 0x0000
-        FOREGROUND_BLUE = 0x0001
-        FOREGROUND_GREEN = 0x0002
-        FOREGROUND_CYAN = 0x0003
-        FOREGROUND_RED = 0x0004
-        FOREGROUND_MAGENTA = 0x0005
-        FOREGROUND_YELLOW = 0x0006
-        FOREGROUND_GREY = 0x0007
-        FOREGROUND_INTENSITY = 0x0008  # foreground color is intensified.
+        foreground_black = 0x0000
+        foreground_blue = 0x0001
+        foreground_green = 0x0002
+        foreground_cyan = 0x0003
+        foreground_red = 0x0004
+        foreground_magenta = 0x0005
+        foreground_yellow = 0x0006
+        foreground_gray = 0x0007
+        foreground_intensity = 0x0008  # foreground color is intensified.
 
-        BACKGROUND_BLACK = 0x0000
-        BACKGROUND_BLUE = 0x0010
-        BACKGROUND_GREEN = 0x0020
-        BACKGROUND_CYAN = 0x0030
-        BACKGROUND_RED = 0x0040
-        BACKGROUND_MAGENTA = 0x0050
-        BACKGROUND_YELLOW = 0x0060
-        BACKGROUND_GREY = 0x0070
-        BACKGROUND_INTENSITY = 0x0080  # background color is intensified.
+        background_black = 0x0000
+        background_blue = 0x0010
+        background_green = 0x0020
+        background_cyan = 0x0030
+        background_red = 0x0040
+        background_magenta = 0x0050
+        background_yellow = 0x0060
+        background_gray = 0x0070
+        background_intensity = 0x0080  # background color is intensified.
 
         levelno = args[1].levelno
         if levelno >= 50:
-            color = BACKGROUND_YELLOW | FOREGROUND_RED | FOREGROUND_INTENSITY | BACKGROUND_INTENSITY
+            color = background_yellow | foreground_red | foreground_intensity | background_intensity
         elif levelno >= 40:
-            color = FOREGROUND_RED | FOREGROUND_INTENSITY
+            color = foreground_red | foreground_intensity
         elif levelno >= 30:
-            color = FOREGROUND_YELLOW | FOREGROUND_INTENSITY
+            color = foreground_yellow | foreground_intensity
         elif levelno >= 20:
-            color = FOREGROUND_GREEN
+            color = foreground_green
         elif levelno >= 10:
-            color = FOREGROUND_MAGENTA
+            color = foreground_magenta
         else:
-            color = FOREGROUND_WHITE
+            color = foreground_white
         # noinspection PyProtectedMember
         args[0]._set_color(color)
 
         ret = fn(*args)
         # noinspection PyProtectedMember
-        args[0]._set_color(FOREGROUND_WHITE)
+        args[0]._set_color(foreground_white)
         # print "after"
         return ret
 
@@ -103,16 +103,16 @@ def add_coloring_to_emit_windows(fn):
 def add_coloring_to_emit_ansi(fn):
     # add methods we need to the class
     def new(*args):
-        levelno = args[1].levelno
-        if levelno >= 50:
+        level_number = args[1].levelno
+        if level_number >= 50:
             color = "\x1b[31m"  # red
-        elif levelno >= 40:
+        elif level_number >= 40:
             color = "\x1b[31m"  # red
-        elif levelno >= 30:
+        elif level_number >= 30:
             color = "\x1b[33m"  # yellow
-        elif levelno >= 20:
+        elif level_number >= 20:
             color = "\x1b[94m"  # light blue
-        elif levelno >= 10:
+        elif level_number >= 10:
             color = "\x1b[32m"  # green
             # color = '\x1b[90m' # bright black
             #
@@ -137,16 +137,16 @@ def enable_color_logging(debug_lvl=logging.DEBUG):
     root = logging.getLogger()
     root.setLevel(debug_lvl)
 
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(debug_lvl)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(debug_lvl)
     # FORMAT = '[%(asctime)-s][%(name)-s][\033[1m%(levelname)-7s\033[0m] %(message)-s'
     # FORMAT='%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 
     # FORMAT from https://github.com/xolox/python-coloredlogs
-    FORMAT = "%(asctime)s %(name)s[%(process)d] \033[1m%(levelname)s\033[0m %(message)s"
+    formatting_method = "%(asctime)s %(name)s[%(process)d] \033[1m%(levelname)s\033[0m %(message)s"
 
     # FORMAT="%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
-    formatter = logging.Formatter(FORMAT, "%Y-%m-%d %H:%M:%S")
+    formatter = logging.Formatter(formatting_method, "%Y-%m-%d %H:%M:%S")
 
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
+    console_handler.setFormatter(formatter)
+    root.addHandler(console_handler)

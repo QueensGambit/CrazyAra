@@ -370,7 +370,7 @@ class MCTSAgent(_Agent):
             self.root_node.child_nodes[0] = child_node  # connect the child to the root
             # assign the value of the root node as the q-value for the child
             # here we must invert the invert the value because it's the value prediction of the next state
-            self.root_node.q[0] = -value
+            self.root_node.q_value[0] = -value
 
     def _run_mcts_search(self, state):
         """
@@ -656,7 +656,7 @@ class MCTSAgent(_Agent):
                             with parent_node.lock:
                                 value = 99
 
-                    if parent_node.v > 0.65:  # and state.are_pocket_empty(): #and pipe_id == 0:
+                    if parent_node.initial_value > 0.65:  # and state.are_pocket_empty(): #and pipe_id == 0:
                         fac = 0.25  # test of adding dirichlet noise to a new node
 
                         if len(parent_node.legal_moves) < 20:
@@ -747,8 +747,10 @@ class MCTSAgent(_Agent):
                 cpuct = self.cpuct
             # calculate the current u values
             # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-            u_value = cpuct * parent_node.p * (np.sqrt(parent_node.n_sum) / (1 + parent_node.n))
-            child_idx = (parent_node.q + u_value).argmax()
+            u_value = (
+                cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_number_visits))
+            )
+            child_idx = (parent_node.q_value + u_value).argmax()
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
 
     def _select_node_based_on_mcts_policy(self, parent_node: Node):
@@ -759,7 +761,7 @@ class MCTSAgent(_Agent):
         """
 
         child_idx = parent_node.get_mcts_policy(self.q_value_weight).argmax()
-        nb_visits = parent_node.n[child_idx]
+        nb_visits = parent_node.child_number_visits[child_idx]
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], nb_visits, child_idx
 
     def show_next_pred_line(self):

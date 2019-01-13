@@ -45,8 +45,8 @@ class GameState(_GameState):
     def get_legal_moves(self):
         # return list(self.board.legal_moves)
         legal_moves = []
-        for mv in self.board.generate_legal_moves():
-            legal_moves.append(mv)
+        for move in self.board.generate_legal_moves():
+            legal_moves.append(move)
         return legal_moves
 
     def is_white_to_move(self):

@@ -70,8 +70,8 @@ def get_planes_from_game(game, mate_in_one=False):
     :return: x - the position description of all moves in the game
              y_value - the target values of the scene description. Here the game outcome.
                   returns -1 if the current player lost, +1 if the current player won, 0 for draw
-             y_policy - the policy vector one-hot encoded indicating the next move the player current player chose in
-                        this position
+             y_policy - the policy vector one-hot encoded indicating the next move the player current player chose
+              in this position
     """
 
     # fen dic is a dictionary which maps the fen description to its number of occurrences
@@ -104,21 +104,16 @@ def get_planes_from_game(game, mate_in_one=False):
     all_moves = []
     for move in game.main_line():
         all_moves.append(move)
-
     # Iterate through all moves (except the last one) and play them on a board.
     # you don't want to push the last move on the board because you had no movement policy to learn from in this case
-
     # The moves get pushed at the end of the for-loop and is only used in the next loop.
     # Therefore we can iterate over 'all' moves
     for i, move in enumerate(all_moves):
-
         # by default the positions hasn't occurred before
         board_occ = 0
-
         fen = board.fen()
         # remove the halfmove counter & move counter from this fen to make repetitions possible
         fen = fen[: fen.find(" ") + 2]
-
         # save the board state to the fen dictionary
         if fen in list(fen_dic.keys()):
             fen_dic[fen] += 1
@@ -126,26 +121,21 @@ def get_planes_from_game(game, mate_in_one=False):
         else:
             # create a new entry
             fen_dic[fen] = 1
-
         # we insert the move i (and not i+1), because the start is the empty board position
-        next_move = all_moves[i]
+        y_policy = all_moves[i]
 
         # check if you need to export a mate_in_one_scenario
         if mate_in_one is False or i == len(all_moves) - 1:
-
             # receive the board and the evaluation of the current position in plane representation
             # We don't want to store float values because the integer datatype is cheaper,
             #  that's why normalize is set to false
             x_cur = board_to_planes(board, board_occ, normalize=False)
-
             # add the evaluation of 1 position to the list
             x.append(x_cur)
-
             y_value.append(y_init)
-
             # add the next move defined in policy vector notation to the policy list
             # the network always sees the board as if he's the white player, that's the move is mirrored fro black
-            y_policy.append(move_to_policy(next_move, is_white_to_move=board.turn))
+            y_policy.append(move_to_policy(y_policy, is_white_to_move=board.turn))
 
         # flip the y_init value after each move
         y_init *= -1

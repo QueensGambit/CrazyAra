@@ -117,8 +117,8 @@ def policy_to_moves(board: chess.variant.CrazyhouseBoard, policy_vec, normalize=
         else:
             mv_uci = LABELS_MIRRORED[mv_idx]
 
-        mv = chess.Move.from_uci(mv_uci)
-        selected_moves.append(mv)
+        move = chess.Move.from_uci(mv_uci)
+        selected_moves.append(move)
 
     return selected_moves, move_probabilites
 
@@ -145,25 +145,25 @@ def set_illegal_moves_to_zero(board: chess.variant.CrazyhouseBoard, policy_vec, 
     # fast routine if only 1 move is available
     if nb_legal_moves == 1:
 
-        mv = legal_moves[0]
+        move = legal_moves[0]
 
         # get the according label index for the selected move
         if board.turn is chess.WHITE:
-            idx = MV_LOOKUP[mv.uci()]
+            idx = MV_LOOKUP[move.uci()]
         else:
-            idx = MV_LOOKUP_MIRRORED[mv.uci()]
+            idx = MV_LOOKUP_MIRRORED[move.uci()]
         policy_vec_out[idx] = 1
 
         return policy_vec_out, 1
 
     # iterate over all legal move and get the move probabilities
-    for mv in legal_moves:
+    for move in legal_moves:
 
         # get the according label index for the selected move
         if board.turn is chess.WHITE:
-            idx = MV_LOOKUP[mv.uci()]
+            idx = MV_LOOKUP[move.uci()]
         else:
-            idx = MV_LOOKUP_MIRRORED[mv.uci()]
+            idx = MV_LOOKUP_MIRRORED[move.uci()]
 
         policy_vec_out[idx] = policy_vec[idx]
 
@@ -188,17 +188,17 @@ def get_probs_of_move_list(policy_vec: np.ndarray, mv_list: [chess.Move], is_whi
     # allocate sufficient memory
     p_vec_small = np.zeros(len(mv_list), np.float32)
 
-    for i, mv in enumerate(mv_list):
+    for idx, move in enumerate(mv_list):
 
         if is_white_to_move is True:
             # find the according index in the vector
-            idx = MV_LOOKUP[mv.uci()]
+            idx = MV_LOOKUP[move.uci()]
         else:
             # use the mirrored look-up table instead
-            idx = MV_LOOKUP_MIRRORED[mv.uci()]
+            idx = MV_LOOKUP_MIRRORED[move.uci()]
 
         # set the right prob value
-        p_vec_small[i] = policy_vec[idx]
+        p_vec_small[idx] = policy_vec[idx]
 
     if normalize is True:
         p_vec_small /= sum(p_vec_small)

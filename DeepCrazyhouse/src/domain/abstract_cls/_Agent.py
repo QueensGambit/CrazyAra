@@ -12,7 +12,6 @@ from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
 
 
 class _Agent:
-
     def __init__(self, temperature=0, temperature_moves=4, verbose=True):
         self.temperature = temperature
         self.temperature_current = temperature
@@ -24,15 +23,15 @@ class _Agent:
 
     def perform_action(self, state: _GameState):
         """
-        Retuns a selected move given a game state by calling evaluate_board_state(state) in order to get a probability
+        Returns a selected move given a game state by calling evaluate_board_state(state) in order to get a probability
         distribution.
         :param state: Game state object for a board position
         :return:
         value - Value prediction in the current players view from [-1,1]: -1 -> 100% lost, +1 100% won
         selected_move - Python chess move object of the selected move
         confidence - Probability value for the selected move in the probability distribution
-        idx - Integer index of the move which was retuned
-        cp - Centi pawn evaluation which is converted from the value prediction in currents player view
+        idx - Integer index of the move which was returned
+        centipawn - Centi pawn evaluation which is converted from the value prediction in currents player view
         depth - Depth which was reached after the search
         nodes - Number of nodes which have been evaluated in the search
         time_elapsed_s - Elapsed time in seconds for the full search
@@ -40,10 +39,10 @@ class _Agent:
         pv - Calculated best line for both players
         """
         # the first step is to call you policy agent to evaluate the given position
-        value, legal_moves, p_vec_small, cp, depth, nodes, time_elapsed_s, nps, pv = self.evaluate_board_state(state)
+        value, legal_moves, policy, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.evaluate_board_state(state)
 
-        if len(legal_moves) != len(p_vec_small):
-            raise Exception("Legal move list %s is uncompatible to policy vector %s" % (legal_moves, p_vec_small))
+        if len(legal_moves) != len(policy):
+            raise Exception("Legal move list %s is incompatible to policy vector %s" % (legal_moves, policy))
 
         if state.get_fullmove_number() <= self.temperature_moves:
             self.temperature_current = self.temperature
@@ -56,25 +55,25 @@ class _Agent:
             idx = 0
         else:
             if self.temperature_current <= 0.01:
-                idx = p_vec_small.argmax()
+                idx = policy.argmax()
             else:
-                p_vec_small = self._apply_temperature_to_policy(p_vec_small)
-                idx = np.random.choice(range(len(legal_moves)), p=p_vec_small)
+                policy = self._apply_temperature_to_policy(policy)
+                idx = np.random.choice(range(len(legal_moves)), p=policy)
 
             selected_move = legal_moves[idx]
-            confidence = p_vec_small[idx]
+            confidence = policy[idx]
 
             if value > 0:
                 # check for draw and decline if value is greater 0
                 state_future = deepcopy(state)
                 state_future.apply_move(selected_move)
                 if state_future.get_pythonchess_board().can_claim_threefold_repetition() is True:
-                    p_vec_small[idx] = 0
-                    idx = p_vec_small.argmax()
+                    policy[idx] = 0
+                    idx = policy.argmax()
                     selected_move = legal_moves[idx]
-                    confidence = p_vec_small[idx]
+                    confidence = policy[idx]
 
-        return value, selected_move, confidence, idx, cp, depth, nodes, time_elapsed_s, nps, pv
+        return value, selected_move, confidence, idx, centipawn, depth, nodes, time_elapsed_s, nps, pv
 
     def _apply_temperature_to_policy(self, p_vec_small):
         """

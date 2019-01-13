@@ -9,12 +9,15 @@ The architecture incorporates new ideas and techniques described in recent paper
 
 R - ResneXt (Aggregated Residual Transformations for Deep Neural Networks, Xie et al., http://arxiv.org/abs/1611.05431)
             (Deep Residual Learning for Image Recognition, He et al., https://arxiv.org/pdf/1512.03385.pdf)
-I - Inception (Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning,  Szegedy et al., https://arxiv.org/pdf/1602.07261.pdf)
-              (Rethinking the Inception Architecture for Computer Vision - https://arxiv.org/pdf/1512.00567.pdf, Szegedy et al., https://arxiv.org/pdf/1512.00567.pdf)
+I - Inception (Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning,
+                Szegedy et al., https://arxiv.org/pdf/1602.07261.pdf)
+              (Rethinking the Inception Architecture for Computer Vision - https://arxiv.org/pdf/1512.00567.pdf,
+               Szegedy et al., https://arxiv.org/pdf/1512.00567.pdf)
 S - Squeeze (Squeeze-and-Excitation Networks,  Xie et al., https://arxiv.org/pdf/1709.01507.pdf)
 E - Excitation
 
-The proposed model architecture has fewer parameters, faster inference and training time while maintaining an equal amount of depth
+The proposed model architecture has fewer parameters,
+faster inference and training time while maintaining an equal amount of depth
 compared to the architecture proposed by DeepMind (19 residual layers with 256 filters).
 On our 10,000 games benchmark dataset it achieved a lower validation error.
 """

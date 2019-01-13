@@ -73,9 +73,9 @@ def show_promask(bin_mask):
     :param bin_mask: Binary which are used by python-chess
     :return: nothing
     """
-    for i, c in enumerate(bin_mask):
-        print(c, end=" ")
-        if i % 8 == 7:
+    for idx, char in enumerate(bin_mask):
+        print(char, end=" ")
+        if idx % 8 == 7:
             print()
 
 
@@ -109,21 +109,20 @@ def get_numpy_arrays(pgn_dataset):
 
     :param pgn_dataset: dataset file handle
     :return: numpy-arrays:
-            s_idcs - defines the index where each game starts
+            starting_idx - defines the index where each game starts
             x - the board representation for all games
-            yv - the game outcome (-1,0,1) for each board position
-            yp - the movement policy for the next_move played
+            y_value - the game outcome (-1,0,1) for each board position
+            y_policy - the movement policy for the next_move played
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
     """
     # Get the data
 
-    s_idcs = np.array(pgn_dataset["start_indices"])
-
+    starting_idx = np.array(pgn_dataset["start_indices"])
     x = np.array(pgn_dataset["x"])
-    yv = np.array(pgn_dataset["y_value"])
-    yp = np.array(pgn_dataset["y_policy"])
+    y_value = np.array(pgn_dataset["y_value"])
+    y_policy = np.array(pgn_dataset["y_policy"])
 
-    return s_idcs, x, yv, yp
+    return starting_idx, x, y_value, y_policy
 
 
 def normalize_input_planes(x):
@@ -143,11 +142,11 @@ def normalize_input_planes(x):
     # iterate over all pieces except the king, (because the king can't be in a pocket)
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+        channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-        mat_pos[ch, :, :] /= MAX_NB_PRISONERS
+        mat_pos[channel, :, :] /= MAX_NB_PRISONERS
         # the prison for black begins 5 channels later
-        mat_pos[ch + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
+        mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
 
     ### Total Move Count
     # 500 was set as the max number of total moves
@@ -164,11 +163,11 @@ MATRIX_NORMALIZER = np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH))
 MATRIX_NORMALIZER = normalize_input_planes(MATRIX_NORMALIZER)
 
 
-def unnormalize_input_planes(x):
+def customize_input_planes(x):
     """
     Reverts normalization back to integer values. Works in place.
-    :param x: Input Planes Represenation
-    :return: The unnormalized planes (covnerted back to integer)
+    :param x: Input Planes Representation
+    :return: The customized planes (converted back to integer)
     """
     mat_pos = x[:NB_CHANNELS_POS, :, :]
     mat_const = x[NB_CHANNELS_POS:, :, :]
@@ -176,11 +175,11 @@ def unnormalize_input_planes(x):
     # iterate over all pieces except the king
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+        channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-        mat_pos[ch, :, :] /= MAX_NB_PRISONERS
+        mat_pos[channel, :, :] /= MAX_NB_PRISONERS
         # the prison for black begins 5 channels later
-        mat_pos[ch + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
+        mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
 
     ### Total Move Count
     # 500 was set as the max number of total moves
@@ -195,13 +194,12 @@ def unnormalize_input_planes(x):
     return x
 
 
-def mult_axis_by_vec(mat, vec, axis=0):
+def mult_axis_by_vec(mat, vec):
     # https://stackoverflow.com/questions/30031828/multiply-numpy-ndarray-with-1d-array-along-a-given-axis
     """
     Multiplies a matrix by a given vectory elementwise along a given axis
     :param mat: Numpy matrix to perform the operation on
     :param vec: Numpy array which is a single vector (must have same dim as desired axis)
-    :param axis: Axis to perform operation on
     :return Elementwise multiplied matrix across axis
     """
     # Given axis along which elementwise multiplication with broadcasting

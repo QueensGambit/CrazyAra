@@ -21,9 +21,9 @@ from DeepCrazyhouse.src.domain.crazyhouse.constants import (
 
 # create vector which scales the piece values according to their crazyhouse value
 # (used in get_x_vis())
-scale_vec = np.zeros(len(chess.PIECE_TYPES))
+SCALE_VEC = np.zeros(len(chess.PIECE_TYPES))
 for i, p_char in enumerate(PIECES[: len(chess.PIECE_TYPES)]):
-    scale_vec[i] = PIECES_VALUE[p_char] * 2
+    SCALE_VEC[i] = PIECES_VALUE[p_char] * 2
 
 
 def get_plane_vis(mat, normalize=False):
@@ -43,16 +43,16 @@ def get_plane_vis(mat, normalize=False):
 
     sign_bit = -1 if chess.COLOR_NAMES[color_bit] == "black" else 1
     x_vis = np.zeros((BOARD_HEIGHT, BOARD_WIDTH))
-    x_vis += sign_bit * mult_axis_by_vec(mat[: len(chess.PIECE_TYPES)], scale_vec, axis=0).max(axis=0)
+    x_vis += sign_bit * mult_axis_by_vec(mat[: len(chess.PIECE_TYPES)], SCALE_VEC, axis=0).max(axis=0)
     x_vis += -sign_bit * mult_axis_by_vec(
-        mat[len(chess.PIECE_TYPES) : 2 * len(chess.PIECE_TYPES)], scale_vec, axis=0
+        mat[len(chess.PIECE_TYPES) : 2 * len(chess.PIECE_TYPES)], SCALE_VEC, axis=0
     ).max(axis=0)
 
     # in real life the board isn't flipped but rotated instead
     x_vis = np.flipud(x_vis)
 
     if normalize is True:
-        sc_max = scale_vec.max()
+        sc_max = SCALE_VEC.max()
         x_vis += sc_max
         x_vis /= 2 * sc_max
 

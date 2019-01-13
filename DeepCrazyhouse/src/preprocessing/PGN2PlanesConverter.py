@@ -139,21 +139,21 @@ class PGN2PlanesConverter:
         pgn = open(self._import_dir + self._pgn_name, "r")
 
         # start a subprocess to be memory efficient
-        q = Queue()
-        p = Process(target=self._filter_pgn_thread, args=(q, pgn))
+        queue = Queue()
+        process = Process(target=self._filter_pgn_thread, args=(queue, pgn))
 
         # filter the according pgns
         logging.debug("start subprocess")
-        p.start()
+        process.start()
 
         # receive the return arguments
-        all_pgn_sel = q.get()
-        nb_games_sel = q.get()
-        batch_white_won = q.get()
-        batch_black_won = q.get()
-        batch_draw = q.get()
+        all_pgn_sel = queue.get()
+        nb_games_sel = queue.get()
+        batch_white_won = queue.get()
+        batch_black_won = queue.get()
+        batch_draw = queue.get()
 
-        p.join()  # this blocks until the process terminates
+        process.join()  # this blocks until the process terminates
         logging.debug("subprocess finished")
 
         return all_pgn_sel, nb_games_sel, batch_white_won, batch_black_won, batch_draw
@@ -203,8 +203,8 @@ class PGN2PlanesConverter:
                     # only searching for '#' lead to the problem that one event was called "Crazyhouse Revolution #1"
                     # also some games are annotated and contain # in the evaluation
                     # \S Matches any non-whitespace character; this is equivalent to the class [^ \t\n\r\f\v].
-                    m = re.search(r"\S#", game[mv_hist_start:])
-                    if m is not None:
+                    mv_hist_finish = re.search(r"\S#", game[mv_hist_start:])
+                    if mv_hist_finish is not None:
                         pgns.append(io.StringIO(game))
 
         logging.info("select games based on given conditions...")
@@ -324,12 +324,12 @@ class PGN2PlanesConverter:
         :return:
         """
         logging.info("PGN-Name: %s", pgn_name)
-        q = Queue()
-        p = Process(target=self._convert_pgn_to_planes_thread, args=(pgn_name, q))
+        queue = Queue()
+        process = Process(target=self._convert_pgn_to_planes_thread, args=(pgn_name, queue))
         # export one batch of pgn games
-        p.start()
-        games_exported = q.get()  # receive the return argument from the Queue()
-        p.join()  # this blocks until the process terminates
+        process.start()
+        games_exported = queue.get()  # receive the return argument from the Queue()
+        process.join()  # this blocks until the process terminates
 
         return games_exported
 
@@ -390,13 +390,13 @@ class PGN2PlanesConverter:
             #  that not too much memory will get allocated over time
             # https://stackoverflow.com/questions/2046603/is-it-possible-to-run-function-in-a-subprocess-without-threading-or-writing-a-se
             logging.debug("start subprocess")
-            p = Process(
+            process = Process(
                 target=self.export_pgn_batch,
                 args=(cur_part, game_idx_start, game_idx_end, pgn_sel, nb_white_wins, nb_black_wins, nb_draws),
             )
             # export one batch of pgn games
-            p.start()
-            p.join()  # this blocks until the process terminates
+            process.start()
+            process.join()  # this blocks until the process terminates
             logging.debug("subprocess finished")
 
             # https://stackoverflow.com/questions/15455048/releasing-memory-in-python
@@ -436,12 +436,10 @@ class PGN2PlanesConverter:
 
         logging.info("starting conversion to planes...")
         t_s = time()
-        p = Pool()
-
+        pool = Pool()
         x_dic = {}
         y_value_dic = {}
         y_policy_dic = {}
-
         metadata_dic = {}
 
         if not os.path.exists(self._export_dir):
@@ -462,14 +460,14 @@ class PGN2PlanesConverter:
 
         # the games occur in random order due to multiprocessing
         # in order to keep structure we store the result in a dictionary first
-        for metadata, game_idx, x, y_value, y_policy in p.map(get_planes_from_pgn, params_inp):
+        for metadata, game_idx, x, y_value, y_policy in pool.map(get_planes_from_pgn, params_inp):
             metadata_dic[game_idx] = metadata
             x_dic[game_idx] = x
             y_value_dic[game_idx] = y_value
             y_policy_dic[game_idx] = y_policy
 
-        p.close()
-        p.join()
+        pool.close()
+        pool.join()
         t_e = time() - t_s
         logging.debug("elapsed time: %fs", t_e)
         t_mean = t_e / self._batch_size
@@ -658,7 +656,7 @@ def export_mate_in_one_scenarios():
 
 
 if __name__ == "__main__":
-    root = logging.getLogger()
-    root.setLevel(logging.INFO)
+    ROOT = logging.getLogger()
+    ROOT.setLevel(logging.INFO)
     # export_mate_in_one_scenarios()
     export_pgn_to_datasetfile()

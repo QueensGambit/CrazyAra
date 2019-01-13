@@ -98,13 +98,13 @@ def board_to_planes(board, board_occ=0, normalize=True):
     # Fill in the piece positions
 
     # Iterate over both color starting with WHITE
-    for z, color in enumerate(chess.COLORS):
+    for idx, color in enumerate(chess.COLORS):
         # the PIECE_TYPE is an integer list in python-chess
         for piece_type in chess.PIECE_TYPES:
             # define the channel by the piecetype (the input representation uses the same ordering as python-chess)
             # we add an offset for the black pieces
             # note that we subtract 1 because in python chess the PAWN has index 1 and not 0
-            channel = (piece_type - 1) + z * len(chess.PIECE_TYPES)
+            channel = (piece_type - 1) + idx * len(chess.PIECE_TYPES)
             # iterate over the piece mask and receive every position square of it
             for pos in board.pieces(piece_type, color):
                 row, col = get_row_col(pos)
@@ -113,43 +113,43 @@ def board_to_planes(board, board_occ=0, normalize=True):
 
     # (II) Fill in the Repetition Data
     # a game to test out if everything is working correctly is: https://lichess.org/jkItXBWy#73
-    ch = CHANNEL_MAPPING_POS["repetitions"]
+    channel = CHANNEL_MAPPING_POS["repetitions"]
 
     # set how often the position has already occurred in the game (default 0 times)
     # this is used to check for claiming the 3 fold repetition rule
     if board_occ >= 1:
-        planes_pos[ch, :, :] = 1
+        planes_pos[channel, :, :] = 1
         if board_occ >= 2:
-            planes_pos[ch + 1, :, :] = 1
+            planes_pos[channel + 1, :, :] = 1
 
     # Fill in the Prisoners / Pocket Pieces
 
     # iterate over all pieces except the king
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+        channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-        planes_pos[ch, :, :] = board.pockets[chess.WHITE].count(p_type)
+        planes_pos[channel, :, :] = board.pockets[chess.WHITE].count(p_type)
         # the prison for black begins 5 channels later
-        planes_pos[ch + 5, :, :] = board.pockets[chess.BLACK].count(p_type)
+        planes_pos[channel + 5, :, :] = board.pockets[chess.BLACK].count(p_type)
 
     # (III) Fill in the promoted pieces
     # iterate over all promoted pieces according to the mask and set the according bit
-    ch = CHANNEL_MAPPING_POS["promo"]
+    channel = CHANNEL_MAPPING_POS["promo"]
     for pos in chess.SquareSet(board.promoted):
         row, col = get_row_col(pos)
 
         if board.piece_at(pos).color == chess.WHITE:
-            planes_pos[ch, row, col] = 1
+            planes_pos[channel, row, col] = 1
         else:
-            planes_pos[ch + 1, row, col] = 1
+            planes_pos[channel + 1, row, col] = 1
 
     # (III.2) En Passant Square
     # mark the square where an en-passant capture is possible
-    ch = CHANNEL_MAPPING_POS["ep_square"]
+    channel = CHANNEL_MAPPING_POS["ep_square"]
     if board.ep_square is not None:
         row, col = get_row_col(board.ep_square)
-        planes_pos[ch, row, col] = 1
+        planes_pos[channel, row, col] = 1
 
     # (IV) Constant Value Inputs
     # (IV.1) Color
@@ -162,25 +162,25 @@ def board_to_planes(board, board_occ=0, normalize=True):
     # alternatively, you could use the half-moves-counter: len(board.move_stack)
 
     # (IV.3) Castling Rights
-    ch = CHANNEL_MAPPING_CONST["castling"]
+    channel = CHANNEL_MAPPING_CONST["castling"]
 
     # WHITE
     # check for King Side Castling
     if bool(board.castling_rights & chess.BB_H1) is True:
         # White can castle with the h1 rook
-        planes_const[ch, :, :] = 1
+        planes_const[channel, :, :] = 1
     # check for Queen Side Castling
     if bool(board.castling_rights & chess.BB_A1) is True:
-        planes_const[ch + 1, :, :] = 1
+        planes_const[channel + 1, :, :] = 1
 
     # BLACK
     # check for King Side Castling
     if bool(board.castling_rights & chess.BB_H8) is True:
         # White can castle with the h1 rook
-        planes_const[ch + 2, :, :] = 1
+        planes_const[channel + 2, :, :] = 1
     # check for Queen Side Castling
     if bool(board.castling_rights & chess.BB_A8) is True:
-        planes_const[ch + 3, :, :] = 1
+        planes_const[channel + 3, :, :] = 1
 
     # (IV.4) No Progress Count
     # define a no 'progress' counter
@@ -236,8 +236,8 @@ def planes_to_board(planes, normalized_input=False):
                 if mat_pos[idx, row, col] == 1:
                     # check if the piece was promoted
                     promoted = False
-                    ch = CHANNEL_MAPPING_POS["promo"]
-                    if mat_pos[ch, row, col] == 1 or mat_pos[ch + 1, row, col] == 1:
+                    channel = CHANNEL_MAPPING_POS["promo"]
+                    if mat_pos[channel, row, col] == 1 or mat_pos[channel + 1, row, col] == 1:
                         promoted = True
 
                     board.set_piece_at(
@@ -258,11 +258,11 @@ def planes_to_board(planes, normalized_input=False):
     # iterate over all pieces except the king
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
-        ch = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+        channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
         # the full board is filled with the same value
         # it's sufficient to take only the first value
-        nb_prisoners = mat_pos[ch, 0, 0]
+        nb_prisoners = mat_pos[channel, 0, 0]
 
         # add prisoners for the current player
         # the whole board is set with the same entry, we can just take the first one
@@ -274,7 +274,7 @@ def planes_to_board(planes, normalized_input=False):
             board.pockets[chess.WHITE].add(p_type)
 
         # add prisoners for the opponent
-        nb_prisoners = mat_pos[ch + 5, 0, 0]
+        nb_prisoners = mat_pos[channel + 5, 0, 0]
         if normalized_input is True:
             nb_prisoners *= MAX_NB_PRISONERS
             nb_prisoners = int(round(nb_prisoners))
@@ -284,16 +284,16 @@ def planes_to_board(planes, normalized_input=False):
 
     # (I.5) En Passant Square
     # mark the square where an en-passant capture is possible
-    ch = CHANNEL_MAPPING_POS["ep_square"]
-    ep_square = np.argmax(mat_pos[ch])
+    channel = CHANNEL_MAPPING_POS["ep_square"]
+    ep_square = np.argmax(mat_pos[channel])
     if ep_square != 0:
         # if no entry 'one' exists, index 0 will be returned
         board.ep_square = ep_square
 
     # (II) Constant Value Inputs
     # (II.1) Total Move Count
-    ch = CHANNEL_MAPPING_CONST["total_mv_cnt"]
-    total_mv_cnt = mat_const[ch, 0, 0]
+    channel = CHANNEL_MAPPING_CONST["total_mv_cnt"]
+    total_mv_cnt = mat_const[channel, 0, 0]
 
     if normalized_input is True:
         total_mv_cnt *= MAX_NB_MOVES
@@ -302,7 +302,7 @@ def planes_to_board(planes, normalized_input=False):
     board.fullmove_number = total_mv_cnt
 
     # (II.2) Castling Rights
-    ch = CHANNEL_MAPPING_CONST["castling"]
+    channel = CHANNEL_MAPPING_CONST["castling"]
 
     # reset the castling_rights for initialization
     board.castling_rights = chess.BB_VOID
@@ -312,23 +312,23 @@ def planes_to_board(planes, normalized_input=False):
     # White can castle with the h1 rook
 
     # add castling option by applying logical-OR operation
-    if mat_const[ch, 0, 0] == 1:
+    if mat_const[channel, 0, 0] == 1:
         board.castling_rights |= chess.BB_H1
     # check for Queen Side Castling
-    if mat_const[ch + 1, 0, 0] == 1:
+    if mat_const[channel + 1, 0, 0] == 1:
         board.castling_rights |= chess.BB_A1
 
     # BLACK
     # check for King Side Castling
-    if mat_const[ch + 2, 0, 0] == 1:
+    if mat_const[channel + 2, 0, 0] == 1:
         board.castling_rights |= chess.BB_H8
     # check for Queen Side Castling
-    if mat_const[ch + 3, 0, 0] == 1:
+    if mat_const[channel + 3, 0, 0] == 1:
         board.castling_rights |= chess.BB_A8
 
     # (II.3) No Progress Count
-    ch = CHANNEL_MAPPING_CONST["no_progress_cnt"]
-    no_progress_cnt = mat_const[ch, 0, 0]
+    channel = CHANNEL_MAPPING_CONST["no_progress_cnt"]
+    no_progress_cnt = mat_const[channel, 0, 0]
     if normalized_input is True:
         no_progress_cnt *= MAX_NB_NO_PROGRESS
         no_progress_cnt = int(round(no_progress_cnt))
@@ -336,9 +336,9 @@ def planes_to_board(planes, normalized_input=False):
     board.halfmove_clock = no_progress_cnt
 
     # (II.4) Color
-    ch = CHANNEL_MAPPING_CONST["color"]
+    channel = CHANNEL_MAPPING_CONST["color"]
 
-    if mat_const[ch, 0, 0] == 1:
+    if mat_const[channel, 0, 0] == 1:
         board.board_turn = chess.WHITE
     else:
         board = board.mirror()
