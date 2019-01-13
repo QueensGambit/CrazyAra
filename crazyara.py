@@ -45,31 +45,27 @@ ENABLE_LICHESS_DEBUG_MSG = False
 client = {"name": "CrazyAra", "version": "0.3.1", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
 
 
-INTRO_PART1 = (
-    ""
-    "                                  _                                           \n"
-    "                   _..           /   ._   _.  _        /\   ._   _.           \n"
-    "                 .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|           \n"
-    "                /  /e)-,\                         /                           \n"
-    "               /  |  ,_ |                    __    __    __    __             \n"
-    "              /   '-(-.)/          bw     8 /__////__////__////__////         \n"
-    "            .'--.   \  `                 7 ////__////__////__////__/          \n"
-    "           /    `\   |                  6 /__////__////__////__////           \n"
-    "         /`       |  / /`\.-.          5 ////__////__////__////__/            \n"
-    "       .'        ;  /  \_/__/         4 /__////__////__////__////             \n"
-    "     .'`-'_     /_.'))).-` \         3 ////__////__////__////__/              \n"
-    "    / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////               \n"
-)
-INTRO_PART2 = (
-    ""
-    "   (__.'/   /` .'`                 1 ////__////__////__////__/                \n"
-    "    (_.'/ /` /`                       a  b  c  d  e  f  g  h                  \n"
-    "      _|.' /`                                                                 \n"
-    "jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          \n"
-    "    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              \n"
-    "       \_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.  \n"
-    "              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n"
-)
+INTRO_PART1 = """
+                                      _                                           
+                       _..           /   ._   _.  _        /\   ._   _.           
+                     .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|           
+                    /  /e)-,\                         /                           
+                   /  |  ,_ |                    __    __    __    __             
+                  /   '-(-.)/          bw     8 /__////__////__////__////         
+                .'--.   \  `                 7 ////__////__////__////__/          
+               /    `\   |                  6 /__////__////__////__////           
+             /`       |  / /`\.-.          5 ////__////__////__////__/            
+           .'        ;  /  \_/__/         4 /__////__////__////__////             
+         .'`-'_     /_.'))).-` \         3 ////__////__////__////__/              
+        / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////               """
+INTRO_PART2 = """
+       (__.'/   /` .'`                 1 ////__////__////__////__/                
+        (_.'/ /` /`                       a  b  c  d  e  f  g  h                  
+          _|.' /`                                                                 
+    jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          
+        .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              
+           \_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.  
+                  ASCII-Art: Joan G. Stark, Chappell, Burton                      """
 
 log_file_path = "CrazyAra-log.txt"
 score_file_path = "score-log.txt"
@@ -512,27 +508,8 @@ def set_options(cmd_list):
                 else:
                     value = int(cmd_list[4])
 
-                if option_name == "use_raw_network":
-                    s["use_raw_network"] = True if value == "true" else False
-                elif option_name == "extend_time_on_bad_position":
-                    s["extend_time_on_bad_position"] = True if value == "true" else False
-                elif option_name == "verbose":
-                    s["verbose"] = True if value == "true" else False
-                elif option_name == "check_mate_in_one":
-                    s["check_mate_in_one"] = True if value == "true" else False
-                elif option_name == "use_pruning":
-                    s["use_pruning"] = True if value == "true" else False
-                elif option_name == "use_oscillating_cpuct":
-                    s["use_oscillating_cpuct"] = True if value == "true" else False
-                elif option_name == "use_time_management":
-                    s["use_time_management"] = True if value == "true" else False
-                else:
-                    # by default all options are treated as integers
-                    s[option_name] = value
-
-                    # Guard threads limits
-                    if option_name == "threads":
-                        s[option_name] = min(4096, max(1, s[option_name]))
+                for option in option_name:
+                    s[option] = True
 
                 log_print("info string Updated option %s to %s" % (option_name, value))
 
@@ -659,7 +636,7 @@ def main():
                     set_options(cmd_list)
                 elif main_cmd == "go":
                     perform_action(cmd_list)
-                elif main_cmd == "quit" or main_cmd == "exit":
+                elif main_cmd in ("quit", "exit"):
                     if log_file:
                         log_file.close()
                     return 0
