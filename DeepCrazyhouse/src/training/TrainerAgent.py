@@ -35,7 +35,7 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu())
 
     :param metrics: List of mxnet metrics which must have the
     names ['value_loss', 'policy_loss', 'value_acc_sign', 'policy_acc']
-    :param data_iterator: Gluon dataiterator object
+    :param data_iterator: Gluon data iterator object
     :param net: Gluon network handle
     :param nb_batches: Number of batches to evaluate (early stopping).
      If set to None all batches of the data_iterator will be evaluated
@@ -56,7 +56,7 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu())
         metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
         metrics["policy_acc"].update(preds=nd.argmax(policy_out, axis=1), labels=policy_label)
 
-        # stop after evaluating x batches (only recommeded to use this for the train set evaluation)
+        # stop after evaluating x batches (only recommended to use this for the train set evaluation)
         if nb_batches is not None and i == nb_batches:
             break
 
@@ -120,7 +120,7 @@ class TrainerAgent:
         self._normalize = normalize
         # self._nb_k_steps = nb_k_steps
         # self._patience = patience
-        # self._nb_lr_droups = nb_lr_drops
+        # self._nb_lr_drops = nb_lr_drops
         self._lr_schedule = lr_schedule
         self._momentum_schedule = momentum_schedule
         self._total_it = total_it
@@ -475,7 +475,7 @@ class TrainerAgent:
                                 # ## Load the best model once again
                                 model_path = "./weights/model-%.5f-%.3f-%04d.params" % (
                                 val_loss_best, val_p_acc_best, k_steps_best)
-                                logging.info('Revert overfiting updates')
+                                logging.info('Revert overfitting updates')
                                 logging.debug('load current best model:%s' % model_path)
                                 self._net.load_parameters(model_path, ctx=self._ctx)
                                 k_steps = k_steps_best

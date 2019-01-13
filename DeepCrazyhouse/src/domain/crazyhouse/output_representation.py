@@ -45,7 +45,7 @@ def policy_to_move(policy_vec_clean, is_white_to_move=True):
 
     :param policy_vec_clean: Numpy array which represents the moves
     :param is_white_to_move: Define the current player turn
-    :return: sinlge move - Python chess move object
+    :return: single move - Python chess move object
     """
 
     mv_idx = np.argmax(policy_vec_clean)
@@ -98,13 +98,13 @@ def policy_to_moves(board: chess.variant.CrazyhouseBoard, policy_vec, normalize=
     :param policy_vec: 1 Dimensional array representing all possible Crazyhouse moves
     :param normalize: normalizes the policy vector in the cleaning step
     :return: selected_moves - List of all python chess move objects from best to worst
-            move_probabilites - Corresponding probabilities ordered descending
+            move_probabilities - Corresponding probabilities ordered descending
     """
 
     policy_vec_clean, nb_legal_moves = set_illegal_moves_to_zero(board, policy_vec, normalize)
 
     sorted_move_value_indices = np.argsort(policy_vec_clean)[::-1]
-    move_probabilites = np.sort(policy_vec_clean)[::-1]
+    move_probabilities = np.sort(policy_vec_clean)[::-1]
 
     selected_moves = []
 
@@ -120,7 +120,7 @@ def policy_to_moves(board: chess.variant.CrazyhouseBoard, policy_vec, normalize=
         move = chess.Move.from_uci(mv_uci)
         selected_moves.append(move)
 
-    return selected_moves, move_probabilites
+    return selected_moves, move_probabilities
 
 
 def set_illegal_moves_to_zero(board: chess.variant.CrazyhouseBoard, policy_vec, normalize=True):
@@ -216,7 +216,7 @@ def value_to_centipawn(value):
     if np.absolute(value) >= 1.0:
         # return a constant if the given value is 1 (otherwise log will result in infinity)
         return np.sign(value) * 9999
-    # use logaritmic scaling with basis 1.1 as a pseudo centipawn conversion
+    # use logarithmic scaling with basis 1.1 as a pseudo centipawn conversion
     return -(np.sign(value) * np.log(1.0 - np.absolute(value)) / np.log(1.2)) * 100
 
 

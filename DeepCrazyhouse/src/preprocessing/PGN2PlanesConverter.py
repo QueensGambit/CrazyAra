@@ -4,7 +4,7 @@ Created on 09.06.18
 @project: DeepCrazyhouse
 @author: queensgambit
 
-Loads the pgn-file and calls the pgn_converter functions to create a plane represenation.
+Loads the pgn-file and calls the pgn_converter functions to create a plane representation.
 Multiprocessing is used for loading, computing and saving.
 
 IMPORTANT NOTICE: This file is only compatible with python-chess v0.23.11 at the moment.
@@ -173,10 +173,10 @@ class PGN2PlanesConverter:
 
     def _filter_pgn_thread(self, queue, pgn):
         """
-        Selects the pgn which fullfill the given conditions
+        Selects the pgn which fulfill the given conditions
         :param queue: Stores the result/return variables
         :param pgn: PGN file
-        :return: Queue filled with the following iterms:
+        :return: Queue filled with the following items:
         - all_pgn_sel: List of the selected pgn files
         - nb_games_sel: Number of games which have been selected
         - batch_white_won: list of number of games which have been won by the white player in this batch

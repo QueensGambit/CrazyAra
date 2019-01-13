@@ -78,7 +78,7 @@ class GameState(_GameState):
 
     def are_pocket_empty(self):
         """
-        Checks wether at least one player has a piece available in their pocket
+        Checks if at least one player has a piece available in their pocket
         :return:
         """
 

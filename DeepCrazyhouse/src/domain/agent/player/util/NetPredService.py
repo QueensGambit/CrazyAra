@@ -35,7 +35,7 @@ class NetPredService:
                                     Each threads has it's own channel.
         :param batch_policy_results: Shared numpy memory in which the policy results of all threads are stored.
                                     Each threads has it's own channel.
-        #:param enable_timeout: Decides wether to enable a timout if a batch didn't occur under 1 second.
+        #:param enable_timeout: Decides whether to enable a timeout if a batch didn't occur under 1 second.
         """
         self.net = net
         self.my_pipe_endings = pipe_endings

@@ -30,7 +30,7 @@ def board_single_game(params_inp):
     Iterates through a game based on the pgn file and compares the board of the pgn file
      with reconvert plane representation.
 
-    :param params_inp: Tuple containin the pgn, plane_representation and the start index of the game
+    :param params_inp: Tuple containing the pgn, plane_representation and the start index of the game
     :return: Boolean indicating if the all board states have been equal and the start_idx of the pgn
     """
     pgn, x_test, start_idx = params_inp
@@ -63,7 +63,7 @@ def board_single_game(params_inp):
 
 def moves_single_game(params_inp):
     """
-    Iterates over all moves of a given pgn file and comparse the reconverted policy representation with
+    Iterates over all moves of a given pgn file and compares the reconverted policy representation with
     the move stored in the pgn file
 
     :param params_inp: pgn file, policy vector, starting index of the game

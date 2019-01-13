@@ -90,7 +90,7 @@ class _Agent:
         else:
             # apply exponential scaling
             p_vec_small = p_vec_small ** (1 / self.temperature_current)
-            # renormalize the values to probabilities again
+            # re-normalize the values to probabilities again
             p_vec_small /= p_vec_small.sum()
 
         return p_vec_small

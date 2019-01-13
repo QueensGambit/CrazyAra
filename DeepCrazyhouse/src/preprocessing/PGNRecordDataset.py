@@ -48,7 +48,7 @@ class PGNRecordDataset(Dataset):
     def __getitem__(self, idx):
         """
         Overwrites the __getitem__ method from RecordFileDataset
-        Each threads loads an individual datasample from the .rec file
+        Each threads loads an individual data sample from the .rec file
 
         :param idx: String buffer index to load
         :return: x - plane representation
