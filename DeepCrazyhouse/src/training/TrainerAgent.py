@@ -241,7 +241,7 @@ class TrainerAgent:
         # create a state variable to check if the net architecture has been reported yet
         graph_exported = False
         old_label = value_out = None
-        if not self.ordering: # safety check to prevent eternal loop
+        if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
         while True:
@@ -291,9 +291,9 @@ class TrainerAgent:
                         # self._metrics['value_loss'].update(preds=value_out, labels=value_label)
 
                     combined_loss.backward()
-                    learning_rate = self._lr_schedule(cur_it) # update the learning rate
+                    learning_rate = self._lr_schedule(cur_it)  # update the learning rate
                     self._trainer.set_learning_rate(learning_rate)
-                    momentum = self._momentum_schedule(cur_it) # update the momentum
+                    momentum = self._momentum_schedule(cur_it)  # update the momentum
                     self._trainer._optimizer.momentum = momentum
                     self._trainer.step(data.shape[0])
                     cur_it += 1
@@ -303,7 +303,7 @@ class TrainerAgent:
                         self.sum_writer.add_graph(self._net)
                         graph_exported = True
 
-                    if batch_proc_tmp >= self._batch_steps: # show metrics every thousands steps
+                    if batch_proc_tmp >= self._batch_steps:  # show metrics every thousands steps
                         # if k_steps < self._warmup_k_steps:
                         # update the learning rate
                         # self._lr *= k_steps * ((self._lr_first - self._lr_warmup_init) / self._warmup_k_steps)
@@ -314,7 +314,7 @@ class TrainerAgent:
                         # log the current learning rate
                         # update batch_proc_tmp counter by subtracting the batch_steps
                         batch_proc_tmp = batch_proc_tmp - self._batch_steps
-                        ms_step = ((time() - t_s_steps) / self._batch_steps) * 1000 # measure elapsed time
+                        ms_step = ((time() - t_s_steps) / self._batch_steps) * 1000  # measure elapsed time
                         # update the counters
                         k_steps += 1
                         patience_cnt += 1
@@ -335,7 +335,7 @@ class TrainerAgent:
                         if self._use_spike_recovery is True and (
                             old_val_loss * self._spike_thresh < val_metric_values["loss"]
                             or np.isnan(val_metric_values["loss"])
-                        ): # check for spikes
+                        ):  # check for spikes
                             nb_spikes += 1
                             logging.warning(
                                 "Spike %d/%d occurred - val_loss: %.3f",
@@ -364,7 +364,7 @@ class TrainerAgent:
                                 val_loss_best,
                                 val_p_acc_best,
                                 k_steps_best,
-                            )# Load the best model once again
+                            )  # Load the best model once again
                             logging.debug("load current best model:%s", model_path)
                             self._net.load_parameters(model_path, ctx=self._ctx)
                             k_steps = k_steps_best
@@ -405,8 +405,7 @@ class TrainerAgent:
                                     print()
                                     logging.info("Saved checkpoint to %s-%04d.params", prefix, k_steps_best)
 
-
-                                patience_cnt = 0 # reset the patience counter
+                                patience_cnt = 0  # reset the patience counter
                             # print the elapsed time
                             t_delta = time() - t_s_steps
                             print(" - %.ds" % t_delta)

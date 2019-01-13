@@ -142,7 +142,7 @@ class Node:
             # we add +1 to the q values to avoid negative values, then the q values are normalized to [0,1] before
             # the q_value_weight is applied.
             policy = (self.child_number_visits / self.n_sum) * (1 - q_value_weight) + (
-                    (self.q_value + 1) * 0.5
+                (self.q_value + 1) * 0.5
             ) * q_value_weight
             return policy
 
