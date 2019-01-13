@@ -11,8 +11,7 @@ import logging
 import numpy as np
 import zarr
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.util import normalize_input_planes
-from DeepCrazyhouse.src.domain.util import get_numpy_arrays
+from DeepCrazyhouse.src.domain.util import get_numpy_arrays, MATRIX_NORMALIZER
 
 
 def _load_dataset_file(dataset_filepath):
@@ -54,7 +53,7 @@ def load_pgn_dataset(
     if dataset_type == "train":
         zarr_filepaths = glob.glob(main_config["planes_train_dir"] + "**/*")
     elif dataset_type == "val":
-        zarr_filepaths = glob.glob(main_config["planes_test_dir"] + "**/*")
+        zarr_filepaths = glob.glob(main_config["planes_val_dir"] + "**/*")
     elif dataset_type == "test":
         zarr_filepaths = glob.glob(main_config["planes_test_dir"] + "**/*")
     elif dataset_type == "mate_in_one":
@@ -94,6 +93,7 @@ def load_pgn_dataset(
         # the y-vectors need to be casted as well in order to be accepted by the network
         y_value = y_value.astype(np.float32)
         y_policy = y_policy.astype(np.float32)
-        normalize_input_planes(x)
+        # apply rescaling using a predefined scaling constant (this makes use of vectorized operations)
+        x *= MATRIX_NORMALIZER
 
     return starting_idx, x, y_value, y_policy, pgn_dataset
