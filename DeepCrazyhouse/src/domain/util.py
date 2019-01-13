@@ -110,34 +110,34 @@ def get_numpy_arrays(pgn_dataset):
     :param pgn_dataset: dataset file handle
     :return: numpy-arrays:
             starting_idx - defines the index where each game starts
-            board_representation - the board representation for all games
-            outcome - the game outcome (-1,0,1) for each board position
+            x - the board representation for all games
+            y_value - the game outcome (-1,0,1) for each board position
             move_policy - the movement policy for the next_move played
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
     """
     # Get the data
 
     starting_idx = np.array(pgn_dataset["start_indices"])
-    board_representation = np.array(pgn_dataset["x"])
-    outcome = np.array(pgn_dataset["y_value"])
+    x = np.array(pgn_dataset["x"])
+    y_value = np.array(pgn_dataset["y_value"])
     move_policy = np.array(pgn_dataset["y_policy"])
 
-    return starting_idx, board_representation, outcome, move_policy
+    return starting_idx, x, y_value, move_policy
 
 
-def normalize_input_planes(input_data):
+def normalize_input_planes(x):
     """
     Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
-    :param input_data: Input planes representation
+    :param x: Input planes representation
     :return: The normalized planes
     """
 
     # convert the input planes to float32 assuming that the datatype is int
-    if input_data.dtype != np.float32:
-        input_data = input_data.astype(np.float32)
+    if x.dtype != np.float32:
+        x = x.astype(np.float32)
 
-    mat_pos = input_data[:NB_CHANNELS_POS, :, :]
-    mat_const = input_data[NB_CHANNELS_POS:, :, :]
+    mat_pos = x[:NB_CHANNELS_POS, :, :]
+    mat_const = x[NB_CHANNELS_POS:, :, :]
 
     # iterate over all pieces except the king, (because the king can't be in a pocket)
     for p_type in chess.PIECE_TYPES[:-1]:
@@ -155,7 +155,7 @@ def normalize_input_planes(input_data):
     # after 40 moves of no progress the 40 moves rule for draw applies
     mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
 
-    return input_data
+    return x
 
 
 # use a constant matrix for normalization to allow broad cast operations
@@ -163,14 +163,14 @@ MATRIX_NORMALIZER = np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH))
 MATRIX_NORMALIZER = normalize_input_planes(MATRIX_NORMALIZER)
 
 
-def customize_input_planes(input_data):
+def customize_input_planes(x):
     """
     Reverts normalization back to integer values. Works in place.
-    :param input_data: Input Planes Representation
+    :param x: Input Planes Representation
     :return: The customized planes (converted back to integer)
     """
-    mat_pos = input_data[:NB_CHANNELS_POS, :, :]
-    mat_const = input_data[NB_CHANNELS_POS:, :, :]
+    mat_pos = x[:NB_CHANNELS_POS, :, :]
+    mat_const = x[NB_CHANNELS_POS:, :, :]
 
     # iterate over all pieces except the king
     for p_type in chess.PIECE_TYPES[:-1]:
@@ -189,18 +189,17 @@ def customize_input_planes(input_data):
     # after 40 moves of no progress the 40 moves rule for draw applies
     mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] *= MAX_NB_NO_PROGRESS
 
-    np.round(input_data, decimals=0, out=input_data)
+    np.round(x, decimals=0, out=x)
 
-    return input_data
+    return x
 
 
-def mult_axis_by_vec(mat, vec, axis=0):
+def mult_axis_by_vec(mat, vec):
     # https://stackoverflow.com/questions/30031828/multiply-numpy-ndarray-with-1d-array-along-a-given-axis
     """
     Multiplies a matrix by a given vectory elementwise along a given axis
     :param mat: Numpy matrix to perform the operation on
     :param vec: Numpy array which is a single vector (must have same dim as desired axis)
-    :param axis: Axis to perform operation on
     :return Elementwise multiplied matrix across axis
     """
     # Given axis along which elementwise multiplication with broadcasting

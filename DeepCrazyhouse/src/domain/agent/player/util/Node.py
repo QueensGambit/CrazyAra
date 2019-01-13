@@ -48,7 +48,7 @@ class Node:
         self.nb_total_expanded_child_nodes = np.array(0)
 
         # visit count of all its child nodes
-        self.child_node_count = np.zeros(self.nb_direct_child_nodes)
+        self.child_number_visits = np.zeros(self.nb_direct_child_nodes)
         # total action value estimated by MCTS for each child node
         self.action_value = np.zeros(self.nb_direct_child_nodes)
         # self.w = np.ones(self.nb_direct_child_nodes) * -0.01 #1
@@ -58,11 +58,11 @@ class Node:
         # (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
 
         # self.q = np.zeros(self.nb_direct_child_nodes)
-        self.combined_value = np.ones(self.nb_direct_child_nodes) * -1
+        self.q_value = np.ones(self.nb_direct_child_nodes) * -1
 
         if is_leaf is False:
             if clip_low_visit is True:
-                self.combined_value[p_vec_small < 1e-3] = -9999
+                self.q_value[p_vec_small < 1e-3] = -9999
             # else:
             #    self.thresh_idcs_root = p_vec_small < 5e-2
 
@@ -110,8 +110,8 @@ class Node:
 
         if clip_low_visit_nodes is True and q_value_weight > 0:
 
-            visit = deepcopy(self.child_node_count)
-            value = deepcopy((self.combined_value + 1))
+            visit = deepcopy(self.child_number_visits)
+            value = deepcopy((self.q_value + 1))
 
             if visit.max() > 0:
 
@@ -141,15 +141,15 @@ class Node:
 
             # we add +1 to the q values to avoid negative values, then the q values are normalized to [0,1] before
             # the q_value_weight is applied.
-            policy = (self.child_node_count / self.n_sum) * (1 - q_value_weight) + (
-                (self.combined_value + 1) * 0.5
+            policy = (self.child_number_visits / self.n_sum) * (1 - q_value_weight) + (
+                    (self.q_value + 1) * 0.5
             ) * q_value_weight
             return policy
 
-        if max(self.child_node_count) == 1:
-            policy = self.child_node_count + 0.05 * self.policy_prob
+        if max(self.child_number_visits) == 1:
+            policy = self.child_number_visits + 0.05 * self.policy_prob
         else:
-            policy = self.child_node_count - 0.05 * self.policy_prob
+            policy = self.child_number_visits - 0.05 * self.policy_prob
         return policy / sum(policy)
 
     def apply_dirichlet_noise_to_prior_policy(self, epsilon=0.25, alpha=0.15):
@@ -176,10 +176,10 @@ class Node:
             # the effect of virtual loss will be undone if the playout is over
             # virtual increase the number of visits
             self.n_sum += virtual_loss
-            self.child_node_count[child_idx] += virtual_loss
+            self.child_number_visits[child_idx] += virtual_loss
             # make it look like if one has lost X games from this node forward where X is the virtual loss value
             self.action_value[child_idx] -= virtual_loss
-            self.combined_value[child_idx] = self.action_value[child_idx] / self.child_node_count[child_idx]
+            self.q_value[child_idx] = self.action_value[child_idx] / self.child_number_visits[child_idx]
 
     def revert_virtual_loss_and_update(self, child_idx, virtual_loss, value):
         # revert the virtual loss effect and apply the backpropagated value of its child node
@@ -187,8 +187,8 @@ class Node:
 
             self.n_sum -= virtual_loss - 1
 
-            self.child_node_count[child_idx] -= virtual_loss - 1
+            self.child_number_visits[child_idx] -= virtual_loss - 1
 
             self.action_value[child_idx] += virtual_loss + value
 
-            self.combined_value[child_idx] = self.action_value[child_idx] / self.child_node_count[child_idx]
+            self.q_value[child_idx] = self.action_value[child_idx] / self.child_number_visits[child_idx]

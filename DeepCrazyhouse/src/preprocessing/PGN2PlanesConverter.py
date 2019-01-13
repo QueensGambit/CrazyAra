@@ -460,9 +460,9 @@ class PGN2PlanesConverter:
 
         # the games occur in random order due to multiprocessing
         # in order to keep structure we store the result in a dictionary first
-        for metadata, game_idx, board, y_value, y_policy in pool.map(get_planes_from_pgn, params_inp):
+        for metadata, game_idx, x, y_value, y_policy in pool.map(get_planes_from_pgn, params_inp):
             metadata_dic[game_idx] = metadata
-            x_dic[game_idx] = board
+            x_dic[game_idx] = x
             y_value_dic[game_idx] = y_value
             y_policy_dic[game_idx] = y_policy
 
@@ -476,23 +476,23 @@ class PGN2PlanesConverter:
 
         # now we can convert the dictionary to a list
         metadata = get_dic_sorted_by_key(metadata_dic)
-        board = get_dic_sorted_by_key(x_dic)
+        x = get_dic_sorted_by_key(x_dic)
         y_value = get_dic_sorted_by_key(y_value_dic)
         y_policy = get_dic_sorted_by_key(y_policy_dic)
 
         # create a list which describes where each game starts
-        start_indices = np.zeros(len(board))
-        for i, x_cur in enumerate(board[:-1]):
+        start_indices = np.zeros(len(x))
+        for i, x_cur in enumerate(x[:-1]):
             start_indices[i + 1] = start_indices[i] + len(x_cur)
 
         # next we stack the list into a numpy-array
         metadata = np.concatenate(metadata, axis=0)
-        board = np.concatenate(board, axis=0)
+        x = np.concatenate(x, axis=0)
         y_value = np.concatenate(y_value, axis=0)
         y_policy = np.concatenate(y_policy, axis=0)
 
         logging.debug("metadata.shape %s", metadata.shape)
-        logging.debug("x.shape %s", board.shape)
+        logging.debug("x.shape %s", x.shape)
         logging.debug("y_value.shape %s", y_value.shape)
         logging.debug("y_policy.shape %s", y_policy.shape)
 
@@ -515,10 +515,10 @@ class PGN2PlanesConverter:
         # export the images
         zarr_file.create_dataset(
             name="x",
-            data=board,
-            shape=board.shape,
+            data=x,
+            shape=x.shape,
             dtype=np.int16,
-            chunks=(128, board.shape[1], board.shape[2], board.shape[3]),
+            chunks=(128, x.shape[1], x.shape[2], x.shape[3]),
             synchronizer=zarr.ThreadSynchronizer(),
             compression=compressor,
         )

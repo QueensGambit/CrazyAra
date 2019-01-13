@@ -370,7 +370,7 @@ class MCTSAgent(_Agent):
             self.root_node.child_nodes[0] = child_node  # connect the child to the root
             # assign the value of the root node as the q-value for the child
             # here we must invert the invert the value because it's the value prediction of the next state
-            self.root_node.combined_value[0] = -value
+            self.root_node.q_value[0] = -value
 
     def _run_mcts_search(self, state):
         """
@@ -748,9 +748,9 @@ class MCTSAgent(_Agent):
             # calculate the current u values
             # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
             u_value = (
-                cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_node_count))
+                cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_number_visits))
             )
-            child_idx = (parent_node.combined_value + u_value).argmax()
+            child_idx = (parent_node.q_value + u_value).argmax()
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
 
     def _select_node_based_on_mcts_policy(self, parent_node: Node):
@@ -761,7 +761,7 @@ class MCTSAgent(_Agent):
         """
 
         child_idx = parent_node.get_mcts_policy(self.q_value_weight).argmax()
-        nb_visits = parent_node.child_node_count[child_idx]
+        nb_visits = parent_node.child_number_visits[child_idx]
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], nb_visits, child_idx
 
     def show_next_pred_line(self):

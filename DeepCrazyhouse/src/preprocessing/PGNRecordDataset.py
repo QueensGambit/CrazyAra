@@ -53,7 +53,7 @@ class PGNRecordDataset(Dataset):
         Each threads loads an individual datasample from the .rec file
 
         :param idx: String buffer index to load
-        :return: board_representation - plane representation
+        :return: x - plane representation
                 output - value output (between -1, 1)
                 policy_vec - policy vector
         """
@@ -64,15 +64,15 @@ class PGNRecordDataset(Dataset):
 
         data = np.frombuffer(buf, dtype=np.int16)
 
-        board_representation = data[: self.input_shape_flatten].reshape(self.input_shape).astype(np.float32)
+        x = data[: self.input_shape_flatten].reshape(self.input_shape).astype(np.float32)
 
         if self.normalize is True:
-            normalize_input_planes(board_representation)
+            normalize_input_planes(x)
 
         output = header[1][0]
         policy_vec = header[1][1]
 
-        return board_representation, output, policy_vec
+        return x, output, policy_vec
 
     def __len__(self):
         return len(self._record.keys)

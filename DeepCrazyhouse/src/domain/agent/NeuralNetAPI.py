@@ -77,33 +77,33 @@ class NeuralNetAPI:
             executor.copy_params_from(arg_params, aux_params)
             self.executors.append(executor)
 
-    def predict_single(self, board_state):
+    def predict_single(self, x):
         """
         Gets the model prediction of a single input sample.
         This function supports the 'keras' and 'mxnet' as its model type.
-        :param board_state: Plane representation of a single board state
+        :param x: Plane representation of a single board state
         :return: [Value Prediction, Policy Prediction] as a list of numpy arrays
         """
 
         # start a subprocess
         queue = Queue()
-        self.predict_single_thread(queue, board_state)
+        self.predict_single_thread(queue, x)
         out = queue.get()
 
         return out
 
-    def predict_single_thread(self, queue, board_state):
+    def predict_single_thread(self, queue, x):
         """
         Gets the model prediction of a single input sample.
         This function supports the 'keras' and 'mxnet' as its model type.
-        :param board_state: Plane representation of a single board state
+        :param x: Plane representation of a single board state
         :param queue: Stores the return values
         :return: [Value Prediction, Policy Prediction] as a list of numpy arrays
         """
         out = [None, None]
 
         # choose the first executor object which support length 1
-        pred = self.executors[0].forward(is_train=False, data=np.expand_dims(board_state, axis=0))
+        pred = self.executors[0].forward(is_train=False, data=np.expand_dims(x, axis=0))
 
         out[0] = pred[0].asnumpy()[0]
         # when using a gluon model you still have to apply a softmax activation after the forward pass
