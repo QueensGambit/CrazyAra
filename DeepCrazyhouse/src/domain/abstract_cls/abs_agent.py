@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 import numpy as np
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
+
+
 class AbsAgent(ABC):
     def __init__(self, temperature=0, temperature_moves=4, verbose=True):
         self.temperature = temperature

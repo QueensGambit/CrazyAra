@@ -471,7 +471,10 @@ class MCTSAgent(AbsAgent):
 
             if time_checked_early is False and t_elapsed_ms > self.movetime_ms / 2:
                 # node, _, _, child_idx = self._select_node_based_on_mcts_policy(self.root_node)
-                if self.root_node.policy_prob.max() > 0.9 and self.root_node.policy_prob.argmax() == self.root_node.q_value.argmax():
+                if (
+                    self.root_node.policy_prob.max() > 0.9
+                    and self.root_node.policy_prob.argmax() == self.root_node.q_value.argmax()
+                ):
                     self.time_buffer_ms += (self.movetime_ms - t_elapsed_ms) * 0.9
                     print("info early break up")
                     break
@@ -496,7 +499,8 @@ class MCTSAgent(AbsAgent):
                 self.time_buffer_ms > 2500
                 and time_checked is False
                 and t_elapsed_ms > self.movetime_ms * 0.9
-                and self.root_node.q_value[self.root_node.child_number_visits.argmax()] < self.root_node.initial_value + 0.01
+                and self.root_node.q_value[self.root_node.child_number_visits.argmax()]
+                < self.root_node.initial_value + 0.01
             ):
                 print("info increase time")
                 time_checked = True
