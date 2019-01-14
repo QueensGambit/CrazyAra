@@ -84,7 +84,7 @@ class CrazyAra:
             print("info string An error occurred while trying to open the self.log_file %s" % self.log_file_path)
             print(self.traceback_text)
 
-        self.intro_part1 = """
+        self.intro = """
                                               _                                           
                                _..           /   ._   _.  _        /\   ._   _.           
                              .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|           
@@ -96,8 +96,7 @@ class CrazyAra:
                      /`       |  / /`\.-.          5 ////__////__////__////__/            
                    .'        ;  /  \_/__/         4 /__////__////__////__////             
                  .'`-'_     /_.'))).-` \         3 ////__////__////__////__/              
-                / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////               """
-        self.intro_part2 = """
+                / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////        
                (__.'/   /` .'`                 1 ////__////__////__////__/                
                 (_.'/ /` /`                       a  b  c  d  e  f  g  h                  
                   _|.' /`                                                                 
@@ -590,8 +589,7 @@ class CrazyAra:
     # main waiting loop for processing command line inputs
 
     def main(self):
-        self.eprint(self.intro_part1, end="")
-        self.eprint(self.intro_part2, end="")
+        self.eprint(self.intro)
         while True:
             line = input()
             self.print_if_debug("waiting ...")
