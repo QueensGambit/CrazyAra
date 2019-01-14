@@ -458,7 +458,7 @@ class CrazyAra:
                     else:
                         value = int(cmd_list[4])
 
-                    for option in option_name:
+                    for option in cmd_list:
                         self.settings[option] = True
 
                     self.log_print("info string Updated option %s to %s" % (option_name, value))
