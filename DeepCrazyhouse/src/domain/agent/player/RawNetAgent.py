@@ -8,18 +8,18 @@ The raw network uses the the single network prediction for it's evaluation.
 No mcts search is being done.
 """
 from time import time
-from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
+from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
-from DeepCrazyhouse.src.domain.abstract_cls._Agent import _Agent
+from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
 
 
-class RawNetAgent(_Agent):
+class RawNetAgent(AbsAgent):
     def __init__(self, net: NeuralNetAPI, temperature=0.0, temperature_moves=4, verbose=True):
         super().__init__(temperature, temperature_moves, verbose)
         self._net = net
 
-    def evaluate_board_state(self, state: _GameState):
+    def evaluate_board_state(self, state: AbsGameState):
         """
         The greedy agent always performs the first legal move with the highest move probability
 
