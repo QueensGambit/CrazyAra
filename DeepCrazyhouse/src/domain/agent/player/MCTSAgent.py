@@ -25,7 +25,7 @@ from multiprocessing import Pipe
 from time import time
 import numpy as np
 from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
-from DeepCrazyhouse.src.domain.abstract_cls._Agent import _Agent
+from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.agent.player.util.NetPredService import NetPredService
 from DeepCrazyhouse.src.domain.agent.player.util.Node import Node
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
@@ -57,7 +57,7 @@ def profile(fnc):
     return inner
 
 
-class MCTSAgent(_Agent):
+class MCTSAgent(AbsAgent):
     def __init__(
         self,
         nets: [NeuralNetAPI],
