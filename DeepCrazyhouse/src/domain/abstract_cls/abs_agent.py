@@ -6,22 +6,24 @@ Created on 14.10.18
 
 Abstract class for defining a playing agent.
 """
+from abc import ABC, abstractmethod
 from copy import deepcopy
 import numpy as np
-from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
+from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 
 
-class _Agent:
+class AbsAgent(ABC):
     def __init__(self, temperature=0, temperature_moves=4, verbose=True):
         self.temperature = temperature
         self.temperature_current = temperature
         self.temperature_moves = temperature_moves
         self.verbose = verbose
 
-    def evaluate_board_state(self, state: _GameState):
-        raise NotImplementedError
+    @abstractmethod
+    def evaluate_board_state(self, state: AbsGameState) -> tuple:
+        pass
 
-    def perform_action(self, state: _GameState):
+    def perform_action(self, state: AbsGameState):
         """
         Returns a selected move given a game state by calling evaluate_board_state(state) in order to get a probability
         distribution.

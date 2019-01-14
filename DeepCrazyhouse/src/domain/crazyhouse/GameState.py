@@ -1,12 +1,12 @@
 import chess
 from chess.variant import CrazyhouseBoard
 from DeepCrazyhouse.src.domain.crazyhouse.input_representation import board_to_planes
-from DeepCrazyhouse.src.domain.abstract_cls._GameState import _GameState
+from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 
 
-class GameState(_GameState):
+class GameState(AbsGameState):
     def __init__(self, board=CrazyhouseBoard()):
-        _GameState.__init__(self, board)
+        AbsGameState.__init__(self, board)
         self.board = board
         self._fen_dic = {}
         self._board_occ = 0

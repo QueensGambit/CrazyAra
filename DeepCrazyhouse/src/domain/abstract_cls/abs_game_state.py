@@ -7,11 +7,11 @@ Created on 14.10.18
 Please describe what the content of this file is about
 """
 
-import chess
+from abc import ABC, abstractmethod
 import chess.variant
 
 
-class _GameState:
+class AbsGameState(ABC):
     def __init__(self, board):
         self.board = board
         self._fen_dic = {}
@@ -19,8 +19,9 @@ class _GameState:
     def apply_move(self, move: chess.Move):  # , remember_state=False):
         self.board.push(move)
 
+    @abstractmethod
     def get_state_planes(self):
-        raise NotImplementedError("get_state_planes() should return board_to_planes(self.board, 0, normalize=True)")
+        pass
         # return board_to_planes(self.board, 0, normalize=True)
 
     def get_pythonchess_board(self):
@@ -30,8 +31,9 @@ class _GameState:
         # check if you can claim a draw - its assumed that the draw is always claimed
         return self.board.can_claim_draw()
 
+    @abstractmethod
     def is_won(self):
-        raise NotImplementedError()
+        pass
         # only a is_won() and no is_lost() function is needed because the game is over
         #  after the player found checkmate successfully
         # return self.board.is_checkmate()
@@ -57,8 +59,9 @@ class _GameState:
         """
         return self.board._transposition_key()
 
+    @abstractmethod
     def new_game(self):
-        raise NotImplementedError
+        pass
 
     def get_halfmove_counter(self):
         return self.board.halfmove_clock
