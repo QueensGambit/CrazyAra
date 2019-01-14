@@ -238,7 +238,7 @@ class MCTSAgent(_Agent):
             )
             self.total_nodes_pre_search = deepcopy(self.root_node.n_sum)
             # reset potential good nodes for the root
-            self.root_node.q[self.root_node.q < 0] = self.root_node.q.max() - 0.25
+            self.root_node.q_value[self.root_node.q_value < 0] = self.root_node.q_value.max() - 0.25
 
         else:
             logging.debug("Starting a brand new search tree...")
@@ -256,9 +256,9 @@ class MCTSAgent(_Agent):
                 self._expand_root_node_multiple_moves(state, legal_moves)  # run a single expansion on the root node
             # opening guard
             if state.get_fullmove_number() <= self.opening_guard_moves:  # 100: #7: #10:
-                self.root_node.q[self.root_node.p < 5e-2] = -9999
+                self.root_node.q_value[self.root_node.policy_prob < 5e-2] = -9999
             # elif len(legal_moves) > 50:
-            #    self.root_node.q[self.root_node.p < 1e-3] = -9999
+            #    self.root_node.q_value[self.root_node.policy_prob < 1e-3] = -9999
             # conduct the mcts-search based on the given settings
             max_depth_reached = self._run_mcts_search(state)
             t_elapsed = time() - self.t_start_eval
@@ -270,7 +270,7 @@ class MCTSAgent(_Agent):
         # if self.use_pruning is False:
         self.node_lookup[key] = self.root_node  # store the current root in the lookup table
         best_child_idx = p_vec_small.argmax()  # select the q-value according to the mcts best child value
-        value = self.root_node.q[best_child_idx]
+        value = self.root_node.q_value[best_child_idx]
         # value = orig_q[best_child_idx]
         lst_best_moves, _ = self.get_calculated_line()
         str_moves = self._mv_list_to_str(lst_best_moves)
@@ -380,7 +380,7 @@ class MCTSAgent(_Agent):
         """
 
         self.node_lookup = {}  # clear the look up table
-        self.root_node_prior_policy = deepcopy(self.root_node.p)  # safe the prior policy of the root node
+        self.root_node_prior_policy = deepcopy(self.root_node.policy_prob)  # safe the prior policy of the root node
         # apply dirichlet noise to the prior probabilities in order to ensure
         #  that every move can possibly be visited
         self.root_node.apply_dirichlet_noise_to_prior_policy(epsilon=self.dirichlet_epsilon, alpha=self.dirichlet_alpha)
@@ -400,7 +400,7 @@ class MCTSAgent(_Agent):
                 child_node.apply_dirichlet_noise_to_prior_policy(
                     epsilon=self.dirichlet_epsilon * 0.05, alpha=self.dirichlet_alpha  # 02,
                 )
-                # child_node.q[child_node.q < 0] = child_node.q.max() - 0.25
+                # child_node.q_value[child_node.q_value < 0] = child_node.q_value.max() - 0.25
         t_elapsed_ms = cur_playouts = 0
         old_time = time()
         cpuct_init = self.cpuct
@@ -416,7 +416,7 @@ class MCTSAgent(_Agent):
 
         while (
             max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and t_elapsed_ms < self.movetime_ms
-        ):  # and np.abs(self.root_node.q.mean()) < 0.99:
+        ):  # and np.abs(self.root_node.q_value.mean()) < 0.99:
 
             if self.use_oscillating_cpuct is True:
                 if decline is True:  # Test about decreasing CPUCT value
@@ -471,7 +471,7 @@ class MCTSAgent(_Agent):
 
             if time_checked_early is False and t_elapsed_ms > self.movetime_ms / 2:
                 # node, _, _, child_idx = self._select_node_based_on_mcts_policy(self.root_node)
-                if self.root_node.p.max() > 0.9 and self.root_node.p.argmax() == self.root_node.q.argmax():
+                if self.root_node.policy_prob.max() > 0.9 and self.root_node.policy_prob.argmax() == self.root_node.q_value.argmax():
                     self.time_buffer_ms += (self.movetime_ms - t_elapsed_ms) * 0.9
                     print("info early break up")
                     break
@@ -496,14 +496,14 @@ class MCTSAgent(_Agent):
                 self.time_buffer_ms > 2500
                 and time_checked is False
                 and t_elapsed_ms > self.movetime_ms * 0.9
-                and self.root_node.q[self.root_node.n.argmax()] < self.root_node.v + 0.01
+                and self.root_node.q_value[self.root_node.child_number_visits.argmax()] < self.root_node.initial_value + 0.01
             ):
                 print("info increase time")
                 time_checked = True
                 time_bonus = self.time_buffer_ms / 4
                 self.time_buffer_ms -= time_bonus  # increase the movetime
                 self.movetime_ms += time_bonus * 0.75
-                self.root_node.v = self.root_node.q[self.root_node.n.argmax()]
+                self.root_node.initial_value = self.root_node.q_value[self.root_node.child_number_visits.argmax()]
 
                 if self.time_buffer_ms < 0:
                     self.movetime_ms += self.time_buffer_ms
@@ -583,7 +583,7 @@ class MCTSAgent(_Agent):
                     parent_node.child_nodes[child_idx] = node
                 # logging.debug('found key: %s' % state.get_board_fen())
                 # get the prior value from the leaf node which has already been expanded
-                value = node.v
+                value = node.initial_value
             else:
                 # expand and evaluate the new board state (the node wasn't found in the look-up table)
                 # its value will be back-propagated through the tree and flipped after every layer
@@ -652,7 +652,7 @@ class MCTSAgent(_Agent):
                 if depth == 1:
                     # disable uncertain moves from being visited by giving them a very bad score
                     if is_leaf is False and self.use_pruning is True:
-                        if self.root_node_prior_policy[child_idx] < 1e-3 and value * -1 < self.root_node.v:
+                        if self.root_node_prior_policy[child_idx] < 1e-3 and value * -1 < self.root_node.initial_value:
                             with parent_node.lock:
                                 value = 99
 
@@ -677,7 +677,7 @@ class MCTSAgent(_Agent):
                 with parent_node.lock:
                     parent_node.child_nodes[child_idx] = new_node  # add the new node to its parent
         elif node.is_leaf is True:  # check if we have reached a leaf node
-            value = node.v
+            value = node.initial_value
         else:
             # get the value from the leaf node (the current function is called recursively)
             value, depth, chosen_nodes = self._run_single_playout(state, node, pipe_id, depth + 1, chosen_nodes)
@@ -775,17 +775,17 @@ class MCTSAgent(_Agent):
         return best_moves
 
     def get_2nd_max(self):
-        n_child = self.root_node.n.argmax()
-        n_max = self.root_node.n[n_child]
-        self.root_node.n[n_child] = 0
-        second_max = self.root_node.n.max()
-        self.root_node.n[n_child] = n_max
+        n_child = self.root_node.child_number_visits.argmax()
+        n_max = self.root_node.child_number_visits[n_child]
+        self.root_node.child_number_visits[n_child] = 0
+        second_max = self.root_node.child_number_visits.max()
+        self.root_node.child_number_visits[n_child] = n_max
         return second_max
 
     def get_xth_max(self, xth_node):
-        if len(self.root_node.n) < xth_node:
-            return self.root_node.n.min()
-        return np.sort(self.root_node.n)[-xth_node]
+        if len(self.root_node.child_number_visits) < xth_node:
+            return self.root_node.child_number_visits.min()
+        return np.sort(self.root_node.child_number_visits)[-xth_node]
 
     def get_last_q_values(self):
         """
@@ -799,7 +799,7 @@ class MCTSAgent(_Agent):
 
         for i in range(self.root_node.nb_direct_child_nodes):
 
-            if self.root_node.n[i] >= self.root_node.n.max() * 0.33:
+            if self.root_node.child_number_visits[i] >= self.root_node.child_number_visits.max() * 0.33:
                 node = self.root_node.child_nodes[i]
                 print(self.root_node.legal_moves[i].uci(), end=" ")
                 turn = 1
@@ -813,7 +813,7 @@ class MCTSAgent(_Agent):
                     turn *= -1
 
                 if final_node is not None:
-                    q_future[i] = final_node.v
+                    q_future[i] = final_node.initial_value
                     indices.append(i)
                     q_future[i] *= turn
                 print(q_future[i])

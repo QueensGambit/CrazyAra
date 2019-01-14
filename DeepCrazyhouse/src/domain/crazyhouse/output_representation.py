@@ -188,7 +188,7 @@ def get_probs_of_move_list(policy_vec: np.ndarray, mv_list: [chess.Move], is_whi
     # allocate sufficient memory
     p_vec_small = np.zeros(len(mv_list), np.float32)
 
-    for idx, move in enumerate(mv_list):
+    for mv_idx, move in enumerate(mv_list):
 
         if is_white_to_move is True:
             # find the according index in the vector
@@ -198,7 +198,7 @@ def get_probs_of_move_list(policy_vec: np.ndarray, mv_list: [chess.Move], is_whi
             idx = MV_LOOKUP_MIRRORED[move.uci()]
 
         # set the right prob value
-        p_vec_small[idx] = policy_vec[idx]
+        p_vec_small[mv_idx] = policy_vec[idx]
 
     if normalize is True:
         p_vec_small /= sum(p_vec_small)
