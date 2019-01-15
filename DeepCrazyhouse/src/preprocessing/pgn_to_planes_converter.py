@@ -585,6 +585,7 @@ class PGN2PlanesConverter:
 
 
 def export_pgn_to_datasetfile():
+    """ Converts the pgn file of the games selected to a dataset file"""
     PGN2PlanesConverter(
         limit_nb_games_to_analyze=10000,
         nb_games_per_file=1000,
@@ -599,6 +600,7 @@ def export_pgn_to_datasetfile():
 
 
 def export_mate_in_one_scenarios():
+    """ Converts the pgn file of the games selected(filtering only the mate-in-one scenarios) to a dataset file"""
     PGN2PlanesConverter(
         limit_nb_games_to_analyze=10024,
         nb_games_per_file=1000,
