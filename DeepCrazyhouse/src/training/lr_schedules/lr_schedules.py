@@ -66,8 +66,7 @@ class LinearWarmUp:
     def __call__(self, iteration):
         if iteration <= self.length:
             return iteration * (self.finish_lr - self.start_lr) / (self.length) + self.start_lr
-        else:
-            return self.schedule(iteration - self.length)
+        return self.schedule(iteration - self.length)
 
 
 class CyclicalSchedule:
@@ -115,8 +114,7 @@ class CosineAnnealingSchedule:
             unit_cycle = (1 + math.cos(iteration * math.pi / self.cycle_length)) / 2
             adjusted_cycle = (unit_cycle * (self.max_lr - self.min_lr)) + self.min_lr
             return adjusted_cycle
-        else:
-            return self.min_lr
+        return self.min_lr
 
 
 class LinearCoolDown:
@@ -138,10 +136,9 @@ class LinearCoolDown:
     def __call__(self, iteration):
         if iteration <= self.start_idx:
             return self.schedule(iteration)
-        elif iteration <= self.finish_idx:
+        if iteration <= self.finish_idx:
             return (iteration - self.start_idx) * (self.finish_lr - self.start_lr) / (self.length) + self.start_lr
-        else:
-            return self.finish_lr
+        return self.finish_lr
 
 
 class OneCycleSchedule:
