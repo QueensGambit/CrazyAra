@@ -7,16 +7,16 @@ Created on 25.09.18
 Tests the functionality of the LABEL and LABEL_MIRRORED list based on the conversion to board and move planes
 """
 
-import chess.variant
 import unittest
+import chess.variant
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import (
     policy_to_move,
     move_to_policy,
     policy_to_moves,
     policy_to_best_move,
 )
-from DeepCrazyhouse.src.domain.crazyhouse.constants import *
-from DeepCrazyhouse.src.domain.preprocessing.util import load_pgn_dataset
+from DeepCrazyhouse.src.domain.crazyhouse.constants import LABELS, LABELS_MIRRORED
+from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
 class MoveRoundTripTest(unittest.TestCase):
@@ -35,42 +35,20 @@ class MoveRoundTripTest(unittest.TestCase):
 
     def test_move_roundtrip_black(self):
 
-        mv = chess.Move.from_uci("e7e5")
+        move = chess.Move.from_uci("e7e5")
 
-        policy_vec = move_to_policy(mv, is_white_to_move=False)
+        policy_vec = move_to_policy(move, is_white_to_move=False)
         mv_conv = policy_to_move(policy_vec, is_white_to_move=False)
 
-        self.assertTrue(LABELS_MIRRORED[policy_vec.argmax()] == mv.uci())
-        self.assertTrue(mv == mv_conv)
-
-    def test_loaded_dataset_white_move(self):
-
-        s_idcs_val, x_val, yv_val, yp_val, pgn_datasets_val = load_pgn_dataset(
-            dataset_type="test", part_id=0, print_statistics=True, print_parameters=True, normalize=True
-        )
-
-        board = chess.variant.CrazyhouseBoard()
-
-        mv_converted = policy_to_move(yp_val[0], is_white_to_move=True)
-
-        mv_converted_is_legal = False
-
-        # check if the move is legal in the starting position
-        for mv in board.legal_moves:
-            if mv == mv_converted:
-                mv_converted_is_legal = True
-
-        self.assertTrue(
-            mv_converted_is_legal,
-            msg="Convert move %s is not a legal move in the starting position for WHITE" % mv_converted.uci(),
-        )
+        self.assertTrue(LABELS_MIRRORED[policy_vec.argmax()] == move.uci())
+        self.assertTrue(move == mv_conv)
 
     def test_loaded_dataset_black_move(self):
         """
         Loads the dataset file and checks the first move policy vector for black for correctness
         :return:
         """
-        s_idcs_val, x_val, yv_val, yp_val, pgn_datasets_val = load_pgn_dataset(
+        _, _, _, yp_val, _ = load_pgn_dataset(
             dataset_type="test", part_id=0, print_statistics=True, print_parameters=True, normalize=True
         )
 
@@ -95,8 +73,8 @@ class MoveRoundTripTest(unittest.TestCase):
             mv_converted_is_legal = False
 
             # check if the move is legal in the starting position
-            for mv in board.legal_moves:
-                if mv == mv_converted:
+            for move in board.legal_moves:
+                if move == mv_converted:
                     mv_converted_is_legal = True
 
             self.assertTrue(
@@ -109,7 +87,7 @@ class MoveRoundTripTest(unittest.TestCase):
         Loads the dataset file and checks the first move policy vector for white for correctness
         :return:
         """
-        s_idcs_val, x_val, yv_val, yp_val, pgn_datasets_val = load_pgn_dataset(
+        _, _, _, yp_val, _ = load_pgn_dataset(
             dataset_type="test", part_id=0, print_statistics=True, print_parameters=True, normalize=True
         )
 
@@ -132,8 +110,8 @@ class MoveRoundTripTest(unittest.TestCase):
             mv_converted_is_legal = False
 
             # check if the move is legal in the starting position
-            for mv in board.legal_moves:
-                if mv == mv_converted:
+            for move in board.legal_moves:
+                if move == mv_converted:
                     mv_converted_is_legal = True
 
             self.assertTrue(
