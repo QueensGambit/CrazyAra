@@ -77,12 +77,11 @@ class CrazyAra:
         }
         try:
             self.log_file = open(self.log_file_path, "w")
-        except:
+        except IOError:
             self.log_file = None
             # print out the error message
-            self.traceback_text = traceback.format_exc()
             print("info string An error occurred while trying to open the self.log_file %s" % self.log_file_path)
-            print(self.traceback_text)
+            traceback.print_exc()
 
         self.intro = """
                                               _                                           
@@ -122,10 +121,10 @@ class CrazyAra:
     def write_score_to_file(self, score: str):
         # score_file = open(score_file_path, 'w')
 
-        with open(self.score_file_path, "w") as file:
-            file.seek(0)
-            file.write(score)
-            file.truncate()
+        with open(self.score_file_path, "w") as selected_file:
+            selected_file.seek(0)
+            selected_file.write(score)
+            selected_file.truncate()
 
     def log(self, text: str):
         if self.log_file:
@@ -329,8 +328,8 @@ class CrazyAra:
         if self.enable_lichess_debug_msg:
             try:
                 self.write_score_to_file(self.score)
-            except Exception:
-                pass
+            except IOError:
+                traceback.print_exc()
         # print out the search information
         self.log_print("info %s" % self.score)
 
@@ -628,10 +627,9 @@ class CrazyAra:
                     else:
                         # give the user a message that the command was ignored
                         print("info string Unknown command: %s" % line)
-                except:
+                except IOError:
                     # log the error message to the log-file and exit the script
-                    traceback_text = traceback.format_exc()
-                    self.log_print(traceback_text)
+                    traceback.print_exc()
 
 
 if __name__ == "__main__":
