@@ -11,8 +11,6 @@ https://mxnet.incubator.apache.org/tutorials/gluon/learning_rate_schedules_advan
 
 import copy
 import math
-import mxnet as mx
-import numpy as np
 import matplotlib.pyplot as plt
 
 
