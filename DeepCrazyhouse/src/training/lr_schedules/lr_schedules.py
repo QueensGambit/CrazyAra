@@ -194,10 +194,10 @@ class MomentumSchedule:
         self.max_momentum = max_momentum
 
     def __call__(self, iteration):
-        lr = self.lr_schedule(iteration)
+        learning_rate = self.lr_schedule(iteration)
 
         # calculate percentage factor
-        perc = (lr - self.min_lr) / (self.max_lr - self.min_lr)
+        perc = (learning_rate - self.min_lr) / (self.max_lr - self.min_lr)
         # invert the percentage factor and apply it
         momentum = self.max_momentum - perc * (self.max_momentum - self.min_momentum)
         return momentum
