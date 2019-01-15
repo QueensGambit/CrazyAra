@@ -7,18 +7,17 @@ Created on 22.08.18
 Loads the plane representation for the test dataset and iterates through all board positions and moves.
 """
 
-from DeepCrazyhouse.src.domain.util import *
-from DeepCrazyhouse.src.domain.crazyhouse.input_representation import planes_to_board
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import policy_to_move
-import chess
-import chess.pgn
 import unittest
-import logging
-from DeepCrazyhouse.src.preprocessing.PGN2PlanesConverter import PGN2PlanesConverter
 from multiprocessing import Pool
 from copy import deepcopy
+import logging
+import chess
+import chess.pgn
+import numpy as np
+from DeepCrazyhouse.src.domain.crazyhouse.input_representation import planes_to_board
+from DeepCrazyhouse.src.domain.crazyhouse.output_representation import policy_to_move
+from DeepCrazyhouse.src.preprocessing.PGN2PlanesConverter import PGN2PlanesConverter
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-
 # import the Colorer to have a nicer logging printout
 from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
 
@@ -122,7 +121,7 @@ class FullRoundTripTests(unittest.TestCase):
             clevel=5,
             dataset_type="test",
         )
-        self._all_pgn_sel, nb_games_sel, batch_white_won, batch_black_won, batch_draw = converter.filter_pgn()
+        self._all_pgn_sel, _, _, _, _ = converter.filter_pgn()
         print(len(self._all_pgn_sel))
 
     def test_board_states(self):
@@ -148,11 +147,11 @@ class FullRoundTripTests(unittest.TestCase):
 
             params_inp.append((pgn, x_test, start_idx))
 
-        p = Pool()
+        pool = Pool()
 
         games_ok = []
         logging.info("start board test...")
-        for game_ok, start_idx in p.map(board_single_game, params_inp):
+        for game_ok, start_idx in pool.map(board_single_game, params_inp):
             self.assertTrue(game_ok)
             if game_ok is True:
                 logging.debug("Board States - Game StartIdx %d [OK]", start_idx)
@@ -161,8 +160,8 @@ class FullRoundTripTests(unittest.TestCase):
 
             games_ok.append(games_ok)
 
-        p.close()
-        p.join()
+        pool.close()
+        pool.join()
         logging.info("board test done...")
 
     def test_moves(self):
@@ -186,11 +185,11 @@ class FullRoundTripTests(unittest.TestCase):
 
             params_inp.append((pgn, yp_test, start_idx))
 
-        p = Pool()
+        pool = Pool()
 
         games_ok = []
         logging.info("start board test...")
-        for game_ok, start_idx in p.map(moves_single_game, params_inp):
+        for game_ok, start_idx in pool.map(moves_single_game, params_inp):
             self.assertTrue(game_ok)
             if game_ok is True:
                 logging.debug("Moves - Game StartIdx %d [OK]", start_idx)
@@ -199,8 +198,8 @@ class FullRoundTripTests(unittest.TestCase):
 
             games_ok.append(games_ok)
 
-        p.close()
-        p.join()
+        pool.close()
+        pool.join()
         logging.info("move comparision test done...")
 
 
