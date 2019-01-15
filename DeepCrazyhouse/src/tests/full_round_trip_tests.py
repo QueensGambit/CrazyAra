@@ -16,8 +16,9 @@ import chess.pgn
 import numpy as np
 from DeepCrazyhouse.src.domain.crazyhouse.input_representation import planes_to_board
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import policy_to_move
-from DeepCrazyhouse.src.preprocessing.PGN2PlanesConverter import PGN2PlanesConverter
+from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesConverter
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
+
 # import the Colorer to have a nicer logging printout
 from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
 

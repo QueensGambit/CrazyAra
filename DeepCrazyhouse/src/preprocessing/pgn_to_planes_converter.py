@@ -192,8 +192,8 @@ class PGN2PlanesConverter:
         # split the content for each single game
         all_games = content.split("[Event")
 
-        for i in range(len(all_games)):
-            all_games[i] = "[Event" + all_games[i]
+        for idx, _ in enumerate(all_games):
+            all_games[idx] = "[Event" + all_games[idx]
 
         pgns = []
         del all_games[0]
