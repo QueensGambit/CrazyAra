@@ -4,7 +4,7 @@ import chess
 from flask import Flask, request, send_from_directory
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
-from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
+from DeepCrazyhouse.src.domain.agent.player.raw_net_agent import RawNetAgent
 from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
 
 

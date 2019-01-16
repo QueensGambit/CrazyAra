@@ -139,7 +139,7 @@ class CrazyAra:
         if self.setup_done is False:
             from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
             from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
-            from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
+            from DeepCrazyhouse.src.domain.agent.player.raw_net_agent import RawNetAgent
             from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
 
             # check for valid parameter setup and do auto-corrections if possible
