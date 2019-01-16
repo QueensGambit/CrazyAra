@@ -47,25 +47,20 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu())
         data = data.as_in_context(ctx)
         value_label = value_label.as_in_context(ctx)
         policy_label = policy_label.as_in_context(ctx)
-
         [value_out, policy_out] = net(data)
-
         # update the metrics
         metrics["value_loss"].update(preds=value_out, labels=value_label)
         metrics["policy_loss"].update(preds=nd.SoftmaxActivation(policy_out), labels=policy_label)
         metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
         metrics["policy_acc"].update(preds=nd.argmax(policy_out, axis=1), labels=policy_label)
-
         # stop after evaluating x batches (only recommended to use this for the train set evaluation)
-        if nb_batches is not None and i == nb_batches:
+        if nb_batches and i == nb_batches:
             break
 
-    metric_values = {}
-    metric_values["loss"] = 0.01 * metrics["value_loss"].get()[1] + 0.99 * metrics["policy_loss"].get()[1]
+    metric_values = {"loss": 0.01 * metrics["value_loss"].get()[1] + 0.99 * metrics["policy_loss"].get()[1]}
 
     for metric in metrics.values():
         metric_values[metric.get()[0]] = metric.get()[1]
-
     return metric_values
 
 
@@ -80,6 +75,7 @@ def reset_metrics(metrics):
 
 
 class TrainerAgent:
+    """Main training loop"""
     def __init__(
         self,
         net,
@@ -142,7 +138,7 @@ class TrainerAgent:
         # self._warmup_k_steps = lr_warmup_k_steps
         # self._lr_warmup_init = lr_warmup_init
         # define a summary writer that logs data and flushes to the file every 5 seconds
-        if log_metrics_to_tensorboard is True:
+        if log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
         # Define the two loss functions
         self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
@@ -161,9 +157,7 @@ class TrainerAgent:
         # collect parameter names for logging the gradients of parameters in each epoch
         self._params = self._net.collect_params()
         self._param_names = self._params.keys()
-
-        # define a list which describes the order of the processed batches
-        self.ordering = list(range(nb_parts))
+        self.ordering = list(range(nb_parts)) # define a list which describes the order of the processed batches
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -177,13 +171,12 @@ class TrainerAgent:
         for name in metric_values.keys():  # show the metric stats
             print(" - %s%s: %.4f" % (prefix, name, metric_values[name]), end="")
             # add the metrics to the tensorboard event file
-
-            if self._log_metrics_to_tensorboard is True:
+            if self._log_metrics_to_tensorboard:
                 self.sum_writer.add_scalar(name, [prefix.replace("_", ""), metric_values[name]], global_step)
 
     def _process_on_data_plane_file(self, train_data, batch_proc_tmp):
 
-        for i, (data, value_label, policy_label) in enumerate(train_data):
+        for _, (data, value_label, policy_label) in enumerate(train_data):
             data = data.as_in_context(self._ctx)
             value_label = value_label.as_in_context(self._ctx)
             policy_label = policy_label.as_in_context(self._ctx)
@@ -267,7 +260,7 @@ class TrainerAgent:
                 )
                 # batch_proc_tmp, dummy = self._process_on_data_plane_file(train_data, batch_proc_tmp)
 
-                for i, (data, value_label, policy_label) in enumerate(train_data):
+                for _, (data, value_label, policy_label) in enumerate(train_data):
                     data = data.as_in_context(self._ctx)
                     value_label = value_label.as_in_context(self._ctx)
                     policy_label = policy_label.as_in_context(self._ctx)
