@@ -31,6 +31,7 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
 class Planes2RecConverter:
+    """ Transform the plane representation in a format that can be used easily during training"""
     def __init__(self, dataset_type="train"):
 
         # make sure that correct dataset_type has been selected
@@ -95,8 +96,8 @@ class Planes2RecConverter:
                 buf = zlib.compress(data.tobytes())
                 # we only store the integer idx of the highest output
                 header = mx.recordio.IRHeader(0, [y_value[position], y_policy[position].argmax()], idx, 0)
-                s = mx.recordio.pack(header, buf)
-                record.write_idx(idx, s)
+                str_pack = mx.recordio.pack(header, buf)
+                record.write_idx(idx, str_pack)
                 idx += 1
 
             # log the elapsed time for a single dataset part file
