@@ -11,11 +11,11 @@ class NeuralNetAPI:
     def __init__(self, ctx="cpu", batch_size=1):
         self.batch_size = batch_size
 
-        if os.path.isdir(main_config["model_architecture_dir"]) is False:
+        if not os.path.isdir(main_config["model_architecture_dir"]):
             raise Exception(
                 "The given model_architecture_dir at: " + main_config["model_architecture_dir"] + " wasn't found."
             )
-        if os.path.isdir(main_config["model_weights_dir"]) is False:
+        if not os.path.isdir(main_config["model_weights_dir"]):
             raise Exception("The given model_weights_dir at: " + main_config["model_weights_dir"] + " wasn't found.")
 
         self.symbol_path = glob.glob(main_config["model_architecture_dir"] + "*")[0]
