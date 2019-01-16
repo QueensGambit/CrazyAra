@@ -26,7 +26,7 @@ from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm
 from mxnet.gluon import HybridBlock
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
 from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _SqueezeExcitation
-from DeepCrazyhouse.src.domain.neural_net.architectures.AlphaZeroResnet import (
+from DeepCrazyhouse.src.domain.neural_net.architectures.a0_resnet import (
     _StemAlphaZero,
     _PolicyHeadAlphaZero,
     _ValueHeadAlphaZero,
