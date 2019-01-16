@@ -34,11 +34,8 @@ class MovePlaneRoundTripTests(unittest.TestCase):
     """
 
     def test_row_col_plane_index_round_trip(self):
-        positions = [[1, 4], [0, 1]]
-        for position in positions:
-            row = position[0]
-            col = position[1]
-
+            row = [1, 4]
+            col = [0, 1]
             print(f"Testing coordinate round trip ({row},{col})")
             rt_row, rt_col = get_row_col(get_board_position_index(row, col))
             self.assertEqual(rt_row, row)
