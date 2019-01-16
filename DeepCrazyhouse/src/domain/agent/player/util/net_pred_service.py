@@ -1,5 +1,5 @@
 """
-@file: NetPredService.py
+@file: net_pred_service.py
 Created on 13.10.18
 @project: crazy_ara_refactor
 @author: queensgambit

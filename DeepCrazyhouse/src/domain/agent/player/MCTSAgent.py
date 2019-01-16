@@ -26,7 +26,7 @@ from time import time
 import numpy as np
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
-from DeepCrazyhouse.src.domain.agent.player.util.NetPredService import NetPredService
+from DeepCrazyhouse.src.domain.agent.player.util.net_pred_service import NetPredService
 from DeepCrazyhouse.src.domain.agent.player.util.node import Node
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
 from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
