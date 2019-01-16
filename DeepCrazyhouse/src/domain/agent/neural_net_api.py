@@ -1,3 +1,13 @@
+"""
+@file: neural_net_api.py
+Changed last on 16.01.19
+@project: crazy_ara_cleaning
+@author: queensgambit and matuiss2
+
+Make the project NN easier to use
+
+This file contains wrappers for NN handling
+"""
 import glob
 import os
 from multiprocessing import Queue
@@ -8,6 +18,7 @@ from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_W
 
 
 class NeuralNetAPI:
+    """Groups every a lot of helpers to be used on NN handling"""
     def __init__(self, ctx="cpu", batch_size=1):
         self.batch_size = batch_size
 
@@ -97,10 +108,13 @@ class NeuralNetAPI:
         queue.put([pred[0].asnumpy()[0], pred[1].softmax().asnumpy()[0]])
 
     def get_batch_size(self):
+        """Make the batch_size public access"""
         return self.batch_size
 
     def get_ctx(self):
+        """Make the ctx public access"""
         return self.ctx
 
     def get_model_name(self):
+        """Make the model_name public access"""
         return self.model_name
