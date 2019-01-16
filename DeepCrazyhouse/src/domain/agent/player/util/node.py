@@ -32,7 +32,7 @@ class Node:
         self.lock = Lock()  # lock object for this node to protect its member variables
         self.initial_value = value  # store the initial value prediction of the current board position
 
-        if is_leaf is True:
+        if is_leaf:
             self.nb_direct_child_nodes = 0
         else:
             # specify the number of direct child nodes from this node
@@ -52,8 +52,8 @@ class Node:
         # self.q = np.zeros(self.nb_direct_child_nodes)
         self.q_value = np.ones(self.nb_direct_child_nodes) * -1
 
-        if is_leaf is False:
-            if clip_low_visit is True:
+        if not is_leaf:
+            if clip_low_visit:
                 self.q_value[p_vec_small < 1e-3] = -9999
             # else:
             #    self.thresh_idcs_root = p_vec_small < 5e-2
@@ -95,7 +95,7 @@ class Node:
         :return: Pruned policy vector based on the MCTS search
         """
 
-        if clip_low_visit_nodes is True and q_value_weight > 0:
+        if clip_low_visit_nodes and q_value_weight > 0:
             visit = deepcopy(self.child_number_visits)
             value = deepcopy((self.q_value + 1))
             if visit.max() > 0:
@@ -138,7 +138,7 @@ class Node:
         :return:
         """
 
-        if self.is_leaf is False:
+        if not self.is_leaf:
             with self.lock:
                 dirichlet_noise = np.random.dirichlet([alpha] * self.nb_direct_child_nodes)
                 self.policy_prob = (1 - epsilon) * self.policy_prob + epsilon * dirichlet_noise
