@@ -15,6 +15,7 @@ from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 
 
 class NetPredService:
+    # TODO: docstring
     def __init__(
         self,
         pipe_endings: [connection],

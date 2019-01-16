@@ -29,7 +29,7 @@ from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.agent.player.util.net_pred_service import NetPredService
 from DeepCrazyhouse.src.domain.agent.player.util.node import Node
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
-from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
+from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
 
 
