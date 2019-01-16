@@ -138,7 +138,7 @@ class CrazyAra:
         """
         if self.setup_done is False:
             from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
-            from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+            from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
             from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
             from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
 

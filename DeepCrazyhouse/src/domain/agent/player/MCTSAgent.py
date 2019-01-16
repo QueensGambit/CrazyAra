@@ -24,7 +24,7 @@ from copy import deepcopy
 from multiprocessing import Pipe
 from time import time
 import numpy as np
-from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.agent.player.util.NetPredService import NetPredService
 from DeepCrazyhouse.src.domain.agent.player.util.Node import Node

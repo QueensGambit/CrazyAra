@@ -11,7 +11,7 @@ from threading import Thread
 from time import time
 import mxnet as mx
 import numpy as np
-from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 
 
 class NetPredService:

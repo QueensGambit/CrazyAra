@@ -9,7 +9,7 @@ No mcts search is being done.
 """
 from time import time
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
-from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
 
