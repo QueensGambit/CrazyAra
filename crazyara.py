@@ -15,7 +15,7 @@ import sys
 import traceback
 import chess.pgn
 import numpy as np
-from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
+from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 
 
 class CrazyAra:

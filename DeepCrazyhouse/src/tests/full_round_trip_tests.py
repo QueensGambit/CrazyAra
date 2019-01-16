@@ -20,7 +20,7 @@ from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesC
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 # import the Colorer to have a nicer logging printout
-from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
+from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 
 enable_color_logging()
 
