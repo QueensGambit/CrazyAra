@@ -1,9 +1,19 @@
+"""
+@file: game_server.py
+Changed last on 17.01.19
+@project: crazy_ara_cleaning
+@author: queensgambit and matuiss2
+
+Handle the game server
+
+This file contains everything related to handling the game server
+"""
 import json
 import logging
 import chess
 from flask import Flask, request, send_from_directory
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
-from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
+from DeepCrazyhouse.src.domain.agent.player.mcts_agent import MCTSAgent
 from DeepCrazyhouse.src.domain.agent.player.raw_net_agent import RawNetAgent
 from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
 
@@ -13,7 +23,8 @@ RANK_LOOKUP = {"1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 6, "8": 7}
 
 
 def get_square_index_from_name(name):
-    if name is None:
+    """ Get the board coordinates using the received annotation"""
+    if not name:
         return None
 
     if len(name) != 2:
@@ -21,7 +32,7 @@ def get_square_index_from_name(name):
 
     col = FILE_LOOKUP[name[0]] if name[0] in FILE_LOOKUP else None
     row = RANK_LOOKUP[name[1]] if name[1] in RANK_LOOKUP else None
-    if col is None or row is None:
+    if not col or not row:
         return None
 
     return chess.square(col, row)
@@ -35,6 +46,7 @@ NB_WORKERS = 64
 
 
 class ChessServer:
+    """ Helper for handling the game server"""
     def __init__(self, name):
         self.app = Flask(name)
 
@@ -62,30 +74,35 @@ class ChessServer:
         # self.agent = player_agents["mcts"]
 
     def _wrap_endpoint(self, func):
+        """TODO: docstring"""
         def wrapper(kwargs):
             return func(self, **kwargs)
 
         return lambda **kwargs: wrapper(kwargs)
 
     def run(self):
+        """ Run the flask server"""
         self.app.run()
 
     @staticmethod
     def serve_client(path=None):
+        """Find the client server path"""
         if path is None:
             path = "index.html"
         return send_from_directory("./client", path)
 
     def serve_state(self):
+        """TODO: docstring"""
         return self.serialize_game_state()
 
     def serve_new_game(self):
+        """TODO: docstring"""
         logging.debug("staring new game()")
         self.perform_new_game()
         return self.serialize_game_state()
 
     def serve_move(self):
-
+        """ Groups the move requests and data to the server and the response from it"""
         # read move data
         drop_piece = request.args.get("drop")
         from_square = request.args.get("from")
@@ -96,8 +113,7 @@ class ChessServer:
         if (from_square_idx is None and drop_piece is None) or to_square_idx is None:
             return self.serialize_game_state("board name is invalid")
 
-        promotion = None
-        drop = None
+        promotion = drop = None
 
         if drop_piece is not None:
             from_square_idx = to_square_idx
@@ -127,9 +143,11 @@ class ChessServer:
         return self.serialize_game_state()
 
     def perform_new_game(self):
+        """Initialize a new game on the server"""
         self._gamestate = GameState()
 
     def perform_move(self, move):
+        """ Apply the move on the game and check if the legality of it"""
         logging.debug("perform_move(): %s", move)
         # check if move is valid
         if move not in list(self._gamestate.board.legal_moves):
@@ -141,14 +159,14 @@ class ChessServer:
         return None
 
     def perform_agent_move(self):
-
+        """TODO: docstring"""
         if self._gamestate.is_won():
             logging.debug("Checkmate")
             return False
 
         value, move, _, _ = self.agent.perform_action(self._gamestate)
 
-        if self._gamestate.is_white_to_move() is False:
+        if not self._gamestate.is_white_to_move():
             value = -value
 
         logging.debug("Value %.4f", value)
@@ -161,6 +179,7 @@ class ChessServer:
         return True
 
     def serialize_game_state(self, message=None, finished=None):
+        """ Encodes the game state to a .json file"""
         if message is None:
             message = ""
 

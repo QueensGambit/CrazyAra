@@ -222,14 +222,15 @@ class _StemRise(HybridBlock):
 
 
 class Rise(HybridBlock):
+    """ Implementing the RISE architecture for learning chess proposed by Johannes Czech"""
     def __init__(
         self,
         n_labels=2272,
         channels=256,
         channels_value_head=8,
         channels_policy_head=16,
-        nb_res_blocksX=7,
-        nb_res_blocksX_neck=12,
+        nb_res_blocks_x=7,
+        nb_res_blocks_x_neck=12,
         cardinality=1,
         cardinality_neck=2,
         value_fc_size=256,
@@ -245,7 +246,7 @@ class Rise(HybridBlock):
 
         :param n_labels: Number of labels the for the policy
         :param channels: Used for all convolution operations. (Except the last 2)
-        :param nb_res_blocksX: Number of residual blocks to stack. In the paper they used 19 or 39 residual blocks
+        :param nb_res_blocks_x: Number of residual blocks to stack. In the paper they used 19 or 39 residual blocks
         :param value_fc_size: Fully Connected layer size. Used for the value output
         :param bn_mom: Batch normalization momentum
         :return: gluon net description
@@ -261,7 +262,7 @@ class Rise(HybridBlock):
             else:
                 self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
 
-        for i in range(nb_res_blocksX):
+        for i in range(nb_res_blocks_x):
             unit_name = "unit%d" % i
             self.body.add(
                 ResidualBlockX(
@@ -275,13 +276,13 @@ class Rise(HybridBlock):
                 )
             )
 
-        for i in range(nb_res_blocksX_neck):
+        for i in range(nb_res_blocks_x_neck):
             unit_name = "unitX%d" % i
 
             dim_match = True
 
             # deactivate the SE for the last two blocks
-            if i in (nb_res_blocksX_neck - 2, nb_res_blocksX_neck - 1):
+            if i in (nb_res_blocks_x_neck - 2, nb_res_blocks_x_neck - 1):
                 cur_use_se = False
                 cur_res_scale_fac = res_scale_fac
             else:

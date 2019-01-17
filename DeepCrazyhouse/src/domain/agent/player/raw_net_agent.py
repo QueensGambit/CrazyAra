@@ -16,6 +16,7 @@ from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs
 
 class RawNetAgent(AbsAgent):
     """ Builds the raw network"""
+
     def __init__(self, net: NeuralNetAPI, temperature=0.0, temperature_moves=4, verbose=True):
         super().__init__(temperature, temperature_moves, verbose)
         self._net = net

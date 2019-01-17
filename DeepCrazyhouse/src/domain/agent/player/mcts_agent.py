@@ -9,7 +9,7 @@ The final move is chosen according to the visit count of each direct child node.
 One playout is defined as expanding one new node in the tree.
 In the case of chess this means evaluating a new board position.
 If the evaluation for one move takes too long on your hardware you can decrease the value for:
- nb_playouts_empty_pockets and nb_playouts_filled_pockets.
+nb_playouts_empty_pockets and nb_playouts_filled_pockets.
 For more details and the mathematical equations please take a look at src/domain/agent/README.md as well as the
 official DeepMind-papers.
 """
@@ -58,6 +58,8 @@ def profile(fnc):
 
 
 class MCTSAgent(AbsAgent):
+    """This class runs simulations in the tree and updates the node statistics smartly"""
+
     def __init__(
         self,
         nets: [NeuralNetAPI],
@@ -515,12 +517,11 @@ class MCTSAgent(AbsAgent):
         self.cpuct = cpuct_init
         return max_depth_reached
 
-    def perform_action(self, state_in: GameState, verbose=True):
+    def perform_action(self, state_in: GameState):
         """
         Return a value, best move with according to the mcts search.
         This method is used when using the mcts agent as a player.
         :param state_in: Requested games state
-        :param verbose: Boolean if debug messages shall be shown
         :return: value - Board value prediction
                 selected_move - Python chess move object according to mcts
                 confidence - Confidence for selecting this move
@@ -691,7 +692,13 @@ class MCTSAgent(AbsAgent):
         return -value, depth, chosen_nodes
 
     def check_for_duplicate(self, transposition_key, chosen_nodes):
+        """
 
+        :param transposition_key: Transposition key which defines the board state by all it's pieces and pocket state.
+                                  The move counter is disregarded.
+        :param chosen_nodes: List of moves which have been taken in the current path.
+        :return:
+        """
         node = self.root_node.child_nodes[chosen_nodes[0]]
         # iterate over all accessed nodes during the current search of the thread and check for same transposition key
         for node_idx in chosen_nodes[1:-1]:
@@ -769,6 +776,7 @@ class MCTSAgent(AbsAgent):
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], nb_visits, child_idx
 
     def show_next_pred_line(self):
+        """ It returns the predicted best moves for both players"""
         best_moves = []
         node = self.root_node  # start at the root node
 
@@ -779,6 +787,7 @@ class MCTSAgent(AbsAgent):
         return best_moves
 
     def get_2nd_max(self):
+        """ TODO: docstring """
         n_child = self.root_node.child_number_visits.argmax()
         n_max = self.root_node.child_number_visits[n_child]
         self.root_node.child_number_visits[n_child] = 0
@@ -787,6 +796,7 @@ class MCTSAgent(AbsAgent):
         return second_max
 
     def get_xth_max(self, xth_node):
+        """ TODO: docstring """
         if len(self.root_node.child_number_visits) < xth_node:
             return self.root_node.child_number_visits.min()
         return np.sort(self.root_node.child_number_visits)[-xth_node]

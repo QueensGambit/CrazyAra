@@ -13,6 +13,8 @@ from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 
 
 class AbsAgent(ABC):
+    """Abstract class for the Agent children classes"""
+
     def __init__(self, temperature=0, temperature_moves=4, verbose=True):
         self.temperature = temperature
         self.temperature_current = temperature
@@ -21,7 +23,7 @@ class AbsAgent(ABC):
 
     @abstractmethod
     def evaluate_board_state(self, state: AbsGameState) -> tuple:
-        pass
+        """Abstract method to force a method to evaluate board state on children"""
 
     def perform_action(self, state: AbsGameState):
         """

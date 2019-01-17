@@ -18,23 +18,20 @@ by Sorin & Dave
 import logging
 import sys
 import platform
+import ctypes
 
 
 def add_coloring_to_emit_windows(fn):
-    # patch Python code to add color support to logging.StreamHandler
+    """ Patch Python code to add color support to logging.StreamHandler"""
 
     # add methods we need to the class
     def _out_handle(self):
-        import ctypes
-
         return ctypes.windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
 
     # noinspection PyUnusedLocal
     out_handle = property(_out_handle)
 
     def _set_color(self, code):
-        import ctypes
-
         # Constants from the Windows API
         self.STD_OUTPUT_HANDLE = -11
         hdl = ctypes.windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
@@ -75,16 +72,16 @@ def add_coloring_to_emit_windows(fn):
         background_gray = 0x0070
         background_intensity = 0x0080  # background color is intensified.
 
-        levelno = args[1].levelno
-        if levelno >= 50:
+        level_number = args[1].levelno
+        if level_number >= 50:
             color = background_yellow | foreground_red | foreground_intensity | background_intensity
-        elif levelno >= 40:
+        elif level_number >= 40:
             color = foreground_red | foreground_intensity
-        elif levelno >= 30:
+        elif level_number >= 30:
             color = foreground_yellow | foreground_intensity
-        elif levelno >= 20:
+        elif level_number >= 20:
             color = foreground_green
-        elif levelno >= 10:
+        elif level_number >= 10:
             color = foreground_magenta
         else:
             color = foreground_white
@@ -100,8 +97,8 @@ def add_coloring_to_emit_windows(fn):
     return new
 
 
-def add_coloring_to_emit_ansi(fn):
-    # add methods we need to the class
+def add_coloring_to_emit_ansi(fn): #  Argument name doesn't conform to snake_case naming style(3 or more length)
+    """ Add methods we need to the class """
     def new(*args):
         level_number = args[1].levelno
         if level_number >= 50:
@@ -127,6 +124,7 @@ def add_coloring_to_emit_ansi(fn):
 
 
 def enable_color_logging(debug_lvl=logging.DEBUG):
+    """Groups every other function on this file, its the main of the module"""
     if platform.system() == "Windows":
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)

@@ -19,6 +19,7 @@ from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_W
 
 class NeuralNetAPI:
     """Groups every a lot of helpers to be used on NN handling"""
+
     def __init__(self, ctx="cpu", batch_size=1):
         self.batch_size = batch_size
 

@@ -32,6 +32,7 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 class Planes2RecConverter:
     """ Transform the plane representation in a format that can be used easily during training"""
+
     def __init__(self, dataset_type="train"):
 
         # make sure that correct dataset_type has been selected
@@ -51,7 +52,7 @@ class Planes2RecConverter:
             )
 
         self._dataset_type = dataset_type
-        self._export_dir = main_config["rec_dir"] # all dataset types are export to a single .rec directory
+        self._export_dir = main_config["rec_dir"]  # all dataset types are export to a single .rec directory
 
     def convert_all_planes_to_rec(self):
         """
@@ -94,8 +95,8 @@ class Planes2RecConverter:
                 record.write_idx(idx, packed_s)
                 idx += 1
 
-            logging.debug("elapsed time %.2fs", (time() - t_s)) # log the elapsed time for a single dataset part file
+            logging.debug("elapsed time %.2fs", (time() - t_s))  # log the elapsed time for a single dataset part file
 
-        record.close()# close the record file
+        record.close()  # close the record file
         logging.debug("created %s successfully", idx_filepath)
         logging.debug("created %s successfully", rec_filepath)

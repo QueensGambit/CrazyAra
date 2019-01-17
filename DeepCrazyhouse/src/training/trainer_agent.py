@@ -76,6 +76,7 @@ def reset_metrics(metrics):
 
 class TrainerAgent:
     """Main training loop"""
+
     def __init__(
         self,
         net,
@@ -157,7 +158,7 @@ class TrainerAgent:
         # collect parameter names for logging the gradients of parameters in each epoch
         self._params = self._net.collect_params()
         self._param_names = self._params.keys()
-        self.ordering = list(range(nb_parts)) # define a list which describes the order of the processed batches
+        self.ordering = list(range(nb_parts))  # define a list which describes the order of the processed batches
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -201,7 +202,7 @@ class TrainerAgent:
         return batch_proc_tmp, self._metrics["value_loss"].get()[1]
 
     def train(self):
-
+        """ Training model"""
         # set a custom seed for reproducibility
         random.seed(self._seed)
         # define and initialize the variables which will be used

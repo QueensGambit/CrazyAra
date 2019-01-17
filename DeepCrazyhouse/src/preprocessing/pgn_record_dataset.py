@@ -20,6 +20,7 @@ def __getitem__(self, idx):
 
 class PGNRecordDataset(Dataset):
     """ Everything related to loading the record dataset into the CNN"""
+
     def __init__(self, dataset_type, input_shape, normalize=True):
         """
         Constructor of the PGNRecordDataset class

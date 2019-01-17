@@ -1,3 +1,13 @@
+"""
+@file: output_representation_tests.py
+Changed last on 17.01.19
+@project: crazy_ara_cleaning
+@author: queensgambit and matuiss2
+
+Testing outputs
+
+This file contains the test cases for testing the outputs
+"""
 import unittest
 import chess
 import numpy as np
@@ -18,6 +28,7 @@ class OutputRepresentationTests(unittest.TestCase):
     """
 
     def test_get_plane_offset_given_id_from_queen_movement_vector_expect_correct_indices(self):
+        """ Test to see if it returns the correct indices for queen movements"""
         plane_ids = np.zeros(56)
         for direction in [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]]:
             for length in range(1, 8):
@@ -34,6 +45,7 @@ class OutputRepresentationTests(unittest.TestCase):
         self.assertTrue(np.all(plane_ids == 1), "some ids where selected never or more than once")
 
     def test_get_move_planes_given_all_positions_expect_correct_position_on_plane(self):
+        """ Test to see if it returns the correct position on the board"""
         for col in range(8):
             for row in range(8):
                 from_idx = get_board_position_index(row, col)
@@ -48,11 +60,10 @@ class OutputRepresentationTests(unittest.TestCase):
                 self.assertTrue(flat_plane[row, col] == 1, "an incorrect position was selected")
 
     def test_get_move_planes_given_knight_moves_expect_correct_plane_selection(self):
+        """ Test to see if it returns the correct indices for knight movements"""
         # place the knight in the center of the board
         # and test all combinations
-        col = 4
-        row = 4
-
+        col = row = 4
         aggregated_selected_boards = np.zeros(8)
 
         for x in [-1, 1]:
@@ -72,6 +83,7 @@ class OutputRepresentationTests(unittest.TestCase):
         self.assertTrue(np.all(aggregated_selected_boards == 1), "some boards where selected never or more than once")
 
     def test_get_move_planes_given_underpromotions_moves_expect_correct_plane_selection(self):
+        """ Test to see if it returns the correct indices for under promotions"""
         col = 4
         row = 6
         aggregated_selected_boards = np.zeros(9)
@@ -92,6 +104,7 @@ class OutputRepresentationTests(unittest.TestCase):
         self.assertTrue(np.all(aggregated_selected_boards == 1), "some boards where selected never or more than once")
 
     def test_get_move_planes_given_queen_promotion_moves_expect_correct_plane_selection(self):
+        """ Test to see if it returns the correct indices for over promotions(queens)"""
         col = 4
         row = 6
         aggregated_selected_boards = np.zeros(56)
@@ -114,6 +127,7 @@ class OutputRepresentationTests(unittest.TestCase):
         self.assertTrue(np.all(selected == 1), "some boards where selected never or more than once")
 
     def test_get_move_planes_given_drops_expect_correct_plane_selection(self):
+        """ Test to see if it returns the correct indices drops"""
         aggregated_selected_boards = np.zeros(5)
 
         for piece in ["p", "n", "b", "r", "q"]:

@@ -96,6 +96,7 @@ def moves_single_game(params_inp):
 
 
 class FullRoundTripTests(unittest.TestCase):
+    """ Load all games from the pgn and test all moves"""
     def __init__(self, *args, **kwargs):
         super(FullRoundTripTests, self).__init__(*args, **kwargs)
 
@@ -126,11 +127,7 @@ class FullRoundTripTests(unittest.TestCase):
         print(len(self._all_pgn_sel))
 
     def test_board_states(self):
-        """
-        Loads all games from the pgn file and calls the board_single_game() routine
-
-        :return:
-        """
+        """ Loads all games from the pgn file and calls the board_single_game() routine """
         logging.info("start board test...")
         logging.info("preparing input parameter...")
         # create a param input list which will concatenate the pgn with it's corresponding game index
@@ -166,11 +163,7 @@ class FullRoundTripTests(unittest.TestCase):
         logging.info("board test done...")
 
     def test_moves(self):
-        """
-        Loads all moves from all games in the pgn file and calls the moves_single_game() routine
-
-        :return:
-        """
+        """ Loads all moves from all games in the pgn file and calls the moves_single_game() routine"""
         logging.info("start move comparision test...")
         logging.info("preparing input parameter...")
         # create a param input list which will concatenate the pgn with it's corresponding game index

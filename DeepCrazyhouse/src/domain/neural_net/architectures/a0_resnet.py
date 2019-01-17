@@ -223,6 +223,7 @@ class _StemAlphaZero(HybridBlock):
 
 class AlphaZeroResnet(HybridBlock):
     """ Creates the alpha zero gluon net description based on the given parameters."""
+
     def __init__(
         self, n_labels=2272, channels=256, num_res_blocks=19, value_fc_size=256, bn_mom=0.9, act_type="relu", **kwargs
     ):

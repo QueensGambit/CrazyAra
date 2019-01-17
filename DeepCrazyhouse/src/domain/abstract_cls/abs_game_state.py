@@ -12,43 +12,46 @@ import chess.variant
 
 
 class AbsGameState(ABC):
+    """Abstract class for the GameState child class"""
+
     def __init__(self, board):
         self.board = board
         self._fen_dic = {}
 
+    @abstractmethod
     def apply_move(self, move: chess.Move):  # , remember_state=False):
-        self.board.push(move)
+        """Force the child to implement apply_move method"""
 
     @abstractmethod
     def get_state_planes(self):
-        pass
+        """Force the child to implement get_state_planes method"""
         # return board_to_planes(self.board, 0, normalize=True)
 
+    @abstractmethod
     def get_pythonchess_board(self):
-        return self.board
+        """ Force the child to implement get_pythonchess_board method"""
 
     def is_draw(self):
-        # check if you can claim a draw - its assumed that the draw is always claimed
+        """ Check if you can claim a draw - its assumed that the draw is always claimed """
         return self.board.can_claim_draw()
 
     @abstractmethod
     def is_won(self):
-        pass
-        # only a is_won() and no is_lost() function is needed because the game is over
-        #  after the player found checkmate successfully
-        # return self.board.is_checkmate()
+        """Force the child to implement is_won method"""
 
     def get_legal_moves(self):
+        """ Find legal moves based on the board state"""
         return self.board.legal_moves
 
+    @abstractmethod
     def is_white_to_move(self):
-        return self.board.turn
+        """Force the child to implement is_white_to_move method"""
 
     def __str__(self):
         return self.board.fen()
 
     def get_board_fen(self):
-        # create an identifier string for the board state
+        """ Create an identifier string for the board state"""
         return self.board.fen()
 
     def get_transposition_key(self):
@@ -57,14 +60,16 @@ class AbsGameState(ABC):
         Calling ._transposition_key() is faster than .fen()
         :return:
         """
-        return self.board._transposition_key()
+        return self.board._transposition_key()  # protected member access(pylint error)
 
     @abstractmethod
     def new_game(self):
-        pass
+        """Force the child to implement new_game method"""
 
     def get_halfmove_counter(self):
+        """ TODO: docstring """
         return self.board.halfmove_clock
 
     def get_fullmove_number(self):
+        """ TODO: docstring """
         return self.board.fullmove_number
