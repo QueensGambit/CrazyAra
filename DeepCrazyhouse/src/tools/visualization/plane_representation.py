@@ -7,7 +7,7 @@ Created on 24.09.18
 Please describe what the content of this file is about
 """
 import numpy as np
-from DeepCrazyhouse.src.domain.util import mult_axis_by_vec
+from DeepCrazyhouse.src.domain.util import multi_axis_by_vec
 from DeepCrazyhouse.src.domain.crazyhouse.constants import (
     BOARD_HEIGHT,
     BOARD_WIDTH,
@@ -35,23 +35,20 @@ def get_plane_vis(mat, normalize=False):
     :param normalize: True if the outputs should be normalized to [0,1]
     :return: 8x8 numpy array which represents the piece positions
     """
-    color_ch = CHANNEL_MAPPING_CONST["color"] + NB_CHANNELS_POS
-
-    color_bit = int(mat[color_ch][0][0])
+    color_bit = int(mat[CHANNEL_MAPPING_CONST["color"] + NB_CHANNELS_POS][0][0])
     if color_bit not in (0, 1):
         raise Exception("Invalid setting of color bit: ", color_bit)
 
     sign_bit = -1 if chess.COLOR_NAMES[color_bit] == "black" else 1
     x_vis = np.zeros((BOARD_HEIGHT, BOARD_WIDTH))
-    x_vis += sign_bit * mult_axis_by_vec(mat[: len(chess.PIECE_TYPES)], SCALE_VEC, axis=0).max(axis=0)
-    x_vis += -sign_bit * mult_axis_by_vec(
+    x_vis += sign_bit * multi_axis_by_vec(mat[: len(chess.PIECE_TYPES)], SCALE_VEC, axis=0).max(axis=0)
+    x_vis += -sign_bit * multi_axis_by_vec(
         mat[len(chess.PIECE_TYPES) : 2 * len(chess.PIECE_TYPES)], SCALE_VEC, axis=0
     ).max(axis=0)
-
     # in real life the board isn't flipped but rotated instead
     x_vis = np.flipud(x_vis)
 
-    if normalize is True:
+    if normalize:
         sc_max = SCALE_VEC.max()
         x_vis += sc_max
         x_vis /= 2 * sc_max

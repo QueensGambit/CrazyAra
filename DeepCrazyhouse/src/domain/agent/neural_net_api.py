@@ -1,3 +1,13 @@
+"""
+@file: neural_net_api.py
+Changed last on 16.01.19
+@project: crazy_ara_cleaning
+@author: queensgambit and matuiss2
+
+Make the project NN easier to use
+
+This file contains wrappers for NN handling
+"""
 import glob
 import os
 from multiprocessing import Queue
@@ -8,20 +18,20 @@ from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_W
 
 
 class NeuralNetAPI:
-    def __init__(self, ctx="cpu", batch_size=1):
+    """Groups every a lot of helpers to be used on NN handling"""
 
+    def __init__(self, ctx="cpu", batch_size=1):
         self.batch_size = batch_size
 
-        if os.path.isdir(main_config["model_architecture_dir"]) is False:
+        if not os.path.isdir(main_config["model_architecture_dir"]):
             raise Exception(
                 "The given model_architecture_dir at: " + main_config["model_architecture_dir"] + " wasn't found."
             )
-        if os.path.isdir(main_config["model_weights_dir"]) is False:
+        if not os.path.isdir(main_config["model_weights_dir"]):
             raise Exception("The given model_weights_dir at: " + main_config["model_weights_dir"] + " wasn't found.")
 
         self.symbol_path = glob.glob(main_config["model_architecture_dir"] + "*")[0]
         self.params_path = glob.glob(main_config["model_weights_dir"] + "*")[0]
-
         # make sure the needed files have been found
         if self.symbol_path is None or ".json" not in self.symbol_path:
             raise Exception(
@@ -38,22 +48,19 @@ class NeuralNetAPI:
 
         print("self.symbol_path:", self.symbol_path)
         print("self.params_path:", self.params_path)
-
         # construct the model name based on the parameter file
         self.model_name = self.params_path.split("/")[-1].replace(".params", "")
-
         sym = mx.sym.load(self.symbol_path)
         # https://github.com/apache/incubator-mxnet/issues/6951
         save_dict = mx.nd.load(self.params_path)
         arg_params = {}
         aux_params = {}
         for key, val in save_dict.items():
-            tp, name = key.split(":", 1)
-            if tp == "arg":
+            param_type, name = key.split(":", 1)
+            if param_type == "arg":
                 arg_params[name] = val
-            if tp == "aux":
+            if param_type == "aux":
                 aux_params[name] = val
-
         # set the context on CPU, switch to GPU if there is one available
         if ctx == "cpu":
             self.ctx = mx.cpu()
@@ -61,7 +68,6 @@ class NeuralNetAPI:
             self.ctx = mx.gpu()
         else:
             raise Exception("Unavailable ctx mode given %s. You must either select 'cpu' or 'gpu'" % ctx)
-
         # define batch_size times executor objects which are used for inference
         # one executor object is used for the currently requested batch batch length
         # the requested batch length is variable and at maximum the given batch_size
@@ -85,12 +91,9 @@ class NeuralNetAPI:
         :return: [Value Prediction, Policy Prediction] as a list of numpy arrays
         """
 
-        # start a subprocess
-        queue = Queue()
+        queue = Queue()  # start a subprocess
         self.predict_single_thread(queue, x)
-        out = queue.get()
-
-        return out
+        return queue.get()
 
     def predict_single_thread(self, queue, x):
         """
@@ -100,22 +103,18 @@ class NeuralNetAPI:
         :param queue: Stores the return values
         :return: [Value Prediction, Policy Prediction] as a list of numpy arrays
         """
-        out = [None, None]
-
         # choose the first executor object which support length 1
         pred = self.executors[0].forward(is_train=False, data=np.expand_dims(x, axis=0))
-
-        out[0] = pred[0].asnumpy()[0]
-        # when using a gluon model you still have to apply a softmax activation after the forward pass
-        out[1] = pred[1].softmax().asnumpy()[0]
-
-        queue.put(out)
+        queue.put([pred[0].asnumpy()[0], pred[1].softmax().asnumpy()[0]])
 
     def get_batch_size(self):
+        """Make the batch_size public access"""
         return self.batch_size
 
     def get_ctx(self):
+        """Make the ctx public access"""
         return self.ctx
 
     def get_model_name(self):
+        """Make the model_name public access"""
         return self.model_name

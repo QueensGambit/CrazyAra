@@ -15,7 +15,7 @@ import sys
 import traceback
 import chess.pgn
 import numpy as np
-from DeepCrazyhouse.src.runtime.ColorLogger import enable_color_logging
+from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 
 
 class CrazyAra:
@@ -137,10 +137,10 @@ class CrazyAra:
         :return:
         """
         if self.setup_done is False:
-            from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
-            from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
-            from DeepCrazyhouse.src.domain.agent.player.RawNetAgent import RawNetAgent
-            from DeepCrazyhouse.src.domain.agent.player.MCTSAgent import MCTSAgent
+            from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
+            from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
+            from DeepCrazyhouse.src.domain.agent.player.raw_net_agent import RawNetAgent
+            from DeepCrazyhouse.src.domain.agent.player.mcts_agent import MCTSAgent
 
             # check for valid parameter setup and do auto-corrections if possible
             self.param_validity_check()

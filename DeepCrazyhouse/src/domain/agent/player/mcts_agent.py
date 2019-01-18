@@ -9,7 +9,7 @@ The final move is chosen according to the visit count of each direct child node.
 One playout is defined as expanding one new node in the tree.
 In the case of chess this means evaluating a new board position.
 If the evaluation for one move takes too long on your hardware you can decrease the value for:
- nb_playouts_empty_pockets and nb_playouts_filled_pockets.
+nb_playouts_empty_pockets and nb_playouts_filled_pockets.
 For more details and the mathematical equations please take a look at src/domain/agent/README.md as well as the
 official DeepMind-papers.
 """
@@ -24,12 +24,12 @@ from copy import deepcopy
 from multiprocessing import Pipe
 from time import time
 import numpy as np
-from DeepCrazyhouse.src.domain.agent.NeuralNetAPI import NeuralNetAPI
+from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
-from DeepCrazyhouse.src.domain.agent.player.util.NetPredService import NetPredService
-from DeepCrazyhouse.src.domain.agent.player.util.Node import Node
+from DeepCrazyhouse.src.domain.agent.player.util.net_pred_service import NetPredService
+from DeepCrazyhouse.src.domain.agent.player.util.node import Node
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
-from DeepCrazyhouse.src.domain.crazyhouse.GameState import GameState
+from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
 
 
@@ -57,7 +57,9 @@ def profile(fnc):
     return inner
 
 
-class MCTSAgent(AbsAgent):
+class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
+    """This class runs simulations in the tree and updates the node statistics smartly"""
+
     def __init__(
         self,
         nets: [NeuralNetAPI],
@@ -80,7 +82,7 @@ class MCTSAgent(AbsAgent):
         use_oscillating_cpuct=True,
         use_time_management=True,
         opening_guard_moves=0,
-    ):
+    ):  # Too many arguments (21/5) - Too many local variables (29/15)
         """
         Constructor of the MCTSAgent.
         :param nets: NeuralNetAPI handle which is used to communicate with the neural network
@@ -176,9 +178,8 @@ class MCTSAgent(AbsAgent):
         self.q_value_weight = q_value_weight
         self.check_mate_in_one = check_mate_in_one
         # temporary variables
-        self.t_start_eval = None  # time counter
-        # number of nodes before the evaluate_board_state() call are stored here to measure the nps correctly
-        self.total_nodes_pre_search = None
+        # time counter - n° of nodes stored to measure the nps - priority policy for the root node
+        self.t_start_eval = self.total_nodes_pre_search = self.root_node_prior_policy = None
         # allocate shared memory for communicating with the network prediction service
         self.batch_state_planes = np.zeros((self.threads, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH), DTYPE)
         self.batch_value_results = np.zeros(self.threads, DTYPE)
@@ -200,28 +201,27 @@ class MCTSAgent(AbsAgent):
 
         self.transposition_table = collections.Counter()
         self.send_batches = False
-        self.root_node_prior_policy = None
         self.use_pruning = use_pruning
         self.use_oscillating_cpuct = use_oscillating_cpuct
         self.time_buffer_ms = 0
         self.use_time_management = use_time_management
         self.opening_guard_moves = opening_guard_moves
 
-    def evaluate_board_state(self, state: GameState):
+    def evaluate_board_state(self, state: GameState):  # Probably is better to be refactored
         """
         Analyzes the current board state. This is the main method which get called by the uci interface or analysis
         request.
         :param state: Actual game state to evaluate for the MCTS
         :return:
         """
-
+        # Too many local variables (28/15) - Too many branches (25/12) - Too many statements (75/50)
         self.t_start_eval = time()  # store the time at which the search started
 
-        if self.net_pred_services[0].running is False:  # check if the net prediction service has already been started
+        if not self.net_pred_services[0].running:  # check if the net prediction service has already been started
             for net_pred_service in self.net_pred_services:  # start the prediction daemon thread
                 net_pred_service.start()
-        # receive a list of all possible legal move in the current board position
-        legal_moves = state.get_legal_moves()
+
+        legal_moves = state.get_legal_moves()  # list of all possible legal move in the current board position
 
         if not legal_moves:  # consistency check
             raise Exception("The given board state has no legal move available")
@@ -230,7 +230,7 @@ class MCTSAgent(AbsAgent):
             state.get_fullmove_number(),
         )  # check first if the the current tree can be reused
 
-        if self.use_pruning is False and key in self.node_lookup:
+        if not self.use_pruning and key in self.node_lookup:
             self.root_node = self.node_lookup[key]  # if key in self.node_lookup:
             logging.debug(
                 "Reuse the search tree. Number of nodes in search tree: %d",
@@ -291,7 +291,7 @@ class MCTSAgent(AbsAgent):
         time_elapsed_s = time_e * 1000
         nps = node_searched / time_e
         pv = str_moves
-        if self.verbose is True:
+        if self.verbose:
             score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (
                 centipawns,
                 depth,
@@ -317,7 +317,7 @@ class MCTSAgent(AbsAgent):
         # extract a sparse policy vector with normalized probabilities
         p_vec_small = get_probs_of_move_list(policy_vec, legal_moves, state.is_white_to_move())
 
-        if self.check_mate_in_one is True:
+        if self.check_mate_in_one:
             str_legal_moves = str(state.get_legal_moves())
         else:
             str_legal_moves = ""
@@ -343,7 +343,7 @@ class MCTSAgent(AbsAgent):
             state_child.apply_move(legal_moves[0])
             is_leaf = False  # initialize is_leaf by default to false
             # we don't need to check for is_lost() because the game is already over
-            if state.is_won() is True:  # check if the current player has won the game
+            if state.is_won():  # check if the current player has won the game
                 value = -1
                 is_leaf = True
                 legal_moves_child = []
@@ -351,7 +351,7 @@ class MCTSAgent(AbsAgent):
             # check if you can claim a draw - its assumed that the draw is always claimed
             elif (
                 self.can_claim_threefold_repetition(state.get_transposition_key(), [0])
-                or state.get_pythonchess_board().can_claim_fifty_moves() is True
+                or state.get_pythonchess_board().can_claim_fifty_moves()
             ):
                 value = 0
                 is_leaf = True
@@ -388,14 +388,14 @@ class MCTSAgent(AbsAgent):
         max_depth_reached = 1  # default is 1, in case only 1 move is available
         futures = []
 
-        if state.are_pocket_empty() is True:  # set the number of playouts accordingly
+        if state.are_pocket_empty():  # set the number of playouts accordingly
             nb_playouts = self.nb_playouts_empty_pockets
         else:
             nb_playouts = self.nb_playouts_filled_pockets
 
         # iterate through all children and add dirichlet if there exists any
         for child_node in self.root_node.child_nodes:
-            if child_node is not None:
+            if child_node:
                 # add dirichlet noise to a the child nodes of the root node
                 child_node.apply_dirichlet_noise_to_prior_policy(
                     epsilon=self.dirichlet_epsilon * 0.05, alpha=self.dirichlet_alpha  # 02,
@@ -406,7 +406,7 @@ class MCTSAgent(AbsAgent):
         cpuct_init = self.cpuct
         decline = True
 
-        if self.use_time_management is True:
+        if self.use_time_management:
             time_checked = time_checked_early = False
         else:
             time_checked = time_checked_early = True
@@ -418,8 +418,8 @@ class MCTSAgent(AbsAgent):
             max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and t_elapsed_ms < self.movetime_ms
         ):  # and np.abs(self.root_node.q_value.mean()) < 0.99:
 
-            if self.use_oscillating_cpuct is True:
-                if decline is True:  # Test about decreasing CPUCT value
+            if self.use_oscillating_cpuct:
+                if decline:  # Test about decreasing CPUCT value
                     self.cpuct -= 0.01
                 else:
                     self.cpuct += 0.01
@@ -469,7 +469,7 @@ class MCTSAgent(AbsAgent):
                 node_searched = int(self.root_node.n_sum - self.total_nodes_pre_search)
                 print("info nps %d time %d" % (int((node_searched / t_elapsed)), t_elapsed_ms))
 
-            if time_checked_early is False and t_elapsed_ms > self.movetime_ms / 2:
+            if not time_checked_early and t_elapsed_ms > self.movetime_ms / 2:
                 # node, _, _, child_idx = self._select_node_based_on_mcts_policy(self.root_node)
                 if (
                     self.root_node.policy_prob.max() > 0.9
@@ -482,7 +482,7 @@ class MCTSAgent(AbsAgent):
                     time_checked_early = True
 
             if (
-                consistent_check is False
+                not consistent_check
                 and cur_playouts > consistent_check_playouts
                 and self.root_node_prior_policy.max()
                 > np.partition(self.root_node_prior_policy.flatten(), -2)[-2] + 0.3
@@ -497,7 +497,7 @@ class MCTSAgent(AbsAgent):
 
             if (
                 self.time_buffer_ms > 2500
-                and time_checked is False
+                and not time_checked
                 and t_elapsed_ms > self.movetime_ms * 0.9
                 and self.root_node.q_value[self.root_node.child_number_visits.argmax()]
                 < self.root_node.initial_value + 0.01
@@ -515,12 +515,11 @@ class MCTSAgent(AbsAgent):
         self.cpuct = cpuct_init
         return max_depth_reached
 
-    def perform_action(self, state_in: GameState, verbose=True):
+    def perform_action(self, state_in: GameState):
         """
         Return a value, best move with according to the mcts search.
         This method is used when using the mcts agent as a player.
         :param state_in: Requested games state
-        :param verbose: Boolean if debug messages shall be shown
         :return: value - Board value prediction
                 selected_move - Python chess move object according to mcts
                 confidence - Confidence for selecting this move
@@ -545,7 +544,9 @@ class MCTSAgent(AbsAgent):
                 depth: Current depth reach by this evaluation
                 mv_list: List of moves which have been selected
         """
-
+        # Probably is better to be refactored
+        # Too many arguments (6/5) - Too many local variables (27/15) - Too many branches (28/12) -
+        # Too many statements (86/50)
         if chosen_nodes is None:  # select a legal move on the chess board
             chosen_nodes = []
         node, move, child_idx = self._select_node(parent_node)
@@ -574,14 +575,14 @@ class MCTSAgent(AbsAgent):
             use_tran_table = True
             node_verified = False
 
-            if use_tran_table is True and key in self.node_lookup:
+            if use_tran_table and key in self.node_lookup:
                 # if self.check_for_duplicate(transposition_key, chosen_nodes) is False:
                 node = self.node_lookup[key]  # get the node from the look-up list
 
                 if node.n_sum > parent_node.n_sum:  # make sure that you don't connect to a node with lower visits
                     node_verified = True
 
-            if node_verified is True:
+            if node_verified:
                 with parent_node.lock:
                     # setup a new connection from the parent to the child
                     parent_node.child_nodes[child_idx] = node
@@ -593,7 +594,7 @@ class MCTSAgent(AbsAgent):
                 # its value will be back-propagated through the tree and flipped after every layer
                 my_pipe = self.my_pipe_endings[pipe_id]  # receive a free available pipe
 
-                if self.send_batches is True:
+                if self.send_batches:
                     my_pipe.send(state.get_state_planes())
                     # this pipe waits for the predictions of the network inference service
                     [value, policy_vec] = my_pipe.recv()
@@ -609,11 +610,11 @@ class MCTSAgent(AbsAgent):
                 # check if the current player has won the game
                 # (we don't need to check for is_lost() because the game is already over
                 #  if the current player checkmated his opponent)
-                if state.is_check() is True:
-                    if state.is_won() is True:
+                if state.is_check():
+                    if state.is_won():
                         is_won = True
 
-                if is_won is True:
+                if is_won:
                     value = -1
                     is_leaf = True
                     legal_moves = []
@@ -643,7 +644,7 @@ class MCTSAgent(AbsAgent):
                     except KeyError:
                         raise Exception("Key Error for state: %s" % state)
                 # convert all legal moves to a string if the option check_mate_in_one was enabled
-                if self.check_mate_in_one is True:
+                if self.check_mate_in_one:
                     str_legal_moves = str(state.get_legal_moves())
                 else:
                     str_legal_moves = ""
@@ -655,7 +656,7 @@ class MCTSAgent(AbsAgent):
 
                 if depth == 1:
                     # disable uncertain moves from being visited by giving them a very bad score
-                    if is_leaf is False and self.use_pruning is True:
+                    if not is_leaf and self.use_pruning:
                         if self.root_node_prior_policy[child_idx] < 1e-3 and value * -1 < self.root_node.initial_value:
                             with parent_node.lock:
                                 value = 99
@@ -675,12 +676,12 @@ class MCTSAgent(AbsAgent):
                             epsilon=self.dirichlet_epsilon * 0.02, alpha=self.dirichlet_alpha
                         )
 
-                if self.use_pruning is False:
+                if not self.use_pruning:
                     self.node_lookup[key] = new_node  # include a reference to the new node in the look-up table
 
                 with parent_node.lock:
                     parent_node.child_nodes[child_idx] = new_node  # add the new node to its parent
-        elif node.is_leaf is True:  # check if we have reached a leaf node
+        elif node.is_leaf:  # check if we have reached a leaf node
             value = node.initial_value
         else:
             # get the value from the leaf node (the current function is called recursively)
@@ -691,7 +692,13 @@ class MCTSAgent(AbsAgent):
         return -value, depth, chosen_nodes
 
     def check_for_duplicate(self, transposition_key, chosen_nodes):
+        """
 
+        :param transposition_key: Transposition key which defines the board state by all it's pieces and pocket state.
+                                  The move counter is disregarded.
+        :param chosen_nodes: List of moves which have been taken in the current path.
+        :return:
+        """
         node = self.root_node.child_nodes[chosen_nodes[0]]
         # iterate over all accessed nodes during the current search of the thread and check for same transposition key
         for node_idx in chosen_nodes[1:-1]:
@@ -737,12 +744,11 @@ class MCTSAgent(AbsAgent):
                 node_idx - Integer idx value indicating the index for the selected child of the parent node
         """
 
-        if parent_node.mate_child_idx is not None:  # check first if there's an immediate mate in one move possible
+        if parent_node.mate_child_idx:  # check first if there's an immediate mate in one move possible
             child_idx = parent_node.mate_child_idx
         else:
             # find the move according to the q- and u-values for each move
-
-            if self.use_oscillating_cpuct is False:
+            if not self.use_oscillating_cpuct:
                 pb_c_base = 19652
                 pb_c_init = self.cpuct
 
@@ -769,16 +775,18 @@ class MCTSAgent(AbsAgent):
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], nb_visits, child_idx
 
     def show_next_pred_line(self):
+        """ It returns the predicted best moves for both players"""
         best_moves = []
         node = self.root_node  # start at the root node
 
-        while node is not None:
+        while node:
             # go deep through the tree by always selecting the best move for both players
             node, move, _ = self._select_node(node)
             best_moves.append(move)
         return best_moves
 
     def get_2nd_max(self):
+        """ TODO: docstring """
         n_child = self.root_node.child_number_visits.argmax()
         n_max = self.root_node.child_number_visits[n_child]
         self.root_node.child_number_visits[n_child] = 0
@@ -787,6 +795,7 @@ class MCTSAgent(AbsAgent):
         return second_max
 
     def get_xth_max(self, xth_node):
+        """ TODO: docstring """
         if len(self.root_node.child_number_visits) < xth_node:
             return self.root_node.child_number_visits.min()
         return np.sort(self.root_node.child_number_visits)[-xth_node]
@@ -802,7 +811,6 @@ class MCTSAgent(AbsAgent):
         indices = []
 
         for i in range(self.root_node.nb_direct_child_nodes):
-
             if self.root_node.child_number_visits[i] >= self.root_node.child_number_visits.max() * 0.33:
                 node = self.root_node.child_nodes[i]
                 print(self.root_node.legal_moves[i].uci(), end=" ")
@@ -810,13 +818,13 @@ class MCTSAgent(AbsAgent):
                 final_node = node
                 move = self.root_node.legal_moves[i]
 
-                while node is not None and node.is_leaf is False and node.n_sum > 3:
+                while node and not node.is_leaf and node.n_sum > 3:
                     final_node = node
                     print(move.uci() + " ", end="")
                     node, move, _, _ = self._select_node_based_on_mcts_policy(node)
                     turn *= -1
 
-                if final_node is not None:
+                if final_node:
                     q_future[i] = final_node.initial_value
                     indices.append(i)
                     q_future[i] *= turn
@@ -836,7 +844,7 @@ class MCTSAgent(AbsAgent):
         lst_nb_visits = []
         node = self.root_node  # start at the root node
 
-        while node is not None and node.is_leaf is False:
+        while node and not node.is_leaf:
             # go deep through the tree by always selecting the best move for both players
             node, move, nb_visits, _ = self._select_node_based_on_mcts_policy(node)
             lst_best_moves.append(move)

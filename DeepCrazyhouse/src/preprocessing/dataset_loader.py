@@ -20,17 +20,12 @@ def _load_dataset_file(dataset_filepath):
     :param dataset_filepath: path where the file is located
     :return:
     """
-    store = zarr.ZipStore(dataset_filepath, mode="r")
-    pgn_dataset = zarr.group(store=store)
-
-    starting_idx, x, y_value, y_policy = get_numpy_arrays(pgn_dataset)
-
-    return starting_idx, x, y_value, y_policy
+    return get_numpy_arrays(zarr.group(store=zarr.ZipStore(dataset_filepath, mode="r")))
 
 
 def load_pgn_dataset(
     dataset_type="train", part_id=0, print_statistics=False, print_parameters=False, verbose=True, normalize=False
-):
+):  # Too many arguments (6/5)
     """
     Loads one part of the pgn dataset in form of planes / multidimensional numpy array.
     It reads all files which are located either in the main_config['test_dir'] or main_config['test_dir']
@@ -68,32 +63,28 @@ def load_pgn_dataset(
 
     # load the zarr-files
     pgn_datasets = zarr_filepaths
-    if verbose is True:
+    if verbose:
         logging.debug("loading: %s...", pgn_datasets[part_id])
         logging.debug("")
 
-    store = zarr.ZipStore(pgn_datasets[part_id], mode="r")
-    pgn_dataset = zarr.group(store=store)
+    pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
+    starting_idx, x, y_value, y_policy = get_numpy_arrays(pgn_dataset)  # Get the data
 
-    # Get the data
-    starting_idx, x, y_value, y_policy = get_numpy_arrays(pgn_dataset)
-
-    if print_statistics is True:
+    if print_statistics:
         logging.info("STATISTICS:")
         for member in pgn_dataset["statistics"]:
             print(member, list(pgn_dataset["statistics"][member]))
 
-    if print_parameters is True:
+    if print_parameters:
         logging.info("PARAMETERS:")
         for member in pgn_dataset["parameters"]:
             print(member, list(pgn_dataset["parameters"][member]))
 
-    if normalize is True:
+    if normalize:
         x = x.astype(np.float32)
         # the y-vectors need to be casted as well in order to be accepted by the network
         y_value = y_value.astype(np.float32)
         y_policy = y_policy.astype(np.float32)
         # apply rescaling using a predefined scaling constant (this makes use of vectorized operations)
         x *= MATRIX_NORMALIZER
-
     return starting_idx, x, y_value, y_policy, pgn_dataset

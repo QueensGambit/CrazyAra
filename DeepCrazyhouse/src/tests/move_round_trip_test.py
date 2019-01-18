@@ -20,11 +20,13 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
 class MoveRoundTripTest(unittest.TestCase):
+    """ TODO: docstring"""
+
     def __init__(self, *args, **kwargs):
         super(MoveRoundTripTest, self).__init__(*args, **kwargs)
 
     def test_move_roundtrip_white(self):
-
+        """ TODO: docstring"""
         move = chess.Move.from_uci("e2e4")
 
         policy_vec = move_to_policy(move, is_white_to_move=True)
@@ -34,7 +36,7 @@ class MoveRoundTripTest(unittest.TestCase):
         self.assertTrue(move == mv_converted)
 
     def test_move_roundtrip_black(self):
-
+        """ TODO: docstring"""
         move = chess.Move.from_uci("e7e5")
 
         policy_vec = move_to_policy(move, is_white_to_move=False)
