@@ -226,7 +226,6 @@ class CrazyAra:  # Too many instance attributes (25/7)
         :return:
         """
         # Too many local variables (21/15) - Too many branches (25/12) - Too many statements (71/50)
-        # Too many branches (13/12)
         movetime_ms = self.min_search_time
 
         if len(cmd_list) >= 5:
