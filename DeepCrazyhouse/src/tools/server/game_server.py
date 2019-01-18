@@ -47,34 +47,29 @@ NB_WORKERS = 64
 
 class ChessServer:
     """ Helper for handling the game server"""
+
     def __init__(self, name):
         self.app = Flask(name)
-
         self.app.add_url_rule("/api/state", "api/state", self._wrap_endpoint(ChessServer.serve_state))
         self.app.add_url_rule("/api/new", "api/new", self._wrap_endpoint(ChessServer.serve_new_game))
         self.app.add_url_rule("/api/move", "api/move", self._wrap_endpoint(ChessServer.serve_move))
         self.app.add_url_rule("/", "serve_client_r", self._wrap_endpoint(ChessServer.serve_client))
         self.app.add_url_rule("/<path:path>", "serve_client", self._wrap_endpoint(ChessServer.serve_client))
-
         self._gamestate = GameState()
-
         net = NeuralNetAPI()
-
         # Loading network
-
         player_agents = {
             "raw_net": RawNetAgent(net),
             "mcts": MCTSAgent(
                 net, virtual_loss=3, threads=BATCH_SIZE, cpuct=CPUCT, dirichlet_epsilon=DIRICHLET_EPSILON
             ),
         }
-
-        # Setting up agent
-        self.agent = player_agents["raw_net"]
+        self.agent = player_agents["raw_net"]  # Setting up agent
         # self.agent = player_agents["mcts"]
 
     def _wrap_endpoint(self, func):
         """TODO: docstring"""
+
         def wrapper(kwargs):
             return func(self, **kwargs)
 
@@ -115,14 +110,13 @@ class ChessServer:
 
         promotion = drop = None
 
-        if drop_piece is not None:
+        if drop_piece:
             from_square_idx = to_square_idx
-
             if not drop_piece in chess.PIECE_SYMBOLS:
                 return self.serialize_game_state("drop piece name is invalid")
             drop = chess.PIECE_SYMBOLS.index(drop_piece)
 
-        if promotion_piece is not None:
+        if promotion_piece:
             if not promotion_piece in chess.PIECE_SYMBOLS:
                 return self.serialize_game_state("promotion piece name is invalid")
             promotion = chess.PIECE_SYMBOLS.index(promotion_piece)
@@ -186,7 +180,7 @@ class ChessServer:
         board_str = "" + self._gamestate.board.__str__()
         pocket_str = "" + self._gamestate.board.pockets[1].__str__() + "|" + self._gamestate.board.pockets[0].__str__()
         state = {"board": board_str, "pocket": pocket_str, "message": message}
-        if finished is not None:
+        if finished:
             state["finished"] = finished
         return json.dumps(state)
 

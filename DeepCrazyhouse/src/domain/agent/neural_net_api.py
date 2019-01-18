@@ -56,10 +56,10 @@ class NeuralNetAPI:
         arg_params = {}
         aux_params = {}
         for key, val in save_dict.items():
-            tp, name = key.split(":", 1)
-            if tp == "arg":
+            param_type, name = key.split(":", 1)
+            if param_type == "arg":
                 arg_params[name] = val
-            if tp == "aux":
+            if param_type == "aux":
                 aux_params[name] = val
         # set the context on CPU, switch to GPU if there is one available
         if ctx == "cpu":
@@ -93,8 +93,7 @@ class NeuralNetAPI:
 
         queue = Queue()  # start a subprocess
         self.predict_single_thread(queue, x)
-        out = queue.get()
-        return out
+        return queue.get()
 
     def predict_single_thread(self, queue, x):
         """

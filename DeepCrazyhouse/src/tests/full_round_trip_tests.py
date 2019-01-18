@@ -95,20 +95,18 @@ def moves_single_game(params_inp):
     return all_ok, start_idx
 
 
-class FullRoundTripTests(unittest.TestCase):
+class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10/7)
     """ Load all games from the pgn and test all moves"""
+
     def __init__(self, *args, **kwargs):
         super(FullRoundTripTests, self).__init__(*args, **kwargs)
-
         logging.info("loading test dataset...")
         self._s_idcs_test, self._x_test, self._yv_test, self._yp_test, self._pgn_datasets_test = load_pgn_dataset(
             dataset_type="test", part_id=0, print_statistics=True, normalize=False, print_parameters=True
         )
-
         logging.info("loading test pgn file...")
         self._pgn_filename = self._pgn_datasets_test["parameters/pgn_name"][0].decode("UTF8")
         self._batch_size = self._pgn_datasets_test["parameters/batch_size"][0]
-
         self._min_elo_both = self._pgn_datasets_test["parameters/min_elo_both"][0]
         self._start_indices = self._pgn_datasets_test["start_indices"]
 
@@ -130,10 +128,8 @@ class FullRoundTripTests(unittest.TestCase):
         """ Loads all games from the pgn file and calls the board_single_game() routine """
         logging.info("start board test...")
         logging.info("preparing input parameter...")
-        # create a param input list which will concatenate the pgn with it's corresponding game index
-        params_inp = []
+        params_inp = []  # create a param input list which will concatenate the pgn with it's corresponding game index
         for i in range(self._batch_size):
-            pgn = self._all_pgn_sel[i]
             if i < self._batch_size - 1:
                 # select all board positions given by the start index to the start index of the next game
                 x_test = self._x_test[self._start_indices[i] : self._start_indices[i + 1], :, :, :]
@@ -141,22 +137,17 @@ class FullRoundTripTests(unittest.TestCase):
                 # for the last batch only take the remaining items in the vector
                 x_test = self._x_test[self._start_indices[i] :, :, :, :]
 
-            start_idx = self._start_indices[i]
-
-            params_inp.append((pgn, x_test, start_idx))
+            params_inp.append((self._all_pgn_sel[i], x_test, self._start_indices[i]))
 
         pool = Pool()
 
-        games_ok = []
         logging.info("start board test...")
         for game_ok, start_idx in pool.map(board_single_game, params_inp):
             self.assertTrue(game_ok)
-            if game_ok is True:
+            if game_ok:
                 logging.debug("Board States - Game StartIdx %d [OK]", start_idx)
             else:
                 logging.error("Board States - Game StartIdx %d [NOK]", start_idx)
-
-            games_ok.append(games_ok)
 
         pool.close()
         pool.join()
@@ -166,22 +157,17 @@ class FullRoundTripTests(unittest.TestCase):
         """ Loads all moves from all games in the pgn file and calls the moves_single_game() routine"""
         logging.info("start move comparision test...")
         logging.info("preparing input parameter...")
-        # create a param input list which will concatenate the pgn with it's corresponding game index
-        params_inp = []
+
+        params_inp = []  # create a param input list which will concatenate the pgn with it's corresponding game index
         for i in range(self._batch_size):
-            pgn = self._all_pgn_sel[i]
             if i < self._batch_size - 1:
                 yp_test = self._yp_test[self._start_indices[i] : self._start_indices[i + 1], :]
             else:
                 yp_test = self._yp_test[self._start_indices[i] :, :]
 
-            start_idx = self._start_indices[i]
-
-            params_inp.append((pgn, yp_test, start_idx))
+            params_inp.append((self._all_pgn_sel[i], yp_test, self._start_indices[i]))
 
         pool = Pool()
-
-        games_ok = []
         logging.info("start board test...")
         for game_ok, start_idx in pool.map(moves_single_game, params_inp):
             self.assertTrue(game_ok)
@@ -189,8 +175,6 @@ class FullRoundTripTests(unittest.TestCase):
                 logging.debug("Moves - Game StartIdx %d [OK]", start_idx)
             else:
                 logging.error("Moves - Game StartIdx %d [NOK]", start_idx)
-
-            games_ok.append(games_ok)
 
         pool.close()
         pool.join()

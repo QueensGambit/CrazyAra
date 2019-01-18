@@ -12,8 +12,7 @@ import chess.pgn
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import move_to_policy
 from DeepCrazyhouse.src.domain.crazyhouse.input_representation import board_to_planes
 
-# constant which defines how many meta data items will be stored in a matrix
-NB_ITEMS_METADATA = 17
+NB_ITEMS_METADATA = 17  # constant which defines how many meta data items will be stored in a matrix
 
 
 def get_planes_from_pgn(params):
@@ -32,8 +31,7 @@ def get_planes_from_pgn(params):
     if game is None:
         print("game is None!")
 
-    # store the meta-data of the game in a buffer
-    metadata = np.zeros((1, NB_ITEMS_METADATA), dtype="S128")
+    metadata = np.zeros((1, NB_ITEMS_METADATA), dtype="S128")  # store the meta-data of the game in a buffer
     row = 0
 
     # add the header to the metadata dictionary for the first game
@@ -51,10 +49,7 @@ def get_planes_from_pgn(params):
         if i == NB_ITEMS_METADATA - 1:
             break
 
-    # get the image planes and targets
-    x, y_value, y_policy = get_planes_from_game(game, mate_in_one)
-
-    return metadata, game_idx, x, y_value, y_policy
+    return metadata, game_idx, get_planes_from_game(game, mate_in_one)
 
 
 def get_planes_from_game(game, mate_in_one=False):
@@ -74,34 +69,22 @@ def get_planes_from_game(game, mate_in_one=False):
               in this position
     """
 
-    # fen dic is a dictionary which maps the fen description to its number of occurrences
-    fen_dic = {}
-
+    fen_dic = {}  # A dictionary which maps the fen description to its number of occurrences
     x = []
     y_value = []
     y_policy = []
-
-    # get the initial board state
-    board = game.board()
-
-    # create the target value
-    # default is a draw
-    y_init = 0
-
+    board = game.board()  # get the initial board state
     # update the y value accordingly
-    if game.headers["Result"] == "1-0":
-        if board.turn == chess.WHITE:
-            y_init = 1
-        else:
-            y_init = -1
-    elif game.headers["Result"] == "0-1":
-        if board.turn == chess.WHITE:
-            y_init = -1
-        else:
-            y_init = 1
+    if board.turn == chess.WHITE:
+        y_init = 1
+    else:
+        y_init = -1
+    if game.headers["Result"] == "0-1":
+        y_init *= -1
+    elif game.headers["Result"] == "1/2-1/2":
+        y_init = 0
 
-    # Extract all moves first and save them into a list
-    all_moves = []
+    all_moves = []  # Extract all moves first and save them into a list
     for move in game.main_line():
         all_moves.append(move)
     # Iterate through all moves (except the last one) and play them on a board.
@@ -109,8 +92,7 @@ def get_planes_from_game(game, mate_in_one=False):
     # The moves get pushed at the end of the for-loop and is only used in the next loop.
     # Therefore we can iterate over 'all' moves
     for i, move in enumerate(all_moves):
-        # by default the positions hasn't occurred before
-        board_occ = 0
+        board_occ = 0  # by default the positions hasn't occurred before
         fen = board.fen()
         # remove the halfmove counter & move counter from this fen to make repetitions possible
         fen = fen[: fen.find(" ") + 2]
@@ -119,13 +101,12 @@ def get_planes_from_game(game, mate_in_one=False):
             fen_dic[fen] += 1
             board_occ = fen_dic[fen]
         else:
-            # create a new entry
-            fen_dic[fen] = 1
+            fen_dic[fen] = 1  # create a new entry
         # we insert the move i (and not i+1), because the start is the empty board position
         next_move = all_moves[i]
 
         # check if you need to export a mate_in_one_scenario
-        if mate_in_one is False or i == len(all_moves) - 1:
+        if not mate_in_one or i == len(all_moves) - 1:
             # receive the board and the evaluation of the current position in plane representation
             # We don't want to store float values because the integer datatype is cheaper,
             #  that's why normalize is set to false
@@ -137,11 +118,8 @@ def get_planes_from_game(game, mate_in_one=False):
             # the network always sees the board as if he's the white player, that's the move is mirrored fro black
             y_policy.append(move_to_policy(next_move, is_white_to_move=board.turn))
 
-        # flip the y_init value after each move
-        y_init *= -1
-
-        # push the next move on the board
-        board.push(move)
+        y_init *= -1  # flip the y_init value after each move
+        board.push(move)  # push the next move on the board
 
     # check if there has been any moves
     if x and y_value and y_policy:

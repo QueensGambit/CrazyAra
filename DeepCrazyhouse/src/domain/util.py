@@ -38,6 +38,7 @@ def get_row_col(position, mirror=False):
 
     if mirror:
         row = 7 - row
+
     return row, col
 
 
@@ -86,10 +87,7 @@ def stack_data(data):
     :param data: list of np.arrays which can be x_train, x_test, y_train or y_test for example
     :return: the prepared data
     """
-    data = np.concatenate(data, axis=0)
-    data = data.astype(np.int16)
-
-    return data
+    return np.concatenate(data, axis=0).astype(np.int16)
 
 
 def get_dic_sorted_by_key(dic):
@@ -116,12 +114,10 @@ def get_numpy_arrays(pgn_dataset):
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
     """
     # Get the data
-
     starting_idx = np.array(pgn_dataset["start_indices"])
     x = np.array(pgn_dataset["x"])
     y_value = np.array(pgn_dataset["y_value"])
     y_policy = np.array(pgn_dataset["y_policy"])
-
     return starting_idx, x, y_value, y_policy
 
 
@@ -143,7 +139,6 @@ def normalize_input_planes(x):
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
         channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
-
         mat_pos[channel, :, :] /= MAX_NB_PRISONERS
         # the prison for black begins 5 channels later
         mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
@@ -159,8 +154,7 @@ def normalize_input_planes(x):
 
 
 # use a constant matrix for normalization to allow broad cast operations
-MATRIX_NORMALIZER = np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH))
-MATRIX_NORMALIZER = normalize_input_planes(MATRIX_NORMALIZER)
+MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH)))
 
 
 def customize_input_planes(x):
@@ -176,7 +170,6 @@ def customize_input_planes(x):
     for p_type in chess.PIECE_TYPES[:-1]:
         # p_type -1 because p_type starts with 1
         channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
-
         mat_pos[channel, :, :] /= MAX_NB_PRISONERS
         # the prison for black begins 5 channels later
         mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
@@ -188,31 +181,24 @@ def customize_input_planes(x):
     ### No progress count
     # after 40 moves of no progress the 40 moves rule for draw applies
     mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] *= MAX_NB_NO_PROGRESS
-
     np.round(x, decimals=0, out=x)
-
     return x
 
 
-def mult_axis_by_vec(mat, vec):
+def multi_axis_by_vec(mat, vec, axis=0):
     # https://stackoverflow.com/questions/30031828/multiply-numpy-ndarray-with-1d-array-along-a-given-axis
     """
     Multiplies a matrix by a given vector element-wise along a given axis
+    :param axis: The axis
     :param mat: Numpy matrix to perform the operation on
     :param vec: Numpy array which is a single vector (must have same dim as desired axis)
     :return Element-wise multiplied matrix across axis
     """
-    # Given axis along which element-wise multiplication with broadcasting
-    # is to be performed
-    axis = 0
-
     # Create an array which would be used to reshape 1D array, b to have
     # singleton dimensions except for the given axis where we would put -1
     # signifying to use the entire length of elements along that axis
     dim_array = np.ones((1, mat.ndim), np.int16).ravel()
     dim_array[axis] = -1
-
     # Reshape b with dim_array and perform element-wise multiplication with
     # broadcasting along the singleton dimensions for the final output
-    b_reshaped = vec.reshape(dim_array)
-    return mat * b_reshaped
+    return mat * vec.reshape(dim_array)

@@ -15,7 +15,7 @@ import numpy as np
 QSIZE = 100
 
 
-class Node:
+class Node:  # Too many instance attributes (14/7)
     """Helper class for nodes stats in the search tree."""
 
     def __init__(
@@ -27,7 +27,7 @@ class Node:
         is_leaf=False,
         transposition_key=None,
         clip_low_visit=True,
-    ):
+    ):  # Too many arguments (8/5)
 
         self.lock = Lock()  # lock object for this node to protect its member variables
         self.initial_value = value  # store the initial value prediction of the current board position
@@ -63,13 +63,10 @@ class Node:
 
         # check if there's a possible mate on the board if yes create a quick link to the mate move
         mate_mv_idx_str = str_legal_moves.find("#")
-        if mate_mv_idx_str != -1:
-            # -1 means that no mate move has been found
+        if mate_mv_idx_str != -1:  # -1 means that no mate move has been found
             # find the according index of the move in the legal_moves generator list
-            mate_mv_idx = str_legal_moves[:mate_mv_idx_str].count(
-                ","
-            )  # We count the ',' which represent the move index
-            self.mate_child_idx = mate_mv_idx  # quick reference path to a child node which leads to mate
+            # and make a quick reference path to a child node which leads to mate
+            self.mate_child_idx = str_legal_moves[:mate_mv_idx_str].count(",")  # Count the ',' its the move index
         else:
             self.mate_child_idx = None  # If no direct mate move is possible so set the reference to None
 
@@ -98,11 +95,10 @@ class Node:
         if clip_low_visit_nodes and q_value_weight > 0:
             visit = deepcopy(self.child_number_visits)
             value = deepcopy((self.q_value + 1))
-            if visit.max() > 0:
-                max_visits = visit.max()
-                thresh_idces = visit < max_visits * 0.33  # mask out nodes that haven't been visited much
+            max_visits = visit.max()
+            if max_visits > 0:
                 # normalize to sum of 1
-                value[thresh_idces] = 0
+                value[visit < max_visits * 0.33] = 0  # mask out nodes that haven't been visited much
                 value[value < 0] = 0
                 # re-normalize to 1
                 visit /= visit.sum()

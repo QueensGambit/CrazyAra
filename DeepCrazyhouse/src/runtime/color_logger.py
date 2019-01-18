@@ -97,8 +97,9 @@ def add_coloring_to_emit_windows(fn):
     return new
 
 
-def add_coloring_to_emit_ansi(fn): #  Argument name doesn't conform to snake_case naming style(3 or more length)
+def add_coloring_to_emit_ansi(fn):  #  Argument name doesn't conform to snake_case naming style(3 or more length)
     """ Add methods we need to the class """
+
     def new(*args):
         level_number = args[1].levelno
         if level_number >= 50:

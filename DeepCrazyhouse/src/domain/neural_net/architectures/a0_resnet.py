@@ -105,15 +105,14 @@ class ResidualBlock(HybridBlock):
         :return: Sum of the shortcut and the computed residual block computation
         """
         shortcut = x
-        out = self.body(shortcut)
-        out = F.Activation(
-            shortcut + out, act_type=self.act_type, name="%s_BroadcastAdd_%s" % (self.unit_name, self.act_type)
+        return F.Activation(
+            shortcut + self.body(shortcut),
+            act_type=self.act_type,
+            name="%s_BroadcastAdd_%s" % (self.unit_name, self.act_type),
         )
 
-        return out
 
-
-class _PolicyHeadAlphaZero(HybridBlock):
+class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-arguments)
     def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu"):
         """
         Definition of the value head proposed by the alpha zero authors
@@ -143,12 +142,10 @@ class _PolicyHeadAlphaZero(HybridBlock):
         :param x: Input data to the block
         :return: Activation maps of the block
         """
-        out = self.body(x)
-
-        return out
+        return self.body(x)
 
 
-class _ValueHeadAlphaZero(HybridBlock):
+class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-arguments)
     def __init__(self, name, channels=1, fc0=256, bn_mom=0.9, act_type="relu"):
         """
         Definition of the value head proposed by the alpha zero authors
@@ -182,9 +179,7 @@ class _ValueHeadAlphaZero(HybridBlock):
         :param x: Input data to the block
         :return: Activation maps of the block
         """
-        out = self.body(x)
-
-        return out
+        return self.body(x)
 
 
 class _StemAlphaZero(HybridBlock):
@@ -216,12 +211,10 @@ class _StemAlphaZero(HybridBlock):
         :param x: Input data to the block
         :return: Activation maps of the block
         """
-        out = self.body(x)
-
-        return out
+        return self.body(x)
 
 
-class AlphaZeroResnet(HybridBlock):
+class AlphaZeroResnet(HybridBlock):  # Too many arguments (7/5) (too-many-arguments)
     """ Creates the alpha zero gluon net description based on the given parameters."""
 
     def __init__(

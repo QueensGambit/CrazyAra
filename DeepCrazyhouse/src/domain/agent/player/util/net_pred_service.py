@@ -14,7 +14,7 @@ import numpy as np
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 
 
-class NetPredService:
+class NetPredService:  # Too many instance attributes (9/7) - Too few public methods (1/2)
     """ TODO: docstring """
 
     def __init__(
@@ -25,7 +25,7 @@ class NetPredService:
         batch_state_planes: np.ndarray,
         batch_value_results: np.ndarray,
         batch_policy_results: np.ndarray,
-    ):
+    ):  # Too many arguments (7/5)
         """
 
         :param pipe_endings: List of pip endings which are for communicating with the thread workers.
@@ -55,8 +55,8 @@ class NetPredService:
 
         while self.running:
             filled_pipes = connection.wait(pipe_endings)
-
             if filled_pipes:
+                planes_ids = []
                 if send_batches:
                     planes_batch = []
                     pipes_pred_output = []
@@ -67,7 +67,6 @@ class NetPredService:
                     # logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
                     state_planes_mxnet = mx.nd.array(planes_batch, ctx=self.net.get_ctx())
                 else:
-                    planes_ids = []
                     pipes_pred_output = []
                     for pipe in filled_pipes[: self.batch_size]:
                         while pipe.poll():
@@ -77,8 +76,7 @@ class NetPredService:
                     # logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
                     state_planes_mxnet = mx.nd.array(self.batch_state_planes[planes_ids], ctx=self.net.get_ctx())
                 # print(len(state_planes_mxnet))
-                executor = self.net.executors[len(state_planes_mxnet) - 1]
-                pred = executor.forward(is_train=False, data=state_planes_mxnet)
+                pred = self.net.executors[len(state_planes_mxnet) - 1].forward(is_train=False, data=state_planes_mxnet)
                 # pred = self.net.get_net()(state_planes_mxnet)
                 # print('pred: %.3f' % (time()-t_s)*1000)
                 # t_s = time()
@@ -93,7 +91,6 @@ class NetPredService:
                     else:
                         # get the according channel index for setting the result
                         channel_idx = planes_ids[i]
-
                         # set the value result
                         self.batch_value_results[channel_idx] = value_preds[i]
                         self.batch_policy_results[channel_idx] = policy_preds[i]

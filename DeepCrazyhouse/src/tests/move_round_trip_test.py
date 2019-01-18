@@ -21,6 +21,7 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 class MoveRoundTripTest(unittest.TestCase):
     """ TODO: docstring"""
+
     def __init__(self, *args, **kwargs):
         super(MoveRoundTripTest, self).__init__(*args, **kwargs)
 

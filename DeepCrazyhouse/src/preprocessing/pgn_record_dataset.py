@@ -15,7 +15,7 @@ from DeepCrazyhouse.src.domain.util import normalize_input_planes
 
 
 def __getitem__(self, idx):
-    return self._record.read_idx(self._record.keys[idx])
+    return self._record.read_idx(self._record.keys[idx])  # Access to a protected member
 
 
 class PGNRecordDataset(Dataset):
@@ -58,20 +58,15 @@ class PGNRecordDataset(Dataset):
                 y_policy - policy vector
         """
         item = self._record.read_idx(self._record.keys[idx])
-
         header, game = recordio.unpack(item)
         buf = zlib.decompress(game)
-
-        data = np.frombuffer(buf, dtype=np.int16)
-
-        x = data[: self.input_shape_flatten].reshape(self.input_shape).astype(np.float32)
+        x = np.frombuffer(buf, dtype=np.int16)[: self.input_shape_flatten].reshape(self.input_shape).astype(np.float32)
 
         if self.normalize:
             normalize_input_planes(x)
 
         y_value = header[1][0]
         y_policy = header[1][1]
-
         return x, y_value, y_policy
 
     def __len__(self):

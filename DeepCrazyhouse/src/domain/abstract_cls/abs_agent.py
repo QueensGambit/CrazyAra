@@ -25,7 +25,7 @@ class AbsAgent(ABC):
     def evaluate_board_state(self, state: AbsGameState) -> tuple:
         """Abstract method to force a method to evaluate board state on children"""
 
-    def perform_action(self, state: AbsGameState):
+    def perform_action(self, state: AbsGameState):  # Too many local variables (16/15)
         """
         Returns a selected move given a game state by calling evaluate_board_state(state) in order to get a probability
         distribution.
@@ -71,7 +71,7 @@ class AbsAgent(ABC):
                 # check for draw and decline if value is greater 0
                 state_future = deepcopy(state)
                 state_future.apply_move(selected_move)
-                if state_future.get_pythonchess_board().can_claim_threefold_repetition() is True:
+                if state_future.get_pythonchess_board().can_claim_threefold_repetition():
                     policy[idx] = 0
                     idx = policy.argmax()
                     selected_move = legal_moves[idx]

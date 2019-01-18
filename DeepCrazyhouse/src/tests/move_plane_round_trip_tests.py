@@ -33,6 +33,7 @@ def assert_round_trip(test_case: unittest.TestCase, board: CrazyhouseBoard, move
 
 def construct_move_and_assert(test_case, pos1, pos2, comment, promotion=None, drop=None):
     """Merge construct_move_from_positions and assert_round_trip"""
+    # Too many arguments (6/5) (too-many-arguments)
     move = construct_move_from_positions(pos1, pos2, promotion=promotion, drop=drop)
     assert_round_trip(test_case, CrazyhouseBoard(), move, comment=comment)
 

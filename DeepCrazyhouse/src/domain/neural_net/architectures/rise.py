@@ -33,7 +33,7 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.a0_resnet import (
 )
 
 
-class ResidualBlockX(HybridBlock):
+class ResidualBlockX(HybridBlock):  # Too many arguments (8/5)
     """
     Definition of a residual block without any pooling operation
     """
@@ -60,7 +60,7 @@ class ResidualBlockX(HybridBlock):
             self.body.add(Conv2D(channels=channels, kernel_size=3, padding=1, groups=cardinality, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
 
-            if use_se is True:
+            if use_se:
                 # apply squeeze excitation
                 self.body.add(_SqueezeExcitation("se0", channels, 16, act_type))
 
@@ -75,23 +75,19 @@ class ResidualBlockX(HybridBlock):
         :return: Sum of the shortcut and the computed residual block computation
         """
         shortcut = x
-
         out = self.body(x)
-
         # scale down the output of the residual block activations to stabilize training
-        if self.res_scale_fac is not None:
+        if self.res_scale_fac:
             out = shortcut + out * self.res_scale_fac
         else:
             # connect the shortcut with the residual activations
             out = shortcut + out
 
         # apply activation
-        out = self.act0(out)
-
-        return out
+        return self.act0(out)
 
 
-class _ResidualBlockXBottleneck(HybridBlock):
+class _ResidualBlockXBottleneck(HybridBlock):  # Too many arguments (9/5)
     """
     Definition of a residual block without any pooling operation
     """
@@ -117,7 +113,6 @@ class _ResidualBlockXBottleneck(HybridBlock):
         super(_ResidualBlockXBottleneck, self).__init__(prefix=unit_name + "_")
         self.unit_name = unit_name
         self.res_scale_fac = res_scale_fac
-
         self.use_se = use_se
         self.dim_match = dim_match
         self.body = HybridSequential(prefix="")
@@ -135,13 +130,13 @@ class _ResidualBlockXBottleneck(HybridBlock):
             self.body.add(Conv2D(channels=channels, kernel_size=1, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
 
-            if use_se is True:
+            if use_se:
                 # apply squeeze excitation
                 self.body.add(_SqueezeExcitation("se0", channels, 16, act_type))
 
             self.act0 = get_act(act_type, prefix="%s1" % act_type)
 
-            if self.dim_match is False:
+            if not self.dim_match:
                 self.expander = HybridSequential(prefix="")
                 self.expander.add(Conv2D(channels=channels, kernel_size=1, use_bias=False, prefix="expander_conv"))
                 self.expander.add(BatchNorm())
@@ -155,24 +150,21 @@ class _ResidualBlockXBottleneck(HybridBlock):
         :return: Activation maps of the block
         """
 
-        if self.dim_match is True:
+        if self.dim_match:
             shortcut = x
         else:
             shortcut = self.expander(x)
 
         out = self.body(x)
-
         # scale down the output of the residual block activations to stabilize training
-        if self.res_scale_fac is not None:
+        if self.res_scale_fac:
             out = shortcut + out * self.res_scale_fac
         else:
             # connect the shortcut with the residual activations
             out = shortcut + out
 
         # apply activation
-        out = self.act0(out)
-
-        return out
+        return self.act0(out)
 
 
 class _StemRise(HybridBlock):
@@ -216,13 +208,12 @@ class _StemRise(HybridBlock):
         :param x: Input data to the block
         :return: Activation maps of the block
         """
-        out = self.body(x)
-
-        return out
+        return self.body(x)
 
 
-class Rise(HybridBlock):
+class Rise(HybridBlock):  # Too many arguments (15/5)
     """ Implementing the RISE architecture for learning chess proposed by Johannes Czech"""
+
     def __init__(
         self,
         n_labels=2272,
@@ -240,7 +231,7 @@ class Rise(HybridBlock):
         res_scale_fac=0.2,
         use_rise_stem=False,
         **kwargs
-    ):
+    ):  # Too many local variables (22/15)
         """
         Creates the alpha zero gluon net description based on the given parameters.
 
@@ -253,11 +244,10 @@ class Rise(HybridBlock):
         """
 
         super(Rise, self).__init__(**kwargs, prefix="")
-
         self.body = HybridSequential(prefix="")
 
         with self.name_scope():
-            if use_rise_stem is True:
+            if use_rise_stem:
                 self.body.add(_StemRise(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
             else:
                 self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
@@ -278,9 +268,7 @@ class Rise(HybridBlock):
 
         for i in range(nb_res_blocks_x_neck):
             unit_name = "unitX%d" % i
-
             dim_match = True
-
             # deactivate the SE for the last two blocks
             if i in (nb_res_blocks_x_neck - 2, nb_res_blocks_x_neck - 1):
                 cur_use_se = False
@@ -315,8 +303,6 @@ class Rise(HybridBlock):
         :return: Value & Policy Output
         """
         out = self.body(x)
-
         value = self.value_head(out)
         policy = self.policy_head(out)
-
         return [value, policy]

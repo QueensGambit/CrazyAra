@@ -18,17 +18,17 @@ def plot_schedule(schedule_fn, iterations=1500, ylabel="Learning Rate", ylim=Non
     """ Make graph to follow the learning rate per iteration"""
     # Iteration count starting at 1
     iterations = [i + 1 for i in range(iterations)]
-    lrs = [schedule_fn(i) for i in iterations]
-    plt.scatter(iterations, lrs)
+    plt.scatter(iterations, [schedule_fn(i) for i in iterations])
     plt.xlabel("Iteration")
     plt.ylabel(ylabel)
-    if ylim is not None:
+    if ylim:
         plt.ylim(ylim)
     plt.show()
 
 
 class TriangularSchedule:
     """TODO: docstring"""
+
     def __init__(self, min_lr, max_lr, cycle_length, inc_fraction=0.5):
         """
         min_lr: lower bound for learning rate (float)
@@ -48,12 +48,13 @@ class TriangularSchedule:
             unit_cycle = (self.cycle_length - iteration) * 1 / (self.cycle_length * (1 - self.inc_fraction))
         else:
             unit_cycle = 0
-        adjusted_cycle = (unit_cycle * (self.max_lr - self.min_lr)) + self.min_lr
-        return adjusted_cycle
+
+        return (unit_cycle * (self.max_lr - self.min_lr)) + self.min_lr
 
 
 class LinearWarmUp:
     """TODO: docstring"""
+
     def __init__(self, schedule, start_lr, length):
         """
         schedule: a pre-initialized schedule (e.g. TriangularSchedule(min_lr=0.5, max_lr=2, cycle_length=500))
@@ -74,6 +75,7 @@ class LinearWarmUp:
 
 class CyclicalSchedule:
     """TODO: docstring"""
+
     def __init__(self, schedule_class, cycle_length, cycle_length_decay=1, cycle_magnitude_decay=1, **kwargs):
         """
         schedule_class: class of schedule, expected to take `cycle_length` argument
@@ -96,14 +98,14 @@ class CyclicalSchedule:
             cycle_length = math.ceil(cycle_length * self.length_decay)
             cycle_idx += 1
             idx += cycle_length
-        cycle_offset = iteration - idx + cycle_length
 
         schedule = self.schedule_class(cycle_length=cycle_length, **self.kwargs)
-        return schedule(cycle_offset) * self.magnitude_decay ** cycle_idx
+        return schedule(iteration - idx + cycle_length) * self.magnitude_decay ** cycle_idx
 
 
 class CosineAnnealingSchedule:
     """TODO: docstring"""
+
     def __init__(self, min_lr, max_lr, cycle_length):
         """
         min_lr: lower bound for learning rate (float)
@@ -117,13 +119,13 @@ class CosineAnnealingSchedule:
     def __call__(self, iteration):
         if iteration <= self.cycle_length:
             unit_cycle = (1 + math.cos(iteration * math.pi / self.cycle_length)) / 2
-            adjusted_cycle = (unit_cycle * (self.max_lr - self.min_lr)) + self.min_lr
-            return adjusted_cycle
+            return (unit_cycle * (self.max_lr - self.min_lr)) + self.min_lr
         return self.min_lr
 
 
 class LinearCoolDown:
     """TODO: docstring"""
+
     def __init__(self, schedule, finish_lr, start_idx, length):
         """
         schedule: a pre-initialized schedule (e.g. TriangularSchedule(min_lr=0.5, max_lr=2, cycle_length=500))
@@ -143,12 +145,13 @@ class LinearCoolDown:
         if iteration <= self.start_idx:
             return self.schedule(iteration)
         if iteration <= self.finish_idx:
-            return (iteration - self.start_idx) * (self.finish_lr - self.start_lr) / (self.length) + self.start_lr
+            return (iteration - self.start_idx) * (self.finish_lr - self.start_lr) / self.length + self.start_lr
         return self.finish_lr
 
 
 class OneCycleSchedule:
     """TODO: docstring"""
+
     def __init__(self, start_lr, max_lr, cycle_length, cooldown_length=0, finish_lr=None):
         """
         start_lr: lower bound for learning rate in triangular cycle (float)
@@ -157,12 +160,12 @@ class OneCycleSchedule:
         cooldown_length: number of iterations used for the cool-down (int)
         finish_lr: learning rate used at end of the cool-down (float)
         """
-        if (cooldown_length > 0) and (finish_lr is None):
+        if cooldown_length > 0 and finish_lr is None:
             raise ValueError("Must specify finish_lr when using cooldown_length > 0.")
-        if (cooldown_length == 0) and (finish_lr is not None):
+        if cooldown_length == 0 and finish_lr:
             raise ValueError("Must specify cooldown_length > 0 when using finish_lr.")
 
-        finish_lr = finish_lr if (cooldown_length > 0) else start_lr
+        finish_lr = finish_lr if cooldown_length > 0 else start_lr
         schedule = TriangularSchedule(min_lr=start_lr, max_lr=max_lr, cycle_length=cycle_length)
         self.schedule = LinearCoolDown(schedule, finish_lr=finish_lr, start_idx=cycle_length, length=cooldown_length)
 
@@ -172,6 +175,7 @@ class OneCycleSchedule:
 
 class OneCycleMomentumSchedule:
     """TODO: docstring"""
+
     def __init__(self, start_momentum, max_momentum, cycle_length, warmup_length=0, finish_momentum=None):
         """
         start_lr: lower bound for learning rate in triangular cycle (float)
@@ -180,12 +184,12 @@ class OneCycleMomentumSchedule:
         cooldown_length: number of iterations used for the cool-down (int)
         finish_lr: learning rate used at end of the cool-down (float)
         """
-        if (warmup_length > 0) and (finish_momentum is None):
+        if warmup_length > 0 and finish_momentum is None:
             raise ValueError("Must specify finish_lr when using cooldown_length > 0.")
-        if (warmup_length == 0) and (finish_momentum is not None):
+        if warmup_length == 0 and finish_momentum:
             raise ValueError("Must specify cooldown_length > 0 when using finish_lr.")
 
-        finish_lr = finish_momentum if (warmup_length > 0) else start_momentum
+        finish_lr = finish_momentum if warmup_length > 0 else start_momentum
         schedule = TriangularSchedule(min_lr=start_momentum, max_lr=max_momentum, cycle_length=cycle_length)
         self.schedule = LinearCoolDown(schedule, finish_lr=finish_lr, start_idx=cycle_length, length=warmup_length)
 
@@ -195,6 +199,7 @@ class OneCycleMomentumSchedule:
 
 class MomentumSchedule:
     """TODO: docstring"""
+
     def __init__(self, lr_schedule, min_lr, max_lr, min_momentum, max_momentum):
         self.lr_schedule = lr_schedule
         self.max_lr = max_lr
@@ -203,10 +208,6 @@ class MomentumSchedule:
         self.max_momentum = max_momentum
 
     def __call__(self, iteration):
-        learning_rate = self.lr_schedule(iteration)
-
-        # calculate percentage factor
-        perc = (learning_rate - self.min_lr) / (self.max_lr - self.min_lr)
+        perc = (self.lr_schedule(iteration) - self.min_lr) / (self.max_lr - self.min_lr)  # calculate percentage factor
         # invert the percentage factor and apply it
-        momentum = self.max_momentum - perc * (self.max_momentum - self.min_momentum)
-        return momentum
+        return self.max_momentum - perc * (self.max_momentum - self.min_momentum)

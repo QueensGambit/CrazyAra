@@ -54,7 +54,7 @@ class PGN2PlanesConverter:
         log_lvl=logging.DEBUG,
         dataset_type="train",
         use_all_games=False,
-    ):
+    ):  # Too many arguments (11/5)
         """
         Set the member variables and loads the config file
 
@@ -161,7 +161,7 @@ class PGN2PlanesConverter:
         logging.debug("subprocess finished")
         return all_pgn_sel, nb_games_sel, batch_white_won, batch_black_won, batch_draw
 
-    def _filter_pgn_thread(self, queue, pgn):
+    def _filter_pgn_thread(self, queue, pgn):  # Refactoring is probably a good idea
         """
         Selects the pgn which fulfill the given conditions
         :param queue: Stores the result/return variables
@@ -173,7 +173,7 @@ class PGN2PlanesConverter:
         - batch_black_won: list of number of games which have been won by the black player in this batch
         - batch_draw: list of number of games which have been drawn in this batch
         """
-
+        # Too many local variables (26/15) - Too many branches (18/12) - Too many statements (53/50)
         content = pgn.read()  # read the pgn content into a string
         nb_games = content.count("Crazy")
         logging.debug("nb_games: %d", nb_games)
@@ -194,7 +194,7 @@ class PGN2PlanesConverter:
             # only add game with at least one move played
             if "1. " in game:
                 # for mate in one make sure the game ended in a checkmate
-                if self._mate_in_one is False:
+                if not self._mate_in_one:
                     pgns.append(io.StringIO(game))
                 else:
                     # look for '#' as soon as the move history begins
@@ -203,7 +203,7 @@ class PGN2PlanesConverter:
                     # also some games are annotated and contain # in the evaluation
                     # \S Matches any non-whitespace character; this is equivalent to the class [^ \t\n\r\f\v].
                     mv_hist_finish = re.search(r"\S#", game[mv_hist_start:])
-                    if mv_hist_finish is not None:
+                    if mv_hist_finish:
                         pgns.append(io.StringIO(game))
 
         logging.info("select games based on given conditions...")
@@ -219,28 +219,30 @@ class PGN2PlanesConverter:
             game_pgn_copy = deepcopy(game_pgn)
             for _, headers in chess.pgn.scan_headers(game_pgn_copy):
                 for term_cond in self._termination_conditions:
-                    if self.use_all_games or term_cond in headers["Termination"]:
-                        if self.use_all_games or (
+                    if self.use_all_games or (
+                        term_cond in headers["Termination"]
+                        and (
                             int(headers["WhiteElo"]) >= self._min_elo_both
                             and int(headers["BlackElo"]) >= self._min_elo_both
-                        ):
-                            if headers["Result"] == "1-0":
-                                nb_white_won += 1
-                            elif headers["Result"] == "0-1":
-                                nb_black_won += 1
-                            elif headers["Result"] == "1/2-1/2":
-                                nb_draws += 1
-                            else:
-                                raise Exception("Illegal Game Result: ", headers["Result"])
+                        )
+                    ):
+                        if headers["Result"] == "1-0":
+                            nb_white_won += 1
+                        elif headers["Result"] == "0-1":
+                            nb_black_won += 1
+                        elif headers["Result"] == "1/2-1/2":
+                            nb_draws += 1
+                        else:
+                            raise Exception("Illegal Game Result: ", headers["Result"])
 
-                            all_pgn_sel.append(game_pgn)
+                        all_pgn_sel.append(game_pgn)
 
-                            if len(all_pgn_sel) % self._batch_size == 0:
-                                # save the stats of 1 batch part
-                                batch_white_won.append(nb_white_won)
-                                batch_black_won.append(nb_black_won)
-                                batch_draw.append(nb_draws)
-                                nb_white_won = nb_black_won = nb_draws = 0
+                        if len(all_pgn_sel) % self._batch_size == 0:
+                            # save the stats of 1 batch part
+                            batch_white_won.append(nb_white_won)
+                            batch_black_won.append(nb_black_won)
+                            batch_draw.append(nb_draws)
+                            nb_white_won = nb_black_won = nb_draws = 0
         # add the remaining stats to the last batch
         if nb_white_won > 0 or nb_black_won > 0 or nb_draws > 0:
             # save the stats of 1 batch part
@@ -323,7 +325,7 @@ class PGN2PlanesConverter:
         return games_exported
 
     # @profile
-    def _convert_pgn_to_planes_thread(self, pgn_name, queue):
+    def _convert_pgn_to_planes_thread(self, pgn_name, queue):  # Too many local variables (19/15)
         """
         This function should be called in a subprocess for memory reason.
         Loads the game of a given pgn file, filters the game based on the given conditions and
@@ -406,7 +408,8 @@ class PGN2PlanesConverter:
         :param nb_draws: Number of draws in the current part
         :return:
         """
-
+        # Refactoring is probably a good idea
+        # Too many arguments (8/5) - Too many local variables (32/15) - Too many statements (69/50)
         params_inp = []  # create a param input list which will concatenate the pgn with it's corresponding game index
         for i, pgn in enumerate(pgn_sel):
             game_idx = game_idx_start + i
@@ -443,8 +446,7 @@ class PGN2PlanesConverter:
         pool.join()
         t_e = time() - t_s
         logging.debug("elapsed time: %fs", t_e)
-        t_mean = t_e / self._batch_size
-        logging.debug("mean time for 1 game: %f ms", t_mean * 1000)
+        logging.debug("mean time for 1 game: %f ms", t_e / self._batch_size * 1000)
         # logging.debug('approx time for whole file (nb_games: %d): %fs', self._nb_games, t_mean * self._nb_games)
         # now we can convert the dictionary to a list
         metadata = get_dic_sorted_by_key(metadata_dic)
@@ -542,7 +544,7 @@ class PGN2PlanesConverter:
             data=[self._min_elo_both],
             compression=compressor,
         )
-        if self._compression is not None:
+        if self._compression:
             zarr_file.create_dataset(
                 "/parameters/compression",
                 shape=(1,),
