@@ -30,9 +30,10 @@ from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
-class Planes2RecConverter:
-    def __init__(self, dataset_type="train"):
+class Planes2RecConverter:  # Too few public methods (1/2)
+    """ Transform the plane representation in a format that can be used easily during training"""
 
+    def __init__(self, dataset_type="train"):
         # make sure that correct dataset_type has been selected
         # note that dataset type is stored in a folder with its time stamp
         if dataset_type == "train":
@@ -50,9 +51,7 @@ class Planes2RecConverter:
             )
 
         self._dataset_type = dataset_type
-
-        # all dataset types are export to a single .rec directory
-        self._export_dir = main_config["rec_dir"]
+        self._export_dir = main_config["rec_dir"]  # all dataset types are export to a single .rec directory
 
     def convert_all_planes_to_rec(self):
         """
@@ -60,25 +59,17 @@ class Planes2RecConverter:
 
         :return:
         """
-
-        # we must add '**/*' because we want to go into the time stamp directory
-        plane_files = glob(self._import_dir + "**/*")
-
         # construct the export filepaths
         idx_filepath = "%s%s" % (self._export_dir, self._dataset_type + ".idx")
         rec_filepath = "%s%s" % (self._export_dir, self._dataset_type + ".rec")
-
         # create both an '.idx' and '.rec' file
         # the '.idx' file stores the indices to the string buffers
         # the '.rec' files stores the planes in a compressed binary string buffer format
         record = mx.recordio.MXIndexedRecordIO(idx_filepath, rec_filepath, "w")
-
-        nb_parts = len(plane_files)
+        # we must add '**/*' because we want to go into the time stamp directory
         idx = 0
-        for part_id in range(nb_parts):
-
+        for part_id in range(len(glob(self._import_dir + "**/*"))):
             t_s = time()
-
             logging.info("PART: %d", part_id)
             # load one chunk of the dataset from memory
             _, x, y_value, y_policy, _ = load_pgn_dataset(
@@ -90,20 +81,14 @@ class Planes2RecConverter:
             )
 
             # iterate over all board states aka. data samples in the file
-            for position, value in enumerate(x):
-                data = value.flatten()
-                buf = zlib.compress(data.tobytes())
+            for idx, value in enumerate(x):
                 # we only store the integer idx of the highest output
-                header = mx.recordio.IRHeader(0, [y_value[position], y_policy[position].argmax()], idx, 0)
-                s = mx.recordio.pack(header, buf)
-                record.write_idx(idx, s)
+                header = mx.recordio.IRHeader(0, [y_value[idx], y_policy[idx].argmax()], idx, 0)
+                record.write_idx(idx, mx.recordio.pack(header, zlib.compress(value.flatten().tobytes())))
                 idx += 1
 
-            # log the elapsed time for a single dataset part file
-            logging.debug("elapsed time %.2fs", (time() - t_s))
+            logging.debug("elapsed time %.2fs", (time() - t_s))  # log the elapsed time for a single dataset part file
 
-        # close the record file
-        record.close()
-
+        record.close()  # close the record file
         logging.debug("created %s successfully", idx_filepath)
         logging.debug("created %s successfully", rec_filepath)

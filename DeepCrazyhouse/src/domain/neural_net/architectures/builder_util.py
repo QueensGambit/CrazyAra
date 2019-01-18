@@ -11,6 +11,7 @@ from mxnet.gluon.nn import Activation, AvgPool2D, MaxPool2D, PReLU, SELU, Swish,
 
 
 def get_act(act_type, **kwargs):
+    """Wrapper method for different non linear activation functions"""
     if act_type in ["relu", "sigmoid", "softrelu", "softsign", "tanh"]:
         return Activation(act_type, **kwargs)
     if act_type == "prelu":
@@ -25,6 +26,7 @@ def get_act(act_type, **kwargs):
 
 
 def get_pool(pool_type, pool_size, strides, **kwargs):
+    """ Wrapper for Pooling operations"""
     if pool_type == "maxpool":
         return MaxPool2D(pool_size=pool_size, strides=strides, **kwargs)
     if pool_type == "avgpool":

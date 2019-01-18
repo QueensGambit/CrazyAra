@@ -13,6 +13,8 @@ from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 
 
 class AbsAgent(ABC):
+    """Abstract class for the Agent children classes"""
+
     def __init__(self, temperature=0, temperature_moves=4, verbose=True):
         self.temperature = temperature
         self.temperature_current = temperature
@@ -21,9 +23,9 @@ class AbsAgent(ABC):
 
     @abstractmethod
     def evaluate_board_state(self, state: AbsGameState) -> tuple:
-        pass
+        """Abstract method to force a method to evaluate board state on children"""
 
-    def perform_action(self, state: AbsGameState):
+    def perform_action(self, state: AbsGameState):  # Too many local variables (16/15)
         """
         Returns a selected move given a game state by calling evaluate_board_state(state) in order to get a probability
         distribution.
@@ -69,7 +71,7 @@ class AbsAgent(ABC):
                 # check for draw and decline if value is greater 0
                 state_future = deepcopy(state)
                 state_future.apply_move(selected_move)
-                if state_future.get_pythonchess_board().can_claim_threefold_repetition() is True:
+                if state_future.get_pythonchess_board().can_claim_threefold_repetition():
                     policy[idx] = 0
                     idx = policy.argmax()
                     selected_move = legal_moves[idx]

@@ -42,23 +42,19 @@ class _SqueezeExcitation(HybridBlock):
         return out
 
 
-class _InceptionResnetBlock(HybridBlock):
+class _InceptionResnetBlock(HybridBlock):  # Too many instance attributes (8/7) - Too many arguments (8/5)
     def __init__(self, name, ch, res_scale_fac=0.2, act_type="relu", bn_mom=0.9, use_se=True, shortcut=True):
         super(_InceptionResnetBlock, self).__init__(prefix=name)
-
         self.shortcut = shortcut
         self.body = HybridSequential(prefix="")
-        self.bn0 = None
-        self.act0 = None
-        self.se0 = None
+        self.bn0 = self.act0 = self.se0 = None
         self.block_name = name
         self.res_scale_fac = res_scale_fac
         self.use_se = use_se
-
         self.bn0 = BatchNorm(momentum=bn_mom, prefix="%s_bn0" % name, in_channels=ch)
         self.act0 = get_act(act_type, prefix="%s_%s0" % (name, act_type))
 
-        if use_se is True:
+        if use_se:
             self.se0 = _SqueezeExcitation("%s_se0" % name, ch, 16, act_type)
 
     def hybrid_forward(self, F, x):
@@ -71,9 +67,9 @@ class _InceptionResnetBlock(HybridBlock):
         """
 
         shortcut = x
-        out = self.body(x)
+        out = self.body(shortcut)
 
-        if self.shortcut is True:
+        if self.shortcut:
             # scale down the output of the residual block activations to stabilize training
             out = out.__mul__(self.res_scale_fac)
             # connect the shortcut with the residual activations
@@ -84,7 +80,7 @@ class _InceptionResnetBlock(HybridBlock):
         out = self.act0(out)
 
         # apply squeeze excitation
-        if self.use_se is True:
+        if self.use_se:
             out = self.se0(out)
 
         return out
@@ -104,11 +100,10 @@ class _UpsampleBlock(HybridBlock):
         :param x: Input data to the block
         :return: Activation maps of the block
         """
-        out = F.UpSampling(x, scale=self.scale, sample_type=self.sample_type)
-        return out
+        return F.UpSampling(x, scale=self.scale, sample_type=self.sample_type)
 
 
-class _RiseResidualBlock(HybridBlock):
+class _RiseResidualBlock(HybridBlock):  # Too many arguments (7/5)
     """
     Definition of a residual block without any pooling operation
     """
@@ -125,9 +120,7 @@ class _RiseResidualBlock(HybridBlock):
         self.act_type = act_type
         self.unit_name = unit_name
         self.res_scale_fac = res_scale_fac
-
         self.use_se = use_se
-
         # branch 0
         self.body = HybridSequential()
         self.body.add(
@@ -135,15 +128,13 @@ class _RiseResidualBlock(HybridBlock):
         )
         self.body.add(BatchNorm(momentum=bn_mom, prefix="%s_bn0" % self.unit_name))
         self.body.add(get_act(act_type, prefix="%s_%s0" % (unit_name, act_type)))
-
         self.body.add(
             Conv2D(channels=channels, kernel_size=(3, 3), padding=(1, 1), use_bias=False, prefix="%s_conv1" % unit_name)
         )
         self.body.add(BatchNorm(momentum=bn_mom, prefix="%s_bn1" % self.unit_name))
-
         self.act0 = get_act(act_type, prefix="%s_%s1" % (unit_name, act_type))
 
-        if use_se is True:
+        if use_se:
             self.se0 = _SqueezeExcitation("%s_se0" % unit_name, channels, 16, act_type)
 
     def hybrid_forward(self, F, x):
@@ -156,31 +147,26 @@ class _RiseResidualBlock(HybridBlock):
         """
 
         shortcut = x
-        out = self.body(x)
-
+        out = self.body(shortcut)
         # if self.shortcut is True:
         # scale down the output of the residual block activations to stabilize training
-        if self.res_scale_fac is not None:
+        if self.res_scale_fac:
             out = out.__mul__(self.res_scale_fac)
         # connect the shortcut with the residual activations
         out = F.broadcast_add(shortcut, out, name=self.unit_name)
-
         # apply batchnormalization and activation
         # out = self.bn0(out)
         out = self.act0(out)
-
         # apply squeeze excitation
-        if self.use_se is True:
+        if self.use_se:
             out = self.se0(out)
 
         return out
 
 
-class _RiseBlockA(_InceptionResnetBlock):
+class _RiseBlockA(_InceptionResnetBlock):  # Too many arguments (10/5)
     def __init__(self, name, in_ch, ch, res_scale_fac, act_type, bn_mom, use_se, shortcut, pool_type):
         """
-
-
         IN 8x8: 256 TOTAL
 
         BRANCH 0
@@ -269,16 +255,13 @@ class _RiseBlockA(_InceptionResnetBlock):
             self.b_2.add(get_act(act_type))
             self.b_2.add(Conv2D(channels=ch_2_2, kernel_size=(3, 3), padding=(1, 1), in_channels=ch_2_1, use_bias=True))
             self.b_2.add(get_act(act_type))
-
             # concatenate all branches and add them to the body
             self.branches.add(self.b_0)
             self.branches.add(self.b_1)
             self.branches.add(self.b_2)
             # self.branches.add(self.b_3)
             # self.branches.add(self.b_4)
-
             self.body.add(self.branches)
-
             self.body.add(
                 Conv2D(
                     channels=ch,
@@ -290,24 +273,14 @@ class _RiseBlockA(_InceptionResnetBlock):
             )  # +ch_3_2+ch_4_2
 
 
-class _RiseBlockB(_InceptionResnetBlock):
+class _RiseBlockB(_InceptionResnetBlock):  # Too many arguments (10/5)
     def __init__(self, name, in_ch, ch, res_scale_fac, act_type, bn_mom, use_se, shortcut, pool_type):
         super(_RiseBlockB, self).__init__(name, ch, res_scale_fac, act_type, bn_mom, use_se, shortcut)
-
         self.body = HybridSequential(prefix="")
-
-        # entry point for all branches
-        self.branches = HybridConcurrent(axis=1, prefix="")
-
-        ch_0_0 = 32
-        ch_0_1 = 96
-        ch_0_2 = 96
-
-        ch_1_0 = 32
-        ch_1_1 = 96
-        ch_1_2 = 96
-
-        ch_2_0 = 192
+        self.branches = HybridConcurrent(axis=1, prefix="")  # entry point for all branches
+        ch_0_0 = ch_1_0 = 32
+        ch_1_1 = ch_1_2 = ch_0_2 = ch_0_1 = 96
+        ch_2_0 = 192  # Too many local variables (18/15)
 
         with self.name_scope():
             # branch 0
@@ -333,11 +306,9 @@ class _RiseBlockB(_InceptionResnetBlock):
             self.b_1.add(
                 Conv2D(channels=ch_1_2, kernel_size=(1, 3), padding=(1, 0), in_channels=ch_1_1, use_bias=False)
             )
-
             # branch 2
             self.b_2 = HybridSequential()
             self.b_2.add(Conv2D(channels=ch_2_0, kernel_size=(1, 1), in_channels=in_ch, use_bias=False))
-
             # concatenate all branches and add them to the body
             self.branches.add(self.b_0)
             self.branches.add(self.b_1)
@@ -345,7 +316,7 @@ class _RiseBlockB(_InceptionResnetBlock):
             self.body.add(self.branches)
 
 
-class _InceptionResnetA(_InceptionResnetBlock):
+class _InceptionResnetA(_InceptionResnetBlock):  # Too many arguments (15/5)
     def __init__(
         self,
         name,
@@ -362,7 +333,7 @@ class _InceptionResnetA(_InceptionResnetBlock):
         res_scale_fac=0.2,
         use_se=True,
         shortcut=True,
-    ):
+    ):  # Too many local variables (16/15)
         """
         Definition of the InceptionResnetA block
 
@@ -381,17 +352,12 @@ class _InceptionResnetA(_InceptionResnetBlock):
         """
 
         super(_InceptionResnetA, self).__init__(name, ch, res_scale_fac, act_type, bn_mom, use_se, shortcut)
-
         self.body = HybridSequential(prefix="")
-
-        # entry point for all branches
-        self.branches = HybridConcurrent(axis=1, prefix="")
-
+        self.branches = HybridConcurrent(axis=1, prefix="")  # entry point for all branches
         # branch 0 of block type A
         self.b_0 = HybridSequential()
         self.b_0.add(Conv2D(channels=ch_0_0, kernel_size=(1, 1), prefix="%s_0_conv0" % name, in_channels=in_ch))
         self.b_0.add(get_act(act_type, prefix="%s_0_%s0" % (name, act_type)))
-
         # branch 1 of block type A
         self.b_1 = HybridSequential()
         self.b_1.add(Conv2D(channels=ch_1_0, kernel_size=(1, 1), prefix="%s_1_conv0" % name, in_channels=in_ch))
@@ -400,7 +366,6 @@ class _InceptionResnetA(_InceptionResnetBlock):
             Conv2D(channels=ch_1_1, kernel_size=(3, 3), padding=(1, 1), prefix="%s_1_conv1" % name, in_channels=ch_1_0)
         )
         self.b_1.add(get_act(act_type, prefix="%s_1_%s1" % (name, act_type)))
-
         # branch 2 of block type A
         self.b_2 = HybridSequential()
         self.b_2.add(Conv2D(channels=ch_2_0, kernel_size=(1, 1), prefix="%s_2_conv0" % name, in_channels=in_ch))
@@ -419,7 +384,6 @@ class _InceptionResnetA(_InceptionResnetBlock):
         self.branches.add(self.b_1)
         self.branches.add(self.b_2)
         self.body.add(self.branches)
-
         # apply a single CNN layer without activation function
         self.body.add(
             Conv2D(
@@ -432,7 +396,7 @@ class _InceptionResnetA(_InceptionResnetBlock):
         )
 
 
-class _InceptionResnetB(_InceptionResnetBlock):
+class _InceptionResnetB(_InceptionResnetBlock):  # Too many arguments (13/5)
     def __init__(
         self,
         name,
@@ -464,15 +428,11 @@ class _InceptionResnetB(_InceptionResnetBlock):
         super(_InceptionResnetB, self).__init__(name, ch, res_scale_fac, act_type, bn_mom, use_se, shortcut)
 
         self.body = HybridSequential(prefix="")
-
-        # entry point for all branches
-        self.branches = HybridConcurrent(axis=1, prefix="")
-
+        self.branches = HybridConcurrent(axis=1, prefix="")  # entry point for all branches
         # branch 0 of block type B
         self.b_0 = HybridSequential()
         self.b_0.add(Conv2D(channels=ch_0_0, kernel_size=(1, 1), prefix="%s_0_conv0" % name, in_channels=in_ch))
         self.b_0.add(get_act(act_type, prefix="%s_0_%s0" % (name, act_type)))
-
         # branch 2 of block type B
         self.b_1 = HybridSequential()
         self.b_1.add(Conv2D(channels=ch_1_0, kernel_size=(1, 1), prefix="%s_1_conv0" % name, in_channels=in_ch))
@@ -489,12 +449,10 @@ class _InceptionResnetB(_InceptionResnetBlock):
             Conv2D(channels=ch_1_2, kernel_size=(5, 1), padding=(2, 0), prefix="%s_1_conv2" % name, in_channels=ch_1_1)
         )
         self.b_1.add(get_act(act_type, prefix="%s_1_%s2" % (name, act_type)))
-
         # concatenate all branches and add them to the body
         self.branches.add(self.b_0)
         self.branches.add(self.b_1)
         self.body.add(self.branches)
-
         # apply a single CNN layer without activation function
         self.body.add(
             Conv2D(
@@ -503,7 +461,7 @@ class _InceptionResnetB(_InceptionResnetBlock):
         )
 
 
-class _InceptionResnetC(_InceptionResnetBlock):
+class _InceptionResnetC(_InceptionResnetBlock):  # Too many arguments (13/5)
     def __init__(
         self,
         name,
@@ -533,20 +491,14 @@ class _InceptionResnetC(_InceptionResnetBlock):
         :param res_scale_fac: Constant multiply scalar which is applied to the residual activations maps
         """
         super(_InceptionResnetC, self).__init__(name, ch, res_scale_fac, act_type, bn_mom, use_se, shortcut)
-
         self.res_scale_fac = res_scale_fac
         self.block_name = name
-
         self.body = HybridSequential(prefix="")
-
-        # entry point for all branches
-        self.branches = HybridConcurrent(axis=1, prefix="")
-
+        self.branches = HybridConcurrent(axis=1, prefix="")  # entry point for all branches
         # branch 0 of block type C
         self.b_0 = HybridSequential()
         self.b_0.add(Conv2D(channels=ch_0_0, kernel_size=(1, 1), prefix="%s_0_conv0" % name, in_channels=in_ch))
         self.b_0.add(get_act(act_type, prefix="%s_0_%s0" % (name, act_type)))
-
         # branch 2 of block type C
         self.b_1 = HybridSequential()
         self.b_1.add(Conv2D(channels=ch_1_0, kernel_size=(1, 1), prefix="%s_1_conv0" % name, in_channels=in_ch))
@@ -559,12 +511,10 @@ class _InceptionResnetC(_InceptionResnetBlock):
             Conv2D(channels=ch_1_2, kernel_size=(3, 1), padding=(1, 0), prefix="%s_1_conv2" % name, in_channels=ch_1_1)
         )
         self.b_1.add(get_act(act_type, prefix="%s_1_%s2" % (name, act_type)))
-
         # concatenate all branches and add them to the body
         self.branches.add(self.b_0)
         self.branches.add(self.b_1)
         self.body.add(self.branches)
-
         # apply a single CNN layer without activation function
         self.body.add(
             Conv2D(

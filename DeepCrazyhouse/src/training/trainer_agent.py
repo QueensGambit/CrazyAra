@@ -47,25 +47,20 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu())
         data = data.as_in_context(ctx)
         value_label = value_label.as_in_context(ctx)
         policy_label = policy_label.as_in_context(ctx)
-
         [value_out, policy_out] = net(data)
-
         # update the metrics
         metrics["value_loss"].update(preds=value_out, labels=value_label)
         metrics["policy_loss"].update(preds=nd.SoftmaxActivation(policy_out), labels=policy_label)
         metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
         metrics["policy_acc"].update(preds=nd.argmax(policy_out, axis=1), labels=policy_label)
-
         # stop after evaluating x batches (only recommended to use this for the train set evaluation)
-        if nb_batches is not None and i == nb_batches:
+        if nb_batches and i == nb_batches:
             break
 
-    metric_values = {}
-    metric_values["loss"] = 0.01 * metrics["value_loss"].get()[1] + 0.99 * metrics["policy_loss"].get()[1]
+    metric_values = {"loss": 0.01 * metrics["value_loss"].get()[1] + 0.99 * metrics["policy_loss"].get()[1]}
 
     for metric in metrics.values():
         metric_values[metric.get()[0]] = metric.get()[1]
-
     return metric_values
 
 
@@ -79,7 +74,9 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-class TrainerAgent:
+class TrainerAgent: # Probably needs refactoring
+    """Main training loop"""
+
     def __init__(
         self,
         net,
@@ -106,6 +103,8 @@ class TrainerAgent:
         val_loss_factor=0.01,
         policy_loss_factor=0.99,
     ):
+        # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
+        # Too few public methods (1/2)
         # , lr_warmup_k_steps=30, lr_warmup_init=0.01):
         # patience=25, nb_lr_drops=3, nb_k_steps=200,
         if metrics is None:
@@ -142,7 +141,7 @@ class TrainerAgent:
         # self._warmup_k_steps = lr_warmup_k_steps
         # self._lr_warmup_init = lr_warmup_init
         # define a summary writer that logs data and flushes to the file every 5 seconds
-        if log_metrics_to_tensorboard is True:
+        if log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
         # Define the two loss functions
         self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
@@ -161,9 +160,7 @@ class TrainerAgent:
         # collect parameter names for logging the gradients of parameters in each epoch
         self._params = self._net.collect_params()
         self._param_names = self._params.keys()
-
-        # define a list which describes the order of the processed batches
-        self.ordering = list(range(nb_parts))
+        self.ordering = list(range(nb_parts))  # define a list which describes the order of the processed batches
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -177,13 +174,12 @@ class TrainerAgent:
         for name in metric_values.keys():  # show the metric stats
             print(" - %s%s: %.4f" % (prefix, name, metric_values[name]), end="")
             # add the metrics to the tensorboard event file
-
-            if self._log_metrics_to_tensorboard is True:
+            if self._log_metrics_to_tensorboard:
                 self.sum_writer.add_scalar(name, [prefix.replace("_", ""), metric_values[name]], global_step)
 
     def _process_on_data_plane_file(self, train_data, batch_proc_tmp):
 
-        for i, (data, value_label, policy_label) in enumerate(train_data):
+        for _, (data, value_label, policy_label) in enumerate(train_data):
             data = data.as_in_context(self._ctx)
             value_label = value_label.as_in_context(self._ctx)
             policy_label = policy_label.as_in_context(self._ctx)
@@ -207,44 +203,36 @@ class TrainerAgent:
             batch_proc_tmp += 1
         return batch_proc_tmp, self._metrics["value_loss"].get()[1]
 
-    def train(self):
-
+    def train(self): # Probably needs refactoring
+        """ Training model"""
+        # Too many local variables (44/15) - Too many branches (18/12) - Too many statements (108/50)
         # set a custom seed for reproducibility
         random.seed(self._seed)
         # define and initialize the variables which will be used
         t_s = time()
         # predefine the local variables that will be used in the training loop
-        val_loss_best = val_p_acc_best = k_steps_best = None
-        patience_cnt = epoch = 0
-        # keep track on how many batches have been processed in this epoch so far
-        batch_proc_tmp = 0
-        # counter for thousands steps
-        k_steps = self._k_steps_initial
+        val_loss_best = val_p_acc_best = k_steps_best = old_label = value_out = None
+        patience_cnt = epoch = batch_proc_tmp = 0 # track on how many batches have been processed in this epoch
+        k_steps = self._k_steps_initial # counter for thousands steps
         # calculate how many log states will be processed
         k_steps_end = self._total_it / self._batch_steps
-        cur_it = 0
-        # count the number of spikes that have been detected
-        nb_spikes = 0
+        cur_it = nb_spikes = 0 # count the number of spikes that have been detected
         # initialize the loss to compare with, with a very high value
         old_val_loss = 9000
-
         # self._lr = self._lr_warmup_init
         # logging.info('Warmup-Schedule')
         # logging.info('Initial learning rate: lr = %.5f', self._lr)
         # logging.info('=========================================')
-
         # set initial lr
         # self._trainer.set_learning_rate(self._lr)
         # log the current learning rate
         # self.sw.add_scalar(tag='lr', value=self._lr, global_step=k_steps)
+        graph_exported = False # create a state variable to check if the net architecture has been reported yet
 
-        # create a state variable to check if the net architecture has been reported yet
-        graph_exported = False
-        old_label = value_out = None
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
-        while True:
+        while True: # Too many nested blocks (7/5)
             # reshuffle the ordering of the training game batches (shuffle works in place)
             random.shuffle(self.ordering)
 
@@ -267,7 +255,7 @@ class TrainerAgent:
                 )
                 # batch_proc_tmp, dummy = self._process_on_data_plane_file(train_data, batch_proc_tmp)
 
-                for i, (data, value_label, policy_label) in enumerate(train_data):
+                for _, (data, value_label, policy_label) in enumerate(train_data):
                     data = data.as_in_context(self._ctx)
                     value_label = value_label.as_in_context(self._ctx)
                     policy_label = policy_label.as_in_context(self._ctx)
@@ -286,7 +274,6 @@ class TrainerAgent:
                         combined_loss = (
                             self._val_loss_factor * value_loss.sum() + self._policy_loss_factor * policy_loss.sum()
                         )
-
                         # update a dummy metric to see a proper progress bar
                         # self._metrics['value_loss'].update(preds=value_out, labels=value_label)
 
@@ -299,7 +286,7 @@ class TrainerAgent:
                     cur_it += 1
                     batch_proc_tmp += 1
                     # add the graph representation of the network to the tensorboard log file
-                    if graph_exported is False and self._log_metrics_to_tensorboard is True:
+                    if not graph_exported and self._log_metrics_to_tensorboard:
                         self.sum_writer.add_graph(self._net)
                         graph_exported = True
 
@@ -332,7 +319,7 @@ class TrainerAgent:
                         # spike_detected = old_val_loss * 1.5 < val_metric_values['loss']
                         # if np.isnan(val_metric_values['loss']):
                         #    spike_detected = True
-                        if self._use_spike_recovery is True and (
+                        if self._use_spike_recovery and (
                             old_val_loss * self._spike_thresh < val_metric_values["loss"]
                             or np.isnan(val_metric_values["loss"])
                         ):  # check for spikes
@@ -344,7 +331,6 @@ class TrainerAgent:
                                 val_metric_values["loss"],
                             )
                             if nb_spikes >= self._max_spikes:
-
                                 val_loss = val_metric_values["loss"]
                                 val_p_acc = val_metric_values["policy_acc"]
                                 logging.debug("The maximum number of spikes has been reached. Stop training.")
@@ -355,7 +341,7 @@ class TrainerAgent:
                                     + str(datetime.timedelta(seconds=round(time() - t_s)))
                                 )
 
-                                if self._log_metrics_to_tensorboard is True:
+                                if self._log_metrics_to_tensorboard:
                                     self.sum_writer.close()
                                 return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)
 
@@ -380,8 +366,7 @@ class TrainerAgent:
                             self._log_metrics(train_metric_values, global_step=k_steps, prefix="train_")
                             self._log_metrics(val_metric_values, global_step=k_steps, prefix="val_")
 
-                            if self._export_grad_histograms is True:
-
+                            if self._export_grad_histograms:
                                 grads = []
                                 # logging the gradients of parameters for checking convergence
                                 for _, name in enumerate(self._param_names):
@@ -398,7 +383,7 @@ class TrainerAgent:
                                 val_p_acc_best = val_metric_values["policy_acc"]
                                 k_steps_best = k_steps
 
-                                if self._export_weights is True:
+                                if self._export_weights:
                                     prefix = "./weights/model-%.5f-%.3f" % (val_loss_best, val_p_acc_best)
                                     # the export function saves both the architecture and the weights
                                     self._net.export(prefix, epoch=k_steps_best)
@@ -437,7 +422,7 @@ class TrainerAgent:
                                     + str(datetime.timedelta(seconds=round(time() - t_s)))
                                 )
 
-                                if self._log_metrics_to_tensorboard is True:
+                                if self._log_metrics_to_tensorboard:
                                     self.sum_writer.close()
 
                                 return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)

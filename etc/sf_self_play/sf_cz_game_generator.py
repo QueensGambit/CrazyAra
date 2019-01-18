@@ -21,7 +21,7 @@ import getpass
 import time
 import subprocess
 
-version = 1.2
+VERSION = 1.2
 
 # Fixed Settings
 # --------------
@@ -29,23 +29,18 @@ version = 1.2
 MAX_DEPTH = int(22)
 # average number of nodes per game
 NB_NODES = int(1e6)
-# use some ranom node counts per game for 20% +/- this would be
+# use some random node counts per game for 20% +/- this would be
 # 1e6  +/- 1e5
 RANDOM_FACTOR_NODES = 0.2
 
 # changeable settings
-def_hash = int(256)
-cutechess_cli_path = None
-threads = None
-sf_path = None
-opening_book_path = None
-pgnout_path = None
-variant = None
+DEF_HASH = int(256)
+CUTECHESS_PATH = THREADS = SF_PATH = OPENING_BOOK_PATH = PGN_PATH = VARIANT = None
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Sf self play game generator v%.1f" % version)
-
+def main():  # Too many local variables (20/15)
+    """Execute the SF self-play game generation"""
+    parser = argparse.ArgumentParser(description="Sf self play game generator v%.1f" % VERSION)
     username = getpass.getuser()
 
     # check for os
@@ -64,27 +59,22 @@ def main():
         type=str,
         help="cutechess executable path (default: %s)" % def_cutechess_cli,
     )
-
     parser.add_argument(
         "--sf_path", default=def_sf_path, type=str, help="cutechess executable path (default: %s)" % def_sf_path
     )
-
     parser.add_argument(
         "--opening_book_path",
         default="1k_cz_lichess_startpos.pgn",
         type=str,
         help="opening book path (default: 1k_cz_lichess_startpos.pgn",
     )
-
-    # create the output file based on the username
-    def_pgnout_path = "sf_vs_sf_" + username + ".pgn"
+    def_pgnout_path = "sf_vs_sf_" + username + ".pgn"  # create the output file based on the username
     parser.add_argument(
         "--pgnout_path",
         default=def_pgnout_path,
         type=str,
         help="filepath where the games will be stored (default: %s)" % def_pgnout_path,
     )
-
     parser.add_argument(
         "--threads",
         type=int,
@@ -92,9 +82,7 @@ def main():
         help="number of threads for generating games (default: %d number of cores-1 detected by python)"
         % max(multiprocessing.cpu_count() - 1, 1),
     )
-
-    parser.add_argument("--hash", type=int, default=def_hash, help="hash size in mb (default: %d)" % def_hash)
-
+    parser.add_argument("--hash", type=int, default=DEF_HASH, help="hash size in mb (default: %d)" % DEF_HASH)
     available_variants = "'3check': Three-check Chess\
                         '5check': Five-check Chess\
                         'atomic': Atomic Chess\
@@ -122,9 +110,7 @@ def main():
         type=str,
         help="define the chess variant (default: crazyhouse)" + available_variants,
     )
-
     args = parser.parse_args()
-
     nodes = []
 
     i = 0
@@ -133,17 +119,12 @@ def main():
         # use a random fixed number of nodes for white and black on every move
         random_nodes_white = NB_NODES * random.random() * RANDOM_FACTOR_NODES * random.choice([-1, 1])
         random_nodes_black = NB_NODES * random.random() * RANDOM_FACTOR_NODES * random.choice([-1, 1])
-
         current_nodes_white = int(NB_NODES + random_nodes_white)
         current_nodes_black = int(NB_NODES + random_nodes_black)
-
         nodes.append(current_nodes_white)
         nodes.append(current_nodes_white)
-
         sf_engine_cmd = []
-
-        t = time.localtime()
-
+        local_time = time.localtime()
         # description of the current game
         event = "Game %d - Nodes: %d-%d - Hash: %d - Threads: %d" % (
             i + 1,
@@ -182,13 +163,11 @@ def main():
         )
 
         cmd_str = args.cutechess_cli_path + sf_engine_cmd[0] + sf_engine_cmd[1] + game_cmd
-
-        # print the current game description
-        print("%s - %s - Threads: %d" % (time.asctime(t), event, args.threads))
-
-        # start the game with the cutechess-cli
-        p = subprocess.Popen(cmd_str, shell=True)
-        p.wait()
+        print(
+            "%s - %s - Threads: %d" % (time.asctime(local_time), event, args.threads)
+        )  # print the current game description
+        process_start = subprocess.Popen(cmd_str, shell=True)  # start the game with the cutechess-cli
+        process_start.wait()
         i += 1
 
 
