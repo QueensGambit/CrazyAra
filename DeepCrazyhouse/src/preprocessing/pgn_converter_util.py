@@ -20,9 +20,11 @@ def get_planes_from_pgn(params):
     Wrapper of the method get_planes_from_game() which loads a pgn first and then calls get_planes_from_game().
     This method is intended to be used for multiprocessing
     :param params: (pgn, game_idx, mv_hist_len, mate_in_one)
-    :return: game - game which corresponds to the given pgn-file
-             game_idx - id which describes the order of the games (first game starts with id=0)
-
+    :return: metadata: nd.array - Numpy array which contains string type meta information about the games
+             game_idx: int - id which describes the order of the games (first game starts with id=0)
+             x: nd.array - All boards of a game which corresponds to the given pgn-file
+             y_value: nd.array - Vector which describes the game outcome either [-1, 0, 1]
+             y_policy: nd.array - Numpy matrix defining the policy distribution for each board state
     """
     (pgn, game_idx, mate_in_one) = params
 

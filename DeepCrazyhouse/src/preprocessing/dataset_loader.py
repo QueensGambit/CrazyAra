@@ -18,7 +18,11 @@ def _load_dataset_file(dataset_filepath):
     """
     Loads a single dataset file give by its path
     :param dataset_filepath: path where the file is located
-    :return:
+    :return:starting_idx: [int] - List of indices where ech game starts
+            x: nd.array - Numpy array which contains the game positions
+            y_value: nd.array - Numpy array which describes the winner for each board position
+            y_policy: nd.array - Numpy array which describes the policy distribution for each board state
+                                 (in case of a pgn dataset the move is one hot encoded)
     """
     return get_numpy_arrays(zarr.group(store=zarr.ZipStore(dataset_filepath, mode="r")))
 

@@ -119,8 +119,6 @@ class CrazyAra:
             self.log_file.flush()
 
     def write_score_to_file(self, score: str):
-        # score_file = open(score_file_path, 'w')
-
         with open(self.score_file_path, "w") as selected_file:
             selected_file.seek(0)
             selected_file.write(score)
@@ -139,6 +137,7 @@ class CrazyAra:
         if self.setup_done is False:
             from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
             from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
+
             from DeepCrazyhouse.src.domain.agent.player.raw_net_agent import RawNetAgent
             from DeepCrazyhouse.src.domain.agent.player.mcts_agent import MCTSAgent
 
@@ -179,7 +178,6 @@ class CrazyAra:
             )
 
             self.gamestate = GameState()
-
             self.setup_done = True
 
     def validity_with_threads(self, optname: str):
@@ -317,7 +315,7 @@ class CrazyAra:
                 self.gamestate
             )
 
-        self.score = "score centipawn %d depth %d nodes %d time %d nps %d pv %s" % (
+        self.score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (
             centipawn,
             depth,
             nodes,
@@ -424,14 +422,14 @@ class CrazyAra:
 
     def set_options(self, cmd_list):
         """
-        Updates the internal options as requested by the use via the uci-protocol
+        Updates the internal options as requested by the use via the uci-protocoll
         An example call could be: "setoption name nb_threads value 1"
         :param cmd_list: List of received of commands
         :return:
         """
         # make sure there exists enough items in the given command list like "setoption name nb_threads value 1"
         if len(cmd_list) >= 5:
-            if cmd_list[1] != "name" or cmd_list[3] != "value":
+            if cmd_list[1] != 'name' or cmd_list[3] != 'value':
                 self.log_print("info string The given setoption command wasn't understood")
                 self.log_print('info string An example call could be: "setoption name threads value 4"')
             else:
@@ -441,26 +439,37 @@ class CrazyAra:
                     self.log_print("info string The given option %s wasn't found in the settings list" % option_name)
                 else:
 
-                    if option_name in [
-                        "UCI_Variant",
-                        "context",
-                        "use_raw_network",
-                        "extend_time_on_bad_position",
-                        "verbose",
-                        "check_mate_in_one",
-                        "use_pruning",
-                        "use_oscillating_cpuct",
-                        "use_time_management",
-                    ]:
+                    if option_name in ['UCI_Variant', 'context', 'use_raw_network',
+                                       'extend_time_on_bad_position', 'verbose', 'check_mate_in_one', 'use_pruning',
+                                       'use_oscillating_cpuct', 'use_time_management']:
 
                         value = cmd_list[4]
                     else:
                         value = int(cmd_list[4])
 
-                    for option in cmd_list:
-                        self.settings[option] = True
+                    if option_name == 'use_raw_network':
+                        self.settings['use_raw_network'] = True if value == 'true' else False
+                    elif option_name == 'extend_time_on_bad_position':
+                        self.settings['extend_time_on_bad_position'] = True if value == 'true' else False
+                    elif option_name == 'verbose':
+                        self.settings['verbose'] = True if value == 'true' else False
+                    elif option_name == 'check_mate_in_one':
+                        self.settings['check_mate_in_one'] = True if value == 'true' else False
+                    elif option_name == 'use_pruning':
+                        self.settings['use_pruning'] = True if value == 'true' else False
+                    elif option_name == 'use_oscillating_cpuct':
+                        self.settings['use_oscillating_cpuct'] = True if value == 'true' else False
+                    elif option_name == 'use_time_management':
+                        self.settings['use_time_management'] = True if value == 'true' else False
+                    else:
+                        # by default all options are treated as integers
+                        self.settings[option_name] = value
 
-                    self.log_print("info string Updated option %s to %s" % (option_name, value))
+                        # Guard threads limits
+                        if option_name == 'threads':
+                            self.settings[option_name] = min(4096, max(1, self.settings[option_name]))
+
+                    self.log_print('info string Updated option %s to %s' % (option_name, value))
 
     def adjust_moves_left(self, moves_left, tc_type, prev_bm_value):
         """
@@ -627,9 +636,10 @@ class CrazyAra:
                     else:
                         # give the user a message that the command was ignored
                         print("info string Unknown command: %s" % line)
-                except IOError:
+                except:  # all possible exceptions
                     # log the error message to the log-file and exit the script
-                    traceback.print_exc()
+                    traceback_text = traceback.format_exc()
+                    self.log_print(traceback_text)
 
 
 if __name__ == "__main__":
