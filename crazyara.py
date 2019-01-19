@@ -18,7 +18,9 @@ import numpy as np
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 
 
-class CrazyAra:
+class CrazyAra:  # Too many instance attributes (25/7)
+    """Main"""
+
     def __init__(self):
         enable_color_logging()
         # Constants
@@ -39,7 +41,7 @@ class CrazyAra:
         # enable this variable if you want to see debug messages in certain environments, like the lichess.org api
         self.enable_lichess_debug_msg = self.setup_done = False
         self.client = {"name": "CrazyAra", "version": "0.3.1", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
-        self.MCTS_agent = self.rawnet_agent = self.gamestate = self.bestmove_value = self.move_time = self.score = None
+        self.mcts_agent = self.rawnet_agent = self.gamestate = self.bestmove_value = self.move_time = self.score = None
         self.engine_played_move = 0
         self.log_file_path = "CrazyAra-log.txt"
         self.score_file_path = "score-log.txt"
@@ -104,27 +106,31 @@ class CrazyAra:
                    \_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.  
                           ASCII-Art: Joan G. Stark, Chappell, Burton                      """
 
+    @staticmethod
     def eprint(*args, **kwargs):
+        """ Wrapper of print() using stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
     def print_if_debug(self, string):
-        if self.enable_lichess_debug_msg is True:
+        """ Print lichess debug message on the log"""
+        if self.enable_lichess_debug_msg:
             self.eprint("[debug] " + string)
 
     def log_print(self, text: str):
+        """ Print all log messages on the log file"""
         print(text)
         self.print_if_debug(text)
-        if self.log_file:
-            self.log_file.write("< %s\n" % text)
-            self.log_file.flush()
+        self.log(text)
 
     def write_score_to_file(self, score: str):
+        """Send the score to score.txt"""
         with open(self.score_file_path, "w") as selected_file:
             selected_file.seek(0)
             selected_file.write(score)
             selected_file.truncate()
 
     def log(self, text: str):
+        """ Sends the text to the log file"""
         if self.log_file:
             self.log_file.write("> %s\n" % text)
             self.log_file.flush()
@@ -134,15 +140,13 @@ class CrazyAra:
         Load the libraries and the weights of the neural network
         :return:
         """
-        if self.setup_done is False:
+        if not self.setup_done:
             from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
             from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
-
             from DeepCrazyhouse.src.domain.agent.player.raw_net_agent import RawNetAgent
             from DeepCrazyhouse.src.domain.agent.player.mcts_agent import MCTSAgent
 
-            # check for valid parameter setup and do auto-corrections if possible
-            self.param_validity_check()
+            self.param_validity_check()  # check for valid parameter setup and do auto-corrections if possible
 
             nets = []
             for _ in range(self.settings["neural_net_services"]):
@@ -154,7 +158,7 @@ class CrazyAra:
                 temperature_moves=self.settings["temperature_moves"],
             )
 
-            self.MCTS_agent = MCTSAgent(
+            self.mcts_agent = MCTSAgent(
                 nets,
                 cpuct=self.settings["centi_cpuct"] / 100,
                 playouts_empty_pockets=self.settings["playouts_empty_pockets"],
@@ -215,22 +219,21 @@ class CrazyAra:
         self.validity_with_threads("batch_size")
         self.validity_with_threads("neural_net_services")
 
-    def perform_action(self, cmd_list):
+    def perform_action(self, cmd_list):  # Probably needs refactoring
         """
         Computes the 'best move' according to the engine and the given settings.
         After the search is done it will print out ' bestmove e2e4' for example on std-out.
         :return:
         """
-
+        # Too many local variables (21/15) - Too many branches (25/12) - Too many statements (71/50)
         movetime_ms = self.min_search_time
 
         if len(cmd_list) >= 5:
             if cmd_list[1] == "wtime" and cmd_list[3] == "btime":
-
                 wtime = int(cmd_list[2])
                 btime = int(cmd_list[4])
 
-                my_inc, winc, binc = 0, 0, 0
+                winc = binc = 0
                 if "winc" in cmd_list:
                     winc = int(cmd_list[6])
                 if "binc" in cmd_list:
@@ -277,33 +280,30 @@ class CrazyAra:
                         self.min_search_time,
                     )
 
-        # movetime in UCI protocol, go movetime x, search exactly x mseconds
+        # movetime in UCI protocol, go movetime x, search exactly x ms
         # UCI protocol: http://wbec-ridderkerk.nl/html/UCIProtocol.html
         elif len(cmd_list) == 3 and cmd_list[1] == "movetime":
             movetime_ms = max(int(cmd_list[2]) - self.settings["move_overhead_ms"], self.min_search_time)
 
-        self.MCTS_agent.update_movetime(movetime_ms)
+        self.mcts_agent.update_movetime(movetime_ms)
         self.log_print("info string Time for this move is %dms" % movetime_ms)
         self.log_print("info string Requested pos: %s" % self.gamestate)
 
         # assign search depth
         try:
             # we try to extract the search depth from the cmd list
-            depth_idx = cmd_list.index("depth") + 1
-            self.MCTS_agent.set_max_search_depth(int(cmd_list[depth_idx]))
-            # increase the movetime to maximum to make sure to reach the given depth
-            movetime_ms = self.max_search_time
-            self.MCTS_agent.update_movetime(movetime_ms)
+            self.mcts_agent.set_max_search_depth(int(cmd_list[cmd_list.index("depth") + 1]))
+            movetime_ms = self.max_search_time  # increase the movetime to maximum to make sure to reach the given depth
+            self.mcts_agent.update_movetime(movetime_ms)
         except ValueError:
-            # the given command wasn't found in the command list
-            pass
+            pass  # the given command wasn't found in the command list
 
         # disable noise for short move times
         if movetime_ms < 1000:
-            self.MCTS_agent.dirichlet_epsilon = 0.1
+            self.mcts_agent.dirichlet_epsilon = 0.1
         elif movetime_ms < 7000:
             # reduce noise for very short move times
-            self.MCTS_agent.dirichlet_epsilon = 0.2
+            self.mcts_agent.dirichlet_epsilon = 0.2
 
         if self.settings["use_raw_network"] or movetime_ms <= self.settings["threshold_time_for_raw_net_ms"]:
             self.log_print("info string Using raw network for fast mode...")
@@ -311,7 +311,7 @@ class CrazyAra:
                 self.gamestate
             )
         else:
-            value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.MCTS_agent.perform_action(
+            value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.mcts_agent.perform_action(
                 self.gamestate
             )
 
@@ -328,9 +328,8 @@ class CrazyAra:
                 self.write_score_to_file(self.score)
             except IOError:
                 traceback.print_exc()
-        # print out the search information
-        self.log_print("info %s" % self.score)
 
+        self.log_print("info %s" % self.score)  # print out the search information
         # Save the bestmove value [-1.0 to 1.0] to modify the next movetime
         self.bestmove_value = float(value)
         self.engine_played_move += 1
@@ -344,7 +343,7 @@ class CrazyAra:
 
         self.log_print("bestmove %s" % selected_move.uci())
 
-    def setup_gamestate(self, cmd_list):
+    def setup_gamestate(self, cmd_list):  # Too many branches (13/12)
         """
         Prepare the gamestate according to the user's wishes.
 
@@ -362,7 +361,6 @@ class CrazyAra:
                 mv_list = cmd_list[9:]
 
             # try to apply opponent last move to the board state
-
             if mv_list:
                 # the move the opponent just played is the last move in the list
                 opponent_last_move = chess.Move.from_uci(mv_list[-1])
@@ -395,7 +393,7 @@ class CrazyAra:
             if position_type == "fen":
                 fen = " ".join(cmd_list[2:8])
                 self.gamestate.set_fen(fen)
-                self.MCTS_agent.update_transposition_table((self.gamestate.get_transposition_key(),))
+                self.mcts_agent.update_transposition_table((self.gamestate.get_transposition_key(),))
                 # log_print("info string Added %s - count %d" % (gamestate.get_board_fen(),
                 #                                    mcts_agent.transposition_table[gamestate.get_transposition_key()]))
 
@@ -407,20 +405,20 @@ class CrazyAra:
         """
 
         self.gamestate.apply_move(selected_move)
-        self.MCTS_agent.update_transposition_table((self.gamestate.get_transposition_key(),))
+        self.mcts_agent.update_transposition_table((self.gamestate.get_transposition_key(),))
         # log_print("info string Added %s - count %d" % (gamestate.get_board_fen(),
         #                                               mcts_agent.transposition_table[
         #                                                   gamestate.get_transposition_key()]))
 
     def new_game(self):
-
+        """Group everything related to start the game"""
         self.log_print("info string >> New Game")
         self.gamestate.new_game()
-        self.MCTS_agent.transposition_table = collections.Counter()
-        self.MCTS_agent.time_buffer_ms = 0
-        self.MCTS_agent.dirichlet_epsilon = self.settings["centi_dirichlet_epsilon"] / 100
+        self.mcts_agent.transposition_table = collections.Counter()
+        self.mcts_agent.time_buffer_ms = 0
+        self.mcts_agent.dirichlet_epsilon = self.settings["centi_dirichlet_epsilon"] / 100
 
-    def set_options(self, cmd_list):
+    def set_options(self, cmd_list):  # Too many branches (16/12)
         """
         Updates the internal options as requested by the use via the uci-protocoll
         An example call could be: "setoption name nb_threads value 1"
@@ -429,7 +427,7 @@ class CrazyAra:
         """
         # make sure there exists enough items in the given command list like "setoption name nb_threads value 1"
         if len(cmd_list) >= 5:
-            if cmd_list[1] != 'name' or cmd_list[3] != 'value':
+            if cmd_list[1] != "name" or cmd_list[3] != "value":
                 self.log_print("info string The given setoption command wasn't understood")
                 self.log_print('info string An example call could be: "setoption name threads value 4"')
             else:
@@ -439,37 +437,43 @@ class CrazyAra:
                     self.log_print("info string The given option %s wasn't found in the settings list" % option_name)
                 else:
 
-                    if option_name in ['UCI_Variant', 'context', 'use_raw_network',
-                                       'extend_time_on_bad_position', 'verbose', 'check_mate_in_one', 'use_pruning',
-                                       'use_oscillating_cpuct', 'use_time_management']:
+                    if option_name in [
+                        "UCI_Variant",
+                        "context",
+                        "use_raw_network",
+                        "extend_time_on_bad_position",
+                        "verbose",
+                        "check_mate_in_one",
+                        "use_pruning",
+                        "use_oscillating_cpuct",
+                        "use_time_management",
+                    ]:
 
                         value = cmd_list[4]
                     else:
                         value = int(cmd_list[4])
 
-                    if option_name == 'use_raw_network':
-                        self.settings['use_raw_network'] = True if value == 'true' else False
-                    elif option_name == 'extend_time_on_bad_position':
-                        self.settings['extend_time_on_bad_position'] = True if value == 'true' else False
-                    elif option_name == 'verbose':
-                        self.settings['verbose'] = True if value == 'true' else False
-                    elif option_name == 'check_mate_in_one':
-                        self.settings['check_mate_in_one'] = True if value == 'true' else False
-                    elif option_name == 'use_pruning':
-                        self.settings['use_pruning'] = True if value == 'true' else False
-                    elif option_name == 'use_oscillating_cpuct':
-                        self.settings['use_oscillating_cpuct'] = True if value == 'true' else False
-                    elif option_name == 'use_time_management':
-                        self.settings['use_time_management'] = True if value == 'true' else False
+                    if option_name == "use_raw_network":
+                        self.settings["use_raw_network"] = True if value == "true" else False
+                    elif option_name == "extend_time_on_bad_position":
+                        self.settings["extend_time_on_bad_position"] = True if value == "true" else False
+                    elif option_name == "verbose":
+                        self.settings["verbose"] = True if value == "true" else False
+                    elif option_name == "check_mate_in_one":
+                        self.settings["check_mate_in_one"] = True if value == "true" else False
+                    elif option_name == "use_pruning":
+                        self.settings["use_pruning"] = True if value == "true" else False
+                    elif option_name == "use_oscillating_cpuct":
+                        self.settings["use_oscillating_cpuct"] = True if value == "true" else False
+                    elif option_name == "use_time_management":
+                        self.settings["use_time_management"] = True if value == "true" else False
                     else:
-                        # by default all options are treated as integers
-                        self.settings[option_name] = value
-
+                        self.settings[option_name] = value  # by default all options are treated as integers
                         # Guard threads limits
-                        if option_name == 'threads':
+                        if option_name == "threads":
                             self.settings[option_name] = min(4096, max(1, self.settings[option_name]))
 
-                    self.log_print('info string Updated option %s to %s' % (option_name, value))
+                    self.log_print("info string Updated option %s to %s" % (option_name, value))
 
     def adjust_moves_left(self, moves_left, tc_type, prev_bm_value):
         """
@@ -490,11 +494,7 @@ class CrazyAra:
             moves_left += self.moves_left_increment
 
         # Increase movetime by reducing the moves left if our prev bestmove value is below 0.0
-        elif (
-            self.settings["extend_time_on_bad_position"]
-            and prev_bm_value is not None
-            and prev_bm_value <= self.max_bad_pos_value
-        ):
+        elif self.settings["extend_time_on_bad_position"] and prev_bm_value and prev_bm_value <= self.max_bad_pos_value:
             if tc_type == "blitz":
                 # The more the bad position is, the more that we extend the search time
                 moves_left -= abs(prev_bm_value) * self.settings["moves_left"]
@@ -506,6 +506,7 @@ class CrazyAra:
         return moves_left
 
     def uci_reply(self):
+        """Group UCI log info's"""
         self.log_print("id name %s %s" % (self.client["name"], self.client["version"]))
         self.log_print("id author %s" % self.client["authors"])
         # tell the GUI all possible options
@@ -591,27 +592,20 @@ class CrazyAra:
             "option name verbose type check default %s" % ("false" if not self.settings["verbose"] else "true")
         )
 
-        # verify that all options have been sent
-        self.log_print("uciok")
-
-    # main waiting loop for processing command line inputs
+        self.log_print("uciok")  # verify that all options have been sent
 
     def main(self):
+        """ Main waiting loop for processing command line inputs"""
         self.eprint(self.intro)
         while True:
             line = input()
             self.print_if_debug("waiting ...")
             self.print_if_debug(line)
-
             # wait for an std-in input command
             if line:
-                # split the line to a list which makes parsing easier
-                cmd_list = line.rstrip().split(" ")
-                # extract the first command from the list for evaluation
-                main_cmd = cmd_list[0]
-
-                # write the given command to the log-file
-                self.log(line)
+                cmd_list = line.rstrip().split(" ")  # split the line to a list which makes parsing easier
+                main_cmd = cmd_list[0]  # extract the first command from the list for evaluation
+                self.log(line)  # write the given command to the log-file
 
                 try:
                     if main_cmd == "uci":
@@ -632,11 +626,10 @@ class CrazyAra:
                     elif main_cmd in ("quit", "exit"):
                         if self.log_file:
                             self.log_file.close()
-
                     else:
                         # give the user a message that the command was ignored
                         print("info string Unknown command: %s" % line)
-                except:  # all possible exceptions
+                except Exception:  # all possible exceptions
                     # log the error message to the log-file and exit the script
                     traceback_text = traceback.format_exc()
                     self.log_print(traceback_text)

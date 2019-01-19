@@ -74,7 +74,7 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-class TrainerAgent: # Probably needs refactoring
+class TrainerAgent:  # Probably needs refactoring
     """Main training loop"""
 
     def __init__(
@@ -203,7 +203,7 @@ class TrainerAgent: # Probably needs refactoring
             batch_proc_tmp += 1
         return batch_proc_tmp, self._metrics["value_loss"].get()[1]
 
-    def train(self): # Probably needs refactoring
+    def train(self):  # Probably needs refactoring
         """ Training model"""
         # Too many local variables (44/15) - Too many branches (18/12) - Too many statements (108/50)
         # set a custom seed for reproducibility
@@ -212,11 +212,11 @@ class TrainerAgent: # Probably needs refactoring
         t_s = time()
         # predefine the local variables that will be used in the training loop
         val_loss_best = val_p_acc_best = k_steps_best = old_label = value_out = None
-        patience_cnt = epoch = batch_proc_tmp = 0 # track on how many batches have been processed in this epoch
-        k_steps = self._k_steps_initial # counter for thousands steps
+        patience_cnt = epoch = batch_proc_tmp = 0  # track on how many batches have been processed in this epoch
+        k_steps = self._k_steps_initial  # counter for thousands steps
         # calculate how many log states will be processed
         k_steps_end = self._total_it / self._batch_steps
-        cur_it = nb_spikes = 0 # count the number of spikes that have been detected
+        cur_it = nb_spikes = 0  # count the number of spikes that have been detected
         # initialize the loss to compare with, with a very high value
         old_val_loss = 9000
         # self._lr = self._lr_warmup_init
@@ -227,12 +227,12 @@ class TrainerAgent: # Probably needs refactoring
         # self._trainer.set_learning_rate(self._lr)
         # log the current learning rate
         # self.sw.add_scalar(tag='lr', value=self._lr, global_step=k_steps)
-        graph_exported = False # create a state variable to check if the net architecture has been reported yet
+        graph_exported = False  # create a state variable to check if the net architecture has been reported yet
 
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
-        while True: # Too many nested blocks (7/5)
+        while True:  # Too many nested blocks (7/5)
             # reshuffle the ordering of the training game batches (shuffle works in place)
             random.shuffle(self.ordering)
 
