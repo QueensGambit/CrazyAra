@@ -34,7 +34,9 @@ from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs
 
 
 DTYPE = np.float
-
+DRAW = 0.5 # 0
+WIN = 1 # 1
+LOST = 0  # -1
 
 def profile(fnc):
     """
@@ -285,7 +287,9 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             )
 
         # define the remaining return variables
-        centipawns = value_to_centipawn(value)
+        # centipawns = value_to_centipawn(value)
+        centipawns = value_to_centipawn(value * 2 - 1)
+
         depth = max_depth_reached
         nodes = node_searched
         time_elapsed_s = time_e * 1000
@@ -344,7 +348,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             is_leaf = False  # initialize is_leaf by default to false
             # we don't need to check for is_lost() because the game is already over
             if state.is_won():  # check if the current player has won the game
-                value = -1
+                value = LOST
                 is_leaf = True
                 legal_moves_child = []
                 p_vec_small_child = None
@@ -353,7 +357,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 self.can_claim_threefold_repetition(state.get_transposition_key(), [0])
                 or state.get_pythonchess_board().can_claim_fifty_moves()
             ):
-                value = 0
+                value = DRAW
                 is_leaf = True
                 legal_moves_child = []
                 p_vec_small_child = None
@@ -615,7 +619,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                         is_won = True
 
                 if is_won:
-                    value = -1
+                    value = LOST
                     is_leaf = True
                     legal_moves = []
                     p_vec_small = None
@@ -628,7 +632,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     or state.get_pythonchess_board().can_claim_fifty_moves() is True
                 ):
                     # raise Exception('Threefold!')
-                    value = 0
+                    value = DRAW
                     is_leaf = True
                     legal_moves = []
                     p_vec_small = None
@@ -657,11 +661,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 if depth == 1:
                     # disable uncertain moves from being visited by giving them a very bad score
                     if not is_leaf and self.use_pruning:
-                        if self.root_node_prior_policy[child_idx] < 1e-3 and value * -1 < self.root_node.initial_value:
+                        if self.root_node_prior_policy[child_idx] < 1e-3 and (1-value) < self.root_node.initial_value:
                             with parent_node.lock:
-                                value = 99
+                                value = 0  # 99
+                                # logging.info("locked node!!!")
+                                parent_node.action_value[child_idx] = -9999
 
-                    if parent_node.initial_value > 0.65:  # and state.are_pocket_empty(): #and pipe_id == 0:
+                    if parent_node.initial_value > (0.65 + 1) / 2:  # and state.are_pocket_empty(): #and pipe_id == 0:
                         fac = 0.25  # test of adding dirichlet noise to a new node
 
                         if len(parent_node.legal_moves) < 20:
@@ -670,7 +676,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                             epsilon=self.dirichlet_epsilon * fac, alpha=self.dirichlet_alpha
                         )
 
-                    if value < 0:
+                    if value < 0.5: #0:
                         # test of adding dirichlet noise to a new node
                         new_node.apply_dirichlet_noise_to_prior_policy(
                             epsilon=self.dirichlet_epsilon * 0.02, alpha=self.dirichlet_alpha
@@ -687,9 +693,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             # get the value from the leaf node (the current function is called recursively)
             value, depth, chosen_nodes = self._run_single_playout(state, node, pipe_id, depth + 1, chosen_nodes)
         # revert the virtual loss and apply the predicted value by the network to the node
-        parent_node.revert_virtual_loss_and_update(child_idx, self.virtual_loss, -value)
+        parent_node.revert_virtual_loss_and_update(child_idx, self.virtual_loss, 1-value)
         # invert the value prediction for the parent of the above node layer because the player's changes every turn
-        return -value, depth, chosen_nodes
+
+        #if value < 0 or value > 1:
+        #    raise Exception("value = %.3f" % value)
+
+        return 1-value, depth, chosen_nodes
 
     def check_for_duplicate(self, transposition_key, chosen_nodes):
         """
@@ -750,7 +760,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             # find the move according to the q- and u-values for each move
             if not self.use_oscillating_cpuct:
                 pb_c_base = 19652
-                pb_c_init = self.cpuct
+                pb_c_init = 1.25  # self.cpuct
 
                 cpuct = math.log((parent_node.n_sum + pb_c_base + 1) / pb_c_base) + pb_c_init
             else:
