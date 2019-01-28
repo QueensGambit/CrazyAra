@@ -267,6 +267,16 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # receive the policy vector based on the MCTS search
         p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
 
+        # use q-future value to update the q-values of direct child nodes
+        q_future, indices = self.get_last_q_values(min_nb_visits=5)
+        # self.root_node.q_value = 0.5 * self.root_node.q_value + 0.5 * q_future
+        # TODO: make this matrix vector form
+        if max_depth_reached >= 5:
+            for idx in indices:
+                self.root_node.q_value[idx] = min(self.root_node.q_value[idx], q_future[idx])
+
+            p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
+
         # if self.use_pruning is False:
         self.node_lookup[key] = self.root_node  # store the current root in the lookup table
         best_child_idx = p_vec_small.argmax()  # select the q-value according to the mcts best child value
@@ -649,7 +659,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 else:
                     str_legal_moves = ""
                 # clip the visit nodes for all nodes in the search tree except the director opp. move
-                clip_low_visit = self.use_pruning and depth != 1
+                clip_low_visit = self.use_pruning and depth != 1 # and depth > 4
                 new_node = Node(
                     value, p_vec_small, legal_moves, str_legal_moves, is_leaf, transposition_key, clip_low_visit
                 )  # create a new node
@@ -800,11 +810,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             return self.root_node.child_number_visits.min()
         return np.sort(self.root_node.child_number_visits)[-xth_node]
 
-    def get_last_q_values(self):
+    def get_last_q_values(self, min_nb_visits=5):
         """
         Returns the values of the last node in the calculated lines according to the mcts search for the most
          visited nodes
-        :return:
+        :param min_nb_visits: Integer defining how deep the tree will be traversed to return the final q-value
+        :return: q_future - q-values for the most visited nodes when going deeper in the tree
+                indices - indices of the evaluated child nodes
         """
 
         q_future = np.zeros(self.root_node.nb_direct_child_nodes)
@@ -818,7 +830,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 final_node = node
                 move = self.root_node.legal_moves[i]
 
-                while node and not node.is_leaf and node.n_sum > 3:
+                while node and not node.is_leaf and node.n_sum >= min_nb_visits:
                     final_node = node
                     print(move.uci() + " ", end="")
                     node, move, _, _ = self._select_node_based_on_mcts_policy(node)
