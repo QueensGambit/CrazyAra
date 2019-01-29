@@ -421,7 +421,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         else:
             time_checked = time_checked_early = True
 
-        consistent_check = False
+        consistent_check = True  # False
         consistent_check_playouts = 2048
 
         while (
@@ -810,19 +810,23 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             return self.root_node.child_number_visits.min()
         return np.sort(self.root_node.child_number_visits)[-xth_node]
 
-    def get_last_q_values(self, min_nb_visits=5):
+    def get_last_q_values(self, min_nb_visits=5, max_depth=7):
         """
         Returns the values of the last node in the calculated lines according to the mcts search for the most
          visited nodes
         :param min_nb_visits: Integer defining how deep the tree will be traversed to return the final q-value
         :return: q_future - q-values for the most visited nodes when going deeper in the tree
                 indices - indices of the evaluated child nodes
+                max_depth - maximum depth to reach for evaluating the q-values.
+                 This avoids that very deep q-values are assigned to the original q-value which might have very
+                 low actual correspondance
         """
 
         q_future = np.zeros(self.root_node.nb_direct_child_nodes)
         indices = []
 
         for i in range(self.root_node.nb_direct_child_nodes):
+            depth = 1
             if self.root_node.child_number_visits[i] >= self.root_node.child_number_visits.max() * 0.33:
                 node = self.root_node.child_nodes[i]
                 print(self.root_node.legal_moves[i].uci(), end=" ")
@@ -830,17 +834,19 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 final_node = node
                 move = self.root_node.legal_moves[i]
 
-                while node and not node.is_leaf and node.n_sum >= min_nb_visits:
+                while node and not node.is_leaf and node.n_sum >= min_nb_visits and depth <= max_depth:
                     final_node = node
                     print(move.uci() + " ", end="")
                     node, move, _, _ = self._select_node_based_on_mcts_policy(node)
                     turn *= -1
+                    depth += 1
 
                 if final_node:
                     q_future[i] = final_node.initial_value
                     indices.append(i)
                     q_future[i] *= turn
                 print(q_future[i])
+
         return q_future, indices
 
     def get_calculated_line(self):
