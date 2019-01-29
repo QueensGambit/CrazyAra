@@ -814,12 +814,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         """
         Returns the values of the last node in the calculated lines according to the mcts search for the most
          visited nodes
+        :param max_depth : maximum depth to reach for evaluating the q-values.
+                 This avoids that very deep q-values are assigned to the original q-value which might have very
+                 low actual correspondence
         :param min_nb_visits: Integer defining how deep the tree will be traversed to return the final q-value
         :return: q_future - q-values for the most visited nodes when going deeper in the tree
                 indices - indices of the evaluated child nodes
-                max_depth - maximum depth to reach for evaluating the q-values.
-                 This avoids that very deep q-values are assigned to the original q-value which might have very
-                 low actual correspondance
+
         """
 
         q_future = np.zeros(self.root_node.nb_direct_child_nodes)
