@@ -62,7 +62,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "max_search_depth": 40,
             "centi_temperature": 7,
             "temperature_moves": 0,
-            "opening_guard_moves": 7,
+            "opening_guard_moves": 0,
             "centi_clip_quantil": 0,
             "virtual_loss": 3,
             "centi_q_value_weight": 70,
