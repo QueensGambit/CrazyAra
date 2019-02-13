@@ -56,11 +56,11 @@ class GameState(AbsGameState):
 
     def get_legal_moves(self):
         """ Returns the legal moves based on current board state"""
-        # return list(self.board.legal_moves)
-        legal_moves = []
-        for move in self.board.generate_legal_moves():
-            legal_moves.append(move)
-        return legal_moves
+        return [*self.board.legal_moves]  # is same as list(self.board.legal_moves)
+        # legal_moves = []
+        # for move in self.board.generate_legal_moves():
+        #     legal_moves.append(move)
+        # return legal_moves
 
     def is_white_to_move(self):
         """ Returns true if its whites turn"""
