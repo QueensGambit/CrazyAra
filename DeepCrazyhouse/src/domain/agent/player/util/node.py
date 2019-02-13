@@ -104,7 +104,10 @@ class Node:  # Too many instance attributes (14/7)
                 value[value < 0] = 0
                 # re-normalize to 1
                 visit /= visit.sum()
-                value /= value.sum()
+                if value.max() > 0:
+                    # make sure not to divide by 0
+                    value /= value.sum()
+
                 policy = (1 - q_value_weight) * visit + q_value_weight * value
                 return policy / sum(policy)
             return visit

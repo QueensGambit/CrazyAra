@@ -23,7 +23,11 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from multiprocessing import Pipe
 from time import time
+from weakref import finalize
+
 import numpy as np
+from gevent.ares import channel
+
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.agent.player.util.net_pred_service import NetPredService
@@ -253,6 +257,10 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             if self.root_node is None:
                 # conduct all necessary steps for fastest way out
                 self._expand_root_node_single_move(state, legal_moves)
+
+            # increase the move time buffer
+            # substract half a second as a constant for possible delay
+            self.time_buffer_ms += max(self.movetime_ms - 500, 0)
         else:
             if self.root_node is None:
                 self._expand_root_node_multiple_moves(state, legal_moves)  # run a single expansion on the root node
@@ -270,7 +278,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
 
         # use q-future value to update the q-values of direct child nodes
-        q_future, indices = self.get_last_q_values(min_nb_visits=5)
+        q_future, indices = self.get_last_q_values(min_nb_visits=5, max_depth=25) #25)
         # self.root_node.q_value = 0.5 * self.root_node.q_value + 0.5 * q_future
         # TODO: make this matrix vector form
         if max_depth_reached >= 5:
@@ -425,9 +433,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         else:
             time_checked = time_checked_early = True
 
-        consistent_check = True  # False
-        consistent_check_playouts = 2048
-
         while (
             max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and t_elapsed_ms < self.movetime_ms
         ):  # and np.abs(self.root_node.q_value.mean()) < 0.99:
@@ -494,20 +499,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     break
                 else:
                     time_checked_early = True
-
-            if (
-                not consistent_check
-                and cur_playouts > consistent_check_playouts
-                and self.root_node_prior_policy.max()
-                > np.partition(self.root_node_prior_policy.flatten(), -2)[-2] + 0.3
-            ):
-                print("Consistency check")
-                if self.root_node.get_mcts_policy(self.q_value_weight).argmax() == self.root_node_prior_policy.argmax():
-                    self.time_buffer_ms += (self.movetime_ms - t_elapsed_ms) * 0.9
-                    print("info early break up")
-                    break
-                else:
-                    consistent_check = True
 
             if (
                 self.time_buffer_ms > 2500
@@ -820,7 +811,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             return self.root_node.child_number_visits.min()
         return np.sort(self.root_node.child_number_visits)[-xth_node]
 
-    def get_last_q_values(self, min_nb_visits=5, max_depth=7):
+    def get_last_q_values(self, min_nb_visits=5, max_depth=25):
         """
         Returns the values of the last node in the calculated lines according to the mcts search for the most
          visited nodes
@@ -835,27 +826,28 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         q_future = np.zeros(self.root_node.nb_direct_child_nodes)
         indices = []
 
-        for i in range(self.root_node.nb_direct_child_nodes):
+        for idx in range(self.root_node.nb_direct_child_nodes):
             depth = 1
-            if self.root_node.child_number_visits[i] >= self.root_node.child_number_visits.max() * 0.33:
-                node = self.root_node.child_nodes[i]
-                print(self.root_node.legal_moves[i].uci(), end=" ")
-                turn = 1
-                final_node = node
-                move = self.root_node.legal_moves[i]
+            if self.root_node.child_number_visits[idx] >= self.root_node.child_number_visits.max() * 0.33:
+                node = self.root_node.child_nodes[idx]
+                final_node = self.root_node
+                move = self.root_node.legal_moves[idx]
+                child_idx = idx
 
                 while node and not node.is_leaf and node.n_sum >= min_nb_visits and depth <= max_depth:
                     final_node = node
                     print(move.uci() + " ", end="")
-                    node, move, _, _ = self._select_node_based_on_mcts_policy(node)
-                    turn *= -1
+                    node, move, _, child_idx = self._select_node_based_on_mcts_policy(node)
                     depth += 1
 
                 if final_node:
-                    q_future[i] = final_node.initial_value
-                    indices.append(i)
-                    q_future[i] *= turn
-                print(q_future[i])
+                    q_future[idx] = final_node.q_value[child_idx]
+                    indices.append(idx)
+                    # invert the value prediction for an odd depth number
+                    if depth % 2 == 0:
+                        q_future[idx] *= -1
+
+                print(q_future[idx])
 
         return q_future, indices
 
