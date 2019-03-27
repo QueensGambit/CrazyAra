@@ -23,7 +23,11 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from multiprocessing import Pipe
 from time import time
+from weakref import finalize
+
 import numpy as np
+from gevent.ares import channel
+
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.agent.player.util.net_pred_service import NetPredService
@@ -31,7 +35,6 @@ from DeepCrazyhouse.src.domain.agent.player.util.node import Node
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
 from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
-
 
 DTYPE = np.float
 
@@ -251,6 +254,10 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             if self.root_node is None:
                 # conduct all necessary steps for fastest way out
                 self._expand_root_node_single_move(state, legal_moves)
+
+            # increase the move time buffer
+            # substract half a second as a constant for possible delay
+            self.time_buffer_ms += max(self.movetime_ms - 500, 0)
         else:
             if self.root_node is None:
                 self._expand_root_node_multiple_moves(state, legal_moves)  # run a single expansion on the root node
@@ -268,7 +275,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
 
         # use q-future value to update the q-values of direct child nodes
-        q_future, indices = self.get_last_q_values(min_nb_visits=5)
+        q_future, indices = self.get_last_q_values(min_nb_visits=5, max_depth=25) #25)
         # self.root_node.q_value = 0.5 * self.root_node.q_value + 0.5 * q_future
         # TODO: make this matrix vector form
         if max_depth_reached >= 5:
@@ -331,8 +338,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             str_legal_moves = str(state.get_legal_moves())
         else:
             str_legal_moves = ""
+
+        # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
+
         # create a new root node
-        self.root_node = Node(value, p_vec_small, legal_moves, str_legal_moves, is_leaf, clip_low_visit=False)
+        self.root_node = Node(state.get_pythonchess_board(),
+                              value, p_vec_small, legal_moves, str_legal_moves, is_leaf, clip_low_visit=False) #,
+                              # check_mv_mask=check_move_mask)
 
     def _expand_root_node_single_move(self, state, legal_moves):
         """
@@ -345,8 +357,12 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # request the value prediction for the current position
         [value, _] = self.nets[0].predict_single(state.get_state_planes())
         p_vec_small = np.array([1], np.float32)  # we can create the move probability vector without the NN this time
+
+        # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
+
         # create a new root node
-        self.root_node = Node(value, p_vec_small, legal_moves, str(state.get_legal_moves()), clip_low_visit=False)
+        self.root_node = Node(state.get_pythonchess_board(), value, p_vec_small, legal_moves,
+                              str(state.get_legal_moves()), clip_low_visit=False) #, check_mv_mask=check_move_mask)
 
         if self.root_node.child_nodes[0] is None:  # check a child node if it doesn't exists already
             state_child = deepcopy(state)
@@ -375,8 +391,12 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 p_vec_small_child = get_probs_of_move_list(
                     policy_vec, legal_moves_child, state_child.is_white_to_move()
                 )
+
+            # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
+
             # create a new child node
-            child_node = Node(value, p_vec_small_child, legal_moves_child, str(state_child.get_legal_moves()), is_leaf)
+            child_node = Node(state.get_pythonchess_board(), value, p_vec_small_child, legal_moves_child,
+                              str(state_child.get_legal_moves()), is_leaf) #, check_move_mask)
             self.root_node.child_nodes[0] = child_node  # connect the child to the root
             # assign the value of the root node as the q-value for the child
             # here we must invert the invert the value because it's the value prediction of the next state
@@ -421,9 +441,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         else:
             time_checked = time_checked_early = True
 
-        consistent_check = True  # False
-        consistent_check_playouts = 2048
-
         while (
             max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and t_elapsed_ms < self.movetime_ms
         ):  # and np.abs(self.root_node.q_value.mean()) < 0.99:
@@ -446,7 +463,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     futures.append(
                         executor.submit(
                             self._run_single_playout,
-                            state=state,
                             parent_node=self.root_node,
                             pipe_id=i,
                             depth=1,
@@ -492,20 +508,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     time_checked_early = True
 
             if (
-                not consistent_check
-                and cur_playouts > consistent_check_playouts
-                and self.root_node_prior_policy.max()
-                > np.partition(self.root_node_prior_policy.flatten(), -2)[-2] + 0.3
-            ):
-                print("Consistency check")
-                if self.root_node.get_mcts_policy(self.q_value_weight).argmax() == self.root_node_prior_policy.argmax():
-                    self.time_buffer_ms += (self.movetime_ms - t_elapsed_ms) * 0.9
-                    print("info early break up")
-                    break
-                else:
-                    consistent_check = True
-
-            if (
                 self.time_buffer_ms > 2500
                 and not time_checked
                 and t_elapsed_ms > self.movetime_ms * 0.9
@@ -538,7 +540,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # create a deepcopy of the state in order not to change the given input parameter
         return super().perform_action(deepcopy(state_in))
 
-    def _run_single_playout(self, state: GameState, parent_node: Node, pipe_id=0, depth=1, chosen_nodes=None):
+    def _run_single_playout(self, parent_node: Node, pipe_id=0, depth=1, chosen_nodes=None):
         """
         This function works recursively until a leaf or terminal node is reached.
         It ends by back-propagating the value of the new expanded node or by propagating the value of a terminal state.
@@ -568,14 +570,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # the effect of virtual loss will be undone if the playout is over
         parent_node.apply_virtual_loss_to_child(child_idx, self.virtual_loss)
 
-        if depth == 1:
-            state = GameState(deepcopy(state.get_pythonchess_board()))
-
-        state.apply_move(move)  # apply the selected move on the board
         # append the selected move to the move list
         chosen_nodes.append(child_idx)  # append the chosen child idx to the chosen_nodes list
 
         if node is None:
+            state = GameState(deepcopy(parent_node.board))  # get the board from the parent node
+            state.apply_move(move)  # apply the selected move on the board
+
             # get the transposition-key which is used as an identifier for the board positions in the look-up table
             transposition_key = state.get_transposition_key()
             # check if the addressed fen exist in the look-up table
@@ -661,7 +662,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 # clip the visit nodes for all nodes in the search tree except the director opp. move
                 clip_low_visit = self.use_pruning and depth != 1 # and depth > 4
                 new_node = Node(
-                    value, p_vec_small, legal_moves, str_legal_moves, is_leaf, transposition_key, clip_low_visit
+                    state.get_pythonchess_board(), value, p_vec_small, legal_moves, str_legal_moves, is_leaf,
+                    transposition_key, clip_low_visit
                 )  # create a new node
 
                 if depth == 1:
@@ -695,7 +697,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             value = node.initial_value
         else:
             # get the value from the leaf node (the current function is called recursively)
-            value, depth, chosen_nodes = self._run_single_playout(state, node, pipe_id, depth + 1, chosen_nodes)
+            value, depth, chosen_nodes = self._run_single_playout(node, pipe_id, depth + 1, chosen_nodes)
         # revert the virtual loss and apply the predicted value by the network to the node
         parent_node.revert_virtual_loss_and_update(child_idx, self.virtual_loss, -value)
         # invert the value prediction for the parent of the above node layer because the player's changes every turn
@@ -770,6 +772,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             u_value = (
                 cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_number_visits))
             )
+
             child_idx = (parent_node.q_value + u_value).argmax()
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
 
@@ -810,7 +813,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             return self.root_node.child_number_visits.min()
         return np.sort(self.root_node.child_number_visits)[-xth_node]
 
-    def get_last_q_values(self, min_nb_visits=5, max_depth=7):
+    def get_last_q_values(self, min_nb_visits=5, max_depth=25):
         """
         Returns the values of the last node in the calculated lines according to the mcts search for the most
          visited nodes
@@ -826,27 +829,28 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         q_future = np.zeros(self.root_node.nb_direct_child_nodes)
         indices = []
 
-        for i in range(self.root_node.nb_direct_child_nodes):
+        for idx in range(self.root_node.nb_direct_child_nodes):
             depth = 1
-            if self.root_node.child_number_visits[i] >= self.root_node.child_number_visits.max() * 0.33:
-                node = self.root_node.child_nodes[i]
-                print(self.root_node.legal_moves[i].uci(), end=" ")
-                turn = 1
-                final_node = node
-                move = self.root_node.legal_moves[i]
+            if self.root_node.child_number_visits[idx] >= self.root_node.child_number_visits.max() * 0.33:
+                node = self.root_node.child_nodes[idx]
+                final_node = self.root_node
+                move = self.root_node.legal_moves[idx]
+                child_idx = idx
 
                 while node and not node.is_leaf and node.n_sum >= min_nb_visits and depth <= max_depth:
                     final_node = node
                     print(move.uci() + " ", end="")
-                    node, move, _, _ = self._select_node_based_on_mcts_policy(node)
-                    turn *= -1
+                    node, move, _, child_idx = self._select_node_based_on_mcts_policy(node)
                     depth += 1
 
                 if final_node:
-                    q_future[i] = final_node.initial_value
-                    indices.append(i)
-                    q_future[i] *= turn
-                print(q_future[i])
+                    q_future[idx] = final_node.q_value[child_idx]
+                    indices.append(idx)
+                    # invert the value prediction for an odd depth number
+                    if depth % 2 == 0:
+                        q_future[idx] *= -1
+
+                print(q_future[idx])
 
         return q_future, indices
 

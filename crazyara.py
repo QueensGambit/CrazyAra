@@ -40,7 +40,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
         self.random_mv_time_portion = 0.1
         # enable this variable if you want to see debug messages in certain environments, like the lichess.org api
         self.enable_lichess_debug_msg = self.setup_done = False
-        self.client = {"name": "CrazyAra", "version": "0.3.1", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
+        self.client = {"name": "CrazyAra", "version": "0.4.0", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
         self.mcts_agent = self.rawnet_agent = self.gamestate = self.bestmove_value = self.move_time = self.score = None
         self.engine_played_move = 0
         self.log_file_path = "CrazyAra-log.txt"
@@ -49,7 +49,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "UCI_Variant": "crazyhouse",
             # set the context in which the neural networks calculation will be done
             # choose 'gpu' using the settings if there is one available
-            "context": "cpu",
+            "context": "gpu",
             "use_raw_network": False,
             "threads": 16,
             "batch_size": 8,
@@ -62,7 +62,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "max_search_depth": 40,
             "centi_temperature": 7,
             "temperature_moves": 0,
-            "opening_guard_moves": 0,
+            "opening_guard_moves": 7,
             "centi_clip_quantil": 0,
             "virtual_loss": 3,
             "centi_q_value_weight": 70,
@@ -85,26 +85,26 @@ class CrazyAra:  # Too many instance attributes (25/7)
             print("info string An error occurred while trying to open the self.log_file %s" % self.log_file_path)
             traceback.print_exc()
 
-        self.intro = """
-                                              _                                           
-                               _..           /   ._   _.  _        /\   ._   _.           
-                             .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|           
-                            /  /e)-,\                         /                           
-                           /  |  ,_ |                    __    __    __    __             
-                          /   '-(-.)/          bw     8 /__////__////__////__////         
-                        .'--.   \  `                 7 ////__////__////__////__/          
-                       /    `\   |                  6 /__////__////__////__////           
-                     /`       |  / /`\.-.          5 ////__////__////__////__/            
-                   .'        ;  /  \_/__/         4 /__////__////__////__////             
-                 .'`-'_     /_.'))).-` \         3 ////__////__////__////__/              
-                / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////        
-               (__.'/   /` .'`                 1 ////__////__////__////__/                
-                (_.'/ /` /`                       a  b  c  d  e  f  g  h                  
-                  _|.' /`                                                                 
-            jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          
-                .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              
-                   \_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.  
-                          ASCII-Art: Joan G. Stark, Chappell, Burton                      """
+        self.intro = """\
+                                  _                                           
+                   _..           /   ._   _.  _        /\   ._   _.           
+                 .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|           
+                /  /e)-,\                         /                           
+               /  |  ,_ |                    __    __    __    __             
+              /   '-(-.)/          bw     8 /__////__////__////__////         
+            .'--.   \  `                 7 ////__////__////__////__/          
+           /    `\   |                  6 /__////__////__////__////           
+         /`       |  / /`\.-.          5 ////__////__////__////__/            
+       .'        ;  /  \_/__/         4 /__////__////__////__////             
+     .'`-'_     /_.'))).-` \         3 ////__////__////__////__/              
+    / -'_.'---;`'-))).-'`\_/        2 /__////__////__////__////        
+   (__.'/   /` .'`                 1 ////__////__////__////__/                
+    (_.'/ /` /`                       a  b  c  d  e  f  g  h                  
+      _|.' /`                                                                 
+jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          
+    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              
+       \_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.  
+              ASCII-Art: Joan G. Stark, Chappell, Burton                      """
 
     @staticmethod
     def eprint(*args, **kwargs):
@@ -626,13 +626,16 @@ class CrazyAra:  # Too many instance attributes (25/7)
                     elif main_cmd in ("quit", "exit"):
                         if self.log_file:
                             self.log_file.close()
+                        return 0
                     else:
                         # give the user a message that the command was ignored
                         print("info string Unknown command: %s" % line)
                 except Exception:  # all possible exceptions
                     # log the error message to the log-file and exit the script
                     traceback_text = traceback.format_exc()
+                    #if main_cmd not in ("quit", "exit"):
                     self.log_print(traceback_text)
+                    return -1
 
 
 if __name__ == "__main__":

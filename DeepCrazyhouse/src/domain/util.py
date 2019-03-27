@@ -8,6 +8,8 @@ Utility functions which are use by the converter scripts
 """
 
 import numpy as np
+import copy
+
 from DeepCrazyhouse.src.domain.crazyhouse.constants import (
     BOARD_HEIGHT,
     BOARD_WIDTH,
@@ -202,3 +204,23 @@ def multi_axis_by_vec(mat, vec, axis=0):
     # Reshape b with dim_array and perform element-wise multiplication with
     # broadcasting along the singleton dimensions for the final output
     return mat * vec.reshape(dim_array)
+
+
+def get_check_move_mask(board, legal_moves):
+    """
+    Returns a binary mask indicating the checking moves marked with True
+    :param board: Python chess both
+    :param legal_moves: list of legal moves
+    :return: np-boolean array markin the checking moves
+    """
+
+    check_move_mask = np.zeros(len(legal_moves))
+
+    for idx, move in enumerate(legal_moves):
+        board_tmp = copy.deepcopy(board)
+        board_tmp.push(move)
+        if board_tmp.is_check():
+            # print(board_tmp.fen())
+            # print(move)
+            check_move_mask[idx] = 1
+    return np.logical_and(check_move_mask, True)

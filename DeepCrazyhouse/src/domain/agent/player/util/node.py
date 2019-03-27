@@ -20,6 +20,7 @@ class Node:  # Too many instance attributes (14/7)
 
     def __init__(
         self,
+        board: chess.BaseBoard,
         value,
         p_vec_small: np.ndarray,
         legal_moves: [chess.Move],
@@ -30,13 +31,14 @@ class Node:  # Too many instance attributes (14/7)
     ):  # Too many arguments (8/5)
 
         self.lock = Lock()  # lock object for this node to protect its member variables
+        self.board = board  # python-chess board object representing the current position
         self.initial_value = value  # store the initial value prediction of the current board position
 
         if is_leaf:
             self.nb_direct_child_nodes = 0
         else:
             # specify the number of direct child nodes from this node
-            self.nb_direct_child_nodes = np.array(len(p_vec_small))
+            self.nb_direct_child_nodes = len(p_vec_small)  # np.array(len(p_vec_small))
 
         self.policy_prob = p_vec_small  # prior probability selecting each child, which is estimated by the NN
         self.legal_moves = legal_moves  # possible legal moves from this node on which represents the edges
@@ -49,7 +51,7 @@ class Node:  # Too many instance attributes (14/7)
         # q: combined action value which is calculated by the averaging over all action values
         # u: exploration metric for each child node
         # (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-        # self.q = np.zeros(self.nb_direct_child_nodes)
+        #self.q_value = np.zeros(self.nb_direct_child_nodes)
         self.q_value = np.ones(self.nb_direct_child_nodes) * -1
 
         if not is_leaf:
@@ -102,7 +104,10 @@ class Node:  # Too many instance attributes (14/7)
                 value[value < 0] = 0
                 # re-normalize to 1
                 visit /= visit.sum()
-                value /= value.sum()
+                if value.max() > 0:
+                    # make sure not to divide by 0
+                    value /= value.sum()
+
                 policy = (1 - q_value_weight) * visit + q_value_weight * value
                 return policy / sum(policy)
             return visit
