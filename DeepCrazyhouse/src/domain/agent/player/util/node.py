@@ -20,6 +20,7 @@ class Node:  # Too many instance attributes (14/7)
 
     def __init__(
         self,
+        board: chess.BaseBoard,
         value,
         p_vec_small: np.ndarray,
         legal_moves: [chess.Move],
@@ -30,13 +31,14 @@ class Node:  # Too many instance attributes (14/7)
     ):  # Too many arguments (8/5)
 
         self.lock = Lock()  # lock object for this node to protect its member variables
+        self.board = board  # python-chess board object representing the current position
         self.initial_value = value  # store the initial value prediction of the current board position
 
         if is_leaf:
             self.nb_direct_child_nodes = 0
         else:
             # specify the number of direct child nodes from this node
-            self.nb_direct_child_nodes = np.array(len(p_vec_small))
+            self.nb_direct_child_nodes = len(p_vec_small)  # np.array(len(p_vec_small))
 
         self.policy_prob = p_vec_small  # prior probability selecting each child, which is estimated by the NN
         self.legal_moves = legal_moves  # possible legal moves from this node on which represents the edges
@@ -49,8 +51,8 @@ class Node:  # Too many instance attributes (14/7)
         # q: combined action value which is calculated by the averaging over all action values
         # u: exploration metric for each child node
         # (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-        self.q_value = np.zeros(self.nb_direct_child_nodes)
-        # self.q_value = np.ones(self.nb_direct_child_nodes) * -1
+        #self.q_value = np.zeros(self.nb_direct_child_nodes)
+        self.q_value = np.ones(self.nb_direct_child_nodes) * -1
 
         if not is_leaf:
             if clip_low_visit:
@@ -94,9 +96,7 @@ class Node:  # Too many instance attributes (14/7)
 
         if clip_low_visit_nodes and q_value_weight > 0:
             visit = deepcopy(self.child_number_visits)
-            # value = deepcopy((self.q_value + 1))
-            value = deepcopy(self.q_value)
-
+            value = deepcopy((self.q_value + 1))
             max_visits = visit.max()
             if max_visits > 0:
                 # normalize to sum of 1
@@ -171,10 +171,8 @@ class Node:  # Too many instance attributes (14/7)
         :param value:  Specify the backpropagated value
         :return:
         """
-        #    raise Exception("value = %.2f" % value)
         with self.lock:
             self.n_sum -= virtual_loss - 1
             self.child_number_visits[child_idx] -= virtual_loss - 1
             self.action_value[child_idx] += virtual_loss + value
-            #self.action_value[child_idx] += value
             self.q_value[child_idx] = self.action_value[child_idx] / self.child_number_visits[child_idx]

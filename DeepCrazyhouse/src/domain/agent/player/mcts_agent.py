@@ -36,7 +36,6 @@ from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_W
 from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
 
-
 DTYPE = np.float
 DRAW = 0.5 # 0
 WIN = 1 # 1
@@ -343,8 +342,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             str_legal_moves = str(state.get_legal_moves())
         else:
             str_legal_moves = ""
+
+        # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
+
         # create a new root node
-        self.root_node = Node(value, p_vec_small, legal_moves, str_legal_moves, is_leaf, clip_low_visit=False)
+        self.root_node = Node(state.get_pythonchess_board(),
+                              value, p_vec_small, legal_moves, str_legal_moves, is_leaf, clip_low_visit=False) #,
+                              # check_mv_mask=check_move_mask)
 
     def _expand_root_node_single_move(self, state, legal_moves):
         """
@@ -357,8 +361,12 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # request the value prediction for the current position
         [value, _] = self.nets[0].predict_single(state.get_state_planes())
         p_vec_small = np.array([1], np.float32)  # we can create the move probability vector without the NN this time
+
+        # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
+
         # create a new root node
-        self.root_node = Node(value, p_vec_small, legal_moves, str(state.get_legal_moves()), clip_low_visit=False)
+        self.root_node = Node(state.get_pythonchess_board(), value, p_vec_small, legal_moves,
+                              str(state.get_legal_moves()), clip_low_visit=False) #, check_mv_mask=check_move_mask)
 
         if self.root_node.child_nodes[0] is None:  # check a child node if it doesn't exists already
             state_child = deepcopy(state)
@@ -387,8 +395,12 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 p_vec_small_child = get_probs_of_move_list(
                     policy_vec, legal_moves_child, state_child.is_white_to_move()
                 )
+
+            # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
+
             # create a new child node
-            child_node = Node(value, p_vec_small_child, legal_moves_child, str(state_child.get_legal_moves()), is_leaf)
+            child_node = Node(state.get_pythonchess_board(), value, p_vec_small_child, legal_moves_child,
+                              str(state_child.get_legal_moves()), is_leaf) #, check_move_mask)
             self.root_node.child_nodes[0] = child_node  # connect the child to the root
             # assign the value of the root node as the q-value for the child
             # here we must invert the invert the value because it's the value prediction of the next state
@@ -455,7 +467,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     futures.append(
                         executor.submit(
                             self._run_single_playout,
-                            state=state,
                             parent_node=self.root_node,
                             pipe_id=i,
                             depth=1,
@@ -533,7 +544,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # create a deepcopy of the state in order not to change the given input parameter
         return super().perform_action(deepcopy(state_in))
 
-    def _run_single_playout(self, state: GameState, parent_node: Node, pipe_id=0, depth=1, chosen_nodes=None):
+    def _run_single_playout(self, parent_node: Node, pipe_id=0, depth=1, chosen_nodes=None):
         """
         This function works recursively until a leaf or terminal node is reached.
         It ends by back-propagating the value of the new expanded node or by propagating the value of a terminal state.
@@ -563,14 +574,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # the effect of virtual loss will be undone if the playout is over
         parent_node.apply_virtual_loss_to_child(child_idx, self.virtual_loss)
 
-        if depth == 1:
-            state = GameState(deepcopy(state.get_pythonchess_board()))
-
-        state.apply_move(move)  # apply the selected move on the board
         # append the selected move to the move list
         chosen_nodes.append(child_idx)  # append the chosen child idx to the chosen_nodes list
 
         if node is None:
+            state = GameState(deepcopy(parent_node.board))  # get the board from the parent node
+            state.apply_move(move)  # apply the selected move on the board
+
             # get the transposition-key which is used as an identifier for the board positions in the look-up table
             transposition_key = state.get_transposition_key()
             # check if the addressed fen exist in the look-up table
@@ -656,7 +666,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 # clip the visit nodes for all nodes in the search tree except the director opp. move
                 clip_low_visit = self.use_pruning and depth != 1 # and depth > 4
                 new_node = Node(
-                    value, p_vec_small, legal_moves, str_legal_moves, is_leaf, transposition_key, clip_low_visit
+                    state.get_pythonchess_board(), value, p_vec_small, legal_moves, str_legal_moves, is_leaf,
+                    transposition_key, clip_low_visit
                 )  # create a new node
 
                 if depth == 1:
@@ -692,7 +703,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             value = node.initial_value
         else:
             # get the value from the leaf node (the current function is called recursively)
-            value, depth, chosen_nodes = self._run_single_playout(state, node, pipe_id, depth + 1, chosen_nodes)
+            value, depth, chosen_nodes = self._run_single_playout(node, pipe_id, depth + 1, chosen_nodes)
         # revert the virtual loss and apply the predicted value by the network to the node
         parent_node.revert_virtual_loss_and_update(child_idx, self.virtual_loss, 1-value)
         # invert the value prediction for the parent of the above node layer because the player's changes every turn
@@ -771,6 +782,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             u_value = (
                 cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_number_visits))
             )
+
             child_idx = (parent_node.q_value + u_value).argmax()
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
 
