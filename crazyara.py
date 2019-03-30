@@ -15,6 +15,8 @@ import sys
 import traceback
 import chess.pgn
 import numpy as np
+
+from DeepCrazyhouse.src.domain.agent.player.alpha_beta_agent import AlphaBetaAgent
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 
 
@@ -41,12 +43,16 @@ class CrazyAra:  # Too many instance attributes (25/7)
         # enable this variable if you want to see debug messages in certain environments, like the lichess.org api
         self.enable_lichess_debug_msg = self.setup_done = False
         self.client = {"name": "CrazyAra", "version": "0.4.0", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
-        self.mcts_agent = self.rawnet_agent = self.gamestate = self.bestmove_value = self.move_time = self.score = None
+        self.mcts_agent = self.rawnet_agent = self.ab_agent = self.gamestate = self.bestmove_value = self.move_time \
+            = self.score = None
         self.engine_played_move = 0
         self.log_file_path = "CrazyAra-log.txt"
         self.score_file_path = "score-log.txt"
         self.settings = {
             "UCI_Variant": "crazyhouse",
+            "search_type": "mcts",  # mcts, alpha_beta
+            "ab_depth": 5,  # depth to reach for alpha_beta
+            "ab_candidate_moves": 7,  # candidate moves to consider for ab-search, clipped according to NN policy
             # set the context in which the neural networks calculation will be done
             # choose 'gpu' using the settings if there is one available
             "context": "gpu",
@@ -181,6 +187,10 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 opening_guard_moves=self.settings["opening_guard_moves"],
             )
 
+            self.ab_agent = AlphaBetaAgent(nets[0], depth=self.settings["ab_depth"],
+                                           nb_candidate_moves=self.settings["ab_candidate_moves"],
+                                           include_check_moves=False)
+
             self.gamestate = GameState()
             self.setup_done = True
 
@@ -305,15 +315,20 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
             # reduce noise for very short move times
             self.mcts_agent.dirichlet_epsilon = 0.2
 
-        if self.settings["use_raw_network"] or movetime_ms <= self.settings["threshold_time_for_raw_net_ms"]:
-            self.log_print("info string Using raw network for fast mode...")
-            value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.rawnet_agent.perform_action(
+        if self.settings["search_type"] == "alpha_beta":
+            value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.ab_agent.perform_action(
                 self.gamestate
             )
-        else:
-            value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.mcts_agent.perform_action(
-                self.gamestate
-            )
+        elif self.settings["search_type"] == "mcts":
+            if self.settings["use_raw_network"] or movetime_ms <= self.settings["threshold_time_for_raw_net_ms"]:
+                self.log_print("info string Using raw network for fast mode...")
+                value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.rawnet_agent.perform_action(
+                    self.gamestate
+                )
+            else:
+                value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.mcts_agent.perform_action(
+                    self.gamestate
+                )
 
         self.score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (
             centipawn,
@@ -439,6 +454,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
 
                     if option_name in [
                         "UCI_Variant",
+                        "search_type",
                         "context",
                         "use_raw_network",
                         "extend_time_on_bad_position",
@@ -448,7 +464,6 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         "use_oscillating_cpuct",
                         "use_time_management",
                     ]:
-
                         value = cmd_list[4]
                     else:
                         value = int(cmd_list[4])
@@ -511,6 +526,12 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         self.log_print("id author %s" % self.client["authors"])
         # tell the GUI all possible options
         self.log_print("option name UCI_Variant type combo default crazyhouse var crazyhouse")
+        self.log_print("option name search_type type combo default %s var mcts var alpha_beta" %
+                       self.settings["search_type"])
+        self.log_print("option name ab_depth type spin default %d min 1 max 40" % self.settings["ab_depth"])
+        self.log_print(
+            "option name ab_candidate_moves type spin default %d min 1 max 4096"
+            % self.settings["ab_candidate_moves"])
         self.log_print("option name context type combo default %s var cpu var gpu" % self.settings["context"])
         self.log_print(
             "option name use_raw_network type check default %s"
