@@ -208,7 +208,7 @@ def multi_axis_by_vec(mat, vec, axis=0):
 
 def get_check_move_mask(board, legal_moves):
     """
-    Returns a binary mask indicating the checking moves marked with True
+    Returns a binary mask indicating the checking moves marked with True [Caution: Not performant]
     :param board: Python chess both
     :param legal_moves: list of legal moves
     :return: np-boolean array markin the checking moves
@@ -224,3 +224,39 @@ def get_check_move_mask(board, legal_moves):
             # print(move)
             check_move_mask[idx] = 1
     return np.logical_and(check_move_mask, True)
+
+
+def get_check_moves(board, legal_moves):
+    """
+    Returns all possible checking moves in a list [Caution: Not performant]
+    :param board: Python chess both
+    :param legal_moves: list of legal moves
+    :return: np-boolean array markin the checking moves
+    """
+
+    check_moves = []
+
+    for idx, move in enumerate(legal_moves):
+        board_tmp = copy.deepcopy(board)
+        board_tmp.push(move)
+        if board_tmp.is_check():
+            check_moves.append(move)
+    return check_moves
+
+
+def get_check_move_indices(board, legal_moves):
+    """
+    Returns all possible checking moves in a list [Caution: Not performant]
+    :param board: Python chess both
+    :param legal_moves: list of legal moves
+    :return: np-boolean array markin the checking moves
+    """
+
+    check_move_idces = []
+
+    for idx, move in enumerate(legal_moves):
+        board_tmp = copy.deepcopy(board)
+        board_tmp.push(move)
+        if board_tmp.is_check():
+            check_move_idces.append(idx)
+    return check_move_idces
