@@ -4,8 +4,8 @@ Created on 24.03.19
 @project: CrazyAra
 @author: queensgambit
 
-Please describe what the content of this file is about
-https://pastebin.com/rZg1Mz9G
+Classical negamax search with alpha beta pruning.
+For more details see: https://en.wikipedia.org/wiki/Negamax
 """
 import math
 
@@ -23,14 +23,13 @@ from DeepCrazyhouse.src.domain.util import get_check_move_indices
 
 class AlphaBetaAgent(AbsAgent):
     """
-    Classical minimax search with alpha beta pruning.
-    For more detail see: https://en.wikipedia.org/wiki/Negamax
+    Alpha beta agent which has the option to clip moves to make the search tractable for NN engines
     """
     def __init__(self, net: NeuralNetAPI, depth=5, nb_candidate_moves=7, include_check_moves=False):
         """
         Constructor
         :param net: Neural network inference service
-        :param depth: Depth ot reach from which all evaluations will be based on
+        :param depth: Depth of the search tree from which all evaluations will be based on
         :param nb_candidate_moves: Number of moves to consider at each depth during search which are clipped according
         to the neural network policy
         :param include_check_moves: Defines if checking moves shall always be considered
