@@ -218,12 +218,15 @@ class AlphaZeroResnet(HybridBlock):  # Too many arguments (7/5) (too-many-argume
     """ Creates the alpha zero gluon net description based on the given parameters."""
 
     def __init__(
-        self, n_labels=2272, channels=256, num_res_blocks=19, value_fc_size=256, bn_mom=0.9, act_type="relu", **kwargs
+        self, n_labels=2272, channels=256, channels_value_head=1, channels_policy_head=2,
+            num_res_blocks=19, value_fc_size=256, bn_mom=0.9, act_type="relu", **kwargs
     ):
         """
 
         :param n_labels: Number of labels the for the policy
         :param channels: Used for all convolution operations. (Except the last 2)
+        :param channels_policy_head: Number of channels in the bottle neck for the policy head
+        :param channels_value_head: Number of channels in the bottle neck for the value head
         :param num_res_blocks: Number of residual blocks to stack. In the paper they used 19 or 39 residual blocks
         :param value_fc_size: Fully Connected layer size. Used for the value output
         :param bn_mom: Batch normalization momentum
@@ -242,8 +245,8 @@ class AlphaZeroResnet(HybridBlock):  # Too many arguments (7/5) (too-many-argume
             self.body.add(ResidualBlock(channels, bn_mom, act_type, unit_name=unit_name))
 
         # create the two heads which will be used in the hybrid fwd pass
-        self.value_head = _ValueHeadAlphaZero("value", 1, value_fc_size, bn_mom, act_type)
-        self.policy_head = _PolicyHeadAlphaZero("policy", 2, n_labels, bn_mom, act_type)
+        self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, bn_mom, act_type)
+        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, bn_mom, act_type)
 
     def hybrid_forward(self, F, x):
         """

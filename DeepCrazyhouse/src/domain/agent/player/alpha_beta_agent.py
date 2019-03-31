@@ -8,16 +8,15 @@ Classical negamax search with alpha beta pruning.
 For more details see: https://en.wikipedia.org/wiki/Negamax
 """
 import math
+import logging
+import copy
+import numpy as np
+from time import time
 
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
-import copy
-import numpy as np
-from time import time
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import value_to_centipawn, get_probs_of_move_list
-import logging
-
 from DeepCrazyhouse.src.domain.util import get_check_move_indices
 
 
@@ -75,7 +74,6 @@ class AlphaBetaAgent(AbsAgent):
             mv_idces += check_idces
 
         for idx, mv_idx in enumerate(mv_idces):  # each child of position
-            # print(mv, end=" ")
             mv = legal_moves[mv_idx]
             state_child = copy.deepcopy(state)
             state_child.apply_move(mv)
