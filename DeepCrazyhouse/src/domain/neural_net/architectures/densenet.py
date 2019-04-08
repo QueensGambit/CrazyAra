@@ -47,8 +47,6 @@ class DenseNet(HybridBlock):
             self.features = nn.HybridSequential(prefix='')
             # add initial convolutional layer
             self.features.add(nn.Conv2D(channels_init, kernel_size=3, padding=1, use_bias=False))
-            self.features.add(nn.BatchNorm())
-            self.features.add(nn.Activation('relu'))
 
             # add dense blocks
             for layer_idx in range(n_layers):

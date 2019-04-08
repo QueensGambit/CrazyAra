@@ -64,6 +64,8 @@ since more data was available.'
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Activation, Flatten, Dense
 from mxnet.gluon import HybridBlock
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
+from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _ChannelSqueezeExcitation, \
+    _SpatialSqueezeExcitation, _SpatialChannelSqueezeExcitation
 
 
 class ResidualBlock(HybridBlock):
@@ -113,7 +115,7 @@ class ResidualBlock(HybridBlock):
 
 
 class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-arguments)
-    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu"):
+    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu", se_type=None):
         """
         Definition of the value head proposed by the alpha zero authors
 
@@ -121,6 +123,8 @@ class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-a
         :param channels: Number of channels for 1st conv operation in branch 0
         :param bn_mom: Batch normalization momentum parameter
         :param act_type: Activation type to use
+        :param se_type: SqueezeExcitation type choose either [None, "cSE", "sSE", csSE"] for no squeeze excitation,
+        channelwise squeeze excitation, channel-spatial-squeeze-excitation, respectively
         """
 
         super(_PolicyHeadAlphaZero, self).__init__(prefix=name + "_")
@@ -130,6 +134,18 @@ class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-a
         with self.name_scope():
             self.body.add(Conv2D(channels=channels, kernel_size=(1, 1), use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
+
+            if se_type:
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "csSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 1, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
+
             self.body.add(get_act(act_type))
             self.body.add(Flatten())
             self.body.add(Dense(units=n_labels))
@@ -146,7 +162,7 @@ class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-a
 
 
 class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-arguments)
-    def __init__(self, name, channels=1, fc0=256, bn_mom=0.9, act_type="relu"):
+    def __init__(self, name, channels=1, fc0=256, bn_mom=0.9, act_type="relu", se_type=None):
         """
         Definition of the value head proposed by the alpha zero authors
 
@@ -155,6 +171,8 @@ class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-ar
         :param fc0: Number of units in Dense/Fully-Connected layer
         :param bn_mom: Batch normalization momentum parameter
         :param act_type: Activation type to use
+        :param se_type: SqueezeExcitation type choose either [None, "cSE", "sSE", csSE"] for no squeeze excitation,
+        channelwise squeeze excitation, channel-spatial-squeeze-excitation, respectively
         """
 
         super(_ValueHeadAlphaZero, self).__init__(prefix=name + "_")
@@ -164,6 +182,18 @@ class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-ar
         with self.name_scope():
             self.body.add(Conv2D(channels=channels, kernel_size=(1, 1), use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
+
+            if se_type:
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "csSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 1, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
+
             self.body.add(get_act(act_type))
             self.body.add(Flatten())
             self.body.add(Dense(units=fc0))
@@ -183,7 +213,7 @@ class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-ar
 
 
 class _StemAlphaZero(HybridBlock):
-    def __init__(self, name, channels, bn_mom=0.9, act_type="relu"):
+    def __init__(self, name, channels, bn_mom=0.9, act_type="relu", nb_input_channels=34, se_type=None):
         """
         Definition of the stem proposed by the alpha zero authors
 
@@ -191,6 +221,8 @@ class _StemAlphaZero(HybridBlock):
         :param channels: Number of channels for 1st conv operation
         :param bn_mom: Batch normalization momentum parameter
         :param act_type: Activation type to use
+        :param nb_input_channels: Number of input channels of the board representation
+        :param se_type: SqueezeExcitation type choose either [None, "cSE", "sSE", csSE"] for no squeeze excitation,
         """
 
         super(_StemAlphaZero, self).__init__(prefix=name + "_")
@@ -198,6 +230,20 @@ class _StemAlphaZero(HybridBlock):
         self.body = HybridSequential(prefix="")
 
         with self.name_scope():
+
+            if se_type:
+                # start with a proceeding batch norm layer
+                self.body.add(BatchNorm(momentum=bn_mom))
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    self.body.add(_ChannelSqueezeExcitation("se0", nb_input_channels, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "csSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", nb_input_channels, 1, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
+
             # add all layers to the stem
             self.body.add(Conv2D(channels=channels, kernel_size=(3, 3), padding=(1, 1), use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
