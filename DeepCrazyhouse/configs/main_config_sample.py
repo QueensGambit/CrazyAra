@@ -9,7 +9,7 @@ Copy and rename this file to main_config.py and adjust the paths accordingly.
 """
 
 
-MAIN_CONFIG = {
+main_config = {
     # Copy and rename this file to main_config.py
     # The training directory includes games from the months:        2016-01 - 2018-07 (excluding 2018-04)
     # The validation directory includes games from the month:       2018-04
