@@ -42,7 +42,7 @@ class AlphaBetaAgent(AbsAgent):
         self.sel_mv_idx = [None] * depth
         self.include_check_moves = include_check_moves
 
-    def negamax(self, state, depth, alpha=-math.inf, beta=math.inf, color=1):
+    def negamax(self, state, depth, alpha=-math.inf, beta=math.inf, color=1, all_moves=1):
         """
         Evaluates all nodes at a given depth and backpropagates their values to their respective parent nodes.
         In order to keep the number nof nodes manageable for neural network evaluation
@@ -67,24 +67,28 @@ class AlphaBetaAgent(AbsAgent):
         legal_moves = state.get_legal_moves()
         p_vec_small = get_probs_of_move_list(policy_vec, state.get_legal_moves(), state.is_white_to_move())
 
-        mv_idces = list(np.argsort(p_vec_small)[::-1][:self.nb_candidate_moves])
+        if all_moves > 0:
+            mv_idces = list(np.argsort(p_vec_small)[::-1])
+        else:
+            mv_idces = list(np.argsort(p_vec_small)[::-1][:self.nb_candidate_moves])
 
         if self.include_check_moves:
             check_idces = get_check_move_indices(state.get_pythonchess_board(), state.get_legal_moves())
             mv_idces += check_idces
 
         for idx, mv_idx in enumerate(mv_idces):  # each child of position
-            mv = legal_moves[mv_idx]
-            state_child = copy.deepcopy(state)
-            state_child.apply_move(mv)
-            value = -self.negamax(state_child, depth-1, -beta, -alpha, -color)
-            if value > best_value:
-                self.best_moves[-depth] = mv
-                self.sel_mv_idx[-depth] = mv_idx
-                best_value = value
-            alpha = max(alpha, value)
-            if alpha >= beta:
-                break
+            if p_vec_small[mv_idx] > 0.1:
+                mv = legal_moves[mv_idx]
+                state_child = copy.deepcopy(state)
+                state_child.apply_move(mv)
+                value = -self.negamax(state_child, depth-1, -beta, -alpha, -color, all_moves-1)
+                if value > best_value:
+                    self.best_moves[-depth] = mv
+                    self.sel_mv_idx[-depth] = mv_idx
+                    best_value = value
+                alpha = max(alpha, value)
+                if alpha >= beta:
+                    break
         return best_value
 
     def evaluate_board_state(self, state: AbsGameState) -> tuple:
