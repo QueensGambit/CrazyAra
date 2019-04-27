@@ -79,7 +79,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "max_move_num_to_reduce_movetime": 4,
             "enhance_checks": False,
             "use_pruning": False,
-            "use_oscillating_cpuct": False,
+            "use_future_q_values": False,
             "use_time_management": True,
             "verbose": False,
         }
@@ -181,8 +181,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 min_movetime=self.min_search_time,
                 batch_size=self.settings["batch_size"],
                 enhance_checks=self.settings["enhance_checks"],
+                use_future_q_values=self.settings["use_future_q_values"],
                 use_pruning=self.settings["use_pruning"],
-                use_oscillating_cpuct=self.settings["use_oscillating_cpuct"],
                 use_time_management=self.settings["use_time_management"],
                 opening_guard_moves=self.settings["opening_guard_moves"],
             )
@@ -461,7 +461,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         "verbose",
                         "enhance_checks",
                         "use_pruning",
-                        "use_oscillating_cpuct",
+                        "use_future_q_values",
                         "use_time_management",
                     ]:
                         value = cmd_list[4]
@@ -478,8 +478,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         self.settings["enhance_checks"] = True if value == "true" else False
                     elif option_name == "use_pruning":
                         self.settings["use_pruning"] = True if value == "true" else False
-                    elif option_name == "use_oscillating_cpuct":
-                        self.settings["use_oscillating_cpuct"] = True if value == "true" else False
+                    elif option_name == "use_future_q_values":
+                        self.settings["use_future_q_values"] = True if value == "true" else False
                     elif option_name == "use_time_management":
                         self.settings["use_time_management"] = True if value == "true" else False
                     else:
@@ -602,8 +602,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
             "option name use_pruning type check default %s" % ("false" if not self.settings["use_pruning"] else "true")
         )
         self.log_print(
-            "option name use_oscillating_cpuct type check default %s"
-            % ("false" if not self.settings["use_oscillating_cpuct"] else "true")
+            "option name use_future_q_values type check default %s"
+            % ("false" if not self.settings["use_future_q_values"] else "true")
         )
         self.log_print(
             "option name use_time_management type check default %s"
@@ -654,7 +654,6 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 except Exception:  # all possible exceptions
                     # log the error message to the log-file and exit the script
                     traceback_text = traceback.format_exc()
-                    #if main_cmd not in ("quit", "exit"):
                     self.log_print(traceback_text)
                     return -1
 

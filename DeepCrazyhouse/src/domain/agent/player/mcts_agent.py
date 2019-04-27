@@ -79,8 +79,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         verbose=True,
         min_movetime=100,
         enhance_checks=False,
+        use_future_q_values=False,
         use_pruning=True,
-        use_oscillating_cpuct=True,
         use_time_management=True,
         opening_guard_moves=0,
     ):  # Too many arguments (21/5) - Too many local variables (29/15)
@@ -131,6 +131,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                                     are clipped and not evaluated.
                                     If 0 no clipping will be done in the
                                     opening.
+        :param use_future_q_values: If set True, the q-values of the most visited child nodes will be updated by taking
+                                    the minimum of both the current and future q-values.
         """
 
         super().__init__(temperature, temperature_moves, verbose)
@@ -205,10 +207,10 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         self.transposition_table = collections.Counter()
         self.send_batches = False
         self.use_pruning = use_pruning
-        self.use_oscillating_cpuct = use_oscillating_cpuct
         self.time_buffer_ms = 0
         self.use_time_management = use_time_management
         self.opening_guard_moves = opening_guard_moves
+        self.use_future_q_values = use_future_q_values
 
     def evaluate_board_state(self, state: GameState):  # Probably is better to be refactored
         """
@@ -282,17 +284,15 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # receive the policy vector based on the MCTS search
         p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
 
-        use_q_future = True
-        if use_q_future:
+        if self.use_future_q_values:
             # use q-future value to update the q-values of direct child nodes
-            q_future, indices = self.get_last_q_values(min_nb_visits=5, max_depth=25) #25)
+            q_future, indices = self.get_last_q_values(min_nb_visits=5, max_depth=25)
             # self.root_node.q_value = 0.5 * self.root_node.q_value + 0.5 * q_future
             # TODO: make this matrix vector form
             if max_depth_reached >= 5:
                 for idx in indices:
                     self.root_node.q_value[idx] = min(self.root_node.q_value[idx], q_future[idx])
-
-                p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
+                p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)
 
         # if self.use_pruning is False:
         self.node_lookup[key] = self.root_node  # store the current root in the lookup table
@@ -438,18 +438,9 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         else:
             nb_playouts = self.nb_playouts_filled_pockets
 
-        # # iterate through all children and add dirichlet if there exists any
-        # for child_node in self.root_node.child_nodes:
-        #     if child_node:
-        #         # add dirichlet noise to a the child nodes of the root node
-        #         child_node.apply_dirichlet_noise_to_prior_policy(
-        #             epsilon=self.dirichlet_epsilon * 0.05, alpha=self.dirichlet_alpha  # 02,
-        #         )
-        #         # child_node.q_value[child_node.q_value < 0] = child_node.q_value.max() - 0.25
         t_elapsed_ms = cur_playouts = 0
         old_time = time()
         cpuct_init = self.cpuct
-        decline = True
 
         if self.use_time_management:
             time_checked = time_checked_early = False
@@ -459,17 +450,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         while (
             max_depth_reached < self.max_search_depth and cur_playouts < nb_playouts and t_elapsed_ms < self.movetime_ms
         ):  # and np.abs(self.root_node.q_value.mean()) < 0.99:
-
-            if self.use_oscillating_cpuct:
-                if decline:  # Test about decreasing CPUCT value
-                    self.cpuct -= 0.01
-                else:
-                    self.cpuct += 0.01
-
-                if self.cpuct < cpuct_init * 0.5:
-                    decline = False
-                elif self.cpuct > cpuct_init:
-                    decline = True
 
             # start searching
             with ThreadPoolExecutor(max_workers=self.threads) as executor:
@@ -511,7 +491,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 print("info nps %d time %d" % (int((node_searched / t_elapsed)), t_elapsed_ms))
 
             if not time_checked_early and t_elapsed_ms > self.movetime_ms / 2:
-                # node, _, _, child_idx = self._select_node_based_on_mcts_policy(self.root_node)
                 if (
                     self.root_node.policy_prob.max() > 0.9
                     and self.root_node.policy_prob.argmax() == self.root_node.q_value.argmax()
@@ -653,7 +632,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     self.can_claim_threefold_repetition(transposition_key, chosen_nodes)
                     or state.get_pythonchess_board().can_claim_fifty_moves() is True
                 ):
-                    # raise Exception('Threefold!')
                     value = 0
                     is_leaf = True
                     legal_moves = []
@@ -715,7 +693,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # iterate over all accessed nodes during the current search of the thread and check for same transposition key
         for node_idx in chosen_nodes[1:-1]:
             if node.transposition_key == transposition_key:
-                # print('DUPLICATE CHECK = TRUE! ')
                 return True
             node = node.child_nodes[node_idx]
             if node is None:
@@ -757,13 +734,10 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         """
 
         # find the move according to the q- and u-values for each move
-        if not self.use_oscillating_cpuct:
-            pb_c_base = 19652
-            pb_c_init = self.cpuct
+        pb_c_base = 19652
+        pb_c_init = self.cpuct
 
-            cpuct = math.log((parent_node.n_sum + pb_c_base + 1) / pb_c_base) + pb_c_init
-        else:
-            cpuct = self.cpuct
+        cpuct = math.log((parent_node.n_sum + pb_c_base + 1) / pb_c_base) + pb_c_init
         # calculate the current u values
         # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
         u_value = (
