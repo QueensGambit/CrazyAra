@@ -56,11 +56,11 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "ab_candidate_moves": 7,  # candidate moves to consider for ab-search, clipped according to NN policy
             # set the context in which the neural networks calculation will be done
             # choose 'gpu' using the settings if there is one available
-            "context": "gpu",
+            "context": "cpu",
             "use_raw_network": False,
-            "threads": 16,
+            "threads": 8,
             "batch_size": 8,
-            "neural_net_services": 2,
+            "neural_net_services": 1,
             "playouts_empty_pockets": 8192,
             "playouts_filled_pockets": 8192,
             "centi_cpuct": 250,
