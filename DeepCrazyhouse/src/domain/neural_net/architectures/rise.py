@@ -25,7 +25,8 @@ On our 10,000 games benchmark dataset it achieved a lower validation error.
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm
 from mxnet.gluon import HybridBlock
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
-from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _SqueezeExcitation
+from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _ChannelSqueezeExcitation, \
+    _SpatialSqueezeExcitation, _SpatialChannelSqueezeExcitation
 from DeepCrazyhouse.src.domain.neural_net.architectures.a0_resnet import (
     _StemAlphaZero,
     _PolicyHeadAlphaZero,
@@ -38,7 +39,7 @@ class ResidualBlockX(HybridBlock):  # Too many arguments (8/5)
     Definition of a residual block without any pooling operation
     """
 
-    def __init__(self, unit_name, cardinality, channels, bn_mom, act_type, res_scale_fac, use_se=True):
+    def __init__(self, unit_name, channels, bn_mom, act_type, se_type="csSE"):
         """
 
         :param channels: Number of channels used in the conv-operations
@@ -49,20 +50,26 @@ class ResidualBlockX(HybridBlock):  # Too many arguments (8/5)
         super(ResidualBlockX, self).__init__(unit_name + "_")
         self.act_type = act_type
         self.unit_name = unit_name
-        self.res_scale_fac = res_scale_fac
         self.body = HybridSequential(prefix="")
 
         with self.name_scope():
-            self.body.add(Conv2D(channels=channels, kernel_size=3, padding=1, use_bias=False))
+            self.body.add(Conv2D(channels=channels, kernel_size=3, padding=1, groups=1, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
             self.body.add(get_act(self.act_type))
-
-            self.body.add(Conv2D(channels=channels, kernel_size=3, padding=1, groups=cardinality, use_bias=False))
+            self.body.add(Conv2D(channels=channels, kernel_size=3, padding=1, groups=1, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
 
-            if use_se:
-                # apply squeeze excitation
-                self.body.add(_SqueezeExcitation("se0", channels, 16, act_type))
+            if se_type:
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    # self.se = _ChannelSqueezeExcitation("se0", channels, 2, act_type)
+                    self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "csSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 2, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
 
             self.act0 = get_act(act_type)
 
@@ -77,11 +84,8 @@ class ResidualBlockX(HybridBlock):  # Too many arguments (8/5)
         shortcut = x
         out = self.body(x)
         # scale down the output of the residual block activations to stabilize training
-        if self.res_scale_fac:
-            out = shortcut + out * self.res_scale_fac
-        else:
-            # connect the shortcut with the residual activations
-            out = shortcut + out
+        # connect the shortcut with the residual activations
+        out = shortcut + out
 
         # apply activation
         return self.act0(out)
@@ -95,12 +99,10 @@ class _ResidualBlockXBottleneck(HybridBlock):  # Too many arguments (9/5)
     def __init__(
         self,
         unit_name,
-        cardinality,
         channels,
         bn_mom=0.9,
         act_type="relu",
-        use_se=True,
-        res_scale_fac=0.2,
+        se_type="csSE",
         dim_match=True,
     ):
         """
@@ -112,27 +114,34 @@ class _ResidualBlockXBottleneck(HybridBlock):  # Too many arguments (9/5)
         """
         super(_ResidualBlockXBottleneck, self).__init__(prefix=unit_name + "_")
         self.unit_name = unit_name
-        self.res_scale_fac = res_scale_fac
-        self.use_se = use_se
+        self.use_se = se_type
         self.dim_match = dim_match
         self.body = HybridSequential(prefix="")
 
         with self.name_scope():
-            self.body.add(get_act(act_type))
-            self.body.add(Conv2D(int(channels // 2), kernel_size=1, padding=0, use_bias=False))
+            self.body.add(Conv2D(int(channels), kernel_size=1, padding=0, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
             self.body.add(get_act(act_type))
-            self.body.add(Conv2D(int(channels // 2), kernel_size=3, padding=1, groups=cardinality, use_bias=False))
+            self.body.add(Conv2D(int(channels), kernel_size=3, padding=1, groups=1, use_bias=False))
+            # self.body.add(Conv2D(int(channels), kernel_size=3, padding=1, groups=8, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
             self.body.add(get_act(act_type))
 
             # add a 1x1 branch after concatenation
             self.body.add(Conv2D(channels=channels, kernel_size=1, use_bias=False))
+            # self.body.add(Conv2D(int(channels), kernel_size=3, padding=1, groups=8, use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
 
-            if use_se:
-                # apply squeeze excitation
-                self.body.add(_SqueezeExcitation("se0", channels, 16, act_type))
+            if se_type:
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "csSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 2, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
 
             self.act0 = get_act(act_type, prefix="%s1" % act_type)
 
@@ -156,12 +165,8 @@ class _ResidualBlockXBottleneck(HybridBlock):  # Too many arguments (9/5)
             shortcut = self.expander(x)
 
         out = self.body(x)
-        # scale down the output of the residual block activations to stabilize training
-        if self.res_scale_fac:
-            out = shortcut + out * self.res_scale_fac
-        else:
-            # connect the shortcut with the residual activations
-            out = shortcut + out
+        # connect the shortcut with the residual activations
+        out = shortcut + out
 
         # apply activation
         return self.act0(out)
@@ -222,13 +227,10 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
         channels_policy_head=16,
         nb_res_blocks_x=7,
         nb_res_blocks_x_neck=12,
-        cardinality=1,
-        cardinality_neck=2,
         value_fc_size=256,
         bn_mom=0.9,
-        act_type="lrelu",
-        use_se=True,
-        res_scale_fac=0.2,
+        act_type="relu",
+        squeeze_excitation_type=None,
         use_rise_stem=False,
         **kwargs
     ):  # Too many local variables (22/15)
@@ -240,6 +242,11 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
         :param nb_res_blocks_x: Number of residual blocks to stack. In the paper they used 19 or 39 residual blocks
         :param value_fc_size: Fully Connected layer size. Used for the value output
         :param bn_mom: Batch normalization momentum
+        :param squeeze_excitation_type: Available types: [None, "cSE", "sSE", "csSE", "mixed"]
+                                        cSE: Channel-wise-squeeze-excitation
+                                        sSE: Spatial-wise-squeeze-excitation
+                                        csSE: Channel-spatial-wise-squeeze-excitation
+                                        mixed: Use cSE and sSE interchangeably
         :return: gluon net description
         """
 
@@ -247,52 +254,59 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
         self.body = HybridSequential(prefix="")
 
         with self.name_scope():
+            se_type = None
+
             if use_rise_stem:
                 self.body.add(_StemRise(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
             else:
-                self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
+                self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type,
+                                             se_type=se_type))
 
         for i in range(nb_res_blocks_x):
             unit_name = "unit%d" % i
+
+            if squeeze_excitation_type is None:
+                se_type = None
+            elif squeeze_excitation_type in ["cSE", "sSE", "csSE"]:
+                se_type = squeeze_excitation_type
+            elif squeeze_excitation_type == "mixed":
+                if i % 2 == 0:
+                    se_type = "cSE"
+                else:
+                    se_type = "sSE"
+            else:
+                raise Exception("Unavailable SE type given.")
+
             self.body.add(
                 ResidualBlockX(
                     unit_name,
-                    cardinality=cardinality,
                     channels=channels,
                     bn_mom=0.9,
                     act_type=act_type,
-                    res_scale_fac=res_scale_fac,
-                    use_se=False,
+                    se_type=se_type,
                 )
             )
 
         for i in range(nb_res_blocks_x_neck):
             unit_name = "unitX%d" % i
             dim_match = True
-            # deactivate the SE for the last two blocks
-            if i in (nb_res_blocks_x_neck - 2, nb_res_blocks_x_neck - 1):
-                cur_use_se = False
-                cur_res_scale_fac = res_scale_fac
-            else:
-                cur_use_se = use_se
-                cur_res_scale_fac = res_scale_fac
+            se_type = None
 
             self.body.add(
                 _ResidualBlockXBottleneck(
                     unit_name,
-                    cardinality_neck,
                     channels,
                     dim_match=dim_match,
                     bn_mom=0.9,
                     act_type=act_type,
-                    use_se=cur_use_se,
-                    res_scale_fac=cur_res_scale_fac,
+                    se_type=se_type,
                 )
             )
 
+        se_type = None
         # create the two heads which will be used in the hybrid fwd pass
-        self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, bn_mom, act_type)
-        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, bn_mom, act_type)
+        self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, bn_mom, act_type, se_type)
+        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, bn_mom, act_type, se_type)
 
     def hybrid_forward(self, F, x):
         """

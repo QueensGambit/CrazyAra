@@ -64,6 +64,8 @@ since more data was available.'
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Activation, Flatten, Dense
 from mxnet.gluon import HybridBlock
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
+from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _ChannelSqueezeExcitation, \
+    _SpatialSqueezeExcitation, _SpatialChannelSqueezeExcitation
 
 
 class ResidualBlock(HybridBlock):
@@ -113,7 +115,7 @@ class ResidualBlock(HybridBlock):
 
 
 class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-arguments)
-    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu"):
+    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu", se_type=None):
         """
         Definition of the value head proposed by the alpha zero authors
 
@@ -121,6 +123,8 @@ class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-a
         :param channels: Number of channels for 1st conv operation in branch 0
         :param bn_mom: Batch normalization momentum parameter
         :param act_type: Activation type to use
+        :param se_type: SqueezeExcitation type choose either [None, "cSE", "sSE", csSE"] for no squeeze excitation,
+        channelwise squeeze excitation, channel-spatial-squeeze-excitation, respectively
         """
 
         super(_PolicyHeadAlphaZero, self).__init__(prefix=name + "_")
@@ -130,6 +134,18 @@ class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-a
         with self.name_scope():
             self.body.add(Conv2D(channels=channels, kernel_size=(1, 1), use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
+
+            if se_type:
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "csSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 1, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
+
             self.body.add(get_act(act_type))
             self.body.add(Flatten())
             self.body.add(Dense(units=n_labels))
@@ -146,7 +162,7 @@ class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-a
 
 
 class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-arguments)
-    def __init__(self, name, channels=1, fc0=256, bn_mom=0.9, act_type="relu"):
+    def __init__(self, name, channels=1, fc0=256, bn_mom=0.9, act_type="relu", se_type=None):
         """
         Definition of the value head proposed by the alpha zero authors
 
@@ -155,6 +171,8 @@ class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-ar
         :param fc0: Number of units in Dense/Fully-Connected layer
         :param bn_mom: Batch normalization momentum parameter
         :param act_type: Activation type to use
+        :param se_type: SqueezeExcitation type choose either [None, "cSE", "sSE", csSE"] for no squeeze excitation,
+        channelwise squeeze excitation, channel-spatial-squeeze-excitation, respectively
         """
 
         super(_ValueHeadAlphaZero, self).__init__(prefix=name + "_")
@@ -164,6 +182,18 @@ class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-ar
         with self.name_scope():
             self.body.add(Conv2D(channels=channels, kernel_size=(1, 1), use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
+
+            if se_type:
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "csSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 1, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
+
             self.body.add(get_act(act_type))
             self.body.add(Flatten())
             self.body.add(Dense(units=fc0))
@@ -183,7 +213,7 @@ class _ValueHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-ar
 
 
 class _StemAlphaZero(HybridBlock):
-    def __init__(self, name, channels, bn_mom=0.9, act_type="relu"):
+    def __init__(self, name, channels, bn_mom=0.9, act_type="relu", nb_input_channels=34, se_type=None):
         """
         Definition of the stem proposed by the alpha zero authors
 
@@ -191,6 +221,8 @@ class _StemAlphaZero(HybridBlock):
         :param channels: Number of channels for 1st conv operation
         :param bn_mom: Batch normalization momentum parameter
         :param act_type: Activation type to use
+        :param nb_input_channels: Number of input channels of the board representation
+        :param se_type: SqueezeExcitation type choose either [None, "cSE", "sSE", csSE"] for no squeeze excitation,
         """
 
         super(_StemAlphaZero, self).__init__(prefix=name + "_")
@@ -198,6 +230,20 @@ class _StemAlphaZero(HybridBlock):
         self.body = HybridSequential(prefix="")
 
         with self.name_scope():
+
+            if se_type:
+                # start with a proceeding batch norm layer
+                self.body.add(BatchNorm(momentum=bn_mom))
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    self.body.add(_ChannelSqueezeExcitation("se0", nb_input_channels, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "csSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", nb_input_channels, 1, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
+
             # add all layers to the stem
             self.body.add(Conv2D(channels=channels, kernel_size=(3, 3), padding=(1, 1), use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
@@ -218,12 +264,15 @@ class AlphaZeroResnet(HybridBlock):  # Too many arguments (7/5) (too-many-argume
     """ Creates the alpha zero gluon net description based on the given parameters."""
 
     def __init__(
-        self, n_labels=2272, channels=256, num_res_blocks=19, value_fc_size=256, bn_mom=0.9, act_type="relu", **kwargs
+        self, n_labels=2272, channels=256, channels_value_head=1, channels_policy_head=2,
+            num_res_blocks=19, value_fc_size=256, bn_mom=0.9, act_type="relu", **kwargs
     ):
         """
 
         :param n_labels: Number of labels the for the policy
         :param channels: Used for all convolution operations. (Except the last 2)
+        :param channels_policy_head: Number of channels in the bottle neck for the policy head
+        :param channels_value_head: Number of channels in the bottle neck for the value head
         :param num_res_blocks: Number of residual blocks to stack. In the paper they used 19 or 39 residual blocks
         :param value_fc_size: Fully Connected layer size. Used for the value output
         :param bn_mom: Batch normalization momentum
@@ -242,8 +291,8 @@ class AlphaZeroResnet(HybridBlock):  # Too many arguments (7/5) (too-many-argume
             self.body.add(ResidualBlock(channels, bn_mom, act_type, unit_name=unit_name))
 
         # create the two heads which will be used in the hybrid fwd pass
-        self.value_head = _ValueHeadAlphaZero("value", 1, value_fc_size, bn_mom, act_type)
-        self.policy_head = _PolicyHeadAlphaZero("policy", 2, n_labels, bn_mom, act_type)
+        self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, bn_mom, act_type)
+        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, bn_mom, act_type)
 
     def hybrid_forward(self, F, x):
         """

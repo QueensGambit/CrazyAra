@@ -15,6 +15,7 @@ from mxnet import autograd, gluon, nd
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
+from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
@@ -28,7 +29,7 @@ def acc_sign(y_true, y_pred):
     return (np.sign(y_pred).flatten() == y_true).sum() / len(y_true)
 
 
-def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu()):
+def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(), select_policy_from_plane=False):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
     The metric results are returned as a dictionary object.
@@ -40,6 +41,7 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu())
     :param nb_batches: Number of batches to evaluate (early stopping).
      If set to None all batches of the data_iterator will be evaluated
     :param ctx: MXNET data context
+    :param select_policy_from_plane: Boolean if potential legal moves will be selected from final policy output
     :return:
     """
     reset_metrics(metrics)
@@ -48,6 +50,8 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu())
         value_label = value_label.as_in_context(ctx)
         policy_label = policy_label.as_in_context(ctx)
         [value_out, policy_out] = net(data)
+        if select_policy_from_plane:
+            policy_out = policy_out[:, FLAT_PLANE_IDX]
         # update the metrics
         metrics["value_loss"].update(preds=value_out, labels=value_label)
         metrics["policy_loss"].update(preds=nd.SoftmaxActivation(policy_out), labels=policy_label)
@@ -102,6 +106,7 @@ class TrainerAgent:  # Probably needs refactoring
         seed=42,
         val_loss_factor=0.01,
         policy_loss_factor=0.99,
+        select_policy_from_plane=True,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -162,6 +167,9 @@ class TrainerAgent:  # Probably needs refactoring
         self._param_names = self._params.keys()
         self.ordering = list(range(nb_parts))  # define a list which describes the order of the processed batches
 
+        # decides if the policy indices shall be selected directly from spatial feature maps without dense layer
+        self.select_policy_from_plane = select_policy_from_plane
+
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
         Logs a dictionary object of metric value to the console and to tensorboard
@@ -191,6 +199,8 @@ class TrainerAgent:  # Probably needs refactoring
             # old_label = value_label
             with autograd.record():
                 [value_out, policy_out] = self._net(data)
+                if self.select_policy_from_plane:
+                    policy_out = policy_out[:, FLAT_PLANE_IDX]
                 value_loss = self._l2_loss(value_out, value_label)
                 policy_loss = self._softmax_cross_entropy(policy_out, policy_label)
                 # weight the components of the combined loss
@@ -203,8 +213,12 @@ class TrainerAgent:  # Probably needs refactoring
             batch_proc_tmp += 1
         return batch_proc_tmp, self._metrics["value_loss"].get()[1]
 
-    def train(self):  # Probably needs refactoring
-        """ Training model"""
+    def train(self, cur_it=None):  # Probably needs refactoring
+        """
+        Training model
+        :param cur_it: Current iteration which is used for the learning rate and momentum schedule.
+         If set to None it will be initialized
+        """
         # Too many local variables (44/15) - Too many branches (18/12) - Too many statements (108/50)
         # set a custom seed for reproducibility
         random.seed(self._seed)
@@ -216,7 +230,9 @@ class TrainerAgent:  # Probably needs refactoring
         k_steps = self._k_steps_initial  # counter for thousands steps
         # calculate how many log states will be processed
         k_steps_end = self._total_it / self._batch_steps
-        cur_it = nb_spikes = 0  # count the number of spikes that have been detected
+        if cur_it is None:
+            cur_it = self._k_steps_initial * 1000
+        nb_spikes = 0   # count the number of spikes that have been detected
         # initialize the loss to compare with, with a very high value
         old_val_loss = 9000
         # self._lr = self._lr_warmup_init
@@ -268,6 +284,8 @@ class TrainerAgent:  # Probably needs refactoring
                     old_label = value_label
                     with autograd.record():
                         [value_out, policy_out] = self._net(data)
+                        if self.select_policy_from_plane:
+                            policy_out = policy_out[:, FLAT_PLANE_IDX]
                         value_loss = self._l2_loss(value_out, value_label)
                         policy_loss = self._softmax_cross_entropy(policy_out, policy_label)
                         # weight the components of the combined loss
@@ -310,10 +328,12 @@ class TrainerAgent:  # Probably needs refactoring
                         logging.debug("Iteration %d/%d", cur_it, self._total_it)
                         logging.debug("lr: %.7f - momentum: %.7f", learning_rate, momentum)
                         train_metric_values = evaluate_metrics(
-                            self._metrics, train_data, self._net, nb_batches=25, ctx=self._ctx
+                            self._metrics, train_data, self._net, nb_batches=25, ctx=self._ctx,
+                            select_policy_from_plane=self.select_policy_from_plane
                         )
                         val_metric_values = evaluate_metrics(
-                            self._metrics, self._val_data, self._net, nb_batches=None, ctx=self._ctx
+                            self._metrics, self._val_data, self._net, nb_batches=None, ctx=self._ctx,
+                            select_policy_from_plane=self.select_policy_from_plane
                         )
                         # spike_detected = False
                         # spike_detected = old_val_loss * 1.5 < val_metric_values['loss']
@@ -426,54 +446,3 @@ class TrainerAgent:  # Probably needs refactoring
                                     self.sum_writer.close()
 
                                 return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)
-
-                            """
-                            
-
-                        if patience_cnt >= self._patience or k_steps == k_steps_end:
-
-                            if cur_lr_drops == self._nb_lr_drops:
-
-                                logging.debug('The number of given learning rate drops has been reached '
-                                              '- stop training now.')
-                                # finally stop training because the number of lr drops has been achieved
-                                print()
-                                print('Elapsed time for training(hh:mm:ss): ' + str(
-                                    datetime.timedelta(seconds=round(time() - t_s))))
-
-                                val_loss = val_metric_values['loss']
-                                val_p_acc = val_metric_values['policy_acc']
-
-                                if self._log_metrics_to_tensorboard is True:
-                                    self.sw.close()
-
-                                return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)
-                                                            
-                            if patience_cnt >= self._patience:
-                                logging.debug('The learning rate will be dropped because the patience counter has been reached.')
-                                logging.debug('The last best model checkpoint will be loaded back into memory.')
-                            else:
-                                logging.debug('The given number of k_steps has been reached in the current period.'
-                                              'Drop the learning rate now')
-
-                            if patience_cnt >= self._patience:
-                                # ## Load the best model once again
-                                model_path = "./weights/model-%.5f-%.3f-%04d.params" % (
-                                val_loss_best, val_p_acc_best, k_steps_best)
-                                logging.info('Revert overfitting updates')
-                                logging.debug('load current best model:%s' % model_path)
-                                self._net.load_parameters(model_path, ctx=self._ctx)
-                                k_steps = k_steps_best
-                                logging.debug('k_step is back at %d', k_steps_best)
-
-                            # update the learning rate
-                            self._lr *= self._lr_drop_fac
-                            self._trainer.set_learning_rate(self._lr)
-                            logging.info('Learning rate update: lr = %.7f', self._lr)
-                            logging.info('=========================================')
-
-                            # set the new k_steps end based on the new current k_steps
-                            k_steps_end = k_steps + self._nb_k_steps
-                            # increase the lr dropping counter
-                            cur_lr_drops += 1
-                            """
