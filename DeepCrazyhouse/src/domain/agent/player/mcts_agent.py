@@ -83,6 +83,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         use_pruning=True,
         use_time_management=True,
         opening_guard_moves=0,
+        u_init_divisor=1,
     ):  # Too many arguments (21/5) - Too many local variables (29/15)
         """
         Constructor of the MCTSAgent.
@@ -133,6 +134,9 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                                     opening.
         :param use_future_q_values: If set True, the q-values of the most visited child nodes will be updated by taking
                                     the minimum of both the current and future q-values.
+        :param u_init_divisor: Division factor for calculating the u-value in select_node(). Default value is 1.0 to
+                                avoid division by 0. Values smaller 1.0 increases the chance of exploring each node at
+                                least once. This value must be greater 0.
         """
 
         super().__init__(temperature, temperature_moves, verbose)
@@ -211,6 +215,9 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         self.use_time_management = use_time_management
         self.opening_guard_moves = opening_guard_moves
         self.use_future_q_values = use_future_q_values
+        if u_init_divisor <= 0 or u_init_divisor > 1:
+            raise Exception("The value for the u-value initial divisor must be in (0,1]")
+        self.u_init_divisor = u_init_divisor
 
     def evaluate_board_state(self, state: GameState):  # Probably is better to be refactored
         """
@@ -741,7 +748,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # calculate the current u values
         # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
         u_value = (
-            cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_number_visits))
+            cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) /
+                                               (self.u_init_divisor + parent_node.child_number_visits))
         )
 
         child_idx = (parent_node.q_value + u_value).argmax()

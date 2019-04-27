@@ -65,6 +65,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "centi_cpuct": 250,
             "centi_dirichlet_epsilon": 25,
             "centi_dirichlet_alpha": 20,
+            "centi_u_init_divisor": 100,
             "max_search_depth": 40,
             "centi_temperature": 7,
             "temperature_moves": 0,
@@ -185,6 +186,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 use_pruning=self.settings["use_pruning"],
                 use_time_management=self.settings["use_time_management"],
                 opening_guard_moves=self.settings["opening_guard_moves"],
+                u_init_divisor=self.settings["centi_u_init_divisor"] / 100,
             )
 
             self.ab_agent = AlphaBetaAgent(nets[0], depth=self.settings["ab_depth"],
@@ -558,6 +560,10 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         self.log_print(
             "option name centi_dirichlet_alpha type spin default %d min 0 max 100"
             % self.settings["centi_dirichlet_alpha"]
+        )
+        self.log_print(
+            "option name centi_u_init_divisor type spin default %d min 1 max 100"
+            % self.settings["centi_u_init_divisor"]
         )
         self.log_print(
             "option name max_search_depth type spin default %d min 1 max 100" % self.settings["max_search_depth"]
