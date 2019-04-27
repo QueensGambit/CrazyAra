@@ -371,8 +371,9 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             self._enhance_checks(state, legal_moves, p_vec_small)
 
         # create a new root node
-        self.root_node = Node(state.get_pythonchess_board(),
-                              value, p_vec_small, legal_moves, is_leaf, clip_low_visit=False)
+        self.root_node = Node(
+            state.get_pythonchess_board(), value, p_vec_small, legal_moves, is_leaf, clip_low_visit=False
+        )
 
     def _expand_root_node_single_move(self, state, legal_moves):
         """
@@ -464,11 +465,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     # calculate the thread id based on the current playout
                     futures.append(
                         executor.submit(
-                            self._run_single_playout,
-                            parent_node=self.root_node,
-                            pipe_id=i,
-                            depth=1,
-                            chosen_nodes=[],
+                            self._run_single_playout, parent_node=self.root_node, pipe_id=i, depth=1, chosen_nodes=[]
                         )
                     )
 
@@ -658,8 +655,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 # clip the visit nodes for all nodes in the search tree except the director opp. move
                 clip_low_visit = self.use_pruning and depth != 1  # and depth > 4
                 new_node = Node(
-                    state.get_pythonchess_board(), value, p_vec_small, legal_moves, is_leaf,
-                    transposition_key, clip_low_visit
+                    state.get_pythonchess_board(),
+                    value,
+                    p_vec_small,
+                    legal_moves,
+                    is_leaf,
+                    transposition_key,
+                    clip_low_visit,
                 )  # create a new node
 
                 if depth == 1:
@@ -748,8 +750,9 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # calculate the current u values
         # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
         u_value = (
-            cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) /
-                                               (self.u_init_divisor + parent_node.child_number_visits))
+            cpuct
+            * parent_node.policy_prob
+            * (np.sqrt(parent_node.n_sum) / (self.u_init_divisor + parent_node.child_number_visits))
         )
 
         child_idx = (parent_node.q_value + u_value).argmax()

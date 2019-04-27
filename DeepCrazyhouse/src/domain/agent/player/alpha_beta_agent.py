@@ -24,6 +24,7 @@ class AlphaBetaAgent(AbsAgent):
     """
     Alpha beta agent which has the option to clip moves to make the search tractable for NN engines
     """
+
     def __init__(self, net: NeuralNetAPI, depth=5, nb_candidate_moves=7, include_check_moves=False):
         """
         Constructor
@@ -70,7 +71,7 @@ class AlphaBetaAgent(AbsAgent):
         if all_moves > 0:
             mv_idces = list(np.argsort(p_vec_small)[::-1])
         else:
-            mv_idces = list(np.argsort(p_vec_small)[::-1][:self.nb_candidate_moves])
+            mv_idces = list(np.argsort(p_vec_small)[::-1][: self.nb_candidate_moves])
 
         if self.include_check_moves:
             check_idces, nb_checks = get_check_move_indices(state.get_pythonchess_board(), state.get_legal_moves())
@@ -81,7 +82,7 @@ class AlphaBetaAgent(AbsAgent):
                 mv = legal_moves[mv_idx]
                 state_child = copy.deepcopy(state)
                 state_child.apply_move(mv)
-                value = -self.negamax(state_child, depth-1, -beta, -alpha, -color, all_moves-1)
+                value = -self.negamax(state_child, depth - 1, -beta, -alpha, -color, all_moves - 1)
                 if value > best_value:
                     self.best_moves[-depth] = mv
                     self.sel_mv_idx[-depth] = mv_idx
@@ -98,8 +99,9 @@ class AlphaBetaAgent(AbsAgent):
         :return:
         """
         self.t_start_eval = time()
-        value = self.negamax(state, depth=self.depth, alpha=-math.inf, beta=math.inf,
-                             color=1 if state.board.turn else -1)
+        value = self.negamax(
+            state, depth=self.depth, alpha=-math.inf, beta=math.inf, color=1 if state.board.turn else -1
+        )
 
         legal_moves = state.get_legal_moves()
         policy = np.zeros(len(legal_moves))
