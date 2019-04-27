@@ -68,7 +68,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "max_search_depth": 40,
             "centi_temperature": 7,
             "temperature_moves": 0,
-            "opening_guard_moves": 7,
+            "opening_guard_moves": 0,
             "centi_clip_quantil": 0,
             "virtual_loss": 3,
             "centi_q_value_weight": 70,
@@ -77,8 +77,8 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "moves_left": 40,
             "extend_time_on_bad_position": True,
             "max_move_num_to_reduce_movetime": 4,
-            "check_mate_in_one": False,
-            "use_pruning": True,
+            "enhance_checks": False,
+            "use_pruning": False,
             "use_oscillating_cpuct": False,
             "use_time_management": True,
             "verbose": False,
@@ -180,7 +180,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 verbose=self.settings["verbose"],
                 min_movetime=self.min_search_time,
                 batch_size=self.settings["batch_size"],
-                check_mate_in_one=self.settings["check_mate_in_one"],
+                enhance_checks=self.settings["enhance_checks"],
                 use_pruning=self.settings["use_pruning"],
                 use_oscillating_cpuct=self.settings["use_oscillating_cpuct"],
                 use_time_management=self.settings["use_time_management"],
@@ -459,7 +459,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         "use_raw_network",
                         "extend_time_on_bad_position",
                         "verbose",
-                        "check_mate_in_one",
+                        "enhance_checks",
                         "use_pruning",
                         "use_oscillating_cpuct",
                         "use_time_management",
@@ -474,8 +474,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         self.settings["extend_time_on_bad_position"] = True if value == "true" else False
                     elif option_name == "verbose":
                         self.settings["verbose"] = True if value == "true" else False
-                    elif option_name == "check_mate_in_one":
-                        self.settings["check_mate_in_one"] = True if value == "true" else False
+                    elif option_name == "enhance_checks":
+                        self.settings["enhance_checks"] = True if value == "true" else False
                     elif option_name == "use_pruning":
                         self.settings["use_pruning"] = True if value == "true" else False
                     elif option_name == "use_oscillating_cpuct":
@@ -595,8 +595,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
             % self.settings["max_move_num_to_reduce_movetime"]
         )
         self.log_print(
-            "option name check_mate_in_one type check default %s"
-            % ("false" if not self.settings["check_mate_in_one"] else "true")
+            "option name enhance_checks type check default %s"
+            % ("false" if not self.settings["enhance_checks"] else "true")
         )
         self.log_print(
             "option name use_pruning type check default %s" % ("false" if not self.settings["use_pruning"] else "true")

@@ -23,10 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from multiprocessing import Pipe
 from time import time
-from weakref import finalize
-
 import numpy as np
-from gevent.ares import channel
 
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
@@ -35,6 +32,7 @@ from DeepCrazyhouse.src.domain.agent.player.util.node import Node
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
 from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
+from DeepCrazyhouse.src.domain.util import get_check_move_mask
 
 DTYPE = np.float
 
@@ -80,7 +78,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         virtual_loss=3,
         verbose=True,
         min_movetime=100,
-        check_mate_in_one=False,
+        enhance_checks=False,
         use_pruning=True,
         use_oscillating_cpuct=True,
         use_time_management=True,
@@ -122,9 +120,10 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                              is the virtual loss. This prevents that every thread will evaluate the same node.
         :param verbose: Defines weather to print out info messages for the current calculated line
         :param min_movetime: Minimum time in milliseconds to search for the best move
-        :param check_mate_in_one: Decide whether to check for every leaf node if a there is a mate in one move then
-                                  create a mate in one short cut which prioritizes this move. Currently by default this
-                                  option is disabled because it takes costs too much nps regarding its benefit.
+        :param enhance_checks: Decide whether to increase the probability for checking move below 10% by 10%.
+                               This lowers the chance of missing forced mates and possible direct mate threats.
+                               Currently it is only applied to the root node and its direct child node due to runtime
+                               costs.
         :param use_time_management: If set to true the mcts will spent less time on "obvious" moves an allocate a time
                                     buffer for more critical moves.
         :param opening_guard_moves: Number of moves for which the exploration is limited
@@ -179,7 +178,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         self.dirichlet_epsilon = dirichlet_epsilon
         self.movetime_ms = min_movetime
         self.q_value_weight = q_value_weight
-        self.check_mate_in_one = check_mate_in_one
+        self.enhance_checks = enhance_checks
+
         # temporary variables
         # time counter - n° of nodes stored to measure the nps - priority policy for the root node
         self.t_start_eval = self.total_nodes_pre_search = self.root_node_prior_policy = None
@@ -235,6 +235,14 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
 
         if not self.use_pruning and key in self.node_lookup:
             self.root_node = self.node_lookup[key]  # if key in self.node_lookup:
+
+            if self.enhance_checks:
+                self._enhance_checks(state, legal_moves, self.root_node.policy_prob)
+                # enhance checks for all direct child nodes
+                for child_node in self.root_node.child_nodes:
+                    if child_node:
+                        self._enhance_checks(state, child_node.legal_moves, child_node.policy_prob)
+
             logging.debug(
                 "Reuse the search tree. Number of nodes in search tree: %d",
                 self.root_node.nb_total_expanded_child_nodes,
@@ -274,15 +282,17 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # receive the policy vector based on the MCTS search
         p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
 
-        # use q-future value to update the q-values of direct child nodes
-        q_future, indices = self.get_last_q_values(min_nb_visits=5, max_depth=25) #25)
-        # self.root_node.q_value = 0.5 * self.root_node.q_value + 0.5 * q_future
-        # TODO: make this matrix vector form
-        if max_depth_reached >= 5:
-            for idx in indices:
-                self.root_node.q_value[idx] = min(self.root_node.q_value[idx], q_future[idx])
+        use_q_future = True
+        if use_q_future:
+            # use q-future value to update the q-values of direct child nodes
+            q_future, indices = self.get_last_q_values(min_nb_visits=5, max_depth=25) #25)
+            # self.root_node.q_value = 0.5 * self.root_node.q_value + 0.5 * q_future
+            # TODO: make this matrix vector form
+            if max_depth_reached >= 5:
+                for idx in indices:
+                    self.root_node.q_value[idx] = min(self.root_node.q_value[idx], q_future[idx])
 
-            p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
+                p_vec_small = self.root_node.get_mcts_policy(self.q_value_weight)  # , xth_n_max=xth_n_max, is_root=True)
 
         # if self.use_pruning is False:
         self.node_lookup[key] = self.root_node  # store the current root in the lookup table
@@ -320,6 +330,22 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             logging.info("info string %s", score)
         return value, legal_moves, p_vec_small, centipawns, depth, nodes, time_elapsed_s, nps, pv
 
+    def _enhance_checks(self, state, legal_moves, policy_prob):
+        """
+        Increases the probability by 10% for checking moves lower than 10% in policy_prob
+        :param state: Board state
+        :param legal_moves: List of legal moves in the position
+        :param policy_prob: Numpy probability vector for each move. Note this variable will be modified.
+        :return:
+        """
+        check_mask, nb_checks = get_check_move_mask(state.get_pythonchess_board(), legal_moves)
+
+        if nb_checks > 0:
+            # increase chances of checking
+            policy_prob[np.logical_and(check_mask, policy_prob < 0.1)] += 0.1
+            # normalize back to 1.0
+            policy_prob /= policy_prob.sum()
+
     def _expand_root_node_multiple_moves(self, state, legal_moves):
         """
         Checks if the current root node can be found in the look-up table.
@@ -334,17 +360,12 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # extract a sparse policy vector with normalized probabilities
         p_vec_small = get_probs_of_move_list(policy_vec, legal_moves, state.is_white_to_move())
 
-        if self.check_mate_in_one:
-            str_legal_moves = str(state.get_legal_moves())
-        else:
-            str_legal_moves = ""
-
-        # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
+        if self.enhance_checks:
+            self._enhance_checks(state, legal_moves, p_vec_small)
 
         # create a new root node
         self.root_node = Node(state.get_pythonchess_board(),
-                              value, p_vec_small, legal_moves, str_legal_moves, is_leaf, clip_low_visit=False) #,
-                              # check_mv_mask=check_move_mask)
+                              value, p_vec_small, legal_moves, is_leaf, clip_low_visit=False)
 
     def _expand_root_node_single_move(self, state, legal_moves):
         """
@@ -358,11 +379,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         [value, _] = self.nets[0].predict_single(state.get_state_planes())
         p_vec_small = np.array([1], np.float32)  # we can create the move probability vector without the NN this time
 
-        # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
-
         # create a new root node
-        self.root_node = Node(state.get_pythonchess_board(), value, p_vec_small, legal_moves,
-                              str(state.get_legal_moves()), clip_low_visit=False) #, check_mv_mask=check_move_mask)
+        self.root_node = Node(state.get_pythonchess_board(), value, p_vec_small, legal_moves, clip_low_visit=False)
 
         if self.root_node.child_nodes[0] is None:  # check a child node if it doesn't exists already
             state_child = deepcopy(state)
@@ -392,11 +410,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     policy_vec, legal_moves_child, state_child.is_white_to_move()
                 )
 
-            # check_move_mask = get_check_move_mask(board=state.board, legal_moves=legal_moves)
-
             # create a new child node
-            child_node = Node(state.get_pythonchess_board(), value, p_vec_small_child, legal_moves_child,
-                              str(state_child.get_legal_moves()), is_leaf) #, check_move_mask)
+            child_node = Node(state.get_pythonchess_board(), value, p_vec_small_child, legal_moves_child, is_leaf)
             self.root_node.child_nodes[0] = child_node  # connect the child to the root
             # assign the value of the root node as the q-value for the child
             # here we must invert the invert the value because it's the value prediction of the next state
@@ -423,14 +438,14 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         else:
             nb_playouts = self.nb_playouts_filled_pockets
 
-        # iterate through all children and add dirichlet if there exists any
-        for child_node in self.root_node.child_nodes:
-            if child_node:
-                # add dirichlet noise to a the child nodes of the root node
-                child_node.apply_dirichlet_noise_to_prior_policy(
-                    epsilon=self.dirichlet_epsilon * 0.05, alpha=self.dirichlet_alpha  # 02,
-                )
-                # child_node.q_value[child_node.q_value < 0] = child_node.q_value.max() - 0.25
+        # # iterate through all children and add dirichlet if there exists any
+        # for child_node in self.root_node.child_nodes:
+        #     if child_node:
+        #         # add dirichlet noise to a the child nodes of the root node
+        #         child_node.apply_dirichlet_noise_to_prior_policy(
+        #             epsilon=self.dirichlet_epsilon * 0.05, alpha=self.dirichlet_alpha  # 02,
+        #         )
+        #         # child_node.q_value[child_node.q_value < 0] = child_node.q_value.max() - 0.25
         t_elapsed_ms = cur_playouts = 0
         old_time = time()
         cpuct_init = self.cpuct
@@ -654,15 +669,11 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                         )
                     except KeyError:
                         raise Exception("Key Error for state: %s" % state)
-                # convert all legal moves to a string if the option check_mate_in_one was enabled
-                if self.check_mate_in_one:
-                    str_legal_moves = str(state.get_legal_moves())
-                else:
-                    str_legal_moves = ""
+
                 # clip the visit nodes for all nodes in the search tree except the director opp. move
-                clip_low_visit = self.use_pruning and depth != 1 # and depth > 4
+                clip_low_visit = self.use_pruning and depth != 1  # and depth > 4
                 new_node = Node(
-                    state.get_pythonchess_board(), value, p_vec_small, legal_moves, str_legal_moves, is_leaf,
+                    state.get_pythonchess_board(), value, p_vec_small, legal_moves, is_leaf,
                     transposition_key, clip_low_visit
                 )  # create a new node
 
@@ -673,20 +684,9 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                             with parent_node.lock:
                                 value = 99
 
-                    if parent_node.initial_value > 0.65:  # and state.are_pocket_empty(): #and pipe_id == 0:
-                        fac = 0.25  # test of adding dirichlet noise to a new node
-
-                        if len(parent_node.legal_moves) < 20:
-                            fac *= 5
-                        new_node.apply_dirichlet_noise_to_prior_policy(
-                            epsilon=self.dirichlet_epsilon * fac, alpha=self.dirichlet_alpha
-                        )
-
-                    if value < 0:
-                        # test of adding dirichlet noise to a new node
-                        new_node.apply_dirichlet_noise_to_prior_policy(
-                            epsilon=self.dirichlet_epsilon * 0.02, alpha=self.dirichlet_alpha
-                        )
+                    # for performance reasons only apply check enhancement on depth 1 for now
+                    if self.enhance_checks:
+                        self._enhance_checks(state, legal_moves, p_vec_small)
 
                 if not self.use_pruning:
                     self.node_lookup[key] = new_node  # include a reference to the new node in the look-up table
@@ -756,24 +756,22 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 node_idx - Integer idx value indicating the index for the selected child of the parent node
         """
 
-        if parent_node.mate_child_idx:  # check first if there's an immediate mate in one move possible
-            child_idx = parent_node.mate_child_idx
+        # find the move according to the q- and u-values for each move
+        if not self.use_oscillating_cpuct:
+            pb_c_base = 19652
+            pb_c_init = self.cpuct
+
+            cpuct = math.log((parent_node.n_sum + pb_c_base + 1) / pb_c_base) + pb_c_init
         else:
-            # find the move according to the q- and u-values for each move
-            if not self.use_oscillating_cpuct:
-                pb_c_base = 19652
-                pb_c_init = self.cpuct
+            cpuct = self.cpuct
+        # calculate the current u values
+        # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
+        u_value = (
+            cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_number_visits))
+        )
 
-                cpuct = math.log((parent_node.n_sum + pb_c_base + 1) / pb_c_base) + pb_c_init
-            else:
-                cpuct = self.cpuct
-            # calculate the current u values
-            # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-            u_value = (
-                cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_number_visits))
-            )
+        child_idx = (parent_node.q_value + u_value).argmax()
 
-            child_idx = (parent_node.q_value + u_value).argmax()
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
 
     def _select_node_based_on_mcts_policy(self, parent_node: Node):
@@ -798,8 +796,11 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             best_moves.append(move)
         return best_moves
 
-    def get_2nd_max(self):
-        """ TODO: docstring """
+    def get_2nd_max(self) -> int:
+        """
+        Returns the number of visits of the 2nd most visited direct child node
+        :return: Integer value of number of visits
+        """
         n_child = self.root_node.child_number_visits.argmax()
         n_max = self.root_node.child_number_visits[n_child]
         self.root_node.child_number_visits[n_child] = 0
@@ -808,7 +809,11 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         return second_max
 
     def get_xth_max(self, xth_node):
-        """ TODO: docstring """
+        """
+        Returns the number of visits of the X most visited direct child node
+        ;:param xth_node: Index number for the number of visits. 1 ist the most visited child
+        :return: Integer value of number of visits
+        """
         if len(self.root_node.child_number_visits) < xth_node:
             return self.root_node.child_number_visits.min()
         return np.sort(self.root_node.child_number_visits)[-xth_node]

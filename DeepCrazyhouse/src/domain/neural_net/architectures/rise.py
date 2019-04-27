@@ -230,7 +230,7 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
         value_fc_size=256,
         bn_mom=0.9,
         act_type="relu",
-        use_se=True,
+        squeeze_excitation_type=None,
         use_rise_stem=False,
         **kwargs
     ):  # Too many local variables (22/15)
@@ -242,6 +242,11 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
         :param nb_res_blocks_x: Number of residual blocks to stack. In the paper they used 19 or 39 residual blocks
         :param value_fc_size: Fully Connected layer size. Used for the value output
         :param bn_mom: Batch normalization momentum
+        :param squeeze_excitation_type: Available types: [None, "cSE", "sSE", "csSE", "mixed"]
+                                        cSE: Channel-wise-squeeze-excitation
+                                        sSE: Spatial-wise-squeeze-excitation
+                                        csSE: Channel-spatial-wise-squeeze-excitation
+                                        mixed: Use cSE and sSE interchangeably
         :return: gluon net description
         """
 
@@ -260,9 +265,17 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
         for i in range(nb_res_blocks_x):
             unit_name = "unit%d" % i
 
-            se_type = None
-            if use_se:
-                se_type = "cSE"
+            if squeeze_excitation_type is None:
+                se_type = None
+            elif squeeze_excitation_type in ["cSE", "sSE", "csSE"]:
+                se_type = squeeze_excitation_type
+            elif squeeze_excitation_type == "mixed":
+                if i % 2 == 0:
+                    se_type = "cSE"
+                else:
+                    se_type = "sSE"
+            else:
+                raise Exception("Unavailable SE type given.")
 
             self.body.add(
                 ResidualBlockX(

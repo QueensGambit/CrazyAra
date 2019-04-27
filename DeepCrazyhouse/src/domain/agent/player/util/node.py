@@ -24,7 +24,6 @@ class Node:  # Too many instance attributes (14/7)
         value,
         p_vec_small: np.ndarray,
         legal_moves: [chess.Move],
-        str_legal_moves: str,
         is_leaf=False,
         transposition_key=None,
         clip_low_visit=True,
@@ -62,15 +61,6 @@ class Node:  # Too many instance attributes (14/7)
 
         # number of total visits to this node
         self.n_sum = 1  # we initialize with 1 because if the node was created it must have been visited
-
-        # check if there's a possible mate on the board if yes create a quick link to the mate move
-        mate_mv_idx_str = str_legal_moves.find("#")
-        if mate_mv_idx_str != -1:  # -1 means that no mate move has been found
-            # find the according index of the move in the legal_moves generator list
-            # and make a quick reference path to a child node which leads to mate
-            self.mate_child_idx = str_legal_moves[:mate_mv_idx_str].count(",")  # Count the ',' its the move index
-        else:
-            self.mate_child_idx = None  # If no direct mate move is possible so set the reference to None
 
         # stores the number of all possible expandable child nodes
         # self.nb_expandable_child_nodes = np.array(self.nb_direct_child_nodes)

@@ -73,7 +73,7 @@ class AlphaBetaAgent(AbsAgent):
             mv_idces = list(np.argsort(p_vec_small)[::-1][:self.nb_candidate_moves])
 
         if self.include_check_moves:
-            check_idces = get_check_move_indices(state.get_pythonchess_board(), state.get_legal_moves())
+            check_idces, nb_checks = get_check_move_indices(state.get_pythonchess_board(), state.get_legal_moves())
             mv_idces += check_idces
 
         for idx, mv_idx in enumerate(mv_idces):  # each child of position
