@@ -232,7 +232,7 @@ class TrainerAgent:  # Probably needs refactoring
         k_steps_end = self._total_it / self._batch_steps
         if cur_it is None:
             cur_it = self._k_steps_initial * 1000
-        nb_spikes = 0   # count the number of spikes that have been detected
+        nb_spikes = 0  # count the number of spikes that have been detected
         # initialize the loss to compare with, with a very high value
         old_val_loss = 9000
         # self._lr = self._lr_warmup_init
@@ -328,12 +328,20 @@ class TrainerAgent:  # Probably needs refactoring
                         logging.debug("Iteration %d/%d", cur_it, self._total_it)
                         logging.debug("lr: %.7f - momentum: %.7f", learning_rate, momentum)
                         train_metric_values = evaluate_metrics(
-                            self._metrics, train_data, self._net, nb_batches=25, ctx=self._ctx,
-                            select_policy_from_plane=self.select_policy_from_plane
+                            self._metrics,
+                            train_data,
+                            self._net,
+                            nb_batches=25,
+                            ctx=self._ctx,
+                            select_policy_from_plane=self.select_policy_from_plane,
                         )
                         val_metric_values = evaluate_metrics(
-                            self._metrics, self._val_data, self._net, nb_batches=None, ctx=self._ctx,
-                            select_policy_from_plane=self.select_policy_from_plane
+                            self._metrics,
+                            self._val_data,
+                            self._net,
+                            nb_batches=None,
+                            ctx=self._ctx,
+                            select_policy_from_plane=self.select_policy_from_plane,
                         )
                         # spike_detected = False
                         # spike_detected = old_val_loss * 1.5 < val_metric_values['loss']

@@ -43,8 +43,9 @@ class CrazyAra:  # Too many instance attributes (25/7)
         # enable this variable if you want to see debug messages in certain environments, like the lichess.org api
         self.enable_lichess_debug_msg = self.setup_done = False
         self.client = {"name": "CrazyAra", "version": "0.4.0", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
-        self.mcts_agent = self.rawnet_agent = self.ab_agent = self.gamestate = self.bestmove_value = self.move_time \
-            = self.score = None
+        self.mcts_agent = (
+            self.rawnet_agent
+        ) = self.ab_agent = self.gamestate = self.bestmove_value = self.move_time = self.score = None
         self.engine_played_move = 0
         self.log_file_path = "CrazyAra-log.txt"
         self.score_file_path = "score-log.txt"
@@ -189,9 +190,12 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 u_init_divisor=self.settings["centi_u_init_divisor"] / 100,
             )
 
-            self.ab_agent = AlphaBetaAgent(nets[0], depth=self.settings["ab_depth"],
-                                           nb_candidate_moves=self.settings["ab_candidate_moves"],
-                                           include_check_moves=False)
+            self.ab_agent = AlphaBetaAgent(
+                nets[0],
+                depth=self.settings["ab_depth"],
+                nb_candidate_moves=self.settings["ab_candidate_moves"],
+                include_check_moves=False,
+            )
 
             self.gamestate = GameState()
             self.setup_done = True
@@ -528,12 +532,13 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         self.log_print("id author %s" % self.client["authors"])
         # tell the GUI all possible options
         self.log_print("option name UCI_Variant type combo default crazyhouse var crazyhouse")
-        self.log_print("option name search_type type combo default %s var mcts var alpha_beta" %
-                       self.settings["search_type"])
+        self.log_print(
+            "option name search_type type combo default %s var mcts var alpha_beta" % self.settings["search_type"]
+        )
         self.log_print("option name ab_depth type spin default %d min 1 max 40" % self.settings["ab_depth"])
         self.log_print(
-            "option name ab_candidate_moves type spin default %d min 1 max 4096"
-            % self.settings["ab_candidate_moves"])
+            "option name ab_candidate_moves type spin default %d min 1 max 4096" % self.settings["ab_candidate_moves"]
+        )
         self.log_print("option name context type combo default %s var cpu var gpu" % self.settings["context"])
         self.log_print(
             "option name use_raw_network type check default %s"

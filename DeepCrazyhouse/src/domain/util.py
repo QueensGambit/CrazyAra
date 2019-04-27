@@ -263,4 +263,3 @@ def get_check_move_indices(board, legal_moves):
             check_move_idces.append(idx)
             nb_checks += 1
     return check_move_idces, nb_checks
-
