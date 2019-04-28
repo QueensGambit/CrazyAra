@@ -257,9 +257,6 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 self.root_node.nb_total_expanded_child_nodes,
             )
             self.total_nodes_pre_search = deepcopy(self.root_node.n_sum)
-            # reset potential good nodes for the root
-            self.root_node.q_value[self.root_node.q_value < 0] = self.root_node.q_value.max() - 0.25
-
         else:
             logging.debug("Starting a brand new search tree...")
             self.root_node = None

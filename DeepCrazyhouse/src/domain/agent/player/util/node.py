@@ -20,7 +20,7 @@ class Node:  # Too many instance attributes (14/7)
 
     def __init__(
         self,
-        board: chess.BaseBoard,
+        board,
         value,
         p_vec_small: np.ndarray,
         legal_moves: [chess.Move],
@@ -50,7 +50,6 @@ class Node:  # Too many instance attributes (14/7)
         # q: combined action value which is calculated by the averaging over all action values
         # u: exploration metric for each child node
         # (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-        # self.q_value = np.zeros(self.nb_direct_child_nodes)
         self.q_value = np.ones(self.nb_direct_child_nodes) * -1
 
         if not is_leaf:
