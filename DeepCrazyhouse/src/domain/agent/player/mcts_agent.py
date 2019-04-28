@@ -273,7 +273,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 self._expand_root_node_single_move(state, legal_moves)
 
             # increase the move time buffer
-            # substract half a second as a constant for possible delay
+            # subtract half a second as a constant for possible delay
             self.time_buffer_ms += max(self.movetime_ms - 500, 0)
         else:
             if self.root_node is None:
@@ -330,7 +330,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         else:
             # return a high constant in otherwise
             nps = 999999999
-            
+
         pv = str_moves
         if self.verbose:
             score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (
@@ -344,7 +344,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             logging.info("info string %s", score)
         return value, legal_moves, p_vec_small, centipawns, depth, nodes, time_elapsed_s, nps, pv
 
-    def _enhance_checks(self, state, legal_moves, policy_prob):
+    @staticmethod
+    def _enhance_checks(state, legal_moves, policy_prob):
         """
         Increases the probability by 10% for checking moves lower than 10% in policy_prob
         :param state: Board state

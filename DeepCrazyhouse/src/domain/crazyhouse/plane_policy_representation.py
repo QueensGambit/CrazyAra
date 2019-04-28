@@ -11,10 +11,10 @@ Most of the functions are 100% optimal in terms of performance, but there are on
 table for retrieving the move probability from the policy feature maps, so this doesn't play a factor.
 
 """
-from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_WIDTH, BOARD_HEIGHT, LABELS
-from DeepCrazyhouse.src.domain.util import get_row_col
 import numpy as np
 import chess
+from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_WIDTH, BOARD_HEIGHT, LABELS
+from DeepCrazyhouse.src.domain.util import get_row_col
 
 
 def get_movement_vector(move: chess.Move):
@@ -137,8 +137,7 @@ def get_plane_index_promotion_move(piece_type, movement_vector) -> int:
         movement_offset = movement_vector[1] + 1  # pawn move: left, forward, right -> 0..2
         board_offset = move_type_offset + (piece_offset * 3) + movement_offset
         return board_offset
-    else:
-        raise RuntimeError("invalid piece promotion")
+    raise RuntimeError("invalid piece promotion")
 
 
 def get_plane_index_drop_move(piece_type) -> int:
@@ -177,7 +176,7 @@ def get_plane_index_from_move(move) -> [int, int, int]:
         to_row, to_col = get_row_col(move.to_square)
         board_offset = get_plane_index_drop_move(piece_type)
         return board_offset, to_row, to_col
-    elif move.promotion:
+    if move.promotion:
         piece_type = move.promotion
         movement_vector = get_movement_vector(move)
         # a pawn can only move forward or capture to the left or right
@@ -185,26 +184,23 @@ def get_plane_index_from_move(move) -> [int, int, int]:
         # python-chess starts counting at 1
         from_row, from_col = get_row_col(move.from_square)
         board_offset = get_plane_index_promotion_move(piece_type, movement_vector)
-
         return board_offset, from_row, from_col
-    else:
-        # normal move
-        movement_vector = get_movement_vector(move)
-        from_row, from_col = get_row_col(move.from_square)
 
-        absolute_movement_vector = np.abs(movement_vector)
-        # a knight move can be identified by its special movement behaviour
-        # only the knight has a '1' and a '2' in its movement vector
-        is_knight_move = (min(absolute_movement_vector) == 1) and (max(absolute_movement_vector) == 2)
-        if is_knight_move:
-            board_offset = get_plane_index_knight_move(movement_vector)
+    # normal move
+    movement_vector = get_movement_vector(move)
+    from_row, from_col = get_row_col(move.from_square)
 
-            return board_offset, from_row, from_col
-        else:
-            move_type_offset = 0
-            movement_offset = get_plane_index_queen_move(movement_vector)
-            board_offset = move_type_offset + movement_offset
-            return board_offset, from_row, from_col
+    absolute_movement_vector = np.abs(movement_vector)
+    # a knight move can be identified by its special movement behaviour
+    # only the knight has a '1' and a '2' in its movement vector
+    is_knight_move = (min(absolute_movement_vector) == 1) and (max(absolute_movement_vector) == 2)
+    if is_knight_move:
+        board_offset = get_plane_index_knight_move(movement_vector)
+        return board_offset, from_row, from_col
+    move_type_offset = 0
+    movement_offset = get_plane_index_queen_move(movement_vector)
+    board_offset = move_type_offset + movement_offset
+    return board_offset, from_row, from_col
 
 
 def get_move_planes(move):
@@ -213,7 +209,7 @@ def get_move_planes(move):
 
     Queen moves | 56     ->  0..55
     Knight moves | 8     -> 56..63
-    Underpromotions | 9  -> 64..75
+    Under-promotions | 9  -> 64..75
     Drop | 5             -> 76..80
     ----------------------------
     Total 81
