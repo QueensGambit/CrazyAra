@@ -475,19 +475,19 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         value = int(cmd_list[4])
 
                     if option_name == "use_raw_network":
-                        self.settings["use_raw_network"] = True if value == "true" else False
+                        self.settings["use_raw_network"] = value == "true"
                     elif option_name == "extend_time_on_bad_position":
-                        self.settings["extend_time_on_bad_position"] = True if value == "true" else False
+                        self.settings["extend_time_on_bad_position"] = value == "true"
                     elif option_name == "verbose":
-                        self.settings["verbose"] = True if value == "true" else False
+                        self.settings["verbose"] = value == "true"
                     elif option_name == "enhance_checks":
-                        self.settings["enhance_checks"] = True if value == "true" else False
+                        self.settings["enhance_checks"] = value == "true"
                     elif option_name == "use_pruning":
-                        self.settings["use_pruning"] = True if value == "true" else False
+                        self.settings["use_pruning"] = value == "true"
                     elif option_name == "use_future_q_values":
-                        self.settings["use_future_q_values"] = True if value == "true" else False
+                        self.settings["use_future_q_values"] = value == "true"
                     elif option_name == "use_time_management":
-                        self.settings["use_time_management"] = True if value == "true" else False
+                        self.settings["use_time_management"] = value == "true"
                     else:
                         self.settings[option_name] = value  # by default all options are treated as integers
                         # Guard threads limits
@@ -522,7 +522,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 moves_left = max(moves_left, self.min_moves_left)
             # Else if TC is traditional, we extend with more time if we have more time left
             elif moves_left > 4:
-                moves_left = moves_left - moves_left // 8
+                moves_left -= moves_left // 8
 
         return moves_left
 

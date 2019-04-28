@@ -10,8 +10,9 @@ For more details see: https://en.wikipedia.org/wiki/Negamax
 import math
 import logging
 import copy
-import numpy as np
 from time import time
+import numpy as np
+
 
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
@@ -35,6 +36,7 @@ class AlphaBetaAgent(AbsAgent):
         :param include_check_moves: Defines if checking moves shall always be considered
         """
         AbsAgent.__init__(self)
+        self.t_start_eval = None
         self.net = net
         self.nodes = 0
         self.depth = depth
@@ -45,8 +47,9 @@ class AlphaBetaAgent(AbsAgent):
 
     def negamax(self, state, depth, alpha=-math.inf, beta=math.inf, color=1, all_moves=1):
         """
-        Evaluates all nodes at a given depth and backpropagates their values to their respective parent nodes.
+        Evaluates all nodes at a given depth and back-propagates their values to their respective parent nodes.
         In order to keep the number nof nodes manageable for neural network evaluation
+        :param all_moves: All possible moves
         :param state: Game state object
         :param depth: Number of depth to reach during search
         :param alpha: Current alpha value which is used for pruning
@@ -74,10 +77,10 @@ class AlphaBetaAgent(AbsAgent):
             mv_idces = list(np.argsort(p_vec_small)[::-1][: self.nb_candidate_moves])
 
         if self.include_check_moves:
-            check_idces, nb_checks = get_check_move_indices(state.get_pythonchess_board(), state.get_legal_moves())
+            check_idces, _ = get_check_move_indices(state.get_pythonchess_board(), state.get_legal_moves())
             mv_idces += check_idces
 
-        for idx, mv_idx in enumerate(mv_idces):  # each child of position
+        for mv_idx in mv_idces:  # each child of position
             if p_vec_small[mv_idx] > 0.1:
                 mv = legal_moves[mv_idx]
                 state_child = copy.deepcopy(state)

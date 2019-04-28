@@ -270,7 +270,7 @@ def planes_to_board(planes, normalized_input=False):
             nb_prisoners *= MAX_NB_PRISONERS
             nb_prisoners = int(round(nb_prisoners))
 
-        for i in range(nb_prisoners):
+        for _ in range(nb_prisoners):
             board.pockets[chess.WHITE].add(p_type)
 
         # add prisoners for the opponent
