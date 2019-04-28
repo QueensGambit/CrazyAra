@@ -248,7 +248,7 @@ def get_check_move_indices(board, legal_moves):
     Returns all possible checking moves in a list [Caution: Not performant]
     :param board: Python chess both
     :param legal_moves: list of legal moves
-    :return: check_move_idxes: np-boolean array marking the checking moves
+    :return: check_move_idces: np-boolean array marking the checking moves
             nb_checks: Number of possible checks
     """
 
