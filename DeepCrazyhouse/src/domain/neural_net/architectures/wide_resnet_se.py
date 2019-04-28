@@ -9,8 +9,11 @@ Please describe what the content of this file is about
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.nn import HybridSequential
 
-from DeepCrazyhouse.src.domain.neural_net.architectures.a0_resnet import _ValueHeadAlphaZero, _PolicyHeadAlphaZero, \
-    _StemAlphaZero
+from DeepCrazyhouse.src.domain.neural_net.architectures.a0_resnet import (
+    _ValueHeadAlphaZero,
+    _PolicyHeadAlphaZero,
+    _StemAlphaZero,
+)
 from DeepCrazyhouse.src.domain.neural_net.architectures.rise import ResidualBlockX
 
 
@@ -56,8 +59,16 @@ class WideResnetSE(HybridBlock):
                 se_type = None
 
             # add the initial convolutional layer
-            self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type,
-                                         se_type=se_type, nb_input_channels=nb_input_channels))
+            self.body.add(
+                _StemAlphaZero(
+                    name="stem",
+                    channels=channels,
+                    bn_mom=bn_mom,
+                    act_type=act_type,
+                    se_type=se_type,
+                    nb_input_channels=nb_input_channels,
+                )
+            )
 
             for i in range(nb_res_blocks):
                 unit_name = "unit%d" % i
@@ -74,7 +85,9 @@ class WideResnetSE(HybridBlock):
                 )
 
             # create the two heads which will be used in the hybrid fwd pass
-            self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, bn_mom, act_type, se_type)
+            self.value_head = _ValueHeadAlphaZero(
+                "value", channels_value_head, value_fc_size, bn_mom, act_type, se_type
+            )
             self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, bn_mom, act_type, se_type)
 
     def hybrid_forward(self, F, x):

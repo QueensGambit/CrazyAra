@@ -24,9 +24,19 @@ class DenseNet(HybridBlock):
     Definition of Densenet bottlekneck architecture
     """
 
-    def __init__(self, channels_init=64, growth_rate=32, n_layers=10,
-                 bottleneck_factor=4, dropout=0, n_labels=1000,
-                 channels_value_head=8, channels_policy_head=16, value_fc_size=256, **kwargs):
+    def __init__(
+        self,
+        channels_init=64,
+        growth_rate=32,
+        n_layers=10,
+        bottleneck_factor=4,
+        dropout=0,
+        n_labels=1000,
+        channels_value_head=8,
+        channels_policy_head=16,
+        value_fc_size=256,
+        **kwargs
+    ):
         """
         Constructor
         :param channels_init: Number of channels for the first convolutional layer
@@ -44,7 +54,7 @@ class DenseNet(HybridBlock):
         super(DenseNet, self).__init__(**kwargs)
 
         with self.name_scope():
-            self.features = nn.HybridSequential(prefix='')
+            self.features = nn.HybridSequential(prefix="")
             # add initial convolutional layer
             self.features.add(nn.Conv2D(channels_init, kernel_size=3, padding=1, use_bias=False))
 
@@ -54,11 +64,11 @@ class DenseNet(HybridBlock):
 
             # we need to add a batch-norm and activation because _make_dense_block() starts with them
             self.features.add(nn.BatchNorm())
-            self.features.add(nn.Activation('relu'))
+            self.features.add(nn.Activation("relu"))
 
         # create the two heads which will be used in the hybrid fwd pass
-        self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, 0.9, 'relu')
-        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, 0.9, 'relu')
+        self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, 0.9, "relu")
+        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, 0.9, "relu")
 
     def hybrid_forward(self, F, x):
         """

@@ -25,8 +25,11 @@ On our 10,000 games benchmark dataset it achieved a lower validation error.
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm
 from mxnet.gluon import HybridBlock
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
-from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _ChannelSqueezeExcitation, \
-    _SpatialSqueezeExcitation, _SpatialChannelSqueezeExcitation
+from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import (
+    _ChannelSqueezeExcitation,
+    _SpatialSqueezeExcitation,
+    _SpatialChannelSqueezeExcitation,
+)
 from DeepCrazyhouse.src.domain.neural_net.architectures.a0_resnet import (
     _StemAlphaZero,
     _PolicyHeadAlphaZero,
@@ -96,15 +99,7 @@ class _ResidualBlockXBottleneck(HybridBlock):  # Too many arguments (9/5)
     Definition of a residual block without any pooling operation
     """
 
-    def __init__(
-        self,
-        unit_name,
-        channels,
-        bn_mom=0.9,
-        act_type="relu",
-        se_type="csSE",
-        dim_match=True,
-    ):
+    def __init__(self, unit_name, channels, bn_mom=0.9, act_type="relu", se_type="csSE", dim_match=True):
         """
 
         :param channels: Number of channels used in the conv-operations
@@ -259,8 +254,9 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
             if use_rise_stem:
                 self.body.add(_StemRise(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type))
             else:
-                self.body.add(_StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type,
-                                             se_type=se_type))
+                self.body.add(
+                    _StemAlphaZero(name="stem", channels=channels, bn_mom=bn_mom, act_type=act_type, se_type=se_type)
+                )
 
         for i in range(nb_res_blocks_x):
             unit_name = "unit%d" % i
@@ -277,15 +273,7 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
             else:
                 raise Exception("Unavailable SE type given.")
 
-            self.body.add(
-                ResidualBlockX(
-                    unit_name,
-                    channels=channels,
-                    bn_mom=0.9,
-                    act_type=act_type,
-                    se_type=se_type,
-                )
-            )
+            self.body.add(ResidualBlockX(unit_name, channels=channels, bn_mom=0.9, act_type=act_type, se_type=se_type))
 
         for i in range(nb_res_blocks_x_neck):
             unit_name = "unitX%d" % i
@@ -294,12 +282,7 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
 
             self.body.add(
                 _ResidualBlockXBottleneck(
-                    unit_name,
-                    channels,
-                    dim_match=dim_match,
-                    bn_mom=0.9,
-                    act_type=act_type,
-                    se_type=se_type,
+                    unit_name, channels, dim_match=dim_match, bn_mom=0.9, act_type=act_type, se_type=se_type
                 )
             )
 

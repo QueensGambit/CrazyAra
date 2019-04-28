@@ -64,8 +64,11 @@ since more data was available.'
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Activation, Flatten, Dense
 from mxnet.gluon import HybridBlock
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act
-from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import _ChannelSqueezeExcitation, \
-    _SpatialSqueezeExcitation, _SpatialChannelSqueezeExcitation
+from DeepCrazyhouse.src.domain.neural_net.architectures.rise_builder_util import (
+    _ChannelSqueezeExcitation,
+    _SpatialSqueezeExcitation,
+    _SpatialChannelSqueezeExcitation,
+)
 
 
 class ResidualBlock(HybridBlock):
@@ -264,8 +267,16 @@ class AlphaZeroResnet(HybridBlock):  # Too many arguments (7/5) (too-many-argume
     """ Creates the alpha zero gluon net description based on the given parameters."""
 
     def __init__(
-        self, n_labels=2272, channels=256, channels_value_head=1, channels_policy_head=2,
-            num_res_blocks=19, value_fc_size=256, bn_mom=0.9, act_type="relu", **kwargs
+        self,
+        n_labels=2272,
+        channels=256,
+        channels_value_head=1,
+        channels_policy_head=2,
+        num_res_blocks=19,
+        value_fc_size=256,
+        bn_mom=0.9,
+        act_type="relu",
+        **kwargs
     ):
         """
 
