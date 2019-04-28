@@ -323,7 +323,14 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         depth = max_depth_reached
         nodes = node_searched
         time_elapsed_s = time_e * 1000
-        nps = node_searched / time_e
+
+        # avoid division by 0
+        if time_e > 0.0:
+            nps = node_searched / time_e
+        else:
+            # return a high constant in otherwise
+            nps = 999999999
+            
         pv = str_moves
         if self.verbose:
             score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (
