@@ -369,7 +369,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             # increase chances of checking
             policy_prob[np.logical_and(check_mask, policy_prob < 0.1)] += 0.1
             # normalize back to 1.0
-            policy_prob /= policy_prob.sum()
+            if policy_prob is not None:
+                policy_prob /= policy_prob.sum()
 
     @staticmethod
     def _enhance_captures(chess_board, legal_moves, policy_prob):
@@ -384,7 +385,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             index = legal_moves.index(capture_move)
             if policy_prob[index] < 0.1:
                 policy_prob[index] += 0.04
-        policy_prob /= policy_prob.sum()
+        if policy_prob is not None:
+            policy_prob /= policy_prob.sum()
 
     def _expand_root_node_multiple_moves(self, state, legal_moves):
         """
@@ -407,9 +409,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             self._enhance_checks(chess_board, legal_moves, p_vec_small)
 
         # create a new root node
-        self.root_node = Node(
-            chess_board, value, p_vec_small, legal_moves, is_leaf, clip_low_visit=False
-        )
+        self.root_node = Node(chess_board, value, p_vec_small, legal_moves, is_leaf, clip_low_visit=False)
 
     def _expand_root_node_single_move(self, state, legal_moves):
         """
