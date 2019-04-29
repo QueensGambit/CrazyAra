@@ -79,6 +79,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         verbose=True,
         min_movetime=100,
         enhance_checks=False,
+        enhance_captures=False,
         use_future_q_values=False,
         use_pruning=True,
         use_time_management=True,
@@ -121,8 +122,12 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                              is the virtual loss. This prevents that every thread will evaluate the same node.
         :param verbose: Defines weather to print out info messages for the current calculated line
         :param min_movetime: Minimum time in milliseconds to search for the best move
-        :param enhance_checks: Decide whether to increase the probability for checking move below 10% by 10%.
+        :param enhance_checks: Decide whether to increase the probability for checking moves below 10% by 10%.
                                This lowers the chance of missing forced mates and possible direct mate threats.
+                               Currently it is only applied to the root node and its direct child node due to runtime
+                               costs.
+        :param enhance_captures: Decide whether to increase the probability for capture moves below 10% by 5%.
+                               This lowers the chance of missing captures.
                                Currently it is only applied to the root node and its direct child node due to runtime
                                costs.
         :param use_time_management: If set to true the mcts will spent less time on "obvious" moves an allocate a time
@@ -185,6 +190,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         self.movetime_ms = min_movetime
         self.q_value_weight = q_value_weight
         self.enhance_checks = enhance_checks
+        self.enhance_captures = enhance_captures
 
         # temporary variables
         # time counter - n° of nodes stored to measure the nps - priority policy for the root node
@@ -243,14 +249,21 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         )  # check first if the the current tree can be reused
 
         if not self.use_pruning and key in self.node_lookup:
+            chess_board = state.get_pythonchess_board()
             self.root_node = self.node_lookup[key]  # if key in self.node_lookup:
-
-            if self.enhance_checks:
-                self._enhance_checks(state, legal_moves, self.root_node.policy_prob)
+            if self.enhance_captures:
+                self._enhance_captures(chess_board, legal_moves, self.root_node.policy_prob)
                 # enhance checks for all direct child nodes
                 for child_node in self.root_node.child_nodes:
                     if child_node:
-                        self._enhance_checks(state, child_node.legal_moves, child_node.policy_prob)
+                        self._enhance_captures(child_node.board, child_node.legal_moves, child_node.policy_prob)
+
+            if self.enhance_checks:
+                self._enhance_checks(chess_board, legal_moves, self.root_node.policy_prob)
+                # enhance checks for all direct child nodes
+                for child_node in self.root_node.child_nodes:
+                    if child_node:
+                        self._enhance_checks(child_node.board, child_node.legal_moves, child_node.policy_prob)
 
             logging.debug(
                 "Reuse the search tree. Number of nodes in search tree: %d",
@@ -342,21 +355,36 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         return value, legal_moves, p_vec_small, centipawns, depth, nodes, time_elapsed_s, nps, pv
 
     @staticmethod
-    def _enhance_checks(state, legal_moves, policy_prob):
+    def _enhance_checks(chess_board, legal_moves, policy_prob):
         """
         Increases the probability by 10% for checking moves lower than 10% in policy_prob
-        :param state: Board state
+        :param chess_board: Board state
         :param legal_moves: List of legal moves in the position
         :param policy_prob: Numpy probability vector for each move. Note this variable will be modified.
         :return:
         """
-        check_mask, nb_checks = get_check_move_mask(state.get_pythonchess_board(), legal_moves)
+        check_mask, nb_checks = get_check_move_mask(chess_board, legal_moves)
 
         if nb_checks > 0:
             # increase chances of checking
             policy_prob[np.logical_and(check_mask, policy_prob < 0.1)] += 0.1
             # normalize back to 1.0
             policy_prob /= policy_prob.sum()
+
+    @staticmethod
+    def _enhance_captures(chess_board, legal_moves, policy_prob):
+        """
+        Increases the probability by 5% for capturing moves lower than 10% in policy_prob
+        :param chess_board: Board state
+        :param legal_moves: List of legal moves in the position
+        :param policy_prob: Numpy probability vector for each move. Note this variable will be modified.
+        :return:
+        """
+        for capture_move in chess_board.generate_legal_captures():
+            index = legal_moves.index(capture_move)
+            if policy_prob[index] < 0.1:
+                policy_prob[index] += 0.04
+        policy_prob /= policy_prob.sum()
 
     def _expand_root_node_multiple_moves(self, state, legal_moves):
         """
@@ -371,13 +399,16 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         [value, policy_vec] = self.nets[0].predict_single(state.get_state_planes())  # start a brand new tree
         # extract a sparse policy vector with normalized probabilities
         p_vec_small = get_probs_of_move_list(policy_vec, legal_moves, state.is_white_to_move())
+        chess_board = state.get_pythonchess_board()
+        if self.enhance_captures:
+            self._enhance_captures(chess_board, legal_moves, p_vec_small)
 
         if self.enhance_checks:
-            self._enhance_checks(state, legal_moves, p_vec_small)
+            self._enhance_checks(chess_board, legal_moves, p_vec_small)
 
         # create a new root node
         self.root_node = Node(
-            state.get_pythonchess_board(), value, p_vec_small, legal_moves, is_leaf, clip_low_visit=False
+            chess_board, value, p_vec_small, legal_moves, is_leaf, clip_low_visit=False
         )
 
     def _expand_root_node_single_move(self, state, legal_moves):
@@ -677,8 +708,12 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                                 value = 99
 
                     # for performance reasons only apply check enhancement on depth 1 for now
+                    chess_board = state.get_pythonchess_board()
                     if self.enhance_checks:
-                        self._enhance_checks(state, legal_moves, p_vec_small)
+                        self._enhance_checks(chess_board, legal_moves, p_vec_small)
+
+                    if self.enhance_captures:
+                        self._enhance_captures(chess_board, legal_moves, p_vec_small)
 
                 if not self.use_pruning:
                     self.node_lookup[key] = new_node  # include a reference to the new node in the look-up table
