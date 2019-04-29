@@ -80,6 +80,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "extend_time_on_bad_position": True,
             "max_move_num_to_reduce_movetime": 4,
             "enhance_checks": False,
+            "enhance_captures": False,
             "use_pruning": False,
             "use_future_q_values": False,
             "use_time_management": True,
@@ -183,6 +184,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 min_movetime=self.min_search_time,
                 batch_size=self.settings["batch_size"],
                 enhance_checks=self.settings["enhance_checks"],
+                enhance_captures=self.settings["enhance_captures"],
                 use_future_q_values=self.settings["use_future_q_values"],
                 use_pruning=self.settings["use_pruning"],
                 use_time_management=self.settings["use_time_management"],
@@ -466,6 +468,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         "extend_time_on_bad_position",
                         "verbose",
                         "enhance_checks",
+                        "enhance_captures",
                         "use_pruning",
                         "use_future_q_values",
                         "use_time_management",
@@ -482,6 +485,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         self.settings["verbose"] = value == "true"
                     elif option_name == "enhance_checks":
                         self.settings["enhance_checks"] = value == "true"
+                    elif option_name == "enhance_captures":
+                        self.settings["enhance_captures"] = value == "true"
                     elif option_name == "use_pruning":
                         self.settings["use_pruning"] = value == "true"
                     elif option_name == "use_future_q_values":
@@ -608,6 +613,10 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         self.log_print(
             "option name enhance_checks type check default %s"
             % ("false" if not self.settings["enhance_checks"] else "true")
+        )
+        self.log_print(
+            "option name enhance_captures type check default %s"
+            % ("false" if not self.settings["enhance_captures"] else "true")
         )
         self.log_print(
             "option name use_pruning type check default %s" % ("false" if not self.settings["use_pruning"] else "true")
