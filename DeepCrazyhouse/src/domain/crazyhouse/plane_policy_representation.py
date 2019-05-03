@@ -13,7 +13,7 @@ table for retrieving the move probability from the policy feature maps, so this 
 """
 import numpy as np
 import chess
-from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_WIDTH, BOARD_HEIGHT, LABELS
+from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_WIDTH, BOARD_HEIGHT, LABELS, P_MAP
 from DeepCrazyhouse.src.domain.util import get_row_col
 
 
@@ -127,8 +127,11 @@ def get_plane_index_promotion_move(piece_type, movement_vector) -> int:
     # a pawn can only move forward or capture to the left or right
     # => we only have to inspect the x axis
     # python-chess starts counting at 1
-    piece_id = (piece_type - 1) % 6
-
+    if type(piece_type) is str:
+        piece_id = P_MAP[piece_type] % 6
+    else:
+        # python-chess starts counting at 1
+        piece_id = (piece_type - 1) % 6
     # promotion
     # 1=knight, 2=bishop, 3=rook, 4=queen
     if 1 <= piece_id <= 4:
@@ -148,7 +151,11 @@ def get_plane_index_drop_move(piece_type) -> int:
     """
 
     # python-chess starts counting at 1
-    piece_id = (piece_type - 1) % 6
+    if type(piece_type) is str:
+        piece_id = P_MAP[piece_type] % 6
+    else:
+        # python-chess starts counting at 1
+        piece_id = (piece_type - 1) % 6
     move_type_offset = 76
     piece_offset = piece_id
     board_offset = move_type_offset + piece_offset
@@ -209,12 +216,12 @@ def get_move_planes(move):
 
     Queen moves | 56     ->  0..55
     Knight moves | 8     -> 56..63
-    Under-promotions | 9  -> 64..75
+    Promotions | 12  -> 64..75
     Drop | 5             -> 76..80
     ----------------------------
     Total 81
     """
-    board = np.zeros((78, 8, 8), dtype="bool")
+    board = np.zeros((81, 8, 8), dtype="bool")
     plane, row, column = get_plane_index_from_move(move)
     board[plane, row, column] = 1
     return board

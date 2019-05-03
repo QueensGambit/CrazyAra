@@ -11,11 +11,11 @@ This file contains the test cases for testing the outputs
 import unittest
 import chess
 import numpy as np
-from DeepCrazyhouse.src.model.crazy_house.output_representation import (
-    get_plane_offset_id_from_queen_movement_vector,
+from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import (
+    get_plane_index_queen_move,
     get_move_planes,
-    get_board_position_index,
 )
+from DeepCrazyhouse.src.domain.util import get_board_position_index
 
 
 class OutputRepresentationTests(unittest.TestCase):
@@ -23,8 +23,8 @@ class OutputRepresentationTests(unittest.TestCase):
     Tests the correct behaviour for converting Move objects into their corresponding plane representation
     Queen moves | 56     ->  0..55
     Knight moves | 8     -> 56..63
-    Under promotions | 9  -> 64..72
-    Drop | 5             -> 73..77
+    Promotions | 12       -> 64..75
+    Drop | 5             -> 76..80
     """
 
     def test_get_plane_offset_given_id_from_queen_movement_vector_expect_correct_indices(self):
@@ -32,7 +32,7 @@ class OutputRepresentationTests(unittest.TestCase):
         plane_ids = np.zeros(56)
         for direction in [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]]:
             for length in range(1, 8):
-                plane_id = get_plane_offset_id_from_queen_movement_vector(np.array(direction) * length)
+                plane_id = get_plane_index_queen_move(np.array(direction) * length)
                 self.assertGreaterEqual(plane_id, 0, "id has to be in range [0..55]")  # check if id lies within [0..55]
                 self.assertLess(plane_id, 56, "id has to be in range [0..55]")
                 plane_ids[plane_id] += 1
@@ -98,13 +98,13 @@ class OutputRepresentationTests(unittest.TestCase):
         """ Test to see if it returns the correct indices for over promotions(queens)"""
         col = 4
         row = 6
-        aggregated_selected_boards = np.zeros(56)
+        aggregated_selected_boards = np.zeros(3)
 
         for x_direction in [-1, 0, 1]:
             movement_vector = [1, x_direction]
             from_idx = get_board_position_index(row, col)
             to_idx = get_board_position_index(row + movement_vector[0], col + movement_vector[1])
-            selected_boards = np.sum(get_move_planes(chess.Move(from_idx, to_idx, "Q"))[0:56, :, :], axis=(1, 2))
+            selected_boards = np.sum(get_move_planes(chess.Move(from_idx, to_idx, "Q"))[73:76, :, :], axis=(1, 2))
             # test that only a single position is selected
             self.assertTrue(np.sum(selected_boards) == 1, "more than one board was selected")
             aggregated_selected_boards += selected_boards
@@ -119,10 +119,12 @@ class OutputRepresentationTests(unittest.TestCase):
         aggregated_selected_boards = np.zeros(5)
 
         for piece in ["p", "n", "b", "r", "q"]:
+            # 1=knight, 2=bishop, 3=rook, 4=queen
+
             from_idx = get_board_position_index(4, 4)
             to_idx = get_board_position_index(4, 4)
             selected_boards = np.sum(
-                get_move_planes(chess.Move(from_idx, to_idx, None, piece))[73:78, :, :], axis=(1, 2)
+                get_move_planes(chess.Move(from_idx, to_idx, None, piece))[76:81, :, :], axis=(1, 2)
             )
             # test that only a single position is selected
             self.assertTrue(np.sum(selected_boards) == 1, "more than one board was selected")
