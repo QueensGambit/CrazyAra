@@ -118,7 +118,8 @@ class ResidualBlock(HybridBlock):
 
 
 class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-arguments)
-    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu", se_type=None):
+    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu", se_type=None,
+                 select_policy_from_plane=False):
         """
         Definition of the value head proposed by the alpha zero authors
 
@@ -151,7 +152,8 @@ class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-a
 
             self.body.add(get_act(act_type))
             self.body.add(Flatten())
-            self.body.add(Dense(units=n_labels))
+            if not select_policy_from_plane:
+                self.body.add(Dense(units=n_labels))
 
     def hybrid_forward(self, F, x):
         """

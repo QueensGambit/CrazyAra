@@ -42,7 +42,7 @@ class ResidualBlockX(HybridBlock):  # Too many arguments (8/5)
     Definition of a residual block without any pooling operation
     """
 
-    def __init__(self, unit_name, channels, bn_mom, act_type, se_type="csSE"):
+    def __init__(self, unit_name, channels, bn_mom, act_type, se_type="scSE"):
         """
 
         :param channels: Number of channels used in the conv-operations
@@ -69,10 +69,10 @@ class ResidualBlockX(HybridBlock):  # Too many arguments (8/5)
                     self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
                 elif se_type == "sSE":
                     self.body.add(_SpatialSqueezeExcitation("se0"))
-                elif se_type == "csSE":
+                elif se_type == "scSE":
                     self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 2, act_type))
                 else:
-                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "scSE"')
 
             self.act0 = get_act(act_type)
 
@@ -99,7 +99,7 @@ class _ResidualBlockXBottleneck(HybridBlock):  # Too many arguments (9/5)
     Definition of a residual block without any pooling operation
     """
 
-    def __init__(self, unit_name, channels, bn_mom=0.9, act_type="relu", se_type="csSE", dim_match=True):
+    def __init__(self, unit_name, channels, bn_mom=0.9, act_type="relu", se_type="scSE", dim_match=True):
         """
 
         :param channels: Number of channels used in the conv-operations
@@ -133,10 +133,10 @@ class _ResidualBlockXBottleneck(HybridBlock):  # Too many arguments (9/5)
                     self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
                 elif se_type == "sSE":
                     self.body.add(_SpatialSqueezeExcitation("se0"))
-                elif se_type == "csSE":
+                elif se_type == "scSE":
                     self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 2, act_type))
                 else:
-                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "scSE"')
 
             self.act0 = get_act(act_type, prefix="%s1" % act_type)
 
@@ -168,7 +168,7 @@ class _ResidualBlockXBottleneck(HybridBlock):  # Too many arguments (9/5)
 
 
 class _StemRise(HybridBlock):
-    def __init__(self, name, channels, bn_mom=0.9, act_type="relu"):  # , use_se=False
+    def __init__(self, name, channels, bn_mom=0.9, act_type="relu", se_type=None):
         """
         Definition of the stem proposed by the alpha zero authors
 
@@ -184,18 +184,20 @@ class _StemRise(HybridBlock):
 
         with self.name_scope():
             # add all layers to the stem
-            self.body.add(Conv2D(channels=64, kernel_size=(3, 3), padding=(1, 1), use_bias=False))
+            self.body.add(Conv2D(channels=channels//2, kernel_size=(3, 3), padding=(1, 1), use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
             self.body.add(get_act(act_type))
-            self.body.add(Conv2D(channels=64, kernel_size=(3, 3), padding=(1, 1), use_bias=False))
-            self.body.add(BatchNorm(momentum=bn_mom))
-            self.body.add(get_act(act_type))
-            self.body.add(Conv2D(channels=128, kernel_size=(3, 3), padding=(1, 1), use_bias=False))
-            self.body.add(BatchNorm(momentum=bn_mom))
-            self.body.add(get_act(act_type))
-            self.body.add(Conv2D(channels=128, kernel_size=(3, 3), padding=(1, 1), use_bias=False))
-            self.body.add(BatchNorm(momentum=bn_mom))
-            self.body.add(get_act(act_type))
+            if se_type:
+                if se_type == "cSE":
+                    # apply squeeze excitation
+                    # self.se = _ChannelSqueezeExcitation("se0", channels, 2, act_type)
+                    self.body.add(_ChannelSqueezeExcitation("se0", channels//2, 16, act_type))
+                elif se_type == "sSE":
+                    self.body.add(_SpatialSqueezeExcitation("se0"))
+                elif se_type == "scSE":
+                    self.body.add(_SpatialChannelSqueezeExcitation("se0", channels//2, 2, act_type))
+                else:
+                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "scSE"')
             self.body.add(Conv2D(channels=channels, kernel_size=(3, 3), padding=(1, 1), use_bias=False))
             self.body.add(BatchNorm(momentum=bn_mom))
             self.body.add(get_act(act_type))
@@ -237,10 +239,10 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
         :param nb_res_blocks_x: Number of residual blocks to stack. In the paper they used 19 or 39 residual blocks
         :param value_fc_size: Fully Connected layer size. Used for the value output
         :param bn_mom: Batch normalization momentum
-        :param squeeze_excitation_type: Available types: [None, "cSE", "sSE", "csSE", "mixed"]
+        :param squeeze_excitation_type: Available types: [None, "cSE", "sSE", "scSE", "mixed"]
                                         cSE: Channel-wise-squeeze-excitation
                                         sSE: Spatial-wise-squeeze-excitation
-                                        csSE: Channel-spatial-wise-squeeze-excitation
+                                        scSE: Channel-spatial-wise-squeeze-excitation
                                         mixed: Use cSE and sSE interchangeably
         :return: gluon net description
         """
@@ -263,7 +265,7 @@ class Rise(HybridBlock):  # Too many arguments (15/5)
 
             if squeeze_excitation_type is None:
                 se_type = None
-            elif squeeze_excitation_type in ["cSE", "sSE", "csSE"]:
+            elif squeeze_excitation_type in ["cSE", "sSE", "scSE"]:
                 se_type = squeeze_excitation_type
             elif squeeze_excitation_type == "mixed":
                 if i % 2 == 0:
