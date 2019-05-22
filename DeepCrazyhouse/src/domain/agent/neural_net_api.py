@@ -14,13 +14,19 @@ from multiprocessing import Queue
 import mxnet as mx
 import numpy as np
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL
+from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
+from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLAT_PLANE_IDX
 
 
 class NeuralNetAPI:
     """Groups every a lot of helpers to be used on NN handling"""
 
-    def __init__(self, ctx="cpu", batch_size=1):
+    def __init__(self, ctx="cpu", batch_size=1, select_policy_form_planes: bool = True):
+        """
+        Constructor
+        :param ctx: Context used for inference "cpu" or "gpu"
+        :param batch_size: Batch size used for inference
+        """
         self.batch_size = batch_size
 
         if not os.path.isdir(main_config["model_architecture_dir"]):
@@ -83,6 +89,16 @@ class NeuralNetAPI:
             executor.copy_params_from(arg_params, aux_params)
             self.executors.append(executor)
 
+        # check if the current net uses a select_policy_from_planes style
+        output_dict = self.executors[0].output_dict
+        for idx, key in enumerate(output_dict):
+            print(key)
+            # the policy output is always the 2nd one
+            if idx == 1 and output_dict[key].shape[1] != NB_LABELS:
+                self.select_policy_form_planes = select_policy_form_planes
+            else:
+                self.select_policy_form_planes = False
+
     def predict_single(self, x):
         """
         Gets the model prediction of a single input sample.
@@ -105,7 +121,13 @@ class NeuralNetAPI:
         """
         # choose the first executor object which support length 1
         pred = self.executors[0].forward(is_train=False, data=np.expand_dims(x, axis=0))
-        queue.put([pred[0].asnumpy()[0], pred[1].softmax().asnumpy()[0]])
+        if self.select_policy_form_planes:
+            policy_preds = pred[1].asnumpy()
+            policy_preds = policy_preds[:, FLAT_PLANE_IDX]
+        else:
+            policy_preds = pred[1].softmax().asnumpy()
+
+        queue.put([pred[0].asnumpy()[0], policy_preds[0]])
 
     def get_batch_size(self):
         """Make the batch_size public access"""

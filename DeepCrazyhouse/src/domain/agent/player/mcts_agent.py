@@ -795,6 +795,9 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             * (np.sqrt(parent_node.n_sum) / (self.u_init_divisor + parent_node.child_number_visits))
         )
 
+        # if parent_node.n_sum % 10 == 0:
+        #     child_idx = np.random.randint(parent_node.nb_direct_child_nodes)
+        # else:
         child_idx = (parent_node.q_value + u_value).argmax()
 
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
