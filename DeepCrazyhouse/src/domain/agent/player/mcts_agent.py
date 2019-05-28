@@ -303,7 +303,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
 
         if self.use_future_q_values:
             # use q-future value to update the q-values of direct child nodes
-            q_future, indices = self.get_last_q_values(min_nb_visits=5, max_depth=25)
+            q_future, indices = self.get_last_q_values(min_nb_visits=5, max_depth=5) #25)
             # self.root_node.q_value = 0.5 * self.root_node.q_value + 0.5 * q_future
             # TODO: make this matrix vector form
             if max_depth_reached >= 5:
@@ -665,7 +665,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     legal_moves = []
                     p_vec_small = None
                     # establish a mate in one connection in order to stop exploring different alternatives
-                    parent_node.mate_child_idx = child_idx
+                    parent_node.set_check_mate_node_idx(child_idx)
                 # get the value from the leaf node (the current function is called recursively)
                 # check if you can claim a draw - its assumed that the draw is always claimed
                 elif (
@@ -680,13 +680,19 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     legal_moves = state.get_legal_moves()  # get the current legal move of its board state
 
                     if not legal_moves:
-                        raise Exception("No legal move is available for state: %s" % state)
-                    try:  # extract a sparse policy vector with normalized probabilities
-                        p_vec_small = get_probs_of_move_list(
-                            policy_vec, legal_moves, is_white_to_move=state.is_white_to_move(), normalize=True
-                        )
-                    except KeyError:
-                        raise Exception("Key Error for state: %s" % state)
+                        # stalemate occurred which is very rare for crazyhouse
+                        value = 0
+                        is_leaf = True
+                        legal_moves = []
+                        p_vec_small = None
+                        # raise Exception("No legal move is available for state: %s" % state)
+                    else:
+                        try:  # extract a sparse policy vector with normalized probabilities
+                            p_vec_small = get_probs_of_move_list(
+                                policy_vec, legal_moves, is_white_to_move=state.is_white_to_move(), normalize=True
+                            )
+                        except KeyError:
+                            raise Exception("Key Error for state: %s" % state)
 
                 # clip the visit nodes for all nodes in the search tree except the director opp. move
                 clip_low_visit = self.use_pruning and depth != 1  # and depth > 4
@@ -782,23 +788,31 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 node_idx - Integer idx value indicating the index for the selected child of the parent node
         """
 
-        # find the move according to the q- and u-values for each move
-        pb_c_base = 19652
-        pb_c_init = self.cpuct
+        if parent_node.check_mate_node:
+            child_idx = parent_node.check_mate_node
+        else:
+            # find the move according to the q- and u-values for each move
+            # pb_c_base = 19652
+            # pb_c_init = self.cpuct
+            cpuct = math.log((parent_node.n_sum + 19652 + 1) / 19652) + self.cpuct
 
-        cpuct = math.log((parent_node.n_sum + pb_c_base + 1) / pb_c_base) + pb_c_init
-        # calculate the current u values
-        # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-        u_value = (
-            cpuct
-            * parent_node.policy_prob
-            * (np.sqrt(parent_node.n_sum) / (self.u_init_divisor + parent_node.child_number_visits))
-        )
+            # pb_u_base = 19652 / 10
+            # pb_u_init = 1
+            # pb_u_low = self.u_init_divisor
+            # u_init = np.exp((-parent_node.n_sum + 1965 + 1) / 1965) / np.exp(1) * (1 - self.u_init_divisor) + self.u_init_divisor
 
-        # if parent_node.n_sum % 10 == 0:
-        #     child_idx = np.random.randint(parent_node.nb_direct_child_nodes)
-        # else:
-        child_idx = (parent_node.q_value + u_value).argmax()
+            # calculate the current u values
+            # it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
+            u_value = (
+                cpuct
+                * parent_node.policy_prob
+                * (np.sqrt(parent_node.n_sum) / (self.u_init_divisor + parent_node.child_number_visits))
+            )
+
+            # if parent_node.n_sum % 10 == 0:
+            #     child_idx = np.random.randint(parent_node.nb_direct_child_nodes)
+            # else:
+            child_idx = (parent_node.q_value + u_value).argmax()
 
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
 

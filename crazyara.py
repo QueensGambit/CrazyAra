@@ -85,6 +85,8 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "use_future_q_values": False,
             "use_time_management": True,
             "verbose": False,
+            "model_architecture_dir": "default",
+            "model_weights_dir": "default"
         }
         try:
             self.log_file = open(self.log_file_path, "w")
@@ -159,7 +161,9 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
 
             nets = []
             for _ in range(self.settings["neural_net_services"]):
-                nets.append(NeuralNetAPI(ctx=self.settings["context"], batch_size=self.settings["batch_size"]))
+                nets.append(NeuralNetAPI(ctx=self.settings["context"], batch_size=self.settings["batch_size"],
+                                         model_architecture_dir=self.settings["model_architecture_dir"],
+                                         model_weights_dir=self.settings["model_weights_dir"]))
 
             self.rawnet_agent = RawNetAgent(
                 nets[0],
@@ -472,6 +476,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         "use_pruning",
                         "use_future_q_values",
                         "use_time_management",
+                        "model_architecture_dir",
+                        "model_weights_dir",
                     ]:
                         value = cmd_list[4]
                     else:
@@ -632,7 +638,14 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         self.log_print(
             "option name verbose type check default %s" % ("false" if not self.settings["verbose"] else "true")
         )
-
+        self.log_print(
+            "option name model_architecture_dir type string default %s"
+            % self.settings["model_architecture_dir"]
+        )
+        self.log_print(
+            "option name model_weights_dir type string default %s"
+            % self.settings["model_weights_dir"]
+        )
         self.log_print("uciok")  # verify that all options have been sent
 
     def main(self):

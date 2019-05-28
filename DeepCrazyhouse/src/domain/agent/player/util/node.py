@@ -70,6 +70,8 @@ class Node:  # Too many instance attributes (14/7)
         self.is_leaf = is_leaf
         # store a unique identifier for the board state excluding the move counter for this node
         self.transposition_key = transposition_key
+        # this is a connection to a direct checkmate node if it's possible, always choose it if it's possible
+        self.check_mate_node = None
 
     def get_mcts_policy(self, q_value_weight=0.65, clip_low_visit_nodes=True):  # , is_root=False, xth_n_max=0
         """
@@ -103,8 +105,8 @@ class Node:  # Too many instance attributes (14/7)
 
         if q_value_weight > 0:
             # disable the q values if there's at least one child which wasn't explored
-            if None in self.child_nodes:
-                q_value_weight = 0
+            # if None in self.child_nodes:
+            #     q_value_weight = 0
             # we add +1 to the q values to avoid negative values, then the q values are normalized to [0,1] before
             # the q_value_weight is applied.
             policy = (self.child_number_visits / self.n_sum) * (1 - q_value_weight) + (
@@ -165,3 +167,12 @@ class Node:  # Too many instance attributes (14/7)
             self.child_number_visits[child_idx] -= virtual_loss - 1
             self.action_value[child_idx] += virtual_loss + value
             self.q_value[child_idx] = self.action_value[child_idx] / self.child_number_visits[child_idx]
+
+    def set_check_mate_node_idx(self, child_idx):
+        """
+        Sets the index for a direct checkmate node which will always be preferred for future rollouts
+        :param child_idx: Idx to the checkmate terminal node
+        :return:
+        """
+        with self.lock:
+            self.check_mate_node = child_idx

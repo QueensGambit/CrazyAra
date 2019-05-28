@@ -21,7 +21,8 @@ from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLA
 class NeuralNetAPI:
     """Groups every a lot of helpers to be used on NN handling"""
 
-    def __init__(self, ctx="cpu", batch_size=1, select_policy_form_planes: bool = True):
+    def __init__(self, ctx="cpu", batch_size=1, select_policy_form_planes: bool = True,
+                 model_architecture_dir="default", model_weights_dir="default"):
         """
         Constructor
         :param ctx: Context used for inference "cpu" or "gpu"
@@ -36,8 +37,17 @@ class NeuralNetAPI:
         if not os.path.isdir(main_config["model_weights_dir"]):
             raise Exception("The given model_weights_dir at: " + main_config["model_weights_dir"] + " wasn't found.")
 
-        self.symbol_path = glob.glob(main_config["model_architecture_dir"] + "*")[0]
-        self.params_path = glob.glob(main_config["model_weights_dir"] + "*")[0]
+        if model_architecture_dir == "default":
+            raise Exception('model_architecture_dir == "default"')
+            self.symbol_path = glob.glob(main_config["model_architecture_dir"] + "*")[0]
+        else:
+            self.symbol_path = glob.glob(model_architecture_dir + "*")[0]
+
+        if model_weights_dir == "default":
+            raise Exception('model_architecture_dir == "default"')
+            self.params_path = glob.glob(main_config["model_weights_dir"] + "*")[0]
+        else:
+            self.params_path = glob.glob(model_weights_dir + "*")[0]
         # make sure the needed files have been found
         if self.symbol_path is None or ".json" not in self.symbol_path:
             raise Exception(
