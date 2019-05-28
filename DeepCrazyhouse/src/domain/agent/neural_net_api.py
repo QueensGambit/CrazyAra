@@ -38,13 +38,11 @@ class NeuralNetAPI:
             raise Exception("The given model_weights_dir at: " + main_config["model_weights_dir"] + " wasn't found.")
 
         if model_architecture_dir == "default":
-            raise Exception('model_architecture_dir == "default"')
             self.symbol_path = glob.glob(main_config["model_architecture_dir"] + "*")[0]
         else:
             self.symbol_path = glob.glob(model_architecture_dir + "*")[0]
 
         if model_weights_dir == "default":
-            raise Exception('model_architecture_dir == "default"')
             self.params_path = glob.glob(main_config["model_weights_dir"] + "*")[0]
         else:
             self.params_path = glob.glob(model_weights_dir + "*")[0]
