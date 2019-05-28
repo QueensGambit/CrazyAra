@@ -80,11 +80,12 @@ class NetPredService:  # Too many instance attributes (9/7) - Too few public met
                 # pred = self.net.get_net()(state_planes_mxnet)
                 # print('pred: %.3f' % (time()-t_s)*1000)
                 # t_s = time()
+                # value_preds = pred[0].asnumpy()
                 value_preds = (pred[0].asnumpy() + 1) / 2
-
                 # for the policy prediction we still have to apply the softmax activation
                 #  because it's not done by the neural net
                 policy_preds = pred[1].softmax().asnumpy()
+                
                 # send the predictions back to the according workers
                 for i, pipe in enumerate(pipes_pred_output):
                     if send_batches is True:

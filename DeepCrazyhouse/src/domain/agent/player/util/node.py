@@ -51,8 +51,8 @@ class Node:  # Too many instance attributes (14/7)
         # q: combined action value which is calculated by the averaging over all action values
         # u: exploration metric for each child node
         # (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-        #self.q_value = np.zeros(self.nb_direct_child_nodes)
-        self.q_value = np.ones(self.nb_direct_child_nodes) * -1
+        self.q_value = np.zeros(self.nb_direct_child_nodes)
+        # self.q_value = np.ones(self.nb_direct_child_nodes) * 0.5 # -1
 
         if not is_leaf:
             if clip_low_visit:
@@ -96,7 +96,9 @@ class Node:  # Too many instance attributes (14/7)
 
         if clip_low_visit_nodes and q_value_weight > 0:
             visit = deepcopy(self.child_number_visits)
-            value = deepcopy((self.q_value + 1))
+            # value = deepcopy((self.q_value + 1))
+            value = deepcopy(self.q_value)
+
             max_visits = visit.max()
             if max_visits > 0:
                 # normalize to sum of 1
@@ -160,7 +162,7 @@ class Node:  # Too many instance attributes (14/7)
             self.n_sum += virtual_loss
             self.child_number_visits[child_idx] += virtual_loss
             # make it look like if one has lost X games from this node forward where X is the virtual loss value
-            self.action_value[child_idx] -= virtual_loss
+            # self.action_value[child_idx] -= virtual_loss
             self.q_value[child_idx] = self.action_value[child_idx] / self.child_number_visits[child_idx]
 
     def revert_virtual_loss_and_update(self, child_idx, virtual_loss, value):
@@ -174,5 +176,6 @@ class Node:  # Too many instance attributes (14/7)
         with self.lock:
             self.n_sum -= virtual_loss - 1
             self.child_number_visits[child_idx] -= virtual_loss - 1
-            self.action_value[child_idx] += virtual_loss + value
+            # self.action_value[child_idx] += virtual_loss + value
+            self.action_value[child_idx] += value
             self.q_value[child_idx] = self.action_value[child_idx] / self.child_number_visits[child_idx]

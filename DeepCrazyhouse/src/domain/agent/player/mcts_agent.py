@@ -23,10 +23,8 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from multiprocessing import Pipe
 from time import time
-from weakref import finalize
 
 import numpy as np
-from gevent.ares import channel
 
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
@@ -35,6 +33,7 @@ from DeepCrazyhouse.src.domain.agent.player.util.node import Node
 from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
 from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
 from DeepCrazyhouse.src.domain.crazyhouse.output_representation import get_probs_of_move_list, value_to_centipawn
+from DeepCrazyhouse.src.domain.util import get_check_move_indices
 
 DTYPE = np.float
 DRAW = 0.5 # 0
@@ -337,6 +336,10 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         [value, policy_vec] = self.nets[0].predict_single(state.get_state_planes())  # start a brand new tree
         # extract a sparse policy vector with normalized probabilities
         p_vec_small = get_probs_of_move_list(policy_vec, legal_moves, state.is_white_to_move())
+        # check_idces, nb_checks = get_check_move_indices(state.get_pythonchess_board(), legal_moves)
+        # if nb_checks > 0:
+        #     p_vec_small[check_idces] += 0.1  # 7 / len(legal_moves)
+        #     p_vec_small /= p_vec_small.sum()  # renormalize to to proper probability distribution
 
         if self.check_mate_in_one:
             str_legal_moves = str(state.get_legal_moves())
@@ -374,7 +377,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             is_leaf = False  # initialize is_leaf by default to false
             # we don't need to check for is_lost() because the game is already over
             if state.is_won():  # check if the current player has won the game
-                value = LOST
+                value = LOST # -1
                 is_leaf = True
                 legal_moves_child = []
                 p_vec_small_child = None
@@ -383,7 +386,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 self.can_claim_threefold_repetition(state.get_transposition_key(), [0])
                 or state.get_pythonchess_board().can_claim_fifty_moves()
             ):
-                value = DRAW
+                value = DRAW # 0
                 is_leaf = True
                 legal_moves_child = []
                 p_vec_small_child = None
@@ -658,6 +661,12 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                         )
                     except KeyError:
                         raise Exception("Key Error for state: %s" % state)
+
+                    # check_idces, nb_checks = get_check_move_indices(state.get_pythonchess_board(), legal_moves)
+                    # if nb_checks > 0:
+                    #     p_vec_small[check_idces] += 0.1  # 7 / len(legal_moves)
+                    #     p_vec_small /= p_vec_small.sum()  # renormalize to to proper probability distribution
+
                 # convert all legal moves to a string if the option check_mate_in_one was enabled
                 if self.check_mate_in_one:
                     str_legal_moves = str(state.get_legal_moves())
@@ -673,12 +682,13 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 if depth == 1:
                     # disable uncertain moves from being visited by giving them a very bad score
                     if not is_leaf and self.use_pruning:
-                        if self.root_node_prior_policy[child_idx] < 1e-3 and (1-value) < self.root_node.initial_value:
+                        # if self.root_node_prior_policy[child_idx] < 1e-3 and value * -1 < self.root_node.initial_value:
+                        if self.root_node_prior_policy[child_idx] < 1e-3 and (1 - value) < self.root_node.initial_value:
                             with parent_node.lock:
-                                value = 0  # 99
-                                # logging.info("locked node!!!")
-                                parent_node.action_value[child_idx] = -9999
+                                # value = 99
+                                value = 0
 
+                    # if parent_node.initial_value > 0.65:  # and state.are_pocket_empty(): #and pipe_id == 0:
                     if parent_node.initial_value > (0.65 + 1) / 2:  # and state.are_pocket_empty(): #and pipe_id == 0:
                         fac = 0.25  # test of adding dirichlet noise to a new node
 
@@ -688,7 +698,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                             epsilon=self.dirichlet_epsilon * fac, alpha=self.dirichlet_alpha
                         )
 
-                    if value < 0.5: #0:
+                    if value < 0.5:  #0:
                         # test of adding dirichlet noise to a new node
                         new_node.apply_dirichlet_noise_to_prior_policy(
                             epsilon=self.dirichlet_epsilon * 0.02, alpha=self.dirichlet_alpha
@@ -705,13 +715,11 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             # get the value from the leaf node (the current function is called recursively)
             value, depth, chosen_nodes = self._run_single_playout(node, pipe_id, depth + 1, chosen_nodes)
         # revert the virtual loss and apply the predicted value by the network to the node
+        # parent_node.revert_virtual_loss_and_update(child_idx, self.virtual_loss, -value)
         parent_node.revert_virtual_loss_and_update(child_idx, self.virtual_loss, 1-value)
         # invert the value prediction for the parent of the above node layer because the player's changes every turn
-
-        #if value < 0 or value > 1:
-        #    raise Exception("value = %.3f" % value)
-
-        return 1-value, depth, chosen_nodes
+        # return -value, depth, chosen_nodes
+        return 1 - value, depth, chosen_nodes
 
     def check_for_duplicate(self, transposition_key, chosen_nodes):
         """
@@ -772,7 +780,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             # find the move according to the q- and u-values for each move
             if not self.use_oscillating_cpuct:
                 pb_c_base = 19652
-                pb_c_init = 1.25  # self.cpuct
+                pb_c_init = self.cpuct / 2 # self.cpuct
 
                 cpuct = math.log((parent_node.n_sum + pb_c_base + 1) / pb_c_base) + pb_c_init
             else:
@@ -783,7 +791,20 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 cpuct * parent_node.policy_prob * (np.sqrt(parent_node.n_sum) / (1 + parent_node.child_number_visits))
             )
 
+            # if parent_node.n_sum % 2 == 0:
+            #     # get 2nd best
+            # distribution = (parent_node.q_value + u_value)
+            # distribution /= distribution.sum()
+            # # try:
+            # child_idx = np.random.choice(range(parent_node.nb_direct_child_nodes), p=distribution) #distribution.argmax()
+            #     # except Exception:
+            #     #     raise Exception(self.use_pruning, parent_node.q_value)
+            #     # distribution[child_idx] = 0
+            #     # child_idx = distribution.argmax()
+            #     # child_idx = np.random.randint(parent_node.nb_direct_child_nodes)
+            # else:
             child_idx = (parent_node.q_value + u_value).argmax()
+
         return parent_node.child_nodes[child_idx], parent_node.legal_moves[child_idx], child_idx
 
     def _select_node_based_on_mcts_policy(self, parent_node: Node):
@@ -857,7 +878,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     indices.append(idx)
                     # invert the value prediction for an odd depth number
                     if depth % 2 == 0:
-                        q_future[idx] *= -1
+                        # q_future[idx] *= -1
+                        q_future[idx] = 1 - q_future[idx]
 
                 print(q_future[idx])
 

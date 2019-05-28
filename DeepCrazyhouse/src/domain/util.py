@@ -253,10 +253,12 @@ def get_check_move_indices(board, legal_moves):
     """
 
     check_move_idces = []
+    nb_checks = 0
 
     for idx, move in enumerate(legal_moves):
         board_tmp = copy.deepcopy(board)
         board_tmp.push(move)
         if board_tmp.is_check():
             check_move_idces.append(idx)
-    return check_move_idces
+            nb_checks += 1
+    return check_move_idces, nb_checks
