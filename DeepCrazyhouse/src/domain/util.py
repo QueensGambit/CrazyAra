@@ -7,8 +7,9 @@ Created on 09.06.18
 Utility functions which are use by the converter scripts
 """
 
-import numpy as np
 import copy
+import numpy as np
+
 
 from DeepCrazyhouse.src.domain.crazyhouse.constants import (
     BOARD_HEIGHT,
@@ -211,19 +212,20 @@ def get_check_move_mask(board, legal_moves):
     Returns a binary mask indicating the checking moves marked with True [Caution: Not performant]
     :param board: Python chess both
     :param legal_moves: list of legal moves
-    :return: np-boolean array markin the checking moves
+    :return: check_mask: np-boolean array marking the checking moves
+            nb_checks: Number of possible checks
     """
 
     check_move_mask = np.zeros(len(legal_moves))
+    nb_checks = 0
 
     for idx, move in enumerate(legal_moves):
         board_tmp = copy.deepcopy(board)
         board_tmp.push(move)
         if board_tmp.is_check():
-            # print(board_tmp.fen())
-            # print(move)
             check_move_mask[idx] = 1
-    return np.logical_and(check_move_mask, True)
+            nb_checks += 1
+    return np.logical_and(check_move_mask, True), nb_checks
 
 
 def get_check_moves(board, legal_moves):
@@ -231,17 +233,14 @@ def get_check_moves(board, legal_moves):
     Returns all possible checking moves in a list [Caution: Not performant]
     :param board: Python chess both
     :param legal_moves: list of legal moves
-    :return: np-boolean array markin the checking moves
+    :return: np-boolean array marking the checking moves
     """
 
-    check_moves = []
-
-    for idx, move in enumerate(legal_moves):
+    for move in legal_moves:
         board_tmp = copy.deepcopy(board)
         board_tmp.push(move)
         if board_tmp.is_check():
-            check_moves.append(move)
-    return check_moves
+            yield move
 
 
 def get_check_move_indices(board, legal_moves):
@@ -249,12 +248,12 @@ def get_check_move_indices(board, legal_moves):
     Returns all possible checking moves in a list [Caution: Not performant]
     :param board: Python chess both
     :param legal_moves: list of legal moves
-    :return: np-boolean array markin the checking moves
+    :return: check_move_idces: np-boolean array marking the checking moves
+            nb_checks: Number of possible checks
     """
 
     check_move_idces = []
     nb_checks = 0
-
     for idx, move in enumerate(legal_moves):
         board_tmp = copy.deepcopy(board)
         board_tmp.push(move)

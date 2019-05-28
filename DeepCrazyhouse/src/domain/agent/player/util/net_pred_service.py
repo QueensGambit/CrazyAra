@@ -12,6 +12,7 @@ from time import time
 import mxnet as mx
 import numpy as np
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
+from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLAT_PLANE_IDX
 
 
 class NetPredService:  # Too many instance attributes (9/7) - Too few public methods (1/2)
@@ -37,7 +38,6 @@ class NetPredService:  # Too many instance attributes (9/7) - Too few public met
                                     Each threads has it's own channel.
         :param batch_policy_results: Shared numpy memory in which the policy results of all threads are stored.
                                     Each threads has it's own channel.
-        #:param enable_timeout: Decides whether to enable a timeout if a batch didn't occur under 1 second.
         """
         self.net = net
         self.my_pipe_endings = pipe_endings
@@ -64,7 +64,6 @@ class NetPredService:  # Too many instance attributes (9/7) - Too few public met
                         while pipe.poll():
                             planes_batch.append(pipe.recv())
                             pipes_pred_output.append(pipe)
-                    # logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
                     state_planes_mxnet = mx.nd.array(planes_batch, ctx=self.net.get_ctx())
                 else:
                     pipes_pred_output = []
@@ -72,20 +71,19 @@ class NetPredService:  # Too many instance attributes (9/7) - Too few public met
                         while pipe.poll():
                             planes_ids.append(pipe.recv())
                             pipes_pred_output.append(pipe)
-
-                    # logging.debug('planes_batch length: %d %d' % (len(planes_batch), len(filled_pipes)))
                     state_planes_mxnet = mx.nd.array(self.batch_state_planes[planes_ids], ctx=self.net.get_ctx())
-                # print(len(state_planes_mxnet))
                 pred = self.net.executors[len(state_planes_mxnet) - 1].forward(is_train=False, data=state_planes_mxnet)
-                # pred = self.net.get_net()(state_planes_mxnet)
-                # print('pred: %.3f' % (time()-t_s)*1000)
-                # t_s = time()
-                # value_preds = pred[0].asnumpy()
-                value_preds = (pred[0].asnumpy() + 1) / 2
-                # for the policy prediction we still have to apply the softmax activation
-                #  because it's not done by the neural net
-                policy_preds = pred[1].softmax().asnumpy()
-                
+                value_preds = pred[0].asnumpy()
+
+                if self.net.select_policy_form_planes:
+                    # when trained with mxnet symbol then softmax is already applied
+                    policy_preds = pred[1].asnumpy()
+                    policy_preds = policy_preds[:, FLAT_PLANE_IDX]
+                else:
+                    # for the policy prediction we still have to apply the softmax activation
+                    #  because it's not done by the neural net if trained in gluon style
+                    policy_preds = pred[1].softmax().asnumpy()
+
                 # send the predictions back to the according workers
                 for i, pipe in enumerate(pipes_pred_output):
                     if send_batches is True:
@@ -98,7 +96,6 @@ class NetPredService:  # Too many instance attributes (9/7) - Too few public met
                         self.batch_policy_results[channel_idx] = policy_preds[i]
                         # give the thread the signal that the result has been set by sending back his channel_idx
                         pipe.send(channel_idx)
-                # print('send back res: %.3f' % (time()-t_s)*1000)
 
     def start(self):
         """ Start the thread inference and the time"""

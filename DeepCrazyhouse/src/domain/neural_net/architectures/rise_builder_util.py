@@ -13,10 +13,10 @@ from mxnet.gluon.contrib.nn import HybridConcurrent
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act, get_pool
 
 
-class _SqueezeExcitation(HybridBlock):
+class _ChannelSqueezeExcitation(HybridBlock):
     def __init__(self, name, nb_act_maps, ratio=16, act_type="relu"):
 
-        super(_SqueezeExcitation, self).__init__(prefix=name)
+        super(_ChannelSqueezeExcitation, self).__init__(prefix=name)
 
         self.nb_act_maps = nb_act_maps
         self.body = HybridSequential(prefix="")
@@ -39,7 +39,59 @@ class _SqueezeExcitation(HybridBlock):
         """
         feature_scaling = self.body(x)
         out = F.broadcast_mul(x, F.reshape(data=feature_scaling, shape=(-1, self.nb_act_maps, 1, 1)))
+
         return out
+
+
+class _SpatialSqueezeExcitation(HybridBlock):
+    def __init__(self, name):
+
+        super(_SpatialSqueezeExcitation, self).__init__(prefix=name)
+
+        self.body = HybridSequential(prefix="")
+
+        with self.name_scope():
+            self.body.add(Conv2D(1, kernel_size=1, padding=0, use_bias=True))
+            self.body.add(get_act("sigmoid"))
+
+    def hybrid_forward(self, F, x):
+        """
+        Compute forward pass
+
+        :param F: Handle
+        :param x: Input data to the block
+        :return: Activation maps of the block
+        """
+        feature_scaling = self.body(x)
+        out = F.broadcast_mul(x, feature_scaling)
+
+        return out
+
+
+class _SpatialChannelSqueezeExcitation(HybridBlock):
+    def __init__(self, name, nb_act_maps, ratio=16, act_type="relu"):
+
+        super(_SpatialChannelSqueezeExcitation, self).__init__(prefix=name)
+
+        self.body = HybridSequential(prefix="")
+
+        with self.name_scope():
+            self.cSE = _ChannelSqueezeExcitation("cSE", nb_act_maps, ratio=ratio, act_type=act_type)
+            self.sSE = _SpatialSqueezeExcitation("sSE")
+
+    def hybrid_forward(self, F, x):
+        """
+        Compute forward pass
+
+        :param F: Handle
+        :param x: Input data to the block
+        :return: Activation maps of the block
+        """
+
+        cSE_out = self.cSE(x)
+        sSE_out = self.sSE(x)
+
+        return F.maximum(cSE_out, sSE_out)
 
 
 class _InceptionResnetBlock(HybridBlock):  # Too many instance attributes (8/7) - Too many arguments (8/5)
@@ -55,7 +107,7 @@ class _InceptionResnetBlock(HybridBlock):  # Too many instance attributes (8/7) 
         self.act0 = get_act(act_type, prefix="%s_%s0" % (name, act_type))
 
         if use_se:
-            self.se0 = _SqueezeExcitation("%s_se0" % name, ch, 16, act_type)
+            self.se0 = _ChannelSqueezeExcitation("%s_se0" % name, ch, 16, act_type)
 
     def hybrid_forward(self, F, x):
         """
@@ -135,7 +187,7 @@ class _RiseResidualBlock(HybridBlock):  # Too many arguments (7/5)
         self.act0 = get_act(act_type, prefix="%s_%s1" % (unit_name, act_type))
 
         if use_se:
-            self.se0 = _SqueezeExcitation("%s_se0" % unit_name, channels, 16, act_type)
+            self.se0 = _ChannelSqueezeExcitation("%s_se0" % unit_name, channels, 16, act_type)
 
     def hybrid_forward(self, F, x):
         """

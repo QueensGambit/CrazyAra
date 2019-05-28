@@ -270,7 +270,7 @@ def planes_to_board(planes, normalized_input=False):
             nb_prisoners *= MAX_NB_PRISONERS
             nb_prisoners = int(round(nb_prisoners))
 
-        for i in range(nb_prisoners):
+        for _ in range(nb_prisoners):
             board.pockets[chess.WHITE].add(p_type)
 
         # add prisoners for the opponent
@@ -305,7 +305,8 @@ def planes_to_board(planes, normalized_input=False):
     channel = CHANNEL_MAPPING_CONST["castling"]
 
     # reset the castling_rights for initialization
-    board.castling_rights = chess.BB_VOID
+    # set to 0, previously called chess.BB_VOID for chess version of 0.23.X and chess.BB_EMPTY for versions > 0.27.X
+    board.castling_rights = 0
 
     # WHITE
     # check for King Side Castling
