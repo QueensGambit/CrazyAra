@@ -211,3 +211,20 @@ class MomentumSchedule:
         perc = (self.lr_schedule(iteration) - self.min_lr) / (self.max_lr - self.min_lr)  # calculate percentage factor
         # invert the percentage factor and apply it
         return self.max_momentum - perc * (self.max_momentum - self.min_momentum)
+
+
+class ConstantSchedule:
+    """
+    Constant schedule which return the same value for every iteration.
+    This can be used to comply with the same program code scheme as other schedulers.
+    """
+
+    def __init__(self, lr):
+        """
+        lr: Constant learning rate
+        """
+        self.lr = lr
+
+    def __call__(self, iteration):
+
+        return self.lr
