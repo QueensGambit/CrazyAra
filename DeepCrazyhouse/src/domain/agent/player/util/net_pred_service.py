@@ -16,7 +16,7 @@ from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLA
 
 
 class NetPredService:  # Too many instance attributes (9/7) - Too few public methods (1/2)
-    """ TODO: docstring """
+    """ Service which provides the network predictions to the workers"""
 
     def __init__(
         self,
@@ -50,7 +50,11 @@ class NetPredService:  # Too many instance attributes (9/7) - Too few public met
         self.batch_policy_results = batch_policy_results
 
     def _provide_inference(self, pipe_endings):
-        # TODO: docstring
+        """
+        Start an inference thread which listens for incoming requests for the NN
+        :param pipe_endings: List of pipe endings
+        :return:
+        """
         send_batches = False
 
         while self.running:
