@@ -61,13 +61,13 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "threads": 8,
             "batch_size": 8,
             "neural_net_services": 1,
-            "playouts_empty_pockets": 8192,
-            "playouts_filled_pockets": 8192,
+            "playouts_empty_pockets": 99999,
+            "playouts_filled_pockets": 99999,
             "centi_cpuct": 250,
             "centi_dirichlet_epsilon": 25,
             "centi_dirichlet_alpha": 20,
             "centi_u_init_divisor": 100,
-            "max_search_depth": 40,
+            "max_search_depth": 99,
             "centi_temperature": 7,
             "temperature_moves": 0,
             "opening_guard_moves": 0,
@@ -84,6 +84,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "use_pruning": False,
             "use_future_q_values": False,
             "use_time_management": True,
+            "use_transposition_table": True,
             "verbose": False,
             "model_architecture_dir": "default",
             "model_weights_dir": "default"
@@ -192,6 +193,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 use_future_q_values=self.settings["use_future_q_values"],
                 use_pruning=self.settings["use_pruning"],
                 use_time_management=self.settings["use_time_management"],
+                use_transposition_table=self.settings["use_transposition_table"],
                 opening_guard_moves=self.settings["opening_guard_moves"],
                 u_init_divisor=self.settings["centi_u_init_divisor"] / 100,
             )
@@ -476,6 +478,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         "use_pruning",
                         "use_future_q_values",
                         "use_time_management",
+                        "use_transposition_table",
                         "model_architecture_dir",
                         "model_weights_dir",
                     ]:
@@ -499,6 +502,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         self.settings["use_future_q_values"] = value == "true"
                     elif option_name == "use_time_management":
                         self.settings["use_time_management"] = value == "true"
+                    elif option_name == "use_transposition_table":
+                        self.settings["use_transposition_table"] = value == "true"
                     else:
                         self.settings[option_name] = value  # by default all options are treated as integers
                         # Guard threads limits
@@ -561,11 +566,11 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
             "option name neural_net_services type spin default %d min 1 max 10" % self.settings["neural_net_services"]
         )
         self.log_print(
-            "option name playouts_empty_pockets type spin default %d min 56 max 8192"
+            "option name playouts_empty_pockets type spin default %d min 56 max 99999"
             % self.settings["playouts_empty_pockets"]
         )
         self.log_print(
-            "option name playouts_filled_pockets type spin default %d min 56 max 8192"
+            "option name playouts_filled_pockets type spin default %d min 56 max 99999"
             % self.settings["playouts_filled_pockets"]
         )
         self.log_print("option name centi_cpuct type spin default %d min 1 max 500" % self.settings["centi_cpuct"])
@@ -634,6 +639,10 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         self.log_print(
             "option name use_time_management type check default %s"
             % ("false" if not self.settings["use_time_management"] else "true")
+        )
+        self.log_print(
+            "option name use_transposition_table type check default %s"
+            % ("false" if not self.settings["use_transposition_table"] else "true")
         )
         self.log_print(
             "option name verbose type check default %s" % ("false" if not self.settings["verbose"] else "true")
