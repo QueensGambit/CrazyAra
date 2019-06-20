@@ -42,7 +42,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
         self.random_mv_time_portion = 0.1
         # enable this variable if you want to see debug messages in certain environments, like the lichess.org api
         self.enable_lichess_debug_msg = self.setup_done = False
-        self.client = {"name": "CrazyAra", "version": "0.4.0", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
+        self.client = {"name": "CrazyAra", "version": "0.4.1", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
         self.mcts_agent = (
             self.rawnet_agent
         ) = self.ab_agent = self.gamestate = self.bestmove_value = self.move_time = self.score = None
