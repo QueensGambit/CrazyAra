@@ -1,4 +1,4 @@
-#### Directory for the weights of the neural network
+### Directory for the weights of the neural network
 
 * Put a working `.params` file here.
 

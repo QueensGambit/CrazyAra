@@ -1,4 +1,4 @@
-#### Directory for the architecture definition of the neural network
+### Directory for the architecture definition of the neural network
 
 * Put a working `.json` file here.
 
