@@ -15,6 +15,7 @@ import sys
 import traceback
 import chess.pgn
 import numpy as np
+import multiprocessing
 
 from DeepCrazyhouse.src.domain.agent.player.alpha_beta_agent import AlphaBetaAgent
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
@@ -58,7 +59,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
             # choose 'gpu' using the settings if there is one available
             "context": "cpu",
             "use_raw_network": False,
-            "threads": 8,
+            "threads": min(8, multiprocessing.cpu_count()),
             "batch_size": 8,
             "neural_net_services": 1,
             "playouts_empty_pockets": 99999,
