@@ -624,22 +624,30 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             # note: It's important to use also the halfmove-counter here, otherwise the system can create an infinite
             # feed-back-loop
             key = transposition_key + (state.get_fullmove_number(),)
-            node_verified = False
 
             if self.use_transposition_table and key in self.node_lookup:
-                # if self.check_for_duplicate(transposition_key, chosen_nodes) is False:
+
                 node = self.node_lookup[key]  # get the node from the look-up list
 
-                if node.n_sum > parent_node.n_sum:  # make sure that you don't connect to a node with lower visits
-                    node_verified = True
-
-            if node_verified:
-                with parent_node.lock:
-                    # setup a new connection from the parent to the child
-                    parent_node.child_nodes[child_idx] = node
-                # logging.debug('found key: %s' % state.get_board_fen())
                 # get the prior value from the leaf node which has already been expanded
                 value = node.initial_value
+
+                # clip the visit nodes for all nodes in the search tree except the director opp. move
+                clip_low_visit = self.use_pruning
+
+                new_node = Node(
+                    node.board,
+                    value,
+                    node.policy_prob,
+                    node.legal_moves,
+                    node.is_leaf,
+                    key,
+                    clip_low_visit,
+                )  # create a new node
+
+                with parent_node.lock:
+                    parent_node.child_nodes[child_idx] = new_node  # add the new node to its parent
+
             else:
                 # expand and evaluate the new board state (the node wasn't found in the look-up table)
                 # its value will be back-propagated through the tree and flipped after every layer
