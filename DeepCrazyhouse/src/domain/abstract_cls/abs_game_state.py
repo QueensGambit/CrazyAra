@@ -67,9 +67,14 @@ class AbsGameState(ABC):
         """Force the child to implement new_game method"""
 
     def get_halfmove_counter(self):
-        """ TODO: docstring """
+        """ Return the number of steps towards the 40 move rule without progress """
         return self.board.halfmove_clock
 
     def get_fullmove_number(self):
-        """ TODO: docstring """
+        """ Returns the current full move number"""
         return self.board.fullmove_number
+
+    @abstractmethod
+    def is_variant_end(self):
+        """ Checks if the current game state is a terminal state"""
+        raise NotImplementedError("is_variant_end() hasn't been implemented yet")
