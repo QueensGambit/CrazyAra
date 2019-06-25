@@ -15,38 +15,39 @@
 
 #include "outputrepresentation.h"
 #include "types.h"
+using namespace std;
+
 
 // TODO: Change this later to blaze::HybridVector<float, MAX_NB_LEGAL_MOVES>
-void get_probs_of_move_list(const NDArray policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall)
+void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall)
 {
     // allocate sufficient memory
-//    DynamicVector<float> policyProbSmall(legalMoves.size());
     policyProbSmall.resize(legalMoves.size());
-    policyProb.WaitToRead();
 
-    size_t idx;
+    size_t vectorIdx;
     if (sideToMove == WHITE) {
         for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx)
         {
             // find the according index in the vector
-            idx = MV_LOOKUP[legalMoves[mvIdx]];
+            vectorIdx = MV_LOOKUP[legalMoves[mvIdx]];
             // set the right prob value
-            policyProbSmall[mvIdx] = policyProb.At(0, idx);
+            policyProbSmall[mvIdx] = policyProb.At(batchIdx, vectorIdx);
         }
     }
     else {
         for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx)
         {
             // use the mirrored look-up table instead
-            idx = MV_LOOKUP_MIRRORED[legalMoves[mvIdx]];
+            vectorIdx = MV_LOOKUP_MIRRORED[legalMoves[mvIdx]];
 
             // set the right prob value
-            policyProbSmall[mvIdx] = policyProb.At(0, idx);
+            policyProbSmall[mvIdx] = policyProb.At(batchIdx, vectorIdx);
         }
     }
 
     if (normalize) {
-        policyProbSmall /= sum(policyProbSmall);
+        policyProbSmall = softmax(policyProbSmall);
+//        policyProbSmall /= sum(policyProbSmall);
     }
 //    return policyProbSmall;
 }

@@ -25,28 +25,38 @@
 #ifndef MCTSAGENT_H
 #define MCTSAGENT_H
 
+#include <thread>
 #include "position.h"
+#include "agent.h"
 #include "../evalinfo.h"
 #include "../node.h"
-#include <thread>
 #include "../board.h"
 #include "../nn/neuralnetapi.h"
 #include "config/searchsettings.h"
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
+#include "../searchthread.h"
 
-class MCTSAgent
+class MCTSAgent : public Agent
 {
 private:
-    NeuralNetAPI *net;
+    NeuralNetAPI *netSingle;
+    NeuralNetAPI *netBatch;
 
     SearchSettings searchSettings;
     SearchLimits searchLimits;
     PlaySettings playSettings;
 
+    std::vector<SearchThread*> searchThreads;
+
+    float input_planes[NB_VALUES_TOTAL];
+    NDArray valueOutput = NDArray(Shape(1, 1), Context::cpu());
+    NDArray probOutputs = NDArray(Shape(1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH), Context::cpu());
 
     Node *rootNode;
-    void expand_root_node_multiple_moves(const Board &pos, const std::vector<Move> &legalMoves);
+    unordered_map<Key, Node*> *hashTable;
+
+    void expand_root_node_multiple_moves(const Board &pos);
     static void run_single_playout(); //Board &pos); //, int i); //Node *rootNode);
     void select_node_to_extend();
 
@@ -61,10 +71,12 @@ private:
 
 public:
 
-    MCTSAgent(NeuralNetAPI *net,
+    MCTSAgent(NeuralNetAPI *netSingle,
+              NeuralNetAPI *netBatch,
               SearchSettings searchSettings,
               SearchLimits searchLimits,
-              PlaySettings playSettings);
+              PlaySettings playSettings); //,
+//              unordered_map<Key, Node*> *hashTable);
 
     EvalInfo evalute_board_state(const Board &pos);
     void run_mcts_search(const Board &pos);

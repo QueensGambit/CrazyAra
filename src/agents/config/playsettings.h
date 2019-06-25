@@ -23,7 +23,7 @@ struct PlaySettings
 {
 public:
     float temperature;
-    int temperatureMoves;
+    unsigned int temperatureMoves;
     bool useTimeManagement;
     int openingGuardMoves;
 

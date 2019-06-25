@@ -212,7 +212,8 @@ void CrazyAra::go(Board& pos, istringstream& is, StateListPtr& states) {
 
 //  Threads.start_thinking(pos, states, limits, ponderMode);
 //  EvalInfo res = rawAgent->evalute_board_state(pos);
-  rawAgent->perform_action(pos);
+//  rawAgent->perform_action(pos);
+  mctsAgent->perform_action(pos);
 
   // runtime
 //  std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
@@ -254,7 +255,7 @@ void CrazyAra::position(Board& pos, istringstream& is, StateListPtr& states) {
   auto uiThread = std::make_shared<Thread>(0);
 
   states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
-//  std::cout << "before pos.set()" << std::endl;
+//  sync_cout << "before pos.set()" << sync_endl;
   pos.set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, &states->back(), uiThread.get()); //Threads.main()
 
 //      StateListPtr states(new std::deque<StateInfo>(1));
@@ -279,14 +280,16 @@ void CrazyAra::position(Board& pos, istringstream& is, StateListPtr& states) {
 
 void CrazyAra::init()
 {
-    net_single = new NeuralNetAPI("cpu", 1, false,
+    SearchSettings searchSettings;
+    searchSettings.batchSize = 8; //8; //64;
+    netSingle = new NeuralNetAPI("cpu", 1, false,
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
-    rawAgent = new RawNetAgent(net_single, PlaySettings(), 0, 0, true);
-    net = new NeuralNetAPI("cpu", 1, false,
+    rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
+    netBatch = new NeuralNetAPI("cpu", searchSettings.batchSize, false,
                            "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                            "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
-    mctsAgent = new MCTSAgent(net, SearchSettings(), SearchLimits(), PlaySettings());
+    mctsAgent = new MCTSAgent(netSingle, netBatch, searchSettings, SearchLimits(), PlaySettings()); //, hashTable);
 
     UCI::init(Options);
 //    Threads.set(1);
@@ -302,5 +305,6 @@ void CrazyAra::init()
 //    Bitbases::init();
 //    Search::init();
     Constants::init();
+//    hashTable = new unordered_map<Key, Node*>;
 
 }

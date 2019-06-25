@@ -19,7 +19,9 @@
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
 #include "constants.h"
+#include "../blazeutil.h"
 #include "mxnet-cpp/MxNetCpp.h"
+#include "uci.h"
 
 using namespace mxnet::cpp;
 
@@ -28,8 +30,12 @@ void MCTSAgent::run_single_playout() //Board &pos) //, int i) //Node *rootNode)
     std::cout << "hello :) " << std::endl;
 }
 
-void MCTSAgent::expand_root_node_multiple_moves(const Board &pos, const std::vector<Move> &legalMoves)
+void MCTSAgent::expand_root_node_multiple_moves(const Board &pos)
 {
+
+    board_to_planes(pos, 0, true, begin(input_planes)); //input_planes_start);
+
+
 //    bool isLeaf = false;  // initialize is_leaf by default to false
 //    // [value, policy_vec] = self.nets[0].predict_single(state.get_state_planes())  # start a brand new tree
 //    float value = 0.42f;
@@ -108,38 +114,35 @@ void MCTSAgent::select_node(Node &parentNode)
         */
 }
 
-MCTSAgent::MCTSAgent(NeuralNetAPI *net, SearchSettings searchSettings, SearchLimits searchLimits, PlaySettings playSettings)
+
+MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI *netBatch,
+                     SearchSettings searchSettings, SearchLimits searchLimits, PlaySettings playSettings //,
+//                     unordered_map<Key, Node*> *hashTable
+                     ):
+    Agent(playSettings.temperature, playSettings.temperatureMoves, true),
+    netSingle(netSingle),
+    netBatch(netBatch),
+    searchSettings(searchSettings),
+    searchLimits(searchLimits),
+    playSettings(playSettings) //,
+//    hashTable(hashTable)
 {
-    this->net = net;
-    this->searchSettings = searchSettings;
-    this->searchLimits = searchLimits;
-    this->playSettings = playSettings;
+    for (auto i = 0; i < searchSettings.threads; ++i) {
+        cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
+        searchThreads.push_back(new SearchThread(netBatch, searchSettings.batchSize, searchSettings.virtualLoss)); //, hashTable));
+    }
+    hashTable = new unordered_map<Key, Node*>;
+
 }
 
 EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
 {
-    std::vector<Move> legalMoves;
-    for (const ExtMove& move : MoveList<LEGAL>(pos)) {
-        legalMoves.push_back(move);
-    }
-
-    if (legalMoves.size() > 1) {
-        expand_root_node_multiple_moves(pos, legalMoves);
-    }
+//    if (legalMoves.size() > 1) {
+//        expand_root_node_multiple_moves(pos, legalMoves);
+//    }
 
     run_mcts_search(pos);
 
-    float input_planes[34][8][8];
-    float *input_planes_start = &input_planes[0][0][0];
-    std::fill(input_planes_start, input_planes_start+34*8*8, 0.0f);
-
-    board_to_planes(pos, 0, true, input_planes_start);
-
-    float sum = 0;
-    for (int i = 0; i < 34*8*8; ++i) {
-//    std::cout << "input_planes" << *(input_planes_start+i) << std::endl;
-    sum += *(input_planes_start+i);
-    }
     /*
 //    std::cout << "sum" << sum << std::endl;
     Symbol net;
@@ -218,25 +221,35 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
     float value;
     Eigen::VectorXf prob_vec;
 
-    int best_idx = 0; //net->predict_single(input_planes_start, value, prob_vec);
+
 //    best_accuracy = array.At(0, best_idx);
 
 //    std::cout << "array " << array << std::endl;
     LABELS_MIRRORED[77] ="%§";
     Constants::init();
-    if (pos.side_to_move() == WHITE) {
-        std::cout << "predicted " << best_idx << " " <<  LABELS[best_idx] << std::endl;
-    }
-    else {
-        std::cout << "predicted " << best_idx << " move" <<  LABELS_MIRRORED[best_idx] << std::endl;
-    }
-    EvalInfo eval_info;
-    eval_info.centipawns = value_to_centipawn(this->rootNode->getValue());
-    eval_info.depth = 42;
-    eval_info.legalMoves = this->rootNode->getLegalMoves();
+//    if (pos.side_to_move() == WHITE) {
+//        std::cout << "predicted " << best_idx << " " <<  LABELS[best_idx] << std::endl;
+//    }
+//    else {
+//        std::cout << "predicted " << best_idx << " move" <<  LABELS_MIRRORED[best_idx] << std::endl;
+//    }
+
+    DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);
+    rootNode->get_mcts_policy(0, 0, mctsPolicy);
+
+//    size_t best_idx = argmax(this->rootNode->getPolicyProbSmall());
+    size_t best_idx = argmax(mctsPolicy);
+
+    EvalInfo evalInfo;
+    evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[best_idx]);
+    evalInfo.depth = 42;
+    evalInfo.legalMoves = this->rootNode->getLegalMoves();
+    evalInfo.pv = {this->rootNode->getLegalMoves()[best_idx]};
+    evalInfo.is_chess960 = pos.is_chess960();
+    evalInfo.nodes = rootNode->numberVisits;
 //    eval_info.policyProbSmall = this->rootNode->getPVecSmall();
 
-    return eval_info;
+    return evalInfo;
 }
 
 void MCTSAgent::run_mcts_search(const Board &pos)
@@ -244,14 +257,35 @@ void MCTSAgent::run_mcts_search(const Board &pos)
     const int num_threads = 32;
     std::thread threads[num_threads];
 
-    for (int i = 0; i < num_threads; ++i) {
-//        go();
-        threads[i] = std::thread(run_single_playout); //, pos); //, 3); //this->rootNode);
+    auto it = hashTable->find(pos.key());
+    if(it != hashTable->end()) {
+        cout << "found root node in tree" << endl;
+       rootNode = it->second;
+    }
+    else {
+        cout << "create new tree" << endl;
+        rootNode = new Node(pos, nullptr, 0);
     }
 
-    for (int i = 0; i < num_threads; ++i) {
-        threads[i].join();
-    }
+    board_to_planes(pos, 0, true, begin(input_planes));
+
+    netSingle->predict(input_planes, valueOutput, probOutputs);
+
+    get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, pos.side_to_move(), true, rootNode->policyProbSmall);
+
+    rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
+
+    searchThreads[0]->setRootNode(rootNode);
+    searchThreads[0]->go();
+
+//    for (int i = 0; i < num_threads; ++i) {
+////        go();
+//        threads[i] = std::thread(run_single_playout); //, pos); //, 3); //this->rootNode);
+//    }
+
+//    for (int i = 0; i < num_threads; ++i) {
+//        threads[i].join();
+//    }
     
 }
 

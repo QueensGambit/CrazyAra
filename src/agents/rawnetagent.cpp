@@ -55,7 +55,6 @@ EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
         evalInfo.nodes = 0;
         evalInfo.pv = {evalInfo.legalMoves[0]};
 //        sync_cout << "bestmove " << UCI::move(evalInfo.legalMoves[0], pos.is_chess960()) << sync_endl;
-
         return evalInfo;
     }
 
@@ -76,13 +75,14 @@ EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
 //    Eigen::VectorXf policyProb(NB_LABELS);
     float value;
 
-//    int best_idx = net->predict_single(input_planes_start, value, policyProb);
+//    net->predict_single(begin(input_planes), valueOutput, probOutputs);
+    NDArray probOutputs = net->predict(begin(input_planes), value);
 
-    net->predict_single(begin(input_planes), valueOutput, probOutputs);
-    cout << "value: " << value << endl;
+//    value = valueOutput.At(0, 0);
+//    cout << "value: " << value << endl;
 //    cout << "prob_vec: " << prob_vec << endl;
 
-    int index;
+//    int index;
 //    policyProb.maxCoeff(&index);
 
     /*
@@ -90,7 +90,6 @@ EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
      * This is done by using the argmax operator on NDArray.
      */
     auto predicted = probOutputs.ArgmaxChannel();
-
     /*
      * Wait until all the previous write operations on the 'predicted'
      * NDArray to be complete before we read it.
@@ -99,11 +98,8 @@ EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
      */
     predicted.WaitToRead();
 
-//    std::cout << "predicted" << predicted << std::endl;
 
-    int best_idx = predicted.At(0, 0);
-
-//    cout << "argmax:" << index << endl;
+    int best_idx = predicted.At(0); //, 0);
 
 //    best_accuracy = array.At(0, best_idx);
 
@@ -118,7 +114,7 @@ EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
         bestmove_mxnet = LABELS_MIRRORED[best_idx];
     }
 
-    get_probs_of_move_list(probOutputs, evalInfo.legalMoves, pos.side_to_move(), true, evalInfo.policyProbSmall);
+    get_probs_of_move_list(0, probOutputs, evalInfo.legalMoves, pos.side_to_move(), true, evalInfo.policyProbSmall);
     size_t sel_idx = argmax(evalInfo.policyProbSmall);
 
 //    sync_cout << "sel_idx " << sel_idx << sync_endl;
@@ -131,6 +127,7 @@ EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
     evalInfo.centipawns = value_to_centipawn(value);
     evalInfo.depth = 1;
     evalInfo.nodes = 1;
+    evalInfo.is_chess960 = pos.is_chess960();
     evalInfo.pv = {bestmove};
 //    eval_info.legalMoves = this->rootNode->getLegalMoves();
 //    eval_info.pVecSmall = this->rootNode->getPVecSmall();

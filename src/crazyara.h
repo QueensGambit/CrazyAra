@@ -12,7 +12,7 @@
  * Created on 12.06.2019
  * @author: queensgambit
  *
- * Please describe what the content of this file is about
+ * Main entry point for the executable which manages the UCI communication.
  */
 
 #ifndef CRAZYARA_H
@@ -26,6 +26,7 @@
 #include "agents/config/searchsettings.h"
 #include "agents/config/searchlimits.h"
 #include "agents/config/playsettings.h"
+#include "node.h"
 
 class CrazyAra
 {
@@ -52,8 +53,9 @@ private:
             std::string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
     RawNetAgent *rawAgent;
     MCTSAgent *mctsAgent;
-    NeuralNetAPI *net_single;
-    NeuralNetAPI *net;
+    NeuralNetAPI *netSingle;
+    NeuralNetAPI *netBatch;
+//    unordered_map<Key, Node*> *hashTable;
 public:
     CrazyAra();
     void welcome();
@@ -64,10 +66,13 @@ public:
 
 };
 
+
 int main(int argc, char* argv[]) {
     CrazyAra crazyara;
     crazyara.init();
     crazyara.welcome();
     crazyara.uci_loop(argc, argv);
 }
+
+
 #endif // CRAZYARA_H

@@ -14,6 +14,7 @@
  */
 
 #include "evalinfo.h"
+#include "uci.h"
 
 EvalInfo::EvalInfo()
 {
@@ -22,10 +23,14 @@ EvalInfo::EvalInfo()
 
 std::ostream& operator<<(std::ostream& os, const EvalInfo& eval_info) {
 
-  os << "cp " << eval_info.centipawns << " depth " << eval_info.depth;
+//  os << "cp " << eval_info.centipawns << " depth " << eval_info.depth;
 
-  os << "info score cp " << eval_info.centipawns << " depth " << eval_info.depth << " nodes " << eval_info.nodes
-            << " time " << eval_info.elapsedTimeMS << " nps " << int((eval_info.nodes / (eval_info.elapsedTimeMS / 1000.0f)) + 0.5f) << " pv " << eval_info.pv[0];
+  os << "info score cp " << eval_info.centipawns
+     << " depth " << eval_info.depth
+     << " nodes " << eval_info.nodes
+     << " time " << eval_info.elapsedTimeMS
+     << " nps " << int((eval_info.nodes / (eval_info.elapsedTimeMS / 1000.0f)) + 0.5f)
+     << " pv " << UCI::move(eval_info.pv[0], eval_info.is_chess960);
 
   return os;
 }

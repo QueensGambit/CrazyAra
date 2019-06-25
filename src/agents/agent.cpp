@@ -31,11 +31,11 @@ void Agent::perform_action(const Board &pos)
 {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     EvalInfo eval_info = this->evalute_board_state(pos);
-
+    sync_cout << "end time" << sync_endl;
     std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
     eval_info.elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
     sync_cout << eval_info << sync_endl;
-    sync_cout << "bestmove " << UCI::move(eval_info.pv[0], pos.is_chess960()) << sync_endl;
+//    sync_cout << "bestmove " << UCI::move(eval_info.pv[0], pos.is_chess960()) << sync_endl;
 
 }

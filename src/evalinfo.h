@@ -42,6 +42,7 @@ public:
     int nodes;
     float elapsedTimeMS;
     float nps;
+    bool is_chess960;
     std::vector<Move> pv;
 };
 

@@ -34,9 +34,7 @@ private:
     std::vector<std::string> output_labels;
     Symbol net;
     Executor *executor;
-//    Executor *executor;
 
-//    Shape input_shape;
     Shape input_shape;
 
     Context global_ctx = Context::cpu();
@@ -70,8 +68,8 @@ private:
 
 public:
     NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicyFromPlanes, string modelArchitectureDir, string modelWeightsDir);
-    void predict_single(float *input_planes, NDArray &valueOutput, NDArray &probOutputs);
-
+    NDArray predict(float *inputPlanes, float &value);
+    void predict(float *input_planes, NDArray &valueOutput, NDArray &probOutputs);
 };
 
 #endif // NEURALNETAPI_H

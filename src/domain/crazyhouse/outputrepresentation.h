@@ -33,6 +33,7 @@ using namespace mxnet::cpp;
 /**
  * @brief get_probs_of_move_list Returns an array in which entry relates to the probability for the given move list.
                                  Its assumed that the moves in the move list are legal and shouldn't be mirrored.
+ * @param batchIdx Index to use in policyProb when extracting the probabilities for all legal moves
  * @param policyProb Policy vector from the neural net prediction
  * @param legalMoves List of legal moves for a specific board position
  * @param lastLegalMove Pointer to the last legal move
@@ -40,7 +41,8 @@ using namespace mxnet::cpp;
  * @param normalize True, if the probability should be normalized
  * @return policyProbSmall - A hybrid blaze vector which stores the probabilities for the given move list
  */
-void get_probs_of_move_list(const NDArray policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall);
+void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, const std::vector<Move> &legalMoves, Color sideToMove,
+                            bool normalize, DynamicVector<float> &policyProbSmall);
 
 /**
  * @brief value_to_centipawn Converts a value in A0-notation to roughly a centi-pawn loss

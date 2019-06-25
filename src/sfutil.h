@@ -12,7 +12,7 @@
  * Created on 13.05.2019
  * @author: queensgambit
  *
- * Additional utility functions for the Stockfish library
+ * Additional utility functions for the Stockfish library.
  */
 
 #ifndef SFUTIL_H
@@ -24,7 +24,7 @@
 /**
  * @brief make_move Creates a move in coordinate representation given an uci string.
  *                  Multiple sf moves are returned in case it's ambigious such as castling or en-passent moves.
- * @param uciMove Valid uci string including czrahyouse dropping moves
+ * @param uciMove Valid uci string including crazyhouse dropping moves
  * @return Move in coordinate representation
  */
 std::vector<Move> make_move(std::string uciMove);

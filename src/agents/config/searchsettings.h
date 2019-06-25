@@ -22,7 +22,7 @@
 struct SearchSettings
 {
     int threads;
-    int batchSize;
+    unsigned int batchSize;
     float cpuct;
     float dirichletEpsilon;
     float dirichletAlpha;
@@ -35,8 +35,8 @@ struct SearchSettings
     bool usePruning;
     float uInitDivisor;
 
-    SearchSettings(): threads(16),
-                 batchSize(8),
+    SearchSettings(): threads(8),
+                 batchSize(2),
                  cpuct(1),
                  dirichletEpsilon(0.25),
                  dirichletAlpha(0.2),

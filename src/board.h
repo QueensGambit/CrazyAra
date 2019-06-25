@@ -12,15 +12,13 @@
  * Created on 23.05.2019
  * @author: queensgambit
  *
- * Please describe what the content of this file is about
+ * Extension of Stockfish's board presentation by introducing new functionality.
  */
 
 #ifndef BOARD_H
 #define BOARD_H
 
 #include <position.h>
-
-
 
 class Board : public Position
 {

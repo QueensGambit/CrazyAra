@@ -52,7 +52,7 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *input_planes
 void board_to_planes(Board pos, int board_occ, bool normalize, float *input_planes) {
 
     // intialize the input_planes with 0
-    std::fill(input_planes, input_planes+NB_CHANNELS_TOTAL*BOARD_HEIGHT*BOARD_WIDTH, 0.0f);
+    std::fill(input_planes, input_planes+NB_VALUES_TOTAL, 0.0f);
 
     // Fill in the piece positions
 
