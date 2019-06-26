@@ -18,8 +18,8 @@
 #include "outputrepresentation.h"
 #include "uci.h"
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss): //, unordered_map<Key, Node *> *hashTable):
-    netBatch(netBatch), batchSize(batchSize), virtualLoss(virtualLoss), isRunning(false) //, hashTable(hashTable)
+SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss, unordered_map<Key, Node *> *hashTable):
+    netBatch(netBatch), batchSize(batchSize), virtualLoss(virtualLoss), isRunning(false), hashTable(hashTable)
 {
     // allocate memory for all predictions and results
     inputPlanes = new float[batchSize * NB_VALUES_TOTAL];
@@ -32,8 +32,11 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const
 void SearchThread::go()
 {
     isRunning = true;
+//    cout << "rootNode" << endl;
+//    cout << rootNode << endl;
+
 //    while(isRunning) {
-    for (int i = 0; i < 128; ++i) {
+    for (int i = 0; i < 100; ++i) {
         create_mini_batch();
 //        cout << "predict" << endl;k
         netBatch->predict(inputPlanes, valueOutputs, probOutputs);
@@ -44,12 +47,12 @@ void SearchThread::go()
         backup_collisions(virtualLoss);
         rootNode->numberVisits = sum(rootNode->childNumberVisits);
 //        isRunning = false;
-        if (rootNode->numberVisits % 100) {
+//        if (rootNode->numberVisits % 100) {
 //            cout << rootNode->numberVisits << endl;
-        }
-        if (rootNode->numberVisits > 400) {
-            break;
-        }
+//        }
+//        if (rootNode->numberVisits > 400) {
+//            break;
+//        }
     }
 //    cout << "rootNode" << endl;
 //    cout << rootNode << endl;
@@ -115,23 +118,23 @@ void SearchThread::set_NN_results_to_child_nodes()
 //        node->parentNode->waitForNNResults[node->childIdxOfParent] = 0;
 //        node->parentNode->numberWaitingChildNodes--;
         ++batchIdx;
-//        hashTable->insert({node->pos.key(), node});
+        hashTable->insert({node->pos.key(), node});
     }
 }
 
 void SearchThread::backup_value_outputs(const float virtualLoss)
 {
-    size_t batchIdx = 0;
+//    size_t batchIdx = 0;
     for (auto node: newNodes) {
         node->parentNode->backup_value(node->childIdxOfParent, virtualLoss, -node->value);
-        ++batchIdx;
+//        ++batchIdx;
     }
     newNodes.clear();
 
-    batchIdx = 0;
+//    batchIdx = 0;
     for (auto node: terminalNodes) {
         node->parentNode->backup_value(node->childIdxOfParent, virtualLoss, -node->value);
-        ++batchIdx;
+//        ++batchIdx;
     }
     terminalNodes.clear();
 
@@ -139,10 +142,10 @@ void SearchThread::backup_value_outputs(const float virtualLoss)
 
 void SearchThread::backup_collisions(const float virtualLoss)
 {
-    size_t batchIdx = 0;
+//    size_t batchIdx = 0;
     for (auto node: collisionNodes) {
-        node->parentNode->backup_collision(node->childIdxOfParent, virtualLoss);
-        ++batchIdx;
+//        node->parentNode->backup_collision(node->childIdxOfParent, virtualLoss);
+//        ++batchIdx;
     }
     collisionNodes.clear();
 }

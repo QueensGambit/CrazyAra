@@ -73,9 +73,6 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
         legalMoves.push_back(move);
     }
 
-    // pos.is_variant_end() doesn't detect stalemates
-//    isTerminal = pos.checkmate_value();//pos.is_variant_end();
-
     if (legalMoves.size() == 0) {
         // test if we have a check-mate
         if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
@@ -87,11 +84,13 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
             isTerminal = true;
         }
     }
-    else if (pos.is_draw(pos.game_ply())) {
-        // reached 40 moves rule
-             value = 1;
-             isTerminal = true;
-    } else {
+    // this can lead to segfault
+//    else if (pos.is_draw(pos.game_ply())) {
+//        // reached 40 moves rule
+//             value = 1;
+//             isTerminal = true;
+//    }
+     else {
         // normal game position
              isTerminal = false;
     }
@@ -236,12 +235,12 @@ void Node::backup_value(unsigned int childIdx, float virtualLoss, float value)
     Node* currentNode = this;
     while (true) {
         currentNode->revert_virtual_loss_and_update(childIdx, virtualLoss, value);
+        value = -value;
         childIdx = currentNode->childIdxOfParent;
         currentNode = currentNode->parentNode;
         if (currentNode == nullptr) {
             return;
         }
-        value = -value;
     }
 }
 
@@ -273,6 +272,12 @@ void Node::revert_virtual_loss(unsigned int childIdx, float virtualLoss)
     childNumberVisits[childIdx] -= virtualLoss;
     actionValues[childIdx] += virtualLoss;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
+}
+
+void Node::make_to_root()
+{
+    parentNode = nullptr;
+    childIdxOfParent = -1;
 }
 
 

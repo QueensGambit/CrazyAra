@@ -49,7 +49,7 @@ private:
     const float virtualLoss;
     bool isRunning;
 
-//    unordered_map<Key, Node*> *hashTable;
+    unordered_map<Key, Node*> *hashTable;
 
     inline Node* get_new_child_to_evaluate(unsigned int &childIdx, bool &isCollision,  bool &isTerminal, size_t &depth);
     void set_NN_results_to_child_nodes();
@@ -59,7 +59,7 @@ private:
     void revert_virtual_loss_for_collision(const float virtualLoss);
 
 public:
-    SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss); //, unordered_map<Key, Node*> *hashTable);
+    SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss, unordered_map<Key, Node*> *hashTable);
     void go();
     void run_single_playout();
     void create_mini_batch();

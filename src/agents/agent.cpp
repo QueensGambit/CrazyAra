@@ -36,6 +36,6 @@ void Agent::perform_action(const Board &pos)
     eval_info.elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
     sync_cout << eval_info << sync_endl;
-//    sync_cout << "bestmove " << UCI::move(eval_info.pv[0], pos.is_chess960()) << sync_endl;
+    sync_cout << "bestmove " << UCI::move(eval_info.pv[0], pos.is_chess960()) << sync_endl;
 
 }

@@ -134,7 +134,27 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     for (int i = 1; i < argc; ++i)
         cmd += std::string(argv[i]) + " ";
 
+    int it = 0;
+
     do {
+//        if (it == 0) {
+//            cmd == "uci";
+//        }
+//        else if (it == 1) {
+//            cmd == "isready";
+//        }
+//        else if (it == 2) {
+//            cmd = "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 d2d3 g8f6 e1g1 e8g8 f3g5 d7d6 g1h1";
+//        }
+//        else if (it == 3) {
+//            cmd = "go wtime 124631 btime 174951 movestogo 34";
+//        }
+//        else if (it == 4) {
+//            cmd = "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 d2d3 g8f6 e1g1 e8g8 f3g5 d7d6 g1h1 d8e7 b1c3";
+//        }
+//        else if (it == 5) {
+//            cmd = "go wtime 119375 btime 174171 movestogo 33";
+//        }
         if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
             cmd = "quit";
 
@@ -177,6 +197,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else
             sync_cout << "Unknown command: " << cmd << sync_endl;
 
+        ++it;
     } while (token != "quit" && argc == 1); // Command line args are one-shot
 }
 

@@ -54,7 +54,7 @@ private:
     unsigned int nbDirectChildNodes;
 
     float initialValue;
-    int numberVisits;
+    int numberVisits  = 0;
     std::vector<Node*> childNodes;
 
     Node *parentNode;
@@ -106,6 +106,10 @@ public:
      */
     void revert_virtual_loss(unsigned int childIdx, float virtualLoss);
 
+    /**
+     * @brief make_to_root Makes the node to the current root node by setting its parent to a nullptr
+     */
+    void make_to_root();
 
     friend class SearchThread;
     friend class MCTSAgent;

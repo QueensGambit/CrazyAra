@@ -40,6 +40,7 @@ public:
     int centipawns;
     int depth;
     int nodes;
+    int nodesPreSearch;
     float elapsedTimeMS;
     float nps;
     bool is_chess960;
