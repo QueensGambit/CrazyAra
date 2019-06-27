@@ -29,35 +29,6 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const
 //    states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
 }
 
-void SearchThread::go()
-{
-    isRunning = true;
-//    cout << "rootNode" << endl;
-//    cout << rootNode << endl;
-
-//    while(isRunning) {
-    for (int i = 0; i < 128; ++i) {
-        create_mini_batch();
-//        cout << "predict" << endl;k
-        netBatch->predict(inputPlanes, valueOutputs, probOutputs);
-//        cout << "set NN result to childs" << endl;
-        set_NN_results_to_child_nodes();
-//        cout << "backup values" << endl;
-        backup_value_outputs(virtualLoss);
-        backup_collisions(virtualLoss);
-        rootNode->numberVisits = sum(rootNode->childNumberVisits);
-//        isRunning = false;
-//        if (rootNode->numberVisits % 100) {
-//            cout << rootNode->numberVisits << endl;
-//        }
-//        if (rootNode->numberVisits > 400) {
-//            break;
-//        }
-    }
-//    cout << "rootNode" << endl;
-//    cout << rootNode << endl;
-}
-
 void SearchThread::run_single_playout()
 {
     //    create_mini_batch();
@@ -66,6 +37,16 @@ void SearchThread::run_single_playout()
 void SearchThread::setRootNode(Node *value)
 {
     rootNode = value;
+}
+
+bool SearchThread::getIsRunning() const
+{
+    return isRunning;
+}
+
+void SearchThread::setIsRunning(bool value)
+{
+    isRunning = value;
 }
 
 inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, bool &isCollision, bool &isTerminal, size_t &depth)
@@ -209,6 +190,39 @@ void SearchThread::create_mini_batch()
 //        cout << "collision" << collisionNodes.size() << endl;
 //    }
 //    cout << "created mini-batch" << endl;
-//    currentNode->[childIdx] = Node();
+    //    currentNode->[childIdx] = Node();
 }
 
+void SearchThread::thread_iteration()
+{
+    create_mini_batch();
+//        cout << "predict" << endl;k
+    netBatch->predict(inputPlanes, valueOutputs, probOutputs);
+//        cout << "set NN result to childs" << endl;
+    set_NN_results_to_child_nodes();
+//        cout << "backup values" << endl;
+    backup_value_outputs(virtualLoss);
+    backup_collisions(virtualLoss);
+    rootNode->numberVisits = sum(rootNode->childNumberVisits);
+//        isRunning = false;
+//        if (rootNode->numberVisits % 100) {
+//            cout << rootNode->numberVisits << endl;
+//        }
+//        if (rootNode->numberVisits > 400) {
+//            break;
+//        }
+}
+
+void go(SearchThread *t)
+{
+    t->setIsRunning(true);
+//    cout << "rootNode" << endl;
+//    cout << rootNode << endl;
+
+//    while(isRunning) {
+    for (int i = 0; i < 128; ++i) {
+        t->thread_iteration();
+    }
+//    cout << "rootNode" << endl;
+//    cout << rootNode << endl;
+}

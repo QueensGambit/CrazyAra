@@ -60,11 +60,15 @@ private:
 
 public:
     SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss, unordered_map<Key, Node*> *hashTable);
-    void go();
     void run_single_playout();
     void create_mini_batch();
-
+    void thread_iteration();
     void setRootNode(Node *value);
+    bool getIsRunning() const;
+    void setIsRunning(bool value);
 };
+
+void go(SearchThread *t);
+
 
 #endif // SEARCHTHREAD_H

@@ -126,7 +126,10 @@ void MCTSAgent::run_mcts_search(const Board &pos)
 //    std::thread threads[num_threads];
 
     searchThreads[0]->setRootNode(rootNode);
-    searchThreads[0]->go();
+    searchThreads[1]->setRootNode(rootNode);
+
+    thread thread1(go, searchThreads[0]);
+    thread1.join();
 
 //    for (int i = 0; i < num_threads; ++i) {
 ////        go();
