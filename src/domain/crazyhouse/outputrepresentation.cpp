@@ -25,31 +25,21 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, co
     policyProbSmall.resize(legalMoves.size());
 
     size_t vectorIdx;
-    if (sideToMove == WHITE) {
-        for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx)
-        {
+    for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
+        if (sideToMove == WHITE) {
             // find the according index in the vector
             vectorIdx = MV_LOOKUP[legalMoves[mvIdx]];
-            // set the right prob value
-            policyProbSmall[mvIdx] = policyProb.At(batchIdx, vectorIdx);
-        }
-    }
-    else {
-        for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx)
-        {
+        } else {
             // use the mirrored look-up table instead
             vectorIdx = MV_LOOKUP_MIRRORED[legalMoves[mvIdx]];
-
-            // set the right prob value
-            policyProbSmall[mvIdx] = policyProb.At(batchIdx, vectorIdx);
         }
+        // set the right prob value
+        policyProbSmall[mvIdx] = policyProb.At(batchIdx, vectorIdx);
     }
 
     if (normalize) {
         policyProbSmall = softmax(policyProbSmall);
-//        policyProbSmall /= sum(policyProbSmall);
     }
-//    return policyProbSmall;
 }
 
 
