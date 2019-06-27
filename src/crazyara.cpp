@@ -190,7 +190,11 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "go")         go(pos, is, states);
         else if (token == "position")   position(pos, is, states);
         else if (token == "ucinewgame") sync_cout << "info string newgame" << sync_endl; //setoption(is); // Search::clear();
-        else if (token == "isready")    sync_cout << "readyok" << sync_endl;
+        else if (token == "isready") {
+            if (is_ready()) {
+                sync_cout << "readyok" << sync_endl;
+            }
+        }
 
         // Additional custom non-UCI commands, mainly for debugging
         else if (token == "flip")  pos.flip();
@@ -301,9 +305,19 @@ void CrazyAra::position(Board& pos, istringstream& is, StateListPtr& states) {
 
 }
 
-
 void CrazyAra::init()
 {
+    UCI::init(Options);
+    Bitboards::init();
+    Position::init();
+    Bitbases::init();
+    Search::init();
+    Constants::init();
+}
+
+bool CrazyAra::is_ready()
+{
+    if (!networkLoaded) {
     SearchSettings searchSettings;
     searchSettings.batchSize = 8; //8; //64;
     netSingle = new NeuralNetAPI("cpu", 1, false,
@@ -314,21 +328,8 @@ void CrazyAra::init()
                            "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                            "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
     mctsAgent = new MCTSAgent(netSingle, netBatch, searchSettings, SearchLimits(), PlaySettings()); //, hashTable);
+    networkLoaded = true;
+    }
 
-    UCI::init(Options);
-//    Threads.set(1);
-    Bitboards::init();
-    Position::init();
-    Bitbases::init();
-    Search::init();
-
-//    UCI::init(Options);
-////    PSQT::init();
-//    Bitboards::init();
-//    Position::init();
-//    Bitbases::init();
-//    Search::init();
-    Constants::init();
-//    hashTable = new unordered_map<Key, Node*>;
-
+    return networkLoaded;
 }

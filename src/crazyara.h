@@ -55,12 +55,20 @@ private:
     MCTSAgent *mctsAgent;
     NeuralNetAPI *netSingle;
     NeuralNetAPI *netBatch;
+    bool networkLoaded = false;
 //    unordered_map<Key, Node*> *hashTable;
 public:
     CrazyAra();
     void welcome();
     void uci_loop(int argc, char* argv[]);
     void init();
+
+    /**
+     * @brief is_ready Loads the neural network weights and creates the agent object in case there haven't loaded already
+     * @return True, if everything isReady
+     */
+    bool is_ready();
+
     void go(Board& pos, istringstream& is, StateListPtr& states);
     void position(Board& pos, istringstream& is, StateListPtr& states);
 
