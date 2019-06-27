@@ -4,10 +4,10 @@ project(CrazyAraMCTS CXX)
 
 # set (CMAKE_CXX_STANDARD 11)
 
-find_package(xtl REQUIRED)
-find_package(xtensor REQUIRED)
+# find_package(xtl REQUIRED)
+# find_package(xtensor REQUIRED)
 # if xtensor was built with xsimd support:
-find_package(xsimd REQUIRED)
+# find_package(xsimd REQUIRED)
 
 find_package( blaze )
 if( blaze_FOUND )
@@ -54,18 +54,24 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
 find_package (Threads)
 include_directories("lib/sf")
 include_directories("lib/catch-2.9.1")
-include_directories("lib/Eigen")
+#include_directories("lib/Eigen")
 include_directories("src/domain/crazyhouse")
 include_directories("src/agents")
 include_directories("src/agents/config")
 include_directories("src/nn")
-include_directories("/home/queensgambit/libs/mxnet/cpp-package/include")
-include_directories("/home/queensgambit/libs/mxnet/include/")
-include_directories("/home/queensgambit/libs/mxnet/3rdparty/tvm/nnvm/include")
-include_directories("/home/queensgambit/libs/mxnet/3rdparty/dmlc-core/include")
 
-include_directories("/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/include")
-link_directories(/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/lib)
+set(MXNET_PATH
+    "/media/queensgambit/Volume/Deep_Learning/libraries/mxnet/"
+    # "/home/queensgambit/libs/mxnet/
+    )
+
+include_directories("${MXNET_PATH}cpp-package/include")
+include_directories("${MXNET_PATH}include/")
+include_directories("${MXNET_PATH}3rdparty/tvm/nnvm/include")
+include_directories("${MXNET_PATH}3rdparty/dmlc-core/include")
+
+#include_directories("/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/include")
+#link_directories(/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/lib)
 
 # find_package(OpenCV REQUIRED)
 
@@ -74,7 +80,8 @@ link_directories(/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/li
 find_package(Threads REQUIRED)
 add_definitions(-DCRAZYHOUSE)
 
-link_directories(/home/queensgambit/libs/mxnet/lib)
+# link_directories(${MXNET_PATH}lib)
+link_directories(${MXNET_PATH}build/lib)
 
 add_executable(${PROJECT_NAME} ${source_files})
 # add_executable(${PROJECT_NAME} "main.cpp")
