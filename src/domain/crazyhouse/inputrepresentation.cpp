@@ -37,9 +37,8 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *input_planes
             input_planes[channel * NB_SQUARES + p] = 1;
           }
           else {
-              size_t row = p / 8;
-              size_t col = p % 8;
-              input_planes[channel * NB_SQUARES + (7 - row) * 8 + col] = 1;
+              //                                         row            col
+              input_planes[channel * NB_SQUARES + (7 - (p / 8)) * 8 + (p % 8)] = 1;
           }
       }
       bitboard >>= 1;

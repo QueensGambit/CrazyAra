@@ -36,4 +36,14 @@ std::vector<Move> make_move(std::string uciMove);
 // each square has two ways to capture except the border square with only one capture
 void fill_en_passent_moves(std::vector<std::string> &enPassentMoves);
 
+/**
+ * https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#FlipVertically
+ * ! NOT USED ATM BECAUSE INDIVIDUAL BIT FLIPPING WAS SLIGHTLY FASTER !
+ * Flip a bitboard vertically about the centre ranks.
+ * Rank 1 is mapped to rank 8 and vice versa.
+ * @param x any bitboard
+ * @return bitboard x flipped vertically
+ */
+Bitboard flip_vertical(Bitboard x);
+
 #endif // SFUTIL_H

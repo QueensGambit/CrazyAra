@@ -175,3 +175,14 @@ std::vector<Move> make_move(std::string uciMove) {
 }
 
 
+Bitboard flip_vertical(Bitboard x)
+{
+    return  ( (x << 56)                           ) |
+            ( (x << 40) & 0x00ff000000000000 ) |
+            ( (x << 24) & 0x0000ff0000000000 ) |
+            ( (x <<  8) & 0x000000ff00000000 ) |
+            ( (x >>  8) & 0x00000000ff000000 ) |
+            ( (x >> 24) & 0x0000000000ff0000 ) |
+            ( (x >> 40) & 0x000000000000ff00 ) |
+            ( (x >> 56) );
+}
