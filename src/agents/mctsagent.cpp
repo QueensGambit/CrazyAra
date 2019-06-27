@@ -96,8 +96,6 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
     rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
     run_mcts_search(pos);
 
-    Eigen::VectorXf prob_vec;
-
     Constants::init();
 
     DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);

@@ -16,7 +16,6 @@
  */
 
 #include "crazyara.h"
-#include <Dense>
 
 #include "bitboard.h"
 #include "position.h"
@@ -38,6 +37,10 @@
 
 using namespace std;
 
+// allocate memory
+std::string LABELS_MIRRORED[NB_LABELS];
+std::unordered_map<Move, size_t> MV_LOOKUP = {};
+std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
 
 // FEN strings of the initial positions
   const string StartFENs[SUBVARIANT_NB] = {

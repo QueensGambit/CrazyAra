@@ -1,5 +1,10 @@
 //#define EIGEN_USE_MKL_ALL
 
+#define BENCHMARK
+
+#ifdef BENCHMARK
+
+/*
 #include <iostream>
 #include <Dense>
 
@@ -49,12 +54,6 @@ namespace PSQT {
   void init();
 }
 
-// TODO: Write unit tests
-// https://github.com/catchorg/Catch2
-std::string LABELS_MIRRORED[NB_LABELS];
-std::unordered_map<Move, size_t> MV_LOOKUP = {};
-std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
-
 template<bool Root>
 uint64_t perft(Position& pos, Depth depth) {
 
@@ -78,28 +77,7 @@ uint64_t perft(Position& pos, Depth depth) {
   }
   return nodes;
 }
-
-inline void init() {
-
-    // fill mirrored label list and look-up table
-    for (size_t mvIdx=0; mvIdx < NB_LABELS; mvIdx++) {
-//        if (mvIdx == 2069)
-//        std::cout << "mvIdx " << mvIdx << "mirror_move(LABELS[mvIdx])" << mirror_move(LABELS[mvIdx]) << std::endl;
-//        std::cout << "mvIdx" << mvIdx << std::endl;
-        LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);
-//        LABELS_MIRRORED.push_back(std::string("test")); //mirror_move(LABELS[mvIdx])));
-        std::vector<Move> moves = make_move(LABELS[mvIdx]);
-        for (Move move : moves) {
-            MV_LOOKUP.insert({move, mvIdx});
-        }
-//        std::cout << LABELS_MIRRORED[mvIdx] << std::endl;
-        std::vector<Move> moves_mirrored = make_move(LABELS_MIRRORED[mvIdx]);
-        for (Move move : moves_mirrored) {
-            MV_LOOKUP_MIRRORED.insert({move, mvIdx});
-        }
-    }
-}
-
+*/
 /*
 int main() {
     xt::xarray<double> arr1
@@ -478,3 +456,4 @@ int main()
   return 0;
 }
 */
+#endif

@@ -20,7 +20,6 @@
 
 #include <mutex>
 #include "position.h"
-#include "Dense"
 #include "movegen.h"
 #include "board.h"
 

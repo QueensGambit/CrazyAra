@@ -36,7 +36,7 @@ void SearchThread::go()
 //    cout << rootNode << endl;
 
 //    while(isRunning) {
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 128; ++i) {
         create_mini_batch();
 //        cout << "predict" << endl;k
         netBatch->predict(inputPlanes, valueOutputs, probOutputs);

@@ -19,7 +19,6 @@
 #ifndef OUTPUTREPRESENTATION_H
 #define OUTPUTREPRESENTATION_H
 
-#include "Dense"
 #include "types.h"
 #include "mxnet-cpp/MxNetCpp.h"
 #include <blaze/Math.h>

@@ -21,7 +21,6 @@
 #include <string>
 #include <iostream>
 
-#include "Dense"
 #include "types.h"
 #include <blaze/Math.h>
 #include "constants.h"
