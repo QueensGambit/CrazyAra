@@ -98,8 +98,11 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
 
     Constants::init();
 
+    float qValueFac = 0; //0.5;
+    float qValueThresh = 0.7;
+
     DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);
-    rootNode->get_mcts_policy(0.5, 0.3, mctsPolicy);
+    rootNode->get_mcts_policy(qValueFac, qValueThresh, mctsPolicy);
 
 //    size_t best_idx = argmax(this->rootNode->getPolicyProbSmall());
     size_t best_idx = argmax(mctsPolicy);

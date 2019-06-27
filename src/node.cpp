@@ -95,9 +95,6 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
              isTerminal = false;
     }
 
-    if (isTerminal) {
-        cout << "isTerminal" << endl;
-    }
     // # store the initial value prediction of the current board position
     initialValue = value;
 

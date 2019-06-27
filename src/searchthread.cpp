@@ -47,9 +47,9 @@ void SearchThread::go()
         backup_collisions(virtualLoss);
         rootNode->numberVisits = sum(rootNode->childNumberVisits);
 //        isRunning = false;
-//        if (rootNode->numberVisits % 100) {
-//            cout << rootNode->numberVisits << endl;
-//        }
+        if (rootNode->numberVisits % 100) {
+            cout << rootNode->numberVisits << endl;
+        }
 //        if (rootNode->numberVisits > 400) {
 //            break;
 //        }
