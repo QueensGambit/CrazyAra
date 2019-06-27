@@ -28,8 +28,7 @@ void fill_value(int pocket_cnt, int current_channel, float *input_planes) {
 }
 
 void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *input_planes, Color color) {
-    size_t p;
-    true ? p = 0 : p = 63;
+    size_t p = 0;
     // set the individual bits for the pieces
     // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
     while (bitboard != 0) {
@@ -44,7 +43,7 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *input_planes
           }
       }
       bitboard >>= 1;
-      true ? p++ : p--;
+      p++;
     }
 }
 
@@ -58,17 +57,17 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
 
     // Iterate over both color starting with WHITE
     size_t current_channel = 0;
-    Color us = pos.side_to_move();
-    Color them = ~us;
+    Color me = pos.side_to_move();
+    Color you = ~me;
 
     // (I) Set the pieces for both players
-    for (Color color : {us, them}) {
+    for (Color color : {me, you}) {
         for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
             Bitboard pieces = pos.pieces(color, piece);
 //            size_t p = 0;
             // set the individual bits for the pieces
             // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
-            set_bits_from_bitmap(pieces, current_channel, input_planes, us);
+            set_bits_from_bitmap(pieces, current_channel, input_planes, me);
             current_channel += 1;
         }
     }
@@ -87,7 +86,7 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
 
     // (III) Fill in the Prisoners / Pocket Pieces
     // iterate over all pieces except the king
-    for (Color color : {us, them}) {
+    for (Color color : {me, you}) {
         for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN}) {
             // unfortunately you can't use a loop over count_in_hand() PieceType because of template arguments
             int pocket_cnt = pos.get_pocket_count(color, piece);
@@ -101,22 +100,22 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
 
     // (IV) Fill in the promoted pieces
     // iterate over all promoted pieces according to the mask and set the according bit
-    set_bits_from_bitmap(pos.promoted_pieces() & pos.pieces(us), current_channel, input_planes, us);
+    set_bits_from_bitmap(pos.promoted_pieces() & pos.pieces(me), current_channel, input_planes, me);
     current_channel++;
-    set_bits_from_bitmap(pos.promoted_pieces() & pos.pieces(them), current_channel, input_planes, us);
+    set_bits_from_bitmap(pos.promoted_pieces() & pos.pieces(you), current_channel, input_planes, me);
     current_channel++;
 
     // (V) En Passant Square
     // mark the square where an en-passant capture is possible
     if (pos.ep_square() != SQ_NONE) {
-        unsigned int ep_square = us == WHITE ? int(pos.ep_square()) : 64-int(pos.ep_square());
+        unsigned int ep_square = me == WHITE ? int(pos.ep_square()) : 64-int(pos.ep_square());
         input_planes[current_channel * NB_SQUARES + ep_square] = 1.0f;
     }
     current_channel++;
 
     // (VI) Constant Value Inputs
     // (VI.1) Color
-    if (us == WHITE) {
+    if (me == WHITE) {
         std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
     }
     current_channel++;
@@ -130,7 +129,7 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
 
     // (IV.3) Castling Rights
     // check for King Side Castling
-    if (us == WHITE) {
+    if (me == WHITE) {
         if (pos.can_castle(WHITE_OO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
