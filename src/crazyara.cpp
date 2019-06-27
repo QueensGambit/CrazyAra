@@ -305,7 +305,7 @@ void CrazyAra::position(Board& pos, istringstream& is, StateListPtr& states) {
 void CrazyAra::init()
 {
     SearchSettings searchSettings;
-    searchSettings.batchSize = 64; //8; //64;
+    searchSettings.batchSize = 8; //8; //64;
     netSingle = new NeuralNetAPI("cpu", 1, false,
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");

@@ -17,6 +17,28 @@
 
 #include "neuralnetapi.h"
 #include "../domain/crazyhouse/constants.h"
+#include "yaml-cpp/yaml.h"
+#include <dirent.h>
+#include <exception>
+#include <string>
+
+// http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
+namespace {
+std::vector<std::string> GetDirectoryFiles(const std::string& dir) {
+  std::vector<std::string> files;
+  std::shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
+  struct dirent *dirent_ptr;
+  if (!directory_ptr) {
+    std::cout << "Error opening : " << std::strerror(errno) << dir << std::endl;
+    return files;
+  }
+
+  while ((dirent_ptr = readdir(directory_ptr.get())) != nullptr) {
+    files.push_back(std::string(dirent_ptr->d_name));
+  }
+  return files;
+}
+}  // namespace
 
 void NeuralNetAPI::loadModel(const string &jsonFilePath)
 {
@@ -77,15 +99,42 @@ void NeuralNetAPI::bindExecutor() //Shape *input_shape_single, Executor* executo
 
 NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicyFromPlanes, string modelArchitectureDir, string modelWeightsDir)
 {
-    const string prefix = "/media/queensgambit/5C483A84483A5CC8/Deep_Learning/data/stockfish/Crazyhouse/model/";
+    YAML::Node config = YAML::LoadFile("config.yaml");
+    const std::string prefix = config["model_directory"].as<std::string>();
+
+    string jsonFilePath;
+    string paramterFilePath;
+
+    const auto& files = GetDirectoryFiles(prefix);
+    for (const auto& file : files) {
+      cout << file << std::endl;
+
+      size_t pos_json = file.find("json");
+      size_t pos_params = file.find("params");
+      if (pos_json != string::npos) {
+          jsonFilePath = prefix + file;
+      }
+      else if (pos_params != string::npos) {
+        paramterFilePath = prefix + file;
+      }
+    }
+    if (jsonFilePath == "" || paramterFilePath == "") {
+      throw std::invalid_argument( "The given directory at " + prefix
+                                   + " doesn't containa .json and a .parmas file.");
+    }
+
+    cout << "json file: " << jsonFilePath << endl;
+
+//    const string prefix = "/media/queensgambit/5C483A84483A5CC8/Deep_Learning/data/stockfish/Crazyhouse/model/";
 //                           "/home/queensgambit/Programming/Deep_Learning/CrazyAra_Fish/";
 //    const string prefix = "/home/queensgambit/Programming/Deep_Learning/models/risev2/";
 
-    const string jsonFilePath = prefix + "symbol/model-1.32689-0.566-symbol.json"; //model-1.19246-0.603-symbol.json";
+//    const string jsonFilePath = prefix + "symbol/model-1.32689-0.566-symbol.json"; //model-1.19246-0.603-symbol.json";
 //    const string jsonFilePath = prefix + "symbol/model-1.19246-0.603-symbol.json";
 
-    const string paramterFilePath = prefix + "params/model-1.32689-0.566-0011.params"; //model-1.19246-0.603-0223.params";
+//    const string paramterFilePath = prefix + "params/model-1.32689-0.566-0011.params"; //model-1.19246-0.603-0223.params";
 //    const string paramterFilePath = prefix + "params/model-1.19246-0.603-0223.params";
+
 
     input_shape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
 //    input_shape =  Shape(batchSize, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH);
