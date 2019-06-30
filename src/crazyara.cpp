@@ -137,28 +137,30 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     for (int i = 1; i < argc; ++i)
         cmd += std::string(argv[i]) + " ";
 
-    int it = 0;
+    size_t it = 0;
+
+    std::vector<std::string> commands = {
+                                          "uci",
+//                                        "isready",
+//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5",
+//                                        "go wtime 180000 btime 180000 movestogo 38",
+//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3",
+//                                        "go wtime 173618 btime 162613 movestogo 37",
+//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3 g8f6 e1g1",
+//                                        "go wtime 164641 btime 145010 movestogo 36",
+//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3 g8f6 e1g1 e8g8 h2h3",
+//                                        "go wtime 151469 btime 127237 movestogo 35",
+//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3 g8f6 e1g1 e8g8 h2h3 d7d6 b5c6",
+//                                        "go wtime 144963 btime 109668 movestogo 34"
+                                        };
 
     do {
-//        if (it == 0) {
-//            cmd == "uci";
-//        }
-//        else if (it == 1) {
-//            cmd == "isready";
-//        }
-//        else if (it == 2) {
-//            cmd = "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 d2d3 g8f6 e1g1 e8g8 f3g5 d7d6 g1h1";
-//        }
-//        else if (it == 3) {
-//            cmd = "go wtime 124631 btime 174951 movestogo 34";
-//        }
-//        else if (it == 4) {
-//            cmd = "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 d2d3 g8f6 e1g1 e8g8 f3g5 d7d6 g1h1 d8e7 b1c3";
-//        }
-//        else if (it == 5) {
-//            cmd = "go wtime 119375 btime 174171 movestogo 33";
-//        }
-        if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
+
+        if (it < commands.size()) {
+            cmd = commands[it];
+            cout << ">>" << cmd << endl;
+        }
+        else if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
             cmd = "quit";
 
         istringstream is(cmd);
@@ -281,27 +283,17 @@ void CrazyAra::position(Board& pos, istringstream& is, StateListPtr& states) {
       return;
 
   auto uiThread = std::make_shared<Thread>(0);
-
-  states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
-//  sync_cout << "before pos.set()" << sync_endl;
-  pos.set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, &states->back(), uiThread.get()); //Threads.main()
-
-//      StateListPtr states(new std::deque<StateInfo>(1));
-
-//      const string fen = "r2q1r1k/1p3pp1/1p1p1b1p/p2P1Bn1/P3bP1Q/1Bp3P1/1PP5/R3R1K1/NPNpn b - - 0 29";
-//      const string fen2 = "r1b1kb1r/1pp2pPp/p1n2q2/8/8/2PB1p2/PP3PPP/R1BQK2R/PNPpnn w KQkq - 22 12";
-
-//      pos.set(fen2, false, CRAZYHOUSE_VARIANT, &states->back(), uiThread.get());
+  pos.set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, &states->back(), uiThread.get());
 
   // Parse move list (if any)
   while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
   {
-      states->emplace_back();
-      pos.do_move(m, states->back());
+      // TODO: Careful this causes a memory leak
+      pos.do_move(m, *(new StateInfo)); //states->back());
       sync_cout << "info string consume move" << sync_endl;
   }
 
-  sync_cout << "info string position" << sync_endl;
+  sync_cout << "info string position " << pos.fen() << sync_endl;
 
 }
 
@@ -319,7 +311,7 @@ bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
     SearchSettings searchSettings;
-    searchSettings.batchSize = 8; //8; //64;
+    searchSettings.batchSize = 64;
     netSingle = new NeuralNetAPI("cpu", 1, false,
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
