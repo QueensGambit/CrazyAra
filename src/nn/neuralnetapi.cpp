@@ -109,8 +109,8 @@ NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicy
     for (const auto& file : files) {
       cout << file << std::endl;
 
-      size_t pos_json = file.find("json");
-      size_t pos_params = file.find("params");
+      size_t pos_json = file.find(".json");
+      size_t pos_params = file.find(".params");
       if (pos_json != string::npos) {
           jsonFilePath = prefix + file;
       }
