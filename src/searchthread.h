@@ -66,6 +66,7 @@ public:
     void setRootNode(Node *value);
     bool getIsRunning() const;
     void setIsRunning(bool value);
+    Node* getRootNode() const;
 };
 
 void go(SearchThread *t);

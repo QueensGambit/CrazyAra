@@ -49,6 +49,11 @@ void SearchThread::setIsRunning(bool value)
     isRunning = value;
 }
 
+Node *SearchThread::getRootNode() const
+{
+    return rootNode;
+}
+
 inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, bool &isCollision, bool &isTerminal, size_t &depth)
 {
     Node *currentNode = rootNode;
@@ -92,14 +97,15 @@ void SearchThread::set_NN_results_to_child_nodes()
     for (auto node: newNodes) {
         if (!node->isTerminal) {
             get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos.side_to_move(), true, node->policyProbSmall);
+            node->mtx.lock();
             node->value = valueOutputs.At(batchIdx, 0);
-//            cout << "node->value: " << node->value << endl;
             node->hasNNResults = true;
+            node->mtx.unlock();
         }
 //        node->parentNode->waitForNNResults[node->childIdxOfParent] = 0;
 //        node->parentNode->numberWaitingChildNodes--;
         ++batchIdx;
-        hashTable->insert({node->pos.key(), node});
+        hashTable->insert({node->pos.hash_key(), node});
     }
 }
 
@@ -123,10 +129,10 @@ void SearchThread::backup_value_outputs(const float virtualLoss)
 
 void SearchThread::backup_collisions(const float virtualLoss)
 {
-//    size_t batchIdx = 0;
+    size_t batchIdx = 0;
     for (auto node: collisionNodes) {
-//        node->parentNode->backup_collision(node->childIdxOfParent, virtualLoss);
-//        ++batchIdx;
+        node->parentNode->backup_collision(node->childIdxOfParent, virtualLoss);
+        ++batchIdx;
     }
     collisionNodes.clear();
 }
@@ -161,6 +167,8 @@ void SearchThread::create_mini_batch()
 
             StateInfo* newState = new StateInfo;
             Board newPos(parentNode->pos);
+//            cout << "legalMoves " << parentNode->legalMoves.size() << " child " << childIdx << endl;
+//            cout << "previous " << parentNode->pos.getStateInfo()->previous->previous->previous << endl;
             newPos.do_move(parentNode->legalMoves[childIdx], *newState);
 
     //        currentNode->childNodes.push_back(Node());
@@ -220,9 +228,9 @@ void go(SearchThread *t)
 //    cout << rootNode << endl;
 
 //    while(isRunning) {
-    for (int i = 0; i < 128; ++i) {
+    for (int i = 0; i < 64*5; ++i) {
         t->thread_iteration();
     }
-//    cout << "rootNode" << endl;
-//    cout << rootNode << endl;
+    cout << "rootNode" << endl;
+    cout << t->getRootNode() << endl;
 }
