@@ -17,6 +17,7 @@
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
 #include "uci.h"
+#include "misc.h"
 
 SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss, unordered_map<Key, Node *> *hashTable):
     netBatch(netBatch), batchSize(batchSize), virtualLoss(virtualLoss), isRunning(false), hashTable(hashTable)
@@ -224,13 +225,17 @@ void SearchThread::thread_iteration()
 void go(SearchThread *t)
 {
     t->setIsRunning(true);
-//    cout << "rootNode" << endl;
-//    cout << rootNode << endl;
+    sync_cout << "string info thread rootNode" << sync_endl;
+    sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
 
 //    while(isRunning) {
-    for (int i = 0; i < 64*5; ++i) {
+    for (int i = 0; i < 64; ++i) {
         t->thread_iteration();
+//        if (i % 20 == 0) {
+//            cout << "rootNode" << endl;
+//            cout << t->getRootNode() << endl;
+//        }
     }
-    cout << "rootNode" << endl;
-    cout << t->getRootNode() << endl;
+//    cout << "rootNode" << endl;
+//    cout << t->getRootNode() << endl;
 }

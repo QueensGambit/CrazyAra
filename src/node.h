@@ -126,6 +126,7 @@ public:
     void setQValues(const DynamicVector<float> &value);
     DynamicVector<float> getChildNumberVisits() const;
     unsigned int getNbDirectChildNodes() const;
+    Board getPos() const;
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);

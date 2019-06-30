@@ -129,10 +129,10 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 {
     Board pos;
     string token, cmd;
-    StateListPtr states(new std::deque<StateInfo>(1));
+//    StateListPtr states(new std::deque<StateInfo>(1));
     auto uiThread = std::make_shared<Thread>(0);
 
-    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, &states->back(), uiThread.get());
+    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
 
     for (int i = 1; i < argc; ++i)
         cmd += std::string(argv[i]) + " ";
@@ -141,7 +141,23 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     std::vector<std::string> commands = {
                                           "uci",
-//                                        "isready",
+                                          "isready",
+                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5",
+                                          "go",
+                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5",
+                                          "go",
+                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5 a7a6 h5e2",
+                                          "go",
+                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5 a7a6 h5e2 f8e7 b5c6",
+                                          "go",
+                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5 a7a6 h5e2 f8e7 b5c6 b7c6 d2d3",
+                                          "go",
+                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5 a7a6 h5e2 f8e7 b5c6 b7c6 d2d3 e8g8 N@d4",
+                                          "go"
+//                                          "position startpos moves e2e4 c7c5 g1f3 b8c6 b1c3 e7e5 f1c4 f8e7 e1g1 d7d6 d2d3 g8f6 f3g5 e8g8 g5f7 f8f7 P@g5 c6d4 g5f6 e7f6 c4f7 g8f7 N@d5 P@h3 R@g3",
+//                                          "position fen r1bq4/pp3kpp/3p1b2/2pNp3/3nP3/2NP2Rp/PPP2PPP/R1BQ1RK1/bn b - - 0 14",
+//                                          "position fen r1bq4/pp3kpp/3p1b2/2pNp3/3nP1R1/2NP3p/PPP2PPP/R1BQ1RK1[Bn] b - - 0 13", // 14
+//                                          "go"
 //                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5",
 //                                        "go wtime 180000 btime 180000 movestogo 38",
 //                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3",
@@ -189,8 +205,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
                       << "uciok"  << sync_endl;
 
         else if (token == "setoption")  sync_cout << "info string Updated option UCI_Variant to crazyhouse" << sync_endl;//setoption(is);
-        else if (token == "go")         go(pos, is, states);
-        else if (token == "position")   position(pos, is, states);
+        else if (token == "go")         go(pos, is);
+        else if (token == "position")   position(pos, is);
         else if (token == "ucinewgame") sync_cout << "info string newgame" << sync_endl; //setoption(is); // Search::clear();
         else if (token == "isready") {
             if (is_ready()) {
@@ -214,7 +230,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 // the thinking time and other parameters from the input string, then starts
 // the search.
 
-void CrazyAra::go(Board& pos, istringstream& is, StateListPtr& states) {
+void CrazyAra::go(Board& pos, istringstream& is) {
 
   Search::LimitsType limits;
   string token;
@@ -263,7 +279,7 @@ void CrazyAra::go(Board& pos, istringstream& is, StateListPtr& states) {
 // or the starting position ("startpos") and then makes the moves given in the
 // following move list ("moves").
 
-void CrazyAra::position(Board& pos, istringstream& is, StateListPtr& states) {
+void CrazyAra::position(Board& pos, istringstream& is) {
 
   Move m;
   string token, fen;
@@ -283,12 +299,15 @@ void CrazyAra::position(Board& pos, istringstream& is, StateListPtr& states) {
       return;
 
   auto uiThread = std::make_shared<Thread>(0);
-  pos.set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, &states->back(), uiThread.get());
+  pos.set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
 
   // Parse move list (if any)
   while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
   {
       // TODO: Careful this causes a memory leak
+      // TODO: position startpos moves e2e4 c7c5 g1f3 b8c6 b1c3 e7e5 f1c4 f8e7 e1g1 d7d6 d2d3 g8f6 f3g5 e8g8 g5f7 f8f7 P@g5 c6d4 g5f6 e7f6 c4f7 g8f7 N@d5 P@h3 R@g3 B@g4 g3g4
+      // position fen r1bq4/pp3kpp/3p1b2/2pNp3/3nP3/2NP2Rp/PPP2PPP/R1BQ1RK1/bn b - - 0 13
+      // check why c8fg4 is proposed -> was due to states list
       pos.do_move(m, *(new StateInfo)); //states->back());
       sync_cout << "info string consume move" << sync_endl;
   }

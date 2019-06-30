@@ -19,6 +19,11 @@ using namespace std;
 #include "blazeutil.h"
 #include "uci.h"
 
+Board Node::getPos() const
+{
+    return pos;
+}
+
 Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     pos(pos),
     parentNode(parentNode),
@@ -33,11 +38,12 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     if (legalMoves.size() == 0) {
         // test if we have a check-mate
         if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
+//            cout << ">> checkmate" << endl;
             value = -1;
             isTerminal = true;
         // we reached a stalmate
         } else {
-            cout << "stalmate >> draw!" << endl;
+//            cout << "stalmate >> draw!" << endl;
             value = 0;
             isTerminal = true;
         }
@@ -45,9 +51,11 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     // this can lead to segfault
     else if (pos.is_draw(pos.game_ply())) {
         // reached 50 moves rule
-              cout << ">> draw!" << endl;
+//              cout << ">> draw!" << endl;
+//              cout << ">> fen " << pos.fen() << endl;
              value = 0;
              isTerminal = true;
+//             isTerminal = false;
     }
      else {
         // normal game position

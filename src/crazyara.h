@@ -69,8 +69,8 @@ public:
      */
     bool is_ready();
 
-    void go(Board& pos, istringstream& is, StateListPtr& states);
-    void position(Board& pos, istringstream& is, StateListPtr& states);
+    void go(Board& pos, istringstream& is);
+    void position(Board &pos, istringstream &is);
 
 };
 
