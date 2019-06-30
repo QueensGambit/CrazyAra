@@ -29,7 +29,6 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     parentNode(parentNode),
     childIdxOfParent(childIdxForParent)
 {
-
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(pos)) {
         legalMoves.push_back(move);
@@ -38,12 +37,10 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     if (legalMoves.size() == 0) {
         // test if we have a check-mate
         if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
-//            cout << ">> checkmate" << endl;
             value = -1;
             isTerminal = true;
-        // we reached a stalmate
         } else {
-//            cout << "stalmate >> draw!" << endl;
+            // we reached a stalmate
             value = 0;
             isTerminal = true;
         }
@@ -51,15 +48,12 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     // this can lead to segfault
     else if (pos.is_draw(pos.game_ply())) {
         // reached 50 moves rule
-//              cout << ">> draw!" << endl;
-//              cout << ">> fen " << pos.fen() << endl;
-             value = 0;
-             isTerminal = true;
-//             isTerminal = false;
+        value = 0;
+        isTerminal = true;
     }
-     else {
+    else {
         // normal game position
-             isTerminal = false;
+        isTerminal = false;
     }
 
     // # store the initial value prediction of the current board position
@@ -82,7 +76,7 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     qValues = DynamicVector<float>(nbDirectChildNodes);
     qValues = -1;
 
-//    ones = DynamicVector<float>::Constant(nbDirectChildNodes, 1);
+    //    ones = DynamicVector<float>::Constant(nbDirectChildNodes, 1);
     ones = DynamicVector<float>(nbDirectChildNodes);
     ones = 1;
 
@@ -96,10 +90,10 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
 
     childNodes.resize(nbDirectChildNodes); // = std::vector<Node>(nbDirectChildNodes);
 
-//    waitForNNResults.resize(nbDirectChildNodes);
-//    waitForNNResults = 0.0f;
+    //    waitForNNResults.resize(nbDirectChildNodes);
+    //    waitForNNResults = 0.0f;
     hasNNResults = false;
-//    numberWaitingChildNodes = 0;
+    //    numberWaitingChildNodes = 0;
 }
 
 DynamicVector<float> Node::getPolicyProbSmall()
@@ -157,7 +151,7 @@ void Node::setNeuralNetResults(float &value, DynamicVector<float> &pVecSmall)
 
 //DynamicVector<float> Node::getMCTSPolicy(float q_value_weight )
 //{
-    
+
 //}
 
 DynamicVector<float> Node::getPVecSmall() const
@@ -216,26 +210,26 @@ size_t Node::select_child_node(float cpuct)
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
 
-//    DynamicVector<float> uValues = (
-//        cpuct_current
-//        * pVecSmall
-//        * sqrt(((1 / numberVisits) * (ones + childNumberVisits)))
-//    );
+    //    DynamicVector<float> uValues = (
+    //        cpuct_current
+    //        * pVecSmall
+    //        * sqrt(((1 / numberVisits) * (ones + childNumberVisits)))
+    //    );
 
-//    float pb_u_base = 19652 / 10;
-//    float pb_u_init = 1;
-//    float pb_u_low = 0.25;
-//    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
-//    divisor = u_init;
+    //    float pb_u_base = 19652 / 10;
+    //    float pb_u_init = 1;
+    //    float pb_u_low = 0.25;
+    //    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
+    //    divisor = u_init;
 
     scoreValues = qValues + ( // u-Values
-                cpuct_current //cpuct_current
-                * policyProbSmall
-                * (sqrt(numberVisits) * (ones / (divisor + childNumberVisits)))
-            );
+                              cpuct_current //cpuct_current
+                              * policyProbSmall
+                              * (sqrt(numberVisits) * (ones / (divisor + childNumberVisits)))
+                              );
 
-//    cout << "scoreValue" << scoreValues << endl;
-//    scoreValues += waitForNNResults;
+    //    cout << "scoreValue" << scoreValues << endl;
+    //    scoreValues += waitForNNResults;
     return argmax(scoreValues); //childIdx;
 }
 
@@ -308,9 +302,9 @@ ostream &operator<<(ostream &os, const Node *node)
 {
     for (size_t childIdx = 0; childIdx < node->getNbDirectChildNodes(); ++childIdx) {
         os << childIdx << ".move " << UCI::move(node->getLegalMoves()[childIdx], false)
-             << " n " << node->getChildNumberVisits()[childIdx]
-             << " p " << node->getPVecSmall()[childIdx]
-             << " Q " << node->getQValues()[childIdx] << endl;
+           << " n " << node->getChildNumberVisits()[childIdx]
+           << " p " << node->getPVecSmall()[childIdx]
+           << " Q " << node->getQValues()[childIdx] << endl;
     }
     return os;
 }

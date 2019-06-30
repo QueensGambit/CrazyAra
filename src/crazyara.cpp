@@ -140,34 +140,10 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     size_t it = 0;
 
     std::vector<std::string> commands = {
-                                          "uci",
-                                          "isready",
-                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5",
-                                          "go",
-                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5",
-                                          "go",
-                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5 a7a6 h5e2",
-                                          "go",
-                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5 a7a6 h5e2 f8e7 b5c6",
-                                          "go",
-                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5 a7a6 h5e2 f8e7 b5c6 b7c6 d2d3",
-                                          "go",
-                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5 b8c6 f1b5 a7a6 h5e2 f8e7 b5c6 b7c6 d2d3 e8g8 N@d4",
-                                          "go"
-//                                          "position startpos moves e2e4 c7c5 g1f3 b8c6 b1c3 e7e5 f1c4 f8e7 e1g1 d7d6 d2d3 g8f6 f3g5 e8g8 g5f7 f8f7 P@g5 c6d4 g5f6 e7f6 c4f7 g8f7 N@d5 P@h3 R@g3",
-//                                          "position fen r1bq4/pp3kpp/3p1b2/2pNp3/3nP3/2NP2Rp/PPP2PPP/R1BQ1RK1/bn b - - 0 14",
-//                                          "position fen r1bq4/pp3kpp/3p1b2/2pNp3/3nP1R1/2NP3p/PPP2PPP/R1BQ1RK1[Bn] b - - 0 13", // 14
+//                                          "uci",
+//                                          "isready",
+//                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5",
 //                                          "go"
-//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5",
-//                                        "go wtime 180000 btime 180000 movestogo 38",
-//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3",
-//                                        "go wtime 173618 btime 162613 movestogo 37",
-//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3 g8f6 e1g1",
-//                                        "go wtime 164641 btime 145010 movestogo 36",
-//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3 g8f6 e1g1 e8g8 h2h3",
-//                                        "go wtime 151469 btime 127237 movestogo 35",
-//                                        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1b5 f8e7 b1c3 g8f6 e1g1 e8g8 h2h3 d7d6 b5c6",
-//                                        "go wtime 144963 btime 109668 movestogo 34"
                                         };
 
     do {
