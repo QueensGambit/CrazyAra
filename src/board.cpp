@@ -52,8 +52,8 @@ Variant subvar;
 Board::Board()
 {
  board;
-
 }
+
 
 Board::Board(const Board &b)
 {
@@ -95,4 +95,19 @@ Bitboard Board::promoted_pieces() const
 int Board::get_pocket_count(Color c, PieceType pt) const
 {
     return pieceCountInHand[c][pt];
+}
+
+Key Board::hash_key() const
+{
+    return st->key + size_t(st->pliesFromNull);
+}
+
+void Board::setStateInfo(StateInfo *st)
+{
+    this->st = st;
+}
+
+StateInfo *Board::getStateInfo() const
+{
+    return st;
 }

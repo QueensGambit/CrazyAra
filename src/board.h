@@ -28,8 +28,9 @@ public:
 
     Bitboard promoted_pieces() const;
     int get_pocket_count(Color c, PieceType pt) const;
-
-
+    Key hash_key() const;
+    void setStateInfo(StateInfo* st);
+    StateInfo* getStateInfo() const;
 };
 
 #endif // BOARD_H

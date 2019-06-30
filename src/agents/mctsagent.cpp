@@ -68,23 +68,18 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI *netBatch,
 
 EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
 {
-//    if (legalMoves.size() > 1) {
-//        expand_root_node_multiple_moves(pos, legalMoves);
-//    }
-
     size_t nodesPreSearch;
 
-    auto it = hashTable->find(pos.key());
+    auto it = hashTable->find(pos.hash_key());
     if(it != hashTable->end()) {
        rootNode = it->second;
        rootNode->make_to_root();
        nodesPreSearch = rootNode->numberVisits;
-       cout << "found root node in tree with " << nodesPreSearch << " nodes" << endl;
     }
     else {
-        cout << "create new tree" << endl;
+        cout << "info string create new tree" << endl;
         rootNode = new Node(pos, nullptr, 0);
-        hashTable->insert({rootNode->pos.key(), rootNode});
+        hashTable->insert({rootNode->pos.hash_key(), rootNode});
 
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, valueOutput, probOutputs);
@@ -92,7 +87,7 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
 
         nodesPreSearch = 0;
     }
-    cout << "apply dirichlet" << endl;
+    cout << "info string apply dirichlet" << endl;
     rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
     run_mcts_search(pos);
 
@@ -104,7 +99,6 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
     DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);
     rootNode->get_mcts_policy(qValueFac, qValueThresh, mctsPolicy);
 
-//    size_t best_idx = argmax(this->rootNode->getPolicyProbSmall());
     size_t best_idx = argmax(mctsPolicy);
 
     EvalInfo evalInfo;
@@ -115,31 +109,20 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
     evalInfo.is_chess960 = pos.is_chess960();
     evalInfo.nodes = rootNode->numberVisits;
     evalInfo.nodesPreSearch = nodesPreSearch;
-//    eval_info.policyProbSmall = this->rootNode->getPVecSmall();
 
     return evalInfo;
 }
 
 void MCTSAgent::run_mcts_search(const Board &pos)
 {
-//    const int num_threads = 32;
-//    std::thread threads[num_threads];
-
     searchThreads[0]->setRootNode(rootNode);
     searchThreads[1]->setRootNode(rootNode);
 
     thread thread1(go, searchThreads[0]);
+    thread thread2(go, searchThreads[1]);
+
     thread1.join();
-
-//    for (int i = 0; i < num_threads; ++i) {
-////        go();
-//        threads[i] = std::thread(run_single_playout); //, pos); //, 3); //this->rootNode);
-//    }
-
-//    for (int i = 0; i < num_threads; ++i) {
-//        threads[i].join();
-//    }
-    
+    thread2.join();
 }
 
 
