@@ -19,6 +19,81 @@ using namespace std;
 #include "blazeutil.h"
 #include "uci.h"
 
+Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
+    pos(pos),
+    parentNode(parentNode),
+    childIdxOfParent(childIdxForParent)
+{
+
+    // generate the legal moves and save them in the list
+    for (const ExtMove& move : MoveList<LEGAL>(pos)) {
+        legalMoves.push_back(move);
+    }
+
+    if (legalMoves.size() == 0) {
+        // test if we have a check-mate
+        if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
+            value = -1;
+            isTerminal = true;
+        // we reached a stalmate
+        } else {
+            cout << "stalmate >> draw!" << endl;
+            value = 0;
+            isTerminal = true;
+        }
+    }
+    // this can lead to segfault
+    else if (pos.is_draw(pos.game_ply())) {
+        // reached 50 moves rule
+              cout << ">> draw!" << endl;
+             value = 0;
+             isTerminal = true;
+    }
+     else {
+        // normal game position
+             isTerminal = false;
+    }
+
+    // # store the initial value prediction of the current board position
+    initialValue = value;
+
+    // specify thisTerminale number of direct child nodes from this node
+    nbDirectChildNodes = unsigned(int(legalMoves.size()));
+
+    // # visit count of all its child nodes
+    childNumberVisits = DynamicVector<float>(nbDirectChildNodes);
+    childNumberVisits = 0;
+
+    // total action value estimated by MCTS for each child node also denoted as w
+    actionValues = DynamicVector<float>(nbDirectChildNodes);
+    actionValues = 0;
+
+    // q: combined action value which is calculated by the averaging over all action values
+    // u: exploration metric for each child node
+    // (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
+    qValues = DynamicVector<float>(nbDirectChildNodes);
+    qValues = -1;
+
+//    ones = DynamicVector<float>::Constant(nbDirectChildNodes, 1);
+    ones = DynamicVector<float>(nbDirectChildNodes);
+    ones = 1;
+
+    divisor = DynamicVector<float>(nbDirectChildNodes);
+    divisor = 0.25;
+
+
+    // number of total visits to this node
+    numberVisits = 1;  // we initialize with 1 because if the node was created it must have been visited
+    scoreValues = DynamicVector<float>(nbDirectChildNodes);
+
+    childNodes.resize(nbDirectChildNodes); // = std::vector<Node>(nbDirectChildNodes);
+
+//    waitForNNResults.resize(nbDirectChildNodes);
+//    waitForNNResults = 0.0f;
+    hasNNResults = false;
+//    numberWaitingChildNodes = 0;
+}
+
 DynamicVector<float> Node::getPolicyProbSmall()
 {
     return policyProbSmall;
@@ -62,80 +137,13 @@ unsigned int Node::getNbDirectChildNodes() const
     return nbDirectChildNodes;
 }
 
-Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
-    pos(pos),
-    parentNode(parentNode),
-    childIdxOfParent(childIdxForParent)
-{
-
-    // generate the legal moves and save them in the list
-    for (const ExtMove& move : MoveList<LEGAL>(pos)) {
-        legalMoves.push_back(move);
-    }
-
-    if (legalMoves.size() == 0) {
-        // test if we have a check-mate
-        if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
-            value = -1;
-            isTerminal = true;
-        // we reached a stalmate
-        } else {
-            value = 0;
-            isTerminal = true;
-        }
-    }
-    // this can lead to segfault
-//    else if (pos.is_draw(pos.game_ply())) {
-//        // reached 40 moves rule
-//             value = 1;
-//             isTerminal = true;
-//    }
-     else {
-        // normal game position
-             isTerminal = false;
-    }
-
-    // # store the initial value prediction of the current board position
-    initialValue = value;
-
-    // specify thisTerminale number of direct child nodes from this node
-    nbDirectChildNodes = unsigned(int(legalMoves.size()));
-
-    // # visit count of all its child nodes
-    childNumberVisits = DynamicVector<float>(nbDirectChildNodes);
-    childNumberVisits = 0;
-
-    // total action value estimated by MCTS for each child node also denoted as w
-    actionValues = DynamicVector<float>(nbDirectChildNodes);
-    actionValues = 0;
-
-    // q: combined action value which is calculated by the averaging over all action values
-    // u: exploration metric for each child node
-    // (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-    qValues = DynamicVector<float>(nbDirectChildNodes);
-    qValues = -1;
-
-//    ones = DynamicVector<float>::Constant(nbDirectChildNodes, 1);
-    ones = DynamicVector<float>(nbDirectChildNodes);
-    ones = 1;
-
-    // number of total visits to this node
-    numberVisits = 1;  // we initialize with 1 because if the node was created it must have been visited
-    scoreValues = DynamicVector<float>(nbDirectChildNodes);
-
-    childNodes.resize(nbDirectChildNodes); // = std::vector<Node>(nbDirectChildNodes);
-
-//    waitForNNResults.resize(nbDirectChildNodes);
-//    waitForNNResults = 0.0f;
-    hasNNResults = false;
-//    numberWaitingChildNodes = 0;
-}
-
 void Node::setNeuralNetResults(float &value, DynamicVector<float> &pVecSmall)
 {
+    mtx.lock();
     this->policyProbSmall = pVecSmall;
     this->value = value;
     hasNNResults = true;
+    mtx.unlock();
 }
 
 
@@ -206,10 +214,16 @@ size_t Node::select_child_node(float cpuct)
 //        * sqrt(((1 / numberVisits) * (ones + childNumberVisits)))
 //    );
 
+//    float pb_u_base = 19652 / 10;
+//    float pb_u_init = 1;
+//    float pb_u_low = 0.25;
+//    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
+//    divisor = u_init;
+
     scoreValues = qValues + ( // u-Values
-                2.5 //cpuct_current
+                cpuct_current //cpuct_current
                 * policyProbSmall
-                * (sqrt(numberVisits) * (ones / (ones + childNumberVisits)))
+                * (sqrt(numberVisits) * (ones / (divisor + childNumberVisits)))
             );
 
 //    cout << "scoreValue" << scoreValues << endl;
@@ -244,10 +258,12 @@ void Node::backup_value(unsigned int childIdx, float virtualLoss, float value)
 
 void Node::revert_virtual_loss_and_update(unsigned int childIdx, float virtualLoss, float value)
 {
+    mtx.lock();
     numberVisits -= virtualLoss - 1;
     childNumberVisits[childIdx] -= virtualLoss - 1;
     actionValues[childIdx] += virtualLoss + value;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
+    mtx.unlock();
 }
 
 void Node::backup_collision(unsigned int childIdx, float virtualLoss)
@@ -265,10 +281,12 @@ void Node::backup_collision(unsigned int childIdx, float virtualLoss)
 
 void Node::revert_virtual_loss(unsigned int childIdx, float virtualLoss)
 {
+    mtx.lock();
     numberVisits -= virtualLoss;
     childNumberVisits[childIdx] -= virtualLoss;
     actionValues[childIdx] += virtualLoss;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
+    mtx.unlock();
 }
 
 void Node::make_to_root()

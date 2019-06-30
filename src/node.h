@@ -45,6 +45,7 @@ private:
 
     // dummy
     DynamicVector<float> ones;
+    DynamicVector<float> divisor;
 
     std::vector<Move> legalMoves;
     int nbLegalMoves;
@@ -59,6 +60,7 @@ private:
     Node *parentNode;
     unsigned int childIdxOfParent;
     bool hasNNResults;
+
 public:
 //    Node();
     Node(Board pos,
