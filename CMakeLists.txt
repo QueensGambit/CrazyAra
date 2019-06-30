@@ -61,6 +61,8 @@ include_directories("src/agents")
 include_directories("src/agents/config")
 include_directories("src/nn")
 
+include_directories("lib/yaml-cpp-yaml-cpp-0.6.2/include")
+
 #set(MXNET_PATH
 #    "/media/queensgambit/Volume/Deep_Learning/libraries/mxnet/"
 #    # "/home/queensgambit/libs/mxnet/
@@ -87,6 +89,7 @@ add_definitions(-DCRAZYHOUSE)
 
 # link_directories(${MXNET_PATH}lib)
 link_directories($ENV{MXNET_PATH}lib)
+#link_directories("lib/yaml-cpp-yaml-cpp-0.6.2/")
 
 add_executable(${PROJECT_NAME} ${source_files})
 # add_executable(${PROJECT_NAME} "main.cpp")

@@ -17,3 +17,9 @@ Clone the Sf library
 
 Download Catch
 * https://github.com/catchorg/Catch2/releases
+
+Downlaod & install yaml-cpp 
+* https://github.com/jbeder/yaml-cpp
+
+or 
+* sudo apt-get install libyaml-cpp-dev
