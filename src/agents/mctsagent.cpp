@@ -43,13 +43,13 @@ void MCTSAgent::select_node_to_extend()
 }
 
 
-MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI *netBatch,
+MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
                      SearchSettings searchSettings, SearchLimits searchLimits, PlaySettings playSettings //,
 //                     unordered_map<Key, Node*> *hashTable
                      ):
     Agent(playSettings.temperature, playSettings.temperatureMoves, true),
     netSingle(netSingle),
-    netBatch(netBatch),
+    netBatches(netBatches),
     searchSettings(searchSettings),
     searchLimits(searchLimits),
     playSettings(playSettings) //,
@@ -60,7 +60,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI *netBatch,
 
     for (auto i = 0; i < searchSettings.threads; ++i) {
         cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
-        searchThreads.push_back(new SearchThread(netBatch, searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
+        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
     }
 
 
@@ -91,7 +91,7 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
     rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
     run_mcts_search(pos);
 
-    float qValueFac = 0; //0.5;
+    float qValueFac = 0.5; //0.5;
     float qValueThresh = 0.7;
 
     DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);

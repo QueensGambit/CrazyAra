@@ -41,7 +41,7 @@ class MCTSAgent : public Agent
 {
 private:
     NeuralNetAPI *netSingle;
-    NeuralNetAPI *netBatch;
+    NeuralNetAPI **netBatches;
 
     SearchSettings searchSettings;
     SearchLimits searchLimits;
@@ -72,7 +72,7 @@ private:
 public:
 
     MCTSAgent(NeuralNetAPI *netSingle,
-              NeuralNetAPI *netBatch,
+              NeuralNetAPI** netBatches,
               SearchSettings searchSettings,
               SearchLimits searchLimits,
               PlaySettings playSettings); //,

@@ -306,15 +306,18 @@ bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
     SearchSettings searchSettings;
-    searchSettings.batchSize = 64;
+    searchSettings.batchSize = 128;
     netSingle = new NeuralNetAPI("cpu", 1, false,
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
     rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
-    netBatch = new NeuralNetAPI("cpu", searchSettings.batchSize, false,
-                           "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
-                           "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
-    mctsAgent = new MCTSAgent(netSingle, netBatch, searchSettings, SearchLimits(), PlaySettings()); //, hashTable);
+    NeuralNetAPI** netBatches = new NeuralNetAPI*[2];
+    for (size_t i = 0; i < 2; ++i) {
+        netBatches[i] = new NeuralNetAPI("cpu", searchSettings.batchSize, false,
+                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
+                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
+    }
+    mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, SearchLimits(), PlaySettings()); //, hashTable);
     networkLoaded = true;
     }
 

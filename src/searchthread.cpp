@@ -229,7 +229,7 @@ void go(SearchThread *t)
     sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
 
 //    while(isRunning) {
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < 16; ++i) {
         t->thread_iteration();
 //        if (i % 20 == 0) {
 //            cout << "rootNode" << endl;
