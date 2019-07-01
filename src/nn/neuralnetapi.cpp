@@ -181,6 +181,7 @@ void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &pr
 {
 
     NDArray image_data {inputPlanes, input_shape, global_ctx};
+//    mtx.lock();
     image_data.CopyTo(&(executor->arg_dict()["data"]));
 
     // Run the forward pass.
@@ -192,6 +193,7 @@ void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &pr
     // Assign the value output to the return paramter
     valueOutput.WaitToRead();
     probOutputs.WaitToRead();
+//    mtx.unlock();
 
 }
 

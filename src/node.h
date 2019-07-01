@@ -48,7 +48,6 @@ private:
     DynamicVector<float> divisor;
 
     std::vector<Move> legalMoves;
-    int nbLegalMoves;
     bool isTerminal;
 //    unsigned int numberWaitingChildNodes;
     unsigned int nbDirectChildNodes;
@@ -58,15 +57,25 @@ private:
     std::vector<Node*> childNodes;
 
     Node *parentNode;
-    unsigned int childIdxOfParent;
+    unsigned int childIdxForParent;
     bool hasNNResults;
+
+    // if checkMateIdx is != -1 it will always be preferred over all other nodes
+    int checkmateIdx;
+
+    /**
+     * @brief check_for_terminal Checks if the currect node is a terminal node and updates the checkmateIdx for its parent in case of a checkmate terminal
+     */
+    inline void check_for_terminal();
 
 public:
 //    Node();
     Node(Board pos,
          Node *parentNode,
-         unsigned int childIdxOfParent);
-    void setNeuralNetResults(float &value, DynamicVector<float>& policyProbSmall);
+         unsigned int childIdxForParent);
+    Node(const Node& b);
+
+//    void setNeuralNetResults(float value, DynamicVector<float>& policyProbSmall);
     DynamicVector<float> getPVecSmall() const;
     void setPVecSmall(const DynamicVector<float> &value);
     std::vector<Move> getLegalMoves() const;
@@ -112,6 +121,11 @@ public:
      */
     void make_to_root();
 
+    /**
+     * @brief enhance_checks Enhances all possible checking moves by min(0.1, 0.5 * max(policyProbSmall)) and applies a renormalization afterwards
+     */
+     void enhance_checks();
+
     friend class SearchThread;
     friend class MCTSAgent;
 
@@ -126,7 +140,7 @@ public:
     void setQValues(const DynamicVector<float> &value);
     DynamicVector<float> getChildNumberVisits() const;
     unsigned int getNbDirectChildNodes() const;
-    Board getPos() const;
+    Board& getPos();
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);

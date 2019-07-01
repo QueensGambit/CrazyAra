@@ -28,6 +28,7 @@ using namespace mxnet::cpp;
 class NeuralNetAPI
 {
 private:
+    std::mutex mtx;
     std::map<std::string, NDArray> args_map;
     std::map<std::string, NDArray> aux_map;
     std::vector<std::string> output_labels;
@@ -36,7 +37,7 @@ private:
 
     Shape input_shape;
 
-    Context global_ctx = Context::gpu(); // Context::cpu(); //
+    Context global_ctx = Context::gpu(); //Context::cpu(); //
 
     /**
      * @brief FileExists Function to check if a file exists in a given path

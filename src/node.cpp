@@ -18,43 +18,25 @@
 using namespace std;
 #include "blazeutil.h"
 #include "uci.h"
+#include "misc.h"
 
-Board Node::getPos() const
+Board& Node::getPos()
 {
     return pos;
 }
 
 Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
-    pos(pos),
     parentNode(parentNode),
-    childIdxOfParent(childIdxForParent)
+    childIdxForParent(childIdxForParent),
+    checkmateIdx(-1)
 {
+    this->pos = pos;
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(pos)) {
         legalMoves.push_back(move);
     }
 
-    if (legalMoves.size() == 0) {
-        // test if we have a check-mate
-        if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
-            value = -1;
-            isTerminal = true;
-        } else {
-            // we reached a stalmate
-            value = 0;
-            isTerminal = true;
-        }
-    }
-    // this can lead to segfault
-    else if (pos.is_draw(pos.game_ply())) {
-        // reached 50 moves rule
-        value = 0;
-        isTerminal = true;
-    }
-    else {
-        // normal game position
-        isTerminal = false;
-    }
+    check_for_terminal();
 
     // # store the initial value prediction of the current board position
     initialValue = value;
@@ -81,7 +63,7 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     ones = 1;
 
     divisor = DynamicVector<float>(nbDirectChildNodes);
-    divisor = 0.25;
+    divisor = 1; //0.25;
 
 
     // number of total visits to this node
@@ -94,6 +76,79 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     //    waitForNNResults = 0.0f;
     hasNNResults = false;
     //    numberWaitingChildNodes = 0;
+}
+
+Node::Node(const Node &b)
+{
+    value = b.value;
+    pos = b.pos;
+    policyProbSmall = b.policyProbSmall;
+    childNumberVisits = b.childNumberVisits;
+    actionValues = b.actionValues;
+    qValues = b.qValues;
+    scoreValues = b.scoreValues;
+    ones = b.ones;
+    divisor = b.divisor;
+    copy(b.legalMoves.begin(), b.legalMoves.end(), back_inserter(legalMoves));
+    nbDirectChildNodes = b.nbDirectChildNodes;
+    initialValue = b.initialValue;
+    numberVisits = b.numberVisits;
+    childNodes.resize(nbDirectChildNodes);
+//    parentNode = // is not copied
+//    childIdxForParent = // is not copied
+    hasNNResults = b.hasNNResults;
+    checkmateIdx = b.checkmateIdx;
+}
+
+void Node::check_for_terminal()
+{
+    if (legalMoves.size() == 0) {
+        // test if we have a check-mate
+        if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
+            value = -1;
+            isTerminal = true;
+            parentNode->mtx.lock();
+            parentNode->checkmateIdx = int(childIdxForParent);
+            parentNode->mtx.unlock();
+        } else {
+            // we reached a stalmate
+            value = 0;
+            isTerminal = true;
+        }
+    }
+    else if (pos.is_draw(pos.game_ply())) {
+        // reached 50 moves rule
+        value = 0;
+        isTerminal = true;
+    }
+    else {
+        // normal game position
+        isTerminal = false;
+    }
+}
+
+void Node::enhance_checks()
+{
+    const float thresh_check = 0.1f;
+//    const float thresh_capture = 0.05f;
+
+    float increment_check = min(0.1f, max(policyProbSmall)*0.5f);
+//    float increment_capture = min(0.05f, max(policyProbSmall)*0.25f);
+
+    bool update = false;
+    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
+        if (policyProbSmall[i] < thresh_check && pos.gives_check(legalMoves[i])) {
+            policyProbSmall[i] += increment_check;
+            update = true;
+        }
+//        if (policyProbSmall[i] < thresh_capture && pos.capture(legalMoves[i])) {
+//            policyProbSmall[i] += increment_capture;
+//            update = true;
+//        }
+    }
+    if (update) {
+        policyProbSmall /= sum(policyProbSmall);
+    }
 }
 
 DynamicVector<float> Node::getPolicyProbSmall()
@@ -139,14 +194,15 @@ unsigned int Node::getNbDirectChildNodes() const
     return nbDirectChildNodes;
 }
 
-void Node::setNeuralNetResults(float &value, DynamicVector<float> &pVecSmall)
-{
-    mtx.lock();
-    this->policyProbSmall = pVecSmall;
-    this->value = value;
-    hasNNResults = true;
-    mtx.unlock();
-}
+//void Node::setNeuralNetResults(float value, DynamicVector<float> &pVecSmall)
+//{
+//    mtx.lock();
+//    this->policyProbSmall = pVecSmall;
+//    this->value = value;
+//    hasNNResults = true;
+//    enhance_checks();
+//    mtx.unlock();
+//}
 
 
 //DynamicVector<float> Node::getMCTSPolicy(float q_value_weight )
@@ -202,6 +258,11 @@ void Node::setValue(float value)
 
 size_t Node::select_child_node(float cpuct)
 {
+    if (checkmateIdx != -1) {
+//        sync_cout << "string info checmateIdx" << checkmateIdx << sync_endl;
+        return size_t(checkmateIdx);
+    }
+
     // find the move according to the q- and u-values for each move
     float pbCBase = 19652;
     float pbCInit = cpuct;
@@ -249,7 +310,7 @@ void Node::backup_value(unsigned int childIdx, float virtualLoss, float value)
     while (true) {
         currentNode->revert_virtual_loss_and_update(childIdx, virtualLoss, value);
         value = -value;
-        childIdx = currentNode->childIdxOfParent;
+        childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
         if (currentNode == nullptr) {
             return;
@@ -273,7 +334,7 @@ void Node::backup_collision(unsigned int childIdx, float virtualLoss)
     Node* currentNode = this;
     while (true) {
         currentNode->revert_virtual_loss(childIdx, virtualLoss);
-        childIdx = currentNode->childIdxOfParent;
+        childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
         if (currentNode == nullptr) {
             return;
@@ -294,7 +355,7 @@ void Node::revert_virtual_loss(unsigned int childIdx, float virtualLoss)
 void Node::make_to_root()
 {
     parentNode = nullptr;
-    childIdxOfParent = -1;
+    childIdxForParent = -1;
 }
 
 
@@ -306,5 +367,7 @@ ostream &operator<<(ostream &os, const Node *node)
            << " p " << node->getPVecSmall()[childIdx]
            << " Q " << node->getQValues()[childIdx] << endl;
     }
+   os << " sum: " << sum(node->getPVecSmall()) << endl;
+
     return os;
 }

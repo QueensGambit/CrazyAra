@@ -31,6 +31,9 @@ public:
     Key hash_key() const;
     void setStateInfo(StateInfo* st);
     StateInfo* getStateInfo() const;
+
+    Board& operator=(const Board &b);
+
 };
 
 #endif // BOARD_H
