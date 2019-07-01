@@ -18,6 +18,7 @@
 using namespace std;
 #include "blazeutil.h"
 #include "uci.h"
+#include "misc.h"
 
 Board Node::getPos() const
 {
@@ -27,34 +28,15 @@ Board Node::getPos() const
 Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     pos(pos),
     parentNode(parentNode),
-    childIdxOfParent(childIdxForParent)
+    childIdxForParent(childIdxForParent),
+    checkmateIdx(-1)
 {
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(pos)) {
         legalMoves.push_back(move);
     }
 
-    if (legalMoves.size() == 0) {
-        // test if we have a check-mate
-        if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
-            value = -1;
-            isTerminal = true;
-        } else {
-            // we reached a stalmate
-            value = 0;
-            isTerminal = true;
-        }
-    }
-    // this can lead to segfault
-    else if (pos.is_draw(pos.game_ply())) {
-        // reached 50 moves rule
-        value = 0;
-        isTerminal = true;
-    }
-    else {
-        // normal game position
-        isTerminal = false;
-    }
+    check_for_terminal();
 
     // # store the initial value prediction of the current board position
     initialValue = value;
@@ -94,6 +76,33 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     //    waitForNNResults = 0.0f;
     hasNNResults = false;
     //    numberWaitingChildNodes = 0;
+}
+
+void Node::check_for_terminal()
+{
+    if (legalMoves.size() == 0) {
+        // test if we have a check-mate
+        if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
+            value = -1;
+            isTerminal = true;
+            parentNode->mtx.lock();
+            parentNode->checkmateIdx = int(childIdxForParent);
+            parentNode->mtx.unlock();
+        } else {
+            // we reached a stalmate
+            value = 0;
+            isTerminal = true;
+        }
+    }
+    else if (pos.is_draw(pos.game_ply())) {
+        // reached 50 moves rule
+        value = 0;
+        isTerminal = true;
+    }
+    else {
+        // normal game position
+        isTerminal = false;
+    }
 }
 
 DynamicVector<float> Node::getPolicyProbSmall()
@@ -202,6 +211,11 @@ void Node::setValue(float value)
 
 size_t Node::select_child_node(float cpuct)
 {
+    if (checkmateIdx != -1) {
+//        sync_cout << "string info checmateIdx" << checkmateIdx << sync_endl;
+        return size_t(checkmateIdx);
+    }
+
     // find the move according to the q- and u-values for each move
     float pbCBase = 19652;
     float pbCInit = cpuct;
@@ -249,7 +263,7 @@ void Node::backup_value(unsigned int childIdx, float virtualLoss, float value)
     while (true) {
         currentNode->revert_virtual_loss_and_update(childIdx, virtualLoss, value);
         value = -value;
-        childIdx = currentNode->childIdxOfParent;
+        childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
         if (currentNode == nullptr) {
             return;
@@ -273,7 +287,7 @@ void Node::backup_collision(unsigned int childIdx, float virtualLoss)
     Node* currentNode = this;
     while (true) {
         currentNode->revert_virtual_loss(childIdx, virtualLoss);
-        childIdx = currentNode->childIdxOfParent;
+        childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
         if (currentNode == nullptr) {
             return;
@@ -294,7 +308,7 @@ void Node::revert_virtual_loss(unsigned int childIdx, float virtualLoss)
 void Node::make_to_root()
 {
     parentNode = nullptr;
-    childIdxOfParent = -1;
+    childIdxForParent = -1;
 }
 
 

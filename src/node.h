@@ -58,14 +58,22 @@ private:
     std::vector<Node*> childNodes;
 
     Node *parentNode;
-    unsigned int childIdxOfParent;
+    unsigned int childIdxForParent;
     bool hasNNResults;
+
+    // if checkMateIdx is != -1 it will always be preferred over all other nodes
+    int checkmateIdx;
+
+    /**
+     * @brief check_for_terminal Checks if the currect node is a terminal node and updates the checkmateIdx for its parent in case of a checkmate terminal
+     */
+    inline void check_for_terminal();
 
 public:
 //    Node();
     Node(Board pos,
          Node *parentNode,
-         unsigned int childIdxOfParent);
+         unsigned int childIdxForParent);
     void setNeuralNetResults(float &value, DynamicVector<float>& policyProbSmall);
     DynamicVector<float> getPVecSmall() const;
     void setPVecSmall(const DynamicVector<float> &value);

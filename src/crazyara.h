@@ -82,5 +82,18 @@ int main(int argc, char* argv[]) {
     crazyara.uci_loop(argc, argv);
 }
 
+// Challenging FENs
+/*
+NR1n1k1r/ppPbbppp/3p1b1n/8/4B3/2P5/P1P1pPPP/2n2R1K/QPQPr w - - 0 29
+-> Q@e1
+r1b1Rq1k/ppp2pqp/5Nn1/1B2p1B1/3P4/8/PPP2bpP/2KR2R1/PNPppn b - - 0 20
+-> @h6 (Sf needs very high depth to find this move > ) (h7h6 is also viable) -> SF needs depth>= 19 to find this
+r1b1kb1r/ppp1pppp/2n5/1B1qN3/3P2p1/2P5/P1P2PpP/R1BQK1R1/NPn w Qkq - 0 10
+-> N@a6
+3k2r1/pBpr1p1p/Pp3p1B/3p4/2PPn2B/5NPp/q4PpP/1R1QR1K1/NNbp w - - 1 23
+-> N@e6
+*/
+
+
 
 #endif // CRAZYARA_H

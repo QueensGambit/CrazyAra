@@ -112,28 +112,21 @@ void SearchThread::set_NN_results_to_child_nodes()
 
 void SearchThread::backup_value_outputs(const float virtualLoss)
 {
-//    size_t batchIdx = 0;
     for (auto node: newNodes) {
-        node->parentNode->backup_value(node->childIdxOfParent, virtualLoss, -node->value);
-//        ++batchIdx;
+        node->parentNode->backup_value(node->childIdxForParent, virtualLoss, -node->value);
     }
     newNodes.clear();
 
-//    batchIdx = 0;
     for (auto node: terminalNodes) {
-        node->parentNode->backup_value(node->childIdxOfParent, virtualLoss, -node->value);
-//        ++batchIdx;
+        node->parentNode->backup_value(node->childIdxForParent, virtualLoss, -node->value);
     }
     terminalNodes.clear();
-
 }
 
 void SearchThread::backup_collisions(const float virtualLoss)
 {
-    size_t batchIdx = 0;
     for (auto node: collisionNodes) {
-        node->parentNode->backup_collision(node->childIdxOfParent, virtualLoss);
-        ++batchIdx;
+        node->parentNode->backup_collision(node->childIdxForParent, virtualLoss);
     }
     collisionNodes.clear();
 }
