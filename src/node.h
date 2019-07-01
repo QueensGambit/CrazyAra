@@ -74,7 +74,7 @@ public:
     Node(Board pos,
          Node *parentNode,
          unsigned int childIdxForParent);
-    void setNeuralNetResults(float &value, DynamicVector<float>& policyProbSmall);
+//    void setNeuralNetResults(float value, DynamicVector<float>& policyProbSmall);
     DynamicVector<float> getPVecSmall() const;
     void setPVecSmall(const DynamicVector<float> &value);
     std::vector<Move> getLegalMoves() const;
@@ -119,6 +119,11 @@ public:
      * @brief make_to_root Makes the node to the current root node by setting its parent to a nullptr
      */
     void make_to_root();
+
+    /**
+     * @brief enhance_checks Enhances all possible checking moves by min(0.1, 0.5 * max(policyProbSmall)) and applies a renormalization afterwards
+     */
+     void enhance_checks();
 
     friend class SearchThread;
     friend class MCTSAgent;

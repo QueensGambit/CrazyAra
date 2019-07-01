@@ -84,7 +84,7 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, valueOutput, probOutputs);
         get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, pos.side_to_move(), true, rootNode->policyProbSmall);
-
+        rootNode->enhance_checks();
         nodesPreSearch = 0;
     }
     cout << "info string apply dirichlet" << endl;

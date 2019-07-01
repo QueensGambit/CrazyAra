@@ -101,6 +101,7 @@ void SearchThread::set_NN_results_to_child_nodes()
             node->mtx.lock();
             node->value = valueOutputs.At(batchIdx, 0);
             node->hasNNResults = true;
+            node->enhance_checks();
             node->mtx.unlock();
         }
 //        node->parentNode->waitForNNResults[node->childIdxOfParent] = 0;
@@ -229,6 +230,6 @@ void go(SearchThread *t)
 //            cout << t->getRootNode() << endl;
 //        }
     }
-//    cout << "rootNode" << endl;
-//    cout << t->getRootNode() << endl;
+    cout << "rootNode" << endl;
+    cout << t->getRootNode() << endl;
 }

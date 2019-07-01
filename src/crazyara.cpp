@@ -307,7 +307,7 @@ bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
     SearchSettings searchSettings;
-    searchSettings.batchSize = 64; //64;
+    searchSettings.batchSize = 8; //64;
     netSingle = new NeuralNetAPI("cpu", 1, false,
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");

@@ -63,7 +63,7 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     ones = 1;
 
     divisor = DynamicVector<float>(nbDirectChildNodes);
-    divisor = 0.25;
+    divisor = 1; //0.25;
 
 
     // number of total visits to this node
@@ -102,6 +102,30 @@ void Node::check_for_terminal()
     else {
         // normal game position
         isTerminal = false;
+    }
+}
+
+void Node::enhance_checks()
+{
+    const float thresh_check = 0.1f;
+//    const float thresh_capture = 0.05f;
+
+    float increment_check = min(0.1f, max(policyProbSmall)*0.5f);
+//    float increment_capture = min(0.05f, max(policyProbSmall)*0.25f);
+
+    bool update = false;
+    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
+        if (policyProbSmall[i] < thresh_check && pos.gives_check(legalMoves[i])) {
+            policyProbSmall[i] += increment_check;
+            update = true;
+        }
+//        if (policyProbSmall[i] < thresh_capture && pos.capture(legalMoves[i])) {
+//            policyProbSmall[i] += increment_capture;
+//            update = true;
+//        }
+    }
+    if (update) {
+        policyProbSmall /= sum(policyProbSmall);
     }
 }
 
@@ -148,14 +172,15 @@ unsigned int Node::getNbDirectChildNodes() const
     return nbDirectChildNodes;
 }
 
-void Node::setNeuralNetResults(float &value, DynamicVector<float> &pVecSmall)
-{
-    mtx.lock();
-    this->policyProbSmall = pVecSmall;
-    this->value = value;
-    hasNNResults = true;
-    mtx.unlock();
-}
+//void Node::setNeuralNetResults(float value, DynamicVector<float> &pVecSmall)
+//{
+//    mtx.lock();
+//    this->policyProbSmall = pVecSmall;
+//    this->value = value;
+//    hasNNResults = true;
+//    enhance_checks();
+//    mtx.unlock();
+//}
 
 
 //DynamicVector<float> Node::getMCTSPolicy(float q_value_weight )
@@ -320,5 +345,7 @@ ostream &operator<<(ostream &os, const Node *node)
            << " p " << node->getPVecSmall()[childIdx]
            << " Q " << node->getQValues()[childIdx] << endl;
     }
+   os << " sum: " << sum(node->getPVecSmall()) << endl;
+
     return os;
 }
