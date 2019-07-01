@@ -63,7 +63,7 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     ones = 1;
 
     divisor = DynamicVector<float>(nbDirectChildNodes);
-    divisor = 0.25; //0.25;
+    divisor = 1; //0.25;
 
 
     // number of total visits to this node

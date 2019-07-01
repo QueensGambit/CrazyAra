@@ -150,22 +150,20 @@ void SearchThread::create_mini_batch()
     size_t numberNewNodes = 0;
 
 //    for (size_t i = 0; i < batchSize; ++i) {
-        while (newNodes.size() < batchSize and collisionNodes.size() < batchSize) {
-//        cout << "getNewChildToEval" << endl;
+        while (newNodes.size() < batchSize and
+               collisionNodes.size() < batchSize and
+               transpositionNodes.size() < batchSize and
+               terminalNodes.size() < batchSize) {
         parentNode = get_new_child_to_evaluate(childIdx, isCollision, isTerminal, depth);
 //        cout << "move " << UCI::move(parentNode->legalMoves[childIdx], false) << " depth " << depth << endl;
-//        cout << "parentNode->numberWaitingChildNodes" << parentNode->numberWaitingChildNodes << endl;
-//        cout << "parentNode->nbDirectChildNodes" << parentNode->nbDirectChildNodes << endl;
 
         if(isTerminal) {
             terminalNodes.push_back(parentNode->childNodes[childIdx]);
-//            cout << ">>>>>>>>>>>>isTerminal!!!!!" << endl;
         }
         else if (!isCollision) {
 //        if (parentNode->numberWaitingChildNodes < parentNode->nbDirectChildNodes) {
 //            parentNode->waitForNNResults[childIdx] = -INFINITY;
 //            parentNode->numberWaitingChildNodes++;
-
             StateInfo* newState = new StateInfo;
             Board newPos(parentNode->pos);
 //            cout << "legalMoves " << parentNode->legalMoves.size() << " child " << childIdx << endl;
@@ -178,11 +176,11 @@ void SearchThread::create_mini_batch()
                  Node *newNode = new Node(*it->second);
                  newNode->parentNode = parentNode;
                  newNode->childIdxForParent = childIdx;
+                 transpositionNodes.push_back(newNode);
 //               rootNode->make_to_root();
 //               nodesPreSearch = rootNode->numberVisits;
             }
             else {
-        //        currentNode->childNodes.push_back(Node());
                 Node *newNode = new Node(newPos, parentNode, childIdx);
 
                 // save a reference newly created list in the temporary list for node creation
@@ -217,9 +215,10 @@ void SearchThread::thread_iteration()
 {
     create_mini_batch();
 //        cout << "predict" << endl;k
-    netBatch->predict(inputPlanes, valueOutputs, probOutputs);
-//        cout << "set NN result to childs" << endl;
-    set_NN_results_to_child_nodes();
+    if (newNodes.size() > 0) {
+        netBatch->predict(inputPlanes, valueOutputs, probOutputs);
+        set_NN_results_to_child_nodes();
+    }
 //        cout << "backup values" << endl;
     backup_value_outputs(virtualLoss);
     backup_collisions(virtualLoss);
@@ -240,13 +239,13 @@ void go(SearchThread *t)
     sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
 
 //    while(isRunning) {
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < 32; ++i) {
         t->thread_iteration();
 //        if (i % 20 == 0) {
 //            cout << "rootNode" << endl;
 //            cout << t->getRootNode() << endl;
 //        }
     }
-    cout << "rootNode" << endl;
-    cout << t->getRootNode() << endl;
+//    cout << "rootNode" << endl;
+//    cout << t->getRootNode() << endl;
 }
