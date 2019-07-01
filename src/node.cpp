@@ -20,17 +20,17 @@ using namespace std;
 #include "uci.h"
 #include "misc.h"
 
-Board Node::getPos() const
+Board& Node::getPos()
 {
     return pos;
 }
 
 Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
-    pos(pos),
     parentNode(parentNode),
     childIdxForParent(childIdxForParent),
     checkmateIdx(-1)
 {
+    this->pos = pos;
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(pos)) {
         legalMoves.push_back(move);
@@ -63,7 +63,7 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     ones = 1;
 
     divisor = DynamicVector<float>(nbDirectChildNodes);
-    divisor = 1; //0.25;
+    divisor = 0.25; //0.25;
 
 
     // number of total visits to this node
@@ -76,6 +76,28 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     //    waitForNNResults = 0.0f;
     hasNNResults = false;
     //    numberWaitingChildNodes = 0;
+}
+
+Node::Node(const Node &b)
+{
+    value = b.value;
+    pos = b.pos;
+    policyProbSmall = b.policyProbSmall;
+    childNumberVisits = b.childNumberVisits;
+    actionValues = b.actionValues;
+    qValues = b.qValues;
+    scoreValues = b.scoreValues;
+    ones = b.ones;
+    divisor = b.divisor;
+    copy(b.legalMoves.begin(), b.legalMoves.end(), back_inserter(legalMoves));
+    nbDirectChildNodes = b.nbDirectChildNodes;
+    initialValue = b.initialValue;
+    numberVisits = b.numberVisits;
+    childNodes.resize(nbDirectChildNodes);
+//    parentNode = // is not copied
+//    childIdxForParent = // is not copied
+    hasNNResults = b.hasNNResults;
+    checkmateIdx = b.checkmateIdx;
 }
 
 void Node::check_for_terminal()

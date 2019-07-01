@@ -118,6 +118,11 @@ void SearchThread::backup_value_outputs(const float virtualLoss)
     }
     newNodes.clear();
 
+    for (auto node: transpositionNodes) {
+        node->parentNode->backup_value(node->childIdxForParent, virtualLoss, -node->value);
+    }
+    transpositionNodes.clear();
+
     for (auto node: terminalNodes) {
         node->parentNode->backup_value(node->childIdxForParent, virtualLoss, -node->value);
     }
@@ -144,7 +149,8 @@ void SearchThread::create_mini_batch()
     size_t depth;
     size_t numberNewNodes = 0;
 
-    for (size_t i = 0; i < batchSize; ++i) {
+//    for (size_t i = 0; i < batchSize; ++i) {
+        while (newNodes.size() < batchSize and collisionNodes.size() < batchSize) {
 //        cout << "getNewChildToEval" << endl;
         parentNode = get_new_child_to_evaluate(childIdx, isCollision, isTerminal, depth);
 //        cout << "move " << UCI::move(parentNode->legalMoves[childIdx], false) << " depth " << depth << endl;
@@ -166,20 +172,31 @@ void SearchThread::create_mini_batch()
 //            cout << "previous " << parentNode->pos.getStateInfo()->previous->previous->previous << endl;
             newPos.do_move(parentNode->legalMoves[childIdx], *newState);
 
-    //        currentNode->childNodes.push_back(Node());
-            Node *newNode = new Node(newPos, parentNode, childIdx);
+            auto it = hashTable->find(newPos.hash_key());
+            if(it != hashTable->end()) {
+//               sync_cout << "found node in hash table" << sync_endl;
+                 Node *newNode = new Node(*it->second);
+                 newNode->parentNode = parentNode;
+                 newNode->childIdxForParent = childIdx;
+//               rootNode->make_to_root();
+//               nodesPreSearch = rootNode->numberVisits;
+            }
+            else {
+        //        currentNode->childNodes.push_back(Node());
+                Node *newNode = new Node(newPos, parentNode, childIdx);
 
-            // save a reference newly created list in the temporary list for node creation
-            // it will later be updated with the evaluation of the NN
-            newNodes.push_back(newNode);
+                // save a reference newly created list in the temporary list for node creation
+                // it will later be updated with the evaluation of the NN
+                newNodes.push_back(newNode);
 
-            // connect the Node to the parent
-            parentNode->childNodes[childIdx] = newNode;
+                // connect the Node to the parent
+                parentNode->childNodes[childIdx] = newNode;
 
-            // fill a new board in the input_planes vector
-            // we shift the index by NB_VALUES_TOTAL each time
-            board_to_planes(newPos, 0, true, inputPlanes+numberNewNodes*NB_VALUES_TOTAL); //input_planes_start);
-            ++numberNewNodes;
+                // fill a new board in the input_planes vector
+                // we shift the index by NB_VALUES_TOTAL each time
+                board_to_planes(newPos, 0, true, inputPlanes+numberNewNodes*NB_VALUES_TOTAL); //input_planes_start);
+                ++numberNewNodes;
+            }
         }
         else {
 //            cout << " node collision " << i <<  endl;

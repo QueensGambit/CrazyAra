@@ -48,7 +48,6 @@ private:
     DynamicVector<float> divisor;
 
     std::vector<Move> legalMoves;
-    int nbLegalMoves;
     bool isTerminal;
 //    unsigned int numberWaitingChildNodes;
     unsigned int nbDirectChildNodes;
@@ -74,6 +73,8 @@ public:
     Node(Board pos,
          Node *parentNode,
          unsigned int childIdxForParent);
+    Node(const Node& b);
+
 //    void setNeuralNetResults(float value, DynamicVector<float>& policyProbSmall);
     DynamicVector<float> getPVecSmall() const;
     void setPVecSmall(const DynamicVector<float> &value);
@@ -139,7 +140,7 @@ public:
     void setQValues(const DynamicVector<float> &value);
     DynamicVector<float> getChildNumberVisits() const;
     unsigned int getNbDirectChildNodes() const;
-    Board getPos() const;
+    Board& getPos();
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);

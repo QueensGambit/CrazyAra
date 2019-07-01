@@ -35,6 +35,7 @@ private:
 //    states
     // list of all node objects which have been selected for expansion
     std::vector<Node*> newNodes;
+    std::vector<Node*> transpositionNodes;
     std::vector<Node*> collisionNodes;
     std::vector<Node*> terminalNodes;
 

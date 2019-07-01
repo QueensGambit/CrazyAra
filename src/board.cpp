@@ -51,40 +51,13 @@ Variant subvar;
 
 Board::Board()
 {
- board;
+    board;
 }
-
 
 Board::Board(const Board &b)
 {
-  std::copy(b.board, b.board+SQUARE_NB, this->board );
-  std::copy(b.byTypeBB, b.byTypeBB+PIECE_TYPE_NB, this->byTypeBB);
-  std::copy(b.byColorBB, b.byColorBB+COLOR_NB, this->byColorBB);
-  std::copy(b.pieceCount, b.pieceCount+PIECE_NB, this->pieceCount);
-#ifdef HORDE
-  std::copy(&b.pieceList[0][0], &pieceList[0][0]+PIECE_NB*SQUARE_NB, &this->pieceList[0][0]);
-#else
-  std::copy(&b.pieceList[0][0], &b.pieceList[0][0]+PIECE_NB*16, &this->pieceList[0][0]);
-#endif
-#ifdef CRAZYHOUSE
-  std::copy(&b.pieceCountInHand[0][0], &b.pieceCountInHand[0][0]+COLOR_NB*PIECE_TYPE_NB, &this->pieceCountInHand[0][0]);
-  promotedPieces = b.promotedPieces;
-#endif
-  std::copy(b.index, b.index+SQUARE_NB, this->index);
-  std::copy(b.castlingRightsMask, b.castlingRightsMask+SQUARE_NB, this->castlingRightsMask);
-#if defined(ANTI) || defined(EXTINCTION) || defined(TWOKINGS)
-  std::copy(b.castlingKingSquare, b.castlingKingSquare+COLOR_NB, this->castlingKingSquare);
-#endif
-  std::copy(b.castlingRookSquare, b.castlingRookSquare+CASTLING_RIGHT_NB, castlingRookSquare);
-  std::copy(b.castlingPath, b.castlingPath+CASTLING_RIGHT_NB, this->castlingPath);
-  this->gamePly = b.gamePly;
-  sideToMove = b.sideToMove;
-  psq = b.psq;
-  thisThread = b.thisThread;
-  st = b.st;
-  chess960 = b.chess960;
-  var = b.var;
-  subvar = b.subvar;
+    // TODO: Change to usage of swap
+    operator=(b);
 }
 
 Bitboard Board::promoted_pieces() const
@@ -110,4 +83,36 @@ void Board::setStateInfo(StateInfo *st)
 StateInfo *Board::getStateInfo() const
 {
     return st;
+}
+
+Board &Board::operator=(const Board &b)
+{
+    std::copy(b.board, b.board+SQUARE_NB, this->board );
+    std::copy(b.byTypeBB, b.byTypeBB+PIECE_TYPE_NB, this->byTypeBB);
+    std::copy(b.byColorBB, b.byColorBB+COLOR_NB, this->byColorBB);
+    std::copy(b.pieceCount, b.pieceCount+PIECE_NB, this->pieceCount);
+  #ifdef HORDE
+    std::copy(&b.pieceList[0][0], &pieceList[0][0]+PIECE_NB*SQUARE_NB, &this->pieceList[0][0]);
+  #else
+    std::copy(&b.pieceList[0][0], &b.pieceList[0][0]+PIECE_NB*16, &this->pieceList[0][0]);
+  #endif
+  #ifdef CRAZYHOUSE
+    std::copy(&b.pieceCountInHand[0][0], &b.pieceCountInHand[0][0]+COLOR_NB*PIECE_TYPE_NB, &this->pieceCountInHand[0][0]);
+    promotedPieces = b.promotedPieces;
+  #endif
+    std::copy(b.index, b.index+SQUARE_NB, this->index);
+    std::copy(b.castlingRightsMask, b.castlingRightsMask+SQUARE_NB, this->castlingRightsMask);
+  #if defined(ANTI) || defined(EXTINCTION) || defined(TWOKINGS)
+    std::copy(b.castlingKingSquare, b.castlingKingSquare+COLOR_NB, this->castlingKingSquare);
+  #endif
+    std::copy(b.castlingRookSquare, b.castlingRookSquare+CASTLING_RIGHT_NB, castlingRookSquare);
+    std::copy(b.castlingPath, b.castlingPath+CASTLING_RIGHT_NB, this->castlingPath);
+    this->gamePly = b.gamePly;
+    sideToMove = b.sideToMove;
+    psq = b.psq;
+    thisThread = b.thisThread;
+    st = b.st;
+    chess960 = b.chess960;
+    var = b.var;
+    subvar = b.subvar;
 }

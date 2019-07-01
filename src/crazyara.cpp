@@ -140,11 +140,11 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     size_t it = 0;
 
     std::vector<std::string> commands = {
-                                          "uci",
-                                          "isready",
-                                          "position fen 3k2r1/pBpr1p1p/Pp3p1B/3p4/2PPn2B/5NPp/q4PpP/1R1QR1K1/NNbp w - - 1 23",
+//                                          "uci",
+//                                          "isready",
+//                                          "position fen 3k2r1/pBpr1p1p/Pp3p1B/3p4/2PPn2B/5NPp/q4PpP/1R1QR1K1/NNbp w - - 1 23",
 //                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5",
-                                          "go"
+//                                          "go"
                                         };
 
     do {
