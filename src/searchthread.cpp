@@ -133,7 +133,6 @@ void SearchThread::backup_value_outputs(const float virtualLoss)
 
 void SearchThread::backup_collisions(const float virtualLoss)
 {
-    size_t batchIdx = 0;
     for (auto node: collisionNodes) {
         node->parentNode->backup_collision(node->childIdxForParent, virtualLoss);
     }
@@ -178,7 +177,7 @@ void SearchThread::create_mini_batch()
             newPos.do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos.hash_key());
-            if(it != hashTable->end()) {
+            if(false) { //it != hashTable->end()) {
 //               sync_cout << "found node in hash table" << sync_endl;
                  Node *newNode = new Node(*it->second);
                  newNode->parentNode = parentNode;
@@ -242,17 +241,24 @@ void SearchThread::thread_iteration()
 void go(SearchThread *t)
 {
     t->setIsRunning(true);
-    sync_cout << "string info thread rootNode" << sync_endl;
-    sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+//    sync_cout << "string info thread rootNode" << sync_endl;
+//    sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
 
 //    while(isRunning) {
-    for (int i = 0; i < 32; ++i) {
+    long elapsedTimeMS;
+
+//    for (int i = 0; i < 128*10; ++i) {
+      do {
         t->thread_iteration();
-//        if (i % 20 == 0) {
+//        if (i % 100 == 0) {
 //            cout << "rootNode" << endl;
 //            cout << t->getRootNode() << endl;
 //        }
-    }
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    } while(elapsedTimeMS < 3600);  // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
 //    cout << "rootNode" << endl;
 //    cout << t->getRootNode() << endl;
 }
