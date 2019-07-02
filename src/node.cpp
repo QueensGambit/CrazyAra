@@ -63,7 +63,7 @@ Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
     ones = 1;
 
     divisor = DynamicVector<float>(nbDirectChildNodes);
-    divisor = 1; //0.25;
+    divisor = 1; // 0.25f; //
 
 
     // number of total visits to this node
@@ -129,25 +129,27 @@ void Node::check_for_terminal()
 
 void Node::enhance_checks()
 {
-    const float thresh_check = 0.1f;
-//    const float thresh_capture = 0.05f;
+    if (true) {
+        const float thresh_check = 0.1f;
+        const float thresh_capture = 0.01f;
 
-    float increment_check = min(0.1f, max(policyProbSmall)*0.5f);
-//    float increment_capture = min(0.05f, max(policyProbSmall)*0.25f);
+        float increment_check = min(0.1f, max(policyProbSmall)*0.5f);
+        float increment_capture = min(0.01f, max(policyProbSmall)*0.1f);
 
-    bool update = false;
-    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
-        if (policyProbSmall[i] < thresh_check && pos.gives_check(legalMoves[i])) {
-            policyProbSmall[i] += increment_check;
-            update = true;
+        bool update = false;
+        for (size_t i = 0; i < nbDirectChildNodes; ++i) {
+            if (policyProbSmall[i] < thresh_check && pos.gives_check(legalMoves[i])) {
+                policyProbSmall[i] += increment_check;
+                update = true;
+            }
+            if (policyProbSmall[i] < thresh_capture && pos.capture(legalMoves[i])) {
+                policyProbSmall[i] += increment_capture;
+                update = true;
+            }
         }
-//        if (policyProbSmall[i] < thresh_capture && pos.capture(legalMoves[i])) {
-//            policyProbSmall[i] += increment_capture;
-//            update = true;
-//        }
-    }
-    if (update) {
-        policyProbSmall /= sum(policyProbSmall);
+        if (update) {
+            policyProbSmall /= sum(policyProbSmall);
+        }
     }
 }
 
@@ -277,11 +279,11 @@ size_t Node::select_child_node(float cpuct)
     //        * sqrt(((1 / numberVisits) * (ones + childNumberVisits)))
     //    );
 
-    //    float pb_u_base = 19652 / 10;
-    //    float pb_u_init = 1;
-    //    float pb_u_low = 0.25;
-    //    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
-    //    divisor = u_init;
+    float pb_u_base = 19652 / 10;
+    float pb_u_init = 1;
+    float pb_u_low = 0.5; //0.25;
+    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
+    divisor = u_init;
 
     scoreValues = qValues + ( // u-Values
                               cpuct_current //cpuct_current

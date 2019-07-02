@@ -142,6 +142,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     std::vector<std::string> commands = {
 //                                          "uci",
 //                                          "isready",
+//                                          "position fen r1b1Rq1k/ppp2pqp/5Nn1/1B2p1B1/3P4/8/PPP2bpP/2KR2R1/PNPppn b - - 0 20"
 //                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5",
 //                                          "go"
                                         };
@@ -306,7 +307,7 @@ bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
     SearchSettings searchSettings;
-    searchSettings.batchSize = 128;
+    searchSettings.batchSize = 8; //128; //1; //28;
     netSingle = new NeuralNetAPI("cpu", 1, false,
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
