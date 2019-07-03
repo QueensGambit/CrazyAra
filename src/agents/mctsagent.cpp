@@ -42,40 +42,29 @@ void MCTSAgent::select_node_to_extend()
 
 }
 
-
-MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
-                     SearchSettings searchSettings, PlaySettings playSettings //,
-//                     unordered_map<Key, Node*> *hashTable
-                     ):
-    Agent(playSettings.temperature, playSettings.temperatureMoves, true),
-    netSingle(netSingle),
-    netBatches(netBatches),
-    searchSettings(searchSettings),
-    playSettings(playSettings),
-    rootNode(nullptr)
-//    hashTable(hashTable)
-{
-    hashTable = new unordered_map<Key, Node*>;
-    hashTable->reserve(10e6);
-
-    for (auto i = 0; i < searchSettings.threads; ++i) {
-        cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
-        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
-    }
-
-
-}
-
-EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
+size_t MCTSAgent::reuse_tree(const Board &pos)
 {
     size_t nodesPreSearch;
 
     auto it = hashTable->find(pos.hash_key());
     if(it != hashTable->end()) {
-       rootNode = it->second;
-       rootNode->make_to_root();
-       nodesPreSearch = rootNode->numberVisits;
-       sync_cout << "info string reuse the tree with " << nodesPreSearch << " nodes" << sync_endl;
+        if (rootNode == it->second) {
+            sync_cout << "info string reuse the full tree" << sync_endl;
+        }
+        else {
+            if (rootNode != nullptr) {
+                sync_cout << "info string delete unused subtrees" << sync_endl;
+                for (Node *childNode: rootNode->childNodes) {
+                    if (childNode != nullptr and childNode != it->second) {
+                        Node::delete_subtree(childNode);
+                    }
+                }
+            }
+            rootNode = it->second;
+            rootNode->make_to_root();
+        }
+        nodesPreSearch = rootNode->numberVisits;
+        sync_cout << "info string reuse the tree with " << nodesPreSearch << " nodes" << sync_endl;
     }
     else {
         if (rootNode != nullptr) {
@@ -90,6 +79,38 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
         rootNode->enhance_checks();
         nodesPreSearch = 0;
     }
+
+    return nodesPreSearch;
+}
+
+
+MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
+                     SearchSettings searchSettings, PlaySettings playSettings //,
+                     //                     unordered_map<Key, Node*> *hashTable
+                     ):
+    Agent(playSettings.temperature, playSettings.temperatureMoves, true),
+    netSingle(netSingle),
+    netBatches(netBatches),
+    searchSettings(searchSettings),
+    playSettings(playSettings),
+    rootNode(nullptr)
+  //    hashTable(hashTable)
+{
+    hashTable = new unordered_map<Key, Node*>;
+    hashTable->reserve(10e6);
+
+    for (auto i = 0; i < searchSettings.threads; ++i) {
+        cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
+        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
+    }
+
+
+}
+
+EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
+{
+    size_t nodesPreSearch = reuse_tree(pos);
+
     hashTable->clear();
     hashTable->insert({rootNode->pos.hash_key(), rootNode});
 

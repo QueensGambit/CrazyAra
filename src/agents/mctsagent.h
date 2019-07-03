@@ -68,6 +68,13 @@ private:
     */
     void select_node(Node &parentNode);
 
+    /**
+     * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
+     * The old tree or former subtrees will be freed from memory.
+     * @param pos Requested board position
+     * @return Number of nodes that have already been explored before the serach
+     */
+    inline size_t reuse_tree(const Board &pos);
 public:
 
     MCTSAgent(NeuralNetAPI *netSingle,
