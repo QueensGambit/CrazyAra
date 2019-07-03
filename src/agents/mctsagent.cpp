@@ -51,7 +51,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     netSingle(netSingle),
     netBatches(netBatches),
     searchSettings(searchSettings),
-    playSettings(playSettings) //,
+    playSettings(playSettings),
+    rootNode(nullptr)
 //    hashTable(hashTable)
 {
     hashTable = new unordered_map<Key, Node*>;
@@ -74,21 +75,27 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
        rootNode = it->second;
        rootNode->make_to_root();
        nodesPreSearch = rootNode->numberVisits;
+       sync_cout << "info string reuse the tree with " << nodesPreSearch << " nodes" << sync_endl;
     }
     else {
-        cout << "info string create new tree" << endl;
+        if (rootNode != nullptr) {
+            sync_cout << "info string delete the old tree " << sync_endl;
+            Node::delete_subtree(rootNode);
+        }
+        sync_cout << "info string create new tree" << sync_endl;
         rootNode = new Node(pos, nullptr, 0);
-        hashTable->insert({rootNode->pos.hash_key(), rootNode});
-
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, valueOutput, probOutputs);
         get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, pos.side_to_move(), true, rootNode->policyProbSmall);
         rootNode->enhance_checks();
         nodesPreSearch = 0;
     }
+    hashTable->clear();
+    hashTable->insert({rootNode->pos.hash_key(), rootNode});
+
     cout << "info string apply dirichlet" << endl;
     rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
-    run_mcts_search(pos);
+    run_mcts_search();
 
     float qValueFac = 0; //0.5; //0.5;
     float qValueThresh = 0.7;
@@ -110,7 +117,7 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
     return evalInfo;
 }
 
-void MCTSAgent::run_mcts_search(const Board &pos)
+void MCTSAgent::run_mcts_search()
 {
     for (size_t i = 0; i < 2; ++i) {
         searchThreads[i]->setRootNode(rootNode);

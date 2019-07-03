@@ -141,9 +141,16 @@ public:
     DynamicVector<float> getChildNumberVisits() const;
     unsigned int getNbDirectChildNodes() const;
     Board& getPos();
+
+    /**
+     * @brief delete_subtree Deletes the node itself and all existing nodes in its subtree
+     * @param node Node of the subtree to delete
+     */
+    static void delete_subtree(Node *node);
+
+    int getNumberVisits() const;
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);
-
 
 #endif // NODE_H

@@ -77,7 +77,7 @@ public:
 //              unordered_map<Key, Node*> *hashTable);
 
     EvalInfo evalute_board_state(const Board &pos);
-    void run_mcts_search(const Board &pos);
+    void run_mcts_search();
 };
 
 #endif // MCTSAGENT_H

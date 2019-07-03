@@ -92,7 +92,6 @@ r1b1kb1r/ppp1pppp/2n5/1B1qN3/3P2p1/2P5/P1P2PpP/R1BQK1R1/NPn w Qkq - 0 10
 -> N@a6
 3k2r1/pBpr1p1p/Pp3p1B/3p4/2PPn2B/5NPp/q4PpP/1R1QR1K1/NNbp w - - 1 23
 -> N@e6
-
 r1bq2nr/ppppbkpp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQK2R[Pb] w KQ - 0 5
 -> @d4
 */

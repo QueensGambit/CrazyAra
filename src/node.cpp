@@ -100,6 +100,11 @@ Node::Node(const Node &b)
     checkmateIdx = b.checkmateIdx;
 }
 
+int Node::getNumberVisits() const
+{
+    return numberVisits;
+}
+
 void Node::check_for_terminal()
 {
     if (legalMoves.size() == 0) {
@@ -356,6 +361,15 @@ void Node::make_to_root()
     childIdxForParent = -1;
 }
 
+void Node::delete_subtree(Node *node)
+{
+    for (Node *child_node: node->childNodes) {
+        if (child_node != nullptr) {
+            delete_subtree(child_node);
+        }
+    }
+    delete node;
+}
 
 ostream &operator<<(ostream &os, const Node *node)
 {
