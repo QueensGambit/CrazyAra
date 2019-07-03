@@ -21,7 +21,7 @@
 #include "node.h"
 #include "constants.h"
 #include "neuralnetapi.h"
-
+#include "config/searchlimits.h"
 
 class SearchThread
 {
@@ -51,6 +51,7 @@ private:
     bool isRunning;
 
     unordered_map<Key, Node*> *hashTable;
+    SearchLimits *searchLimits;
 
     inline Node* get_new_child_to_evaluate(unsigned int &childIdx, bool &isCollision,  bool &isTerminal, size_t &depth);
     void set_NN_results_to_child_nodes();
@@ -65,9 +66,11 @@ public:
     void create_mini_batch();
     void thread_iteration();
     void setRootNode(Node *value);
+    void set_search_limits(SearchLimits *s);
     bool getIsRunning() const;
     void setIsRunning(bool value);
     Node* getRootNode() const;
+    SearchLimits *getSearchLimits() const;
 };
 
 void go(SearchThread *t);

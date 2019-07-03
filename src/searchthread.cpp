@@ -40,6 +40,11 @@ void SearchThread::setRootNode(Node *value)
     rootNode = value;
 }
 
+void SearchThread::set_search_limits(SearchLimits *s)
+{
+    searchLimits = s;
+}
+
 bool SearchThread::getIsRunning() const
 {
     return isRunning;
@@ -53,6 +58,11 @@ void SearchThread::setIsRunning(bool value)
 Node *SearchThread::getRootNode() const
 {
     return rootNode;
+}
+
+SearchLimits *SearchThread::getSearchLimits() const
+{
+    return searchLimits;
 }
 
 inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, bool &isCollision, bool &isTerminal, size_t &depth)
@@ -150,12 +160,14 @@ void SearchThread::create_mini_batch()
 //    cout << "batchSize " << batchSize << endl;
     size_t depth;
     size_t numberNewNodes = 0;
+    size_t tranpositionEvents = 0;
+    size_t terminalEvents = 0;
 
 //    for (size_t i = 0; i < batchSize; ++i) {
         while (newNodes.size() < batchSize and
                collisionNodes.size() < batchSize and
-               transpositionNodes.size() < batchSize and
-               terminalNodes.size() < batchSize) {
+               tranpositionEvents < batchSize and
+               terminalEvents < batchSize) {
         parentNode = get_new_child_to_evaluate(childIdx, isCollision, isTerminal, depth);
 //        cout << "move " << UCI::move(parentNode->legalMoves[childIdx], false) << " depth " << depth << endl;
 //        cout << "parentNode->numberWaitingChildNodes" << parentNode->numberWaitingChildNodes << endl;
@@ -163,6 +175,8 @@ void SearchThread::create_mini_batch()
 
         if(isTerminal) {
             terminalNodes.push_back(parentNode->childNodes[childIdx]);
+//            parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
+            ++terminalEvents;
 //            cout << ">>>>>>>>>>>>isTerminal!!!!!" << endl;
         }
         else if (!isCollision) {
@@ -177,14 +191,14 @@ void SearchThread::create_mini_batch()
             newPos.do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos.hash_key());
-            if(false) { //it != hashTable->end()) {
+            if(it != hashTable->end()) {
 //               sync_cout << "found node in hash table" << sync_endl;
                  Node *newNode = new Node(*it->second);
                  newNode->parentNode = parentNode;
                  newNode->childIdxForParent = childIdx;
+//                 parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
+                 ++tranpositionEvents;
                  transpositionNodes.push_back(newNode);
-//               rootNode->make_to_root();
-//               nodesPreSearch = rootNode->numberVisits;
             }
             else {
                 Node *newNode = new Node(newPos, parentNode, childIdx);
@@ -247,7 +261,7 @@ void go(SearchThread *t)
 //    sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
 
 //    while(isRunning) {
-    long elapsedTimeMS;
+    TimePoint elapsedTimeMS;
 
 //    for (int i = 0; i < 128*10; ++i) {
       do {
@@ -256,9 +270,10 @@ void go(SearchThread *t)
 //            cout << "rootNode" << endl;
 //            cout << t->getRootNode() << endl;
 //        }
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    } while(elapsedTimeMS < 3600);  // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
+        TimePoint end = now();
+        elapsedTimeMS = end - t->getSearchLimits()->startTime;
+        //std::chrono::duration_cast<std::chrono::milliseconds>(end - t->getSearchLimits()->startTime).count();
+    } while(elapsedTimeMS < t->getSearchLimits()->movetime);  // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
 //    cout << "rootNode" << endl;
 //    cout << t->getRootNode() << endl;
 }

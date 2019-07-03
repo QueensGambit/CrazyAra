@@ -15,6 +15,8 @@
  * Please describe what the content of this file is about
  */
 
+#include "misc.h"
+
 #ifndef SEARCHLIMITS_H
 #define SEARCHLIMITS_H
 
@@ -26,12 +28,18 @@ public:
     int playoutsFilledPockets;
     int maxSearchDepth;
     int minMovetime;
+    TimePoint time[COLOR_NB];
+    TimePoint inc[COLOR_NB];
+    TimePoint npmsec;
+    TimePoint movetime;
+    TimePoint startTime;
 
     SearchLimits():
                  playoutsEmptyPockets(256),
                  playoutsFilledPockets(512),
                  maxSearchDepth(15),
-                 minMovetime(100) {}
+                 minMovetime(100),
+                 movetime(3000){}
 };
 
 #endif // SEARCHLIMITS_H

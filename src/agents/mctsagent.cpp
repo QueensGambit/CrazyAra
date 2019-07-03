@@ -44,14 +44,13 @@ void MCTSAgent::select_node_to_extend()
 
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
-                     SearchSettings searchSettings, SearchLimits searchLimits, PlaySettings playSettings //,
+                     SearchSettings searchSettings, PlaySettings playSettings //,
 //                     unordered_map<Key, Node*> *hashTable
                      ):
     Agent(playSettings.temperature, playSettings.temperatureMoves, true),
     netSingle(netSingle),
     netBatches(netBatches),
     searchSettings(searchSettings),
-    searchLimits(searchLimits),
     playSettings(playSettings) //,
 //    hashTable(hashTable)
 {
@@ -113,8 +112,10 @@ EvalInfo MCTSAgent::evalute_board_state(const Board &pos)
 
 void MCTSAgent::run_mcts_search(const Board &pos)
 {
-    searchThreads[0]->setRootNode(rootNode);
-    searchThreads[1]->setRootNode(rootNode);
+    for (size_t i = 0; i < 2; ++i) {
+        searchThreads[i]->setRootNode(rootNode);
+        searchThreads[i]->set_search_limits(searchLimits);
+    }
 
     thread thread1(go, searchThreads[0]);
     thread thread2(go, searchThreads[1]);

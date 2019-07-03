@@ -44,7 +44,6 @@ private:
     NeuralNetAPI **netBatches;
 
     SearchSettings searchSettings;
-    SearchLimits searchLimits;
     PlaySettings playSettings;
 
     std::vector<SearchThread*> searchThreads;
@@ -74,7 +73,6 @@ public:
     MCTSAgent(NeuralNetAPI *netSingle,
               NeuralNetAPI** netBatches,
               SearchSettings searchSettings,
-              SearchLimits searchLimits,
               PlaySettings playSettings); //,
 //              unordered_map<Key, Node*> *hashTable);
 

@@ -27,9 +27,10 @@ Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
     this->verbose = verbose;
 }
 
-void Agent::perform_action(const Board &pos)
+void Agent::perform_action(const Board &pos, SearchLimits *searchLimits)
 {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    this->searchLimits = searchLimits;
     EvalInfo eval_info = this->evalute_board_state(pos);
     sync_cout << "end time" << sync_endl;
     std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();

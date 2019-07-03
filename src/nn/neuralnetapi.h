@@ -37,7 +37,7 @@ private:
 
     Shape input_shape;
 
-    Context global_ctx = Context::gpu(); //Context::cpu(); //
+    Context global_ctx = Context::cpu(); //Context::gpu(); //
 
     /**
      * @brief FileExists Function to check if a file exists in a given path
