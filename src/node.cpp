@@ -345,7 +345,6 @@ void Node::backup_value(unsigned int childIdx, float virtualLoss, float value)
     }
 }
 
-
 void Node::revert_virtual_loss_and_update(unsigned int childIdx, float virtualLoss, float value)
 {
     mtx.lock();
