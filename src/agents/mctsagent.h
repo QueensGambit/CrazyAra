@@ -36,6 +36,8 @@
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
 #include "../searchthread.h"
+#include "../statesmanager.h"
+
 
 class MCTSAgent : public Agent
 {
@@ -54,6 +56,7 @@ private:
 
     Node *rootNode;
     unordered_map<Key, Node*> *hashTable;
+    StatesManager* states;
 
     void expand_root_node_multiple_moves(const Board &pos);
     static void run_single_playout(); //Board &pos); //, int i); //Node *rootNode);
@@ -80,7 +83,8 @@ public:
     MCTSAgent(NeuralNetAPI *netSingle,
               NeuralNetAPI** netBatches,
               SearchSettings searchSettings,
-              PlaySettings playSettings); //,
+              PlaySettings playSettings,
+              StatesManager* states); //,
 //              unordered_map<Key, Node*> *hashTable);
 
     EvalInfo evalute_board_state(const Board &pos);

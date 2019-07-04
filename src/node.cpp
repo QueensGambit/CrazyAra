@@ -147,7 +147,12 @@ void Node::enhance_checks()
                 policyProbSmall[i] += increment_check;
                 update = true;
             }
+            if (policyProbSmall[i] < thresh_capture && pos.capture(legalMoves[i])) {
+                policyProbSmall[i] += increment_capture;
+                update = true;
+            }
         }
+
         if (update) {
             policyProbSmall /= sum(policyProbSmall);
         }
@@ -283,8 +288,8 @@ size_t Node::select_child_node(float cpuct)
 //    float pb_u_base = 19652 / 10;
 //    float pb_u_init = 1;
 //    float pb_u_low = 0.5; //0.25;
-//    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
-//    divisor = u_init;
+    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
+    divisor = u_init;
 
     scoreValues = qValues + ( // u-Values
                               cpuct_current //cpuct_current

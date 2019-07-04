@@ -27,6 +27,8 @@
 #include "agents/config/searchlimits.h"
 #include "agents/config/playsettings.h"
 #include "node.h"
+#include "statesmanager.h"
+
 
 class CrazyAra
 {
@@ -56,6 +58,8 @@ private:
     NeuralNetAPI *netSingle;
     NeuralNetAPI *netBatch;
     bool networkLoaded = false;
+    StatesManager *states;
+
 //    unordered_map<Key, Node*> *hashTable;
 public:
     CrazyAra();
@@ -71,7 +75,6 @@ public:
 
     void go(Board& pos, istringstream& is);
     void position(Board &pos, istringstream &is);
-
 };
 
 

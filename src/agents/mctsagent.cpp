@@ -22,6 +22,7 @@
 #include "../blazeutil.h"
 #include "mxnet-cpp/MxNetCpp.h"
 #include "uci.h"
+#include "../statesmanager.h"
 
 using namespace mxnet::cpp;
 
@@ -48,6 +49,10 @@ size_t MCTSAgent::reuse_tree(const Board &pos)
 
     auto it = hashTable->find(pos.hash_key());
     if(it != hashTable->end()) {
+        // swap the states because now the old states are used
+        // This way the memory won't be freed for the next new move
+        states->swap_states();
+
         if (rootNode == it->second) {
             sync_cout << "info string reuse the full tree" << sync_endl;
         }
@@ -85,16 +90,16 @@ size_t MCTSAgent::reuse_tree(const Board &pos)
 
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
-                     SearchSettings searchSettings, PlaySettings playSettings //,
-                     //                     unordered_map<Key, Node*> *hashTable
+                     SearchSettings searchSettings, PlaySettings playSettings,
+                     StatesManager *states
                      ):
     Agent(playSettings.temperature, playSettings.temperatureMoves, true),
     netSingle(netSingle),
     netBatches(netBatches),
     searchSettings(searchSettings),
     playSettings(playSettings),
-    rootNode(nullptr)
-  //    hashTable(hashTable)
+    rootNode(nullptr),
+    states(states)
 {
     hashTable = new unordered_map<Key, Node*>;
     hashTable->reserve(10e6);

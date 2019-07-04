@@ -103,7 +103,7 @@ const string StartFENs[SUBVARIANT_NB] = {
 
 CrazyAra::CrazyAra()
 {
-
+    states = new StatesManager();
 }
 
 void CrazyAra::welcome()
@@ -132,7 +132,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     //    StateListPtr states(new std::deque<StateInfo>(1));
     auto uiThread = std::make_shared<Thread>(0);
 
-    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
+    StateInfo* newState = new StateInfo;
+    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, newState, uiThread.get());
+    states->activeStates.push_back(newState);
 
     for (int i = 1; i < argc; ++i)
         cmd += std::string(argv[i]) + " ";
@@ -282,14 +284,19 @@ void CrazyAra::position(Board& pos, istringstream& is) {
     auto uiThread = std::make_shared<Thread>(0);
     pos.set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
 
+    states->swap_states();
+    states->clear_states();
+
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
     {
         // TODO: Careful this causes a memory leak
-        // TODO: position startpos moves e2e4 c7c5 g1f3 b8c6 b1c3 e7e5 f1c4 f8e7 e1g1 d7d6 d2d3 g8f6 f3g5 e8g8 g5f7 f8f7 P@g5 c6d4 g5f6 e7f6 c4f7 g8f7 N@d5 P@h3 R@g3 B@g4 g3g4
+        // TODO: position startpos moves e2e4 c7c5 g1f3 b8c6 b1c3 e7e5 f1c4 f8e7 e1g1 d7d6 d2d3 g8f6 f3g5 e8g8 g5f7 f8f7 P@g5 c6d4 g5f6 e7f6 c4f7 g8f7 N@d5 P@h3 R@g3
         // position fen r1bq4/pp3kpp/3p1b2/2pNp3/3nP3/2NP2Rp/PPP2PPP/R1BQ1RK1/bn b - - 0 13
         // check why c8fg4 is proposed -> was due to states list
-        pos.do_move(m, *(new StateInfo)); //states->back());
+        StateInfo *newState = new StateInfo;
+        pos.do_move(m, *newState); //states->back());
+        states->activeStates.push_back(newState);
         sync_cout << "info string consume move" << sync_endl;
     }
 
@@ -322,7 +329,7 @@ bool CrazyAra::is_ready()
                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
         }
-        mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, PlaySettings());
+        mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, PlaySettings(), states);
         networkLoaded = true;
     }
 
