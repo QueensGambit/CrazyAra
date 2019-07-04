@@ -21,17 +21,17 @@ EvalInfo::EvalInfo()
 
 }
 
-std::ostream& operator<<(std::ostream& os, const EvalInfo& eval_info) {
-
-//  os << "cp " << eval_info.centipawns << " depth " << eval_info.depth;
-
-  os << "info score cp " << eval_info.centipawns
-     << " depth " << eval_info.depth
-     << " nodes " << eval_info.nodes
-     << " time " << eval_info.elapsedTimeMS
-        // + 0.5 and int() is a simple way for rounding to the first decimal
-     << " nps " << int(((eval_info.nodes-eval_info.nodesPreSearch) / (eval_info.elapsedTimeMS / 1000.0f)) + 0.5f)
-     << " pv " << UCI::move(eval_info.pv[0], eval_info.is_chess960);
-
-  return os;
+std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
+{
+    os << "info score cp " << evalInfo.centipawns
+       << " depth " << evalInfo.pv.size()
+       << " nodes " << evalInfo.nodes
+       << " time " << evalInfo.elapsedTimeMS
+          // + 0.5 and int() is a simple way for rounding to the first decimal
+       << " nps " << int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f)
+       << " pv";
+    for (Move move: evalInfo.pv) {
+        os << " " << UCI::move(move, evalInfo.is_chess960);
+    }
+    return os;
 }

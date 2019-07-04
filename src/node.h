@@ -150,6 +150,13 @@ public:
     static void delete_subtree(Node *node);
 
     int getNumberVisits() const;
+
+    /**
+     * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
+     * The moves a are pushed into the pv vector.
+     * @param pv Vector in which moves will be pushed.
+     */
+    void get_principal_variation(std::vector<Move>& pv);
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);

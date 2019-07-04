@@ -94,8 +94,8 @@ Node::Node(const Node &b)
     initialValue = b.initialValue;
     numberVisits = b.numberVisits;
     childNodes.resize(nbDirectChildNodes);
-//    parentNode = // is not copied
-//    childIdxForParent = // is not copied
+    //    parentNode = // is not copied
+    //    childIdxForParent = // is not copied
     hasNNResults = b.hasNNResults;
     checkmateIdx = b.checkmateIdx;
 }
@@ -108,6 +108,20 @@ Node::~Node()
 int Node::getNumberVisits() const
 {
     return numberVisits;
+}
+
+void Node::get_principal_variation(std::vector<Move> &pv)
+{
+    pv.clear();
+    Node* curNode = this;
+    size_t childIdx;
+    do {
+        DynamicVector<float> mctsPolicy(curNode->nbDirectChildNodes);
+        curNode->get_mcts_policy(0, 0, mctsPolicy);
+        childIdx = argmax(mctsPolicy);
+        pv.push_back(curNode->legalMoves[childIdx]);
+        curNode = curNode->childNodes[childIdx];
+    } while (curNode != nullptr and !curNode->isTerminal);
 }
 
 void Node::check_for_terminal()
@@ -272,7 +286,7 @@ void Node::setValue(float value)
 size_t Node::select_child_node(float cpuct)
 {
     if (checkmateIdx != -1) {
-//        sync_cout << "string info checmateIdx" << checkmateIdx << sync_endl;
+        //        sync_cout << "string info checmateIdx" << checkmateIdx << sync_endl;
         return size_t(checkmateIdx);
     }
 
@@ -290,9 +304,9 @@ size_t Node::select_child_node(float cpuct)
     //        * sqrt(((1 / numberVisits) * (ones + childNumberVisits)))
     //    );
 
-//    float pb_u_base = 19652 / 10;
-//    float pb_u_init = 1;
-//    float pb_u_low = 0.5; //0.25;
+    //    float pb_u_base = 19652 / 10;
+    //    float pb_u_init = 1;
+    //    float pb_u_low = 0.5; //0.25;
     float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
     divisor = u_init;
 
@@ -386,10 +400,10 @@ ostream &operator<<(ostream &os, const Node *node)
     for (size_t childIdx = 0; childIdx < node->getNbDirectChildNodes(); ++childIdx) {
         os << childIdx << ".move " << UCI::move(node->getLegalMoves()[childIdx], false)
            << " n " << node->getChildNumberVisits()[childIdx]
-           << " p " << node->getPVecSmall()[childIdx]
-           << " Q " << node->getQValues()[childIdx] << endl;
+              << " p " << node->getPVecSmall()[childIdx]
+                 << " Q " << node->getQValues()[childIdx] << endl;
     }
-   os << " sum: " << sum(node->getPVecSmall()) << endl;
+    os << " sum: " << sum(node->getPVecSmall()) << endl;
 
     return os;
 }

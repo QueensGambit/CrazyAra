@@ -136,7 +136,8 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
     evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[best_idx]);
     evalInfo.depth = 42;
     evalInfo.legalMoves = this->rootNode->getLegalMoves();
-    evalInfo.pv = {this->rootNode->getLegalMoves()[best_idx]};
+    this->rootNode->get_principal_variation(evalInfo.pv);
+//    evalInfo.pv = {this->rootNode->getLegalMoves()[best_idx]};
     evalInfo.is_chess960 = pos->is_chess960();
     evalInfo.nodes = rootNode->numberVisits;
     evalInfo.nodesPreSearch = nodesPreSearch;
