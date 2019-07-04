@@ -38,14 +38,14 @@ public:
      * @param pos Board position to evaluate
      * @param limits Pointer to the search limit
      */
-    void perform_action(const Board &pos, SearchLimits *searchLimits);
+    void perform_action(Board *pos, SearchLimits *searchLimits);
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents
      * @param pos Board position to evaluate
      * @return Evaluation information
      */
-    virtual EvalInfo evalute_board_state(const Board &pos) = 0;
+    virtual EvalInfo evalute_board_state(Board *pos) = 0;
 };
 
 #endif // AGENT_H

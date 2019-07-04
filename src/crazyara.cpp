@@ -120,7 +120,7 @@ void CrazyAra::welcome()
     ////    const string fen2 = "r1b1kb1r/1pp2pPp/p1n2q2/8/8/2PB1p2/PP3PPP/R1BQK2R/PNPpnn w KQkq - 22 12";
     ////    const string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1"; //StartFENs[CRAZYHOUSE_VARIANT]; //variant];
 
-    //    pos.set(fen, false, CRAZYHOUSE_VARIANT, &states->back(), uiThread.get());
+    //    pos->set(fen, false, CRAZYHOUSE_VARIANT, &states->back(), uiThread.get());
     //    rawAgent->evalute_board_state(pos);
     //    mctsAgent->evalute_board_state(pos);
 }
@@ -145,11 +145,11 @@ void CrazyAra::uci_loop(int argc, char *argv[])
                                                   "uci",
                                                   "isready",
         //                                          "position fen r1b1Rq1k/ppp2pqp/5Nn1/1B2p1B1/3P4/8/PPP2bpP/2KR2R1/PNPppn b - - 0 20"
-        //                                          "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5",
-                                                  "position startpos moves e2e4 e7e5",
-                                                  "go",
-                                                  "position startpos moves e2e4 e7e5 g1f3 b8c6",
-                                                  "go"
+//                                                  "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5",
+//                                                  "position startpos moves e2e4 e7e5",
+//                                                  "go",
+//                                                  "position startpos moves e2e4 e7e5 g1f3 b8c6",
+//                                                  "go"
     };
 
     do {
@@ -187,8 +187,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
                     << "uciok"  << sync_endl;
 
         else if (token == "setoption")  sync_cout << "info string Updated option UCI_Variant to crazyhouse" << sync_endl;//setoption(is);
-        else if (token == "go")         go(pos, is);
-        else if (token == "position")   position(pos, is);
+        else if (token == "go")         go(&pos, is);
+        else if (token == "position")   position(&pos, is);
         else if (token == "ucinewgame") sync_cout << "info string newgame" << sync_endl; //setoption(is); // Search::clear();
         else if (token == "isready") {
             if (is_ready()) {
@@ -197,6 +197,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         }
 
         // Additional custom non-UCI commands, mainly for debugging
+        else if (token == "root")  mctsAgent->print_root_node();
         else if (token == "flip")  pos.flip();
         else if (token == "bench") cout << "dummy"; //bench(pos, is, states);
         else if (token == "d")     sync_cout << pos << sync_endl;
@@ -212,7 +213,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 // the thinking time and other parameters from the input string, then starts
 // the search.
 
-void CrazyAra::go(Board& pos, istringstream& is) {
+void CrazyAra::go(Board *pos, istringstream &is) {
 
     //  Search::LimitsType limits;
     SearchLimits searchLimits;
@@ -255,7 +256,7 @@ void CrazyAra::go(Board& pos, istringstream& is) {
     //  sync_cout << "info score cp " << res.centipawns << " depth " << res.depth << " nodes " << res.nodes
     //            << " time " << elapsedTimeMS << " nps " << int((res.nodes / (elapsedTimeMS / 1000.0)) + 0.5) << " pv " << res.pv[0] << sync_endl;
     ////  sync_cout << "bestmove "<< res.pv[0] << sync_endl;
-    //  sync_cout << "bestmove " << UCI::move(res.pv[0], pos.is_chess960()) << sync_endl;
+    //  sync_cout << "bestmove " << UCI::move(res.pv[0], pos->is_chess960()) << sync_endl;
     //    info score cp 304 depth 6 nodes 72 time 1009 nps 71 pv b1c3 g8f6 g1f3 d7d5 e4d5 f6d5
     //    std::cout << "info score cp" << std::endl;
 }
@@ -265,7 +266,7 @@ void CrazyAra::go(Board& pos, istringstream& is) {
 // or the starting position ("startpos") and then makes the moves given in the
 // following move list ("moves").
 
-void CrazyAra::position(Board& pos, istringstream& is) {
+void CrazyAra::position(Board *pos, istringstream& is) {
 
     Move m;
     string token, fen;
@@ -285,25 +286,25 @@ void CrazyAra::position(Board& pos, istringstream& is) {
         return;
 
     auto uiThread = std::make_shared<Thread>(0);
-    pos.set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
+    pos->set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
 
     states->swap_states();
     states->clear_states();
 
     // Parse move list (if any)
-    while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
+    while (is >> token && (m = UCI::to_move(*pos, token)) != MOVE_NONE)
     {
         // TODO: Careful this causes a memory leak
         // TODO: position startpos moves e2e4 c7c5 g1f3 b8c6 b1c3 e7e5 f1c4 f8e7 e1g1 d7d6 d2d3 g8f6 f3g5 e8g8 g5f7 f8f7 P@g5 c6d4 g5f6 e7f6 c4f7 g8f7 N@d5 P@h3 R@g3
         // position fen r1bq4/pp3kpp/3p1b2/2pNp3/3nP3/2NP2Rp/PPP2PPP/R1BQ1RK1/bn b - - 0 13
         // check why c8fg4 is proposed -> was due to states list
         StateInfo *newState = new StateInfo;
-        pos.do_move(m, *newState); //states->back());
+        pos->do_move(m, *newState); //states->back());
         states->activeStates.push_back(newState);
         sync_cout << "info string consume move" << sync_endl;
     }
 
-    sync_cout << "info string position " << pos.fen() << sync_endl;
+    sync_cout << "info string position " << pos->fen() << sync_endl;
 
 }
 
@@ -321,7 +322,7 @@ bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
         SearchSettings searchSettings;
-        searchSettings.batchSize = 8; //128; //1; //28;
+        searchSettings.batchSize = 128; //128; //1; //28;
         netSingle = new NeuralNetAPI("cpu", 1, false,
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");

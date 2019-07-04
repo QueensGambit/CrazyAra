@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(CrazyAraMCTS CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # find_package(xtl REQUIRED)
@@ -61,7 +61,7 @@ include_directories("src/agents")
 include_directories("src/agents/config")
 include_directories("src/nn")
 
-# include_directories("/home/queensgambit/Programming/C++/CrazyAraMCTS/lib/yaml-cpp-yaml-cpp-0.6.2/include")
+include_directories("lib/yaml-cpp-yaml-cpp-0.6.2/include")
 
 #set(MXNET_PATH
 #    "/media/queensgambit/Volume/Deep_Learning/libraries/mxnet/"
@@ -89,7 +89,7 @@ add_definitions(-DCRAZYHOUSE)
 
 # link_directories(${MXNET_PATH}lib)
 link_directories($ENV{MXNET_PATH}lib)
-# link_directories("/home/queensgambit/Programming/C++/CrazyAraMCTS/lib/yaml-cpp-yaml-cpp-0.6.2/build")
+link_directories("lib/yaml-cpp-yaml-cpp-0.6.2/build")
 
 add_executable(${PROJECT_NAME} ${source_files})
 # add_executable(${PROJECT_NAME} "main.cpp")

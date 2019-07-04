@@ -47,7 +47,7 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *input_planes
 }
 
 
-void board_to_planes(Board pos, int board_occ, bool normalize, float *input_planes) {
+void board_to_planes(const Board *pos, int board_occ, bool normalize, float *input_planes) {
 
     // intialize the input_planes with 0
     std::fill(input_planes, input_planes+NB_VALUES_TOTAL, 0.0f);
@@ -56,13 +56,13 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
 
     // Iterate over both color starting with WHITE
     size_t current_channel = 0;
-    Color me = pos.side_to_move();
+    Color me = pos->side_to_move();
     Color you = ~me;
 
     // (I) Set the pieces for both players
     for (Color color : {me, you}) {
         for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
-            Bitboard pieces = pos.pieces(color, piece);
+            Bitboard pieces = pos->pieces(color, piece);
 //            size_t p = 0;
             // set the individual bits for the pieces
             // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
@@ -88,7 +88,7 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
     for (Color color : {me, you}) {
         for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN}) {
             // unfortunately you can't use a loop over count_in_hand() PieceType because of template arguments
-            int pocket_cnt = pos.get_pocket_count(color, piece);
+            int pocket_cnt = pos->get_pocket_count(color, piece);
             if (pocket_cnt > 0) {
                 std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES,
                           normalize ? pocket_cnt / MAX_NB_PRISONERS : pocket_cnt);
@@ -99,15 +99,15 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
 
     // (IV) Fill in the promoted pieces
     // iterate over all promoted pieces according to the mask and set the according bit
-    set_bits_from_bitmap(pos.promoted_pieces() & pos.pieces(me), current_channel, input_planes, me);
+    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(me), current_channel, input_planes, me);
     current_channel++;
-    set_bits_from_bitmap(pos.promoted_pieces() & pos.pieces(you), current_channel, input_planes, me);
+    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(you), current_channel, input_planes, me);
     current_channel++;
 
     // (V) En Passant Square
     // mark the square where an en-passant capture is possible
-    if (pos.ep_square() != SQ_NONE) {
-        unsigned int ep_square = me == WHITE ? int(pos.ep_square()) : 64-int(pos.ep_square());
+    if (pos->ep_square() != SQ_NONE) {
+        unsigned int ep_square = me == WHITE ? int(pos->ep_square()) : 64-int(pos->ep_square());
         input_planes[current_channel * NB_SQUARES + ep_square] = 1.0f;
     }
     current_channel++;
@@ -119,46 +119,46 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
     }
     current_channel++;
 
-//    std::cout << "pos.game_ply()" << pos.game_ply() << std::endl;
+//    std::cout << "pos->game_ply()" << pos->game_ply() << std::endl;
     // (VI.2) Total Move Count
     std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES,
               // stockfish starts counting from 0, the full move counter starts at 1 in FEN
-              normalize ? ((pos.game_ply()/2)+1) / MAX_FULL_MOVE_COUNTER : ((pos.game_ply()/2)+1));
+              normalize ? ((pos->game_ply()/2)+1) / MAX_FULL_MOVE_COUNTER : ((pos->game_ply()/2)+1));
     current_channel++;
 
     // (IV.3) Castling Rights
     // check for King Side Castling
     if (me == WHITE) {
-        if (pos.can_castle(WHITE_OO)) {
+        if (pos->can_castle(WHITE_OO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
-        if (pos.can_castle(WHITE_OOO)) {
+        if (pos->can_castle(WHITE_OOO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
-        if (pos.can_castle(BLACK_OO)) {
+        if (pos->can_castle(BLACK_OO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
-        if (pos.can_castle(BLACK_OOO)) {
+        if (pos->can_castle(BLACK_OOO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
     }   else {
-        if (pos.can_castle(BLACK_OO)) {
+        if (pos->can_castle(BLACK_OO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
-        if (pos.can_castle(BLACK_OOO)) {
+        if (pos->can_castle(BLACK_OOO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
-        if (pos.can_castle(WHITE_OO)) {
+        if (pos->can_castle(WHITE_OO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
-        if (pos.can_castle(WHITE_OOO)) {
+        if (pos->can_castle(WHITE_OOO)) {
             std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
@@ -172,7 +172,7 @@ void board_to_planes(Board pos, int board_occ, bool normalize, float *input_plan
     // halfmove_clock is an official metric in fen notation
     //  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
     std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES,
-              normalize ? pos.rule50_count() / MAX_NB_NO_PROGRESS: pos.rule50_count());
+              normalize ? pos->rule50_count() / MAX_NB_NO_PROGRESS: pos->rule50_count());
     current_channel++;
 }
 

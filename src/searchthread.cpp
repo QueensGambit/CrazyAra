@@ -76,7 +76,7 @@ inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, boo
     depth = 0;
 
     while (true) {
-//        cout << currentNode->pos.fen() << endl;
+//        cout << currentNode->pos->fen() << endl;
 //        cout << currentNode->pos << endl;
         childIdx = currentNode->select_child_node(2.5);
         currentNode->apply_virtual_loss_to_child(childIdx, virtualLoss);
@@ -107,7 +107,7 @@ void SearchThread::set_NN_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: newNodes) {
         if (!node->isTerminal) {
-            get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos.side_to_move(), true, node->policyProbSmall);
+            get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos->side_to_move(), true, node->policyProbSmall);
             node->mtx.lock();
             node->value = valueOutputs.At(batchIdx, 0);
             node->hasNNResults = true;
@@ -117,7 +117,7 @@ void SearchThread::set_NN_results_to_child_nodes()
 //        node->parentNode->waitForNNResults[node->childIdxOfParent] = 0;
 //        node->parentNode->numberWaitingChildNodes--;
         ++batchIdx;
-        hashTable->insert({node->pos.hash_key(), node});
+        hashTable->insert({node->pos->hash_key(), node});
     }
 }
 
@@ -185,12 +185,12 @@ void SearchThread::create_mini_batch()
 //            parentNode->numberWaitingChildNodes++;
 
             StateInfo* newState = new StateInfo;
-            Board newPos(parentNode->pos);
+            Board* newPos= new Board(*parentNode->pos);
 //            cout << "legalMoves " << parentNode->legalMoves.size() << " child " << childIdx << endl;
-//            cout << "previous " << parentNode->pos.getStateInfo()->previous->previous->previous << endl;
-            newPos.do_move(parentNode->legalMoves[childIdx], *newState);
+//            cout << "previous " << parentNode->pos->getStateInfo()->previous->previous->previous << endl;
+            newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
-            auto it = hashTable->find(newPos.hash_key());
+            auto it = hashTable->find(newPos->hash_key());
             if(it != hashTable->end()) {
 //               sync_cout << "found node in hash table" << sync_endl;
                  Node *newNode = new Node(*it->second);

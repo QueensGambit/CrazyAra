@@ -34,7 +34,7 @@ class Node
 private:
     std::mutex mtx;
     float value;
-    Board pos;
+    Board *pos;
 //    StateInfo state;
     DynamicVector<float> policyProbSmall;
     DynamicVector<float> childNumberVisits;
@@ -70,10 +70,11 @@ private:
 
 public:
 //    Node();
-    Node(Board pos,
+    Node(Board *pos,
          Node *parentNode,
          unsigned int childIdxForParent);
     Node(const Node& b);
+    ~Node();
 
 //    void setNeuralNetResults(float value, DynamicVector<float>& policyProbSmall);
     DynamicVector<float> getPVecSmall() const;
@@ -140,7 +141,7 @@ public:
     void setQValues(const DynamicVector<float> &value);
     DynamicVector<float> getChildNumberVisits() const;
     unsigned int getNbDirectChildNodes() const;
-    Board& getPos();
+    Board* getPos();
 
     /**
      * @brief delete_subtree Deletes the node itself and all existing nodes in its subtree

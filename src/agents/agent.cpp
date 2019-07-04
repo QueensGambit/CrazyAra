@@ -27,7 +27,7 @@ Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
     this->verbose = verbose;
 }
 
-void Agent::perform_action(const Board &pos, SearchLimits *searchLimits)
+void Agent::perform_action(Board *pos, SearchLimits *searchLimits)
 {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     this->searchLimits = searchLimits;
@@ -37,6 +37,6 @@ void Agent::perform_action(const Board &pos, SearchLimits *searchLimits)
     eval_info.elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
     sync_cout << eval_info << sync_endl;
-    sync_cout << "bestmove " << UCI::move(eval_info.pv[0], pos.is_chess960()) << sync_endl;
+    sync_cout << "bestmove " << UCI::move(eval_info.pv[0], pos->is_chess960()) << sync_endl;
 
 }

@@ -20,7 +20,7 @@
 
 #include "../../board.h"
 
-void board_to_planes(Board pos, int board_occ, bool normalize, float *input_planes);
+void board_to_planes(const Board *pos, int board_occ, bool normalize, float *input_planes);
 
 #endif // INPUTREPRESENTATION_H
 

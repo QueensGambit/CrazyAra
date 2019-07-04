@@ -20,19 +20,19 @@ using namespace std;
 #include "uci.h"
 #include "misc.h"
 
-Board& Node::getPos()
+Board* Node::getPos()
 {
     return pos;
 }
 
-Node::Node(Board pos, Node *parentNode, unsigned int childIdxForParent):
+Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent):
+    pos(pos),
     parentNode(parentNode),
     childIdxForParent(childIdxForParent),
     checkmateIdx(-1)
 {
-    this->pos = pos;
     // generate the legal moves and save them in the list
-    for (const ExtMove& move : MoveList<LEGAL>(pos)) {
+    for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
         legalMoves.push_back(move);
     }
 
@@ -100,6 +100,11 @@ Node::Node(const Node &b)
     checkmateIdx = b.checkmateIdx;
 }
 
+Node::~Node()
+{
+    delete pos;
+}
+
 int Node::getNumberVisits() const
 {
     return numberVisits;
@@ -109,7 +114,7 @@ void Node::check_for_terminal()
 {
     if (legalMoves.size() == 0) {
         // test if we have a check-mate
-        if (parentNode->pos.gives_check(parentNode->legalMoves[childIdxForParent])) {
+        if (parentNode->pos->gives_check(parentNode->legalMoves[childIdxForParent])) {
             value = -1;
             isTerminal = true;
             parentNode->mtx.lock();
@@ -121,7 +126,7 @@ void Node::check_for_terminal()
             isTerminal = true;
         }
     }
-    else if (pos.is_draw(pos.game_ply())) {
+    else if (pos->is_draw(pos->game_ply())) {
         // reached 50 moves rule
         value = 0;
         isTerminal = true;
@@ -143,11 +148,11 @@ void Node::enhance_checks()
 
         bool update = false;
         for (size_t i = 0; i < nbDirectChildNodes; ++i) {
-            if (policyProbSmall[i] < thresh_check && pos.gives_check(legalMoves[i])) {
+            if (policyProbSmall[i] < thresh_check && pos->gives_check(legalMoves[i])) {
                 policyProbSmall[i] += increment_check;
                 update = true;
             }
-            if (policyProbSmall[i] < thresh_capture && pos.capture(legalMoves[i])) {
+            if (policyProbSmall[i] < thresh_capture && pos->capture(legalMoves[i])) {
                 policyProbSmall[i] += increment_capture;
                 update = true;
             }

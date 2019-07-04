@@ -25,6 +25,7 @@ class Board : public Position
 public:
     Board();
     Board(const Board& b);
+    ~Board();
 
     Bitboard promoted_pieces() const;
     int get_pocket_count(Color c, PieceType pt) const;

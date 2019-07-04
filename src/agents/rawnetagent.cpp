@@ -35,10 +35,10 @@ RawNetAgent::RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings, float tem
     this->playSettings = playSettings;
 }
 
-EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
+EvalInfo RawNetAgent::evalute_board_state(Board *pos)
 {
     EvalInfo evalInfo;
-    for (const ExtMove& move : MoveList<LEGAL>(pos)) {
+    for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
         evalInfo.legalMoves.push_back(move);
     }
 
@@ -54,7 +54,7 @@ EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
         evalInfo.depth = 0;
         evalInfo.nodes = 0;
         evalInfo.pv = {evalInfo.legalMoves[0]};
-//        sync_cout << "bestmove " << UCI::move(evalInfo.legalMoves[0], pos.is_chess960()) << sync_endl;
+//        sync_cout << "bestmove " << UCI::move(evalInfo.legalMoves[0], pos->is_chess960()) << sync_endl;
         return evalInfo;
     }
 
@@ -107,27 +107,27 @@ EvalInfo RawNetAgent::evalute_board_state(const Board &pos)
 //    Constants::init();
 
     string bestmove_mxnet;
-    if (pos.side_to_move() == WHITE) {
+    if (pos->side_to_move() == WHITE) {
         bestmove_mxnet = LABELS[best_idx];
     }
     else {
         bestmove_mxnet = LABELS_MIRRORED[best_idx];
     }
 
-    get_probs_of_move_list(0, probOutputs, evalInfo.legalMoves, pos.side_to_move(), true, evalInfo.policyProbSmall);
+    get_probs_of_move_list(0, probOutputs, evalInfo.legalMoves, pos->side_to_move(), true, evalInfo.policyProbSmall);
     size_t sel_idx = argmax(evalInfo.policyProbSmall);
 
 //    sync_cout << "sel_idx " << sel_idx << sync_endl;
 //    sync_cout << "policyProbSmall" << evalInfo.policyProbSmall/sum(evalInfo.policyProbSmall) << sync_endl;
     Move bestmove = evalInfo.legalMoves[sel_idx];
-    assert(bestmove_mxnet == UCI::move(bestmove, pos.is_chess960()));
+    assert(bestmove_mxnet == UCI::move(bestmove, pos->is_chess960()));
 
-//    sync_cout << "bestmove " << UCI::move(bestmove, pos.is_chess960()) << sync_endl;
+//    sync_cout << "bestmove " << UCI::move(bestmove, pos->is_chess960()) << sync_endl;
 
     evalInfo.centipawns = value_to_centipawn(value);
     evalInfo.depth = 1;
     evalInfo.nodes = 1;
-    evalInfo.is_chess960 = pos.is_chess960();
+    evalInfo.is_chess960 = pos->is_chess960();
     evalInfo.pv = {bestmove};
 //    eval_info.legalMoves = this->rootNode->getLegalMoves();
 //    eval_info.pVecSmall = this->rootNode->getPVecSmall();

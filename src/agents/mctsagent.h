@@ -42,8 +42,8 @@
 class MCTSAgent : public Agent
 {
 private:
-    NeuralNetAPI *netSingle;
-    NeuralNetAPI **netBatches;
+    NeuralNetAPI* netSingle;
+    NeuralNetAPI** netBatches;
 
     SearchSettings searchSettings;
     PlaySettings playSettings;
@@ -54,12 +54,12 @@ private:
     NDArray valueOutput = NDArray(Shape(1, 1), Context::cpu());
     NDArray probOutputs = NDArray(Shape(1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH), Context::cpu());
 
-    Node *rootNode;
-    unordered_map<Key, Node*> *hashTable;
+    Node* rootNode;
+    unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
 
-    void expand_root_node_multiple_moves(const Board &pos);
-    static void run_single_playout(); //Board &pos); //, int i); //Node *rootNode);
+    void expand_root_node_multiple_moves(const Board *pos);
+    static void run_single_playout(); //Board *pos); //, int i); //Node *rootNode);
     void select_node_to_extend();
 
     /**
@@ -77,18 +77,25 @@ private:
      * @param pos Requested board position
      * @return Number of nodes that have already been explored before the serach
      */
-    inline size_t reuse_tree(const Board &pos);
+    inline size_t reuse_tree(Board* pos);
+
 public:
 
-    MCTSAgent(NeuralNetAPI *netSingle,
+    MCTSAgent(NeuralNetAPI* netSingle,
               NeuralNetAPI** netBatches,
               SearchSettings searchSettings,
               PlaySettings playSettings,
               StatesManager* states); //,
 //              unordered_map<Key, Node*> *hashTable);
 
-    EvalInfo evalute_board_state(const Board &pos);
+    EvalInfo evalute_board_state(Board *pos);
     void run_mcts_search();
+
+    /**
+     * @brief print_root_node Prints out the root node statistics (visits, q-value, u-value)
+     *  by calling the stdout operator for the Node class
+     */
+    void print_root_node();
 };
 
 #endif // MCTSAGENT_H

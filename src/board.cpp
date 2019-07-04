@@ -16,7 +16,9 @@
  */
 
 #include "board.h"
+#include <iostream>
 
+using namespace std;
 /*
 // Data members
 Piece board[SQUARE_NB];
@@ -58,6 +60,11 @@ Board::Board(const Board &b)
 {
     // TODO: Change to usage of swap
     operator=(b);
+}
+
+Board::~Board()
+{
+    delete st;
 }
 
 Bitboard Board::promoted_pieces() const

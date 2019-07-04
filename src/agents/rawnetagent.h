@@ -43,7 +43,7 @@ public:
     RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings,
                 float temperature, unsigned int temperature_moves, bool verbose);
 
-    EvalInfo evalute_board_state(const Board &pos);
+    EvalInfo evalute_board_state(Board *pos);
 
 };
 

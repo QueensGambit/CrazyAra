@@ -73,8 +73,8 @@ public:
      */
     bool is_ready();
 
-    void go(Board& pos, istringstream& is);
-    void position(Board &pos, istringstream &is);
+    void go(Board *pos, istringstream& is);
+    void position(Board *pos, istringstream &is);
 };
 
 
