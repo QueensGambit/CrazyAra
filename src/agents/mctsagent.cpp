@@ -60,7 +60,7 @@ size_t MCTSAgent::reuse_tree(const Board &pos)
             if (rootNode != nullptr) {
                 sync_cout << "info string delete unused subtrees" << sync_endl;
                 for (Node *childNode: rootNode->childNodes) {
-                    if (childNode != nullptr and childNode != it->second) {
+                    if (childNode != nullptr and childNode != it->second->parentNode) {
                         Node::delete_subtree(childNode);
                     }
                 }
