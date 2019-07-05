@@ -124,7 +124,7 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
     rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
     run_mcts_search();
 
-    float qValueFac = 0; //0.5; //0.5;
+    float qValueFac = 0.7; //0.5; //0.5;
     float qValueThresh = 0.7;
 
     DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);

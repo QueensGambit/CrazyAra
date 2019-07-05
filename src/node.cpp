@@ -63,8 +63,7 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent):
     ones = 1;
 
     divisor = DynamicVector<float>(nbDirectChildNodes);
-    divisor = 1; // 0.25f; //
-
+    divisor = 1; // 0.25f
 
     // number of total visits to this node
     numberVisits = 1;  // we initialize with 1 because if the node was created it must have been visited
@@ -188,9 +187,22 @@ void Node::setPolicyProbSmall(const DynamicVector<float> &value)
     policyProbSmall = value;
 }
 
-void Node::get_mcts_policy(const float qValueWeight, const float q_value_min_visit_fac, DynamicVector<float>& mctsPolicy)
+void Node::get_mcts_policy(const float qValueWeight, const float qValueThresh, DynamicVector<float>& mctsPolicy)
 {
-    mctsPolicy = childNumberVisits;
+    if (qValueWeight != 0) {
+        DynamicVector<float> qValuePruned(nbDirectChildNodes);
+        qValuePruned = (qValues + ones) * 0.5f;
+        size_t maxVisists = max(childNumberVisits);
+        float visitThresh = qValueThresh * maxVisists;
+        for (size_t idx; idx < nbDirectChildNodes; ++idx) {
+            if (qValuePruned[idx] < visitThresh) {
+                qValuePruned[idx] = 0;
+            }
+        }
+        mctsPolicy = (1.0f - qValueWeight) * (childNumberVisits / numberVisits) + qValueWeight * qValuePruned;
+    } else {
+    mctsPolicy = childNumberVisits / numberVisits;
+    }
 }
 
 DynamicVector<float> Node::getQValues() const
@@ -307,8 +319,9 @@ size_t Node::select_child_node(float cpuct)
     //    float pb_u_base = 19652 / 10;
     //    float pb_u_init = 1;
     //    float pb_u_low = 0.5; //0.25;
-    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
-    divisor = u_init;
+//    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
+//    divisor = u_init;
+
 
     scoreValues = qValues + ( // u-Values
                               cpuct_current //cpuct_current

@@ -83,5 +83,4 @@ inline decltype(auto) argmax( const DynamicVector<VT,TF>& dv ) {
     return idx;
 }
 
-
 #endif // BLAZEUTIL_H
