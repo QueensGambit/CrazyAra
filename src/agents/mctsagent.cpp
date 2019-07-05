@@ -74,11 +74,10 @@ size_t MCTSAgent::reuse_tree(Board *pos)
     else {
         if (rootNode != nullptr) {
             sync_cout << "info string delete the old tree " << sync_endl;
-            // TODO: Activate delete without seg-fault
-//            Node::delete_subtree(rootNode);
+            Node::delete_subtree(rootNode);
         }
         sync_cout << "info string create new tree" << sync_endl;
-        rootNode = new Node(pos, nullptr, 0);
+        rootNode = new Node(new Board(*pos), nullptr, 0);
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, valueOutput, probOutputs);
         get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, pos->side_to_move(), true, rootNode->policyProbSmall);
