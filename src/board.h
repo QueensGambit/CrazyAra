@@ -34,7 +34,7 @@ public:
     StateInfo* getStateInfo() const;
 
     Board& operator=(const Board &b);
-
+    int plies_from_null();
 };
 
 #endif // BOARD_H

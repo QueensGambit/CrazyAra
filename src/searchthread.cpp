@@ -191,14 +191,29 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(false) { //it != hashTable->end()) {
-//               sync_cout << "found node in hash table" << sync_endl;
+            if(false and it != hashTable->end() and it->second->hasNNResults and
+               it->second->pos->rule50_count() == newPos->rule50_count() and
+               it->second->pos->plies_from_null() == newPos->plies_from_null()) {
+//                 Node *newNode = new Node(newPos, parentNode, childIdx);
                  Node *newNode = new Node(*it->second);
+                 newNode->mtx.lock();
+//                 newNode->value = it->second->value;
+//                 newNode->policyProbSmall = it->second->policyProbSmall;
+                 newNode->pos = newPos;
                  newNode->parentNode = parentNode;
                  newNode->childIdxForParent = childIdx;
+                 newNode->hasNNResults = true;
+                 newNode->mtx.unlock();
+                 parentNode->mtx.lock();
+//                 sync_cout << "parentNode: childNodes" << parentNode->childNodes.size() << " " << childIdx << sync_endl;
+                 parentNode->childNodes[childIdx] = newNode;
+                 parentNode->mtx.unlock();
+                 assert(newNode->nbDirectChildNodes == it->second->nbDirectChildNodes);
+//                 sync_cout << parentNode->childNodes[childIdx]->value << sync_endl;
 //                 parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
+                 parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
                  ++tranpositionEvents;
-                 transpositionNodes.push_back(newNode);
+//                 transpositionNodes.push_back(newNode);
             }
             else {
                 Node *newNode = new Node(newPos, parentNode, childIdx);
@@ -208,7 +223,9 @@ void SearchThread::create_mini_batch()
                 newNodes.push_back(newNode);
 
                 // connect the Node to the parent
+                parentNode->mtx.lock();
                 parentNode->childNodes[childIdx] = newNode;
+                parentNode->mtx.unlock();
 
                 // fill a new board in the input_planes vector
                 // we shift the index by NB_VALUES_TOTAL each time
@@ -273,7 +290,7 @@ void go(SearchThread *t)
         TimePoint end = now();
         elapsedTimeMS = end - t->getSearchLimits()->startTime;
         //std::chrono::duration_cast<std::chrono::milliseconds>(end - t->getSearchLimits()->startTime).count();
-    } while(elapsedTimeMS < t->getSearchLimits()->movetime);  // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
+    } while(elapsedTimeMS < t->getSearchLimits()->movetime);
 //    cout << "rootNode" << endl;
 //    cout << t->getRootNode() << endl;
 }

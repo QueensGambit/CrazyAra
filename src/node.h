@@ -73,6 +73,12 @@ public:
     Node(Board *pos,
          Node *parentNode,
          unsigned int childIdxForParent);
+
+    /**
+     * @brief Node Copy constructor which copies the value evaluation, board position, prior policy and checkmateIdx.
+     * The qValues, actionValues and visits aren't copied over.
+     * @param b Node from which the stats will be copied
+     */
     Node(const Node& b);
     ~Node();
 

@@ -21,8 +21,8 @@ using namespace std;
 // TODO: Change this later to blaze::HybridVector<float, MAX_NB_LEGAL_MOVES>
 void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall)
 {
-    // allocate sufficient memory
-    policyProbSmall.resize(legalMoves.size());
+//    // allocate sufficient memory
+//    policyProbSmall.resize(legalMoves.size());
 
     size_t vectorIdx;
     for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {

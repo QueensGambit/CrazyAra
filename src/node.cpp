@@ -70,6 +70,7 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent):
     scoreValues = DynamicVector<float>(nbDirectChildNodes);
 
     childNodes.resize(nbDirectChildNodes); // = std::vector<Node>(nbDirectChildNodes);
+    policyProbSmall.resize(nbDirectChildNodes);
 
     //    waitForNNResults.resize(nbDirectChildNodes);
     //    waitForNNResults = 0.0f;
@@ -81,17 +82,24 @@ Node::Node(const Node &b)
 {
     value = b.value;
     pos = b.pos;
+    nbDirectChildNodes = b.nbDirectChildNodes;
+    policyProbSmall.resize(nbDirectChildNodes);
     policyProbSmall = b.policyProbSmall;
-    childNumberVisits = b.childNumberVisits;
-    actionValues = b.actionValues;
-    qValues = b.qValues;
+    childNumberVisits.resize(nbDirectChildNodes);
+    childNumberVisits = 0;
+    actionValues.resize(nbDirectChildNodes);
+    actionValues = 0;
+    qValues.resize(nbDirectChildNodes);
+    qValues = -1;
     scoreValues = b.scoreValues;
+    ones.resize(nbDirectChildNodes);
     ones = b.ones;
+    divisor.resize(nbDirectChildNodes);
     divisor = b.divisor;
     copy(b.legalMoves.begin(), b.legalMoves.end(), back_inserter(legalMoves));
-    nbDirectChildNodes = b.nbDirectChildNodes;
+    isTerminal = b.isTerminal;
     initialValue = b.initialValue;
-    numberVisits = b.numberVisits;
+    numberVisits = 1;
     childNodes.resize(nbDirectChildNodes);
     //    parentNode = // is not copied
     //    childIdxForParent = // is not copied

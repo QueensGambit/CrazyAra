@@ -123,3 +123,8 @@ Board &Board::operator=(const Board &b)
     var = b.var;
     subvar = b.subvar;
 }
+
+int Board::plies_from_null()
+{
+    return st->pliesFromNull;
+}
