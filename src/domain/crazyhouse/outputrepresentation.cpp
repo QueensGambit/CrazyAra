@@ -24,6 +24,7 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, co
 //    // allocate sufficient memory
 //    policyProbSmall.resize(legalMoves.size());
 
+    const float *data = policyProb.GetData();
     size_t vectorIdx;
     for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
         if (sideToMove == WHITE) {
@@ -34,7 +35,9 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, co
             vectorIdx = MV_LOOKUP_MIRRORED[legalMoves[mvIdx]];
         }
         // set the right prob value
-        policyProbSmall[mvIdx] = policyProb.At(batchIdx, vectorIdx);
+        // accessing the data on the raw floating point vector is faster
+        // than calling policyProb.At(batchIdx, vectorIdx)
+        policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS+vectorIdx];
     }
 
     if (normalize) {

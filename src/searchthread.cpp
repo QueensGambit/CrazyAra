@@ -174,8 +174,8 @@ void SearchThread::create_mini_batch()
 //        cout << "parentNode->nbDirectChildNodes" << parentNode->nbDirectChildNodes << endl;
 
         if(isTerminal) {
-//            terminalNodes.push_back(parentNode->childNodes[childIdx]);
-            parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
+            terminalNodes.push_back(parentNode->childNodes[childIdx]);
+//            parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
             ++terminalEvents;
 //            cout << ">>>>>>>>>>>>isTerminal!!!!!" << endl;
         }
@@ -191,7 +191,7 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(false and it != hashTable->end() and it->second->hasNNResults and
+            if(it != hashTable->end() and it->second->hasNNResults and
                it->second->pos->rule50_count() == newPos->rule50_count() and
                it->second->pos->plies_from_null() == newPos->plies_from_null()) {
 //                 Node *newNode = new Node(newPos, parentNode, childIdx);

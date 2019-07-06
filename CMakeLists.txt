@@ -5,6 +5,11 @@ project(CrazyAraMCTS CXX)
 # set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# -pg performance profiling flags
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+#SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+#SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+
 # find_package(xtl REQUIRED)
 # find_package(xtensor REQUIRED)
 # if xtensor was built with xsimd support:

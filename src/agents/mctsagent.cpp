@@ -61,7 +61,7 @@ size_t MCTSAgent::reuse_tree(Board *pos)
                 sync_cout << "info string delete unused subtrees" << sync_endl;
                 for (Node *childNode: rootNode->childNodes) {
                     if (childNode != nullptr and childNode != it->second->parentNode) {
-                        Node::delete_subtree(childNode);
+//                        Node::delete_subtree(childNode);
                     }
                 }
             }
@@ -74,7 +74,7 @@ size_t MCTSAgent::reuse_tree(Board *pos)
     else {
         if (rootNode != nullptr) {
             sync_cout << "info string delete the old tree " << sync_endl;
-            Node::delete_subtree(rootNode);
+//            Node::delete_subtree(rootNode);
         }
         sync_cout << "info string create new tree" << sync_endl;
         rootNode = new Node(new Board(*pos), nullptr, 0);
@@ -153,9 +153,11 @@ void MCTSAgent::run_mcts_search()
 
     thread thread1(go, searchThreads[0]);
     thread thread2(go, searchThreads[1]);
+//    thread thread3(go, searchThreads[2]);
 
     thread1.join();
     thread2.join();
+//    thread3.join();
 }
 
 void MCTSAgent::print_root_node()
