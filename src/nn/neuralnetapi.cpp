@@ -99,6 +99,14 @@ void NeuralNetAPI::bindExecutor() //Shape *input_shape_single, Executor* executo
 
 NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicyFromPlanes, string modelArchitectureDir, string modelWeightsDir)
 {
+    if (ctx == "cpu") {
+        global_ctx = Context::cpu();
+    } else if (ctx == "gpu") {
+        global_ctx = Context::gpu();
+    } else {
+        throw "unsupported context " + ctx + " given";
+    }
+
     YAML::Node config = YAML::LoadFile("config.yaml");
     const std::string prefix = config["model_directory"].as<std::string>();
 

@@ -34,10 +34,8 @@ private:
     std::vector<std::string> output_labels;
     Symbol net;
     Executor *executor;
-
     Shape input_shape;
-
-    Context global_ctx = Context::gpu(); // Context::cpu(); //
+    Context global_ctx = Context::cpu();
 
     /**
      * @brief FileExists Function to check if a file exists in a given path
