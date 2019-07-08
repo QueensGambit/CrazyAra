@@ -39,7 +39,7 @@ public:
                  playoutsFilledPockets(512),
                  maxSearchDepth(15),
                  minMovetime(100),
-                 movetime(17000*2){}    // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
+                 movetime(3600){}    // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
 };
 
 #endif // SEARCHLIMITS_H

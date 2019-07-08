@@ -35,7 +35,7 @@ struct SearchSettings
     bool usePruning;
     float uInitDivisor;
 
-    SearchSettings(): threads(8),
+    SearchSettings(): threads(4),
                  batchSize(2),
                  cpuct(1),
                  dirichletEpsilon(0.25),

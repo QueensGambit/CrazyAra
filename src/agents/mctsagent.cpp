@@ -26,6 +26,28 @@
 
 using namespace mxnet::cpp;
 
+MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
+                     SearchSettings searchSettings, PlaySettings playSettings,
+                     StatesManager *states
+                     ):
+    Agent(playSettings.temperature, playSettings.temperatureMoves, true),
+    netSingle(netSingle),
+    netBatches(netBatches),
+    searchSettings(searchSettings),
+    playSettings(playSettings),
+    rootNode(nullptr),
+    states(states)
+{
+    hashTable = new unordered_map<Key, Node*>;
+    hashTable->reserve(10e6);
+
+    for (auto i = 0; i < searchSettings.threads; ++i) {
+        cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
+        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
+    }
+
+}
+
 void MCTSAgent::run_single_playout() //Board *pos) //, int i) //Node *rootNode)
 {
     std::cout << "hello :) " << std::endl;
@@ -89,29 +111,6 @@ size_t MCTSAgent::reuse_tree(Board *pos)
 }
 
 
-MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
-                     SearchSettings searchSettings, PlaySettings playSettings,
-                     StatesManager *states
-                     ):
-    Agent(playSettings.temperature, playSettings.temperatureMoves, true),
-    netSingle(netSingle),
-    netBatches(netBatches),
-    searchSettings(searchSettings),
-    playSettings(playSettings),
-    rootNode(nullptr),
-    states(states)
-{
-    hashTable = new unordered_map<Key, Node*>;
-    hashTable->reserve(10e6);
-
-    for (auto i = 0; i < searchSettings.threads; ++i) {
-        cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
-        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
-    }
-
-
-}
-
 EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 {
     size_t nodesPreSearch = reuse_tree(pos);
@@ -146,18 +145,17 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 
 void MCTSAgent::run_mcts_search()
 {
-    for (size_t i = 0; i < 2; ++i) {
+    thread** threads = new thread*[searchSettings.threads];
+    for (size_t i = 0; i < searchSettings.threads; ++i) {
         searchThreads[i]->setRootNode(rootNode);
         searchThreads[i]->set_search_limits(searchLimits);
+        threads[i] = new thread(go, searchThreads[i]);
     }
 
-    thread thread1(go, searchThreads[0]);
-    thread thread2(go, searchThreads[1]);
-//    thread thread3(go, searchThreads[2]);
+    for (size_t i = 0; i < searchSettings.threads; ++i) {
+        threads[i]->join();
+    }
 
-    thread1.join();
-    thread2.join();
-//    thread3.join();
 }
 
 void MCTSAgent::print_root_node()

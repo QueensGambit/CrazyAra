@@ -330,8 +330,8 @@ bool CrazyAra::is_ready()
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
-        NeuralNetAPI** netBatches = new NeuralNetAPI*[2];
-        for (size_t i = 0; i < 2; ++i) {
+        NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings.threads];
+        for (size_t i = 0; i < searchSettings.threads; ++i) {
             netBatches[i] = new NeuralNetAPI("cpu", searchSettings.batchSize, false,
                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
