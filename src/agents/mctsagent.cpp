@@ -83,7 +83,7 @@ size_t MCTSAgent::reuse_tree(Board *pos)
                 sync_cout << "info string delete unused subtrees" << sync_endl;
                 for (Node *childNode: rootNode->childNodes) {
                     if (childNode != nullptr and childNode != it->second->parentNode) {
-//                        Node::delete_subtree(childNode);
+                        Node::delete_subtree(childNode);
                     }
                 }
             }
@@ -94,15 +94,17 @@ size_t MCTSAgent::reuse_tree(Board *pos)
         sync_cout << "info string reuse the tree with " << nodesPreSearch << " nodes" << sync_endl;
     }
     else {
+        Board* newPos = new Board(*pos);
+        newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
         if (rootNode != nullptr) {
             sync_cout << "info string delete the old tree " << sync_endl;
-//            Node::delete_subtree(rootNode);
+            Node::delete_subtree(rootNode);
         }
         sync_cout << "info string create new tree" << sync_endl;
-        rootNode = new Node(new Board(*pos), nullptr, 0);
+        rootNode = new Node(new Board(*newPos), nullptr, 0);
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, valueOutput, probOutputs);
-        get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, pos->side_to_move(), true, rootNode->policyProbSmall);
+        get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(), true, rootNode->policyProbSmall);
         rootNode->enhance_checks();
         nodesPreSearch = 0;
     }

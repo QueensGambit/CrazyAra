@@ -97,7 +97,7 @@ inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, boo
             isTerminal = false;
             return currentNode;
         }
-        currentNode = currentNode->childNodes[childIdx];
+        currentNode = nextNode;
     }
 
 }
@@ -191,7 +191,7 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(it != hashTable->end() and it->second->hasNNResults and
+            if(false and it != hashTable->end() and it->second->hasNNResults and
                it->second->pos->rule50_count() == newPos->rule50_count() and
                it->second->pos->plies_from_null() == newPos->plies_from_null()) {
 //                 Node *newNode = new Node(newPos, parentNode, childIdx);

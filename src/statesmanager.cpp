@@ -29,9 +29,11 @@ void StatesManager::swap_states()
 
 void StatesManager::clear_states()
 {
-    for (auto state: activeStates) {
-        delete state;
+    if (passiveStates.size() > 0) {
+        for (auto state: passiveStates) {
+            delete state;
+        }
+        passiveStates.clear();
     }
-    activeStates.clear();
 }
 

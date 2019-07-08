@@ -99,6 +99,13 @@ r1bq2nr/ppppbkpp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQK2R[Pb] w KQ - 0 5
 -> @d4
 r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1[-] b kq - 0 4
 -> d6?!
+
+1r1k2r1/pP1bbpPp/5p2/3N4/4p3/8/PPnPQPPP/R1B2K1R/PBNqnpp b - - 1 21
+-> N@c7
+8/3pbkbP/N2pp1p1/1p2pprp/1P1P4/1Q6/P1P2P1P/2N1NK1R/BQprrbn b - - 0 57
+-> P@e2 M#7
+8/3pbkbP/N2pp1p1/1p2pprp/1PQP4/8/P1P2P1P/2N1NK1R/BBQprrn b - - 0 58
+-> R@g1 M#11
 */
 
 

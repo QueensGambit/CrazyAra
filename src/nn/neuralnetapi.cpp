@@ -190,7 +190,7 @@ void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &pr
 
     NDArray image_data {inputPlanes, input_shape, global_ctx};
 //    mtx.lock();
-    image_data.CopyTo(&(executor->arg_dict()["data"]));
+    image_data.CopyTo(&(executor->arg_dict()["data"]));  // crash occurs here!
 
     // Run the forward pass.
     executor->Forward(false);
