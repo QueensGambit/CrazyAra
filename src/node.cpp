@@ -404,13 +404,14 @@ void Node::make_to_root()
     childIdxForParent = -1;
 }
 
-void Node::delete_subtree(Node *node)
+void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)
 {
     for (Node *child_node: node->childNodes) {
         if (child_node != nullptr) {
-            delete_subtree(child_node);
+            delete_subtree(child_node, hashTable);
         }
     }
+    hashTable->erase(node->getPos()->hash_key());
     delete node;
 }
 

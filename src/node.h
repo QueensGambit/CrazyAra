@@ -27,6 +27,8 @@
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
+#include <unordered_map>
+using namespace std;
 #include <iostream>
 
 class Node
@@ -150,10 +152,11 @@ public:
     Board* getPos();
 
     /**
-     * @brief delete_subtree Deletes the node itself and all existing nodes in its subtree
+     * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
      * @param node Node of the subtree to delete
+     * @param hashTable Pointer to the hashTable which stores a pointer to all active nodes
      */
-    static void delete_subtree(Node *node);
+    static void delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable);
 
     int getNumberVisits() const;
 
