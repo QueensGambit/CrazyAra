@@ -10,7 +10,7 @@ Download and install the blaze library
 Build the MXNet C++ package
 * https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
 ```make -j USE_CPP_PACKAGE=1 USE_OPENCV=0```
-* _because the current dev branch broke the loading of certain models download release (MXNet-release 1.4.1)[https://github.com/apache/incubator-mxnet/releases] instead_
+* _because the current dev branch broke the loading of certain models download release [MXNet-release 1.4.1](https://github.com/apache/incubator-mxnet/releases) instead_
 
 
 Clone the Sf library
