@@ -144,6 +144,16 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     std::vector<std::string> commands = {
 //                                                  "uci",
 //                                                  "isready",
+//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7",
+//                                                  "go",
+//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7 N@h4 e1g1",
+//                                                  "go",
+//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7 N@h4 e1g1 h4g2 P@b7",
+//                                                  "go",
+//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7 N@h4 e1g1 h4g2 P@b7 e8g8 b7a8q",
+//                                                  "go",
+//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7 N@h4 e1g1 h4g2 P@b7 e8g8 b7a8q f8a8 Q@b7",
+//                                                  "go"
 //                                                  "go",
 //                                                  "position fen 3k2r1/pBpr1p1p/Pp3p1B/3p4/2PPn2B/5NPp/q4PpP/1R1QR1K1/NNbp w - - 1 23",
 //                                                  "go movetime 1500",

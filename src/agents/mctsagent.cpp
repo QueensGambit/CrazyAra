@@ -82,7 +82,8 @@ size_t MCTSAgent::reuse_tree(Board *pos)
             if (rootNode != nullptr) {
                 sync_cout << "info string delete unused subtrees" << sync_endl;
                 for (Node *childNode: rootNode->childNodes) {
-                    if (childNode != nullptr and childNode != it->second->parentNode) {
+                    // TODO: change hash_key() to pointer comparision
+                    if (childNode != nullptr and childNode->pos->hash_key() != it->second->parentNode->pos->hash_key()) {
                         Node::delete_subtree(childNode, hashTable);
                     }
                 }
@@ -107,6 +108,7 @@ size_t MCTSAgent::reuse_tree(Board *pos)
         get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(), true, rootNode->policyProbSmall);
         rootNode->enhance_checks();
         nodesPreSearch = 0;
+        hashTable->insert({rootNode->pos->hash_key(), rootNode});
     }
 
     return nodesPreSearch;
@@ -116,7 +118,6 @@ size_t MCTSAgent::reuse_tree(Board *pos)
 EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 {
     size_t nodesPreSearch = reuse_tree(pos);
-    hashTable->insert({rootNode->pos->hash_key(), rootNode});
 
     cout << "info string apply dirichlet" << endl;
     rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
