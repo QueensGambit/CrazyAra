@@ -81,6 +81,11 @@ void NeuralNetAPI::bindExecutor() //Shape *input_shape_single, Executor* executo
     std::vector<NDArray> grad_arrays;
     std::vector<OpReqType> grad_reqs;
     std::vector<NDArray> aux_arrays;
+    Shape value_label_shape(input_shape[0]);
+    Shape policy_label_shape(input_shape[0]);
+
+    args_map["value_label"] = NDArray(value_label_shape, global_ctx, false);
+    args_map["policy_label"] = NDArray(policy_label_shape, global_ctx, false);
 
     net.InferExecutorArrays(global_ctx, &arg_arrays, &grad_arrays, &grad_reqs,
                             &aux_arrays, args_map, std::map<std::string, NDArray>(),
@@ -88,12 +93,12 @@ void NeuralNetAPI::bindExecutor() //Shape *input_shape_single, Executor* executo
     for (size_t i = 0; i < grad_reqs.size(); ++i) {
         grad_reqs[i] = kNullOp;
     }
-    executor = net.Bind(global_ctx, arg_arrays, grad_arrays, grad_reqs, aux_arrays,
-                                         std::map<std::string, Context>(), nullptr);
-//    executor = net.SimpleBind(global_ctx, args_map, std::map<std::string, NDArray>(),
-//                              std::map<std::string, OpReqType>(), aux_map);
-
+//    executor = net.Bind(global_ctx, arg_arrays, grad_arrays, grad_reqs, aux_arrays,
+//                                         std::map<std::string, Context>(), nullptr);
     /*end new */
+    executor = new Executor(net, global_ctx, arg_arrays, grad_arrays, grad_reqs, aux_arrays);
+//        executor = net.SimpleBind(global_ctx, args_map, std::map<std::string, NDArray>(),
+//                                  std::map<std::string, OpReqType>(), aux_map);
     LG << ">>>> Bind successfull! >>>>>>";
 }
 
@@ -179,7 +184,7 @@ NDArray NeuralNetAPI::predict(float *inputPlanes, float &value)
     cout << "probOutputs" << probOutputs << endl;
     predicted.WaitToRead();
     cout << "predicted" << predicted << endl;
-    int best_idx = predicted.At(0); //, 0);
+    int best_idx = predicted.At(0, 0); //, 0);
     cout << "best_idx: " << best_idx << endl;
 
     return probOutputs; //best_idx;
