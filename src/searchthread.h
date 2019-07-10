@@ -44,8 +44,8 @@ private:
 
     // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
     // sufficient memory according to the batch-size will be allocated in the constructor
-    NDArray valueOutputs;
-    NDArray probOutputs;
+    NDArray* valueOutputs;
+    NDArray* probOutputs;
 
     const float virtualLoss;
     bool isRunning;

@@ -15,16 +15,17 @@
 
 #include "outputrepresentation.h"
 #include "types.h"
+#include "policymaprepresentation.h"
 using namespace std;
 
 
 // TODO: Change this later to blaze::HybridVector<float, MAX_NB_LEGAL_MOVES>
-void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall)
+void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance)
 {
 //    // allocate sufficient memory
 //    policyProbSmall.resize(legalMoves.size());
 
-    const float *data = policyProb.GetData();
+    const float *data = policyProb->GetData();
     size_t vectorIdx;
     for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
         if (sideToMove == WHITE) {
@@ -34,10 +35,15 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, co
             // use the mirrored look-up table instead
             vectorIdx = MV_LOOKUP_MIRRORED[legalMoves[mvIdx]];
         }
+
         // set the right prob value
         // accessing the data on the raw floating point vector is faster
         // than calling policyProb.At(batchIdx, vectorIdx)
-        policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS+vectorIdx];
+        if (select_policy_from_plance) {
+            policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS_POLICY_MAP+FLAT_PLANE_IDX[vectorIdx]];
+        } else {
+            policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS+vectorIdx];
+        }
     }
 
     if (normalize) {

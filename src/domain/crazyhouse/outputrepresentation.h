@@ -38,10 +38,11 @@ using namespace mxnet::cpp;
  * @param lastLegalMove Pointer to the last legal move
  * @param sideToMove Determine if it's white's or black's turn to move
  * @param normalize True, if the probability should be normalized
+ * @param select_policy_from_plance Sets if the policy is encoded in policy map representation
  * @return policyProbSmall - A hybrid blaze vector which stores the probabilities for the given move list
  */
-void get_probs_of_move_list(const size_t batchIdx, const NDArray &policyProb, const std::vector<Move> &legalMoves, Color sideToMove,
-                            bool normalize, DynamicVector<float> &policyProbSmall);
+void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove,
+                            bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance);
 
 /**
  * @brief value_to_centipawn Converts a value in A0-notation to roughly a centi-pawn loss

@@ -39,7 +39,7 @@ const int NB_SQUARES = BOARD_WIDTH * BOARD_HEIGHT;
 const int NB_CHANNELS_POS = 27;
 const int NB_CHANNELS_CONST = 7;
 const int NB_CHANNELS_TOTAL = NB_CHANNELS_POS + NB_CHANNELS_CONST;
-const int NB_VALUES_TOTAL = NB_CHANNELS_TOTAL*BOARD_HEIGHT*BOARD_WIDTH;
+const int NB_VALUES_TOTAL = NB_CHANNELS_TOTAL * BOARD_HEIGHT * BOARD_WIDTH;
 
 // define the number of different pieces one can have in his pocket (the king is excluded)
 const int POCKETS_SIZE_PIECE_TYPE = 5;
@@ -57,6 +57,14 @@ const unsigned long MAX_NB_LEGAL_MOVES = 512;
 // Policy Vector Description:
 // (Note that this vector does only work for the white player.
 // For the black player you have ot mirror the move afterwards by using mirror_move())
+
+// legal moves total which are represented in the NN
+const int NB_LABELS = 2272;
+
+// this describes the number of channels in the policy map representation
+const int NB_CHANNELS_POLICY_MAP = 81;
+const int NB_LABELS_POLICY_MAP = NB_CHANNELS_POLICY_MAP * BOARD_HEIGHT * BOARD_WIDTH;
+
 
 const std::string LABELS[] = {
     "a1b1",
@@ -2332,9 +2340,6 @@ const std::string LABELS[] = {
     "R@h8",
     "Q@h8",
 };
-
-// legal moves total which are represented in the NN
-const int NB_LABELS = 2272;
 
 // will be filled in init()
 //static std::vector <std::string> LABELS_MIRRORED;

@@ -51,8 +51,10 @@ private:
     std::vector<SearchThread*> searchThreads;
 
     float input_planes[NB_VALUES_TOTAL];
-    NDArray valueOutput = NDArray(Shape(1, 1), Context::cpu());
-    NDArray probOutputs = NDArray(Shape(1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH), Context::cpu());
+//    NDArray* valueOutput;
+//    NDArray* probOutputs;
+    NDArray valueOutput= NDArray(Shape(1, 1), Context::cpu());
+    NDArray probOutputs = NDArray(Shape(1, NB_LABELS), Context::cpu());
 
     Node* rootNode;
     unordered_map<Key, Node*>* hashTable;

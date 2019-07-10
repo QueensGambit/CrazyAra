@@ -46,6 +46,15 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
         searchThreads.push_back(new SearchThread(netBatches[i], searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
     }
 
+//    valueOutput = new NDArray(Shape(1, 1), Context::cpu());
+//    bool select_policy_from_plane = true;
+
+//    if (select_policy_from_plane) {
+//        probOutputs = new NDArray(Shape(1, NB_LABELS_POLICY_MAP), Context::cpu());
+//    } else {
+//        probOutputs = new NDArray(Shape(1, NB_LABELS), Context::cpu());
+//    }
+
 }
 
 void MCTSAgent::run_single_playout() //Board *pos) //, int i) //Node *rootNode)
@@ -105,7 +114,9 @@ size_t MCTSAgent::reuse_tree(Board *pos)
         rootNode = new Node(new Board(*newPos), nullptr, 0);
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, valueOutput, probOutputs);
-        get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(), true, rootNode->policyProbSmall);
+//        cout << "valueOutput: " << valueOutput << endl;
+        get_probs_of_move_list(0, &probOutputs, rootNode->legalMoves, newPos->side_to_move(), false, rootNode->policyProbSmall, true);
+//        cout << "policyProbSmall: " << rootNode->policyProbSmall << endl;
         rootNode->enhance_checks();
         nodesPreSearch = 0;
         hashTable->insert({rootNode->pos->hash_key(), rootNode});

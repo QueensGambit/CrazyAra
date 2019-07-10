@@ -99,7 +99,7 @@ EvalInfo RawNetAgent::evalute_board_state(Board *pos)
     predicted.WaitToRead();
 
 
-    int best_idx = predicted.At(0); //, 0);
+    int best_idx = predicted.At(0, 0); //, 0);
 
 //    best_accuracy = array.At(0, best_idx);
 
@@ -115,7 +115,7 @@ EvalInfo RawNetAgent::evalute_board_state(Board *pos)
     }
 
     evalInfo.policyProbSmall.resize(evalInfo.legalMoves.size());
-    get_probs_of_move_list(0, probOutputs, evalInfo.legalMoves, pos->side_to_move(), true, evalInfo.policyProbSmall);
+    get_probs_of_move_list(0, &probOutputs, evalInfo.legalMoves, pos->side_to_move(), true, evalInfo.policyProbSmall, true);
     size_t sel_idx = argmax(evalInfo.policyProbSmall);
 
 //    sync_cout << "sel_idx " << sel_idx << sync_endl;

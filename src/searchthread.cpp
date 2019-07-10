@@ -24,8 +24,15 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const
 {
     // allocate memory for all predictions and results
     inputPlanes = new float[batchSize * NB_VALUES_TOTAL];
-    NDArray valueOutput = NDArray(Shape(batchSize, 1), Context::cpu());
-    NDArray probOutputs = NDArray(Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH), Context::cpu());
+    valueOutputs = new NDArray(Shape(batchSize, 1), Context::cpu());
+
+    bool select_policy_from_plane = true;
+
+    if (select_policy_from_plane) {
+        probOutputs = new NDArray(Shape(batchSize, NB_LABELS_POLICY_MAP), Context::cpu());
+    } else {
+        probOutputs = new NDArray(Shape(batchSize, NB_LABELS), Context::cpu());
+    }
 //    states = nullptr;
 //    states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
 }
@@ -107,9 +114,10 @@ void SearchThread::set_NN_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: newNodes) {
         if (!node->isTerminal) {
-            get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos->side_to_move(), true, node->policyProbSmall);
+//            get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos->side_to_move(), true, node->policyProbSmall, true);
+            get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos->side_to_move(), false, node->policyProbSmall, true);
             node->mtx.lock();
-            node->value = valueOutputs.At(batchIdx, 0);
+            node->value = valueOutputs->At(batchIdx, 0);
             node->hasNNResults = true;
             node->enhance_checks();
             node->mtx.unlock();
@@ -241,22 +249,13 @@ void SearchThread::create_mini_batch()
 void SearchThread::thread_iteration()
 {
     create_mini_batch();
-//        cout << "predict" << endl;k
     if (newNodes.size() > 0) {
-        netBatch->predict(inputPlanes, valueOutputs, probOutputs);
+        netBatch->predict(inputPlanes, *valueOutputs, *probOutputs);
         set_NN_results_to_child_nodes();
     }
-//        cout << "backup values" << endl;
     backup_value_outputs(virtualLoss);
     backup_collisions(virtualLoss);
     rootNode->numberVisits = sum(rootNode->childNumberVisits);
-//        isRunning = false;
-//        if (rootNode->numberVisits % 100) {
-//            cout << rootNode->numberVisits << endl;
-//        }
-//        if (rootNode->numberVisits > 400) {
-//            break;
-//        }
 }
 
 void go(SearchThread *t)
@@ -267,10 +266,8 @@ void go(SearchThread *t)
 //    sync_cout << "string info thread rootNode" << sync_endl;
 //    sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
 
-//    while(isRunning) {
     TimePoint elapsedTimeMS;
 
-//    for (int i = 0; i < 128*10; ++i) {
       do {
         t->thread_iteration();
 //        if (i % 100 == 0) {
@@ -279,8 +276,5 @@ void go(SearchThread *t)
 //        }
         TimePoint end = now();
         elapsedTimeMS = end - t->getSearchLimits()->startTime;
-        //std::chrono::duration_cast<std::chrono::milliseconds>(end - t->getSearchLimits()->startTime).count();
     } while(elapsedTimeMS < t->getSearchLimits()->movetime);
-//    cout << "rootNode" << endl;
-//    cout << t->getRootNode() << endl;
 }
