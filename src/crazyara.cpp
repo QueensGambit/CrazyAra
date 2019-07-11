@@ -341,13 +341,13 @@ bool CrazyAra::is_ready()
     if (!networkLoaded) {
         SearchSettings searchSettings;
         searchSettings.batchSize = 8; // 8//128; //1; //28;
-        netSingle = new NeuralNetAPI("cpu", 1, false,
+        netSingle = new NeuralNetAPI("gpu", 1, false,
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings.threads];
         for (size_t i = 0; i < searchSettings.threads; ++i) {
-            netBatches[i] = new NeuralNetAPI("cpu", searchSettings.batchSize, false,
+            netBatches[i] = new NeuralNetAPI("gpu", searchSettings.batchSize, false,
                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
         }

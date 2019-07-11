@@ -114,8 +114,8 @@ void SearchThread::set_NN_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: newNodes) {
         if (!node->isTerminal) {
-//            get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos->side_to_move(), true, node->policyProbSmall, true);
-            get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos->side_to_move(), false, node->policyProbSmall, true);
+            get_probs_of_move_list(batchIdx, probOutputs, node->legalMoves, node->pos->side_to_move(),
+                                   !netBatch->getSelectPolicyFromPlane(), node->policyProbSmall, netBatch->getSelectPolicyFromPlane());
             node->mtx.lock();
             node->value = valueOutputs->At(batchIdx, 0);
             node->hasNNResults = true;

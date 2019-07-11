@@ -36,6 +36,8 @@ private:
     Executor *executor;
     Shape input_shape;
     Context global_ctx = Context::cpu();
+    unsigned int batchSize;
+    bool selectPolicyFromPlane;
 
     /**
      * @brief FileExists Function to check if a file exists in a given path
@@ -64,10 +66,13 @@ private:
      */
     void bindExecutor(); //Shape &input_shape, Executor* executor);
 
+    void infer_select_policy_from_planes();
+
 public:
     NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicyFromPlanes, string modelArchitectureDir, string modelWeightsDir);
     NDArray predict(float *inputPlanes, float &value);
     void predict(float *input_planes, NDArray &valueOutput, NDArray &probOutputs);
+    bool getSelectPolicyFromPlane() const;
 };
 
 #endif // NEURALNETAPI_H

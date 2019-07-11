@@ -115,7 +115,8 @@ size_t MCTSAgent::reuse_tree(Board *pos)
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, valueOutput, probOutputs);
 //        cout << "valueOutput: " << valueOutput << endl;
-        get_probs_of_move_list(0, &probOutputs, rootNode->legalMoves, newPos->side_to_move(), false, rootNode->policyProbSmall, true);
+        get_probs_of_move_list(0, &probOutputs, rootNode->legalMoves, newPos->side_to_move(),
+                               !netSingle->getSelectPolicyFromPlane(), rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
 //        cout << "policyProbSmall: " << rootNode->policyProbSmall << endl;
         rootNode->enhance_checks();
         nodesPreSearch = 0;

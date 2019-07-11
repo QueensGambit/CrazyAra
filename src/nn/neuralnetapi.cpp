@@ -40,6 +40,11 @@ std::vector<std::string> GetDirectoryFiles(const std::string& dir) {
 }
 }  // namespace
 
+bool NeuralNetAPI::getSelectPolicyFromPlane() const
+{
+    return selectPolicyFromPlane;
+}
+
 void NeuralNetAPI::loadModel(const string &jsonFilePath)
 {
     if (!FileExists(jsonFilePath)) {
@@ -48,6 +53,11 @@ void NeuralNetAPI::loadModel(const string &jsonFilePath)
     }
     LG << "Loading the model from " << jsonFilePath << std::endl;
     net = Symbol::Load(jsonFilePath);
+
+//    std::map<std::string, std::vector<mx_uint> > arg_shapes;
+//    std::vector<std::vector<mx_uint> > aux_shapes, in_shapes, out_shapes;
+//    net.InferShape(arg_shapes, &in_shapes, &aux_shapes, &out_shapes);
+//    cout << "out_shape: " << out_shapes.at(1).at(0) << endl;
 }
 
 void NeuralNetAPI::loadParameters(const std::string& paramterFilePath) {
@@ -102,7 +112,19 @@ void NeuralNetAPI::bindExecutor() //Shape *input_shape_single, Executor* executo
     LG << ">>>> Bind successfull! >>>>>>";
 }
 
-NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicyFromPlanes, string modelArchitectureDir, string modelWeightsDir)
+void NeuralNetAPI::infer_select_policy_from_planes()
+{
+    float input_planes[batchSize*NB_VALUES_TOTAL];
+    std::fill(input_planes, input_planes+batchSize*NB_VALUES_TOTAL, 0.0f);
+
+    float value;
+    NDArray probOutputs = predict(input_planes, value);
+    selectPolicyFromPlane = probOutputs.GetShape()[1] != NB_LABELS;
+    cout << "string info selectPolicyFromPlane: " << selectPolicyFromPlane << endl;
+}
+
+NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicyFromPlanes, string modelArchitectureDir, string modelWeightsDir):
+batchSize(batchSize)
 {
     if (ctx == "cpu") {
         global_ctx = Context::cpu();
@@ -155,6 +177,7 @@ NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicy
     loadModel(jsonFilePath);
     loadParameters(paramterFilePath);
     bindExecutor(); //&input_shape_single, executor_single);
+    infer_select_policy_from_planes();
 //    bindExecutor(&input_shape, executor);
 }
 
@@ -174,20 +197,14 @@ NDArray NeuralNetAPI::predict(float *inputPlanes, float &value)
 
     // Assign the value output to the return paramter
     valueOutput.WaitToRead();
-    cout << "valueOutput.shape" << valueOutput.Size() << " " << valueOutput << endl;
     value = valueOutput.At(0, 0);
-    cout << "value " << value << endl;
 
     probOutputs.WaitToRead();
 
     auto predicted = probOutputs.ArgmaxChannel();
-    cout << "probOutputs" << probOutputs << endl;
     predicted.WaitToRead();
-    cout << "predicted" << predicted << endl;
-    int best_idx = predicted.At(0, 0); //, 0);
-    cout << "best_idx: " << best_idx << endl;
 
-    return probOutputs; //best_idx;
+    return probOutputs;
 }
 
 void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &probOutputs)
