@@ -51,18 +51,16 @@ private:
     std::vector<SearchThread*> searchThreads;
 
     float input_planes[NB_VALUES_TOTAL];
-//    NDArray* valueOutput;
-//    NDArray* probOutputs;
-    NDArray valueOutput= NDArray(Shape(1, 1), Context::cpu());
-    NDArray probOutputs = NDArray(Shape(1, NB_LABELS), Context::cpu());
+    NDArray* valueOutput;
+    NDArray* probOutputs;
+//    NDArray valueOutput= NDArray(Shape(1, 1), Context::cpu());
+//    NDArray probOutputs = NDArray(Shape(1, NB_LABELS), Context::cpu());
 
     Node* rootNode;
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
 
     void expand_root_node_multiple_moves(const Board *pos);
-    static void run_single_playout(); //Board *pos); //, int i); //Node *rootNode);
-    void select_node_to_extend();
 
     /**
      * @brief select_node Selects the best child node from a given parent node based on the q and u value

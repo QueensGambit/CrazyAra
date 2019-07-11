@@ -46,31 +46,20 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
         searchThreads.push_back(new SearchThread(netBatches[i], searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
     }
 
-//    valueOutput = new NDArray(Shape(1, 1), Context::cpu());
-//    bool select_policy_from_plane = true;
+    valueOutput = new NDArray(Shape(1, 1), Context::cpu());
 
-//    if (select_policy_from_plane) {
-//        probOutputs = new NDArray(Shape(1, NB_LABELS_POLICY_MAP), Context::cpu());
-//    } else {
-//        probOutputs = new NDArray(Shape(1, NB_LABELS), Context::cpu());
-//    }
+    if (netSingle->getSelectPolicyFromPlane()) {
+        probOutputs = new NDArray(Shape(1, NB_LABELS_POLICY_MAP), Context::cpu());
+    } else {
+        probOutputs = new NDArray(Shape(1, NB_LABELS), Context::cpu());
+    }
 
-}
-
-void MCTSAgent::run_single_playout() //Board *pos) //, int i) //Node *rootNode)
-{
-    std::cout << "hello :) " << std::endl;
 }
 
 void MCTSAgent::expand_root_node_multiple_moves(const Board *pos)
 {
 
     board_to_planes(pos, 0, true, begin(input_planes)); //input_planes_start);
-
-}
-
-void MCTSAgent::select_node_to_extend()
-{
 
 }
 
@@ -84,7 +73,7 @@ size_t MCTSAgent::reuse_tree(Board *pos)
         // This way the memory won't be freed for the next new move
         states->swap_states();
 
-        if (rootNode == it->second) {
+        if (false and rootNode == it->second) {
             sync_cout << "info string reuse the full tree" << sync_endl;
         }
         else {
@@ -113,9 +102,9 @@ size_t MCTSAgent::reuse_tree(Board *pos)
         sync_cout << "info string create new tree" << sync_endl;
         rootNode = new Node(new Board(*newPos), nullptr, 0);
         board_to_planes(pos, 0, true, begin(input_planes));
-        netSingle->predict(input_planes, valueOutput, probOutputs);
+        netSingle->predict(input_planes, *valueOutput, *probOutputs);
 //        cout << "valueOutput: " << valueOutput << endl;
-        get_probs_of_move_list(0, &probOutputs, rootNode->legalMoves, newPos->side_to_move(),
+        get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(),
                                !netSingle->getSelectPolicyFromPlane(), rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
 //        cout << "policyProbSmall: " << rootNode->policyProbSmall << endl;
         rootNode->enhance_checks();
