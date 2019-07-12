@@ -76,6 +76,7 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent):
     //    waitForNNResults = 0.0f;
     hasNNResults = false;
     //    numberWaitingChildNodes = 0;
+    generator = default_random_engine(r());
 }
 
 Node::Node(const Node &b)
@@ -225,9 +226,7 @@ DynamicVector<float> Node::getQValues() const
 
 void Node::apply_dirichlet_noise_to_prior_policy(const float epsilon, const float alpha)
 {
-    DynamicVector<float> dirichlet_noise(nbDirectChildNodes);
-    dirichlet_noise = 1.0f;
-    dirichlet_noise /= nbDirectChildNodes;
+    DynamicVector<float> dirichlet_noise = get_dirichlet_noise(nbDirectChildNodes, 0.2f);
     policyProbSmall = (1 - epsilon) * policyProbSmall + epsilon * dirichlet_noise;
 }
 

@@ -60,7 +60,6 @@ private:
     bool networkLoaded = false;
     StatesManager *states;
 
-//    unordered_map<Key, Node*> *hashTable;
 public:
     CrazyAra();
     void welcome();
@@ -106,6 +105,8 @@ r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1[-] b kq - 0 4
 -> P@e2 M#7
 8/3pbkbP/N2pp1p1/1p2pprp/1PQP4/8/P1P2P1P/2N1NK1R/BBQprrn b - - 0 58
 -> R@g1 M#11
+r4rk1/ppp2pbp/8/4p1q1/3nB3/2NP1BPp/PPP2P1P/R4RK1[QBNPnp] b - - 0 21
+-> N@d2 ?!
 */
 
 

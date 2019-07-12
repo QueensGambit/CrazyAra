@@ -83,4 +83,18 @@ inline decltype(auto) argmax( const DynamicVector<VT,TF>& dv ) {
     return idx;
 }
 
+
+// random generator used for dirchlet noise
+static std::random_device r;
+static std::default_random_engine generator(r());
+
+/**
+ * @brief get_dirichlet_noise Returns a vector of size length of generated dirichlet noise with value alpha
+ * @param length Lenght of the vector
+ * @param alpha Alpha value for the distribution
+ * @return Dirchlet noise vector
+ */
+DynamicVector<float> get_dirichlet_noise(size_t length, const float alpha);
+
+
 #endif // BLAZEUTIL_H

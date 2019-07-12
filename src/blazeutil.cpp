@@ -18,3 +18,15 @@
 #include "blazeutil.h"
 
 
+
+DynamicVector<float> get_dirichlet_noise(size_t length, const float alpha)
+{
+    DynamicVector<float> dirichletNoise(length);
+
+    for (size_t i = 0; i < length; ++i) {
+        std::gamma_distribution<float> distribution(alpha, 1.0f);
+        dirichletNoise[i] = distribution(generator);
+    }
+    dirichletNoise /= sum(dirichletNoise);
+    return  dirichletNoise;
+}
