@@ -34,6 +34,7 @@
 #include "constants.h"
 #include "board.h"
 #include "mxnet-cpp/MxNetCpp.h"
+#include "domain/variants.h"
 
 using namespace std;
 
@@ -41,65 +42,6 @@ using namespace std;
 std::string LABELS_MIRRORED[NB_LABELS];
 std::unordered_map<Move, size_t> MV_LOOKUP = {};
 std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
-
-// FEN strings of the initial positions
-const string StartFENs[SUBVARIANT_NB] = {
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #ifdef ANTI
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #endif
-    #ifdef ATOMIC
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #endif
-    #ifdef CRAZYHOUSE
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1",
-    #endif
-    #ifdef EXTINCTION
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #endif
-    #ifdef GRID
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #endif
-    #ifdef HORDE
-    "rnbqkbnr/pppppppp/8/1PP2PP1/PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP w kq - 0 1",
-    #endif
-    #ifdef KOTH
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #endif
-    #ifdef LOSERS
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #endif
-    #ifdef RACE
-    "8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1",
-    #endif
-    #ifdef THREECHECK
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 3+3 0 1",
-    #endif
-    #ifdef TWOKINGS
-    "rnbqkknr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKKNR w KQkq - 0 1",
-    #endif
-    #ifdef SUICIDE
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
-    #endif
-    #ifdef BUGHOUSE
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1",
-    #endif
-    #ifdef DISPLACEDGRID
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #endif
-    #ifdef LOOP
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1",
-    #endif
-    #ifdef PLACEMENT
-    "8/pppppppp/8/8/8/8/PPPPPPPP/8[KQRRBBNNkqrrbbnn] w - -",
-    #endif
-    #ifdef SLIPPEDGRID
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    #endif
-    #ifdef TWOKINGSSYMMETRIC
-    "rnbqkknr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKKNR w KQkq - 0 1",
-    #endif
-};
 
 CrazyAra::CrazyAra()
 {
@@ -110,19 +52,6 @@ void CrazyAra::welcome()
 {
     start_logger("CrazyAra.log");
     std::cout << intro << std::endl;
-
-    //    Board pos;
-    ////    string token, cmd;
-    //    StateListPtr states(new std::deque<StateInfo>(1));
-    //    auto uiThread = std::make_shared<Thread>(0);
-
-    //    const string fen = "r2q1r1k/1p3pp1/1p1p1b1p/p2P1Bn1/P3bP1Q/1Bp3P1/1PP5/R3R1K1/NPNpn w - - 0 29";
-    ////    const string fen2 = "r1b1kb1r/1pp2pPp/p1n2q2/8/8/2PB1p2/PP3PPP/R1BQK2R/PNPpnn w KQkq - 22 12";
-    ////    const string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1"; //StartFENs[CRAZYHOUSE_VARIANT]; //variant];
-
-    //    pos->set(fen, false, CRAZYHOUSE_VARIANT, &states->back(), uiThread.get());
-    //    rawAgent->evalute_board_state(pos);
-    //    mctsAgent->evalute_board_state(pos);
 }
 
 void CrazyAra::uci_loop(int argc, char *argv[])
