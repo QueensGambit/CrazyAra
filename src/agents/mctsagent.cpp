@@ -103,17 +103,18 @@ Node *MCTSAgent::get_new_root_node(Board *pos)
 {
     Node* newRoot = nullptr;
 
-    if (rootNode != nullptr and rootNode->hash_key() == pos->hash_key()) {
+    if (rootNode != nullptr && rootNode->hash_key() == pos->hash_key()) {
         sync_cout << "info string reuse the full tree" << sync_endl;
         newRoot = rootNode;
     }
     else {
         for (Node* node : potentialRoots) {
-            if (node != nullptr and node->hash_key() == pos->hash_key()) {
+            if (node != nullptr && node->hash_key() == pos->hash_key()) {
                 newRoot = node;
                 break;
             }
         }
+
         if (rootNode != nullptr and newRoot != nullptr) {
             sync_cout << "info string delete unused subtrees" << sync_endl;
             for (Node *childNode: rootNode->childNodes) {
@@ -121,13 +122,12 @@ Node *MCTSAgent::get_new_root_node(Board *pos)
                     Node::delete_subtree(childNode, hashTable);
                 }
             }
-            // delete the old rootNode
-//            hashTable->erase(rootNode->hash_key());
-//            delete rootNode;
 
-//            // delete the new root parent
-//            hashTable->erase(newRoot->parentNode->hash_key());
-//            delete newRoot->parentNode;
+            // the old rootNode and its parent must not be deleted, otherwise you lose information
+            // for the 3-fold-repetition check
+
+            // TODO: Store all played nodes of the final game in a list, so it can be freed when a new game starts
+//            // delete the old rootNode
 
             rootNode = newRoot;
             rootNode->make_to_root();
@@ -148,15 +148,17 @@ void MCTSAgent::apply_move_to_tree(Move m, bool ownMove)
 
     if (parentNode != nullptr) {
         size_t idx = 0;
+        int foundIdx = -1;
         for (Move childMove : parentNode->legalMoves) {
             if (childMove == m) {
+                foundIdx = idx;
                 break;
             }
             ++idx;
         }
 
-        if (parentNode->childNodes[idx] != nullptr) {
-            potentialRoots.push_back(parentNode->childNodes[idx]);
+        if (foundIdx != -1 && parentNode->childNodes[foundIdx] != nullptr) {
+            potentialRoots.push_back(parentNode->childNodes[foundIdx]);
         }
     }
 
