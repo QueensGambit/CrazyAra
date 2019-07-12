@@ -166,6 +166,12 @@ public:
      * @param pv Vector in which moves will be pushed.
      */
     void get_principal_variation(std::vector<Move>& pv);
+
+    /**
+     * @brief hash_key Returns the hash key of its corresponding position
+     * @return
+     */
+    Key hash_key();
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);

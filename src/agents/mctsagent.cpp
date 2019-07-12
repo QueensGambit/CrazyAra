@@ -54,6 +54,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
         probOutputs = new NDArray(Shape(1, NB_LABELS), Context::cpu());
     }
 
+    potentialRoots.resize(2);
 }
 
 void MCTSAgent::expand_root_node_multiple_moves(const Board *pos)
@@ -66,33 +67,15 @@ void MCTSAgent::expand_root_node_multiple_moves(const Board *pos)
 size_t MCTSAgent::reuse_tree(Board *pos)
 {
     size_t nodesPreSearch;
+    Node* newRoot = get_new_root_node(pos);
 
-    auto it = hashTable->find(pos->hash_key());
-    if(it != hashTable->end()) {
+    if (newRoot != nullptr) {
         // swap the states because now the old states are used
         // This way the memory won't be freed for the next new move
         states->swap_states();
-
-        if (false and rootNode == it->second) {
-            sync_cout << "info string reuse the full tree" << sync_endl;
-        }
-        else {
-            if (rootNode != nullptr) {
-                sync_cout << "info string delete unused subtrees" << sync_endl;
-                for (Node *childNode: rootNode->childNodes) {
-                    // TODO: change hash_key() to pointer comparision
-                    if (childNode != nullptr and childNode->pos->hash_key() != it->second->parentNode->pos->hash_key()) {
-                        Node::delete_subtree(childNode, hashTable);
-                    }
-                }
-            }
-            rootNode = it->second;
-            rootNode->make_to_root();
-        }
         nodesPreSearch = rootNode->numberVisits;
         sync_cout << "info string reuse the tree with " << nodesPreSearch << " nodes" << sync_endl;
-    }
-    else {
+    } else {
         Board* newPos = new Board(*pos);
         newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
         if (rootNode != nullptr) {
@@ -100,7 +83,7 @@ size_t MCTSAgent::reuse_tree(Board *pos)
             Node::delete_subtree(rootNode, hashTable);
         }
         sync_cout << "info string create new tree" << sync_endl;
-        rootNode = new Node(new Board(*newPos), nullptr, 0);
+        rootNode = new Node(newPos, nullptr, 0);
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, *valueOutput, *probOutputs);
 //        cout << "valueOutput: " << valueOutput << endl;
@@ -109,10 +92,74 @@ size_t MCTSAgent::reuse_tree(Board *pos)
 //        cout << "policyProbSmall: " << rootNode->policyProbSmall << endl;
         rootNode->enhance_checks();
         nodesPreSearch = 0;
-        hashTable->insert({rootNode->pos->hash_key(), rootNode});
+//        hashTable->insert({rootNode->pos->hash_key(), rootNode});
     }
 
+    potentialRoots.clear();
     return nodesPreSearch;
+}
+
+Node *MCTSAgent::get_new_root_node(Board *pos)
+{
+    Node* newRoot = nullptr;
+
+    if (rootNode != nullptr and rootNode->hash_key() == pos->hash_key()) {
+        sync_cout << "info string reuse the full tree" << sync_endl;
+        newRoot = rootNode;
+    }
+    else {
+        for (Node* node : potentialRoots) {
+            if (node != nullptr and node->hash_key() == pos->hash_key()) {
+                newRoot = node;
+                break;
+            }
+        }
+        if (rootNode != nullptr and newRoot != nullptr) {
+            sync_cout << "info string delete unused subtrees" << sync_endl;
+            for (Node *childNode: rootNode->childNodes) {
+                if (childNode != nullptr and childNode != newRoot->parentNode) {
+                    Node::delete_subtree(childNode, hashTable);
+                }
+            }
+            // delete the old rootNode
+//            hashTable->erase(rootNode->hash_key());
+//            delete rootNode;
+
+//            // delete the new root parent
+//            hashTable->erase(newRoot->parentNode->hash_key());
+//            delete newRoot->parentNode;
+
+            rootNode = newRoot;
+            rootNode->make_to_root();
+        }
+    }
+
+    return newRoot;
+}
+
+void MCTSAgent::apply_move_to_tree(Move m, bool ownMove)
+{
+    Node* parentNode;
+    if (ownMove) {
+        parentNode = rootNode;
+    } else {
+        parentNode = potentialRoots[0];
+    }
+
+    if (parentNode != nullptr) {
+        size_t idx = 0;
+        for (Move childMove : parentNode->legalMoves) {
+            if (childMove == m) {
+                break;
+            }
+            ++idx;
+        }
+
+        if (parentNode->childNodes[idx] != nullptr) {
+            potentialRoots.push_back(parentNode->childNodes[idx]);
+        }
+    }
+
 }
 
 

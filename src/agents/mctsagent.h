@@ -57,6 +57,7 @@ private:
 //    NDArray probOutputs = NDArray(Shape(1, NB_LABELS), Context::cpu());
 
     Node* rootNode;
+    vector<Node*> potentialRoots;
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
 
@@ -79,6 +80,14 @@ private:
      */
     inline size_t reuse_tree(Board* pos);
 
+    /**
+     * @brief get_new_root_node Returns the pointer of the new root node for the given position in the case
+     * it was either the old root node or an element of the potential root node list.
+     * Otherwise a nullptr will be returned.
+     * @param pos Requested board position
+     * @return Pointer to root node or nullptr
+     */
+    inline Node* get_new_root_node(Board* pos);
 public:
 
     MCTSAgent(NeuralNetAPI* netSingle,
@@ -94,8 +103,11 @@ public:
     /**
      * @brief print_root_node Prints out the root node statistics (visits, q-value, u-value)
      *  by calling the stdout operator for the Node class
+     * @param ownMove Defines if the move shall be applied to the current root or the first potential root
      */
     void print_root_node();
+
+    void apply_move_to_tree(Move m, bool ownMove);
 };
 
 #endif // MCTSAGENT_H

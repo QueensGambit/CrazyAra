@@ -142,32 +142,15 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     size_t it = 0;
 
     std::vector<std::string> commands = {
-                                                  "uci",
-                                                  "isready",
-//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7",
-//                                                  "go",
-//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7 N@h4 e1g1",
-//                                                  "go",
-//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7 N@h4 e1g1 h4g2 P@b7",
-//                                                  "go",
-//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7 N@h4 e1g1 h4g2 P@b7 e8g8 b7a8q",
-//                                                  "go",
-//                                                  "position startpos moves d2d4 d7d5 g1f3 c8f5 f3e5 e7e6 c1f4 g8f6 b1d2 b8d7 e2e3 f8e7 f1d3 d7e5 d3f5 e5g6 B@b5 c7c6 f5g6 h7g6 b5c6 b7c6 N@c7 d8c7 f4c7 N@h4 e1g1 h4g2 P@b7 e8g8 b7a8q f8a8 Q@b7",
-//                                                  "go"
-//                                                  "go",
-//                                                  "position fen 3k2r1/pBpr1p1p/Pp3p1B/3p4/2PPn2B/5NPp/q4PpP/1R1QR1K1/NNbp w - - 1 23",
-//                                                  "go movetime 1500",
-//                                                  "position fen r1b1Rq1k/ppp2pqp/5Nn1/1B2p1B1/3P4/8/PPP2bpP/2KR2R1/PNPppn b - - 0 20",
-//                                                  "go movetime 1500",
-//                                                  "position startpos",
-//                                                  "go"
-//                                                  "position fen r1b1Rq1k/ppp2pqp/5Nn1/1B2p1B1/3P4/8/PPP2bpP/2KR2R1/PNPppn b - - 0 20"
-//                                                  "position startpos moves e2e4 g8f6 e4e5 d7d5 e5f6 e7f6 d1h5",
-//                                                  "position startpos moves e2e4 e7e5",
-//                                                  "go",
-//                                                  "position startpos moves e2e4 e7e5 g1f3 b8c6",
-//                                                  "go"
-//                                                    "quit"
+//"uci",
+//"isready",
+//"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2 f1f2 e3f2",
+//"go",
+//"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2 f1f2 e3f2 g1f2 P@b2",
+//"go",
+//"go",
+//"go",
+//"quit"
     };
 
     do {
@@ -264,8 +247,10 @@ void CrazyAra::go(Board *pos, istringstream &is) {
     //  EvalInfo res = rawAgent->evalute_board_state(pos);
     //  rawAgent->perform_action(pos);
 
-    mctsAgent->perform_action(pos, &searchLimits);
+    Move selectedMove = mctsAgent->perform_action(pos, &searchLimits);
 
+    // inform the mcts agent of the move, so the tree can potentially be reused later
+    mctsAgent->apply_move_to_tree(selectedMove, true);
     // runtime
     //  std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
     //  std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
@@ -309,6 +294,8 @@ void CrazyAra::position(Board *pos, istringstream& is) {
     states->clear_states();
     states->swap_states();
 
+    Move lastMove = MOVE_NULL;
+
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(*pos, token)) != MOVE_NONE)
     {
@@ -320,6 +307,12 @@ void CrazyAra::position(Board *pos, istringstream& is) {
         pos->do_move(m, *newState); //states->back());
         states->activeStates.push_back(newState);
         sync_cout << "info string consume move" << sync_endl;
+        lastMove = m;
+    }
+
+    // inform the mcts agent of the move, so the tree can potentially be reused later
+    if (lastMove != MOVE_NULL) {
+        mctsAgent->apply_move_to_tree(lastMove, false);
     }
 
     sync_cout << "info string position " << pos->fen() << sync_endl;

@@ -38,7 +38,7 @@ public:
      * @param pos Board position to evaluate
      * @param limits Pointer to the search limit
      */
-    void perform_action(Board *pos, SearchLimits *searchLimits);
+    Move perform_action(Board *pos, SearchLimits *searchLimits);
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents

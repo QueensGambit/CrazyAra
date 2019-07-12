@@ -131,6 +131,11 @@ void Node::get_principal_variation(std::vector<Move> &pv)
     } while (curNode != nullptr and !curNode->isTerminal);
 }
 
+Key Node::hash_key()
+{
+    return pos->hash_key();
+}
+
 void Node::check_for_terminal()
 {
     if (legalMoves.size() == 0) {
@@ -411,7 +416,7 @@ void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)
             delete_subtree(child_node, hashTable);
         }
     }
-    hashTable->erase(node->getPos()->hash_key());
+    hashTable->erase(node->hash_key());
     delete node;
 }
 
