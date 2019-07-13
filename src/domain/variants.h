@@ -8,7 +8,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @file: policymaprepresentation.h
+ * @file: variants.h
  * Created on 12.07.2019
  * @author: queensgambit
  *
@@ -20,6 +20,11 @@
 
 #include "types.h"
 using namespace std;
+
+// list of all current available variants fro CrazyAra
+static vector<string> availableVariants = {
+    "crazyhouse"
+};
 
 // FEN strings of the initial positions
 const static string StartFENs[SUBVARIANT_NB] = {

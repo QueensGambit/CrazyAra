@@ -35,6 +35,7 @@
 #include "board.h"
 #include "mxnet-cpp/MxNetCpp.h"
 #include "domain/variants.h"
+#include "optionsuci.h"
 
 using namespace std;
 
@@ -112,13 +113,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
             Threads.main()->ponder = false; // Switch to normal search
 
         else if (token == "uci")
-            sync_cout //<< "id name " << engine_info(true)
-                    //<< "\n"       << Options
-                    << "id name CrazyAra 0.5.0\n"
-                    << "id author Johannes Czech, Moritz Willig, Alena Beyer\n"
-                    << "option name UCI_Variant type combo default crazyhouse var crazyhouse\n"
-                       //                      << "option name use_raw_network type check default true"
-                    << "uciok"  << sync_endl;
+            sync_cout << engine_info()
+                      << Options << sync_endl
+                      << "uciok"  << sync_endl;
 
         else if (token == "setoption")  sync_cout << "info string Updated option UCI_Variant to crazyhouse" << sync_endl;//setoption(is);
         else if (token == "go")         go(&pos, is);
@@ -254,7 +251,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
 
 void CrazyAra::init()
 {
-    UCI::init(Options);
+    OptionsUCI::init(Options);
     Bitboards::init();
     Position::init();
     Bitbases::init();
@@ -282,4 +279,12 @@ bool CrazyAra::is_ready()
     }
 
     return networkLoaded;
+}
+
+string CrazyAra::engine_info()
+{
+    stringstream ss;
+    ss << "id name " << name << " " << version << "\n";
+    ss << "id author " << authors;
+    return ss.str();
 }

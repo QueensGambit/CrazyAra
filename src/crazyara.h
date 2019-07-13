@@ -33,32 +33,41 @@
 class CrazyAra
 {
 private:
-    std::string intro = std::string("\n") +
-            std::string("                                  _                                           \n") +
-            std::string("                   _..           /   ._   _.  _        /\\   ._   _.           \n") +
-            std::string("                 .' _ `\\         \\_  |   (_|  /_  \\/  /--\\  |   (_|           \n") +
-            std::string("                /  /e)-,\\                         /                           \n") +
-            std::string("               /  |  ,_ |                    __    __    __    __             \n") +
-            std::string("              /   '-(-.)/          bw     8 /__////__////__////__////         \n") +
-            std::string("            .'--.   \\  `                 7 ////__////__////__////__/          \n") +
-            std::string("           /    `\\   |                  6 /__////__////__////__////           \n") +
-            std::string("         /`       |  / /`\\.-.          5 ////__////__////__////__/            \n") +
-            std::string("       .'        ;  /  \\_/__/         4 /__////__////__////__////             \n") +
-            std::string("     .'`-'_     /_.'))).-` \\         3 ////__////__////__////__/              \n") +
-            std::string("    / -'_.'---;`'-))).-'`\\_/        2 /__////__////__////__////               \n") +
-            std::string("   (__.'/   /` .'`                 1 ////__////__////__////__/                \n") +
-            std::string("    (_.'/ /` /`                       a  b  c  d  e  f  g  h                  \n") +
-            std::string("      _|.' /`                                                                 \n") +
-            std::string("jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          \n") +
-            std::string("    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              \n") +
-            std::string("       \\_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.   \n") +
-            std::string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
+    string name = "CrazyAra";
+    string version = "0.6.0";
+    string authors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
+    string intro =  string("\n") +
+                    string("                                  _                                           \n") +
+                    string("                   _..           /   ._   _.  _        /\\   ._   _.           \n") +
+                    string("                 .' _ `\\         \\_  |   (_|  /_  \\/  /--\\  |   (_|           \n") +
+                    string("                /  /e)-,\\                         /                           \n") +
+                    string("               /  |  ,_ |                    __    __    __    __             \n") +
+                    string("              /   '-(-.)/          bw     8 /__////__////__////__////         \n") +
+                    string("            .'--.   \\  `                 7 ////__////__////__////__/          \n") +
+                    string("           /    `\\   |                  6 /__////__////__////__////           \n") +
+                    string("         /`       |  / /`\\.-.          5 ////__////__////__////__/            \n") +
+                    string("       .'        ;  /  \\_/__/         4 /__////__////__////__////             \n") +
+                    string("     .'`-'_     /_.'))).-` \\         3 ////__////__////__////__/              \n") +
+                    string("    / -'_.'---;`'-))).-'`\\_/        2 /__////__////__////__////               \n") +
+                    string("   (__.'/   /` .'`                 1 ////__////__////__////__/                \n") +
+                    string("    (_.'/ /` /`                       a  b  c  d  e  f  g  h                  \n") +
+                    string("      _|.' /`                                                                 \n") +
+                    string("jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          \n") +
+                    string("    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              \n") +
+                    string("       \\_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.   \n") +
+                    string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
     RawNetAgent *rawAgent;
     MCTSAgent *mctsAgent;
     NeuralNetAPI *netSingle;
     NeuralNetAPI *netBatch;
     bool networkLoaded = false;
     StatesManager *states;
+
+    /**
+     * @brief engine_info Returns a string about the engine version and authors
+     * @return string
+     */
+    string engine_info();
 
 public:
     CrazyAra();
@@ -107,6 +116,8 @@ r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1[-] b kq - 0 4
 -> R@g1 M#11
 r4rk1/ppp2pbp/8/4p1q1/3nB3/2NP1BPp/PPP2P1P/R4RK1[QBNPnp] b - - 0 21
 -> N@d2 ?!
+3r3k/pP3rp1/1p2pnKp/1Q6/3bB3/P2P2P1/1P4Np/R6R/PPPNBQPNPb b - - 0 51
+-> Bc5 M#10
 */
 
 

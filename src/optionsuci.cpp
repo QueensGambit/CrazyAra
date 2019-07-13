@@ -1,0 +1,50 @@
+/*
+ * CrazyAra, a deep learning chess variant engine
+ * Copyright (C) 2018 Johannes Czech, Moritz Willig, Alena Beyer
+ * Copyright (C) 2019 Johannes Czech
+ *
+ * CrazyAra is free software: You can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * @file: optionsuci.cpp
+ * Created on 13.07.2019
+ * @author: queensgambit
+ */
+
+#include "optionsuci.h"
+
+void OptionsUCI::init(OptionsMap &o)
+{
+         // at most 2^32 clusters.
+         constexpr int MaxHashMB = Is64Bit ? 131072 : 2048;
+
+         o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
+         o["Search_Type"]              << Option("MCTS", {"MCTS"});
+         o["Context"]                  << Option("CPU", {"CPU", "GPU"});
+         o["Use_Raw_Network"]          << Option(false);
+         o["Threads"]                  << Option(2, 1, 512);
+         o["Batch_Size"]               << Option(8, 1, 8192);
+         o["Playouts"]                 << Option(99999, 1, 99999);
+         o["Centi_CPUCT"]              << Option(250, 1, 99999);
+         o["Centi_Dirichlet_Epsilon"]  << Option(25, 1, 99999);
+         o["Centi_Dirichlet_Epsilon"]  << Option(20, 1, 99999);
+         o["Centi_U-Init-Divisor"]     << Option(100, 1, 99999);
+         o["Max_Search_Depth"]         << Option(99, 1, 99999);
+         o["Centi_Temperature"]        << Option(7, 0, 99999);
+         o["Temperature_Moves"]        << Option(0, 0, 99999);
+         o["Virtual_Loss"]             << Option(0, 3, 99999);
+         o["Centi_Q-Value_Weight"]     << Option(70, 0, 99999);
+         o["Enhance_Checks"]           << Option(true);
+         o["Enhance_Captures"]         << Option(true);
+         o["Use_Transposition_Table"]  << Option(true);
+         o["Model_Architecture_Dir"]   << Option("default");
+//         o["Debug_Log_File"]           << Option("", activate_logger);
+         o["Contempt"]                 << Option(24, -100, 100);
+         o["Hash"]                     << Option(16, 1, MaxHashMB);
+         o["Move_Overhead"]            << Option(30, 0, 5000);
+         o["Minimum_Thinking_Time"]    << Option(20, 0, 5000);
+         o["UCI_Chess960"]             << Option(false);
+}
+

@@ -8,7 +8,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @file: policymaprepresentation.h
+ * @file: variants.cpp
  * Created on 12.07.2019
  * @author: queensgambit
  */
