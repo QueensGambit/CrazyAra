@@ -24,20 +24,21 @@
 struct SearchLimits
 {
 public:
-    int playoutsEmptyPockets;
-    int playoutsFilledPockets;
-    int maxSearchDepth;
+    size_t nodes;
+    size_t movestogo;
+    int depth;
     int minMovetime;
     TimePoint time[COLOR_NB];
     TimePoint inc[COLOR_NB];
     TimePoint npmsec;
     TimePoint movetime;
     TimePoint startTime;
+    bool infinite;
+    bool ponder;
 
     SearchLimits():
-                 playoutsEmptyPockets(256),
-                 playoutsFilledPockets(512),
-                 maxSearchDepth(15),
+                 nodes(800),
+                 depth(15),
                  minMovetime(100),
                  movetime(3600){}    // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
 };

@@ -72,19 +72,19 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     size_t it = 0;
 
     std::vector<std::string> commands = {
-//"uci",
-//"isready",
-//"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2",
-//"go"
-//"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3",
-//"go",
-//"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2",
-//"go",
-//"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2 f1f2 e3f2",
-//"go",
-//"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2 f1f2 e3f2 g1f2 P@b2",
-//"go",
-//"quit"
+        //"uci",
+        //"isready",
+        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2",
+        //"go"
+        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3",
+        //"go",
+        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2",
+        //"go",
+        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2 f1f2 e3f2",
+        //"go",
+        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2 f1f2 e3f2 g1f2 P@b2",
+        //"go",
+        //"quit"
     };
 
     do {
@@ -146,7 +146,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
 void CrazyAra::go(Board *pos, istringstream &is) {
 
-    //  Search::LimitsType limits;
+    //      Search::LimitsType limits;
+    SearchLimits limits;
+
     SearchLimits searchLimits;
     string token;
     bool ponderMode = false;
@@ -154,26 +156,23 @@ void CrazyAra::go(Board *pos, istringstream &is) {
     searchLimits.startTime = now(); // As early as possible!
 
     while (is >> token) {
-              if (token == "searchmoves")
-                  while (is >> token);
-//                      searchLimits.searchmoves.push_back(UCI::to_move(pos, token));
+        if (token == "searchmoves")
+            while (is >> token);
+        //                      searchLimits.searchmoves.push_back(UCI::to_move(pos, token));
 
-        //      else if (token == "wtime")     is >> limits.time[WHITE];
-        //      else if (token == "btime")     is >> limits.time[BLACK];
-        //      else if (token == "winc")      is >> limits.inc[WHITE];
-        //      else if (token == "binc")      is >> limits.inc[BLACK];
-        //      else if (token == "movestogo") is >> limits.movestogo;
-        //      else if (token == "depth")     is >> limits.depth;
-        //      else if (token == "nodes")     is >> limits.nodes;
-            else if (token == "movetime")  {
-                  is >> searchLimits.movetime;
-              }
-    //      else if (token == "mate")      is >> limits.mate;
-    //      else if (token == "perft")     is >> limits.perft;
-    //      else if (token == "infinite")  limits.infinite = 1;
-    //      else if (token == "ponder")    ponderMode = true;
+        else if (token == "wtime")     is >> limits.time[WHITE];
+        else if (token == "btime")     is >> limits.time[BLACK];
+        else if (token == "winc")      is >> limits.inc[WHITE];
+        else if (token == "binc")      is >> limits.inc[BLACK];
+        else if (token == "movestogo") is >> limits.movestogo;
+        else if (token == "depth")     is >> limits.depth;
+        else if (token == "nodes")     is >> limits.nodes;
+        else if (token == "movetime")    is >> searchLimits.movetime;
+        //      else if (token == "mate")      is >> limits.mate;
+        //      else if (token == "perft")     is >> limits.perft;
+        else if (token == "infinite")  limits.infinite = true;
+        else if (token == "ponder")    ponderMode = true;
     }
-    //  Threads.start_thinking(pos, states, limits, ponderMode);
     //  EvalInfo res = rawAgent->evalute_board_state(pos);
     //  rawAgent->perform_action(pos);
 
@@ -181,17 +180,6 @@ void CrazyAra::go(Board *pos, istringstream &is) {
 
     // inform the mcts agent of the move, so the tree can potentially be reused later
     mctsAgent->apply_move_to_tree(selectedMove, true);
-    // runtime
-    //  std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-    //  std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
-
-    //  int elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    //  sync_cout << "info score cp " << res.centipawns << " depth " << res.depth << " nodes " << res.nodes
-    //            << " time " << elapsedTimeMS << " nps " << int((res.nodes / (elapsedTimeMS / 1000.0)) + 0.5) << " pv " << res.pv[0] << sync_endl;
-    ////  sync_cout << "bestmove "<< res.pv[0] << sync_endl;
-    //  sync_cout << "bestmove " << UCI::move(res.pv[0], pos->is_chess960()) << sync_endl;
-    //    info score cp 304 depth 6 nodes 72 time 1009 nps 71 pv b1c3 g8f6 g1f3 d7d5 e4d5 f6d5
-    //    std::cout << "info score cp" << std::endl;
 }
 
 // position() is called when engine receives the "position" UCI command.
