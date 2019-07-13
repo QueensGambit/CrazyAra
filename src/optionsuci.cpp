@@ -14,6 +14,10 @@
  */
 
 #include "optionsuci.h"
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <algorithm>
 
 void OptionsUCI::init(OptionsMap &o)
 {
@@ -48,3 +52,31 @@ void OptionsUCI::init(OptionsMap &o)
          o["UCI_Chess960"]             << Option(false);
 }
 
+
+void OptionsUCI::setoption(istringstream &is)
+{
+
+  string token, name, value;
+  is >> token; // Consume "name" token
+
+  // Read option name (can contain spaces)
+  while (is >> token && token != "value")
+      name += (name.empty() ? "" : " ") + token;
+
+  // Read option value (can contain spaces)
+  while (is >> token)
+      value += (value.empty() ? "" : " ") + token;
+
+  if (Options.count(name))
+  {
+      Options[name] = value;
+      std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+      if (name == "uci_variant") {
+          Variant variant = UCI::variant_from_name(value);
+          sync_cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << sync_endl;
+//          Tablebases::init(variant, Options["SyzygyPath"]);
+      }
+  }
+  else
+      sync_cout << "No such option: " << name << sync_endl;
+}

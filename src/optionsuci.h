@@ -33,6 +33,14 @@ namespace OptionsUCI {
      * @param o Alias to the option map which will get initialized
      */
     void init(OptionsMap& o);
+
+    /**
+     * @brief setoption Sets a given option value to the Options map.
+     * Method is based on lib/sf/uci.cpp
+     * @param is Stringstream
+     */
+    void setoption(istringstream& is);
+
 }
 
 #endif // OPTIONSUCI_H

@@ -117,10 +117,10 @@ void CrazyAra::uci_loop(int argc, char *argv[])
                       << Options << sync_endl
                       << "uciok"  << sync_endl;
 
-        else if (token == "setoption")  sync_cout << "info string Updated option UCI_Variant to crazyhouse" << sync_endl;//setoption(is);
+        else if (token == "setoption")  OptionsUCI::setoption(is);
         else if (token == "go")         go(&pos, is);
         else if (token == "position")   position(&pos, is);
-        else if (token == "ucinewgame") sync_cout << "info string newgame" << sync_endl; //setoption(is); // Search::clear();
+        else if (token == "ucinewgame") sync_cout << "info string newgame" << sync_endl;
         else if (token == "isready") {
             if (is_ready()) {
                 sync_cout << "readyok" << sync_endl;
