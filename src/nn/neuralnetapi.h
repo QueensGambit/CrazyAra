@@ -66,10 +66,14 @@ private:
      */
     void bindExecutor(); //Shape &input_shape, Executor* executor);
 
+    /**
+     * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
+     * and sets the selectPolicyFromPlane boolean accordingly
+     */
     void infer_select_policy_from_planes();
 
 public:
-    NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicyFromPlanes, string modelArchitectureDir, string modelWeightsDir);
+    NeuralNetAPI(string ctx, unsigned int batchSize, string modelArchitectureDir, string modelWeightsDir);
     NDArray predict(float *inputPlanes, float &value);
     void predict(float *input_planes, NDArray &valueOutput, NDArray &probOutputs);
     bool getSelectPolicyFromPlane() const;

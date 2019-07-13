@@ -123,7 +123,7 @@ void NeuralNetAPI::infer_select_policy_from_planes()
     cout << "string info selectPolicyFromPlane: " << selectPolicyFromPlane << endl;
 }
 
-NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, bool selectPolicyFromPlanes, string modelArchitectureDir, string modelWeightsDir):
+NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, string modelArchitectureDir, string modelWeightsDir):
 batchSize(batchSize)
 {
     if (ctx == "cpu") {
