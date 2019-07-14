@@ -147,13 +147,20 @@ void MCTSAgent::stop_search_based_on_limits()
         int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()] / float(searchLimits->movestogo))
                 + searchLimits->inc[rootNode->getPos()->side_to_move()] + 0.5f - searchLimits->moveOverhead);
         assert(curMovetime > 0);
-        sync_cout << "string info curMovetime " << curMovetime << sync_endl;
+        sync_cout << "string info movetime " << curMovetime << sync_endl;
         this_thread::sleep_for(chrono::milliseconds(curMovetime));
         stop_search();
     }
     else if (searchLimits->nodes) {
         // TODO
         ;
+    }
+    else {
+        int curMovetime = 1000 - searchLimits->moveOverhead;
+        assert(curMovetime > 0);
+        sync_cout << "string info No limit specification given, setting movetime to (1000 - moveOverhead)" << sync_endl;
+        this_thread::sleep_for(chrono::milliseconds(curMovetime));
+        stop_search();
     }
 }
 

@@ -37,16 +37,7 @@ public:
     bool infinite;
     bool ponder;
 
-    SearchLimits():
-                 nodes(0),
-                 depth(0),
-                 minMovetime(0),
-                 movetime(0){
-        time[WHITE] = 0;
-        time[BLACK] = 0;
-        inc[WHITE] = 0;
-        inc[BLACK] = 0;
-    }    // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
+    SearchLimits();
 
 };
 
