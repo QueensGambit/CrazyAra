@@ -22,12 +22,12 @@ if( blaze_FOUND )
 endif()
 
 file(GLOB source_files
-        "lib/sf/syzygy/*.h"
-        "lib/sf/syzygy/*.cpp"
+        "lib/Stockfish/src/syzygy/*.h"
+        "lib/Stockfish/src/syzygy/*.cpp"
         "*.h"
         "*.cpp"
-        "lib/sf/*.h"
-        "lib/sf/*.cpp"
+        "lib/Stockfish/src/*.h"
+        "lib/Stockfish/src/*.cpp"
         "lib/catch-2.91/*.hpp"
         "lib/Eigen/*h"
         "lib/Eigen/*.cpp"
@@ -58,7 +58,7 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
   )
 
 find_package (Threads)
-include_directories("lib/sf")
+include_directories("lib/Stockfish/src")
 include_directories("lib/catch-2.9.1")
 #include_directories("lib/Eigen")
 include_directories("src/domain/crazyhouse")
