@@ -1,0 +1,6 @@
+[submodule "libs/Stockfish"]
+	path = libs/Stockfish
+	url = https://github.com/QueensGambit/Stockfish.git
+[submodule "lib/Stockfish"]
+	path = lib/Stockfish
+	url = https://github.com/QueensGambit/Stockfish.git
