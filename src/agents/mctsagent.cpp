@@ -144,32 +144,34 @@ void MCTSAgent::stop_search_based_on_limits()
         stop_search();
     }
     else if (searchLimits->movestogo != 0) {
-        int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()] / float(searchLimits->movestogo) + 0.5f)
+        int curMovetime = int(((searchLimits->time[rootNode->getPos()->side_to_move()]  - searchLimits->moveOverhead * 3) / float(searchLimits->movestogo) + 0.5f)
                 + searchLimits->inc[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead);
-        assert(curMovetime > 0);
         sync_cout << "string info movetime " << curMovetime << sync_endl;
+        assert(curMovetime > 0);
         this_thread::sleep_for(chrono::milliseconds(curMovetime));
         stop_search();
     }
     else if (searchLimits->time[rootNode->getPos()->side_to_move()] != 0) {
-        int expectedGameLengthPly = 100;
-        int plyThresh = 80;
+        int expectedGameLength = 50;
+        int threshMove = 40;
         float moveFact = 0.05f;
-        if (rootNode->getPos()->plies_from_null() < plyThresh) {
-            int curMovetime = int(searchLimits->time[rootNode->getPos()->side_to_move()] / float(expectedGameLengthPly) + 0.5f)
+        if (rootNode->getPos()->plies_from_null() < threshMove) {
+            int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()]  - searchLimits->moveOverhead * 3) / float(expectedGameLength) + 0.5f)
                     + searchLimits->inc[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead;
+            sync_cout << "string info movetime " << curMovetime << sync_endl;
             assert(curMovetime > 0);
             this_thread::sleep_for(chrono::milliseconds(curMovetime));
             stop_search();
         }
         else {
-            int curMovetime = int(searchLimits->time[rootNode->getPos()->side_to_move()] * moveFact + 0.5f)
+            int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead * 3) * moveFact + 0.5f)
                     + searchLimits->inc[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead;
+            sync_cout << "string info movetime " << curMovetime << sync_endl;
             assert(curMovetime > 0);
             this_thread::sleep_for(chrono::milliseconds(curMovetime));
             stop_search();
         }
-        expectedGameLengthPly - rootNode->getPos()->plies_from_null();
+        expectedGameLength - rootNode->getPos()->plies_from_null();
     }
     else if (searchLimits->nodes) {
         // TODO

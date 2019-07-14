@@ -47,7 +47,7 @@ void OptionsUCI::init(OptionsMap &o)
 //         o["Debug_Log_File"]           << Option("", activate_logger);
          o["Contempt"]                 << Option(24, -100, 100);
          o["Hash"]                     << Option(16, 1, MaxHashMB);
-         o["Move_Overhead"]            << Option(500, 0, 5000);
+         o["Move_Overhead"]            << Option(50, 0, 5000);
          o["Minimum_Thinking_Time"]    << Option(20, 0, 5000);
          o["UCI_Chess960"]             << Option(false);
 }
