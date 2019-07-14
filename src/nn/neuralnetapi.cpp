@@ -126,9 +126,9 @@ void NeuralNetAPI::infer_select_policy_from_planes()
 NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, string modelArchitectureDir, string modelWeightsDir):
 batchSize(batchSize)
 {
-    if (ctx == "cpu") {
+    if (ctx == "cpu" or ctx == "CPU") {
         global_ctx = Context::cpu();
-    } else if (ctx == "gpu") {
+    } else if (ctx == "gpu" or ctx == "GPU") {
         global_ctx = Context::gpu();
     } else {
         throw "unsupported context " + ctx + " given";

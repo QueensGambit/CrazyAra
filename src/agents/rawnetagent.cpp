@@ -15,16 +15,14 @@
  * Please describe what the content of this file is about
  */
 
+#include <blaze/Math.h>
 #include "rawnetagent.h"
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
 #include "constants.h"
 #include "misc.h"
-//#include <numeric>      // std::accumulate
-#include <blaze/Math.h>
 #include "../blazeutil.h"
-//#include "../../lib/sf/uci.h"
-#include "../../lib/sf/uci.h"
+#include "uci.h"
 
 using blaze::HybridVector;
 
