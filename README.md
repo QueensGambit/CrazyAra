@@ -26,3 +26,10 @@ Downlaod & install yaml-cpp
 
 or 
 * sudo apt-get install libyaml-cpp-dev
+
+
+### Performance Profiling
+
+https://github.com/jrfonseca/gprof2dot
+
+$ gprof CrazyAraMCTS | gprof2dot | dot -Tpng -o output.png
