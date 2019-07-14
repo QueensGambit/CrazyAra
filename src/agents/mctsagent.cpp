@@ -137,6 +137,33 @@ Node *MCTSAgent::get_new_root_node(Board *pos)
     return newRoot;
 }
 
+void MCTSAgent::stop_search_based_on_limits()
+{
+    if (searchLimits->movetime != 0) {
+        this_thread::sleep_for(chrono::milliseconds(searchLimits->movetime));
+        stop_search();
+    }
+    else if (searchLimits->movestogo != 0) {
+        int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()] / float(searchLimits->movestogo))
+                + searchLimits->inc[rootNode->getPos()->side_to_move()] + 0.5f - searchLimits->moveOverhead);
+        assert(curMovetime > 0);
+        sync_cout << "string info curMovetime " << curMovetime << sync_endl;
+        this_thread::sleep_for(chrono::milliseconds(curMovetime));
+        stop_search();
+    }
+    else if (searchLimits->nodes) {
+        // TODO
+        ;
+    }
+}
+
+void MCTSAgent::stop_search()
+{
+    for (size_t i = 0; i < searchSettings.threads; ++i) {
+        searchThreads[i]->stop();
+    }
+}
+
 void MCTSAgent::apply_move_to_tree(Move m, bool ownMove)
 {
     Node* parentNode;
@@ -203,10 +230,11 @@ void MCTSAgent::run_mcts_search()
         threads[i] = new thread(go, searchThreads[i]);
     }
 
+    stop_search_based_on_limits();
+
     for (size_t i = 0; i < searchSettings.threads; ++i) {
         threads[i]->join();
     }
-
 }
 
 void MCTSAgent::print_root_node()

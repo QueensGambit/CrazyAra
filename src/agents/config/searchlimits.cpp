@@ -11,9 +11,17 @@
  * @file: searchlimits.cpp
  * Created on 12.06.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include "searchlimits.h"
 
+
+std::ostream &operator<<(std::ostream &os, const SearchLimits &searchLimits)
+{
+    os << " wtime " << searchLimits.time[WHITE]
+       << " btime " << searchLimits.time[BLACK]
+       << " winc "  << searchLimits.inc[WHITE]
+       << " binc "  << searchLimits.inc[BLACK]
+       << "movestogo " << searchLimits.movestogo;
+    return os;
+}

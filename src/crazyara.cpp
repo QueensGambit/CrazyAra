@@ -145,11 +145,10 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 // the search.
 
 void CrazyAra::go(Board *pos, istringstream &is) {
-
-    //      Search::LimitsType limits;
-    SearchLimits limits;
-
     SearchLimits searchLimits;
+    //      Search::LimitsType limits;
+    searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
+
     string token;
     bool ponderMode = false;
 
@@ -159,23 +158,21 @@ void CrazyAra::go(Board *pos, istringstream &is) {
         if (token == "searchmoves")
             while (is >> token);
         //                      searchLimits.searchmoves.push_back(UCI::to_move(pos, token));
-
-        else if (token == "wtime")     is >> limits.time[WHITE];
-        else if (token == "btime")     is >> limits.time[BLACK];
-        else if (token == "winc")      is >> limits.inc[WHITE];
-        else if (token == "binc")      is >> limits.inc[BLACK];
-        else if (token == "movestogo") is >> limits.movestogo;
-        else if (token == "depth")     is >> limits.depth;
-        else if (token == "nodes")     is >> limits.nodes;
+        else if (token == "wtime")     is >> searchLimits.time[WHITE];
+        else if (token == "btime")     is >> searchLimits.time[BLACK];
+        else if (token == "winc")      is >> searchLimits.inc[WHITE];
+        else if (token == "binc")      is >> searchLimits.inc[BLACK];
+        else if (token == "movestogo") is >> searchLimits.movestogo;
+        else if (token == "depth")     is >> searchLimits.depth;
+        else if (token == "nodes")     is >> searchLimits.nodes;
         else if (token == "movetime")    is >> searchLimits.movetime;
-        //      else if (token == "mate")      is >> limits.mate;
-        //      else if (token == "perft")     is >> limits.perft;
-        else if (token == "infinite")  limits.infinite = true;
+        //      else if (token == "mate")      is >> searchLimits.mate;
+        //      else if (token == "perft")     is >> searchLimits.perft;
+        else if (token == "infinite")  searchLimits.infinite = true;
         else if (token == "ponder")    ponderMode = true;
     }
     //  EvalInfo res = rawAgent->evalute_board_state(pos);
     //  rawAgent->perform_action(pos);
-
     Move selectedMove = mctsAgent->perform_action(pos, &searchLimits);
 
     // inform the mcts agent of the move, so the tree can potentially be reused later
@@ -252,13 +249,13 @@ bool CrazyAra::is_ready()
     if (!networkLoaded) {
         SearchSettings searchSettings;
         searchSettings.batchSize = 8; // 8//128; //1; //28;
-        netSingle = new NeuralNetAPI("cpu", 1,
+        netSingle = new NeuralNetAPI("gpu", 1,
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings.threads];
         for (size_t i = 0; i < searchSettings.threads; ++i) {
-            netBatches[i] = new NeuralNetAPI("cpu", searchSettings.batchSize,
+            netBatches[i] = new NeuralNetAPI("gpu", searchSettings.batchSize,
                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                              "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
         }

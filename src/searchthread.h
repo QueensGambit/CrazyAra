@@ -93,6 +93,9 @@ public:
     void set_search_limits(SearchLimits *s);
     bool getIsRunning() const;
     void setIsRunning(bool value);
+
+    void stop();
+
     Node* getRootNode() const;
     SearchLimits *getSearchLimits() const;
 };

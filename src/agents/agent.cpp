@@ -27,7 +27,7 @@ Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
     this->verbose = verbose;
 }
 
-Move Agent::perform_action(Board *pos, SearchLimits *searchLimits)
+Move Agent::perform_action(Board *pos, SearchLimits* searchLimits)
 {
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     this->searchLimits = searchLimits;

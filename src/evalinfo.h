@@ -46,6 +46,6 @@ public:
     std::vector<Move> pv;
 };
 
-extern std::ostream& operator<<(std::ostream& os, const EvalInfo& eval_info);
+extern std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo);
 
 #endif // EVALINFO_H

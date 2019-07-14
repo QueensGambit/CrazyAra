@@ -88,6 +88,18 @@ private:
      * @return Pointer to root node or nullptr
      */
     inline Node* get_new_root_node(Board* pos);
+
+    /**
+     * @brief stop_search_based_on_limits Checks for the search limit condition and possible early break-ups
+     * and stops all running search threads accordingly
+     */
+    inline void stop_search_based_on_limits();
+
+    /**
+     * @brief stop_search Stops all search threads
+     */
+    inline void stop_search();
+
 public:
 
     MCTSAgent(NeuralNetAPI* netSingle,

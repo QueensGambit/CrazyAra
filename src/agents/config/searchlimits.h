@@ -24,23 +24,32 @@
 struct SearchLimits
 {
 public:
+    TimePoint movetime;
     size_t nodes;
-    size_t movestogo;
+    int movestogo;
     int depth;
     int minMovetime;
-    TimePoint time[COLOR_NB];
-    TimePoint inc[COLOR_NB];
+    int time[COLOR_NB];
+    int inc[COLOR_NB];
     TimePoint npmsec;
-    TimePoint movetime;
     TimePoint startTime;
+    TimePoint moveOverhead;
     bool infinite;
     bool ponder;
 
     SearchLimits():
-                 nodes(800),
-                 depth(15),
-                 minMovetime(100),
-                 movetime(3600){}    // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
+                 nodes(0),
+                 depth(0),
+                 minMovetime(0),
+                 movetime(0){
+        time[WHITE] = 0;
+        time[BLACK] = 0;
+        inc[WHITE] = 0;
+        inc[BLACK] = 0;
+    }    // 3600 -> 3min, 5000 -> 5min, 17000 -> 15min
+
 };
+
+extern std::ostream& operator<<(std::ostream& os, const SearchLimits& searchLimits);
 
 #endif // SEARCHLIMITS_H

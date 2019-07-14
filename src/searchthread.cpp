@@ -62,6 +62,11 @@ void SearchThread::setIsRunning(bool value)
     isRunning = value;
 }
 
+void SearchThread::stop()
+{
+    isRunning = false;
+}
+
 Node *SearchThread::getRootNode() const
 {
     return rootNode;
@@ -172,7 +177,7 @@ void SearchThread::create_new_node(Board* newPos, Node* parentNode, size_t child
 
     // fill a new board in the input_planes vector
     // we shift the index by NB_VALUES_TOTAL each time
-    board_to_planes(newPos, 0, true, inputPlanes+numberNewNodes*NB_VALUES_TOTAL);
+    board_to_planes(newPos, newPos->getStateInfo()->repetition, true, inputPlanes+numberNewNodes*NB_VALUES_TOTAL);
 }
 
 void SearchThread::copy_node(const unordered_map<Key,Node*>::const_iterator &it, Board* newPos, Node* parentNode, size_t childIdx)
@@ -276,5 +281,5 @@ void go(SearchThread *t)
 //        }
         TimePoint end = now();
         elapsedTimeMS = end - t->getSearchLimits()->startTime;
-    } while(elapsedTimeMS < t->getSearchLimits()->movetime);
+    } while(t->getIsRunning());
 }

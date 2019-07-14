@@ -29,7 +29,7 @@ protected:
     float current_temperature;
     unsigned int temperature_moves;
     bool verbose;
-    SearchLimits *searchLimits;
+    SearchLimits* searchLimits;
 public:
     Agent(float temperature, unsigned int temperature_moves, bool verbose);
 
@@ -38,7 +38,7 @@ public:
      * @param pos Board position to evaluate
      * @param limits Pointer to the search limit
      */
-    Move perform_action(Board *pos, SearchLimits *searchLimits);
+    Move perform_action(Board *pos, SearchLimits* searchLimits);
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents
