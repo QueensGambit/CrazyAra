@@ -33,7 +33,7 @@ public:
     int inc[COLOR_NB];
     TimePoint npmsec;
     TimePoint startTime;
-    TimePoint moveOverhead;
+    int moveOverhead;
     bool infinite;
     bool ponder;
 
