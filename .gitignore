@@ -32,4 +32,4 @@
 *.app
 
 # Lib Directory
-lib/
+libs/
