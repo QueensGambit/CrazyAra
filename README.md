@@ -30,6 +30,12 @@ or
 
 ### Performance Profiling
 
-https://github.com/jrfonseca/gprof2dot
+Install the plotting utility for gprof:
+* https://github.com/jrfonseca/gprof2dot
 
+Activate the -pg flags in `CMakeLists.txt` and rebuild.
+Run the executable and generate the plot:
+```
+$ ./CrazyAraMCTS
 $ gprof CrazyAraMCTS | gprof2dot | dot -Tpng -o output.png
+```
