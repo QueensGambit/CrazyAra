@@ -158,6 +158,9 @@ void MCTSAgent::stop_search_based_on_limits()
         if (rootNode->getPos()->plies_from_null() < threshMove) {
             int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()]  - searchLimits->moveOverhead * 3) / float(expectedGameLength) + 0.5f)
                     + searchLimits->inc[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead;
+            if (searchLimits->time[rootNode->getPos()->side_to_move()] < 5000) {
+                curMovetime -= searchLimits->moveOverhead * 3;
+            }
             sync_cout << "string info movetime " << curMovetime << sync_endl;
             assert(curMovetime > 0);
             this_thread::sleep_for(chrono::milliseconds(curMovetime));
@@ -166,6 +169,9 @@ void MCTSAgent::stop_search_based_on_limits()
         else {
             int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead * 3) * moveFact + 0.5f)
                     + searchLimits->inc[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead;
+            if (searchLimits->time[rootNode->getPos()->side_to_move()] < 5000) {
+                curMovetime -= searchLimits->moveOverhead * 3;
+            }
             sync_cout << "string info movetime " << curMovetime << sync_endl;
             assert(curMovetime > 0);
             this_thread::sleep_for(chrono::milliseconds(curMovetime));
