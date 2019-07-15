@@ -79,7 +79,7 @@ int Board::get_pocket_count(Color c, PieceType pt) const
 
 Key Board::hash_key() const
 {
-    return st->key + size_t(st->pliesFromNull);
+    return st->key; // + size_t(st->pliesFromNull);
 }
 
 void Board::setStateInfo(StateInfo *st)

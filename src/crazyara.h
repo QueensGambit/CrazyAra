@@ -118,6 +118,8 @@ r4rk1/ppp2pbp/8/4p1q1/3nB3/2NP1BPp/PPP2P1P/R4RK1[QBNPnp] b - - 0 21
 -> N@d2 ?!
 3r3k/pP3rp1/1p2pnKp/1Q6/3bB3/P2P2P1/1P4Np/R6R/PPPNBQPNPb b - - 0 51
 -> Bc5 M#10
+r1b2r2/pp3Bpk/3b1q2/2p5/3pPp2/3P3P/PPP2PP1/RN1Q1RK1/PNNpbn b - - 0 19
+-> @h6 oder N@g5
 */
 
 

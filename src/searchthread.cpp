@@ -33,8 +33,8 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const
     } else {
         probOutputs = new NDArray(Shape(batchSize, NB_LABELS), Context::cpu());
     }
-//    states = nullptr;
-//    states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
+    //    states = nullptr;
+    //    states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
 }
 
 void SearchThread::run_single_playout()
@@ -83,13 +83,13 @@ inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, boo
     Node *nextNode;
 
     // traverse the tree until you get to a new unexplored node
-//    currentNode = rootNode; //rootNode;
+    //    currentNode = rootNode; //rootNode;
 
     depth = 0;
 
     while (true) {
-//        cout << currentNode->pos->fen() << endl;
-//        cout << currentNode->pos << endl;
+        //        cout << currentNode->pos->fen() << endl;
+        //        cout << currentNode->pos << endl;
         childIdx = currentNode->select_child_node(2.5);
         currentNode->apply_virtual_loss_to_child(childIdx, virtualLoss);
         nextNode = currentNode->get_child_node(childIdx);
@@ -127,8 +127,8 @@ void SearchThread::set_NN_results_to_child_nodes()
             node->enhance_checks();
             node->mtx.unlock();
         }
-//        node->parentNode->waitForNNResults[node->childIdxOfParent] = 0;
-//        node->parentNode->numberWaitingChildNodes--;
+        //        node->parentNode->waitForNNResults[node->childIdxOfParent] = 0;
+        //        node->parentNode->numberWaitingChildNodes--;
         ++batchIdx;
         hashTable->insert({node->pos->hash_key(), node});
     }
@@ -136,7 +136,7 @@ void SearchThread::set_NN_results_to_child_nodes()
 
 void SearchThread::backup_value_outputs(const float virtualLoss)
 {
-//    size_t batchIdx = 0;
+    //    size_t batchIdx = 0;
     for (auto node: newNodes) {
         node->parentNode->backup_value(node->childIdxForParent, virtualLoss, -node->value);
     }
@@ -184,21 +184,21 @@ void SearchThread::copy_node(const unordered_map<Key,Node*>::const_iterator &it,
 {
     Node *newNode = new Node(*it->second);
     newNode->mtx.lock();
-//                 newNode->value = it->second->value;
-//                 newNode->policyProbSmall = it->second->policyProbSmall;
+    //                 newNode->value = it->second->value;
+    //                 newNode->policyProbSmall = it->second->policyProbSmall;
     newNode->pos = newPos;
     newNode->parentNode = parentNode;
     newNode->childIdxForParent = childIdx;
     newNode->hasNNResults = true;
     newNode->mtx.unlock();
     parentNode->mtx.lock();
-//                 sync_cout << "parentNode: childNodes" << parentNode->childNodes.size() << " " << childIdx << sync_endl;
+    //                 sync_cout << "parentNode: childNodes" << parentNode->childNodes.size() << " " << childIdx << sync_endl;
     parentNode->childNodes[childIdx] = newNode;
     parentNode->mtx.unlock();
     assert(newNode->nbDirectChildNodes == it->second->nbDirectChildNodes);
-//                 sync_cout << parentNode->childNodes[childIdx]->value << sync_endl;
+    //                 sync_cout << parentNode->childNodes[childIdx]->value << sync_endl;
     parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
-//    parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
+    //    parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
 }
 
 void SearchThread::create_mini_batch()
@@ -214,14 +214,14 @@ void SearchThread::create_mini_batch()
     size_t tranpositionEvents = 0;
     size_t terminalEvents = 0;
 
-        while (newNodes.size() < batchSize and
-               collisionNodes.size() < batchSize and
-               tranpositionEvents < batchSize and
-               terminalEvents < batchSize) {
+    while (newNodes.size() < batchSize and
+           collisionNodes.size() < batchSize and
+           tranpositionEvents < batchSize and
+           terminalEvents < batchSize) {
         parentNode = get_new_child_to_evaluate(childIdx, isCollision, isTerminal, depth);
 
         if(isTerminal) {
-//            terminalNodes.push_back(parentNode->childNodes[childIdx]);
+            //            terminalNodes.push_back(parentNode->childNodes[childIdx]);
             parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
             ++terminalEvents;
         }
@@ -235,11 +235,17 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(it != hashTable->end() and it->second->hasNNResults and
-               it->second->pos->rule50_count() == newPos->rule50_count() and
-               it->second->pos->plies_from_null() == newPos->plies_from_null()) {
-//                 Node *newNode = new Node(newPos, parentNode, childIdx);
-                copy_node(it, newPos, parentNode, childIdx);
+            if(it != hashTable->end() && it->second->hasNNResults && newState->repetition == 0)
+            {
+                Node *newNode = new Node(newPos, parentNode, childIdx);
+                newNode->mtx.lock();
+                newNode->value = it->second->value;
+                newNode->hasNNResults = true;
+                newNode->mtx.unlock();
+                parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
+
+                // TODO: Intead also copy the move generation
+//                copy_node(it, newPos, parentNode, childIdx);
                 ++tranpositionEvents;
             }
             else {
@@ -268,17 +274,17 @@ void go(SearchThread *t)
     t->setIsRunning(true);
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
-//    sync_cout << "string info thread rootNode" << sync_endl;
-//    sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
+    //    sync_cout << "string info thread rootNode" << sync_endl;
+    //    sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
 
     TimePoint elapsedTimeMS;
 
-      do {
+    do {
         t->thread_iteration();
-//        if (i % 100 == 0) {
-//            cout << "rootNode" << endl;
-//            cout << t->getRootNode() << endl;
-//        }
+        //        if (i % 100 == 0) {
+        //            cout << "rootNode" << endl;
+        //            cout << t->getRootNode() << endl;
+        //        }
         TimePoint end = now();
         elapsedTimeMS = end - t->getSearchLimits()->startTime;
     } while(t->getIsRunning());

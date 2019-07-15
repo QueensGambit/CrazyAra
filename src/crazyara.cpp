@@ -74,7 +74,15 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     std::vector<std::string> commands = {
 //        "uci",
 //        "isready",
-//        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4"
+//        "position startpos",
+//        "position startpos moves e2e4",
+//        "position startpos moves e2e4 e7e5",
+//        "go wtime 90000 btime 90000 winc 5000 binc 5000",
+//        "position startpos moves e2e4 e7e5 g1f3 b8c6",
+//        "go wtime 88200 btime 83866 winc 5000 binc 5000",
+//        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5",
+//        "go wtime 86435 btime 77657 winc 5000 binc 5000",
+//        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4",
 //        "go wtime 58675 btime 58913 movestogo 38",
 //        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1",
 //        "go wtime 57151 btime 57850 movestogo 37",
@@ -95,7 +103,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
         if (it < commands.size()) {
             cmd = commands[it];
-            cout << ">>" << cmd << endl;
+            sync_cout << ">>" << cmd << sync_endl;
         }
         else if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
             cmd = "quit";
