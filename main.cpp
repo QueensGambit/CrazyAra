@@ -1,10 +1,10 @@
 //#define EIGEN_USE_MKL_ALL
 
-#define BENCHMARK
+//#define BENCHMARK
 
 #ifdef BENCHMARK
 
-/*
+
 #include <iostream>
 #include <Dense>
 
@@ -77,8 +77,7 @@ uint64_t perft(Position& pos, Depth depth) {
   }
   return nodes;
 }
-*/
-/*
+
 int main() {
     xt::xarray<double> arr1
       {{1.0, 2.0, 3.0},
@@ -136,9 +135,11 @@ int main() {
 //    blaze::StaticVector<float, size> blaze_vec;
 //    blaze::HybridVector<float, 512UL> blaze_vec(size);
 //    blaze::DynamicVector<float> blaze_vec(size);
-     blaze::DynamicVector<float> blaze_vec {1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9,
-                                           1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9};
+//    typedef double real;
+    typedef float real;
 
+     blaze::DynamicVector<real> blaze_vec {1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9,
+                                           1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9, 1,2,3,4,42,5,6,7,8,9};
 //    blaze_vec = vec;
 //    cout << "blaze vec" << blaze_vec << endl;
 
@@ -154,7 +155,7 @@ int main() {
 //    eigen_vec[42] = 99;
 
 //    blaze::StaticVector<float, size> res_blaze;
-    blaze::DynamicVector<float> res_blaze(size);
+    blaze::DynamicVector<real> res_blaze(size);
 //    blaze::HybridVector<float, 512UL> res_blaze(size);
 
     res_blaze = 0;
@@ -180,7 +181,7 @@ int main() {
     for (size_t i = 0; i < it; ++i) {
 //        auto sum_xtensor = xt::sum(xtensor_vec);
 //          res_eigen = xtensor_vec + xtensor_vec;
-//            res_xtensor += xtensor_vec;
+            res_xtensor += xtensor_vec;
             res_xtensor *= xtensor_vec;
             res_xtensor /= xtensor_vec;
 //            id = xt::argmax(xtensor_vec);
@@ -191,7 +192,7 @@ int main() {
     int idx = 0;
     std::chrono::steady_clock::time_point start_blaze = std::chrono::steady_clock::now();
     for (size_t i = 0; i < it; ++i) {
-//        res_blaze += blaze_vec;
+        res_blaze += blaze_vec;
         res_blaze *= blaze_vec;
         res_blaze /= blaze_vec;
 ////        argmax(blaze_vec);
@@ -208,7 +209,7 @@ int main() {
 //    cout << "totalsum" << res_blaze[511] << endl;
     std::chrono::steady_clock::time_point start_eigen = std::chrono::steady_clock::now();
     for (size_t i = 0; i < it; ++i) {
-//        res_eigen += eigen_vec;
+        res_eigen += eigen_vec;
         res_eigen *= eigen_vec;
         res_eigen *= eigen_vec_div;
 //        res_eigen *= (1.0f/eigen_vec);
@@ -233,7 +234,6 @@ int main() {
 
     cout << endl;
 }
-*/
 /*
 int main()
 {

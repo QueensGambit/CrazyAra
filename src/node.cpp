@@ -415,7 +415,7 @@ void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)
             delete_subtree(child_node, hashTable);
         }
     }
-    hashTable->erase(node->hash_key());
+//    hashTable->erase(node->hash_key());
     delete node;
 }
 
