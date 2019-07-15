@@ -85,7 +85,6 @@ public:
     void position(Board *pos, istringstream &is);
 };
 
-
 int main(int argc, char* argv[]) {
     CrazyAra crazyara;
     crazyara.init();

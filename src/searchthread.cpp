@@ -197,7 +197,7 @@ void SearchThread::copy_node(const unordered_map<Key,Node*>::const_iterator &it,
     parentNode->mtx.unlock();
     assert(newNode->nbDirectChildNodes == it->second->nbDirectChildNodes);
     //                 sync_cout << parentNode->childNodes[childIdx]->value << sync_endl;
-    parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
+//    parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
     //    parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
 }
 
@@ -235,17 +235,31 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(it != hashTable->end() && it->second->hasNNResults && newState->repetition == 0)
+            if(it != hashTable->end() && it->second->hasNNResults &&
+                    it->second->pos->getStateInfo()->pliesFromNull == newState->pliesFromNull &&
+                    newState->repetition == 0)
             {
-                Node *newNode = new Node(newPos, parentNode, childIdx);
-                newNode->mtx.lock();
-                newNode->value = it->second->value;
-                newNode->hasNNResults = true;
-                newNode->mtx.unlock();
-                parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
+                copy_node(it, newPos, parentNode, childIdx);
+//                sync_cout << "transposition event!" << sync_endl;
 
-                // TODO: Intead also copy the move generation
-//                copy_node(it, newPos, parentNode, childIdx);
+//                assert(newPos->fen() == it->second->pos->fen());
+//                Node *newNode = new Node(newPos, parentNode, childIdx);
+//                newNode->mtx.lock();
+//                if (!newNode->isTerminal) {
+//                    newNode->value = it->second->value;
+//                    newNode->checkmateIdx = it->second->checkmateIdx;
+//                }
+//                newNode->hasNNResults = true;
+//                newNode->mtx.unlock();
+
+//                // connect the Node to the parent
+//                parentNode->mtx.lock();
+//                parentNode->childNodes[childIdx] = newNode;
+//                parentNode->mtx.unlock();
+
+//                parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
+                transpositionNodes.push_back(parentNode->childNodes[childIdx]);
+
                 ++tranpositionEvents;
             }
             else {

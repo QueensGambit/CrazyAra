@@ -97,7 +97,7 @@ Node::Node(const Node &b)
     ones = b.ones;
     divisor.resize(nbDirectChildNodes);
     divisor = b.divisor;
-    copy(b.legalMoves.begin(), b.legalMoves.end(), back_inserter(legalMoves));
+    legalMoves = b.legalMoves;
     isTerminal = b.isTerminal;
     initialValue = b.initialValue;
     numberVisits = 1;
