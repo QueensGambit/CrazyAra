@@ -12,7 +12,7 @@
  * Created on 12.06.2019
  * @author: queensgambit
  *
- * Please describe what the content of this file is about
+ * Struct which stores all relevant search settings for the Search-Agents
  */
 
 #ifndef SEARCHSETTINGS_H

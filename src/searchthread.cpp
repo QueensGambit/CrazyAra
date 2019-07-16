@@ -37,11 +37,6 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const
     //    states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
 }
 
-void SearchThread::run_single_playout()
-{
-    //    create_mini_batch();
-}
-
 void SearchThread::setRootNode(Node *value)
 {
     rootNode = value;

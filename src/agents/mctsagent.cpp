@@ -36,6 +36,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     searchSettings(searchSettings),
     playSettings(playSettings),
     rootNode(nullptr),
+    oldestRootNode(nullptr),
     states(states)
 {
     hashTable = new unordered_map<Key, Node*>;
@@ -79,12 +80,13 @@ size_t MCTSAgent::reuse_tree(Board *pos)
     } else {
         Board* newPos = new Board(*pos);
         newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
-        if (rootNode != nullptr) {
+        if (oldestRootNode != nullptr) {
             sync_cout << "info string delete the old tree " << sync_endl;
-            Node::delete_subtree(rootNode, hashTable);
+            Node::delete_subtree(oldestRootNode, hashTable);
         }
         sync_cout << "info string create new tree" << sync_endl;
         rootNode = new Node(newPos, nullptr, 0);
+        oldestRootNode = rootNode;
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, *valueOutput, *probOutputs);
 //        cout << "valueOutput: " << valueOutput << endl;
@@ -121,17 +123,14 @@ Node *MCTSAgent::get_new_root_node(Board *pos)
 
         if (rootNode != nullptr and newRoot != nullptr) {
             sync_cout << "info string delete unused subtrees" << sync_endl;
+            size_t i = 0;
             for (Node *childNode: rootNode->childNodes) {
                 if (childNode != nullptr and childNode != newRoot->parentNode) {
                     Node::delete_subtree(childNode, hashTable);
+                    rootNode->childNodes[i] = nullptr;
                 }
+                ++i;
             }
-
-            // the old rootNode and its parent must not be deleted, otherwise you lose information
-            // for the 3-fold-repetition check
-
-            // TODO: Store all played nodes of the final game in a list, so it can be freed when a new game starts
-//            // delete the old rootNode
 
             rootNode = newRoot;
             rootNode->make_to_root();

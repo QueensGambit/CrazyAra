@@ -59,6 +59,10 @@ private:
 //    NDArray probOutputs = NDArray(Shape(1, NB_LABELS), Context::cpu());
 
     Node* rootNode;
+    // The oldes root node stores a reference to the node with with the current root nodes is based on.
+    // This is used in the case of tree reusage. The old subtree cannot be cleared immediatly because of
+    // stateInfos for 3-fold repetition, but can be cleared as soon as the tree cannot be reused anymore.
+    Node* oldestRootNode;
     vector<Node*> potentialRoots;
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;

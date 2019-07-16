@@ -78,7 +78,6 @@ private:
     inline void copy_node(const unordered_map<Key,Node*>::const_iterator &it, Board* newPos, Node* parentNode, size_t childIdx);
 public:
     SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss, unordered_map<Key, Node*> *hashTable);
-    void run_single_playout();
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
