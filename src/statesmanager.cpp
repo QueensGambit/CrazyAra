@@ -11,8 +11,6 @@
  * @file: statesmanager.cpp
  * Created on 04.07.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include "statesmanager.h"

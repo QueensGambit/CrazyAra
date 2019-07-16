@@ -37,9 +37,9 @@ public:
     std::vector<Move> legalMoves;
     DynamicVector<float> policyProbSmall;
     int centipawns;
-    int depth;
+    size_t depth;
     int nodes;
-    int nodesPreSearch;
+    size_t nodesPreSearch;
     float elapsedTimeMS;
     float nps;
     bool is_chess960;

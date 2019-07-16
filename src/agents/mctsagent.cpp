@@ -192,7 +192,7 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
     rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
     run_mcts_search();
 
-    float qValueFac = 0.0; //0.5; //0.5;
+    float qValueFac = searchSettings.qValueWeight;
     float qValueThresh = 0.7;
 
     DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);
@@ -202,10 +202,9 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 
     EvalInfo evalInfo;
     evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[best_idx]);
-    evalInfo.depth = 42;
     evalInfo.legalMoves = this->rootNode->getLegalMoves();
     this->rootNode->get_principal_variation(evalInfo.pv);
-//    evalInfo.pv = {this->rootNode->getLegalMoves()[best_idx]};
+    evalInfo.depth = evalInfo.pv.size();
     evalInfo.is_chess960 = pos->is_chess960();
     evalInfo.nodes = rootNode->numberVisits;
     evalInfo.nodesPreSearch = nodesPreSearch;

@@ -215,7 +215,7 @@ void Node::get_mcts_policy(const float qValueWeight, const float qValueThresh, D
         }
         mctsPolicy = (1.0f - qValueWeight) * (childNumberVisits / numberVisits) + qValueWeight * qValuePruned;
     } else {
-    mctsPolicy = childNumberVisits / numberVisits;
+        mctsPolicy = childNumberVisits / numberVisits;
     }
 }
 
@@ -415,7 +415,7 @@ void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)
             delete_subtree(child_node, hashTable);
         }
     }
-//    hashTable->erase(node->hash_key());
+    //    hashTable->erase(node->hash_key());
     delete node;
 }
 

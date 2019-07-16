@@ -16,6 +16,9 @@
  * This is needed for 3-fold repeptition detection.
  * In the case the MCTS tree gets resued the passive states vector
  * becomes the active states vector again by calling swap_states().
+ *
+ * Keeps track of the states list of the current new game history generated in the uci-loop
+ * and the old states which are connected to the current search tree.
  */
 
 #ifndef STATESMANAGER_H
