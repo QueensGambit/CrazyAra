@@ -234,7 +234,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
         StateInfo *newState = new StateInfo;
         pos->do_move(m, *newState); //states->back());
         states->activeStates.push_back(newState);
-        sync_cout << "info string consume move" << sync_endl;
+//        sync_cout << "info string consume move" << sync_endl;
         lastMove = m;
     }
 

@@ -39,7 +39,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     states(states)
 {
     hashTable = new unordered_map<Key, Node*>;
-    hashTable->reserve(10e6);
+    hashTable->reserve(1e6);
 
     for (auto i = 0; i < searchSettings.threads; ++i) {
         cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
@@ -55,6 +55,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     }
 
     potentialRoots.resize(2);
+    timeManager = new TimeManager();
 }
 
 void MCTSAgent::expand_root_node_multiple_moves(const Board *pos)
@@ -142,57 +143,10 @@ Node *MCTSAgent::get_new_root_node(Board *pos)
 
 void MCTSAgent::stop_search_based_on_limits()
 {
-    if (searchLimits->movetime != 0) {
-        this_thread::sleep_for(chrono::milliseconds(searchLimits->movetime - searchLimits->moveOverhead));
-        stop_search();
-    }
-    else if (searchLimits->movestogo != 0) {
-        int curMovetime = int(((searchLimits->time[rootNode->getPos()->side_to_move()]  - searchLimits->moveOverhead * 3) / float(searchLimits->movestogo) + 0.5f)
-                + searchLimits->inc[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead);
-        sync_cout << "string info movetime " << curMovetime << sync_endl;
-        assert(curMovetime > 0);
-        this_thread::sleep_for(chrono::milliseconds(curMovetime));
-        stop_search();
-    }
-    else if (searchLimits->time[rootNode->getPos()->side_to_move()] != 0) {
-        int expectedGameLength = 50;
-        int threshMove = 40;
-        float moveFact = 0.05f;
-        if (rootNode->getPos()->plies_from_null() < threshMove) {
-            int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()]  - searchLimits->moveOverhead * 3) / float(expectedGameLength) + 0.5f)
-                    + searchLimits->inc[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead;
-            if (searchLimits->time[rootNode->getPos()->side_to_move()] < 5000) {
-                curMovetime -= searchLimits->moveOverhead * 3;
-            }
-            sync_cout << "string info movetime " << curMovetime << sync_endl;
-            assert(curMovetime > 0);
-            this_thread::sleep_for(chrono::milliseconds(curMovetime));
-            stop_search();
-        }
-        else {
-            int curMovetime = int((searchLimits->time[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead * 3) * moveFact + 0.5f)
-                    + searchLimits->inc[rootNode->getPos()->side_to_move()] - searchLimits->moveOverhead;
-            if (searchLimits->time[rootNode->getPos()->side_to_move()] < 5000) {
-                curMovetime -= searchLimits->moveOverhead * 3;
-            }
-            sync_cout << "string info movetime " << curMovetime << sync_endl;
-            assert(curMovetime > 0);
-            this_thread::sleep_for(chrono::milliseconds(curMovetime));
-            stop_search();
-        }
-        expectedGameLength - rootNode->getPos()->plies_from_null();
-    }
-    else if (searchLimits->nodes) {
-        // TODO
-        ;
-    }
-    else {
-        int curMovetime = 1000 - searchLimits->moveOverhead;
-        assert(curMovetime > 0);
-        sync_cout << "string info No limit specification given, setting movetime to (1000 - moveOverhead)" << sync_endl;
-        this_thread::sleep_for(chrono::milliseconds(curMovetime));
-        stop_search();
-    }
+    int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->pos->side_to_move(), rootNode->pos->plies_from_null()/2);
+    sync_cout << "string info movetime " << curMovetime << sync_endl;
+    this_thread::sleep_for(chrono::milliseconds(curMovetime));
+    stop_search();
 }
 
 void MCTSAgent::stop_search()
@@ -202,7 +156,7 @@ void MCTSAgent::stop_search()
     }
 }
 
-void MCTSAgent::apply_move_to_tree(Move m, bool ownMove)
+void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 {
     Node* parentNode;
     if (ownMove) {
@@ -215,7 +169,7 @@ void MCTSAgent::apply_move_to_tree(Move m, bool ownMove)
         size_t idx = 0;
         int foundIdx = -1;
         for (Move childMove : parentNode->legalMoves) {
-            if (childMove == m) {
+            if (childMove == move) {
                 foundIdx = idx;
                 break;
             }

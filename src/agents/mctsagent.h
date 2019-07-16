@@ -37,7 +37,7 @@
 #include "config/playsettings.h"
 #include "../searchthread.h"
 #include "../statesmanager.h"
-
+#include "../timemanager.h"
 
 class MCTSAgent : public Agent
 {
@@ -53,6 +53,8 @@ private:
     float input_planes[NB_VALUES_TOTAL];
     NDArray* valueOutput;
     NDArray* probOutputs;
+
+    TimeManager* timeManager;
 //    NDArray valueOutput= NDArray(Shape(1, 1), Context::cpu());
 //    NDArray probOutputs = NDArray(Shape(1, NB_LABELS), Context::cpu());
 
@@ -119,7 +121,12 @@ public:
      */
     void print_root_node();
 
-    void apply_move_to_tree(Move m, bool ownMove);
+    /**
+     * @brief apply_move_to_tree Applies the given move to the search tree by adding the expanded node to the candidate list
+     * @param m Move
+     * @param ownMove Boolean indicating if it was CrazyAra's move
+     */
+    void apply_move_to_tree(Move move, bool ownMove);
 };
 
 #endif // MCTSAGENT_H
