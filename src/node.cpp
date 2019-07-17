@@ -62,9 +62,6 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent):
     ones = DynamicVector<float>(nbDirectChildNodes);
     ones = 1;
 
-    divisor = DynamicVector<float>(nbDirectChildNodes);
-    divisor = 1; // 0.25f
-
     // number of total visits to this node
     numberVisits = 1;  // we initialize with 1 because if the node was created it must have been visited
     scoreValues = DynamicVector<float>(nbDirectChildNodes);
@@ -95,8 +92,6 @@ Node::Node(const Node &b)
     scoreValues = b.scoreValues;
     ones.resize(nbDirectChildNodes);
     ones = b.ones;
-    divisor.resize(nbDirectChildNodes);
-    divisor = b.divisor;
     legalMoves = b.legalMoves;
     isTerminal = b.isTerminal;
     initialValue = b.initialValue;
@@ -332,16 +327,16 @@ size_t Node::select_child_node(float cpuct)
     //    float pb_u_init = 1;
     //    float pb_u_low = 0.5; //0.25;
     float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
-    divisor = u_init;
 
     scoreValues = qValues + ( // u-Values
                               cpuct_current //cpuct_current
                               * policyProbSmall
-                              * (sqrt(numberVisits) * (ones / (divisor + childNumberVisits)))
+                              * (sqrt(numberVisits) * (ones / (childNumberVisits + u_init)))
                               );
 
     //    cout << "scoreValue" << scoreValues << endl;
     //    scoreValues += waitForNNResults;
+
     return argmax(scoreValues); //childIdx;
 }
 

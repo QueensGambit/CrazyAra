@@ -47,7 +47,6 @@ private:
 
     // dummy
     DynamicVector<float> ones;
-    DynamicVector<float> divisor;
 
     std::vector<Move> legalMoves;
     bool isTerminal;

@@ -11,12 +11,9 @@
  * @file: blazeutil.cpp
  * Created on 17.06.2019
  * @author: queensgambit
- *
- * Addition of missing functionality to the blaze library
  */
 
 #include "blazeutil.h"
-
 
 
 DynamicVector<float> get_dirichlet_noise(size_t length, const float alpha)
