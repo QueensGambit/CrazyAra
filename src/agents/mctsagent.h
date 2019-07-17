@@ -106,6 +106,12 @@ private:
      */
     inline void stop_search();
 
+    /**
+     * @brief check_early_stopping Checks if the search can be ended prematurely based on the current tree statistics (visits & Q-values)
+     * @return True, if early stopping is recommended
+     */
+    inline bool early_stopping();
+
 public:
 
     MCTSAgent(NeuralNetAPI* netSingle,
