@@ -12,7 +12,7 @@
  * Created on 27.05.2019
  * @author: queensgambit
  *
- * Please describe what the content of this file is about
+ * Utility methods for defining the inputs of the neural network
  */
 
 #ifndef INPUTREPRESENTATION_H
@@ -20,7 +20,26 @@
 
 #include "../../board.h"
 
-void board_to_planes(const Board *pos, int board_occ, bool normalize, float *input_planes);
+/**
+ * @brief board_to_planes Converts the given board represetntation into the plane representation.
+ *                        The plane representation will be encoded on a flat float array.
+ *                        No history and only the single current board position will be encoded.
+ * @param pos Board position
+ * @param boardRepetition Defines how often the board has already been repeated so far
+ * @param normalize Flag, telling if the representation should be rescaled into the [0,1] range using the scaling constants from "constants.h"
+ * @param input_planes Output where the plane representation will be stored.
+ */
+void board_to_planes(const Board *pos, int boardRepetition, bool normalize, float *inputPlanes);
+
+/**
+ * @brief set_bits_from_bitmap Sets the individual bits from a given bitboard on the given channel for the inputPlanes
+ * @param bitboard Bitboard of a single 8x8 plane
+ * @param channel Channel index on where to set the bits
+ * @param input_planes Input planes encoded as flat vector
+ * @param color Color of the side to move
+ */
+inline void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color);
+
 
 #endif // INPUTREPRESENTATION_H
 

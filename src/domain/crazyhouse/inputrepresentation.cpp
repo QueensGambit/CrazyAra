@@ -21,24 +21,18 @@
 #include <iostream>
 using namespace std;
 
-void fill_value(int pocket_cnt, int current_channel, float *input_planes) {
-    if (pocket_cnt > 0) {
-        std::fill(input_planes + (current_channel+1) * NB_SQUARES, input_planes + (current_channel+2) * NB_SQUARES, 1.0f);
-    }
-}
-
-void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *input_planes, Color color) {
+void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color) {
     size_t p = 0;
     // set the individual bits for the pieces
     // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
     while (bitboard != 0) {
       if (bitboard & 0x1) {
           if (color == WHITE) {
-            input_planes[channel * NB_SQUARES + p] = 1;
+            inputPlanes[channel * NB_SQUARES + p] = 1;
           }
           else {
               //                                         row            col
-              input_planes[channel * NB_SQUARES + (7 - (p / 8)) * 8 + (p % 8)] = 1;
+              inputPlanes[channel * NB_SQUARES + (7 - (p / 8)) * 8 + (p % 8)] = 1;
           }
       }
       bitboard >>= 1;
@@ -47,10 +41,10 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *input_planes
 }
 
 
-void board_to_planes(const Board *pos, int board_occ, bool normalize, float *input_planes) {
+void board_to_planes(const Board *pos, int boardRepetition, bool normalize, float *inputPlanes) {
 
     // intialize the input_planes with 0
-    std::fill(input_planes, input_planes+NB_VALUES_TOTAL, 0.0f);
+    std::fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);
 
     // Fill in the piece positions
 
@@ -66,7 +60,7 @@ void board_to_planes(const Board *pos, int board_occ, bool normalize, float *inp
 //            size_t p = 0;
             // set the individual bits for the pieces
             // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
-            set_bits_from_bitmap(pieces, current_channel, input_planes, me);
+            set_bits_from_bitmap(pieces, current_channel, inputPlanes, me);
             current_channel += 1;
         }
     }
@@ -75,10 +69,10 @@ void board_to_planes(const Board *pos, int board_occ, bool normalize, float *inp
     // set how often the position has already occurred in the game (default 0 times)
     // this is used to check for claiming the 3 fold repetition rule
     // A game to test out if everything is working correctly is: https://lichess.org/jkItXBWy#73
-    if (board_occ >= 1) {
-        std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
-        if (board_occ >= 2) {
-            std::fill(input_planes + (current_channel+1) * NB_SQUARES, input_planes + (current_channel+2) * NB_SQUARES, 1.0f);
+    if (boardRepetition >= 1) {
+        std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+        if (boardRepetition >= 2) {
+            std::fill(inputPlanes + (current_channel+1) * NB_SQUARES, inputPlanes + (current_channel+2) * NB_SQUARES, 1.0f);
         }
     }
     current_channel+= 2;
@@ -90,7 +84,7 @@ void board_to_planes(const Board *pos, int board_occ, bool normalize, float *inp
             // unfortunately you can't use a loop over count_in_hand() PieceType because of template arguments
             int pocket_cnt = pos->get_pocket_count(color, piece);
             if (pocket_cnt > 0) {
-                std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES,
+                std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
                           normalize ? pocket_cnt / MAX_NB_PRISONERS : pocket_cnt);
             }
             current_channel++;
@@ -99,29 +93,29 @@ void board_to_planes(const Board *pos, int board_occ, bool normalize, float *inp
 
     // (IV) Fill in the promoted pieces
     // iterate over all promoted pieces according to the mask and set the according bit
-    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(me), current_channel, input_planes, me);
+    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(me), current_channel, inputPlanes, me);
     current_channel++;
-    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(you), current_channel, input_planes, me);
+    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(you), current_channel, inputPlanes, me);
     current_channel++;
 
     // (V) En Passant Square
     // mark the square where an en-passant capture is possible
     if (pos->ep_square() != SQ_NONE) {
         unsigned int ep_square = me == WHITE ? int(pos->ep_square()) : 64-int(pos->ep_square());
-        input_planes[current_channel * NB_SQUARES + ep_square] = 1.0f;
+        inputPlanes[current_channel * NB_SQUARES + ep_square] = 1.0f;
     }
     current_channel++;
 
     // (VI) Constant Value Inputs
     // (VI.1) Color
     if (me == WHITE) {
-        std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+        std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
     }
     current_channel++;
 
 //    std::cout << "pos->game_ply()" << pos->game_ply() << std::endl;
     // (VI.2) Total Move Count
-    std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES,
+    std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
               // stockfish starts counting from 0, the full move counter starts at 1 in FEN
               normalize ? ((pos->game_ply()/2)+1) / MAX_FULL_MOVE_COUNTER : ((pos->game_ply()/2)+1));
     current_channel++;
@@ -130,36 +124,36 @@ void board_to_planes(const Board *pos, int board_occ, bool normalize, float *inp
     // check for King Side Castling
     if (me == WHITE) {
         if (pos->can_castle(WHITE_OO)) {
-            std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
         if (pos->can_castle(WHITE_OOO)) {
-            std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
         if (pos->can_castle(BLACK_OO)) {
-            std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
         if (pos->can_castle(BLACK_OOO)) {
-            std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
     }   else {
         if (pos->can_castle(BLACK_OO)) {
-            std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
         if (pos->can_castle(BLACK_OOO)) {
-            std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
         if (pos->can_castle(WHITE_OO)) {
-            std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
         if (pos->can_castle(WHITE_OOO)) {
-            std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
         }
         current_channel++;
 
@@ -171,7 +165,7 @@ void board_to_planes(const Board *pos, int board_occ, bool normalize, float *inp
     // however, whenever a piece gets dropped, a piece is captured or a pawn is moved, it is reset to 0
     // halfmove_clock is an official metric in fen notation
     //  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
-    std::fill(input_planes + current_channel * NB_SQUARES, input_planes + (current_channel+1) * NB_SQUARES,
+    std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
               normalize ? pos->rule50_count() / MAX_NB_NO_PROGRESS: pos->rule50_count());
     current_channel++;
 }
