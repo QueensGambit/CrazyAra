@@ -13,6 +13,8 @@
  * @author: queensgambit
  *
  * This file contains wrappers for handling the neural network.
+ * Parts of the code are based on the MXNet C++ inference tutorial:
+ * https://github.com/apache/incubator-mxnet/tree/master/cpp-package/example/inference
  */
 
 #ifndef NEURALNETAPI_H
@@ -44,27 +46,24 @@ private:
      * @param name Filepath
      * @return True if exists else false
      */
-    inline bool FileExists(const std::string& name) {
-        struct stat buffer;
-        return (stat(name.c_str(), &buffer) == 0);
-    }
+    inline bool FileExists(const std::string& name);
 
     /**
-     * @brief loadModel Loads the model architecture definition from a json file
+     * @brief load_model Loads the model architecture definition from a json file
      * @param model_json_file JSON-Path to the json file
      */
-    void loadModel(const std::string& jsonFilePath);
+    void load_model(const std::string& jsonFilePath);
 
     /**
-     * @brief loadParameters Loads the parameters / weights of the model given a parameter path
+     * @brief load_parameters Loads the parameters a.k.a weights of the model given a parameter path
      * @param model_parameters_file Parameter file path
      */
-    void loadParameters(const std::string& paramterFilePath);
+    void load_parameters(const std::string& paramterFilePath);
 
     /**
-     * @brief bindExecutor Binds the executor object to the neural network
+     * @brief bind_executor Binds the executor object to the neural network
      */
-    void bindExecutor(); //Shape &input_shape, Executor* executor);
+    void bind_executor();
 
     /**
      * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
@@ -73,9 +72,31 @@ private:
     void infer_select_policy_from_planes();
 
 public:
+    /**
+     * @brief NeuralNetAPI
+     * @param ctx Computation contex either "cpu" or "gpu"
+     * @param batchSize Constant batch size which is used for inference
+     * @param modelArchitectureDir Directory where the network architecture is stored (.json file)
+     * @param modelWeightsDir Directory where parameters a.k.a weights of the neural are stored (.params file)
+     */
     NeuralNetAPI(string ctx, unsigned int batchSize, string modelArchitectureDir, string modelWeightsDir);
+
+    /**
+     * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
+     * @param inputPlanes Pointer to the input planes of a single board position
+     * @param value Value prediction for the board by the neural network
+     * @return Policy NDArray
+     */
     NDArray predict(float *inputPlanes, float &value);
+
+    /**
+     * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
+     * @param inputPlanes Pointer to the input planes of a single board position
+     * @param value Value prediction for the board by the neural network
+     * @param probOutputs Policy NDArray of the raw network output (including illegal moves). It's assumend that the memory has already been allocated.
+     */
     void predict(float *input_planes, NDArray &valueOutput, NDArray &probOutputs);
+
     bool getSelectPolicyFromPlane() const;
 };
 
