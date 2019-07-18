@@ -55,8 +55,6 @@ private:
     NDArray* probOutputs;
 
     TimeManager* timeManager;
-//    NDArray valueOutput= NDArray(Shape(1, 1), Context::cpu());
-//    NDArray probOutputs = NDArray(Shape(1, NB_LABELS), Context::cpu());
 
     Node* rootNode;
     // The oldes root node stores a reference to the node with with the current root nodes is based on.
@@ -84,7 +82,7 @@ private:
      * @param pos Requested board position
      * @return Number of nodes that have already been explored before the serach
      */
-    inline size_t reuse_tree(Board* pos);
+    inline size_t init_root_node(Board* pos);
 
     /**
      * @brief get_new_root_node Returns the pointer of the new root node for the given position in the case
@@ -93,7 +91,7 @@ private:
      * @param pos Requested board position
      * @return Pointer to root node or nullptr
      */
-    inline Node* get_new_root_node(Board* pos);
+    inline Node* get_root_node_from_tree(Board* pos);
 
     /**
      * @brief stop_search_based_on_limits Checks for the search limit condition and possible early break-ups
@@ -118,8 +116,7 @@ public:
               NeuralNetAPI** netBatches,
               SearchSettings searchSettings,
               PlaySettings playSettings,
-              StatesManager* states); //,
-//              unordered_map<Key, Node*> *hashTable);
+              StatesManager* states);
 
     EvalInfo evalute_board_state(Board *pos);
     void run_mcts_search();

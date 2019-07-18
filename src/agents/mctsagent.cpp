@@ -61,15 +61,13 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
 
 void MCTSAgent::expand_root_node_multiple_moves(const Board *pos)
 {
-
     board_to_planes(pos, 0, true, begin(input_planes)); //input_planes_start);
-
 }
 
-size_t MCTSAgent::reuse_tree(Board *pos)
+size_t MCTSAgent::init_root_node(Board *pos)
 {
     size_t nodesPreSearch;
-    Node* newRoot = get_new_root_node(pos);
+    Node* newRoot = get_root_node_from_tree(pos);
 
     if (newRoot != nullptr) {
         // swap the states because now the old states are used
@@ -89,10 +87,8 @@ size_t MCTSAgent::reuse_tree(Board *pos)
         oldestRootNode = rootNode;
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, *valueOutput, *probOutputs);
-//        cout << "valueOutput: " << valueOutput << endl;
         get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(),
                                !netSingle->getSelectPolicyFromPlane(), rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
-//        cout << "policyProbSmall: " << rootNode->policyProbSmall << endl;
         rootNode->enhance_checks();
         nodesPreSearch = 0;
 //        hashTable->insert({rootNode->pos->hash_key(), rootNode});
@@ -105,7 +101,7 @@ size_t MCTSAgent::reuse_tree(Board *pos)
     return nodesPreSearch;
 }
 
-Node *MCTSAgent::get_new_root_node(Board *pos)
+Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 {
     Node* newRoot = nullptr;
 
@@ -196,14 +192,21 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 
 }
 
-
 EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 {
-    size_t nodesPreSearch = reuse_tree(pos);
+    size_t nodesPreSearch = init_root_node(pos);
 
-    cout << "info string apply dirichlet" << endl;
-    rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
-    run_mcts_search();
+    if (rootNode->nbDirectChildNodes == 1) {
+        sync_cout << "info string Only single move available -> early stopping" << sync_endl;
+    }
+    else if (rootNode->nbDirectChildNodes == 0) {
+        sync_cout << "info string The given position has no legal moves" << sync_endl;
+    }
+    else {
+        sync_cout << "info string apply dirichlet" << sync_endl;
+        rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
+        run_mcts_search();
+    }
 
     float qValueFac = searchSettings.qValueWeight;
     float qValueThresh = 0.7;
