@@ -144,8 +144,13 @@ void MCTSAgent::stop_search_based_on_limits()
 {
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->pos->side_to_move(), rootNode->pos->plies_from_null()/2);
     sync_cout << "string info movetime " << curMovetime << sync_endl;
-    this_thread::sleep_for(chrono::milliseconds(curMovetime));
-    stop_search();
+    this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
+    if (early_stopping()) {
+        stop_search();
+    } else {
+        this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
+        stop_search();
+    }
 }
 
 void MCTSAgent::stop_search()
@@ -153,6 +158,15 @@ void MCTSAgent::stop_search()
     for (size_t i = 0; i < searchSettings.threads; ++i) {
         searchThreads[i]->stop();
     }
+}
+
+bool MCTSAgent::early_stopping()
+{
+    if (max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
+        sync_cout << "string info Early stopping." << sync_endl;
+        return true;
+    }
+    return false;
 }
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
