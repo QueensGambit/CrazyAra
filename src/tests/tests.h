@@ -18,10 +18,9 @@
 #ifndef TESTS_H
 #define TESTS_H
 
-#define BUILD_TESTS
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+// #define BUILD_TESTS
 #ifdef BUILD_TESTS
-
+#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #endif
 
 #endif // TESTS_H

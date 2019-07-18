@@ -15,6 +15,7 @@
 
 #include "tests.h"
 
+#ifdef BUILD_TESTS
 #include <iostream>
 #include "catch.hpp"
 #include "../sfutil.h"
@@ -33,4 +34,4 @@ TEST_CASE("En-passent moves") {
         REQUIRE(returnVal == true);
     }
 }
-
+#endif
