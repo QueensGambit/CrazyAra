@@ -29,8 +29,8 @@ file(GLOB source_files
         "lib/Stockfish/src/*.h"
         "lib/Stockfish/src/*.cpp"
         "lib/catch-2.91/*.hpp"
-        "lib/Eigen/*h"
-        "lib/Eigen/*.cpp"
+        "libs/Eigen/*h"
+        "libs/Eigen/*.cpp"
         "src/*.h"
         "src/*.cpp"
         "src/tests/*.h"
@@ -51,7 +51,7 @@ set(CPP_EXAMPLE_LIBS
   ${mxnet_LINKER_LIBS}
   )
 
-set(CPP_PACKAGE_INCLUDE_DIR /home/queensgambit/libs/mxnet/cpp-package/include)
+set(CPP_PACKAGE_INCLUDE_DIR $ENV{MXNET_PATH}cpp-package/include)
 file(GLOB_RECURSE CPP_PACKAGE_HEADERS
   "${CPP_PACKAGE_INCLUDE_DIR}/*.h"
   "${CPP_PACKAGE_INCLUDE_DIR}/*.hpp"
@@ -60,7 +60,7 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
 find_package (Threads)
 include_directories("lib/Stockfish/src")
 include_directories("lib/catch-2.9.1")
-#include_directories("lib/Eigen")
+include_directories("libs/Eigen")
 include_directories("src/domain/crazyhouse")
 include_directories("src/agents")
 include_directories("src/agents/config")
@@ -90,6 +90,7 @@ include_directories("$ENV{MXNET_PATH}3rdparty/dmlc-core/include")
 # find_package(OpenCV REQUIRED)
 
 find_package(Threads REQUIRED)
+add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
 
 # link_directories(${MXNET_PATH}lib)
