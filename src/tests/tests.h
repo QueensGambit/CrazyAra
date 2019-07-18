@@ -8,16 +8,20 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * @file: planerepresentationtests.cpp
- * Created on 19.06.2019
+ * @file: tests.h
+ * Created on 18.07.2019
  * @author: queensgambit
  *
- * Please describe what the content of this file is about
+ * Main entry point to run all tests.
  */
 
-#include "planerepresentationtests.h"
+#ifndef TESTS_H
+#define TESTS_H
 
-//PlaneRepresentationTests::PlaneRepresentationTests()
-//{
+#define BUILD_TESTS
+#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+#ifdef BUILD_TESTS
 
-//}
+#endif
+
+#endif // TESTS_H

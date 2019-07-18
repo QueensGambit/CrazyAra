@@ -92,6 +92,42 @@ void fill_en_passent_moves(std::vector<std::string> &enPassentMoves) {
     }
 }
 
+Square get_origin_square(std::string& uciMove)
+{
+    File from_file = FILE_LOOKUP.at(uciMove[0]);
+    Rank from_rank = RANK_LOOKUP.at(uciMove[1]);
+    return make_square(from_file, from_rank);
+}
+
+Square get_destination_square(std::string& uciMove)
+{
+    File to_file = FILE_LOOKUP.at(uciMove[2]);
+    Rank to_rank = RANK_LOOKUP.at(uciMove[3]);
+    return make_square(to_file, to_rank);
+}
+
+bool is_drop_move(std::string& uciMove)
+{
+    return uciMove[1] == '@';
+}
+
+bool is_promotion_move(std::string &uciMove)
+{
+    return uciMove.length() == 5;
+}
+
+bool is_en_passent_candidate(Square origin, Square destination)
+{
+    // en-passent move candidates for white & black
+    if ((rank_of(origin) == RANK_5 && rank_of(destination) == RANK_6) || (rank_of(origin) == RANK_4 && rank_of(destination) == RANK_3)) {
+        // diagonal pawn-captures
+        if ((file_of(destination) == file_of(origin) - 1) || (file_of(destination) == file_of(origin) + 1)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void fill_castle_moves(std::vector<std::string> &castleMoves, bool is_960) {
     castleMoves.push_back("e1g1");
     castleMoves.push_back("e1c1");
@@ -102,18 +138,11 @@ void fill_castle_moves(std::vector<std::string> &castleMoves, bool is_960) {
     }
 }
 
-
 std::vector<Move> make_move(std::string uciMove) {
 
     std::vector<Move> sfMoves;
 
-    bool isDropMove = false;
-
-    if (uciMove[1] == '@') {
-        isDropMove = true;
-    }
-
-    if (isDropMove) {
+    if (is_drop_move(uciMove)) {
         // in sf the dropping moves have a different id for black and white
         for (int color : {WHITE, BLACK}) {
             char piece = uciMove[0];
@@ -121,19 +150,11 @@ std::vector<Move> make_move(std::string uciMove) {
                 piece = char(tolower(piece));
             }
             Piece pt = Piece(PIECE_LOOKUP.at(piece));
-            File file = FILE_LOOKUP.at(uciMove[2]);
-            Rank rank = RANK_LOOKUP.at(uciMove[3]);
-            Square to_sq = make_square(file, rank);
+            Square to_sq = get_destination_square(uciMove);
             sfMoves.push_back(make_drop(to_sq, pt));
         }
     }
     else {
-        bool isPromotion = false;
-
-        if (uciMove.length() == 5) {
-            isPromotion = true;
-        }
-
         // castling moves have a seperate flag in sf
         if (uciMove == "e1g1" || uciMove == "e1c1" || uciMove == "e8g8" ||  uciMove == "e8c8") {
             Square w_ksq = make_square(FILE_E, RANK_1);
@@ -152,18 +173,15 @@ std::vector<Move> make_move(std::string uciMove) {
             else if (uciMove == "e8c8") {
                 sfMoves.push_back(make<CASTLING>(b_ksq, make_square(FILE_A, RANK_8)));
             }
-
         }
 
-        File from_file = FILE_LOOKUP.at(uciMove[0]);
-        Rank from_rank = RANK_LOOKUP.at(uciMove[1]);
-        File to_file = FILE_LOOKUP.at(uciMove[2]);
-        Rank to_rank = RANK_LOOKUP.at(uciMove[3]);
+        Square from_sq = get_origin_square(uciMove);
+        Square to_sq = get_destination_square(uciMove);
 
-        Square from_sq = make_square(from_file, from_rank);
-        Square to_sq = make_square(to_file, to_rank);
-
-        if (isPromotion) {
+        if (is_en_passent_candidate(from_sq, to_sq)) {
+            sfMoves.push_back(make<ENPASSANT>(from_sq, to_sq));
+        }
+        if (is_promotion_move(uciMove)) {
             PieceType pt = PIECE_TYPE_LOOKUP.at(uciMove[4]);
             sfMoves.push_back(make<PROMOTION>(from_sq, to_sq, pt));
         }
@@ -173,7 +191,6 @@ std::vector<Move> make_move(std::string uciMove) {
     }
     return sfMoves;
 }
-
 
 Bitboard flip_vertical(Bitboard x)
 {

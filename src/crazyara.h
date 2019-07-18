@@ -28,7 +28,7 @@
 #include "agents/config/playsettings.h"
 #include "node.h"
 #include "statesmanager.h"
-
+#include "tests/tests.h"
 
 class CrazyAra
 {
@@ -85,12 +85,14 @@ public:
     void position(Board *pos, istringstream &is);
 };
 
+#ifndef BUILD_TESTS
 int main(int argc, char* argv[]) {
     CrazyAra crazyara;
     crazyara.init();
     crazyara.welcome();
     crazyara.uci_loop(argc, argv);
 }
+#endif
 
 // Challenging FENs
 /*
