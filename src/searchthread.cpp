@@ -19,19 +19,19 @@
 #include "uci.h"
 #include "misc.h"
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss, unordered_map<Key, Node *> *hashTable):
-    netBatch(netBatch), batchSize(batchSize), virtualLoss(virtualLoss), isRunning(false), hashTable(hashTable)
+SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings searchSettings, unordered_map<Key, Node *> *hashTable):
+    netBatch(netBatch), searchSettings(searchSettings), isRunning(false), hashTable(hashTable)
 {
     // allocate memory for all predictions and results
-    inputPlanes = new float[batchSize * NB_VALUES_TOTAL];
-    valueOutputs = new NDArray(Shape(batchSize, 1), Context::cpu());
+    inputPlanes = new float[searchSettings.batchSize * NB_VALUES_TOTAL];
+    valueOutputs = new NDArray(Shape(searchSettings.batchSize, 1), Context::cpu());
 
     bool select_policy_from_plane = true;
 
     if (select_policy_from_plane) {
-        probOutputs = new NDArray(Shape(batchSize, NB_LABELS_POLICY_MAP), Context::cpu());
+        probOutputs = new NDArray(Shape(searchSettings.batchSize, NB_LABELS_POLICY_MAP), Context::cpu());
     } else {
-        probOutputs = new NDArray(Shape(batchSize, NB_LABELS), Context::cpu());
+        probOutputs = new NDArray(Shape(searchSettings.batchSize, NB_LABELS), Context::cpu());
     }
     //    states = nullptr;
     //    states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
@@ -77,16 +77,10 @@ inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, boo
     Node *currentNode = rootNode;
     Node *nextNode;
 
-    // traverse the tree until you get to a new unexplored node
-    //    currentNode = rootNode; //rootNode;
-
     depth = 0;
-
     while (true) {
-        //        cout << currentNode->pos->fen() << endl;
-        //        cout << currentNode->pos << endl;
-        childIdx = currentNode->select_child_node(2.5);
-        currentNode->apply_virtual_loss_to_child(childIdx, virtualLoss);
+        childIdx = currentNode->select_child_node();
+        currentNode->apply_virtual_loss_to_child(childIdx);
         nextNode = currentNode->get_child_node(childIdx);
         depth++;
         if (nextNode == nullptr) {
@@ -129,37 +123,37 @@ void SearchThread::set_NN_results_to_child_nodes()
     }
 }
 
-void SearchThread::backup_value_outputs(const float virtualLoss)
+void SearchThread::backup_value_outputs()
 {
     //    size_t batchIdx = 0;
     for (auto node: newNodes) {
-        node->parentNode->backup_value(node->childIdxForParent, virtualLoss, -node->value);
+        node->parentNode->backup_value(node->childIdxForParent, -node->value);
     }
     newNodes.clear();
 
     for (auto node: transpositionNodes) {
-        node->parentNode->backup_value(node->childIdxForParent, virtualLoss, -node->value);
+        node->parentNode->backup_value(node->childIdxForParent, -node->value);
     }
     transpositionNodes.clear();
 
     for (auto node: terminalNodes) {
-        node->parentNode->backup_value(node->childIdxForParent, virtualLoss, -node->value);
+        node->parentNode->backup_value(node->childIdxForParent, -node->value);
     }
     terminalNodes.clear();
 
 }
 
-void SearchThread::backup_collisions(const float virtualLoss)
+void SearchThread::backup_collisions()
 {
     for (auto node: collisionNodes) {
-        node->parentNode->backup_collision(node->childIdxForParent, virtualLoss);
+        node->parentNode->backup_collision(node->childIdxForParent);
     }
     collisionNodes.clear();
 }
 
 void SearchThread::create_new_node(Board* newPos, Node* parentNode, size_t childIdx, size_t numberNewNodes)
 {
-    Node *newNode = new Node(newPos, parentNode, childIdx);
+    Node *newNode = new Node(newPos, parentNode, childIdx, &searchSettings);
 
     // save a reference newly created list in the temporary list for node creation
     // it will later be updated with the evaluation of the NN
@@ -209,15 +203,15 @@ void SearchThread::create_mini_batch()
     size_t tranpositionEvents = 0;
     size_t terminalEvents = 0;
 
-    while (newNodes.size() < batchSize and
-           collisionNodes.size() < batchSize and
-           tranpositionEvents < batchSize and
-           terminalEvents < batchSize) {
+    while (newNodes.size() < searchSettings.batchSize and
+           collisionNodes.size() < searchSettings.batchSize and
+           tranpositionEvents < searchSettings.batchSize and
+           terminalEvents < searchSettings.batchSize) {
         parentNode = get_new_child_to_evaluate(childIdx, isCollision, isTerminal, depth);
 
         if(isTerminal) {
             //            terminalNodes.push_back(parentNode->childNodes[childIdx]);
-            parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
+            parentNode->backup_value(childIdx, -parentNode->childNodes[childIdx]->value);
             ++terminalEvents;
         }
         else if (isCollision) {
@@ -230,7 +224,7 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(it != hashTable->end() && it->second->hasNNResults &&
+            if(false and it != hashTable->end() && it->second->hasNNResults &&
                it->second->pos->getStateInfo()->pliesFromNull == newState->pliesFromNull &&
                it->second->pos->getStateInfo()->rule50 == newState->rule50 &&
                newState->repetition == 0)
@@ -278,8 +272,8 @@ void SearchThread::thread_iteration()
         netBatch->predict(inputPlanes, *valueOutputs, *probOutputs);
         set_NN_results_to_child_nodes();
     }
-    backup_value_outputs(virtualLoss);
-    backup_collisions(virtualLoss);
+    backup_value_outputs();
+    backup_collisions();
     rootNode->numberVisits = sum(rootNode->childNumberVisits);
 }
 

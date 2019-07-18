@@ -30,6 +30,7 @@ using blaze::DynamicVector;
 #include <unordered_map>
 using namespace std;
 #include <iostream>
+#include "agents/config/searchsettings.h"
 
 class Node
 {
@@ -42,7 +43,6 @@ private:
     DynamicVector<float> childNumberVisits;
     DynamicVector<float> actionValues;
     DynamicVector<float> qValues;
-    DynamicVector<float> scoreValues;
 //    DynamicVector<float> waitForNNResults;
 
     // dummy
@@ -64,16 +64,37 @@ private:
     // if checkMateIdx is != -1 it will always be preferred over all other nodes
     int checkmateIdx;
 
+    SearchSettings* searchSettings;
+
     /**
      * @brief check_for_terminal Checks if the currect node is a terminal node and updates the checkmateIdx for its parent in case of a checkmate terminal
      */
     inline void check_for_terminal();
 
+    /**
+     * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
+     * @return float
+     */
+    inline float get_current_cput();
+
+    /**
+     * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
+     * @return float
+     */
+    inline float get_current_u_divisor();
+
+    /**
+     * @brief get_current_u_values Calucates anCalucates and returns the current u-values for this node
+     * @return DynamicVector<float>
+     */
+    DynamicVector<float> get_current_u_values();
+
 public:
-//    Node();
+
     Node(Board *pos,
          Node *parentNode,
-         unsigned int childIdxForParent);
+         unsigned int childIdxForParent,
+         SearchSettings* searchSettings);
 
     /**
      * @brief Node Copy constructor which copies the value evaluation, board position, prior policy and checkmateIdx.
@@ -88,10 +109,10 @@ public:
     void setPVecSmall(const DynamicVector<float> &value);
     std::vector<Move> getLegalMoves() const;
     void setLegalMoves(const std::vector<Move> &value);
-    void apply_virtual_loss_to_child(unsigned int childIdx, float virtualLoss);
+    void apply_virtual_loss_to_child(unsigned int childIdx);
     float getValue() const;
     void setValue(float value);
-    size_t select_child_node(float cpuct);
+    size_t select_child_node();
     Node* get_child_node(size_t childIdx);
     void set_child_node(size_t childIdx, Node *newNode);
 
@@ -100,29 +121,26 @@ public:
      * The value is flipped at every ply.
      * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
      */
-    void backup_value(unsigned int childIdx, float virtualLoss, float value);
+    void backup_value(unsigned int childIdx, float value);
 
     /**
      * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
      * @param child_idx Index to the child node to update
-     * @param virtualLoss Specifies the virtual loss
      * @param value Specifies the value evaluation to backpropagate
      */
-    void revert_virtual_loss_and_update(unsigned int child_idx, float virtualLoss, float value);
+    void revert_virtual_loss_and_update(unsigned int child_idx, float value);
 
     /**
      * @brief backup_collision Iteratively removes the virtual loss of the collision event that occured
      * @param childIdx Index to the child node to update
-     * @param virtualLoss  Specifies the virtual loss
      */
-    void backup_collision(unsigned int childIdx, float virtualLoss);
+    void backup_collision(unsigned int childIdx);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
      * @param child_idx Index to the child node to update
-     * @param virtualLoss  Specifies the virtual loss
      */
-    void revert_virtual_loss(unsigned int childIdx, float virtualLoss);
+    void revert_virtual_loss(unsigned int childIdx);
 
     /**
      * @brief make_to_root Makes the node to the current root node by setting its parent to a nullptr
@@ -143,7 +161,7 @@ public:
     void get_mcts_policy(const float qValueWeight, const float q_value_min_visit_fac, DynamicVector<float>& mctsPolicy);
     DynamicVector<float> getQValues() const;
 
-    void apply_dirichlet_noise_to_prior_policy(const float epsilon, const float alpha);
+    void apply_dirichlet_noise_to_prior_policy();
 
     void setQValues(const DynamicVector<float> &value);
     DynamicVector<float> getChildNumberVisits() const;
@@ -171,6 +189,7 @@ public:
      * @return
      */
     Key hash_key();
+    static void setSearchSettings(SearchSettings *value);
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);

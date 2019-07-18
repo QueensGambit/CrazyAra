@@ -23,7 +23,6 @@ struct SearchSettings
 {
     int threads;
     unsigned int batchSize;
-    float cpuct;
     float dirichletEpsilon;
     float dirichletAlpha;
     float qValueWeight;
@@ -33,21 +32,29 @@ struct SearchSettings
     bool enhanceCaptures;
     bool useFutureQValues;
     bool usePruning;
-    float uInitDivisor;
+    float cpuctInit;
+    float cpuctBase;
+    float uBase;
+    float uInit;
+    float uMin;
 
     SearchSettings(): threads(2),
-                 batchSize(2),
-                 cpuct(1),
-                 dirichletEpsilon(0.25),
-                 dirichletAlpha(0.2),
-                 qValueWeight(0.0),
-                 virtualLoss(3),
-                 verbose(true),
-                 enhanceChecks(true),
-                 enhanceCaptures(true),
-                 useFutureQValues(true),
-                 usePruning(false),
-                 uInitDivisor(1.0) {}
+        batchSize(2),
+        dirichletEpsilon(0.25f),
+        dirichletAlpha(0.2f),
+        qValueWeight(0.0f),
+        virtualLoss(3.0f),
+        verbose(true),
+        enhanceChecks(true),
+        enhanceCaptures(true),
+        useFutureQValues(true),
+        usePruning(false),
+        cpuctInit(2.5f),
+        cpuctBase(19652.0f),
+        uBase(1965.0f),
+        uInit(1.0f),
+        uMin(0.25f)
+    {}
 };
 
 #endif // SEARCHSETTINGS_H

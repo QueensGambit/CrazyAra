@@ -28,7 +28,6 @@ class SearchThread
 private:
     Node* rootNode;
     NeuralNetAPI *netBatch;
-    unsigned int batchSize;
 
     float *inputPlanes; //[NB_VALUES_TOTAL]; //34][8][8];
 //    StateListPtr& states; // = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
@@ -47,17 +46,17 @@ private:
     NDArray* valueOutputs;
     NDArray* probOutputs;
 
-    const float virtualLoss;
     bool isRunning;
 
     unordered_map<Key, Node*> *hashTable;
-    SearchLimits *searchLimits;
+    SearchSettings searchSettings;
+    SearchLimits* searchLimits;
 
     inline Node* get_new_child_to_evaluate(unsigned int &childIdx, bool &isCollision,  bool &isTerminal, size_t &depth);
     void set_NN_results_to_child_nodes();
-    void backup_value_outputs(const float virtualLoss);
-    void backup_collisions(const float virtualLoss);
-    void revert_virtual_loss_for_collision(const float virtualLoss);
+    void backup_value_outputs();
+    void backup_collisions();
+    void revert_virtual_loss_for_collision();
 
     /**
      * @brief create_new_node Creates a new node which will be added to the tree
@@ -77,7 +76,7 @@ private:
      */
     inline void copy_node(const unordered_map<Key,Node*>::const_iterator &it, Board* newPos, Node* parentNode, size_t childIdx);
 public:
-    SearchThread(NeuralNetAPI *netBatch, unsigned int batchSize, const float virtualLoss, unordered_map<Key, Node*> *hashTable);
+    SearchThread(NeuralNetAPI* netBatch, SearchSettings searchSettings, unordered_map<Key, Node*>* hashTable);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

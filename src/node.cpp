@@ -20,16 +20,18 @@ using namespace std;
 #include "uci.h"
 #include "misc.h"
 
+
 Board* Node::getPos()
 {
     return pos;
 }
 
-Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent):
+Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent, SearchSettings* searchSettings):
     pos(pos),
     parentNode(parentNode),
     childIdxForParent(childIdxForParent),
-    checkmateIdx(-1)
+    checkmateIdx(-1),
+    searchSettings(searchSettings)
 {
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
@@ -64,7 +66,6 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent):
 
     // number of total visits to this node
     numberVisits = 1;  // we initialize with 1 because if the node was created it must have been visited
-    scoreValues = DynamicVector<float>(nbDirectChildNodes);
 
     childNodes.resize(nbDirectChildNodes); // = std::vector<Node>(nbDirectChildNodes);
     policyProbSmall.resize(nbDirectChildNodes);
@@ -89,7 +90,6 @@ Node::Node(const Node &b)
     actionValues = 0;
     qValues.resize(nbDirectChildNodes);
     qValues = -1;
-    scoreValues = b.scoreValues;
     ones.resize(nbDirectChildNodes);
     ones = b.ones;
     legalMoves = b.legalMoves;
@@ -101,6 +101,7 @@ Node::Node(const Node &b)
     //    childIdxForParent = // is not copied
     hasNNResults = b.hasNNResults;
     checkmateIdx = b.checkmateIdx;
+    searchSettings = b.searchSettings;
 }
 
 Node::~Node()
@@ -157,6 +158,22 @@ void Node::check_for_terminal()
         // normal game position
         isTerminal = false;
     }
+}
+
+float Node::get_current_cput()
+{
+//    return std::log((numberVisits + 19652.0f + 1) / 19652.0f) + 2.5f;
+    return std::log((numberVisits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
+}
+
+float Node::get_current_u_divisor()
+{
+    return searchSettings->uMin - exp(-numberVisits / searchSettings->uBase) * (searchSettings->uMin - searchSettings->uInit);
+}
+
+DynamicVector<float> Node::get_current_u_values()
+{
+    return get_current_cput() * policyProbSmall * (sqrt(numberVisits) * (ones / (childNumberVisits + get_current_u_divisor())));
 }
 
 void Node::enhance_checks()
@@ -219,10 +236,10 @@ DynamicVector<float> Node::getQValues() const
     return qValues;
 }
 
-void Node::apply_dirichlet_noise_to_prior_policy(const float epsilon, const float alpha)
+void Node::apply_dirichlet_noise_to_prior_policy()
 {
-    DynamicVector<float> dirichlet_noise = get_dirichlet_noise(nbDirectChildNodes, 0.2f);
-    policyProbSmall = (1 - epsilon) * policyProbSmall + epsilon * dirichlet_noise;
+    DynamicVector<float> dirichlet_noise = get_dirichlet_noise(nbDirectChildNodes, searchSettings->dirichletAlpha);
+    policyProbSmall = (1 - searchSettings->dirichletEpsilon ) * policyProbSmall + searchSettings->dirichletEpsilon  * dirichlet_noise;
 }
 
 void Node::setQValues(const DynamicVector<float> &value)
@@ -276,18 +293,18 @@ void Node::setLegalMoves(const std::vector<Move> &value)
     legalMoves = value;
 }
 
-void Node::apply_virtual_loss_to_child(unsigned int childIdx, float virtualLoss)
+void Node::apply_virtual_loss_to_child(unsigned int childIdx)
 {
     mtx.lock();
     // update the stats of the parent node
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
     // virtual increase the number of visits
-    numberVisits += virtualLoss;
-    childNumberVisits[childIdx] += virtualLoss;
+    numberVisits += searchSettings->virtualLoss;
+    childNumberVisits[childIdx] +=  searchSettings->virtualLoss;
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
     // self.action_value[child_idx] -= virtual_loss
-    actionValues[childIdx] -= virtualLoss;
+    actionValues[childIdx] -=  searchSettings->virtualLoss;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
     mtx.unlock();
 }
@@ -302,42 +319,15 @@ void Node::setValue(float value)
     value = value;
 }
 
-size_t Node::select_child_node(float cpuct)
+size_t Node::select_child_node()
 {
     if (checkmateIdx != -1) {
-        //        sync_cout << "string info checmateIdx" << checkmateIdx << sync_endl;
         return size_t(checkmateIdx);
     }
-
     // find the move according to the q- and u-values for each move
-    float pbCBase = 19652;
-    float pbCInit = cpuct;
-
-    float cpuct_current = std::log((numberVisits + pbCBase + 1) / pbCBase) + pbCInit;
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-
-    //    DynamicVector<float> uValues = (
-    //        cpuct_current
-    //        * pVecSmall
-    //        * sqrt(((1 / numberVisits) * (ones + childNumberVisits)))
-    //    );
-
-    //    float pb_u_base = 19652 / 10;
-    //    float pb_u_init = 1;
-    //    float pb_u_low = 0.5; //0.25;
-    float u_init = std::exp((-numberVisits + 1965 + 1) / 1965) / std::exp(1) * (1 - 0.25) + 0.25;
-
-    scoreValues = qValues + ( // u-Values
-                              cpuct_current //cpuct_current
-                              * policyProbSmall
-                              * (sqrt(numberVisits) * (ones / (childNumberVisits + u_init)))
-                              );
-
-    //    cout << "scoreValue" << scoreValues << endl;
-    //    scoreValues += waitForNNResults;
-
-    return argmax(scoreValues); //childIdx;
+    return argmax(qValues + get_current_u_values());
 }
 
 Node *Node::get_child_node(size_t childIdx)
@@ -350,11 +340,11 @@ void Node::set_child_node(size_t childIdx, Node *newNode)
     //    childNodes[childIdx] = Node(); // = newNode;
 }
 
-void Node::backup_value(unsigned int childIdx, float virtualLoss, float value)
+void Node::backup_value(unsigned int childIdx, float value)
 {
     Node* currentNode = this;
     while (true) {
-        currentNode->revert_virtual_loss_and_update(childIdx, virtualLoss, value);
+        currentNode->revert_virtual_loss_and_update(childIdx, value);
         value = -value;
         childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
@@ -364,21 +354,21 @@ void Node::backup_value(unsigned int childIdx, float virtualLoss, float value)
     }
 }
 
-void Node::revert_virtual_loss_and_update(unsigned int childIdx, float virtualLoss, float value)
+void Node::revert_virtual_loss_and_update(unsigned int childIdx, float value)
 {
     mtx.lock();
-    numberVisits -= virtualLoss - 1;
-    childNumberVisits[childIdx] -= virtualLoss - 1;
-    actionValues[childIdx] += virtualLoss + value;
+    numberVisits -= searchSettings->virtualLoss - 1;
+    childNumberVisits[childIdx] -= searchSettings->virtualLoss - 1;
+    actionValues[childIdx] += searchSettings->virtualLoss + value;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
     mtx.unlock();
 }
 
-void Node::backup_collision(unsigned int childIdx, float virtualLoss)
+void Node::backup_collision(unsigned int childIdx)
 {
     Node* currentNode = this;
     while (true) {
-        currentNode->revert_virtual_loss(childIdx, virtualLoss);
+        currentNode->revert_virtual_loss(childIdx);
         childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
         if (currentNode == nullptr) {
@@ -387,12 +377,12 @@ void Node::backup_collision(unsigned int childIdx, float virtualLoss)
     }
 }
 
-void Node::revert_virtual_loss(unsigned int childIdx, float virtualLoss)
+void Node::revert_virtual_loss(unsigned int childIdx)
 {
     mtx.lock();
-    numberVisits -= virtualLoss;
-    childNumberVisits[childIdx] -= virtualLoss;
-    actionValues[childIdx] += virtualLoss;
+    numberVisits -= searchSettings->virtualLoss;
+    childNumberVisits[childIdx] -= searchSettings->virtualLoss;
+    actionValues[childIdx] += searchSettings->virtualLoss;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
     mtx.unlock();
 }

@@ -23,6 +23,7 @@
 #include "mxnet-cpp/MxNetCpp.h"
 #include "uci.h"
 #include "../statesmanager.h"
+#include "../node.h"
 
 using namespace mxnet::cpp;
 
@@ -44,7 +45,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
 
     for (auto i = 0; i < searchSettings.threads; ++i) {
         cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
-        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings.batchSize, searchSettings.virtualLoss, hashTable));
+        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings, hashTable));
     }
 
     valueOutput = new NDArray(Shape(1, 1), Context::cpu());
@@ -83,7 +84,7 @@ size_t MCTSAgent::init_root_node(Board *pos)
             Node::delete_subtree(oldestRootNode, hashTable);
         }
         sync_cout << "info string create new tree" << sync_endl;
-        rootNode = new Node(newPos, nullptr, 0);
+        rootNode = new Node(newPos, nullptr, 0, &searchSettings);
         oldestRootNode = rootNode;
         board_to_planes(pos, 0, true, begin(input_planes));
         netSingle->predict(input_planes, *valueOutput, *probOutputs);
@@ -204,7 +205,7 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
     }
     else {
         sync_cout << "info string apply dirichlet" << sync_endl;
-        rootNode->apply_dirichlet_noise_to_prior_policy(0.25, 0.2);
+        rootNode->apply_dirichlet_noise_to_prior_policy();
         run_mcts_search();
     }
 
