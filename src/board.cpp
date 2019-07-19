@@ -19,37 +19,6 @@
 #include <iostream>
 
 using namespace std;
-/*
-// Data members
-Piece board[SQUARE_NB];
-Bitboard byTypeBB[PIECE_TYPE_NB];
-Bitboard byColorBB[COLOR_NB];
-int pieceCount[PIECE_NB];
-#ifdef HORDE
-Square pieceList[PIECE_NB][SQUARE_NB];
-#else
-Square pieceList[PIECE_NB][16];
-#endif
-#ifdef CRAZYHOUSE
-int pieceCountInHand[COLOR_NB][PIECE_TYPE_NB];
-Bitboard promotedPieces;
-#endif
-int index[SQUARE_NB];
-int castlingRightsMask[SQUARE_NB];
-#if defined(ANTI) || defined(EXTINCTION) || defined(TWOKINGS)
-Square castlingKingSquare[COLOR_NB];
-#endif
-Square castlingRookSquare[CASTLING_RIGHT_NB];
-Bitboard castlingPath[CASTLING_RIGHT_NB];
-int gamePly;
-Color sideToMove;
-Score psq;
-Thread* thisThread;
-StateInfo* st;
-bool chess960;
-Variant var;
-Variant subvar;
-*/
 
 Board::Board()
 {

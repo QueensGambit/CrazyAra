@@ -29,9 +29,8 @@ private:
     Node* rootNode;
     NeuralNetAPI *netBatch;
 
-    float *inputPlanes; //[NB_VALUES_TOTAL]; //34][8][8];
-//    StateListPtr& states; // = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
-//    states
+    float *inputPlanes;
+
     // list of all node objects which have been selected for expansion
     std::vector<Node*> newNodes;
     std::vector<Node*> transpositionNodes;

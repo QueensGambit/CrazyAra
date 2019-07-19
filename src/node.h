@@ -38,19 +38,16 @@ private:
     std::mutex mtx;
     float value;
     Board *pos;
-//    StateInfo state;
     DynamicVector<float> policyProbSmall;
     DynamicVector<float> childNumberVisits;
     DynamicVector<float> actionValues;
     DynamicVector<float> qValues;
-//    DynamicVector<float> waitForNNResults;
 
     // dummy
     DynamicVector<float> ones;
 
     std::vector<Move> legalMoves;
     bool isTerminal;
-//    unsigned int numberWaitingChildNodes;
     unsigned int nbDirectChildNodes;
 
     float initialValue;
@@ -104,7 +101,6 @@ public:
     Node(const Node& b);
     ~Node();
 
-//    void setNeuralNetResults(float value, DynamicVector<float>& policyProbSmall);
     DynamicVector<float> getPVecSmall() const;
     void setPVecSmall(const DynamicVector<float> &value);
     std::vector<Move> getLegalMoves() const;

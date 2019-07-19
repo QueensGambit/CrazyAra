@@ -26,8 +26,6 @@ using namespace UCI;
 
 namespace OptionsUCI {
 
-//    void activate_logger(const Option& o) { start_logger(o); }
-
     /**
      * @brief init Defines and initiatlizes the UCI options
      * @param o Alias to the option map which will get initialized
