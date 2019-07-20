@@ -67,7 +67,7 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent, SearchS
     // number of total visits to this node
     numberVisits = 1;  // we initialize with 1 because if the node was created it must have been visited
 
-    childNodes.resize(nbDirectChildNodes); // = std::vector<Node>(nbDirectChildNodes);
+    childNodes.resize(nbDirectChildNodes);
     policyProbSmall.resize(nbDirectChildNodes);
 
     //    waitForNNResults.resize(nbDirectChildNodes);
@@ -187,7 +187,7 @@ void Node::enhance_checks()
         const float thresh_check = 0.1f;
         const float thresh_capture = 0.01f;
 
-        float increment_check = min(thresh_check, max(policyProbSmall)*1.0f); //0.5f);
+        float increment_check = min(thresh_check, max(policyProbSmall)*0.5f);
         float increment_capture = min(thresh_capture, max(policyProbSmall)*0.1f);
 
         bool update = false;
@@ -260,22 +260,6 @@ unsigned int Node::getNbDirectChildNodes() const
 {
     return nbDirectChildNodes;
 }
-
-//void Node::setNeuralNetResults(float value, DynamicVector<float> &pVecSmall)
-//{
-//    mtx.lock();
-//    this->policyProbSmall = pVecSmall;
-//    this->value = value;
-//    hasNNResults = true;
-//    enhance_checks();
-//    mtx.unlock();
-//}
-
-
-//DynamicVector<float> Node::getMCTSPolicy(float q_value_weight )
-//{
-
-//}
 
 DynamicVector<float> Node::getPVecSmall() const
 {
