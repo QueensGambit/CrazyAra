@@ -18,10 +18,12 @@
 using namespace std;
 
 
-TimeManager::TimeManager(int expectedGameLength, int threshMove, float moveFact):
+TimeManager::TimeManager(int expectedGameLength, int threshMove, float moveFactor, float incrementFactor, int timeBufferFactor):
     expectedGameLength(expectedGameLength),
     threshMove(threshMove),
-    moveFact(moveFact)
+    moveFactor(moveFactor),
+    incrementFactor(incrementFactor),
+    timeBufferFactor(timeBufferFactor)
 {
     assert(threshMove < expectedGameLength);
 }
@@ -29,7 +31,7 @@ TimeManager::TimeManager(int expectedGameLength, int threshMove, float moveFact)
 int TimeManager::get_time_for_move(SearchLimits* searchLimits, Color me, int moveNumber)
 {
     // leave an additional time buffer to avoid losing on time
-    time_buffer = searchLimits->moveOverhead * 3;
+    timeBuffer = searchLimits->moveOverhead * timeBufferFactor;
 
     if (searchLimits->movetime != 0) {
         // only return the plain move time substracted by the move overhead
@@ -37,18 +39,18 @@ int TimeManager::get_time_for_move(SearchLimits* searchLimits, Color me, int mov
     }
     else if (searchLimits->movestogo != 0) {
         // calculate a constant move time based on increment and moves left
-        curMovetime = int(((searchLimits->time[me] - time_buffer) / float(searchLimits->movestogo) + 0.5f)
+        curMovetime = int(((searchLimits->time[me] - timeBuffer) / float(searchLimits->movestogo) + 0.5f)
                 + searchLimits->inc[me] - searchLimits->moveOverhead);
     }
     else if (searchLimits->time[me] != 0) {
         // calculate a movetime in sudden death mode
         if (moveNumber < threshMove) {
-            curMovetime = int((searchLimits->time[me] - time_buffer) / float(expectedGameLength-moveNumber) + 0.5f)
-                    + max(searchLimits->inc[me]-time_buffer, 0) - searchLimits->moveOverhead;
+            curMovetime = int((searchLimits->time[me] - timeBuffer) / float(expectedGameLength-moveNumber) + 0.5f)
+                    + int(searchLimits->inc[me] * incrementFactor) - searchLimits->moveOverhead;
         }
         else {
-            curMovetime = int((searchLimits->time[me] - time_buffer) * moveFact + 0.5f)
-                    + max(searchLimits->inc[me]-time_buffer, 0) - searchLimits->moveOverhead;
+            curMovetime = int((searchLimits->time[me] - timeBuffer) * moveFactor + 0.5f)
+                    + int(searchLimits->inc[me] * incrementFactor) - searchLimits->moveOverhead;
         }
     }
     else if (searchLimits->nodes) {
@@ -60,6 +62,8 @@ int TimeManager::get_time_for_move(SearchLimits* searchLimits, Color me, int mov
 //        sync_cout << "string info No limit specification given, setting movetime to (1000 - moveOverhead)" << sync_endl;
     }
 
-    assert(curMovetime > 0);
+    if (curMovetime <= 0) {
+        curMovetime = searchLimits->moveOverhead * 2;
+    }
     return curMovetime;
 }

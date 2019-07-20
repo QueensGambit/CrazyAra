@@ -25,20 +25,23 @@ class TimeManager
 {
 private:
     int curMovetime;
-    int time_buffer;
+    int timeBuffer;
 
     int expectedGameLength;
     int threshMove;
-    float moveFact;
+    float moveFactor;
+    float incrementFactor;
+    int timeBufferFactor;
 public:
 
     /**
      * @brief TimeManager
      * @param expectedGameLength Expected game length for the game in full moves
      * @param threshMove Threshold move on which the constant move regime will switch to a proportional one
-     * @param moveFact Portion of the current move time which will be used in the proportional movetime regime
+     * @param moveFactor Portion of the current move time which will be used in the proportional movetime regime
+     * @param timeBufferFactor Factor which is applied on the moveOverhead to calculate a time buffer for avoiding losing on time
      */
-    TimeManager(int expectedGameLength=50, int threshMove=40, float moveFact=0.05f);
+    TimeManager(int expectedGameLength=50, int threshMove=40, float moveFactor=0.05f, float incrementFactor=0.5f, int timeBufferFactor=30.0f);
 
     /**
      * @brief get_time_for_move Calculates the movetime based on the searchSettigs

@@ -37,9 +37,6 @@ private:
     std::vector<Node*> collisionNodes;
     std::vector<Node*> terminalNodes;
 
-    std::vector<Node*> parentNode;
-
-
     // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
     // sufficient memory according to the batch-size will be allocated in the constructor
     NDArray* valueOutputs;
@@ -85,7 +82,11 @@ public:
      */
     void create_mini_batch();
 
+    /**
+     * @brief thread_iteration Runs multiple mcts-rollouts as long as a new batch is filled
+     */
     void thread_iteration();
+
     void setRootNode(Node *value);
     void set_search_limits(SearchLimits *s);
     bool getIsRunning() const;
