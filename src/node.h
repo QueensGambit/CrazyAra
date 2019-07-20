@@ -81,6 +81,13 @@ private:
     inline float get_current_u_divisor();
 
     /**
+     * @brief get_current_q_thresh Calculates the current q-thresh factor which is used to disable the effect of the q-value for low visited nodes
+     * for the final move selection after the search
+     * @return float
+     */
+    inline float get_current_q_thresh();
+
+    /**
      * @brief get_current_u_values Calucates anCalucates and returns the current u-values for this node
      * @return DynamicVector<float>
      */
@@ -154,9 +161,19 @@ public:
     DynamicVector<float> getPolicyProbSmall();
     void setPolicyProbSmall(const DynamicVector<float> &value);
 
-    void get_mcts_policy(const float qValueWeight, const float q_value_min_visit_fac, DynamicVector<float>& mctsPolicy);
+    /**
+     * @brief get_mcts_policy Returns the final policy after the mcts search which is used for move selection, in most cases argmax(mctsPolicy).
+     * Depending on the searchSettings, Q-values will be taken into account for creating this.
+     * @param mctsPolicy Output of the final mcts policy after search
+     */
+    void get_mcts_policy(DynamicVector<float>& mctsPolicy);
     DynamicVector<float> getQValues() const;
 
+    /**
+     * @brief apply_dirichlet_noise_to_prior_policy Applies dirichlet noise of strength searchSettings->dirichletEpsilon with
+     * alpha value searchSettings->dirichletAlpha to the prior policy of the root node. This encourages exploration of nodes with initially low
+     * low activations.
+     */
     void apply_dirichlet_noise_to_prior_policy();
 
     void setQValues(const DynamicVector<float> &value);

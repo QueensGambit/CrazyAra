@@ -209,11 +209,8 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
         run_mcts_search();
     }
 
-    float qValueFac = searchSettings.qValueWeight;
-    float qValueThresh = 0.7;
-
     DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);
-    rootNode->get_mcts_policy(qValueFac, qValueThresh, mctsPolicy);
+    rootNode->get_mcts_policy(mctsPolicy);
 
     size_t best_idx = argmax(mctsPolicy);
 

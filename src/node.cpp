@@ -121,7 +121,7 @@ void Node::get_principal_variation(std::vector<Move> &pv)
     size_t childIdx;
     do {
         DynamicVector<float> mctsPolicy(curNode->nbDirectChildNodes);
-        curNode->get_mcts_policy(0, 0, mctsPolicy);
+        curNode->get_mcts_policy(mctsPolicy);
         childIdx = argmax(mctsPolicy);
         pv.push_back(curNode->legalMoves[childIdx]);
         curNode = curNode->childNodes[childIdx];
@@ -171,6 +171,11 @@ float Node::get_current_u_divisor()
     return searchSettings->uMin - exp(-numberVisits / searchSettings->uBase) * (searchSettings->uMin - searchSettings->uInit);
 }
 
+float Node::get_current_q_thresh()
+{
+    return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
+}
+
 DynamicVector<float> Node::get_current_u_values()
 {
     return get_current_cput() * policyProbSmall * (sqrt(numberVisits) * (ones / (childNumberVisits + get_current_u_divisor())));
@@ -213,19 +218,18 @@ void Node::setPolicyProbSmall(const DynamicVector<float> &value)
     policyProbSmall = value;
 }
 
-void Node::get_mcts_policy(const float qValueWeight, const float qValueThresh, DynamicVector<float>& mctsPolicy)
+void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy)
 {
-    if (qValueWeight != 0) {
+    if (searchSettings->qValueWeight != 0) {
         DynamicVector<float> qValuePruned(nbDirectChildNodes);
         qValuePruned = (qValues + ones) * 0.5f;
-        size_t maxVisists = max(childNumberVisits);
-        float visitThresh = qValueThresh * maxVisists;
+        float visitThresh = get_current_q_thresh() * max(childNumberVisits);
         for (size_t idx; idx < nbDirectChildNodes; ++idx) {
             if (qValuePruned[idx] < visitThresh) {
                 qValuePruned[idx] = 0;
             }
         }
-        mctsPolicy = (1.0f - qValueWeight) * (childNumberVisits / numberVisits) + qValueWeight * qValuePruned;
+        mctsPolicy = (1.0f - searchSettings->qValueWeight) * (childNumberVisits / numberVisits) + searchSettings->qValueWeight * qValuePruned;
     } else {
         mctsPolicy = childNumberVisits / numberVisits;
     }

@@ -34,9 +34,12 @@ struct SearchSettings
     bool usePruning;
     float cpuctInit;
     float cpuctBase;
-    float uBase;
     float uInit;
     float uMin;
+    float uBase;
+    float qThreshInit;
+    float qThreshMax;
+    float qThreshBase;
 
     SearchSettings(): threads(2),
         batchSize(2),
@@ -51,9 +54,12 @@ struct SearchSettings
         usePruning(false),
         cpuctInit(2.5f),
         cpuctBase(19652.0f),
-        uBase(1965.0f),
         uInit(1.0f),
-        uMin(0.25f)
+        uMin(0.25f),
+        uBase(1965.0f),
+        qThreshInit(0.5f),
+        qThreshMax(0.9f),
+        qThreshBase(1965.0f)
     {}
 };
 
