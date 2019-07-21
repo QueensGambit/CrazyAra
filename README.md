@@ -33,20 +33,20 @@ __TODO__
 Please follow these steps to build CrazyAra from source:
 ### Linux
 1. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6**:
-* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
-* https://bitbucket.org/blaze-lib/blaze/downloads/
+	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
+	* https://bitbucket.org/blaze-lib/blaze/downloads/
 
 2. Build the MXNet C++ package
-* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
+	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
 
-```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
+   ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
 
-3. Download & install yaml-cpp 
-* https://github.com/jbeder/yaml-cpp
+3. Download and install yaml-cpp 
+	* https://github.com/jbeder/yaml-cpp
 
-or alternative for Linux Debian systems
-
-`$ sudo apt-get install libyaml-cpp-dev`
+   For Linux Debian systems there is an official package available: 
+   
+   `$ sudo apt-get install libyaml-cpp-dev`
 
 ### Windows
 __TODO__
@@ -57,7 +57,7 @@ The following libraries are used to run CrazyAra:
 * [**Multi Variant Stockfish**](https://github.com/ddugovic/Stockfish): Stockfish fork specialized to play chess and some chess variants
 	* Used for move generation and board representation as a replacement for [python-chess](https://github.com/niklasf/python-chess).
 * [**MXNet C++ Package**](https://github.com/apache/incubator-mxnet/tree/master/cpp-package): A flexible and efficient library for deep learning
-        * Used as the deep learning backend for loading and inference of the trained neural network
+	* Used as the deep learning backend for loading and inference of the trained neural network
 * [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/): An open-source, high-performance C++ math library for dense and sparse arithmetic
 	* Used for arithmeic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
 * [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
