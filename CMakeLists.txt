@@ -26,6 +26,7 @@ file(GLOB source_files
         "lib/Stockfish/src/syzygy/*.cpp"
         "*.h"
         "*.cpp"
+        "*.md"
         "lib/Stockfish/src/*.h"
         "lib/Stockfish/src/*.cpp"
         "lib/catch-2.91/*.hpp"
