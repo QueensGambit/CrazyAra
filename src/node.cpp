@@ -398,7 +398,11 @@ void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)
             delete_subtree(child_node, hashTable);
         }
     }
-    //    hashTable->erase(node->hash_key());
+
+    auto it = hashTable->find(node->pos->hash_key());
+    if(it != hashTable->end() && it->second == node) {
+        hashTable->erase(node->hash_key());
+    }
     delete node;
 }
 

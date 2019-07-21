@@ -61,7 +61,7 @@ private:
     unsigned int nbDirectChildNodes;
 
     float initialValue;
-    size_t numberVisits = 0;
+    int numberVisits = 0;
     std::vector<Node*> childNodes;
 
     Node *parentNode;

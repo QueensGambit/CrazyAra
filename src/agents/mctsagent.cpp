@@ -107,8 +107,6 @@ size_t MCTSAgent::init_root_node(Board *pos)
 
     potentialRoots.clear();
 
-    // TODO: Use individual deletion of entries instead to maintain positions after reusing the tree
-    hashTable->clear();
     return nodesPreSearch;
 }
 
