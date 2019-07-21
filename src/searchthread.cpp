@@ -43,8 +43,6 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings searchSettings
     } else {
         probOutputs = new NDArray(Shape(searchSettings.batchSize, NB_LABELS), Context::cpu());
     }
-    //    states = nullptr;
-    //    states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
 }
 
 void SearchThread::setRootNode(Node *value)
@@ -126,8 +124,6 @@ void SearchThread::set_NN_results_to_child_nodes()
             node->enhance_checks();
             node->mtx.unlock();
         }
-        //        node->parentNode->waitForNNResults[node->childIdxOfParent] = 0;
-        //        node->parentNode->numberWaitingChildNodes--;
         ++batchIdx;
         hashTable->insert({node->pos->hash_key(), node});
     }
@@ -183,21 +179,14 @@ void SearchThread::copy_node(const unordered_map<Key,Node*>::const_iterator &it,
 {
     Node *newNode = new Node(*it->second);
     newNode->mtx.lock();
-    //                 newNode->value = it->second->value;
-    //                 newNode->policyProbSmall = it->second->policyProbSmall;
     newNode->pos = newPos;
     newNode->parentNode = parentNode;
     newNode->childIdxForParent = childIdx;
     newNode->hasNNResults = true;
     newNode->mtx.unlock();
     parentNode->mtx.lock();
-    //                 sync_cout << "parentNode: childNodes" << parentNode->childNodes.size() << " " << childIdx << sync_endl;
     parentNode->childNodes[childIdx] = newNode;
     parentNode->mtx.unlock();
-    //    assert(newNode->nbDirectChildNodes == it->second->nbDirectChildNodes);
-    //                 sync_cout << parentNode->childNodes[childIdx]->value << sync_endl;
-    //    parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
-    //    parentNode->backup_value(childIdx, virtualLoss, -parentNode->childNodes[childIdx]->value);
 }
 
 void SearchThread::create_mini_batch()
@@ -234,37 +223,14 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(false and it != hashTable->end() && it->second->hasNNResults &&
-               it->second->pos->getStateInfo()->pliesFromNull == newState->pliesFromNull &&
-               it->second->pos->getStateInfo()->rule50 == newState->rule50 &&
-               newState->repetition == 0)
-                {
-                                    copy_node(it, newPos, parentNode, childIdx);
-                    //                sync_cout << "transposition event!: " << newPos->fen() << sync_endl;
-
-//                    if (newPos->fen() != it->second->pos->fen()) {
-//                        sync_cout << "fen missmatch!" << sync_endl;
-//                        sync_cout << newPos->fen() << " != " << it->second->pos->fen() << sync_endl;
-//                        assert(newPos->fen() == it->second->pos->fen());
-//                    }
-//                    Node *newNode = new Node(newPos, parentNode, childIdx);
-//                    newNode->mtx.lock();
-//                    if (!newNode->isTerminal) {
-//                        newNode->value = it->second->value;
-//                        newNode->checkmateIdx = it->second->checkmateIdx;
-//                    }
-//                    newNode->hasNNResults = true;
-//                    newNode->mtx.unlock();
-
-//                    //                // connect the Node to the parent
-//                    parentNode->mtx.lock();
-//                    parentNode->childNodes[childIdx] = newNode;
-//                    parentNode->mtx.unlock();
-                    //                assert(it->second->nbDirectChildNodes == newNode->nbDirectChildNodes);
-                    //                parentNode->backup_value(childIdx, virtualLoss, -newNode->value);
-                    transpositionNodes.push_back(parentNode->childNodes[childIdx]);
-
-                    ++tranpositionEvents;
+            if(it != hashTable->end() && it->second->hasNNResults &&
+                    it->second->pos->getStateInfo()->pliesFromNull == newState->pliesFromNull &&
+                    it->second->pos->getStateInfo()->rule50 == newState->rule50 &&
+                    newState->repetition == 0)
+            {
+                copy_node(it, newPos, parentNode, childIdx);
+                transpositionNodes.push_back(parentNode->childNodes[childIdx]);
+                ++tranpositionEvents;
             }
             else {
                 create_new_node(newPos, parentNode, childIdx, numberNewNodes);
@@ -290,20 +256,8 @@ void SearchThread::thread_iteration()
 void go(SearchThread *t)
 {
     t->setIsRunning(true);
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-
-    //    sync_cout << "string info thread rootNode" << sync_endl;
-    //    sync_cout << "string info >> fen " << t->getRootNode()->getPos().fen() << sync_endl;
-
-    TimePoint elapsedTimeMS;
 
     do {
         t->thread_iteration();
-        //        if (i % 100 == 0) {
-        //            cout << "rootNode" << endl;
-        //            cout << t->getRootNode() << endl;
-        //        }
-        TimePoint end = now();
-        elapsedTimeMS = end - t->getSearchLimits()->startTime;
     } while(t->getIsRunning());
 }
