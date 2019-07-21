@@ -31,7 +31,7 @@
 #include "outputrepresentation.h"
 #include "constants.h"
 #include "misc.h"
-#include "../blazeutil.h"
+#include "../util/blazeutil.h"
 #include "uci.h"
 
 using blaze::HybridVector;

@@ -26,7 +26,7 @@
 #include "node.h"
 #include <iostream>
 using namespace std;
-#include "blazeutil.h"
+#include "util/blazeutil.h"
 #include "uci.h"
 #include "misc.h"
 

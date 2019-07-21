@@ -39,7 +39,7 @@
 
 #include "evalinfo.h"
 #include "domain/crazyhouse/constants.h"
-#include "sfutil.h"
+#include "util/sfutil.h"
 #include "uci.h"
 #include "constants.h"
 #include "board.h"

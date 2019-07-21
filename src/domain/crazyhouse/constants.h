@@ -37,7 +37,7 @@
 #include <string>
 #include <unordered_map>
 #include "types.h"
-#include "../../sfutil.h"
+#include "../../util/sfutil.h"
 #include <iostream>
 
 // Define the board size

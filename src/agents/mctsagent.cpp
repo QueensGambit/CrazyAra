@@ -29,7 +29,7 @@
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
 #include "constants.h"
-#include "../blazeutil.h"
+#include "../util/blazeutil.h"
 #include "mxnet-cpp/MxNetCpp.h"
 #include "uci.h"
 #include "../statesmanager.h"
