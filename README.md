@@ -30,18 +30,18 @@ __TODO__
 
 ## Compilation
 
-Please follow the given step to build CrazyAra from source.
+Please follow these steps to build CrazyAra from source:
 ### Linux
-1. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) version **>=3.6**:
+1. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6**:
 * https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 * https://bitbucket.org/blaze-lib/blaze/downloads/
 
-Build the MXNet C++ package
+2. Build the MXNet C++ package
 * https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
 
 ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
 
-2. Download & install yaml-cpp 
+3. Download & install yaml-cpp 
 * https://github.com/jbeder/yaml-cpp
 
 or alternative for Linux Debian systems
