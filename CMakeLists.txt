@@ -36,6 +36,8 @@ file(GLOB source_files
         "src/*.cpp"
         "src/tests/*.h"
         "src/tests/*.cpp"
+        "src/util/*.h"
+        "src/util/*.cpp"
         "src/domain/crazyhouse/*.h"
         "src/domain/crazyhouse/*.cpp"
         "src/agents/*.cpp"
