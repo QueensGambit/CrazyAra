@@ -45,7 +45,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings searchSettings
     }
 }
 
-void SearchThread::setRootNode(Node *value)
+void SearchThread::set_root_node(Node *value)
 {
     rootNode = value;
 }
@@ -55,12 +55,12 @@ void SearchThread::set_search_limits(SearchLimits *s)
     searchLimits = s;
 }
 
-bool SearchThread::getIsRunning() const
+bool SearchThread::get_is_running() const
 {
     return isRunning;
 }
 
-void SearchThread::setIsRunning(bool value)
+void SearchThread::set_is_running(bool value)
 {
     isRunning = value;
 }
@@ -70,12 +70,12 @@ void SearchThread::stop()
     isRunning = false;
 }
 
-Node *SearchThread::getRootNode() const
+Node *SearchThread::get_root_node() const
 {
     return rootNode;
 }
 
-SearchLimits *SearchThread::getSearchLimits() const
+SearchLimits *SearchThread::get_search_limits() const
 {
     return searchLimits;
 }
@@ -111,7 +111,7 @@ inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, boo
 
 }
 
-void SearchThread::set_NN_results_to_child_nodes()
+void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: newNodes) {
@@ -131,7 +131,6 @@ void SearchThread::set_NN_results_to_child_nodes()
 
 void SearchThread::backup_value_outputs()
 {
-    //    size_t batchIdx = 0;
     for (auto node: newNodes) {
         node->parentNode->backup_value(node->childIdxForParent, -node->value);
     }
@@ -146,7 +145,6 @@ void SearchThread::backup_value_outputs()
         node->parentNode->backup_value(node->childIdxForParent, -node->value);
     }
     terminalNodes.clear();
-
 }
 
 void SearchThread::backup_collisions()
@@ -187,6 +185,11 @@ void SearchThread::copy_node(const unordered_map<Key,Node*>::const_iterator &it,
     parentNode->mtx.lock();
     parentNode->childNodes[childIdx] = newNode;
     parentNode->mtx.unlock();
+}
+
+bool SearchThread::nodes_limits_ok()
+{
+    return searchLimits->nodes == 0 || (rootNode->numberVisits < searchLimits->nodes);
 }
 
 void SearchThread::create_mini_batch()
@@ -246,7 +249,7 @@ void SearchThread::thread_iteration()
     create_mini_batch();
     if (newNodes.size() > 0) {
         netBatch->predict(inputPlanes, *valueOutputs, *probOutputs);
-        set_NN_results_to_child_nodes();
+        set_nn_results_to_child_nodes();
     }
     backup_value_outputs();
     backup_collisions();
@@ -255,9 +258,9 @@ void SearchThread::thread_iteration()
 
 void go(SearchThread *t)
 {
-    t->setIsRunning(true);
+    t->set_is_running(true);
 
     do {
         t->thread_iteration();
-    } while(t->getIsRunning());
+    } while(t->get_is_running() && t->nodes_limits_ok());
 }

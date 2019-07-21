@@ -58,11 +58,31 @@ private:
     SearchSettings searchSettings;
     SearchLimits* searchLimits;
 
+    /**
+     * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
+     * In the case a collision event occured the isCollision flag will be set and for a terminal node the isTerminal flag is set.
+     * @param childIdx Move index for the parent node in order to expand the next node
+     * @param isCollision Flag signaling a collision event, same node was selected multiple time
+     * @param isTerminal Flag signaling a terminal state
+     * @param depth Depth which was reached on this rollout
+     * @return
+     */
     inline Node* get_new_child_to_evaluate(unsigned int &childIdx, bool &isCollision,  bool &isTerminal, size_t &depth);
-    void set_NN_results_to_child_nodes();
+
+    /**
+     * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
+     */
+    void set_nn_results_to_child_nodes();
+
+    /**
+     * @brief backup_value_outputs Backpropagates all newly received value evaluations from the neural network accross the visited search paths
+     */
     void backup_value_outputs();
+
+    /**
+     * @brief backup_collisions Reverts the applied virtual loss for all rollouts which ended in a collision event
+     */
     void backup_collisions();
-    void revert_virtual_loss_for_collision();
 
     /**
      * @brief create_new_node Creates a new node which will be added to the tree
@@ -81,7 +101,14 @@ private:
      * @param childIdx Index on how to visit the child node from its parent
      */
     inline void copy_node(const unordered_map<Key,Node*>::const_iterator &it, Board* newPos, Node* parentNode, size_t childIdx);
+
 public:
+    /**
+     * @brief SearchThread
+     * @param netBatch Network API object which provides the prediction of the neural network
+     * @param searchSettings Given settings for this search run
+     * @param hashTable Handle to the hash table
+     */
     SearchThread(NeuralNetAPI* netBatch, SearchSettings searchSettings, unordered_map<Key, Node*>* hashTable);
 
     /**
@@ -97,15 +124,25 @@ public:
      */
     void thread_iteration();
 
-    void setRootNode(Node *value);
-    void set_search_limits(SearchLimits *s);
-    bool getIsRunning() const;
-    void setIsRunning(bool value);
+    /**
+     * @brief nodes_limits_ok Checks if the searchLimits based on the amount of nodes to search has been reached.
+     * In the case the number of nodes is set to zero the limit condition is ignored
+     * @return bool
+     */
+    inline bool nodes_limits_ok();
 
+    /**
+     * @brief stop Stops the rollouts of the current thread
+     */
     void stop();
 
-    Node* getRootNode() const;
-    SearchLimits *getSearchLimits() const;
+    // Getter, setter functions
+    void set_search_limits(SearchLimits *s);
+    Node* get_root_node() const;
+    SearchLimits *get_search_limits() const;
+    void set_root_node(Node *value);
+    bool get_is_running() const;
+    void set_is_running(bool value);
 };
 
 void go(SearchThread *t);

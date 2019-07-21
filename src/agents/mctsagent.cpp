@@ -240,7 +240,7 @@ void MCTSAgent::run_mcts_search()
 {
     thread** threads = new thread*[searchSettings.threads];
     for (size_t i = 0; i < searchSettings.threads; ++i) {
-        searchThreads[i]->setRootNode(rootNode);
+        searchThreads[i]->set_root_node(rootNode);
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(go, searchThreads[i]);
     }
