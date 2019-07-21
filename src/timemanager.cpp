@@ -24,6 +24,8 @@
  */
 
 #include "timemanager.h"
+#include <iostream>
+#include "misc.h"
 
 using namespace std;
 
@@ -63,13 +65,9 @@ int TimeManager::get_time_for_move(SearchLimits* searchLimits, Color me, int mov
                     + int(searchLimits->inc[me] * incrementFactor) - searchLimits->moveOverhead;
         }
     }
-    else if (searchLimits->nodes) {
-        // TODO
-        assert(false);
-    }
     else {
         curMovetime = 1000 - searchLimits->moveOverhead;
-//        sync_cout << "string info No limit specification given, setting movetime to (1000 - moveOverhead)" << sync_endl;
+        sync_cout << "string info No limit specification given, setting movetime to " << curMovetime << "ms" << sync_endl;
     }
 
     if (curMovetime <= 0) {

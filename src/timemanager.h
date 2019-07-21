@@ -51,7 +51,7 @@ public:
      * @param moveFactor Portion of the current move time which will be used in the proportional movetime regime
      * @param timeBufferFactor Factor which is applied on the moveOverhead to calculate a time buffer for avoiding losing on time
      */
-    TimeManager(int expectedGameLength=50, int threshMove=40, float moveFactor=0.05f, float incrementFactor=0.5f, int timeBufferFactor=30.0f);
+    TimeManager(int expectedGameLength=50, int threshMove=40, float moveFactor=0.05f, float incrementFactor=0.7f, int timeBufferFactor=30.0f);
 
     /**
      * @brief get_time_for_move Calculates the movetime based on the searchSettigs
