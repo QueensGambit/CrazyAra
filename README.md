@@ -59,7 +59,7 @@ The following libraries are used to run CrazyAra:
 * [**MXNet C++ Package**](https://github.com/apache/incubator-mxnet/tree/master/cpp-package): A flexible and efficient library for deep learning
 	* Used as the deep learning backend for loading and inference of the trained neural network
 * [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/): An open-source, high-performance C++ math library for dense and sparse arithmetic
-	* Used for arithmeic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
+	* Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
 * [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
 	* Used as the testing framework as a replacmenet for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
 * [**yaml-cpp**](https://github.com/jbeder/yaml-cpp): A YAML parser and emitter in C++
