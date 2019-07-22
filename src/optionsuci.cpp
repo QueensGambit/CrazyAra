@@ -36,10 +36,10 @@ void OptionsUCI::init(OptionsMap &o)
 
          o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
          o["Search_Type"]              << Option("MCTS", {"MCTS"});
-         o["Context"]                  << Option("CPU", {"CPU", "GPU"});
+         o["Context"]                  << Option("GPU", {"CPU", "GPU"});
          o["Use_Raw_Network"]          << Option(false);
          o["Threads"]                  << Option(2, 1, 512);
-         o["Batch_Size"]               << Option(8, 1, 8192);
+         o["Batch_Size"]               << Option(64, 1, 8192);  // 8
          o["Playouts"]                 << Option(99999, 1, 99999);
          o["Centi_CPUCT"]              << Option(250, 1, 99999);
          o["Centi_Dirichlet_Epsilon"]  << Option(25, 1, 99999);

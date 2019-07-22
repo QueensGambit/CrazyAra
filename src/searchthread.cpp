@@ -226,13 +226,14 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(it != hashTable->end() && it->second->hasNNResults &&
+            if(searchSettings.useTranspositionTable && it != hashTable->end() && it->second->hasNNResults &&
                     it->second->pos->getStateInfo()->pliesFromNull == newState->pliesFromNull &&
                     it->second->pos->getStateInfo()->rule50 == newState->rule50 &&
                     newState->repetition == 0)
             {
                 copy_node(it, newPos, parentNode, childIdx);
                 transpositionNodes.push_back(parentNode->childNodes[childIdx]);
+//                parentNode->backup_value(childIdx, -parentNode->childNodes[childIdx]->value);
                 ++tranpositionEvents;
             }
             else {

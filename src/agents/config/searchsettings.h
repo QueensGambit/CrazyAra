@@ -42,6 +42,7 @@ struct SearchSettings
     bool enhanceCaptures;
     bool useFutureQValues;
     bool usePruning;
+    bool useTranspositionTable;
     float cpuctInit;
     float cpuctBase;
     float uInit;
@@ -62,6 +63,7 @@ struct SearchSettings
         enhanceCaptures(true),
         useFutureQValues(true),
         usePruning(false),
+        useTranspositionTable(true),
         cpuctInit(2.5f),
         cpuctBase(19652.0f),
         uInit(1.0f),

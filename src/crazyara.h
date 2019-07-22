@@ -131,6 +131,15 @@ r4rk1/ppp2pbp/8/4p1q1/3nB3/2NP1BPp/PPP2P1P/R4RK1[QBNPnp] b - - 0 21
 -> Bc5 M#10
 r1b2r2/pp3Bpk/3b1q2/2p5/3pPp2/3P3P/PPP2PP1/RN1Q1RK1/PNNpbn b - - 0 19
 -> @h6 oder N@g5
+
+r2q2k1/ppp2ppp/5p2/1B1p4/8/2r3P1/PPn1Q1KP/R1B5/PNNBBRpppn w - - 0 20
+-> @e6
+
+r4bk1/ppq3pp/5pp1/3N4/3Qp1b1/P7/1PP2PKP/R4R2/PPNNRNbbpp b - - 0 21
+r4bk1/ppq3pp/5pp1/3NQ3/4p1b1/P7/1PP2PKP/R4R2/BPPNNRNbpp b - - 0 22
+-> probably first mate sequence for white but Sf doesn't see it at depth 29
+info depth 29 seldepth 18 multipv 1 score cp 0 nodes 638207891 nps 954325 hashfull 999 tbhits 0 time 668753 pv P@f3 g2g1 c7e5 P@f7 g8f7 N@h8 f7e8 N@c7 e8d7 P@c6 b7c6 R@f7 f8e7 N@c5 d7d6 c5b7 d6d7
+
 */
 
 

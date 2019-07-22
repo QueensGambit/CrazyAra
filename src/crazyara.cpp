@@ -272,6 +272,7 @@ bool CrazyAra::is_ready()
     if (!networkLoaded) {
         SearchSettings searchSettings;
         searchSettings.batchSize = Options["Batch_Size"]; // 8//128; //1; //28;
+        searchSettings.useTranspositionTable = Options["Use_Transposition_Table"];
         netSingle = new NeuralNetAPI(Options["Context"], 1,
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
