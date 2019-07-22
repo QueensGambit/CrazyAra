@@ -53,9 +53,6 @@ private:
     DynamicVector<float> actionValues;
     DynamicVector<float> qValues;
 
-    // dummy
-    DynamicVector<float> ones;
-
     std::vector<Move> legalMoves;
     bool isTerminal;
     unsigned int nbDirectChildNodes;

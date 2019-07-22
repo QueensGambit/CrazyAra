@@ -70,10 +70,6 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent, SearchS
     qValues = DynamicVector<float>(nbDirectChildNodes);
     qValues = -1;
 
-    //    ones = DynamicVector<float>::Constant(nbDirectChildNodes, 1);
-    ones = DynamicVector<float>(nbDirectChildNodes);
-    ones = 1;
-
     // number of total visits to this node
     numberVisits = 1;  // we initialize with 1 because if the node was created it must have been visited
 
@@ -100,8 +96,6 @@ Node::Node(const Node &b)
     actionValues = 0;
     qValues.resize(nbDirectChildNodes);
     qValues = -1;
-    ones.resize(nbDirectChildNodes);
-    ones = b.ones;
     legalMoves = b.legalMoves;
     isTerminal = b.isTerminal;
     initialValue = b.initialValue;
@@ -172,8 +166,7 @@ void Node::check_for_terminal()
 
 float Node::get_current_cput()
 {
-//    return std::log((numberVisits + 19652.0f + 1) / 19652.0f) + 2.5f;
-    return std::log((numberVisits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
+    return log((numberVisits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
 float Node::get_current_u_divisor()
@@ -188,7 +181,7 @@ float Node::get_current_q_thresh()
 
 DynamicVector<float> Node::get_current_u_values()
 {
-    return get_current_cput() * policyProbSmall * (sqrt(numberVisits) * (ones / (childNumberVisits + get_current_u_divisor())));
+    return get_current_cput() * policyProbSmall * (sqrt(numberVisits) / (childNumberVisits + get_current_u_divisor()));
 }
 
 void Node::enhance_checks()
@@ -197,7 +190,7 @@ void Node::enhance_checks()
         const float thresh_check = 0.1f;
         const float thresh_capture = 0.01f;
 
-        float increment_check = min(thresh_check, max(policyProbSmall)*0.5f);
+        float increment_check = min(thresh_check, max(policyProbSmall)*0.5f); //0.5f
         float increment_capture = min(thresh_capture, max(policyProbSmall)*0.1f);
 
         bool update = false;
@@ -232,7 +225,7 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy)
 {
     if (searchSettings->qValueWeight != 0) {
         DynamicVector<float> qValuePruned(nbDirectChildNodes);
-        qValuePruned = (qValues + ones) * 0.5f;
+        qValuePruned = (qValues + 1) * 0.5f;
         float visitThresh = get_current_q_thresh() * max(childNumberVisits);
         for (size_t idx; idx < nbDirectChildNodes; ++idx) {
             if (qValuePruned[idx] < visitThresh) {
