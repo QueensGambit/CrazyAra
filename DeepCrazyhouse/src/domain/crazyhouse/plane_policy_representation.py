@@ -7,7 +7,7 @@ Created on 18.04.19
 Functionality for representing all possible moves in the policy feature maps.
 Note, most of the entries in the policy feature map are unusable because the represent illegal moves
 which would go beyond the board.
-Most of the functions are 100% optimal in terms of performance, but there are only used to create a static look-up
+Most of the functions are not 100% optimal in terms of performance, but there are only used to create a static look-up
 table for retrieving the move probability from the policy feature maps, so this doesn't play a factor.
 
 """
@@ -227,7 +227,8 @@ def get_move_planes(move):
     return board
 
 
-# generated conversion list which describes the plane index for each move in the policy LABELS list
+# generated conversion list for the flattened policy map representation
+# which describes the corresponding index for each move in the policy LABELS (constants.py) list
 FLAT_PLANE_IDX = [
     896,
     960,

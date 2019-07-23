@@ -27,7 +27,7 @@ from DeepCrazyhouse.src.domain.util import MATRIX_NORMALIZER, get_board_position
 def board_to_planes(board, board_occ=0, normalize=True):
     """
     Gets the plane representation of a given board state.
-    (Now history of past board positions is used.)
+    (No history of past board positions is used.)
 
     ## Crazyhouse:
 
