@@ -63,7 +63,8 @@ class NeuralNetAPI:
         print("self.symbol_path:", self.symbol_path)
         print("self.params_path:", self.params_path)
         # construct the model name based on the parameter file
-        self.model_name = self.params_path.split("/")[-1].replace(".params", "")
+        _, params_filename = os.path.split(self.params_path)
+        self.model_name = params_filename.replace(".params", "")
         sym = mx.sym.load(self.symbol_path)
         # https://github.com/apache/incubator-mxnet/issues/6951
         save_dict = mx.nd.load(self.params_path)
@@ -100,7 +101,6 @@ class NeuralNetAPI:
         # check if the current net uses a select_policy_from_planes style
         output_dict = self.executors[0].output_dict
         for idx, key in enumerate(output_dict):
-            print(key)
             # the policy output is always the 2nd one
             if idx == 1 and output_dict[key].shape[1] != NB_LABELS:
                 self.select_policy_form_planes = select_policy_form_planes

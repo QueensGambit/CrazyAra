@@ -11,7 +11,7 @@ import zlib
 from mxnet.gluon.data.dataset import recordio, Dataset
 import numpy as np
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.util import normalize_input_planes
+from DeepCrazyhouse.src.domain.util import MATRIX_NORMALIZER
 
 
 def __getitem__(self, idx):
@@ -63,7 +63,7 @@ class PGNRecordDataset(Dataset):
         x = np.frombuffer(buf, dtype=np.int16)[: self.input_shape_flatten].reshape(self.input_shape).astype(np.float32)
 
         if self.normalize:
-            normalize_input_planes(x)
+            x *= MATRIX_NORMALIZER
 
         y_value = header[1][0]
         y_policy = header[1][1]
@@ -71,3 +71,6 @@ class PGNRecordDataset(Dataset):
 
     def __len__(self):
         return len(self._record.keys)
+
+    def _get_data(self):
+        raise NotImplementedError

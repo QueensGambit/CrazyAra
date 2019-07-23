@@ -72,6 +72,7 @@ class GameState(AbsGameState):
     def new_game(self):
         """ Create a new board on the starting position"""
         self.board = CrazyhouseBoard()
+        self.board.is_variant_end()
         self._fen_dic = {}
 
     def set_fen(self, fen):  # , remember_state=True
@@ -96,3 +97,7 @@ class GameState(AbsGameState):
     def are_pocket_empty(self):
         """ Checks if at least one player has a piece available in their pocket """
         return not self.board.pockets[chess.WHITE] and not self.board.pockets[chess.BLACK]
+
+    def is_variant_end(self):
+        """ Checks if the current game state is a terminal state"""
+        return self.is_won() or self.is_draw()

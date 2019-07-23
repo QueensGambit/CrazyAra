@@ -61,6 +61,9 @@ class AlphaBetaAgent(AbsAgent):
         if state.is_won():  # check for draw is neglected for now due to bad runtime
             return -1
 
+        if state.get_pythonchess_board().can_claim_draw():
+            return 0
+
         [value, policy_vec] = self.net.predict_single(state.get_state_planes())  # start a brand new tree
 
         if depth == 0:

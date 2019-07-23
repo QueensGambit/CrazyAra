@@ -83,6 +83,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         use_future_q_values=False,
         use_pruning=True,
         use_time_management=True,
+        use_transposition_table=True,
         opening_guard_moves=0,
         u_init_divisor=1,
     ):  # Too many arguments (21/5) - Too many local variables (29/15)
@@ -132,6 +133,8 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                                costs.
         :param use_time_management: If set to true the mcts will spent less time on "obvious" moves an allocate a time
                                     buffer for more critical moves.
+        :param use_transposition_table: Stores a transposition table for all nodes to modify the tree structure for
+                                        transpositions. Enables reaching higher depth with same number of nodes.
         :param opening_guard_moves: Number of moves for which the exploration is limited
                                     (only recommended for . Moves which have a prior probability < 5%)
                                     are clipped and not evaluated.
@@ -219,6 +222,10 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         self.use_pruning = use_pruning
         self.time_buffer_ms = 0
         self.use_time_management = use_time_management
+        if self.use_pruning:  # pruning is incompatible with transposition usage
+            self.use_transposition_table = False
+        else:
+            self.use_transposition_table = use_transposition_table
         self.opening_guard_moves = opening_guard_moves
         self.use_future_q_values = use_future_q_values
         if u_init_divisor <= 0 or u_init_divisor > 1:
@@ -383,7 +390,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         """
         for capture_move in chess_board.generate_legal_captures():
             index = legal_moves.index(capture_move)
-            if policy_prob[index] < 0.1:
+            if policy_prob[index] < 0.04:
                 policy_prob[index] += 0.04
         if policy_prob is not None:
             policy_prob /= policy_prob.sum()
@@ -617,23 +624,30 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             # note: It's important to use also the halfmove-counter here, otherwise the system can create an infinite
             # feed-back-loop
             key = transposition_key + (state.get_fullmove_number(),)
-            use_tran_table = True
-            node_verified = False
 
-            if use_tran_table and key in self.node_lookup:
-                # if self.check_for_duplicate(transposition_key, chosen_nodes) is False:
+            if self.use_transposition_table and key in self.node_lookup:
+
                 node = self.node_lookup[key]  # get the node from the look-up list
 
-                if node.n_sum > parent_node.n_sum:  # make sure that you don't connect to a node with lower visits
-                    node_verified = True
-
-            if node_verified:
-                with parent_node.lock:
-                    # setup a new connection from the parent to the child
-                    parent_node.child_nodes[child_idx] = node
-                # logging.debug('found key: %s' % state.get_board_fen())
                 # get the prior value from the leaf node which has already been expanded
                 value = node.initial_value
+
+                # clip the visit nodes for all nodes in the search tree except the director opp. move
+                clip_low_visit = self.use_pruning
+
+                new_node = Node(
+                    node.board,
+                    value,
+                    node.policy_prob,
+                    node.legal_moves,
+                    node.is_leaf,
+                    key,
+                    clip_low_visit,
+                )  # create a new node
+
+                with parent_node.lock:
+                    parent_node.child_nodes[child_idx] = new_node  # add the new node to its parent
+
             else:
                 # expand and evaluate the new board state (the node wasn't found in the look-up table)
                 # its value will be back-propagated through the tree and flipped after every layer
@@ -810,7 +824,11 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             )
 
             # if parent_node.n_sum % 10 == 0:
-            #     child_idx = np.random.randint(parent_node.nb_direct_child_nodes)
+            #     prob = parent_node.q_value + u_value
+            #     child_idx = prob.argmax()
+            #     prob[child_idx] = 0
+            #     child_idx = prob.argmax()
+            #     # child_idx = np.random.randint(parent_node.nb_direct_child_nodes)
             # else:
             child_idx = (parent_node.q_value + u_value).argmax()
 
@@ -887,6 +905,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 while node and not node.is_leaf and node.n_sum >= min_nb_visits and depth <= max_depth:
                     final_node = node
                     print(move.uci() + " ", end="")
+                    print(str(node.initial_value) + " ", end="")
                     node, move, _, child_idx = self._select_node_based_on_mcts_policy(node)
                     depth += 1
 

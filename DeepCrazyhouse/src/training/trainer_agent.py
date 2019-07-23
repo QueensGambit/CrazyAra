@@ -4,7 +4,7 @@ Created on 27.09.18
 @project: crazyara
 @author: queensgambit
 
-Definition of the main training loop done in keras.
+Definition of the main training loop done in gluon.
 """
 import datetime
 import logging
@@ -50,6 +50,7 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(),
         value_label = value_label.as_in_context(ctx)
         policy_label = policy_label.as_in_context(ctx)
         [value_out, policy_out] = net(data)
+        value_out[0][0].wait_to_read()
         if select_policy_from_plane:
             policy_out = policy_out[:, FLAT_PLANE_IDX]
         # update the metrics
@@ -89,6 +90,7 @@ class TrainerAgent:  # Probably needs refactoring
         lr_schedule,
         momentum_schedule,
         total_it,
+        optimizer_name="nag",
         wd=0.0001,
         batch_steps=1000,
         k_steps_initial=0,
@@ -151,6 +153,8 @@ class TrainerAgent:  # Probably needs refactoring
         # Define the two loss functions
         self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
         self._l2_loss = gluon.loss.L2Loss()
+        if optimizer_name != "nag":
+            raise NotImplementedError("The requested optimizer %s Isn't supported yet." % optimizer_name)
         self._trainer = gluon.Trainer(
             self._net.collect_params(),
             "nag",
@@ -269,7 +273,6 @@ class TrainerAgent:  # Probably needs refactoring
                 train_data = gluon.data.DataLoader(
                     train_dataset, batch_size=self._batch_size, shuffle=True, num_workers=self._cpu_count
                 )
-                # batch_proc_tmp, dummy = self._process_on_data_plane_file(train_data, batch_proc_tmp)
 
                 for _, (data, value_label, policy_label) in enumerate(train_data):
                     data = data.as_in_context(self._ctx)
@@ -398,7 +401,7 @@ class TrainerAgent:  # Probably needs refactoring
                                 grads = []
                                 # logging the gradients of parameters for checking convergence
                                 for _, name in enumerate(self._param_names):
-                                    if "bn" not in name and "batch" not in name:
+                                    if "bn" not in name and "batch" not in name and name != "policy_flat_plane_idx":
                                         grads.append(self._params[name].grad())
                                         self.sum_writer.add_histogram(
                                             tag=name, values=grads[-1], global_step=k_steps, bins=20

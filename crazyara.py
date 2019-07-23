@@ -15,6 +15,7 @@ import sys
 import traceback
 import chess.pgn
 import numpy as np
+import multiprocessing
 
 from DeepCrazyhouse.src.domain.agent.player.alpha_beta_agent import AlphaBetaAgent
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
@@ -42,7 +43,7 @@ class CrazyAra:  # Too many instance attributes (25/7)
         self.random_mv_time_portion = 0.1
         # enable this variable if you want to see debug messages in certain environments, like the lichess.org api
         self.enable_lichess_debug_msg = self.setup_done = False
-        self.client = {"name": "CrazyAra", "version": "0.4.0", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
+        self.client = {"name": "CrazyAra", "version": "0.5.0", "authors": "Johannes Czech, Moritz Willig, Alena Beyer"}
         self.mcts_agent = (
             self.rawnet_agent
         ) = self.ab_agent = self.gamestate = self.bestmove_value = self.move_time = self.score = None
@@ -58,16 +59,16 @@ class CrazyAra:  # Too many instance attributes (25/7)
             # choose 'gpu' using the settings if there is one available
             "context": "cpu",
             "use_raw_network": False,
-            "threads": 8,
+            "threads": min(8, multiprocessing.cpu_count()),
             "batch_size": 8,
             "neural_net_services": 1,
-            "playouts_empty_pockets": 8192,
-            "playouts_filled_pockets": 8192,
+            "playouts_empty_pockets": 99999,
+            "playouts_filled_pockets": 99999,
             "centi_cpuct": 250,
             "centi_dirichlet_epsilon": 25,
             "centi_dirichlet_alpha": 20,
             "centi_u_init_divisor": 100,
-            "max_search_depth": 40,
+            "max_search_depth": 99,
             "centi_temperature": 7,
             "temperature_moves": 0,
             "opening_guard_moves": 0,
@@ -84,10 +85,12 @@ class CrazyAra:  # Too many instance attributes (25/7)
             "use_pruning": False,
             "use_future_q_values": False,
             "use_time_management": True,
+            "use_transposition_table": True,
             "verbose": False,
             "model_architecture_dir": "default",
             "model_weights_dir": "default"
         }
+        self.cmd_list = []
         try:
             self.log_file = open(self.log_file_path, "w")
         except IOError:
@@ -192,6 +195,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 use_future_q_values=self.settings["use_future_q_values"],
                 use_pruning=self.settings["use_pruning"],
                 use_time_management=self.settings["use_time_management"],
+                use_transposition_table=self.settings["use_transposition_table"],
                 opening_guard_moves=self.settings["opening_guard_moves"],
                 u_init_divisor=self.settings["centi_u_init_divisor"] / 100,
             )
@@ -241,71 +245,124 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         self.validity_with_threads("batch_size")
         self.validity_with_threads("neural_net_services")
 
-    def perform_action(self, cmd_list):  # Probably needs refactoring
+    def _get_wtime_btime_idx(self):
+        """
+        Return the movement time for white and black in the command list.
+        Assumes that cmd list has at least a length of 4.
+        :return:
+        """
+        
+        wtime_idx = None
+        btime_idx = None
+
+        # wtime and btime can be sent in an arbitrary order
+        if self.cmd_list[1] == "wtime":
+            wtime_idx = 1
+        elif self.cmd_list[3] == "wtime":
+            wtime_idx = 3
+
+        if self.cmd_list[1] == "btime":
+            btime_idx = 1
+        elif self.cmd_list[3] == "btime":
+            btime_idx = 3
+            
+        return wtime_idx, btime_idx
+            
+    def _get_movetime_5_args(self):
+        """
+        Returns the movetime whne given 5 command line arguments
+        :return: movetime in ms
+        """
+
+        wtime_idx, btime_idx = self._get_wtime_btime_idx()
+
+        if wtime_idx and btime_idx:
+            wtime = int(self.cmd_list[wtime_idx + 1])
+            btime = int(self.cmd_list[btime_idx + 1])
+
+            winc = binc = 0
+            if "winc" in self.cmd_list:
+                winc = int(self.cmd_list[wtime_idx + 5])
+            if "binc" in self.cmd_list:
+                binc = int(self.cmd_list[btime_idx + 5])
+
+            if self.gamestate.is_white_to_move():
+                my_time = wtime
+                my_inc = winc
+            else:
+                my_time = btime
+                my_inc = binc
+
+            if self.move_time is None:
+                self.move_time = (my_time + self.blitz_game_length * my_inc) / self.blitz_game_length
+
+            # TC with period (traditional) like 40/60 or 40 moves in 60 sec repeating
+            if "movestogo" in self.cmd_list:
+                tc_type = "traditional"
+                if "winc" in self.cmd_list and "binc" in self.cmd_list:
+                    moves_left = int(self.cmd_list[10])
+                else:
+                    moves_left = int(self.cmd_list[6])
+                # If we are close to the period limit, save extra time to avoid time forfeit
+                if moves_left <= 3:
+                    moves_left += 1
+            else:
+                tc_type = "blitz"
+                moves_left = self.settings["moves_left"]
+
+            moves_left = self.adjust_moves_left(moves_left, tc_type, self.bestmove_value)
+            if tc_type == "blitz" and self.engine_played_move < self.blitz_game_length * 0.8:
+                movetime_ms = (
+                        self.move_time + (np.random.rand() - 0.5) * self.random_mv_time_portion * self.move_time
+                )
+
+                if self.engine_played_move < self.settings["max_move_num_to_reduce_movetime"]:
+                    # avoid spending too much time in the opening
+                    movetime_ms *= self.mv_time_opening_portion
+            else:
+                movetime_ms = max(
+                    my_time / moves_left
+                    + self.inc_factor * my_inc // self.inc_div
+                    - self.settings["move_overhead_ms"],
+                    self.min_search_time,
+                )
+        else:
+            # set the minimum search time as the default value
+            movetime_ms = self.min_search_time
+                
+        return movetime_ms
+        
+    def get_movetime(self):
+        """
+        Calculates the movetime given the command-line arguments.
+        :return:
+        """
+        
+        # set the minimum search time as the default value
+        movetime_ms = self.min_search_time
+        
+        if len(self.cmd_list) >= 5:
+            movetime_ms = self._get_movetime_5_args()
+            
+        # movetime in UCI protocol, go movetime x, search exactly x ms
+        # UCI protocol: http://wbec-ridderkerk.nl/html/UCIProtocol.html
+        elif len(self.cmd_list) == 3 and self.cmd_list[1] == "movetime":
+            movetime_ms = max(int(self.cmd_list[2]) - self.settings["move_overhead_ms"], self.min_search_time)
+
+        return movetime_ms
+    
+    def perform_action(self):  # Probably needs refactoring
         """
         Computes the 'best move' according to the engine and the given settings.
         After the search is done it will print out ' bestmove e2e4' for example on std-out.
         :return:
         """
-        # Too many local variables (21/15) - Too many branches (25/12) - Too many statements (71/50)
-        movetime_ms = self.min_search_time
 
-        if len(cmd_list) >= 5:
-            if cmd_list[1] == "wtime" and cmd_list[3] == "btime":
-                wtime = int(cmd_list[2])
-                btime = int(cmd_list[4])
+        if self.gamestate.is_variant_end():
+            self.log_print("info string The requested position %s doesn't have any legal move." % self.gamestate)
+            return
 
-                winc = binc = 0
-                if "winc" in cmd_list:
-                    winc = int(cmd_list[6])
-                if "binc" in cmd_list:
-                    binc = int(cmd_list[8])
-
-                if self.gamestate.is_white_to_move():
-                    my_time = wtime
-                    my_inc = winc
-                else:
-                    my_time = btime
-                    my_inc = binc
-
-                if self.move_time is None:
-                    self.move_time = (my_time + self.blitz_game_length * my_inc) / self.blitz_game_length
-
-                # TC with period (traditional) like 40/60 or 40 moves in 60 sec repeating
-                if "movestogo" in cmd_list:
-                    tc_type = "traditional"
-                    if "winc" in cmd_list and "binc" in cmd_list:
-                        moves_left = int(cmd_list[10])
-                    else:
-                        moves_left = int(cmd_list[6])
-                    # If we are close to the period limit, save extra time to avoid time forfeit
-                    if moves_left <= 3:
-                        moves_left += 1
-                else:
-                    tc_type = "blitz"
-                    moves_left = self.settings["moves_left"]
-
-                moves_left = self.adjust_moves_left(moves_left, tc_type, self.bestmove_value)
-                if tc_type == "blitz" and self.engine_played_move < self.blitz_game_length * 0.8:
-                    movetime_ms = (
-                        self.move_time + (np.random.rand() - 0.5) * self.random_mv_time_portion * self.move_time
-                    )
-
-                    if self.engine_played_move < self.settings["max_move_num_to_reduce_movetime"]:
-                        # avoid spending too much time in the opening
-                        movetime_ms *= self.mv_time_opening_portion
-                else:
-                    movetime_ms = max(
-                        my_time / moves_left
-                        + self.inc_factor * my_inc // self.inc_div
-                        - self.settings["move_overhead_ms"],
-                        self.min_search_time,
-                    )
-
-        # movetime in UCI protocol, go movetime x, search exactly x ms
-        # UCI protocol: http://wbec-ridderkerk.nl/html/UCIProtocol.html
-        elif len(cmd_list) == 3 and cmd_list[1] == "movetime":
-            movetime_ms = max(int(cmd_list[2]) - self.settings["move_overhead_ms"], self.min_search_time)
+        movetime_ms = self.get_movetime()
 
         self.mcts_agent.update_movetime(movetime_ms)
         self.log_print("info string Time for this move is %dms" % movetime_ms)
@@ -314,7 +371,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         # assign search depth
         try:
             # we try to extract the search depth from the cmd list
-            self.mcts_agent.set_max_search_depth(int(cmd_list[cmd_list.index("depth") + 1]))
+            self.mcts_agent.set_max_search_depth(int(self.cmd_list[self.cmd_list.index("depth") + 1]))
             movetime_ms = self.max_search_time  # increase the movetime to maximum to make sure to reach the given depth
             self.mcts_agent.update_movetime(movetime_ms)
         except ValueError:
@@ -341,6 +398,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 value, selected_move, _, _, centipawn, depth, nodes, time_elapsed_s, nps, pv = self.mcts_agent.perform_action(
                     self.gamestate
                 )
+        else:
+            raise Exception("Unknown search type %s" % self.settings["search_type"])
 
         self.score = "score cp %d depth %d nodes %d time %d nps %d pv %s" % (
             centipawn,
@@ -370,22 +429,22 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
 
         self.log_print("bestmove %s" % selected_move.uci())
 
-    def setup_gamestate(self, cmd_list):  # Too many branches (13/12)
+    def setup_gamestate(self):  # Too many branches (13/12)
         """
         Prepare the gamestate according to the user's wishes.
 
-        :param cmd_list: Input-command lists arguments
+        :param self.cmd_list: Input-command lists arguments
         :return:
         """
-        position_type = cmd_list[1]
+        position_type = self.cmd_list[1]
 
-        if "moves" in cmd_list:
+        if "moves" in self.cmd_list:
             # position startpos moves e2e4 g8f6
             if position_type == "startpos":
-                mv_list = cmd_list[3:]
+                mv_list = self.cmd_list[3:]
             else:
                 # position fen rn2N2k/pp5p/3pp1pN/3p4/3q1P2/3P1p2/PP3PPP/RN3RK1/Qrbbpbb b - - 3 27 moves d4f2 f1f2
-                mv_list = cmd_list[9:]
+                mv_list = self.cmd_list[9:]
 
             # try to apply opponent last move to the board state
             if mv_list:
@@ -409,7 +468,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 if position_type == "startpos":
                     self.new_game()
                 else:
-                    fen = " ".join(cmd_list[2:8])
+                    fen = " ".join(self.cmd_list[2:8])
                     self.gamestate.set_fen(fen)
 
                 for move in mv_list:
@@ -418,7 +477,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 self.log_print("info string Move Compatible")
         else:
             if position_type == "fen":
-                fen = " ".join(cmd_list[2:8])
+                fen = " ".join(self.cmd_list[2:8])
                 self.gamestate.set_fen(fen)
                 self.mcts_agent.update_transposition_table((self.gamestate.get_transposition_key(),))
                 # log_print("info string Added %s - count %d" % (gamestate.get_board_fen(),
@@ -445,20 +504,20 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         self.mcts_agent.time_buffer_ms = 0
         self.mcts_agent.dirichlet_epsilon = self.settings["centi_dirichlet_epsilon"] / 100
 
-    def set_options(self, cmd_list):  # Too many branches (16/12)
+    def set_options(self):  # Too many branches (16/12)
         """
         Updates the internal options as requested by the use via the uci-protocoll
         An example call could be: "setoption name nb_threads value 1"
-        :param cmd_list: List of received of commands
+        :param self.cmd_list: List of received of commands
         :return:
         """
         # make sure there exists enough items in the given command list like "setoption name nb_threads value 1"
-        if len(cmd_list) >= 5:
-            if cmd_list[1] != "name" or cmd_list[3] != "value":
+        if len(self.cmd_list) >= 5:
+            if self.cmd_list[1] != "name" or self.cmd_list[3] != "value":
                 self.log_print("info string The given setoption command wasn't understood")
                 self.log_print('info string An example call could be: "setoption name threads value 4"')
             else:
-                option_name = cmd_list[2]
+                option_name = self.cmd_list[2]
 
                 if option_name not in self.settings:
                     self.log_print("info string The given option %s wasn't found in the settings list" % option_name)
@@ -476,12 +535,13 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         "use_pruning",
                         "use_future_q_values",
                         "use_time_management",
+                        "use_transposition_table",
                         "model_architecture_dir",
                         "model_weights_dir",
                     ]:
-                        value = cmd_list[4]
+                        value = self.cmd_list[4]
                     else:
-                        value = int(cmd_list[4])
+                        value = int(self.cmd_list[4])
 
                     if option_name == "use_raw_network":
                         self.settings["use_raw_network"] = value == "true"
@@ -499,6 +559,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         self.settings["use_future_q_values"] = value == "true"
                     elif option_name == "use_time_management":
                         self.settings["use_time_management"] = value == "true"
+                    elif option_name == "use_transposition_table":
+                        self.settings["use_transposition_table"] = value == "true"
                     else:
                         self.settings[option_name] = value  # by default all options are treated as integers
                         # Guard threads limits
@@ -561,11 +623,11 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
             "option name neural_net_services type spin default %d min 1 max 10" % self.settings["neural_net_services"]
         )
         self.log_print(
-            "option name playouts_empty_pockets type spin default %d min 56 max 8192"
+            "option name playouts_empty_pockets type spin default %d min 56 max 99999"
             % self.settings["playouts_empty_pockets"]
         )
         self.log_print(
-            "option name playouts_filled_pockets type spin default %d min 56 max 8192"
+            "option name playouts_filled_pockets type spin default %d min 56 max 99999"
             % self.settings["playouts_filled_pockets"]
         )
         self.log_print("option name centi_cpuct type spin default %d min 1 max 500" % self.settings["centi_cpuct"])
@@ -636,6 +698,10 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
             % ("false" if not self.settings["use_time_management"] else "true")
         )
         self.log_print(
+            "option name use_transposition_table type check default %s"
+            % ("false" if not self.settings["use_transposition_table"] else "true")
+        )
+        self.log_print(
             "option name verbose type check default %s" % ("false" if not self.settings["verbose"] else "true")
         )
         self.log_print(
@@ -657,8 +723,8 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
             self.print_if_debug(line)
             # wait for an std-in input command
             if line:
-                cmd_list = line.rstrip().split(" ")  # split the line to a list which makes parsing easier
-                main_cmd = cmd_list[0]  # extract the first command from the list for evaluation
+                self.cmd_list = line.rstrip().split(" ")  # split the line to a list which makes parsing easier
+                main_cmd = self.cmd_list[0]  # extract the first command from the list for evaluation
                 self.log(line)  # write the given command to the log-file
 
                 try:
@@ -672,11 +738,11 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                         self.engine_played_move = 0
                         self.new_game()
                     elif main_cmd == "position":
-                        self.setup_gamestate(cmd_list)
+                        self.setup_gamestate()
                     elif main_cmd == "setoption":
-                        self.set_options(cmd_list)
+                        self.set_options()
                     elif main_cmd == "go":
-                        self.perform_action(cmd_list)
+                        self.perform_action()
                     elif main_cmd in ("quit", "exit"):
                         if self.log_file:
                             self.log_file.close()

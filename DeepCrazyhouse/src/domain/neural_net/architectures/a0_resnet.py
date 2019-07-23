@@ -118,7 +118,7 @@ class ResidualBlock(HybridBlock):
 
 
 class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-arguments)
-    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu", se_type=None,
+    def __init__(self, name, channels=2, n_labels=4992, bn_mom=0.9, act_type="relu",
                  select_policy_from_plane=False):
         """
         Definition of the value head proposed by the alpha zero authors
@@ -134,25 +134,22 @@ class _PolicyHeadAlphaZero(HybridBlock):  # Too many arguments (6/5) (too-many-a
         super(_PolicyHeadAlphaZero, self).__init__(prefix=name + "_")
 
         self.body = HybridSequential(prefix="")
+        self.select_policy_from_plane = select_policy_from_plane
 
         with self.name_scope():
-            self.body.add(Conv2D(channels=channels, kernel_size=(1, 1), use_bias=False))
-            self.body.add(BatchNorm(momentum=bn_mom))
+            if self.select_policy_from_plane:
+                self.body.add(Conv2D(channels=256, padding=1, kernel_size=(3, 3), use_bias=False))
+                self.body.add(BatchNorm(momentum=bn_mom))
+                self.body.add(get_act(act_type))
+                self.body.add(Conv2D(channels=channels, padding=1, kernel_size=(3, 3), use_bias=False))
+                self.body.add(Flatten())
+            else:
+                self.body.add(Conv2D(channels=channels, kernel_size=(1, 1), use_bias=False))
+                self.body.add(BatchNorm(momentum=bn_mom))
+                # if not self.select_policy_from_plane:
+                self.body.add(get_act(act_type))
 
-            if se_type:
-                if se_type == "cSE":
-                    # apply squeeze excitation
-                    self.body.add(_ChannelSqueezeExcitation("se0", channels, 16, act_type))
-                elif se_type == "sSE":
-                    self.body.add(_SpatialSqueezeExcitation("se0"))
-                elif se_type == "csSE":
-                    self.body.add(_SpatialChannelSqueezeExcitation("se0", channels, 1, act_type))
-                else:
-                    raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "csSE"')
-
-            self.body.add(get_act(act_type))
-            self.body.add(Flatten())
-            if not select_policy_from_plane:
+                self.body.add(Flatten())
                 self.body.add(Dense(units=n_labels))
 
     def hybrid_forward(self, F, x):
@@ -278,6 +275,7 @@ class AlphaZeroResnet(HybridBlock):  # Too many arguments (7/5) (too-many-argume
         value_fc_size=256,
         bn_mom=0.9,
         act_type="relu",
+        select_policy_from_plane=False,
         **kwargs
     ):
         """
@@ -305,7 +303,8 @@ class AlphaZeroResnet(HybridBlock):  # Too many arguments (7/5) (too-many-argume
 
         # create the two heads which will be used in the hybrid fwd pass
         self.value_head = _ValueHeadAlphaZero("value", channels_value_head, value_fc_size, bn_mom, act_type)
-        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, bn_mom, act_type)
+        self.policy_head = _PolicyHeadAlphaZero("policy", channels_policy_head, n_labels, bn_mom, act_type,
+                                                select_policy_from_plane)
 
     def hybrid_forward(self, F, x):
         """
