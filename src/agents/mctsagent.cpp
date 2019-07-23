@@ -49,7 +49,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     rootNode(nullptr),
     oldestRootNode(nullptr),
     states(states),
-    timeBuffers(0)
+    timeBuffersMS(0.0f)
 {
     hashTable = new unordered_map<Key, Node*>;
     hashTable->reserve(1e6);
@@ -157,7 +157,9 @@ void MCTSAgent::stop_search_based_on_limits()
     } else {
         this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
         if (continue_search()) {
-            this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
+            int bonusTime = timeBuffersMS / 4;
+            timeBuffersMS -= bonusTime;
+            this_thread::sleep_for(chrono::milliseconds(bonusTime));
         }
         stop_search();
     }
@@ -175,16 +177,16 @@ bool MCTSAgent::early_stopping()
 //    if (false && max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
     if (max(rootNode->policyProbSmall) > 0.9f && argmax(rootNode->policyProbSmall) == argmax(rootNode->qValues)) {
         sync_cout << "string info Early stopping" << sync_endl;
-        timeBuffers++;
+        timeBuffersMS++;
         return true;
     }
     return false;
 }
 
 bool MCTSAgent::continue_search() {
-    if (timeBuffers && rootNode->qValues[argmax(rootNode->childNumberVisits)] < rootNode->value) {
+    if (timeBuffersMS > 1000 && rootNode->qValues[argmax(rootNode->childNumberVisits)] < rootNode->value) {
         sync_cout << "info Increase search time" << sync_endl;
-        timeBuffers--;
+        return true;
     }
     return false;
 
@@ -220,7 +222,7 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 
 void MCTSAgent::reset_time_buffer_counter()
 {
-    timeBuffers = 0;
+    timeBuffersMS = 0;
 }
 
 EvalInfo MCTSAgent::evalute_board_state(Board *pos)
@@ -229,7 +231,7 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 
     if (rootNode->nbDirectChildNodes == 1) {
         sync_cout << "info string Only single move available -> early stopping" << sync_endl;
-        timeBuffers++;
+        timeBuffersMS += timeManager->get_time_for_move(searchLimits, rootNode->pos->side_to_move(), rootNode->pos->plies_from_null()/2);
     }
     else if (rootNode->nbDirectChildNodes == 0) {
         sync_cout << "info string The given position has no legal moves" << sync_endl;

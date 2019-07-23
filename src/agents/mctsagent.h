@@ -74,7 +74,7 @@ private:
     vector<Node*> potentialRoots;
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
-    int timeBuffers;
+    int timeBuffersMS;
 
     void expand_root_node_multiple_moves(const Board *pos);
 
