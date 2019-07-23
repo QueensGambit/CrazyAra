@@ -58,11 +58,7 @@ CrazyAra 0.3.1 was also put to the test against known crazyhouse engines:
 
 ### Strength of CrazyAra 0.5.0
 
-[Matuiss2](https://github.com/Matuiss2) genereated 25 games between CrazyAra 0.3.1 and CrazyAra 0.5.0:
-
-Hardware:
-* Intel i5 8600k at 5GHz 
-* TC: 5 minutes 40 moves
+[Matuiss2](https://github.com/Matuiss2) generated 25 games (Intel i5 8600k, 5GHz) between CrazyAra 0.3.1 and CrazyAra 0.5.0:
 
 Results:
 ```python
