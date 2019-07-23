@@ -74,6 +74,7 @@ private:
     vector<Node*> potentialRoots;
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
+    int timeBuffers;
 
     void expand_root_node_multiple_moves(const Board *pos);
 
@@ -120,6 +121,12 @@ private:
      */
     inline bool early_stopping();
 
+    /**
+     * @brief continue_search Checks if the search should which is based on the initial value prediciton
+     * @return True, if search extension is recommend
+     */
+    inline bool continue_search();
+
 public:
 
     MCTSAgent(NeuralNetAPI* netSingle,
@@ -144,6 +151,11 @@ public:
      * @param ownMove Boolean indicating if it was CrazyAra's move
      */
     void apply_move_to_tree(Move move, bool ownMove);
+
+    /**
+     * @brief reset_time_buffer_counter Resets the counter on how often the search has been stopped early
+     */
+    void reset_time_buffer_counter();
 };
 
 #endif // MCTSAGENT_H

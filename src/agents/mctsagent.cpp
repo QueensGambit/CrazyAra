@@ -48,7 +48,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     playSettings(playSettings),
     rootNode(nullptr),
     oldestRootNode(nullptr),
-    states(states)
+    states(states),
+    timeBuffers(0)
 {
     hashTable = new unordered_map<Key, Node*>;
     hashTable->reserve(1e6);
@@ -100,6 +101,7 @@ size_t MCTSAgent::init_root_node(Board *pos)
         netSingle->predict(input_planes, *valueOutput, *probOutputs);
         get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(),
                                !netSingle->getSelectPolicyFromPlane(), rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
+        rootNode->value = valueOutput->At(0, 0);
         rootNode->enhance_checks();
         nodesPreSearch = 0;
 //        hashTable->insert({rootNode->pos->hash_key(), rootNode});
@@ -154,6 +156,9 @@ void MCTSAgent::stop_search_based_on_limits()
         stop_search();
     } else {
         this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
+        if (continue_search()) {
+            this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
+        }
         stop_search();
     }
 }
@@ -167,12 +172,24 @@ void MCTSAgent::stop_search()
 
 bool MCTSAgent::early_stopping()
 {
-    if (max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
-        sync_cout << "string info Early stopping." << sync_endl;
+//    if (false && max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
+    if (max(rootNode->policyProbSmall) > 0.9f && argmax(rootNode->policyProbSmall) == argmax(rootNode->qValues)) {
+        sync_cout << "string info Early stopping" << sync_endl;
+        timeBuffers++;
         return true;
     }
     return false;
 }
+
+bool MCTSAgent::continue_search() {
+    if (timeBuffers && rootNode->qValues[argmax(rootNode->childNumberVisits)] < rootNode->value) {
+        sync_cout << "info Increase search time" << sync_endl;
+        timeBuffers--;
+    }
+    return false;
+
+}
+
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 {
@@ -201,12 +218,18 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 
 }
 
+void MCTSAgent::reset_time_buffer_counter()
+{
+    timeBuffers = 0;
+}
+
 EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 {
     size_t nodesPreSearch = init_root_node(pos);
 
     if (rootNode->nbDirectChildNodes == 1) {
         sync_cout << "info string Only single move available -> early stopping" << sync_endl;
+        timeBuffers++;
     }
     else if (rootNode->nbDirectChildNodes == 0) {
         sync_cout << "info string The given position has no legal moves" << sync_endl;
@@ -221,6 +244,10 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
     rootNode->get_mcts_policy(mctsPolicy);
 
     size_t best_idx = argmax(mctsPolicy);
+
+    if (best_idx != argmax(rootNode->childNumberVisits)) {
+        sync_cout << "string info Select different move due to higher Q-value" << sync_endl;
+    }
 
     EvalInfo evalInfo;
     evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[best_idx]);
