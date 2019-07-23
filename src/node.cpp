@@ -223,12 +223,12 @@ void Node::setPolicyProbSmall(const DynamicVector<float> &value)
 
 void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy)
 {
-    if (searchSettings->qValueWeight != 0) {
+    if (searchSettings->qValueWeight > 0) {
         DynamicVector<float> qValuePruned(nbDirectChildNodes);
         qValuePruned = (qValues + 1) * 0.5f;
         float visitThresh = get_current_q_thresh() * max(childNumberVisits);
-        for (size_t idx; idx < nbDirectChildNodes; ++idx) {
-            if (qValuePruned[idx] < visitThresh) {
+        for (size_t idx = 0; idx < nbDirectChildNodes; ++idx) {
+            if (childNumberVisits[idx] < visitThresh) {
                 qValuePruned[idx] = 0;
             }
         }

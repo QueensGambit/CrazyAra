@@ -52,7 +52,7 @@ void OptionsUCI::init(OptionsMap &o)
          o["Centi_Temperature"]        << Option(7, 0, 99999);
          o["Temperature_Moves"]        << Option(0, 0, 99999);
          o["Virtual_Loss"]             << Option(0, 3, 99999);
-         o["Centi_Q-Value_Weight"]     << Option(70, 0, 99999);
+         o["Centi_Q_Value_Weight"]     << Option(70, 0, 99999);
          o["Enhance_Checks"]           << Option(true);
          o["Enhance_Captures"]         << Option(true);
          o["Use_Transposition_Table"]  << Option(true);

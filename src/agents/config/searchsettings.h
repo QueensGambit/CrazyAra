@@ -56,7 +56,7 @@ struct SearchSettings
         batchSize(2),
         dirichletEpsilon(0.25f),
         dirichletAlpha(0.2f),
-        qValueWeight(0.0f),
+        qValueWeight(0.7f),
         virtualLoss(3.0f),
         verbose(true),
         enhanceChecks(true),
