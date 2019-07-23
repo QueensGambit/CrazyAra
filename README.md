@@ -44,7 +44,10 @@ For more details about the training procedure visit the wiki pages:
 You can also find our original project proposal document as well as our presentation about CrazyAra 0.1:
 * https://github.com/QueensGambit/CrazyAra/tree/master/etc/doc
 
-## How strong is CrazyAra 0.3.1?
+## Playing strength evaluation
+
+### Strength of CrazyAra 0.5.0
+
 CrazyAra 0.3.1 played multiple world champion Justin Tan (LM [JannLee](https://lichess.org/@/JannLee)) at 18:00 GMT
  on 21st December in five official matches and won 4-1.
 You can find a detailed report about the past event published by [okei](https://lichess.org/@/okei) here:
@@ -52,6 +55,23 @@ You can find a detailed report about the past event published by [okei](https://
 
 CrazyAra 0.3.1 was also put to the test against known crazyhouse engines:
 * [Strength evaluation  v0.3.1](https://github.com/QueensGambit/CrazyAra/wiki/v0.3.1)
+
+### Strength of CrazyAra 0.5.0
+
+[Matuiss2](https://github.com/Matuiss2) genereated 25 games between CrazyAra 0.3.1 and CrazyAra 0.5.0:
+
+Hardware:
+* Intel i5 8600k at 5GHz 
+* TC: 5 minutes 40 moves
+
+Results:
+```python
+[TimeControl "40/300"]
+Score of CrazyAra 0.5.0 vs CrazyAra 0.3.1: 22 - 3 - 0 [0.88]
+Elo difference: 346 +/- NaN
+
+25 of 25 games finished.
+```
 
 ## License
 This source-code including all project files is licensed under the GPLv3-License if not stated otherwise.
