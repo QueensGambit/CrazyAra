@@ -129,11 +129,10 @@ class NeuralNetAPI:
         """
         # choose the first executor object which support length 1
         pred = self.executors[0].forward(is_train=False, data=np.expand_dims(x, axis=0))
+        policy_preds = pred[1].softmax().asnumpy()
+
         if self.select_policy_form_planes:
-            policy_preds = pred[1].asnumpy()
             policy_preds = policy_preds[:, FLAT_PLANE_IDX]
-        else:
-            policy_preds = pred[1].softmax().asnumpy()
 
         queue.put([pred[0].asnumpy()[0], policy_preds[0]])
 
