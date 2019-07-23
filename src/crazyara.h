@@ -91,7 +91,24 @@ public:
      */
     bool is_ready();
 
+    /**
+     * @brief new_game Handles the request of starting a new game
+     */
+    void new_game();
+
+    /**
+     * @brief go Main method which starts the search after receiving the UCI "go" command
+     * @param pos Current board position
+     * @param is List of command line arguments for the search
+     */
     void go(Board *pos, istringstream& is);
+
+    /**
+     * @brief position Method which is called from the UCI command-line when a new position is described.
+     * This can be a FEN string or the starting position followed by a list of moves
+     * @param pos Position object which will be set
+     * @param is List of command line arguments which describe the position
+     */
     void position(Board *pos, istringstream &is);
 };
 
@@ -134,6 +151,9 @@ r1b2r2/pp3Bpk/3b1q2/2p5/3pPp2/3P3P/PPP2PP1/RN1Q1RK1/PNNpbn b - - 0 19
 
 r2q2k1/ppp2ppp/5p2/1B1p4/8/2r3P1/PPn1Q1KP/R1B5/PNNBBRpppn w - - 0 20
 -> @e6
+
+4rbk1/ppp2ppp/3n4/3BnbP1/5B2/2N4P/PPP2PPn/R2QK2R/Qpprp w KQ - 1 19
+-> Q@e3
 
 r4bk1/ppq3pp/5pp1/3N4/3Qp1b1/P7/1PP2PKP/R4R2/PPNNRNbbpp b - - 0 21
 r4bk1/ppq3pp/5pp1/3NQ3/4p1b1/P7/1PP2PKP/R4R2/BPPNNRNbpp b - - 0 22

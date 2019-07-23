@@ -35,11 +35,14 @@ void OptionsUCI::init(OptionsMap &o)
          constexpr int MaxHashMB = Is64Bit ? 131072 : 2048;
 
          o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
+         o["uBase"]                    << Option(1965, 0, 99999);
+         o["Centi_uInit"]              << Option(100, 0, 100);
+         o["Centi_uMin"]               << Option(25, 0, 100);
          o["Search_Type"]              << Option("MCTS", {"MCTS"});
          o["Context"]                  << Option("GPU", {"CPU", "GPU"});
          o["Use_Raw_Network"]          << Option(false);
          o["Threads"]                  << Option(2, 1, 512);
-         o["Batch_Size"]               << Option(64, 1, 8192);  // 8
+         o["Batch_Size"]               << Option(8, 1, 8192);  // 8
          o["Playouts"]                 << Option(99999, 1, 99999);
          o["Centi_CPUCT"]              << Option(250, 1, 99999);
          o["Centi_Dirichlet_Epsilon"]  << Option(25, 1, 99999);
@@ -53,13 +56,15 @@ void OptionsUCI::init(OptionsMap &o)
          o["Enhance_Checks"]           << Option(true);
          o["Enhance_Captures"]         << Option(true);
          o["Use_Transposition_Table"]  << Option(true);
-         o["Model_Architecture_Dir"]   << Option("default");
+//         o["Model_Architecture_Dir"]   << Option("default");
 //         o["Debug_Log_File"]           << Option("", activate_logger);
-         o["Contempt"]                 << Option(24, -100, 100);
-         o["Hash"]                     << Option(16, 1, MaxHashMB);
+//         o["Contempt"]                 << Option(24, -100, 100);
+//         o["Hash"]                     << Option(16, 1, MaxHashMB);
          o["Move_Overhead"]            << Option(50, 0, 5000);
-         o["Minimum_Thinking_Time"]    << Option(20, 0, 5000);
-         o["UCI_Chess960"]             << Option(false);
+//         o["Minimum_Thinking_Time"]    << Option(20, 0, 5000);
+//         o["UCI_Chess960"]             << Option(false);
+
+//         o["Epsilon_Move"]             << Option(50, 0, 99999);
 }
 
 

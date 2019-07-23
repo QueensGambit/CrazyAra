@@ -143,7 +143,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "setoption")  OptionsUCI::setoption(is);
         else if (token == "go")         go(&pos, is);
         else if (token == "position")   position(&pos, is);
-        else if (token == "ucinewgame") sync_cout << "info string newgame" << sync_endl;
+        else if (token == "ucinewgame") new_game();
         else if (token == "isready") {
             if (is_ready()) {
                 sync_cout << "readyok" << sync_endl;
@@ -162,10 +162,6 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         ++it;
     } while (token != "quit" && argc == 1); // Command line args are one-shot
 }
-
-// go() is called when engine receives the "go" UCI command. The function sets
-// the thinking time and other parameters from the input string, then starts
-// the search.
 
 void CrazyAra::go(Board *pos, istringstream &is) {
     SearchLimits searchLimits;
@@ -201,11 +197,6 @@ void CrazyAra::go(Board *pos, istringstream &is) {
     // inform the mcts agent of the move, so the tree can potentially be reused later
     mctsAgent->apply_move_to_tree(selectedMove, true);
 }
-
-// position() is called when engine receives the "position" UCI command.
-// The function sets up the position described in the given FEN string ("fen")
-// or the starting position ("startpos") and then makes the moves given in the
-// following move list ("moves").
 
 void CrazyAra::position(Board *pos, istringstream& is) {
 
@@ -273,6 +264,10 @@ bool CrazyAra::is_ready()
         SearchSettings searchSettings;
         searchSettings.batchSize = Options["Batch_Size"]; // 8//128; //1; //28;
         searchSettings.useTranspositionTable = Options["Use_Transposition_Table"];
+        searchSettings.uInit = Options["Centi_uInit"] / 100.0;
+        searchSettings.uMin = Options["Centi_uMin"] / 100.0;
+        searchSettings.uBase = Options["uBase"];
+//        searchSettings.epsilonMove = Options["Epsilon_Move"];
         netSingle = new NeuralNetAPI(Options["Context"], 1,
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
@@ -288,6 +283,12 @@ bool CrazyAra::is_ready()
     }
 
     return networkLoaded;
+}
+
+void CrazyAra::new_game()
+{
+    mctsAgent->reset_time_buffer_counter();
+    sync_cout << "info string newgame" << sync_endl;
 }
 
 string CrazyAra::engine_info()

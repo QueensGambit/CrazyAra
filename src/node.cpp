@@ -29,7 +29,7 @@ using namespace std;
 #include "util/blazeutil.h"
 #include "uci.h"
 #include "misc.h"
-
+#include <experimental/random>
 
 Board* Node::getPos()
 {
@@ -190,7 +190,7 @@ void Node::enhance_checks()
         const float thresh_check = 0.1f;
         const float thresh_capture = 0.01f;
 
-        float increment_check = min(thresh_check, max(policyProbSmall)*0.5f); //0.5f
+        float increment_check = min(thresh_check, max(policyProbSmall)*0.5f);
         float increment_capture = min(thresh_capture, max(policyProbSmall)*0.1f);
 
         bool update = false;
@@ -407,7 +407,6 @@ ostream &operator<<(ostream &os, const Node *node)
               << " p " << node->getPVecSmall()[childIdx]
                  << " Q " << node->getQValues()[childIdx] << endl;
     }
-    os << " sum: " << sum(node->getPVecSmall()) << endl;
-
+    os << " initial value: " << node->getValue() << endl;
     return os;
 }
