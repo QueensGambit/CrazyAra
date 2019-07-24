@@ -41,8 +41,7 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent, SearchS
     parentNode(parentNode),
     childIdxForParent(childIdxForParent),
     checkmateIdx(-1),
-    searchSettings(searchSettings),
-    isRoot(false)
+    searchSettings(searchSettings)
 {
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
@@ -106,7 +105,6 @@ Node::Node(const Node &b)
     hasNNResults = b.hasNNResults;
     checkmateIdx = b.checkmateIdx;
     searchSettings = b.searchSettings;
-    isRoot = false;
 }
 
 Node::~Node()
@@ -201,10 +199,10 @@ void Node::enhance_checks()
 {
     if (true) {
         const float thresh_check = 0.1f;
-        const float thresh_capture = 0.01f;
+        const float thresh_capture = 0.1f;
 
         float increment_check = min(thresh_check, max(policyProbSmall)*0.5f);
-        float increment_capture = min(thresh_capture, max(policyProbSmall)*0.1f);
+        float increment_capture = min(thresh_capture, max(policyProbSmall)*0.25f);
 
         bool update = false;
         for (size_t i = 0; i < nbDirectChildNodes; ++i) {
@@ -348,15 +346,12 @@ void Node::set_child_node(size_t childIdx, Node *newNode)
 void Node::backup_value(unsigned int childIdx, float value)
 {
     Node* currentNode = this;
-    while(true) {
+    do {
         currentNode->revert_virtual_loss_and_update(childIdx, value);
-        if (currentNode->isRoot) {
-            break;
-        }
         childIdx = currentNode->childIdxForParent;
         value = -value;
         currentNode = currentNode->parentNode;
-    }
+    } while(currentNode != nullptr);
 }
 
 void Node::revert_virtual_loss_and_update(unsigned int childIdx, float value)
@@ -372,14 +367,11 @@ void Node::revert_virtual_loss_and_update(unsigned int childIdx, float value)
 void Node::backup_collision(unsigned int childIdx)
 {
     Node* currentNode = this;
-    while(true) {
+    do {
         currentNode->revert_virtual_loss(childIdx);
-        if (currentNode->isRoot) {
-            break;
-        }
         childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
-    }
+    } while (currentNode != nullptr);
 }
 
 void Node::revert_virtual_loss(unsigned int childIdx)
@@ -394,7 +386,7 @@ void Node::revert_virtual_loss(unsigned int childIdx)
 
 void Node::make_to_root()
 {
-    isRoot = true;
+    parentNode = nullptr;
 }
 
 void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)

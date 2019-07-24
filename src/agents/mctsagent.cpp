@@ -100,7 +100,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     }
     if (same_hash_key(ownNextRoot, pos)) {
         ownNextRoot->delete_sibling_subtrees(hashTable);
-        ownNextRoot->parentNode->delete_sibling_subtrees(hashTable);
+        rootNode->delete_sibling_subtrees(hashTable);
         ownNextRoot->make_to_root();
         return ownNextRoot;
     }

@@ -69,7 +69,6 @@ private:
     int checkmateIdx;
 
     SearchSettings* searchSettings;
-    bool isRoot;
 
     /**
      * @brief check_for_terminal Checks if the currect node is a terminal node and updates the checkmateIdx for its parent in case of a checkmate terminal
