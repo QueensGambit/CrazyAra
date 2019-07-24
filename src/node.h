@@ -69,6 +69,7 @@ private:
     int checkmateIdx;
 
     SearchSettings* searchSettings;
+    bool isRoot;
 
     /**
      * @brief check_for_terminal Checks if the currect node is a terminal node and updates the checkmateIdx for its parent in case of a checkmate terminal
@@ -123,6 +124,12 @@ public:
     float getValue() const;
     void setValue(float value);
     size_t select_child_node();
+    /**
+     * @brief get_child_node Returns the child node at the given index.
+     * A nullptr is returned if the child node wasn't expanded yet and no check is done if the childIdx is smaller than
+     * @param childIdx Index for the next child node to select
+     * @return child node
+     */
     Node* get_child_node(size_t childIdx);
     void set_child_node(size_t childIdx, Node *newNode);
 
@@ -195,6 +202,12 @@ public:
      */
     static void delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable);
 
+    /**
+     * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr
+     * @param hashTable Pointer to the hashTables
+     */
+    void delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable);
+
     int getNumberVisits() const;
 
     /**
@@ -210,6 +223,15 @@ public:
      */
     Key hash_key();
     static void setSearchSettings(SearchSettings *value);
+
+    /**
+     * @brief find_move_idx Returns the index of the required move in its move list.
+     * -1 is returned if the move wasn't found.
+     * @param m Move that is searched for
+     * @return Respective child index for the given move in its move list
+     */
+    int find_move_idx(Move m);
+
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);

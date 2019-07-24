@@ -37,7 +37,7 @@
 #include "agents/config/searchlimits.h"
 #include "agents/config/playsettings.h"
 #include "node.h"
-#include "statesmanager.h"
+#include "manager/statesmanager.h"
 #include "tests/tests.h"
 
 class CrazyAra

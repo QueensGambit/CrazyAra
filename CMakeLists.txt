@@ -46,6 +46,8 @@ file(GLOB source_files
         "src/agents/config/*.h"
         "src/nn/*.cpp"
         "src/nn/*.h"
+        "src/manager/*.cpp"
+        "src/manager/*.h"
 )
 
 set(CPP_EXAMPLE_LIBS

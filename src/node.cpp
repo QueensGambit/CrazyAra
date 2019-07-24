@@ -41,7 +41,8 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent, SearchS
     parentNode(parentNode),
     childIdxForParent(childIdxForParent),
     checkmateIdx(-1),
-    searchSettings(searchSettings)
+    searchSettings(searchSettings),
+    isRoot(false)
 {
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
@@ -80,7 +81,6 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent, SearchS
     //    waitForNNResults = 0.0f;
     hasNNResults = false;
     //    numberWaitingChildNodes = 0;
-    generator = default_random_engine(r());
 }
 
 Node::Node(const Node &b)
@@ -106,6 +106,7 @@ Node::Node(const Node &b)
     hasNNResults = b.hasNNResults;
     checkmateIdx = b.checkmateIdx;
     searchSettings = b.searchSettings;
+    isRoot = false;
 }
 
 Node::~Node()
@@ -135,6 +136,18 @@ void Node::get_principal_variation(std::vector<Move> &pv)
 Key Node::hash_key()
 {
     return pos->hash_key();
+}
+
+int Node::find_move_idx(Move move)
+{
+    int idx = 0;
+    for (Move childMove : legalMoves) {
+        if (childMove == move) {
+            return idx;
+        }
+        ++idx;
+    }
+    return -1;
 }
 
 void Node::check_for_terminal()
@@ -323,6 +336,7 @@ size_t Node::select_child_node()
 
 Node *Node::get_child_node(size_t childIdx)
 {
+    assert(chilIdx < nbDirectChildNodes);
     return childNodes[childIdx];
 }
 
@@ -334,14 +348,14 @@ void Node::set_child_node(size_t childIdx, Node *newNode)
 void Node::backup_value(unsigned int childIdx, float value)
 {
     Node* currentNode = this;
-    while (true) {
+    while(true) {
         currentNode->revert_virtual_loss_and_update(childIdx, value);
-        value = -value;
-        childIdx = currentNode->childIdxForParent;
-        currentNode = currentNode->parentNode;
-        if (currentNode == nullptr) {
-            return;
+        if (currentNode->isRoot) {
+            break;
         }
+        childIdx = currentNode->childIdxForParent;
+        value = -value;
+        currentNode = currentNode->parentNode;
     }
 }
 
@@ -358,13 +372,13 @@ void Node::revert_virtual_loss_and_update(unsigned int childIdx, float value)
 void Node::backup_collision(unsigned int childIdx)
 {
     Node* currentNode = this;
-    while (true) {
+    while(true) {
         currentNode->revert_virtual_loss(childIdx);
+        if (currentNode->isRoot) {
+            break;
+        }
         childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
-        if (currentNode == nullptr) {
-            return;
-        }
     }
 }
 
@@ -380,8 +394,7 @@ void Node::revert_virtual_loss(unsigned int childIdx)
 
 void Node::make_to_root()
 {
-    parentNode = nullptr;
-    childIdxForParent = -1;
+    isRoot = true;
 }
 
 void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)
@@ -397,6 +410,21 @@ void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)
         hashTable->erase(node->hash_key());
     }
     delete node;
+}
+
+void Node::delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable)
+{
+    if (parentNode != nullptr) {
+        sync_cout << "info string delete unused subtrees" << sync_endl;
+        size_t i = 0;
+        for (Node *childNode: parentNode->childNodes) {
+            if (childNode != nullptr and childNode != this) {
+                Node::delete_subtree(childNode, hashTable);
+                parentNode->childNodes[i] = nullptr;
+            }
+            ++i;
+        }
+    }
 }
 
 ostream &operator<<(ostream &os, const Node *node)

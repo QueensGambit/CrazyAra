@@ -46,8 +46,8 @@
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
 #include "../searchthread.h"
-#include "../statesmanager.h"
-#include "../timemanager.h"
+#include "../manager/statesmanager.h"
+#include "../manager/timemanager.h"
 
 class MCTSAgent : public Agent
 {
@@ -71,21 +71,15 @@ private:
     // This is used in the case of tree reusage. The old subtree cannot be cleared immediatly because of
     // stateInfos for 3-fold repetition, but can be cleared as soon as the tree cannot be reused anymore.
     Node* oldestRootNode;
-    vector<Node*> potentialRoots;
+
+    // stores the pointer to the root node which will become the new root
+    Node* ownNextRoot;
+    // stores the pointer to the root node which will become the new root for opponents turn
+    Node* opponentsNextRoot;
+
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
     int timeBuffersMS;
-
-    void expand_root_node_multiple_moves(const Board *pos);
-
-    /**
-     * @brief select_node Selects the best child node from a given parent node based on the q and u value
-     * @param parentNode Reference to the node object which has been selected
-                    If this node hasn't been expanded yet, None will be returned
-            move - The move which leads to the selected child node from the given parent node on forward
-            node_idx - Integer idx value indicating the index for the selected child of the parent node
-    */
-    void select_node(Node &parentNode);
 
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
@@ -126,6 +120,12 @@ private:
      * @return True, if search extension is recommend
      */
     inline bool continue_search();
+
+    /**
+     * @brief create_new_root_node Creates a new root node for the given board position and requests the neural network for evaluation
+     * @param pos Board position
+     */
+    inline void create_new_root_node(Board *pos);
 
 public:
 

@@ -82,32 +82,17 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     size_t it = 0;
 
     std::vector<std::string> commands = {
-//        "uci",
-//        "isready",
-//        "position startpos",
-//        "position startpos moves e2e4",
-//        "position startpos moves e2e4 e7e5",
-//        "go wtime 900000 btime 900000 winc 5000 binc 5000",
-//        "position startpos moves e2e4 e7e5 g1f3 b8c6",
-//        "go wtime 88200 btime 830866 winc 5000 binc 5000",
-//        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5",
-//        "go wtime 86435 btime 776057 winc 5000 binc 5000",
-
-//        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4",
-//        "go wtime 58675 btime 58913 movestogo 38",
-//        "position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1",
-//        "go wtime 57151 btime 57850 movestogo 37",
-//        "position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2",
-//        "go"
-        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3",
-        //"go",
-        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2",
-        //"go",
-        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2 f1f2 e3f2",
-        //"go",
-        //"position startpos moves e2e4 b8c6 b1c3 e7e6 d2d4 f8b4 g1f3 g8f6 f1d3 d7d5 e4e5 f6e4 e1g1 b4c3 b2c3 e4c3 c1g5 c3d1 g5d8 d1f2 f1f2 P@e3 f2f1 N@f2 f1f2 e3f2 g1f2 P@b2",
-        //"go",
-//        "quit"
+//"uci",
+//"isready",
+//"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5",
+//"go wtime 26864 btime 39522 winc 2000 binc 2000",
+//"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8",
+//"go wtime 25991 btime 38380 winc 2000 binc 2000",
+//"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8 f8g8 d1h5",
+//"go wtime 25153 btime 37253 winc 2000 binc 2000",
+//"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8 f8g8 d1h5 g6h5 N@f6",
+//"go wtime 24348 btime 36106 winc 2000 binc 2000",
+//"quit"
     };
 
     do {

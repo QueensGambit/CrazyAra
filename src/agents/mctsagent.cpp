@@ -32,7 +32,8 @@
 #include "../util/blazeutil.h"
 #include "mxnet-cpp/MxNetCpp.h"
 #include "uci.h"
-#include "../statesmanager.h"
+#include "../manager/statesmanager.h"
+#include "../manager/treemanager.h"
 #include "../node.h"
 
 using namespace mxnet::cpp;
@@ -48,6 +49,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     playSettings(playSettings),
     rootNode(nullptr),
     oldestRootNode(nullptr),
+    ownNextRoot(nullptr),
+    opponentsNextRoot(nullptr),
     states(states),
     timeBuffersMS(0.0f)
 {
@@ -66,85 +69,47 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     } else {
         probOutputs = new NDArray(Shape(1, NB_LABELS), Context::cpu());
     }
-
-    potentialRoots.resize(2);
     timeManager = new TimeManager();
-}
-
-void MCTSAgent::expand_root_node_multiple_moves(const Board *pos)
-{
-    board_to_planes(pos, 0, true, begin(input_planes)); //input_planes_start);
+    generator = default_random_engine(r());
 }
 
 size_t MCTSAgent::init_root_node(Board *pos)
 {
     size_t nodesPreSearch;
-    Node* newRoot = get_root_node_from_tree(pos);
+    rootNode = get_root_node_from_tree(pos);
 
-    if (newRoot != nullptr) {
+    if (rootNode != nullptr) {
         // swap the states because now the old states are used
         // This way the memory won't be freed for the next new move
         states->swap_states();
         nodesPreSearch = rootNode->numberVisits;
         sync_cout << "info string reuse the tree with " << nodesPreSearch << " nodes" << sync_endl;
-    } else {
-        Board* newPos = new Board(*pos);
-        newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
-        if (oldestRootNode != nullptr) {
-            sync_cout << "info string delete the old tree " << sync_endl;
-            Node::delete_subtree(oldestRootNode, hashTable);
-        }
-        sync_cout << "info string create new tree" << sync_endl;
-        rootNode = new Node(newPos, nullptr, 0, &searchSettings);
-        oldestRootNode = rootNode;
-        board_to_planes(pos, 0, true, begin(input_planes));
-        netSingle->predict(input_planes, *valueOutput, *probOutputs);
-        get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(),
-                               !netSingle->getSelectPolicyFromPlane(), rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
-        rootNode->value = valueOutput->At(0, 0);
-        rootNode->enhance_checks();
-        nodesPreSearch = 0;
-//        hashTable->insert({rootNode->pos->hash_key(), rootNode});
     }
-
-    potentialRoots.clear();
-
+    else {
+        create_new_root_node(pos);
+        nodesPreSearch = 0;
+    }
     return nodesPreSearch;
 }
 
 Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 {
-    Node* newRoot = nullptr;
-
-    if (rootNode != nullptr && rootNode->hash_key() == pos->hash_key()) {
+    if (same_hash_key(rootNode, pos)) {
         sync_cout << "info string reuse the full tree" << sync_endl;
-        newRoot = rootNode;
+        return rootNode;
     }
-    else {
-        for (Node* node : potentialRoots) {
-            if (node != nullptr && node->hash_key() == pos->hash_key()) {
-                newRoot = node;
-                break;
-            }
-        }
-
-        if (rootNode != nullptr and newRoot != nullptr) {
-            sync_cout << "info string delete unused subtrees" << sync_endl;
-            size_t i = 0;
-            for (Node *childNode: rootNode->childNodes) {
-                if (childNode != nullptr and childNode != newRoot->parentNode) {
-                    Node::delete_subtree(childNode, hashTable);
-                    rootNode->childNodes[i] = nullptr;
-                }
-                ++i;
-            }
-
-            rootNode = newRoot;
-            rootNode->make_to_root();
-        }
+    if (same_hash_key(ownNextRoot, pos)) {
+        ownNextRoot->delete_sibling_subtrees(hashTable);
+        ownNextRoot->parentNode->delete_sibling_subtrees(hashTable);
+        ownNextRoot->make_to_root();
+        return ownNextRoot;
     }
-
-    return newRoot;
+    if (same_hash_key(opponentsNextRoot, pos)) {
+        opponentsNextRoot->delete_sibling_subtrees(hashTable);
+        opponentsNextRoot->make_to_root();
+        return opponentsNextRoot;
+    }
+    return nullptr;
 }
 
 void MCTSAgent::stop_search_based_on_limits()
@@ -167,14 +132,14 @@ void MCTSAgent::stop_search_based_on_limits()
 
 void MCTSAgent::stop_search()
 {
-    for (size_t i = 0; i < searchSettings.threads; ++i) {
-        searchThreads[i]->stop();
+    for (auto searchThread : searchThreads) {
+        searchThread->stop();
     }
 }
 
 bool MCTSAgent::early_stopping()
 {
-//    if (false && max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
+    //    if (false && max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
     if (max(rootNode->policyProbSmall) > 0.9f && argmax(rootNode->policyProbSmall) == argmax(rootNode->qValues)) {
         sync_cout << "string info Early stopping" << sync_endl;
         timeBuffersMS++;
@@ -192,32 +157,36 @@ bool MCTSAgent::continue_search() {
 
 }
 
+void MCTSAgent::create_new_root_node(Board *pos)
+{
+    Board* newPos = new Board(*pos);
+    newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
+    if (oldestRootNode != nullptr) {
+        sync_cout << "info string delete the old tree " << sync_endl;
+        Node::delete_subtree(oldestRootNode, hashTable);
+    }
+    sync_cout << "info string create new tree" << sync_endl;
+    rootNode = new Node(newPos, nullptr, 0, &searchSettings);
+    oldestRootNode = rootNode;
+    board_to_planes(pos, 0, true, begin(input_planes));
+    netSingle->predict(input_planes, *valueOutput, *probOutputs);
+    get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(),
+                           !netSingle->getSelectPolicyFromPlane(), rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
+    rootNode->value = valueOutput->At(0, 0);
+    rootNode->enhance_checks();
+    rootNode->make_to_root();
+}
+
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 {
-    Node* parentNode;
+    sync_cout << "info string apply move to tree" << sync_endl;
     if (ownMove) {
-        parentNode = rootNode;
-    } else {
-        parentNode = potentialRoots[0];
+        opponentsNextRoot = pick_next_node(move, rootNode);
     }
-
-    if (parentNode != nullptr) {
-        size_t idx = 0;
-        int foundIdx = -1;
-        for (Move childMove : parentNode->legalMoves) {
-            if (childMove == move) {
-                foundIdx = idx;
-                break;
-            }
-            ++idx;
-        }
-
-        if (foundIdx != -1 && parentNode->childNodes[foundIdx] != nullptr) {
-            potentialRoots.push_back(parentNode->childNodes[foundIdx]);
-        }
+    else {
+        ownNextRoot = pick_next_node(move, opponentsNextRoot);
     }
-
 }
 
 void MCTSAgent::reset_time_buffer_counter()
@@ -271,7 +240,6 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(go, searchThreads[i]);
     }
-
     stop_search_based_on_limits();
 
     for (size_t i = 0; i < searchSettings.threads; ++i) {

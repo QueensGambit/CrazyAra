@@ -29,7 +29,7 @@
 #ifndef TIMEMANAGER_H
 #define TIMEMANAGER_H
 
-#include "agents/config/searchlimits.h"
+#include "../agents/config/searchlimits.h"
 
 class TimeManager
 {
