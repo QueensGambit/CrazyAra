@@ -39,7 +39,7 @@ void OptionsUCI::init(OptionsMap &o)
          o["Centi_uInit"]              << Option(100, 0, 100);
          o["Centi_uMin"]               << Option(25, 0, 100);
          o["Search_Type"]              << Option("MCTS", {"MCTS"});
-         o["Context"]                  << Option("GPU", {"CPU", "GPU"});
+         o["Context"]                  << Option("CPU", {"CPU", "GPU"});
          o["Use_Raw_Network"]          << Option(false);
          o["Threads"]                  << Option(2, 1, 512);
          o["Batch_Size"]               << Option(8, 1, 8192);  // 8
@@ -85,6 +85,7 @@ void OptionsUCI::setoption(istringstream &is)
   if (Options.count(name))
   {
       Options[name] = value;
+      sync_cout << "Updated option " << name << " to " << value << sync_endl;
       std::transform(name.begin(), name.end(), name.begin(), ::tolower);
       if (name == "uci_variant") {
           Variant variant = UCI::variant_from_name(value);
