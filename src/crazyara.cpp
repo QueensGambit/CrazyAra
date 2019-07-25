@@ -79,17 +79,17 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     size_t it = 0;
 
     std::vector<std::string> commands = {
-//"uci",
-//"isready",
-//"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5",
-//"go wtime 26864 btime 39522 winc 2000 binc 2000",
-//"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8",
-//"go wtime 25991 btime 38380 winc 2000 binc 2000",
-//"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8 f8g8 d1h5",
-//"go wtime 25153 btime 37253 winc 2000 binc 2000",
-//"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8 f8g8 d1h5 g6h5 N@f6",
-//"go wtime 24348 btime 36106 winc 2000 binc 2000",
-//"quit"
+        //"uci",
+        //"isready",
+        //"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5",
+        //"go wtime 26864 btime 39522 winc 2000 binc 2000",
+        //"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8",
+        //"go wtime 25991 btime 38380 winc 2000 binc 2000",
+        //"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8 f8g8 d1h5",
+        //"go wtime 25153 btime 37253 winc 2000 binc 2000",
+        //"position startpos moves e2e4 e7e5 g1f3 b8c6 f1c4 f8c5 e1g1 g8f6 d2d3 e8g8 b1c3 d7d6 c1g5 h7h6 g5f6 d8f6 c4b5 g8h8 c3d5 f6d8 b5c6 b7c6 N@e7 c6d5 N@g6 h8h7 g6f8 d8f8 e7d5 B@d8 R@b5 c7c6 b5c5 c6d5 c5c8 a8c8 B@f5 B@g6 f5c8 N@f4 e4d5 f4g2 R@d2 g2f4 P@g3 N@h3 c8h3 f4h3 g1g2 N@f4 g3f4 h3f4 g2g1 P@g2 N@g5 h6g5 f3g5 d8g5 B@g8 f8g8 d1h5 g6h5 N@f6",
+        //"go wtime 24348 btime 36106 winc 2000 binc 2000",
+        //"quit"
     };
 
     do {
@@ -229,7 +229,25 @@ void CrazyAra::init()
 bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
-        searchSettings = new SearchSettings(Options);
+        searchSettings = new SearchSettings();
+        searchSettings->threads = Options["Threads"];
+        searchSettings->batchSize = Options["Batch_Size"];
+        searchSettings->useTranspositionTable = Options["Use_Transposition_Table"];
+        searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;
+        searchSettings->uMin = Options["Centi_U_Min"] / 100.0f;
+        searchSettings->uBase = Options["U_Base"];
+        searchSettings->qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
+        searchSettings->enhanceChecks = Options["Enhance_Checks"];
+        searchSettings->enhanceCaptures = Options["Enhance_Captures"];
+        searchSettings->cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
+        searchSettings->cpuctBase = Options["CPuct_Base"];
+        searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
+        searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Alpha"] / 100.0f;
+        searchSettings->virtualLoss = Options["Virtual_Loss"];
+        searchSettings->qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
+        searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
+        searchSettings->qThreshBase = Options["Q_Thresh_Base"];
+
         netSingle = new NeuralNetAPI(Options["Context"], 1);
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
@@ -238,6 +256,7 @@ bool CrazyAra::is_ready()
         }
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, PlaySettings(), states);
         networkLoaded = true;
+        sync_cout << "searchSettings" << searchSettings->cpuctBase << sync_endl;
     }
     return networkLoaded;
 }

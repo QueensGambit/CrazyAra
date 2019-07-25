@@ -80,6 +80,7 @@ private:
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
     int timeBuffersMS;
+    bool lastEvalPositive;
 
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.

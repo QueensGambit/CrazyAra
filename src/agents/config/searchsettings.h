@@ -54,7 +54,7 @@ struct SearchSettings
     float qThreshMax;
     float qThreshBase;
 
-    SearchSettings(OptionsMap& o);
+    SearchSettings();
 
 };
 

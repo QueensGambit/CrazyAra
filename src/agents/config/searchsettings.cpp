@@ -25,24 +25,25 @@
 
 #include "searchsettings.h"
 
-SearchSettings::SearchSettings(OptionsMap &o):
-    verbose(true)
+SearchSettings::SearchSettings():
+        threads(2),
+        batchSize(2),
+        dirichletEpsilon(0.25f),
+        dirichletAlpha(0.2f),
+        qValueWeight(0.7f),
+        virtualLoss(3.0f),
+        verbose(true),
+        enhanceChecks(true),
+        enhanceCaptures(true),
+        useTranspositionTable(true),
+        cpuctInit(2.5f),
+        cpuctBase(19652.0f),
+        uInit(1.0f),
+        uMin(0.25f),
+        uBase(1965.0f),
+        qThreshInit(0.5f),
+        qThreshMax(0.9f),
+        qThreshBase(1965.0f)
 {
-    threads = o["Threads"];
-    batchSize = o["Batch_Size"];
-    useTranspositionTable = o["Use_Transposition_Table"];
-    uInit = float(o["Centi_U_Init_Divisor"]) / 100.0f;
-    uMin = o["Centi_U_Min"] / 100.0f;
-    uBase = o["U_Base"];
-    qValueWeight = o["Centi_Q_Value_Weight"] / 100.0f;
-    enhanceChecks = o["Enhance_Checks"];
-    enhanceCaptures = o["Enhance_Captures"];
-    cpuctInit = o["Centi_CPuct_Init"] / 100.0f;
-    cpuctBase = o["CPuct_Base"];
-    dirichletEpsilon = o["Centi_Dirichlet_Epsilon"] / 100.0f;
-    dirichletEpsilon = o["Centi_Dirichlet_Alpha"] / 100.0f;
-    virtualLoss = o["Virtual_Loss"];
-    qThreshInit = o["Centi_Q_Thresh_Init"] / 100.0f;
-    qThreshMax = o["Centi_Q_Thresh_Max"] / 100.0f;
-    qThreshBase = o["Q_Thresh_Base"];
+
 }

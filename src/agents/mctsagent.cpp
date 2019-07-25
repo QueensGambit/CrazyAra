@@ -52,7 +52,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     ownNextRoot(nullptr),
     opponentsNextRoot(nullptr),
     states(states),
-    timeBuffersMS(0.0f)
+    timeBuffersMS(0.0f),
+    lastEvalPositive(false)
 {
     hashTable = new unordered_map<Key, Node*>;
     hashTable->reserve(1e6);
@@ -121,9 +122,7 @@ void MCTSAgent::stop_search_based_on_limits()
     } else {
         this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
         if (continue_search()) {
-            int bonusTime = timeBuffersMS / 4;
-            timeBuffersMS -= bonusTime;
-            this_thread::sleep_for(chrono::milliseconds(bonusTime));
+            this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
         }
         stop_search();
     }
@@ -148,7 +147,7 @@ bool MCTSAgent::early_stopping()
 }
 
 bool MCTSAgent::continue_search() {
-    if (timeBuffersMS > 1000 && rootNode->qValues[argmax(rootNode->childNumberVisits)] < rootNode->value) {
+    if (rootNode->pos->plies_from_null()/2 < 30 && lastEvalPositive && rootNode->qValues[argmax(rootNode->childNumberVisits)] < 0) {
         sync_cout << "info Increase search time" << sync_endl;
         return true;
     }
@@ -220,6 +219,7 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 
     EvalInfo evalInfo;
     evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[best_idx]);
+    lastEvalPositive = evalInfo.centipawns > 0;
     evalInfo.legalMoves = this->rootNode->getLegalMoves();
     this->rootNode->get_principal_variation(evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
