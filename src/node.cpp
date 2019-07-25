@@ -402,16 +402,26 @@ void Node::make_to_root()
     parentNode = nullptr;
 }
 
-void Node::delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable)
+void Node::delete_subtree(Node *node)
 {
-    for (Node *child_node: node->childNodes) {
-        if (child_node != nullptr) {
-            delete_subtree(child_node, hashTable);
+    for (Node *childNode: node->childNodes) {
+        if (childNode != nullptr) {
+            delete_subtree(childNode);
+        }
+    }
+    delete node;
+}
+
+void Node::delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>* hashTable)
+{
+    for (Node *childNode: node->childNodes) {
+        if (childNode != nullptr) {
+            delete_subtree_and_hash_entries(childNode, hashTable);
         }
     }
 
     auto it = hashTable->find(node->pos->hash_key());
-    if(it != hashTable->end() && it->second == node) {
+    if(it != hashTable->end()) {
         hashTable->erase(node->hash_key());
     }
     delete node;
@@ -423,8 +433,8 @@ void Node::delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable)
         sync_cout << "info string delete unused subtrees" << sync_endl;
         size_t i = 0;
         for (Node *childNode: parentNode->childNodes) {
-            if (childNode != nullptr and childNode != this) {
-                Node::delete_subtree(childNode, hashTable);
+            if (childNode != nullptr && childNode != this) {
+                Node::delete_subtree_and_hash_entries(childNode, hashTable);
                 parentNode->childNodes[i] = nullptr;
             }
             ++i;

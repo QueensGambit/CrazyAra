@@ -215,11 +215,18 @@ public:
     Board* getPos();
 
     /**
+     * @brief delete_subtree Deletes the node itself and all existing nodes in its subtree.
+     * @param node ode of the subtree to delete
+     */
+    static void delete_subtree(Node *node);
+
+    /**
      * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
      * @param node Node of the subtree to delete
      * @param hashTable Pointer to the hashTable which stores a pointer to all active nodes
      */
-    static void delete_subtree(Node *node, unordered_map<Key, Node*>* hashTable);
+    static void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>* hashTable);
+
 
     /**
      * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr

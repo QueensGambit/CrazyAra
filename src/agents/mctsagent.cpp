@@ -100,7 +100,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     }
     if (same_hash_key(ownNextRoot, pos)) {
         ownNextRoot->delete_sibling_subtrees(hashTable);
-        rootNode->delete_sibling_subtrees(hashTable);
+        opponentsNextRoot->delete_sibling_subtrees(hashTable);
         ownNextRoot->make_to_root();
         return ownNextRoot;
     }
@@ -160,7 +160,9 @@ void MCTSAgent::create_new_root_node(Board *pos)
     newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
     if (oldestRootNode != nullptr) {
         sync_cout << "info string delete the old tree " << sync_endl;
-        Node::delete_subtree(oldestRootNode, hashTable);
+        if (opponentsNextRoot != nullptr) {
+            opponentsNextRoot->delete_sibling_subtrees(hashTable);
+        }
     }
     sync_cout << "info string create new tree" << sync_endl;
     rootNode = new Node(newPos, nullptr, 0, searchSettings);
