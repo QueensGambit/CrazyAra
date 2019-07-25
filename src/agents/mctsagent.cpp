@@ -174,6 +174,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
     rootNode->value = valueOutput->At(0, 0);
     rootNode->enhance_moves();
     rootNode->make_to_root();
+    gameNodes.push_back(rootNode);
 }
 
 
@@ -182,15 +183,31 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
     sync_cout << "info string apply move to tree" << sync_endl;
     if (ownMove) {
         opponentsNextRoot = pick_next_node(move, rootNode);
+        if (opponentsNextRoot != nullptr) {
+            gameNodes.push_back(opponentsNextRoot);
+        }
     }
     else {
         ownNextRoot = pick_next_node(move, opponentsNextRoot);
+        if (ownNextRoot != nullptr) {
+            gameNodes.push_back(ownNextRoot);
+        }
     }
 }
 
 void MCTSAgent::reset_time_buffer_counter()
 {
     timeBuffersMS = 0;
+}
+
+void MCTSAgent::clear_game_history()
+{
+    for (Node* node: gameNodes) {
+        delete node;
+    }
+    gameNodes.clear();
+    hashTable->clear();
+    oldestRootNode = nullptr;
 }
 
 EvalInfo MCTSAgent::evalute_board_state(Board *pos)

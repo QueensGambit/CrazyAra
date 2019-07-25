@@ -433,7 +433,7 @@ void Node::delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable)
         sync_cout << "info string delete unused subtrees" << sync_endl;
         size_t i = 0;
         for (Node *childNode: parentNode->childNodes) {
-            if (childNode != nullptr && childNode != this) {
+            if (childNode != nullptr && i != childIdxForParent) {
                 Node::delete_subtree_and_hash_entries(childNode, hashTable);
                 parentNode->childNodes[i] = nullptr;
             }

@@ -264,6 +264,7 @@ bool CrazyAra::is_ready()
 void CrazyAra::new_game()
 {
     mctsAgent->reset_time_buffer_counter();
+    mctsAgent->clear_game_history();
     sync_cout << "info string newgame" << sync_endl;
 }
 

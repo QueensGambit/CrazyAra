@@ -77,6 +77,9 @@ private:
     // stores the pointer to the root node which will become the new root for opponents turn
     Node* opponentsNextRoot;
 
+    // this vector contains all nodes which have been played during a game
+    vector<Node*> gameNodes;
+
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
     int timeBuffersMS;
@@ -160,6 +163,11 @@ public:
      * @brief reset_time_buffer_counter Resets the counter on how often the search has been stopped early
      */
     void reset_time_buffer_counter();
+
+    /**
+     * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them
+     */
+    void clear_game_history();
 };
 
 #endif // MCTSAGENT_H
