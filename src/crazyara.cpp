@@ -60,14 +60,13 @@ CrazyAra::CrazyAra()
 void CrazyAra::welcome()
 {
     start_logger("CrazyAra.log");
-    std::cout << intro << std::endl;
+    sync_cout << intro << sync_endl;
 }
 
 void CrazyAra::uci_loop(int argc, char *argv[])
 {
     Board pos;
     string token, cmd;
-    //    StateListPtr states(new std::deque<StateInfo>(1));
     auto uiThread = std::make_shared<Thread>(0);
 
     StateInfo* newState = new StateInfo;
@@ -230,12 +229,12 @@ void CrazyAra::init()
 bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
-        SearchSettings searchSettings(Options);
+        searchSettings = new SearchSettings(Options);
         netSingle = new NeuralNetAPI(Options["Context"], 1);
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
-        NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings.threads];
-        for (size_t i = 0; i < searchSettings.threads; ++i) {
-            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings.batchSize);
+        NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
+        for (size_t i = 0; i < searchSettings->threads; ++i) {
+            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize);
         }
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, PlaySettings(), states);
         networkLoaded = true;

@@ -70,6 +70,7 @@ private:
     MCTSAgent *mctsAgent;
     NeuralNetAPI *netSingle;
     NeuralNetAPI *netBatch;
+    SearchSettings *searchSettings;
     bool networkLoaded = false;
     StatesManager *states;
 

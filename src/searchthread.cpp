@@ -29,19 +29,19 @@
 #include "uci.h"
 #include "misc.h"
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings searchSettings, unordered_map<Key, Node *> *hashTable):
-    netBatch(netBatch), searchSettings(searchSettings), isRunning(false), hashTable(hashTable)
+SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, unordered_map<Key, Node *> *hashTable):
+    netBatch(netBatch), isRunning(false), hashTable(hashTable), searchSettings(searchSettings)
 {
     // allocate memory for all predictions and results
-    inputPlanes = new float[searchSettings.batchSize * NB_VALUES_TOTAL];
-    valueOutputs = new NDArray(Shape(searchSettings.batchSize, 1), Context::cpu());
+    inputPlanes = new float[searchSettings->batchSize * NB_VALUES_TOTAL];
+    valueOutputs = new NDArray(Shape(searchSettings->batchSize, 1), Context::cpu());
 
     bool select_policy_from_plane = true;
 
     if (select_policy_from_plane) {
-        probOutputs = new NDArray(Shape(searchSettings.batchSize, NB_LABELS_POLICY_MAP), Context::cpu());
+        probOutputs = new NDArray(Shape(searchSettings->batchSize, NB_LABELS_POLICY_MAP), Context::cpu());
     } else {
-        probOutputs = new NDArray(Shape(searchSettings.batchSize, NB_LABELS), Context::cpu());
+        probOutputs = new NDArray(Shape(searchSettings->batchSize, NB_LABELS), Context::cpu());
     }
 }
 
@@ -156,7 +156,7 @@ void SearchThread::backup_collisions()
 
 void SearchThread::create_new_node(Board* newPos, Node* parentNode, size_t childIdx, size_t numberNewNodes)
 {
-    Node *newNode = new Node(newPos, parentNode, childIdx, &searchSettings);
+    Node *newNode = new Node(newPos, parentNode, childIdx, searchSettings);
 
     // save a reference newly created list in the temporary list for node creation
     // it will later be updated with the evaluation of the NN
@@ -204,10 +204,10 @@ void SearchThread::create_mini_batch()
     size_t tranpositionEvents = 0;
     size_t terminalEvents = 0;
 
-    while (newNodes.size() < searchSettings.batchSize and
-           collisionNodes.size() < searchSettings.batchSize and
-           tranpositionEvents < searchSettings.batchSize and
-           terminalEvents < searchSettings.batchSize) {
+    while (newNodes.size() < searchSettings->batchSize and
+           collisionNodes.size() < searchSettings->batchSize and
+           tranpositionEvents < searchSettings->batchSize and
+           terminalEvents < searchSettings->batchSize) {
         parentNode = get_new_child_to_evaluate(childIdx, isCollision, isTerminal, depth);
 
         if(isTerminal) {
@@ -225,7 +225,7 @@ void SearchThread::create_mini_batch()
             newPos->do_move(parentNode->legalMoves[childIdx], *newState);
 
             auto it = hashTable->find(newPos->hash_key());
-            if(searchSettings.useTranspositionTable && it != hashTable->end() && it->second->hasNNResults &&
+            if(searchSettings->useTranspositionTable && it != hashTable->end() && it->second->hasNNResults &&
                     it->second->pos->getStateInfo()->pliesFromNull == newState->pliesFromNull &&
                     it->second->pos->getStateInfo()->rule50 == newState->rule50 &&
                     newState->repetition == 0)

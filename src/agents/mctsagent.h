@@ -55,7 +55,7 @@ private:
     NeuralNetAPI* netSingle;
     NeuralNetAPI** netBatches;
 
-    SearchSettings searchSettings;
+    SearchSettings* searchSettings;
     PlaySettings playSettings;
 
     std::vector<SearchThread*> searchThreads;
@@ -128,14 +128,17 @@ private:
     inline void create_new_root_node(Board *pos);
 
 public:
-
     MCTSAgent(NeuralNetAPI* netSingle,
               NeuralNetAPI** netBatches,
-              SearchSettings searchSettings,
+              SearchSettings* searchSettings,
               PlaySettings playSettings,
               StatesManager* states);
 
     EvalInfo evalute_board_state(Board *pos);
+
+    /**
+     * @brief run_mcts_search Starts the MCTS serach using all available search threads
+     */
     void run_mcts_search();
 
     /**

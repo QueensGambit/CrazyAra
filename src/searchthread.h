@@ -55,7 +55,7 @@ private:
     bool isRunning;
 
     unordered_map<Key, Node*> *hashTable;
-    SearchSettings searchSettings;
+    SearchSettings* searchSettings;
     SearchLimits* searchLimits;
 
     /**
@@ -109,7 +109,7 @@ public:
      * @param searchSettings Given settings for this search run
      * @param hashTable Handle to the hash table
      */
-    SearchThread(NeuralNetAPI* netBatch, SearchSettings searchSettings, unordered_map<Key, Node*>* hashTable);
+    SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, unordered_map<Key, Node*>* hashTable);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

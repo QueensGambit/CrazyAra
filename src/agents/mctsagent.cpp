@@ -39,7 +39,7 @@
 using namespace mxnet::cpp;
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
-                     SearchSettings searchSettings, PlaySettings playSettings,
+                     SearchSettings* searchSettings, PlaySettings playSettings,
                      StatesManager *states
                      ):
     Agent(playSettings.temperature, playSettings.temperatureMoves, true),
@@ -57,8 +57,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     hashTable = new unordered_map<Key, Node*>;
     hashTable->reserve(1e6);
 
-    for (auto i = 0; i < searchSettings.threads; ++i) {
-        cout << "searchSettings.batchSize" << searchSettings.batchSize << endl;
+    for (auto i = 0; i < searchSettings->threads; ++i) {
         searchThreads.push_back(new SearchThread(netBatches[i], searchSettings, hashTable));
     }
 
@@ -154,7 +153,6 @@ bool MCTSAgent::continue_search() {
         return true;
     }
     return false;
-
 }
 
 void MCTSAgent::create_new_root_node(Board *pos)
@@ -166,7 +164,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
         Node::delete_subtree(oldestRootNode, hashTable);
     }
     sync_cout << "info string create new tree" << sync_endl;
-    rootNode = new Node(newPos, nullptr, 0, &searchSettings);
+    rootNode = new Node(newPos, nullptr, 0, searchSettings);
     oldestRootNode = rootNode;
     board_to_planes(pos, 0, true, begin(input_planes));
     netSingle->predict(input_planes, *valueOutput, *probOutputs);
@@ -234,15 +232,15 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 
 void MCTSAgent::run_mcts_search()
 {
-    thread** threads = new thread*[searchSettings.threads];
-    for (size_t i = 0; i < searchSettings.threads; ++i) {
+    thread** threads = new thread*[searchSettings->threads];
+    for (size_t i = 0; i < searchSettings->threads; ++i) {
         searchThreads[i]->set_root_node(rootNode);
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(go, searchThreads[i]);
     }
     stop_search_based_on_limits();
 
-    for (size_t i = 0; i < searchSettings.threads; ++i) {
+    for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
 }
@@ -255,8 +253,5 @@ void MCTSAgent::print_root_node()
     }
     sync_cout << rootNode << sync_endl;
 }
-
-
-
 
 

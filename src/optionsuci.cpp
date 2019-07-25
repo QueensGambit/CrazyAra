@@ -43,9 +43,9 @@ void OptionsUCI::init(OptionsMap &o)
          o["CPuct_Base"]               << Option(19652, 1, 99999);
          o["Centi_Dirichlet_Epsilon"]  << Option(25, 1, 99999);
          o["Centi_Dirichlet_Alpha"]    << Option(20, 1, 99999);
-         o["Centi_U_Init"]              << Option(100, 0, 100);
-         o["Centi_U_Min"]               << Option(25, 0, 100);
-         o["U_Base"]                    << Option(1965, 0, 99999);
+         o["Centi_U_Init"]             << Option(100, 0, 100);
+         o["Centi_U_Min"]              << Option(25, 0, 100);
+         o["U_Base"]                   << Option(1965, 0, 99999);
          o["Centi_U_Init_Divisor"]     << Option(100, 1, 99999);
          o["Centi_Q_Value_Weight"]     << Option(70, 0, 99999);
          o["Centi_Q_Thresh_Init"]      << Option(50, 0, 100);

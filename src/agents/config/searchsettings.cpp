@@ -25,10 +25,11 @@
 
 #include "searchsettings.h"
 
-SearchSettings::SearchSettings(OptionsMap &o): threads(2),
+SearchSettings::SearchSettings(OptionsMap &o):
     verbose(true)
 {
-    batchSize = o["Batch_Size"]; // 8//128; //1; //28;
+    threads = o["Threads"];
+    batchSize = o["Batch_Size"];
     useTranspositionTable = o["Use_Transposition_Table"];
     uInit = float(o["Centi_U_Init_Divisor"]) / 100.0f;
     uMin = o["Centi_U_Min"] / 100.0f;
@@ -38,8 +39,8 @@ SearchSettings::SearchSettings(OptionsMap &o): threads(2),
     enhanceCaptures = o["Enhance_Captures"];
     cpuctInit = o["Centi_CPuct_Init"] / 100.0f;
     cpuctBase = o["CPuct_Base"];
-    dirichletEpsilon = o["Centi_Dirichlet_Epsilon"];
-    dirichletEpsilon = o["Centi_Dirichlet_Alpha"];
+    dirichletEpsilon = o["Centi_Dirichlet_Epsilon"] / 100.0f;
+    dirichletEpsilon = o["Centi_Dirichlet_Alpha"] / 100.0f;
     virtualLoss = o["Virtual_Loss"];
     qThreshInit = o["Centi_Q_Thresh_Init"] / 100.0f;
     qThreshMax = o["Centi_Q_Thresh_Max"] / 100.0f;
