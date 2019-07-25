@@ -195,30 +195,48 @@ DynamicVector<float> Node::get_current_u_values()
     return get_current_cput() * policyProbSmall * (sqrt(numberVisits) / (childNumberVisits + get_current_u_divisor()));
 }
 
-void Node::enhance_checks()
+bool Node::enhance_checks(const float incrementCheck, float threshCheck)
 {
-    if (true) {
-        const float thresh_check = 0.1f;
-        const float thresh_capture = 0.1f;
-
-        float increment_check = min(thresh_check, max(policyProbSmall)*0.5f);
-        float increment_capture = min(thresh_capture, max(policyProbSmall)*0.25f);
-
-        bool update = false;
-        for (size_t i = 0; i < nbDirectChildNodes; ++i) {
-            if (policyProbSmall[i] < thresh_check && pos->gives_check(legalMoves[i])) {
-                policyProbSmall[i] += increment_check;
-                update = true;
-            }
-            if (policyProbSmall[i] < thresh_capture && pos->capture(legalMoves[i])) {
-                policyProbSmall[i] += increment_capture;
-                update = true;
-            }
+    bool update = false;
+    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
+        if (policyProbSmall[i] < threshCheck && pos->gives_check(legalMoves[i])) {
+            policyProbSmall[i] += incrementCheck;
+            update = true;
         }
+    }
+    return update;
+}
 
-        if (update)     {
-            policyProbSmall /= sum(policyProbSmall);
+bool Node::enhance_captures(const float incrementCapture, float threshCapture)
+{
+    bool update = false;
+    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
+        if (policyProbSmall[i] < threshCapture && pos->capture(legalMoves[i])) {
+            policyProbSmall[i] += incrementCapture;
+            update = true;
         }
+    }
+
+    return update;
+}
+
+void Node::enhance_moves(const float threshCheck, const float checkFactor, const float threshCapture, const float captureFactor)
+{
+    float maxPolicyValue = max(policyProbSmall);
+    bool checkUpdate = false;
+    bool captureUpdate = false;
+
+    if (searchSettings->enhanceChecks) {
+        float incrementCheck = min(threshCheck, maxPolicyValue*checkFactor);
+        checkUpdate = enhance_checks(incrementCheck, threshCheck);
+    }
+    if (searchSettings->enhanceCaptures) {
+        float incrementCapture = min(threshCapture, maxPolicyValue*captureFactor);
+        captureUpdate = enhance_captures(incrementCapture, threshCapture);
+    }
+
+    if (checkUpdate || captureUpdate) {
+        policyProbSmall /= sum(policyProbSmall);
     }
 }
 
@@ -336,11 +354,6 @@ Node *Node::get_child_node(size_t childIdx)
 {
     assert(chilIdx < nbDirectChildNodes);
     return childNodes[childIdx];
-}
-
-void Node::set_child_node(size_t childIdx, Node *newNode)
-{
-    //    childNodes[childIdx] = Node(); // = newNode;
 }
 
 void Node::backup_value(unsigned int childIdx, float value)

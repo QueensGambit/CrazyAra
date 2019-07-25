@@ -108,7 +108,6 @@ inline Node* SearchThread::get_new_child_to_evaluate(unsigned int &childIdx, boo
         }
         currentNode = nextNode;
     }
-
 }
 
 void SearchThread::set_nn_results_to_child_nodes()
@@ -121,7 +120,7 @@ void SearchThread::set_nn_results_to_child_nodes()
             node->mtx.lock();
             node->value = valueOutputs->At(batchIdx, 0);
             node->hasNNResults = true;
-            node->enhance_checks();
+            node->enhance_moves();
             node->mtx.unlock();
         }
         ++batchIdx;

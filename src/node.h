@@ -100,6 +100,23 @@ private:
      */
     DynamicVector<float> get_current_u_values();
 
+    /**
+      * @brief enhance_checks Enhances all possible checking moves below threshCheck by incrementCheck and returns true if a modification
+      * was applied. This signals that a renormizalition should be applied afterwards.
+      * @param increment_check Constant factor which is added to the checks below threshCheck
+      * @param threshCheck Probability threshold for checking moves
+      * @return bool
+      */
+     inline bool enhance_checks(const float incrementCheck, float threshCheck);
+
+     /**
+       * @brief enhance_captures Enhances all possible capture moves below threshCapture by incrementCapture and returns true if a modification
+       * was applied. This signals that a renormizalition should be applied afterwards.
+       * @param incrementCapture Constant factor which is added to the checks below threshCheck
+       * @param threshCapture Probability threshold for capture moves
+       * @return bool
+       */
+     inline bool enhance_captures(const float incrementCapture, float threshCapture);
 public:
 
     Node(Board *pos,
@@ -130,7 +147,6 @@ public:
      * @return child node
      */
     Node* get_child_node(size_t childIdx);
-    void set_child_node(size_t childIdx, Node *newNode);
 
     /**
      * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
@@ -164,9 +180,13 @@ public:
     void make_to_root();
 
     /**
-     * @brief enhance_checks Enhances all possible checking moves by min(0.1, 0.5 * max(policyProbSmall)) and applies a renormalization afterwards
-     */
-     void enhance_checks();
+      * @brief enhance_moves Calls enhance_checks & enchance captures if the searchSetting suggests it and applies a renormilization afterwards
+      * @param threshCheck Threshold probability for checking moves
+      * @param checkFactor Factor based on the maximum probability with which checks will be increased
+      * @param threshCapture Threshold probability for capture moves
+      * @param captureFactor Factor based on the maximum probability with which captures will be increased
+      */
+    void enhance_moves(const float threshCheck = 0.1f, const float checkFactor=0.5f, const float threshCapture = 0.1f, const float captureFactor=0.25f);
 
     friend class SearchThread;
     friend class MCTSAgent;
@@ -230,7 +250,6 @@ public:
      * @return Respective child index for the given move in its move list
      */
     int find_move_idx(Move m);
-
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Node *node);

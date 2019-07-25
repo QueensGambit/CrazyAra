@@ -253,8 +253,9 @@ bool CrazyAra::is_ready()
         searchSettings.uMin = Options["Centi_uMin"] / 100.0;
         searchSettings.uBase = Options["uBase"];
         searchSettings.qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0;
+        searchSettings.enhanceChecks = Options["Enhance_Checks"];
+        searchSettings.enhanceCaptures = Options["Enhance_Captures"];
 
-//        searchSettings.epsilonMove = Options["Epsilon_Move"];
         netSingle = new NeuralNetAPI(Options["Context"], 1,
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
