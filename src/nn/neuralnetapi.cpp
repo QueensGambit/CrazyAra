@@ -21,8 +21,6 @@
  * @file: neuralnetapi.cpp
  * Created on 12.06.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include "neuralnetapi.h"
@@ -34,7 +32,7 @@
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
-std::vector<std::string> GetDirectoryFiles(const std::string& dir) {
+std::vector<std::string> get_directory_files(const std::string& dir) {
     std::vector<std::string> files;
     std::shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
     struct dirent *dirent_ptr;
@@ -50,12 +48,57 @@ std::vector<std::string> GetDirectoryFiles(const std::string& dir) {
 }
 }  // namespace
 
+NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize):
+    batchSize(batchSize)
+{
+    if (ctx == "cpu" or ctx == "CPU") {
+        global_ctx = Context::cpu();
+    } else if (ctx == "gpu" or ctx == "GPU") {
+        global_ctx = Context::gpu();
+    } else {
+        throw "unsupported context " + ctx + " given";
+    }
+
+    YAML::Node config = YAML::LoadFile("config.yaml");
+    const std::string prefix = config["model_directory"].as<std::string>();
+
+    string jsonFilePath;
+    string paramterFilePath;
+
+    const auto& files = get_directory_files(prefix);
+    for (const auto& file : files) {
+        cout << file << std::endl;
+
+        size_t pos_json = file.find(".json");
+        size_t pos_params = file.find(".params");
+        if (pos_json != string::npos) {
+            jsonFilePath = prefix + file;
+        }
+        else if (pos_params != string::npos) {
+            paramterFilePath = prefix + file;
+        }
+    }
+    if (jsonFilePath == "" || paramterFilePath == "") {
+        throw std::invalid_argument( "The given directory at " + prefix
+                                     + " doesn't containa .json and a .parmas file.");
+    }
+
+    cout << "json file: " << jsonFilePath << endl;
+
+    input_shape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
+
+    load_model(jsonFilePath);
+    load_parameters(paramterFilePath);
+    bind_executor();
+    infer_select_policy_from_planes();
+}
+
 bool NeuralNetAPI::getSelectPolicyFromPlane() const
 {
     return selectPolicyFromPlane;
 }
 
-bool NeuralNetAPI::FileExists(const string &name)
+bool NeuralNetAPI::file_exists(const string &name)
 {
     struct stat buffer;
     return (stat(name.c_str(), &buffer) == 0);
@@ -63,21 +106,16 @@ bool NeuralNetAPI::FileExists(const string &name)
 
 void NeuralNetAPI::load_model(const string &jsonFilePath)
 {
-    if (!FileExists(jsonFilePath)) {
+    if (!file_exists(jsonFilePath)) {
         LG << "Model file " << jsonFilePath << " does not exist";
         throw std::runtime_error("Model file does not exist");
     }
     LG << "Loading the model from " << jsonFilePath << std::endl;
     net = Symbol::Load(jsonFilePath);
-
-    //    std::map<std::string, std::vector<mx_uint> > arg_shapes;
-    //    std::vector<std::vector<mx_uint> > aux_shapes, in_shapes, out_shapes;
-    //    net.InferShape(arg_shapes, &in_shapes, &aux_shapes, &out_shapes);
-    //    cout << "out_shape: " << out_shapes.at(1).at(0) << endl;
 }
 
 void NeuralNetAPI::load_parameters(const std::string& paramterFilePath) {
-    if (!FileExists(paramterFilePath)) {
+    if (!file_exists(paramterFilePath)) {
         LG << "Parameter file " << paramterFilePath << " does not exist";
         throw std::runtime_error("Model parameters does not exist");
     }
@@ -98,7 +136,7 @@ void NeuralNetAPI::load_parameters(const std::string& paramterFilePath) {
     NDArray::WaitAll();
 }
 
-void NeuralNetAPI::bind_executor() //Shape *input_shape_single, Executor* executor_single)
+void NeuralNetAPI::bind_executor()
 {
     // Create an executor after binding the model to input parameters.
     args_map["data"] = NDArray(input_shape, global_ctx, false);
@@ -139,70 +177,10 @@ void NeuralNetAPI::infer_select_policy_from_planes()
     cout << "string info selectPolicyFromPlane: " << selectPolicyFromPlane << endl;
 }
 
-NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize, string modelArchitectureDir, string modelWeightsDir):
-    batchSize(batchSize)
-{
-    if (ctx == "cpu" or ctx == "CPU") {
-        global_ctx = Context::cpu();
-    } else if (ctx == "gpu" or ctx == "GPU") {
-        global_ctx = Context::gpu();
-    } else {
-        throw "unsupported context " + ctx + " given";
-    }
-
-    YAML::Node config = YAML::LoadFile("config.yaml");
-    const std::string prefix = config["model_directory"].as<std::string>();
-
-    string jsonFilePath;
-    string paramterFilePath;
-
-    const auto& files = GetDirectoryFiles(prefix);
-    for (const auto& file : files) {
-        cout << file << std::endl;
-
-        size_t pos_json = file.find(".json");
-        size_t pos_params = file.find(".params");
-        if (pos_json != string::npos) {
-            jsonFilePath = prefix + file;
-        }
-        else if (pos_params != string::npos) {
-            paramterFilePath = prefix + file;
-        }
-    }
-    if (jsonFilePath == "" || paramterFilePath == "") {
-        throw std::invalid_argument( "The given directory at " + prefix
-                                     + " doesn't containa .json and a .parmas file.");
-    }
-
-    cout << "json file: " << jsonFilePath << endl;
-
-    //    const string prefix = "/media/queensgambit/5C483A84483A5CC8/Deep_Learning/data/stockfish/Crazyhouse/model/";
-    //                           "/home/queensgambit/Programming/Deep_Learning/CrazyAra_Fish/";
-    //    const string prefix = "/home/queensgambit/Programming/Deep_Learning/models/risev2/";
-
-    //    const string jsonFilePath = prefix + "symbol/model-1.32689-0.566-symbol.json"; //model-1.19246-0.603-symbol.json";
-    //    const string jsonFilePath = prefix + "symbol/model-1.19246-0.603-symbol.json";
-
-    //    const string paramterFilePath = prefix + "params/model-1.32689-0.566-0011.params"; //model-1.19246-0.603-0223.params";
-    //    const string paramterFilePath = prefix + "params/model-1.19246-0.603-0223.params";
-
-
-    input_shape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
-    //    input_shape =  Shape(batchSize, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH);
-
-    load_model(jsonFilePath);
-    load_parameters(paramterFilePath);
-    bind_executor(); //&input_shape_single, executor_single);
-    infer_select_policy_from_planes();
-    //    bindExecutor(&input_shape, executor);
-}
-
 NDArray NeuralNetAPI::predict(float *inputPlanes, float &value)
 {
-    // populates v vector data in a matrix of 1 row and 4 columns
     NDArray image_data {inputPlanes, input_shape, global_ctx};
 
-    //    std::cout << "image data" << image_data << std::endl;
     image_data.CopyTo(&(executor->arg_dict()["data"]));
 
     // Run the forward pass.
@@ -225,9 +203,7 @@ NDArray NeuralNetAPI::predict(float *inputPlanes, float &value)
 
 void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &probOutputs)
 {
-
     NDArray image_data {inputPlanes, input_shape, global_ctx};
-    //    mtx.lock();
     image_data.CopyTo(&(executor->arg_dict()["data"]));
 
     // Run the forward pass.
@@ -239,7 +215,5 @@ void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &pr
     // Assign the value output to the return paramter
     valueOutput.WaitToRead();
     probOutputs.WaitToRead();
-    //    mtx.unlock();
-
 }
 

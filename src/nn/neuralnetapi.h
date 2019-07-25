@@ -56,7 +56,7 @@ private:
      * @param name Filepath
      * @return True if exists else false
      */
-    inline bool FileExists(const std::string& name);
+    inline bool file_exists(const std::string& name);
 
     /**
      * @brief load_model Loads the model architecture definition from a json file
@@ -89,7 +89,7 @@ public:
      * @param modelArchitectureDir Directory where the network architecture is stored (.json file)
      * @param modelWeightsDir Directory where parameters a.k.a weights of the neural are stored (.params file)
      */
-    NeuralNetAPI(string ctx, unsigned int batchSize, string modelArchitectureDir, string modelWeightsDir);
+    NeuralNetAPI(string ctx, unsigned int batchSize);
 
     /**
      * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number

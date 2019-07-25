@@ -248,15 +248,11 @@ bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
         SearchSettings searchSettings(Options);
-        netSingle = new NeuralNetAPI(Options["Context"], 1,
-                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
-                                     "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
+        netSingle = new NeuralNetAPI(Options["Context"], 1);
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings.threads];
         for (size_t i = 0; i < searchSettings.threads; ++i) {
-            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings.batchSize,
-                                             "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
-                                             "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");
+            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings.batchSize);
         }
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, PlaySettings(), states);
         networkLoaded = true;
