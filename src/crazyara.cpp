@@ -21,8 +21,6 @@
  * @file: crazyara.cpp
  * Created on 12.06.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include "crazyara.h"
@@ -138,9 +136,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         // Additional custom non-UCI commands, mainly for debugging
         else if (token == "root")  mctsAgent->print_root_node();
         else if (token == "flip")  pos.flip();
-        else if (token == "bench") cout << "dummy"; //bench(pos, is, states);
         else if (token == "d")     sync_cout << pos << sync_endl;
-        else if (token == "eval")  cout << "dummy"; //sync_cout << Eval::trace(pos) << sync_endl;
         else
             sync_cout << "Unknown command: " << cmd << sync_endl;
 
@@ -162,7 +158,6 @@ void CrazyAra::go(Board *pos, istringstream &is) {
     while (is >> token) {
         if (token == "searchmoves")
             while (is >> token);
-        //                      searchLimits.searchmoves.push_back(UCI::to_move(pos, token));
         else if (token == "wtime")     is >> searchLimits.time[WHITE];
         else if (token == "btime")     is >> searchLimits.time[BLACK];
         else if (token == "winc")      is >> searchLimits.inc[WHITE];
@@ -188,13 +183,12 @@ void CrazyAra::position(Board *pos, istringstream& is) {
 
     Move m;
     string token, fen;
-
     Variant variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
     is >> token;
     if (token == "startpos")
     {
-        fen = StartFENs[CRAZYHOUSE_VARIANT]; //variant];
+        fen = StartFENs[variant];
         is >> token; // Consume "moves" token if any
     }
     else if (token == "fen")
@@ -205,33 +199,23 @@ void CrazyAra::position(Board *pos, istringstream& is) {
 
     auto uiThread = std::make_shared<Thread>(0);
     pos->set(fen, Options["UCI_Chess960"], CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
-
     states->clear_states();
     states->swap_states();
-
     Move lastMove = MOVE_NULL;
 
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(*pos, token)) != MOVE_NONE)
     {
-        // TODO: Careful this causes a memory leak
-        // TODO: position startpos moves e2e4 c7c5 g1f3 b8c6 b1c3 e7e5 f1c4 f8e7 e1g1 d7d6 d2d3 g8f6 f3g5 e8g8 g5f7 f8f7 P@g5 c6d4 g5f6 e7f6 c4f7 g8f7 N@d5 P@h3 R@g3
-        // position fen r1bq4/pp3kpp/3p1b2/2pNp3/3nP3/2NP2Rp/PPP2PPP/R1BQ1RK1/bn b - - 0 13
-        // check why c8fg4 is proposed -> was due to states list
         StateInfo *newState = new StateInfo;
-        pos->do_move(m, *newState); //states->back());
+        pos->do_move(m, *newState);
         states->activeStates.push_back(newState);
-//        sync_cout << "info string consume move" << sync_endl;
         lastMove = m;
     }
-
     // inform the mcts agent of the move, so the tree can potentially be reused later
     if (lastMove != MOVE_NULL) {
         mctsAgent->apply_move_to_tree(lastMove, false);
     }
-
     sync_cout << "info string position " << pos->fen() << sync_endl;
-
 }
 
 void CrazyAra::init()
@@ -257,7 +241,6 @@ bool CrazyAra::is_ready()
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, PlaySettings(), states);
         networkLoaded = true;
     }
-
     return networkLoaded;
 }
 

@@ -22,7 +22,7 @@
  * Created on 12.06.2019
  * @author: queensgambit
  *
- * Main entry point for the executable which manages the UCI communication.
+ * Main entry point for the executable which manages the UCI communication
  */
 
 #ifndef CRAZYARA_H
@@ -81,8 +81,22 @@ private:
 
 public:
     CrazyAra();
+
+    /**
+     * @brief welcome Prints a welcome message to std-out
+     */
     void welcome();
+
+    /**
+     * @brief uci_loop Runs the uci-loop which reads std-in UCI-messages
+     * @param argc Number of arguments
+     * @param argv Argument values
+     */
     void uci_loop(int argc, char* argv[]);
+
+    /**
+     * @brief init Initializes all needed backend-types
+     */
     void init();
 
     /**
@@ -161,7 +175,5 @@ r4bk1/ppq3pp/5pp1/3NQ3/4p1b1/P7/1PP2PKP/R4R2/BPPNNRNbpp b - - 0 22
 info depth 29 seldepth 18 multipv 1 score cp 0 nodes 638207891 nps 954325 hashfull 999 tbhits 0 time 668753 pv P@f3 g2g1 c7e5 P@f7 g8f7 N@h8 f7e8 N@c7 e8d7 P@c6 b7c6 R@f7 f8e7 N@c5 d7d6 c5b7 d6d7
 
 */
-
-
 
 #endif // CRAZYARA_H
