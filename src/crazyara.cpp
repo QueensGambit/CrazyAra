@@ -146,7 +146,6 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
 void CrazyAra::go(Board *pos, istringstream &is) {
     SearchLimits searchLimits;
-    //      Search::LimitsType limits;
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
     searchLimits.nodes = Options["Nodes"];
 
