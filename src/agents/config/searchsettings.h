@@ -28,6 +28,9 @@
 #ifndef SEARCHSETTINGS_H
 #define SEARCHSETTINGS_H
 
+#include "uci.h"
+
+using namespace UCI;
 
 struct SearchSettings
 {
@@ -40,8 +43,7 @@ struct SearchSettings
     bool verbose;
     bool enhanceChecks;
     bool enhanceCaptures;
-    bool useFutureQValues;
-    bool usePruning;
+//    bool useFutureQValues;  currently not supported
     bool useTranspositionTable;
     float cpuctInit;
     float cpuctBase;
@@ -52,27 +54,8 @@ struct SearchSettings
     float qThreshMax;
     float qThreshBase;
 
-    SearchSettings(): threads(2),
-        batchSize(2),
-        dirichletEpsilon(0.25f),
-        dirichletAlpha(0.2f),
-        qValueWeight(0.7f),
-        virtualLoss(3.0f),
-        verbose(true),
-        enhanceChecks(true),
-        enhanceCaptures(true),
-        useFutureQValues(true),
-        usePruning(false),
-        useTranspositionTable(true),
-        cpuctInit(2.5f),
-        cpuctBase(19652.0f),
-        uInit(1.0f),
-        uMin(0.25f),
-        uBase(1965.0f),
-        qThreshInit(0.5f),
-        qThreshMax(0.9f),
-        qThreshBase(1965.0f)
-    {}
+    SearchSettings(OptionsMap& o);
+
 };
 
 #endif // SEARCHSETTINGS_H

@@ -152,6 +152,7 @@ void CrazyAra::go(Board *pos, istringstream &is) {
     SearchLimits searchLimits;
     //      Search::LimitsType limits;
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
+    searchLimits.nodes = Options["Nodes"];
 
     string token;
     bool ponderMode = false;
@@ -246,16 +247,7 @@ void CrazyAra::init()
 bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
-        SearchSettings searchSettings;
-        searchSettings.batchSize = Options["Batch_Size"]; // 8//128; //1; //28;
-        searchSettings.useTranspositionTable = Options["Use_Transposition_Table"];
-        searchSettings.uInit = Options["Centi_uInit"] / 100.0;
-        searchSettings.uMin = Options["Centi_uMin"] / 100.0;
-        searchSettings.uBase = Options["uBase"];
-        searchSettings.qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0;
-        searchSettings.enhanceChecks = Options["Enhance_Checks"];
-        searchSettings.enhanceCaptures = Options["Enhance_Captures"];
-
+        SearchSettings searchSettings(Options);
         netSingle = new NeuralNetAPI(Options["Context"], 1,
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/json/",
                                      "/home/queensgambit/Programming/Deep_Learning/models/risev2/params/");

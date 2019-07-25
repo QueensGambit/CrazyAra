@@ -21,9 +21,27 @@
  * @file: searchsettings.cpp
  * Created on 12.06.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include "searchsettings.h"
 
+SearchSettings::SearchSettings(OptionsMap &o): threads(2),
+    verbose(true)
+{
+    batchSize = o["Batch_Size"]; // 8//128; //1; //28;
+    useTranspositionTable = o["Use_Transposition_Table"];
+    uInit = float(o["Centi_U_Init_Divisor"]) / 100.0f;
+    uMin = o["Centi_U_Min"] / 100.0f;
+    uBase = o["U_Base"];
+    qValueWeight = o["Centi_Q_Value_Weight"] / 100.0f;
+    enhanceChecks = o["Enhance_Checks"];
+    enhanceCaptures = o["Enhance_Captures"];
+    cpuctInit = o["Centi_CPuct_Init"] / 100.0f;
+    cpuctBase = o["CPuct_Base"];
+    dirichletEpsilon = o["Centi_Dirichlet_Epsilon"];
+    dirichletEpsilon = o["Centi_Dirichlet_Alpha"];
+    virtualLoss = o["Virtual_Loss"];
+    qThreshInit = o["Centi_Q_Thresh_Init"] / 100.0f;
+    qThreshMax = o["Centi_Q_Thresh_Max"] / 100.0f;
+    qThreshBase = o["Q_Thresh_Base"];
+}
