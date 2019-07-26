@@ -181,13 +181,13 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
     sync_cout << "info string apply move to tree" << sync_endl;
     if (ownMove) {
         opponentsNextRoot = pick_next_node(move, rootNode);
-        if (opponentsNextRoot != nullptr) {
+        if (opponentsNextRoot != nullptr && opponentsNextRoot->hasNNResults) {
             gameNodes.push_back(opponentsNextRoot);
         }
     }
     else {
         ownNextRoot = pick_next_node(move, opponentsNextRoot);
-        if (ownNextRoot != nullptr) {
+        if (ownNextRoot != nullptr && ownNextRoot->hasNNResults) {
             gameNodes.push_back(ownNextRoot);
         }
     }
