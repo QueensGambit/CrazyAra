@@ -145,7 +145,7 @@ bool MCTSAgent::early_stopping()
 }
 
 bool MCTSAgent::continue_search() {
-    if (searchLimits->movetime != 0 && searchLimits->movestogo != 1 && rootNode->qValues[argmax(rootNode->childNumberVisits)]+0.1f < lastValueEval) {
+    if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->qValues[argmax(rootNode->childNumberVisits)]+0.1f < lastValueEval) {
         sync_cout << "info Increase search time" << sync_endl;
         return true;
     }
