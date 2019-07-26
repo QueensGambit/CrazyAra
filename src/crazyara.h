@@ -115,8 +115,18 @@ public:
      * @brief go Main method which starts the search after receiving the UCI "go" command
      * @param pos Current board position
      * @param is List of command line arguments for the search
+     * @param evalInfo Returns the evalutation information
+     * @param applyMoveToTree Tells if the given move shall be applied to the tree for future reusage
      */
-    void go(Board *pos, istringstream& is);
+    void go(Board *pos, istringstream& is, EvalInfo& evalInfo, bool applyMoveToTree=true);
+
+    /**
+     * @brief go Wrapper function for go() which accepts a FEN string
+     * @param fen FEN string
+     * @param goCommand Go command (such as "go movetime 5000")
+     * @param evalInfo Returns the evalutation information
+     */
+    void go(string fen, string goCommand, EvalInfo& evalInfo);
 
     /**
      * @brief position Method which is called from the UCI command-line when a new position is described.
@@ -125,6 +135,12 @@ public:
      * @param is List of command line arguments which describe the position
      */
     void position(Board *pos, istringstream &is);
+
+    /**
+     * @brief benchmark Runs a list of benchmark position for a given time
+     * @param is Movetime in ms
+     */
+    void benchmark(istringstream &is);
 };
 
 #ifndef BUILD_TESTS
@@ -169,6 +185,9 @@ r2q2k1/ppp2ppp/5p2/1B1p4/8/2r3P1/PPn1Q1KP/R1B5/PNNBBRpppn w - - 0 20
 
 4rbk1/ppp2ppp/3n4/3BnbP1/5B2/2N4P/PPP2PPn/R2QK2R/Qpprp w KQ - 1 19
 -> Q@e3
+
+r1b2bk1/pp3ppp/2pn1bn1/4r3/3Q3P/2N1PB1p/PPP1PPP1/3RK2R/NQp w K - 0 24
+-> Blunder h5, Q@h2 is better
 
 r4bk1/ppq3pp/5pp1/3N4/3Qp1b1/P7/1PP2PKP/R4R2/PPNNRNbbpp b - - 0 21
 r4bk1/ppq3pp/5pp1/3NQ3/4p1b1/P7/1PP2PKP/R4R2/BPPNNRNbpp b - - 0 22

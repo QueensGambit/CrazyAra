@@ -186,7 +186,7 @@ public:
       * @param threshCapture Threshold probability for capture moves
       * @param captureFactor Factor based on the maximum probability with which captures will be increased
       */
-    void enhance_moves(const float threshCheck = 0.1f, const float checkFactor=0.5f, const float threshCapture = 0.1f, const float captureFactor=0.25f);
+    void enhance_moves(const float threshCheck = 0.1f, const float checkFactor=0.5f, const float threshCapture = 0.1f, const float captureFactor=0.05f);
 
     friend class SearchThread;
     friend class MCTSAgent;

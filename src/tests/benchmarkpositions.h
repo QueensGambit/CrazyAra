@@ -18,45 +18,46 @@
 */
 
 /*
- * @file: evalinfo.h
- * Created on 13.05.2019
+ * @file: benchmarkpositions.h
+ * Created on 26.07.2019
  * @author: queensgambit
  *
- * Stores the evaluation output for a given board position.
+ * Run of the engine using a set of FENs and test the result for blunder moves
  */
 
-#ifndef EVALINFO_H
-#define EVALINFO_H
-#include <vector>
+#ifndef BENCHMARKPOSITIONS_H
+#define BENCHMARKPOSITIONS_H
+
+#include "tests.h"
 #include <string>
+#include <vector>
 #include <iostream>
+using namespace std;
 
-#include "types.h"
-#include <blaze/Math.h>
-#include "constants.h"
-
-using blaze::HybridVector;
-using blaze::DynamicVector;
-
-struct EvalInfo
-{
+struct TestPosition {
 public:
-    EvalInfo();
-
-    float value;
-    std::vector<Move> legalMoves;
-    DynamicVector<float> policyProbSmall;
-    int centipawns;
-    size_t depth;
-    int nodes;
-    size_t nodesPreSearch;
-    float elapsedTimeMS;
-    float nps;
-    bool is_chess960;
-    std::vector<Move> pv;
-    Move bestMove;
+    string fen;
+    string blunderMove;
+    string alternativeMove;
+    TestPosition(string fen, string blunderMove, string alternativeMove):
+        fen(fen), blunderMove(blunderMove), alternativeMove(alternativeMove) {}
 };
 
-extern std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo);
+struct BenchmarkPositions
+{
+public:
+    string goCommand;
+    vector<TestPosition> positions;
+    float totalNPS;
+    float totalDepth;
+    BenchmarkPositions();
+};
 
-#endif // EVALINFO_H
+#ifdef BENCHMARK
+int main() {
+    BenchmarkPositions benchmark;
+    benchmark.run_benchmark();
+}
+#endif
+
+#endif // BENCHMARKPOSITIONS_H

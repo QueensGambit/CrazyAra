@@ -43,9 +43,8 @@ RawNetAgent::RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings, float tem
     this->playSettings = playSettings;
 }
 
-EvalInfo RawNetAgent::evalute_board_state(Board *pos)
+void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 {
-    EvalInfo evalInfo;
     for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
         evalInfo.legalMoves.push_back(move);
     }
@@ -63,7 +62,6 @@ EvalInfo RawNetAgent::evalute_board_state(Board *pos)
         evalInfo.nodes = 0;
         evalInfo.pv = {evalInfo.legalMoves[0]};
 //        sync_cout << "bestmove " << UCI::move(evalInfo.legalMoves[0], pos->is_chess960()) << sync_endl;
-        return evalInfo;
     }
 
 //    float *input_planes_start = &input_planes[0][0][0];
@@ -141,6 +139,4 @@ EvalInfo RawNetAgent::evalute_board_state(Board *pos)
     evalInfo.pv = {bestmove};
 //    eval_info.legalMoves = this->rootNode->getLegalMoves();
 //    eval_info.pVecSmall = this->rootNode->getPVecSmall();
-    return evalInfo;
-
 }

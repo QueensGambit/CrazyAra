@@ -137,7 +137,7 @@ public:
               PlaySettings playSettings,
               StatesManager* states);
 
-    EvalInfo evalute_board_state(Board *pos);
+    void evalute_board_state(Board *pos, EvalInfo& evalInfo);
 
     /**
      * @brief run_mcts_search Starts the MCTS serach using all available search threads

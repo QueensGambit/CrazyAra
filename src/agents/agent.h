@@ -47,15 +47,16 @@ public:
      * @brief perform_action Selects an action based on the evaluation result
      * @param pos Board position to evaluate
      * @param limits Pointer to the search limit
+     * @param evalInfo Returns the evaluation information
      */
-    Move perform_action(Board *pos, SearchLimits* searchLimits);
+    void perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo);
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents
      * @param pos Board position to evaluate
-     * @return Evaluation information
+     * @param evalInfo Returns the evaluation information
      */
-    virtual EvalInfo evalute_board_state(Board *pos) = 0;
+    virtual void evalute_board_state(Board *pos,  EvalInfo& evalInfo) = 0;
 };
 
 #endif // AGENT_H

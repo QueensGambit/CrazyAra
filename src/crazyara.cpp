@@ -44,6 +44,7 @@
 #include "mxnet-cpp/MxNetCpp.h"
 #include "domain/variants.h"
 #include "optionsuci.h"
+#include "tests/benchmarkpositions.h"
 
 using namespace std;
 
@@ -67,6 +68,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 {
     Board pos;
     string token, cmd;
+    EvalInfo evalInfo;
     auto uiThread = std::make_shared<Thread>(0);
 
     StateInfo* newState = new StateInfo;
@@ -123,7 +125,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
                       << "uciok"  << sync_endl;
 
         else if (token == "setoption")  OptionsUCI::setoption(is);
-        else if (token == "go")         go(&pos, is);
+        else if (token == "go")         go(&pos, is, evalInfo);
         else if (token == "position")   position(&pos, is);
         else if (token == "ucinewgame") new_game();
         else if (token == "isready") {
@@ -133,9 +135,10 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         }
 
         // Additional custom non-UCI commands, mainly for debugging
-        else if (token == "root")  mctsAgent->print_root_node();
-        else if (token == "flip")  pos.flip();
-        else if (token == "d")     sync_cout << pos << sync_endl;
+        else if (token == "benchmark")  benchmark(is);
+        else if (token == "root")       mctsAgent->print_root_node();
+        else if (token == "flip")       pos.flip();
+        else if (token == "d")          sync_cout << pos << sync_endl;
         else
             sync_cout << "Unknown command: " << cmd << sync_endl;
 
@@ -143,7 +146,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     } while (token != "quit" && argc == 1); // Command line args are one-shot
 }
 
-void CrazyAra::go(Board *pos, istringstream &is) {
+void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo, bool applyMoveToTree) {
     SearchLimits searchLimits;
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
     searchLimits.nodes = Options["Nodes"];
@@ -171,10 +174,27 @@ void CrazyAra::go(Board *pos, istringstream &is) {
     }
     //  EvalInfo res = rawAgent->evalute_board_state(pos);
     //  rawAgent->perform_action(pos);
-    Move selectedMove = mctsAgent->perform_action(pos, &searchLimits);
+    mctsAgent->perform_action(pos, &searchLimits, evalInfo);
 
-    // inform the mcts agent of the move, so the tree can potentially be reused later
-    mctsAgent->apply_move_to_tree(selectedMove, true);
+    if (applyMoveToTree) {
+        // inform the mcts agent of the move, so the tree can potentially be reused later
+        mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
+    }
+}
+
+void CrazyAra::go(string fen, string goCommand, EvalInfo& evalInfo)
+{
+    Board pos;
+    string token, cmd;
+    auto uiThread = std::make_shared<Thread>(0);
+
+    StateInfo* newState = new StateInfo;
+    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, newState, uiThread.get());
+
+    istringstream is("fen " + fen);
+    position(&pos, is);
+    istringstream isGoCommand(goCommand);
+    go(&pos, isGoCommand, evalInfo, false);
 }
 
 void CrazyAra::position(Board *pos, istringstream& is) {
@@ -214,6 +234,45 @@ void CrazyAra::position(Board *pos, istringstream& is) {
         mctsAgent->apply_move_to_tree(lastMove, false);
     }
     sync_cout << "info string position " << pos->fen() << sync_endl;
+}
+
+void CrazyAra::benchmark(istringstream &is)
+{
+    int passedCounter = 0;
+    EvalInfo evalInfo;
+    BenchmarkPositions benchmark;
+    string moveTime;
+    is >> moveTime;
+    string goCommand = "go movetime " + moveTime;
+    int totalNPS = 0;
+    int totalDepth = 0;
+
+    for (TestPosition pos : benchmark.positions) {
+        go(pos.fen, goCommand, evalInfo);
+        string uciMove = UCI::move(evalInfo.bestMove, false);
+        if (uciMove != pos.blunderMove) {
+            cout << "passed      -- " << uciMove << " != " << pos.blunderMove << endl;
+            passedCounter++;
+        }
+        else {
+            cout << "failed      -- " << uciMove << " == " << pos.blunderMove << endl;
+        }
+        cout << "alternative -- ";
+        if (uciMove == pos.alternativeMove) {
+            cout << uciMove << " == " << pos.alternativeMove << endl;
+        }
+        else {
+            cout << uciMove << " != " << pos.alternativeMove << endl;
+        }
+        totalNPS += evalInfo.nps;
+        totalDepth += evalInfo.depth;
+    }
+
+    cout << endl << "Summary" << endl;
+    cout << "----------------------" << endl;
+    cout << "Passed:\t\t" << passedCounter << "/" << benchmark.positions.size() << endl;
+    cout << "NPS:\t\t" << setw(2) << totalNPS /  benchmark.positions.size() << endl;
+    cout << "PV-Depth:\t" << setw(2) << totalDepth /  benchmark.positions.size() << endl;
 }
 
 void CrazyAra::init()

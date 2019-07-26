@@ -38,7 +38,7 @@ std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
        << " nodes " << evalInfo.nodes
        << " time " << evalInfo.elapsedTimeMS
           // + 0.5 and int() is a simple way for rounding to the first decimal
-       << " nps " << int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f)
+       << " nps " << evalInfo.nps
        << " pv";
     for (Move move: evalInfo.pv) {
         os << " " << UCI::move(move, evalInfo.is_chess960);

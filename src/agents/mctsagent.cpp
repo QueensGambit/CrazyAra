@@ -52,7 +52,6 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     ownNextRoot(nullptr),
     opponentsNextRoot(nullptr),
     states(states),
-    timeBuffersMS(0.0f),
     lastValueEval(-1.0f)
 {
     hashTable = new unordered_map<Key, Node*>;
@@ -146,7 +145,7 @@ bool MCTSAgent::early_stopping()
 }
 
 bool MCTSAgent::continue_search() {
-    if (searchLimits->movestogo != 1 && rootNode->qValues[argmax(rootNode->childNumberVisits)]+0.1f < lastValueEval) {
+    if (searchLimits->movetime != 0 && searchLimits->movestogo != 1 && rootNode->qValues[argmax(rootNode->childNumberVisits)]+0.1f < lastValueEval) {
         sync_cout << "info Increase search time" << sync_endl;
         return true;
     }
@@ -205,7 +204,7 @@ void MCTSAgent::clear_game_history()
     lastValueEval = -1.0f;
 }
 
-EvalInfo MCTSAgent::evalute_board_state(Board *pos)
+void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 {
     size_t nodesPreSearch = init_root_node(pos);
 
@@ -230,7 +229,6 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
         sync_cout << "string info Select different move due to higher Q-value" << sync_endl;
     }
 
-    EvalInfo evalInfo;
     evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[bestIdx]);
     lastValueEval = rootNode->qValues[bestIdx];
     evalInfo.legalMoves = this->rootNode->getLegalMoves();
@@ -239,8 +237,6 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
     evalInfo.is_chess960 = pos->is_chess960();
     evalInfo.nodes = rootNode->numberVisits;
     evalInfo.nodesPreSearch = nodesPreSearch;
-
-    return evalInfo;
 }
 
 void MCTSAgent::run_mcts_search()
