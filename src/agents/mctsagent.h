@@ -82,8 +82,7 @@ private:
 
     unordered_map<Key, Node*>* hashTable;
     StatesManager* states;
-    int timeBuffersMS;
-    bool lastEvalPositive;
+    float lastValueEval;
 
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
@@ -158,11 +157,6 @@ public:
      * @param ownMove Boolean indicating if it was CrazyAra's move
      */
     void apply_move_to_tree(Move move, bool ownMove);
-
-    /**
-     * @brief reset_time_buffer_counter Resets the counter on how often the search has been stopped early
-     */
-    void reset_time_buffer_counter();
 
     /**
      * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them

@@ -53,7 +53,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     opponentsNextRoot(nullptr),
     states(states),
     timeBuffersMS(0.0f),
-    lastEvalPositive(false)
+    lastValueEval(-1.0f)
 {
     hashTable = new unordered_map<Key, Node*>;
     hashTable->reserve(1e6);
@@ -140,14 +140,13 @@ bool MCTSAgent::early_stopping()
     //    if (false && max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
     if (max(rootNode->policyProbSmall) > 0.9f && argmax(rootNode->policyProbSmall) == argmax(rootNode->qValues)) {
         sync_cout << "string info Early stopping" << sync_endl;
-        timeBuffersMS++;
         return true;
     }
     return false;
 }
 
 bool MCTSAgent::continue_search() {
-    if (rootNode->pos->plies_from_null()/2 < 30 && lastEvalPositive && rootNode->qValues[argmax(rootNode->childNumberVisits)] < 0) {
+    if (searchLimits->movestogo != 1 && rootNode->qValues[argmax(rootNode->childNumberVisits)]+0.1f < lastValueEval) {
         sync_cout << "info Increase search time" << sync_endl;
         return true;
     }
@@ -195,11 +194,6 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
     }
 }
 
-void MCTSAgent::reset_time_buffer_counter()
-{
-    timeBuffersMS = 0;
-}
-
 void MCTSAgent::clear_game_history()
 {
     for (Node* node: gameNodes) {
@@ -208,6 +202,7 @@ void MCTSAgent::clear_game_history()
     gameNodes.clear();
     hashTable->clear();
     oldestRootNode = nullptr;
+    lastValueEval = -1.0f;
 }
 
 EvalInfo MCTSAgent::evalute_board_state(Board *pos)
@@ -216,7 +211,6 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
 
     if (rootNode->nbDirectChildNodes == 1) {
         sync_cout << "info string Only single move available -> early stopping" << sync_endl;
-        timeBuffersMS += timeManager->get_time_for_move(searchLimits, rootNode->pos->side_to_move(), rootNode->pos->plies_from_null()/2);
     }
     else if (rootNode->nbDirectChildNodes == 0) {
         sync_cout << "info string The given position has no legal moves" << sync_endl;
@@ -230,15 +224,15 @@ EvalInfo MCTSAgent::evalute_board_state(Board *pos)
     DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);
     rootNode->get_mcts_policy(mctsPolicy);
 
-    size_t best_idx = argmax(mctsPolicy);
+    size_t bestIdx = argmax(mctsPolicy);
 
-    if (best_idx != argmax(rootNode->childNumberVisits)) {
+    if (bestIdx != argmax(rootNode->childNumberVisits)) {
         sync_cout << "string info Select different move due to higher Q-value" << sync_endl;
     }
 
     EvalInfo evalInfo;
-    evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[best_idx]);
-    lastEvalPositive = evalInfo.centipawns > 0;
+    evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[bestIdx]);
+    lastValueEval = rootNode->qValues[bestIdx];
     evalInfo.legalMoves = this->rootNode->getLegalMoves();
     this->rootNode->get_principal_variation(evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
