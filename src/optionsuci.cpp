@@ -39,7 +39,7 @@ void OptionsUCI::init(OptionsMap &o)
          o["Context"]                  << Option("GPU", {"CPU", "GPU"});
          o["Batch_Size"]               << Option(8, 1, 8192);  // 8
          o["Threads"]                  << Option(2, 1, 512);
-         o["Centi_CPuct_Init"]         << Option(250, 1, 99999);
+         o["Centi_CPuct_Init"]         << Option(125, 1, 99999); // 250
          o["CPuct_Base"]               << Option(19652, 1, 99999);
          o["Centi_Dirichlet_Epsilon"]  << Option(25, 1, 99999);
          o["Centi_Dirichlet_Alpha"]    << Option(20, 1, 99999);
@@ -58,7 +58,7 @@ void OptionsUCI::init(OptionsMap &o)
          o["Nodes"]                    << Option(0, 0, 99999);
          o["Use_Raw_Network"]          << Option(false);
          o["Enhance_Checks"]           << Option(true);
-         o["Enhance_Captures"]         << Option(true);
+         o["Enhance_Captures"]         << Option(false);
          o["Use_Transposition_Table"]  << Option(true);
 //         o["Model_Architecture_Dir"]   << Option("default");
 //         o["Debug_Log_File"]           << Option("", activate_logger);
