@@ -352,7 +352,7 @@ size_t Node::select_child_node()
 
 Node *Node::get_child_node(size_t childIdx)
 {
-    assert(chilIdx < nbDirectChildNodes);
+    assert(childIdx < nbDirectChildNodes);
     return childNodes[childIdx];
 }
 
@@ -433,7 +433,7 @@ void Node::delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable)
         sync_cout << "info string delete unused subtrees" << sync_endl;
         size_t i = 0;
         for (Node *childNode: parentNode->childNodes) {
-            if (childNode != nullptr && i != childIdxForParent) {
+            if (childNode != nullptr && childNode != this) {
                 Node::delete_subtree_and_hash_entries(childNode, hashTable);
                 parentNode->childNodes[i] = nullptr;
             }
