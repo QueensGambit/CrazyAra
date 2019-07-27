@@ -177,9 +177,7 @@ void NeuralNetAPI::infer_select_policy_from_planes()
 
 NDArray NeuralNetAPI::predict(float *inputPlanes, float &value)
 {
-    NDArray image_data {inputPlanes, input_shape, global_ctx};
-
-    image_data.CopyTo(&(executor->arg_dict()["data"]));
+    executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, NB_VALUES_TOTAL * batchSize);
 
     // Run the forward pass.
     executor->Forward(false);
@@ -201,8 +199,7 @@ NDArray NeuralNetAPI::predict(float *inputPlanes, float &value)
 
 void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &probOutputs)
 {
-    NDArray image_data {inputPlanes, input_shape, global_ctx};
-    image_data.CopyTo(&(executor->arg_dict()["data"]));
+    executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, NB_VALUES_TOTAL * batchSize);
 
     // Run the forward pass.
     executor->Forward(false);
@@ -214,4 +211,3 @@ void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &pr
     valueOutput.WaitToRead();
     probOutputs.WaitToRead();
 }
-
