@@ -299,15 +299,18 @@ bool CrazyAra::is_ready()
         searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
         searchSettings->qThreshBase = Options["Q_Thresh_Base"];
 
+        playSettings = new PlaySettings();
+        playSettings->temperature = Options["Centi_Temperature"] / 100.0f;
+        playSettings->temperatureMoves = Options["Temperature_Moves"];
+
         netSingle = new NeuralNetAPI(Options["Context"], 1);
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
         for (size_t i = 0; i < searchSettings->threads; ++i) {
             netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize);
         }
-        mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, PlaySettings(), states);
+        mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);
         networkLoaded = true;
-        sync_cout << "searchSettings" << searchSettings->cpuctBase << sync_endl;
     }
     return networkLoaded;
 }

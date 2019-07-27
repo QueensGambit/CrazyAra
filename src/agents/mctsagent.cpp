@@ -220,10 +220,10 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
         run_mcts_search();
     }
 
-    DynamicVector<float> mctsPolicy(rootNode->nbDirectChildNodes);
-    rootNode->get_mcts_policy(mctsPolicy);
+    evalInfo.policyProbSmall.resize(rootNode->nbDirectChildNodes);
+    rootNode->get_mcts_policy(evalInfo.policyProbSmall);
 
-    size_t bestIdx = argmax(mctsPolicy);
+    size_t bestIdx = argmax(evalInfo.policyProbSmall);
 
     if (bestIdx != argmax(rootNode->childNumberVisits)) {
         sync_cout << "string info Select different move due to higher Q-value" << sync_endl;
@@ -231,7 +231,8 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 
     evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[bestIdx]);
     lastValueEval = rootNode->qValues[bestIdx];
-    evalInfo.legalMoves = this->rootNode->getLegalMoves();
+    evalInfo.legalMoves = rootNode->getLegalMoves();
+//    evalInfo.policyProbSmall = mctsPolicy;
     this->rootNode->get_principal_variation(evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
     evalInfo.is_chess960 = pos->is_chess960();

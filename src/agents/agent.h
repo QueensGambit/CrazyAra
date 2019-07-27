@@ -34,14 +34,39 @@
 
 class Agent
 {
+private:
+    /**
+     * @brief pick_move_idx Picks a move according to the probability distribution
+     * @param policyProbSmall Probability distribution over all legal moves
+     * @return Random picked move index
+     */
+    size_t pick_move_idx(DynamicVector<double>& policyProbSmall);
+
+    /**
+     * @brief apply_temperature_to_policy Applies temperature rescaling to the policy distribution by enhancing higher probability values.
+     * A temperature below 0.01 relates to one hot encoding.
+     * @param policyProbSmall
+     */
+    void apply_temperature_to_policy(DynamicVector<double>& policyProbSmall);
+
+    /**
+     * @brief set_best_move Sets the "best" (chosen) move by the engine to the evalInformation
+     * @param evalInfo Evaluation information
+     * @param moveCounter Current move counter (ply//2)
+     */
+    void set_best_move(EvalInfo& evalInfo, size_t moveCounter);
+
 protected:
     float temperature;
-    float current_temperature;
-    unsigned int temperature_moves;
+    float currentTemperature;
+    unsigned int temperatureMoves;
     bool verbose;
     SearchLimits* searchLimits;
+    // used for sampling from the mcts policy
+    std::random_device rd;
+    std::mt19937 gen;
 public:
-    Agent(float temperature, unsigned int temperature_moves, bool verbose);
+    Agent(float temperature, unsigned int temperatureMoves, bool verbose);
 
     /**
      * @brief perform_action Selects an action based on the evaluation result

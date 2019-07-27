@@ -66,13 +66,14 @@ private:
                     string("    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              \n") +
                     string("       \\_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.   \n") +
                     string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
-    RawNetAgent *rawAgent;
-    MCTSAgent *mctsAgent;
-    NeuralNetAPI *netSingle;
-    NeuralNetAPI *netBatch;
-    SearchSettings *searchSettings;
+    RawNetAgent* rawAgent;
+    MCTSAgent* mctsAgent;
+    NeuralNetAPI* netSingle;
+    NeuralNetAPI* netBatch;
+    SearchSettings* searchSettings;
+    PlaySettings* playSettings;
     bool networkLoaded = false;
-    StatesManager *states;
+    StatesManager* states;
 
     /**
      * @brief engine_info Returns a string about the engine version and authors

@@ -261,6 +261,7 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy)
                 qValuePruned[idx] = 0;
             }
         }
+        qValuePruned /= sum(qValuePruned);
         mctsPolicy = (1.0f - searchSettings->qValueWeight) * (childNumberVisits / numberVisits) + searchSettings->qValueWeight * qValuePruned;
     } else {
         mctsPolicy = childNumberVisits / numberVisits;

@@ -30,11 +30,41 @@
 #include "misc.h"
 #include "uci.h"
 
+size_t Agent::pick_move_idx(DynamicVector<double>& policyProbSmall)
+{
+    double* prob = policyProbSmall.data();
+    std::discrete_distribution<> d(prob, prob+policyProbSmall.size());
+    return size_t(d(gen));
+}
+
+void Agent::apply_temperature_to_policy(DynamicVector<double> &policyProbSmall)
+{
+    assert(currentTemperature > 0.01f);
+    // apply exponential scaling
+    policyProbSmall = pow(policyProbSmall, 1.0f / temperature);
+    // re-normalize the values to probabilities again
+    policyProbSmall /= sum(policyProbSmall);
+}
+
+void Agent::set_best_move(EvalInfo &evalInfo, size_t moveCounter)
+{
+    if (moveCounter <= temperatureMoves && temperature > 0.01f) {
+        DynamicVector<double> policyProbSmall = evalInfo.policyProbSmall;
+        apply_temperature_to_policy(policyProbSmall);
+        size_t moveIdx = pick_move_idx(policyProbSmall);
+        evalInfo.bestMove = evalInfo.legalMoves[moveIdx];
+    }
+    else {
+        evalInfo.bestMove = evalInfo.pv[0];
+    }
+}
+
 Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
 {
     this->temperature = temperature;
-    this->temperature_moves = temperature_moves;
+    this->temperatureMoves = temperature_moves;
     this->verbose = verbose;
+    std::mt19937 gen(rd());
 }
 
 void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo)
@@ -42,11 +72,11 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     this->searchLimits = searchLimits;
     this->evalute_board_state(pos, evalInfo);
-    sync_cout << "end time" << sync_endl;
     std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
     evalInfo.elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     evalInfo.nps = int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f);
-    evalInfo.bestMove = evalInfo.pv[0];
+    set_best_move(evalInfo, size_t(pos->plies_from_null() / 2));
     sync_cout << evalInfo << sync_endl;
     sync_cout << "bestmove " << UCI::move(evalInfo.bestMove, pos->is_chess960()) << sync_endl;
 }
+

@@ -23,13 +23,10 @@
  * @author: queensgambit
  *
  * The MCTSAgent runs playouts/simulations in the search tree and updates the node statistics.
- * The final move is chosen according to the visit count of each direct child node.
+ * The final move is chosen according to the visit count of each direct child node and optionally taken Q-values into account.
  * One playout is defined as expanding one new node in the tree.
  * In the case of chess this means evaluating a new board position.
- * If the evaluation for one move takes too long on your hardware you can decrease the value for:
- * nb_playouts_empty_pockets and nb_playouts_filled_pockets.
- * For more details and the mathematical equations please take a look at src/domain/agent/README.md as well as the
- * official DeepMind-papers.
+ * For more details and the mathematical equations please refer to our Journal Paper <add-link-here> as well as the official DeepMind-papers.
  */
 
 #ifndef MCTSAGENT_H
