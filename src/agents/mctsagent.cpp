@@ -168,7 +168,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
     board_to_planes(pos, 0, true, begin(input_planes));
     netSingle->predict(input_planes, *valueOutput, *probOutputs);
     get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(),
-                           true, rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
+                           !netSingle->getSelectPolicyFromPlane(), rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
     rootNode->value = valueOutput->At(0, 0);
     rootNode->enhance_moves();
     rootNode->make_to_root();
