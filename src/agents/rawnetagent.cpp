@@ -122,7 +122,7 @@ void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 
     evalInfo.policyProbSmall.resize(evalInfo.legalMoves.size());
     get_probs_of_move_list(0, &probOutputs, evalInfo.legalMoves, pos->side_to_move(),
-                           true, evalInfo.policyProbSmall, net->getSelectPolicyFromPlane());
+                           !net->getSelectPolicyFromPlane(), evalInfo.policyProbSmall, net->getSelectPolicyFromPlane());
     size_t sel_idx = argmax(evalInfo.policyProbSmall);
 
 //    sync_cout << "sel_idx " << sel_idx << sync_endl;

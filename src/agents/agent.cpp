@@ -75,7 +75,7 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
     std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
     evalInfo.elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     evalInfo.nps = int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f);
-    set_best_move(evalInfo, size_t(pos->plies_from_null() / 2));
+    set_best_move(evalInfo, pos->total_move_cout());
     sync_cout << evalInfo << sync_endl;
     sync_cout << "bestmove " << UCI::move(evalInfo.bestMove, pos->is_chess960()) << sync_endl;
 }

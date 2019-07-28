@@ -52,7 +52,7 @@ void OptionsUCI::init(OptionsMap &o)
          o["Centi_Q_Thresh_Max"]       << Option(90, 0, 100);
          o["Q_Thresh_Base"]            << Option(1965, 0, 99999);
          o["Max_Search_Depth"]         << Option(99, 1, 99999);
-         o["Centi_Temperature"]        << Option(7, 0, 99999);
+         o["Centi_Temperature"]        << Option(0, 0, 99999);
          o["Temperature_Moves"]        << Option(0, 0, 99999);
          o["Virtual_Loss"]             << Option(3, 0, 99999);
          o["Nodes"]                    << Option(0, 0, 99999);

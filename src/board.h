@@ -45,6 +45,12 @@ public:
 
     Board& operator=(const Board &b);
     int plies_from_null();
+
+    /**
+     * @brief total_move_cout Returns the current full move counter
+     * @return Total move number
+     */
+    size_t total_move_cout();
 };
 
 #endif // BOARD_H

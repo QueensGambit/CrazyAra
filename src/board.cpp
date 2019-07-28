@@ -107,3 +107,8 @@ int Board::plies_from_null()
 {
     return st->pliesFromNull;
 }
+
+size_t Board::total_move_cout()
+{
+    return st->pliesFromNull / 2 + 1;
+}

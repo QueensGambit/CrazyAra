@@ -32,7 +32,7 @@ using namespace std;
 // TODO: Change this later to blaze::HybridVector<float, MAX_NB_LEGAL_MOVES>
 void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance)
 {
-//    // allocate sufficient memory
+//    // allocate sufficient memory -> is assumed that it has already been done
 //    policyProbSmall.resize(legalMoves.size());
 
     const float *data = policyProb->GetData();
@@ -45,6 +45,7 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, co
             // use the mirrored look-up table instead
             vectorIdx = MV_LOOKUP_MIRRORED[legalMoves[mvIdx]];
         }
+        assert(vectorIdx < NB_LABELS);
 
         // set the right prob value
         // accessing the data on the raw floating point vector is faster
