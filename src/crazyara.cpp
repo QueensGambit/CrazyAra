@@ -293,7 +293,7 @@ bool CrazyAra::is_ready()
         searchSettings->cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
         searchSettings->cpuctBase = Options["CPuct_Base"];
         searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
-        searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Alpha"] / 100.0f;
+        searchSettings->dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
         searchSettings->virtualLoss = Options["Virtual_Loss"];
         searchSettings->qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
         searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
