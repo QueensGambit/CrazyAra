@@ -37,7 +37,6 @@ std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
        << " depth " << evalInfo.depth
        << " nodes " << evalInfo.nodes
        << " time " << evalInfo.elapsedTimeMS
-          // + 0.5 and int() is a simple way for rounding to the first decimal
        << " nps " << evalInfo.nps
        << " pv";
     for (Move move: evalInfo.pv) {

@@ -21,8 +21,6 @@
  * @file: inputrepresentation.cpp
  * Created on 27.05.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include "inputrepresentation.h"

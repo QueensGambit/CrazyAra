@@ -7,6 +7,7 @@
 * **`nn`**: Contains the functionality methods for loading the neural network and predicting the policy and value evaluation
 * **`domain`**: Contains conversion methods of the board into plane representation and constant definition for chess variants
 * **`util`**: Contains additional utility methods for the blaze library and stockfish backend
+* **`manager`**: Contains manager classes for different aspects e.g. the search tree, the time and the states list
 
 ## Performance Profiling 
 

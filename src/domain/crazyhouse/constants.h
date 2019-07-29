@@ -2352,11 +2352,9 @@ const std::string LABELS[] = {
 };
 
 // will be filled in init()
-//static std::vector <std::string> LABELS_MIRRORED;
-
 // stores a mapping from Stockfish's move representation to the NN index in the policy
-extern std::unordered_map<Move, size_t> MV_LOOKUP; // = {};
-extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED; // = {};
+extern std::unordered_map<Move, size_t> MV_LOOKUP;
+extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED;
 
 //https://stackoverflow.com/questions/23390034/c-change-global-variable-value-in-different-files
 extern std::string LABELS_MIRRORED[NB_LABELS];
@@ -2369,22 +2367,15 @@ extern std::string LABELS_MIRRORED[NB_LABELS];
 std::string mirror_move(std::string moveUCI);
 
 namespace Constants {
-//void init();
 inline void init() {
 
     // fill mirrored label list and look-up table
     for (size_t mvIdx=0; mvIdx < NB_LABELS; mvIdx++) {
-//        if (mvIdx == 2069)
-//        std::cout << "mvIdx " << mvIdx << "mirror_move(LABELS[mvIdx])" << mirror_move(LABELS[mvIdx]) << std::endl;
-//        std::cout << "mvIdx" << mvIdx << std::endl;
         LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);
-//        LABELS_MIRRORED.push_back(std::string("test")); //mirror_move(LABELS[mvIdx])));
         std::vector<Move> moves = make_move(LABELS[mvIdx]);
         for (Move move : moves) {
             MV_LOOKUP.insert({move, mvIdx});
-//            std::cout << "insert " << move << " " << mvIdx << std::endl;
         }
-//        std::cout << LABELS_MIRRORED[mvIdx] << std::endl;
         std::vector<Move> moves_mirrored = make_move(LABELS_MIRRORED[mvIdx]);
         for (Move move : moves_mirrored) {
             MV_LOOKUP_MIRRORED.insert({move, mvIdx});
@@ -2392,43 +2383,5 @@ inline void init() {
     }
 }
 }
-
-/*
-def mirror_move(move: chess.Move):
-    """
-    Mirrors a move given as python chess notation
-
-    :param move: Move object
-    :return: Mirrored move
-    """
-    from_square = chess.square_mirror(move.from_square)
-    to_square = chess.square_mirror(move.to_square)
-    return chess.Move(from_square, to_square, move.promotion, move.drop)
-
-
-# flip the labels for BLACK
-LABELS_MIRRORED = [None] * NB_LABELS
-
-for i, label in enumerate(LABELS):
-    mv = chess.Move.from_uci(label)
-    mv_mirrored = mirror_move(mv)
-    LABELS_MIRRORED[i] = mv_mirrored.uci()
-
-
-# The movement lookup table is a dictionary/hash-map which maps the string to the corresponding label index
-MV_LOOKUP = {}
-
-# iterate over all moves and assign the integer move index to the string
-for i, label in enumerate(LABELS):
-    MV_LOOKUP[label] = i
-
-
-# do the same for the black player
-MV_LOOKUP_MIRRORED = {}
-
-# iterate over all moves and assign the integer move index to the string
-for i, label in enumerate(LABELS_MIRRORED):
-    MV_LOOKUP_MIRRORED[label] = i
-*/
 
 #endif // CONSTANTS_H

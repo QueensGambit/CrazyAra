@@ -21,35 +21,12 @@
  * @file: constants.cpp
  * Created on 13.05.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include <stdlib.h>
 #include "constants.h"
 #include <iostream>
-/*
-void Constants::init() {
 
-    // fill mirrored label list and look-up table
-    for (size_t mvIdx=0; mvIdx < NB_LABELS; mvIdx++) {
-//        if (mvIdx == 2069)
-//        std::cout << "mvIdx " << mvIdx << "mirror_move(LABELS[mvIdx])" << mirror_move(LABELS[mvIdx]) << std::endl;
-        std::cout << "mvIdx" << mvIdx << std::endl;
-        Constants::LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);
-//        LABELS_MIRRORED.push_back(std::string("test")); //mirror_move(LABELS[mvIdx])));
-        std::vector<Move> moves = make_move(LABELS[mvIdx]);
-        for (Move move : moves) {
-            MV_LOOKUP.insert({move, mvIdx});
-        }
-        std::cout << Constants::LABELS_MIRRORED[mvIdx] << std::endl;
-        std::vector<Move> moves_mirrored = make_move(Constants::LABELS_MIRRORED[mvIdx]);
-        for (Move move : moves_mirrored) {
-            MV_LOOKUP_MIRRORED.insert({move, mvIdx});
-        }
-    }
-}
-*/
 std::string mirror_move(std::string moveUCI) {
 
     // first copy the original move
