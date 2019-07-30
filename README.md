@@ -26,13 +26,13 @@ The project is mainly inspired by the techniques described in the [Alpha-(Go)-Ze
 This repository contains the source code of the engine search written in C++ based on the previous [Python version](https://github.com/QueensGambit/CrazyAra).
 The training scripts, preprocessing and neural network definition source files can be found in the [Python version](https://github.com/QueensGambit/CrazyAra).
 
-CrazyAra is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://github.com/cutechess/cutechess), [XBoard](https://www.gnu.org/software/xboard/), [WinBoard](http://hgm.nubati.net/) for convinient usage.
+CrazyAra is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://github.com/cutechess/cutechess), [XBoard](https://www.gnu.org/software/xboard/), [WinBoard](http://hgm.nubati.net/)) for convinient usage.
 
 ## Download
 __TODO__
 
 ## Variants
-The current list of available chess variants include
+The current list of available chess variants include:
 * [Crazyhouse](https://lichess.org/variant/crazyhouse)
 
 ## Compilation
