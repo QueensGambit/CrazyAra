@@ -71,8 +71,6 @@ include_directories("src/agents")
 include_directories("src/agents/config")
 include_directories("src/nn")
 
-include_directories("lib/yaml-cpp-yaml-cpp-0.6.2/include")
-
 #set(MXNET_PATH
 #    "/media/queensgambit/Volume/Deep_Learning/libraries/mxnet/"
 #    # "/home/queensgambit/libs/mxnet/
@@ -92,25 +90,18 @@ include_directories("$ENV{MXNET_PATH}3rdparty/dmlc-core/include")
 #include_directories("/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/include")
 #link_directories(/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/lib)
 
-# find_package(OpenCV REQUIRED)
-
 find_package(Threads REQUIRED)
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
 
 # link_directories(${MXNET_PATH}lib)
 link_directories($ENV{MXNET_PATH}lib)
-link_directories("lib/yaml-cpp-yaml-cpp-0.6.2/build")
 
 add_executable(${PROJECT_NAME} ${source_files})
 # add_executable(${PROJECT_NAME} "main.cpp")
 # target_link_libraries (${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 # target_link_libraries( ${PROJECT_NAME} pthread)
 target_link_libraries(${PROJECT_NAME} mxnet)
-target_link_libraries(${PROJECT_NAME} yaml-cpp)
-# and for each executable/library dependent on OpenCV
-message(STATUS "${OpenCV_LIBS}")
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} opencv_calib3d;opencv_core;opencv_features2d;opencv_flann;opencv_highgui;opencv_imgcodecs;opencv_imgproc;opencv_ml;opencv_objdetect;opencv_photo;opencv_shape;opencv_stitching;opencv_superres;opencv_video;opencv_videoio;opencv_videostab;opencv_aruco;opencv_bgsegm;opencv_bioinspired;opencv_ccalib;opencv_datasets;opencv_dpm;opencv_face;opencv_freetype;opencv_fuzzy;opencv_hdf;opencv_line_descriptor;opencv_optflow;opencv_phase_unwrapping;opencv_plot;opencv_reg;opencv_rgbd;opencv_saliency;opencv_stereo;opencv_structured_light;opencv_surface_matching;opencv_text;opencv_ximgproc;opencv_xobjdetect;opencv_xphoto )
 
 if(THREADS_HAVE_PTHREAD_ARG)
   target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")

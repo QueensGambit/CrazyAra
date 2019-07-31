@@ -303,11 +303,12 @@ bool CrazyAra::is_ready()
         playSettings->temperature = Options["Centi_Temperature"] / 100.0f;
         playSettings->temperatureMoves = Options["Temperature_Moves"];
 
-        netSingle = new NeuralNetAPI(Options["Context"], 1);
+        string modelDirectory = Options["Model_Directory"];
+        netSingle = new NeuralNetAPI(Options["Context"], 1, modelDirectory);
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
         for (size_t i = 0; i < searchSettings->threads; ++i) {
-            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize);
+            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory);
         }
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);
         networkLoaded = true;

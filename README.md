@@ -48,13 +48,6 @@ Please follow these steps to build CrazyAra from source:
 
    ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
 
-3. Download and install yaml-cpp 
-	* https://github.com/jbeder/yaml-cpp
-
-   For Linux Debian systems there is an official package available: 
-   
-   `$ sudo apt-get install libyaml-cpp-dev`
-
 ### Windows
 __TODO__
 
@@ -69,8 +62,6 @@ The following libraries are used to run CrazyAra:
 	* Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
 * [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
 	* Used as the testing framework as a replacmenet for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
-* [**yaml-cpp**](https://github.com/jbeder/yaml-cpp): A YAML parser and emitter in C++
-	* Used for loading the .yaml configuration file
 
 ## Licence
 

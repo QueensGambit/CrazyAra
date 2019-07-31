@@ -25,7 +25,6 @@
 
 #include "neuralnetapi.h"
 #include "../domain/crazyhouse/constants.h"
-#include "yaml-cpp/yaml.h"
 #include <dirent.h>
 #include <exception>
 #include <string>
@@ -48,7 +47,7 @@ std::vector<std::string> get_directory_files(const std::string& dir) {
 }
 }  // namespace
 
-NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize):
+NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory):
     batchSize(batchSize)
 {
     if (ctx == "cpu" or ctx == "CPU") {
@@ -59,25 +58,22 @@ NeuralNetAPI::NeuralNetAPI(string ctx, unsigned int batchSize):
         throw "unsupported context " + ctx + " given";
     }
 
-    YAML::Node config = YAML::LoadFile("config.yaml");
-    const std::string prefix = config["model_directory"].as<std::string>();
-
     string jsonFilePath;
     string paramterFilePath;
 
-    const auto& files = get_directory_files(prefix);
+    const auto& files = get_directory_files(modelDirectory);
     for (const auto& file : files) {
         size_t pos_json = file.find(".json");
         size_t pos_params = file.find(".params");
         if (pos_json != string::npos) {
-            jsonFilePath = prefix + file;
+            jsonFilePath = modelDirectory + file;
         }
         else if (pos_params != string::npos) {
-            paramterFilePath = prefix + file;
+            paramterFilePath = modelDirectory + file;
         }
     }
     if (jsonFilePath == "" || paramterFilePath == "") {
-        throw std::invalid_argument( "The given directory at " + prefix
+        throw std::invalid_argument( "The given directory at " + modelDirectory
                                      + " doesn't containa .json and a .parmas file.");
     }
 

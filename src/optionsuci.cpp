@@ -60,7 +60,7 @@ void OptionsUCI::init(OptionsMap &o)
          o["Enhance_Checks"]           << Option(true);
          o["Enhance_Captures"]         << Option(false);
          o["Use_Transposition_Table"]  << Option(true);
-//         o["Model_Architecture_Dir"]   << Option("default");
+         o["Model_Directory"]          << Option("model/");
 //         o["Debug_Log_File"]           << Option("", activate_logger);
 //         o["Contempt"]                 << Option(24, -100, 100);
 //         o["Hash"]                     << Option(16, 1, MaxHashMB);

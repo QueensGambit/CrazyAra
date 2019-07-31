@@ -86,10 +86,10 @@ public:
      * @brief NeuralNetAPI
      * @param ctx Computation contex either "cpu" or "gpu"
      * @param batchSize Constant batch size which is used for inference
-     * @param modelArchitectureDir Directory where the network architecture is stored (.json file)
-     * @param modelWeightsDir Directory where parameters a.k.a weights of the neural are stored (.params file)
+     * @param modelDirectory Directory where the network architecture is stored (.json file) and
+     * where parameters a.k.a weights of the neural are stored (.params file) are stored
      */
-    NeuralNetAPI(string ctx, unsigned int batchSize);
+    NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory);
 
     /**
      * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
