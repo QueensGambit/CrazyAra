@@ -79,7 +79,7 @@ The following libraries are used to run CrazyAra:
 * [:earth_africa: Project Website](https://crazyara.org/)
 * [♞ Lichess.org account](https://lichess.org/@/CrazyAra/all)
 * [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
-
+* :notebook_with_decorative_cover: Paper __TODO__
 ## Licence
 
 CrazyAra is free software, and distributed under the terms of the GNU General Public License version 3 (GPL v3).
