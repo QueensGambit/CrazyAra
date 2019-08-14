@@ -1,7 +1,7 @@
 # CrazyAra - A Deep Learning Chess Variant Engine
 ![CRAZYARA_LOGO](media/crazyara_logo_medium.png "rc")
 
-## Table of Contents
+## Contents
 * [Description](#description)
 * [Download](#download)
 * [Variants](#variants)
@@ -9,6 +9,7 @@
     * [Linux](#linux)
     * [Windows](#windows)
 * [Libraries](#libraries)
+* [Links](#links)
 * [Licence](#licence)
 
 <img align="right" src="media/TU_logo.png" width="128">
@@ -38,18 +39,28 @@ The current list of available chess variants include:
 ## Compilation
 
 Please follow these steps to build CrazyAra from source:
+
+Clone the CrazyAra repository:
+
+```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
+
 ### Linux
 1. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6**:
 	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 	* https://bitbucket.org/blaze-lib/blaze/downloads/
 
-2. Build the MXNet C++ package
-	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
+2. Build the MXNet C++ package (OpenCV is not required for CrazyAra)
 
    ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
+   
+   Detailed instruction can be found here:
+   	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
+
 
 ### Windows
 __TODO__
+* https://mxnet.incubator.apache.org/versions/master/install/windows_setup.html
+* https://github.com/apache/incubator-mxnet/issues/15632
 
 ## Libraries
 The following libraries are used to run CrazyAra:
@@ -62,6 +73,12 @@ The following libraries are used to run CrazyAra:
 	* Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
 * [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
 	* Used as the testing framework as a replacmenet for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
+
+## Links
+
+* [:earth_africa: Project Website](https://crazyara.org/)
+* [♞ Lichess.org account](https://lichess.org/@/CrazyAra/all)
+* [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
 
 ## Licence
 
