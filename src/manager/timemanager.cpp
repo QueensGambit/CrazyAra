@@ -67,7 +67,7 @@ int TimeManager::get_time_for_move(SearchLimits* searchLimits, Color me, int mov
     }
     else {
         curMovetime = 1000 - searchLimits->moveOverhead;
-        sync_cout << "string info No limit specification given, setting movetime to " << curMovetime << "ms" << sync_endl;
+        sync_cout << "info string No limit specification given, setting movetime to " << curMovetime << "ms" << sync_endl;
     }
 
     if (curMovetime <= 0) {

@@ -114,7 +114,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 void MCTSAgent::stop_search_based_on_limits()
 {
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->pos->side_to_move(), rootNode->pos->plies_from_null()/2);
-    sync_cout << "string info movetime " << curMovetime << sync_endl;
+    sync_cout << "info string movetime " << curMovetime << sync_endl;
     this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
     if (early_stopping()) {
         stop_search();
@@ -138,7 +138,7 @@ bool MCTSAgent::early_stopping()
 {
     //    if (false && max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
     if (max(rootNode->policyProbSmall) > 0.9f && argmax(rootNode->policyProbSmall) == argmax(rootNode->qValues)) {
-        sync_cout << "string info Early stopping" << sync_endl;
+        sync_cout << "info string Early stopping" << sync_endl;
         return true;
     }
     return false;
@@ -226,7 +226,7 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     size_t bestIdx = argmax(evalInfo.policyProbSmall);
 
     if (bestIdx != argmax(rootNode->childNumberVisits)) {
-        sync_cout << "string info Select different move due to higher Q-value" << sync_endl;
+        sync_cout << "info string Select different move due to higher Q-value" << sync_endl;
     }
 
     evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[bestIdx]);

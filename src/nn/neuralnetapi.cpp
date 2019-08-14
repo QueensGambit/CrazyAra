@@ -24,24 +24,24 @@
  */
 
 #include "neuralnetapi.h"
-#include "../domain/crazyhouse/constants.h"
 #include <dirent.h>
 #include <exception>
 #include <string>
+#include "../domain/crazyhouse/constants.h"
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
-std::vector<std::string> get_directory_files(const std::string& dir) {
-    std::vector<std::string> files;
-    std::shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
+vector<string> get_directory_files(const string& dir) {
+    vector<string> files;
+    shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
     struct dirent *dirent_ptr;
     if (!directory_ptr) {
-        std::cout << "Error opening : " << std::strerror(errno) << dir << std::endl;
+		cout << "info string Error opening : " << strerror(errno) << dir << endl;
         return files;
     }
 
     while ((dirent_ptr = readdir(directory_ptr.get())) != nullptr) {
-        files.push_back(std::string(dirent_ptr->d_name));
+        files.push_back(string(dirent_ptr->d_name));
     }
     return files;
 }
@@ -50,9 +50,9 @@ std::vector<std::string> get_directory_files(const std::string& dir) {
 NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory):
     batchSize(batchSize)
 {
-    if (ctx == "cpu" or ctx == "CPU") {
+    if (ctx == "cpu" || ctx == "CPU") {
         global_ctx = Context::cpu();
-    } else if (ctx == "gpu" or ctx == "GPU") {
+    } else if (ctx == "gpu" || ctx == "GPU") {
         global_ctx = Context::gpu();
     } else {
         throw "unsupported context " + ctx + " given";
@@ -61,8 +61,8 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
     string jsonFilePath;
     string paramterFilePath;
 
-    const auto& files = get_directory_files(modelDirectory);
-    for (const auto& file : files) {
+    const vector<string>& files = get_directory_files(modelDirectory);
+    for (const string& file : files) {
         size_t pos_json = file.find(".json");
         size_t pos_params = file.find(".params");
         if (pos_json != string::npos) {
@@ -73,11 +73,11 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
         }
     }
     if (jsonFilePath == "" || paramterFilePath == "") {
-        throw std::invalid_argument( "The given directory at " + modelDirectory
+        throw invalid_argument( "The given directory at " + modelDirectory
                                      + " doesn't containa .json and a .parmas file.");
     }
 
-    cout << "json file: " << jsonFilePath << endl;
+	cout << "info string json file: " << jsonFilePath << endl;
 
     input_shape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
 
@@ -101,20 +101,20 @@ bool NeuralNetAPI::file_exists(const string &name)
 void NeuralNetAPI::load_model(const string &jsonFilePath)
 {
     if (!file_exists(jsonFilePath)) {
-        LG << "Model file " << jsonFilePath << " does not exist";
-        throw std::runtime_error("Model file does not exist");
+		cout << "info string Model file " << jsonFilePath << " does not exist";
+        throw runtime_error("Model file does not exist");
     }
-    LG << "Loading the model from " << jsonFilePath << std::endl;
+	cout << "info string Loading the model from " << jsonFilePath << endl;
     net = Symbol::Load(jsonFilePath);
 }
 
-void NeuralNetAPI::load_parameters(const std::string& paramterFilePath) {
+void NeuralNetAPI::load_parameters(const string& paramterFilePath) {
     if (!file_exists(paramterFilePath)) {
-        LG << "Parameter file " << paramterFilePath << " does not exist";
-        throw std::runtime_error("Model parameters does not exist");
+        cout << "info string Parameter file " << paramterFilePath << " does not exist";
+        throw runtime_error("Model parameters does not exist");
     }
-    LG << "Loading the model parameters from " << paramterFilePath << std::endl;
-    std::map<std::string, NDArray> parameters;
+	cout << "info string Loading the model parameters from " << paramterFilePath << endl;
+    map<string, NDArray> parameters;
     NDArray::Load(paramterFilePath, 0, &parameters);
     for (const auto &k : parameters) {
         if (k.first.substr(0, 4) == "aux:") {
@@ -135,10 +135,10 @@ void NeuralNetAPI::bind_executor()
     // Create an executor after binding the model to input parameters.
     args_map["data"] = NDArray(input_shape, global_ctx, false);
     /* new */
-    std::vector<NDArray> arg_arrays;
-    std::vector<NDArray> grad_arrays;
-    std::vector<OpReqType> grad_reqs;
-    std::vector<NDArray> aux_arrays;
+    vector<NDArray> arg_arrays;
+    vector<NDArray> grad_arrays;
+    vector<OpReqType> grad_reqs;
+    vector<NDArray> aux_arrays;
     Shape value_label_shape(input_shape[0]);
     Shape policy_label_shape(input_shape[0]);
 
@@ -146,29 +146,26 @@ void NeuralNetAPI::bind_executor()
     args_map["policy_label"] = NDArray(policy_label_shape, global_ctx, false);
 
     net.InferExecutorArrays(global_ctx, &arg_arrays, &grad_arrays, &grad_reqs,
-                            &aux_arrays, args_map, std::map<std::string, NDArray>(),
-                            std::map<std::string, OpReqType>(), aux_map);
+                            &aux_arrays, args_map, map<string, NDArray>(),
+                            map<string, OpReqType>(), aux_map);
     for (size_t i = 0; i < grad_reqs.size(); ++i) {
         grad_reqs[i] = kNullOp;
     }
-    //    executor = net.Bind(global_ctx, arg_arrays, grad_arrays, grad_reqs, aux_arrays,
-    //                                         std::map<std::string, Context>(), nullptr);
-    /*end new */
+
     executor = new Executor(net, global_ctx, arg_arrays, grad_arrays, grad_reqs, aux_arrays);
-    //        executor = net.SimpleBind(global_ctx, args_map, std::map<std::string, NDArray>(),
-    //                                  std::map<std::string, OpReqType>(), aux_map);
-    LG << ">>>> Bind successfull! >>>>>>";
+	cout << "info string Bind successfull!" << endl;
 }
 
 void NeuralNetAPI::infer_select_policy_from_planes()
 {
-    float input_planes[batchSize*NB_VALUES_TOTAL];
-    std::fill(input_planes, input_planes+batchSize*NB_VALUES_TOTAL, 0.0f);
+    float* inputPlanes = new float[batchSize*NB_VALUES_TOTAL];
+    fill(inputPlanes, inputPlanes+batchSize*NB_VALUES_TOTAL, 0.0f);
 
     float value;
-    NDArray probOutputs = predict(input_planes, value);
+    NDArray probOutputs = predict(inputPlanes, value);
     selectPolicyFromPlane = probOutputs.GetShape()[1] != NB_LABELS;
-    cout << "string info selectPolicyFromPlane: " << selectPolicyFromPlane << endl;
+	cout << "info string selectPolicyFromPlane: " << selectPolicyFromPlane << endl;
+	delete inputPlanes;
 }
 
 NDArray NeuralNetAPI::predict(float *inputPlanes, float &value)
