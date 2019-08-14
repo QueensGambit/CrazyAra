@@ -59,7 +59,7 @@ Clone the CrazyAra repository:
 
 ### Windows
 __TODO__
-* https://mxnet.incubator.apache.org/versions/master/install/windows_setup.html
+* https://mxnet.incubator.apache.org/versions/master/install/windows_setup.html#build-from-source
 * https://github.com/apache/incubator-mxnet/issues/15632
 
 ## Libraries
@@ -80,6 +80,7 @@ The following libraries are used to run CrazyAra:
 * [♞ Lichess.org account](https://lichess.org/@/CrazyAra/all)
 * [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
 * :notebook_with_decorative_cover: Paper __TODO__
+
 ## Licence
 
 CrazyAra is free software, and distributed under the terms of the GNU General Public License version 3 (GPL v3).
