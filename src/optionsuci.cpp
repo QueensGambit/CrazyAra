@@ -31,70 +31,65 @@
 
 void OptionsUCI::init(OptionsMap &o)
 {
-         // at most 2^32 clusters.
-         constexpr int MaxHashMB = Is64Bit ? 131072 : 2048;
+    // at most 2^32 clusters.
+    constexpr int MaxHashMB = Is64Bit ? 131072 : 2048;
 
-         o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
-         o["Search_Type"]              << Option("MCTS", {"MCTS"});
-         o["Context"]                  << Option("CPU", {"CPU", "GPU"});
-         o["Batch_Size"]               << Option(8, 1, 8192);
-         o["Threads"]                  << Option(1, 1, 512);
-         o["Centi_CPuct_Init"]         << Option(250, 1, 99999);
-         o["CPuct_Base"]               << Option(19652, 1, 99999);
-         o["Centi_Dirichlet_Epsilon"]  << Option(25, 1, 99999);
-         o["Centi_Dirichlet_Alpha"]    << Option(20, 1, 99999);
-         o["Centi_U_Init"]             << Option(100, 0, 100);
-         o["Centi_U_Min"]              << Option(25, 0, 100);
-         o["U_Base"]                   << Option(1965, 0, 99999);
-         o["Centi_U_Init_Divisor"]     << Option(100, 1, 99999);
-         o["Centi_Q_Value_Weight"]     << Option(70, 0, 99999);
-         o["Centi_Q_Thresh_Init"]      << Option(50, 0, 100);
-         o["Centi_Q_Thresh_Max"]       << Option(90, 0, 100);
-         o["Q_Thresh_Base"]            << Option(1965, 0, 99999);
-         o["Max_Search_Depth"]         << Option(99, 1, 99999);
-         o["Centi_Temperature"]        << Option(0, 0, 99999);
-         o["Temperature_Moves"]        << Option(0, 0, 99999);
-         o["Virtual_Loss"]             << Option(3, 0, 99999);
-         o["Nodes"]                    << Option(0, 0, 99999);
-         o["Use_Raw_Network"]          << Option(false);
-         o["Enhance_Checks"]           << Option(true);
-         o["Enhance_Captures"]         << Option(false);
-         o["Use_Transposition_Table"]  << Option(true);
-         o["Model_Directory"]          << Option("model/");
-//         o["Debug_Log_File"]           << Option("", activate_logger);
-//         o["Contempt"]                 << Option(24, -100, 100);
-//         o["Hash"]                     << Option(16, 1, MaxHashMB);
-         o["Move_Overhead"]            << Option(50, 0, 5000);
-//         o["Minimum_Thinking_Time"]    << Option(20, 0, 5000);
-//         o["UCI_Chess960"]             << Option(false);
+    o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
+    o["Search_Type"]              << Option("mcts", {"mcts"});
+    o["Context"]                  << Option("cpu", {"cpu", "gpu"});
+    o["Batch_Size"]               << Option(8, 1, 8192);
+    o["Threads"]                  << Option(1, 1, 512);
+    o["Centi_CPuct_Init"]         << Option(250, 1, 99999);
+    o["CPuct_Base"]               << Option(19652, 1, 99999);
+    o["Centi_Dirichlet_Epsilon"]  << Option(25, 1, 99999);
+    o["Centi_Dirichlet_Alpha"]    << Option(20, 1, 99999);
+    o["Centi_U_Init"]             << Option(100, 0, 100);
+    o["Centi_U_Min"]              << Option(25, 0, 100);
+    o["U_Base"]                   << Option(1965, 0, 99999);
+    o["Centi_U_Init_Divisor"]     << Option(100, 1, 99999);
+    o["Centi_Q_Value_Weight"]     << Option(70, 0, 99999);
+    o["Centi_Q_Thresh_Init"]      << Option(50, 0, 100);
+    o["Centi_Q_Thresh_Max"]       << Option(90, 0, 100);
+    o["Q_Thresh_Base"]            << Option(1965, 0, 99999);
+    o["Max_Search_Depth"]         << Option(99, 1, 99999);
+    o["Centi_Temperature"]        << Option(0, 0, 99999);
+    o["Temperature_Moves"]        << Option(0, 0, 99999);
+    o["Virtual_Loss"]             << Option(3, 0, 99999);
+    o["Nodes"]                    << Option(0, 0, 99999);
+    o["Use_Raw_Network"]          << Option(false);
+    o["Enhance_Checks"]           << Option(true);
+    o["Enhance_Captures"]         << Option(false);
+    o["Use_Transposition_Table"]  << Option(true);
+    o["Model_Directory"]          << Option("model/");
+    o["Move_Overhead"]            << Option(50, 0, 5000);
 }
 
 
 void OptionsUCI::setoption(istringstream &is)
 {
 
-  string token, name, value;
-  is >> token; // Consume "name" token
+    string token, name, value;
+    is >> token; // Consume "name" token
 
-  // Read option name (can contain spaces)
-  while (is >> token && token != "value")
-      name += (name.empty() ? "" : " ") + token;
+    // Read option name (can contain spaces)
+    while (is >> token && token != "value")
+        name += (name.empty() ? "" : " ") + token;
 
-  // Read option value (can contain spaces)
-  while (is >> token)
-      value += (value.empty() ? "" : " ") + token;
+    // Read option value (can contain spaces)
+    while (is >> token)
+        value += (value.empty() ? "" : " ") + token;
 
-  if (Options.count(name))
-  {
-      Options[name] = value;
-      sync_cout << "Updated option " << name << " to " << value << sync_endl;
-      std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-      if (name == "uci_variant") {
-          Variant variant = UCI::variant_from_name(value);
-          sync_cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << sync_endl;
-//          Tablebases::init(variant, Options["SyzygyPath"]);
-      }
-  }
-  else
-      sync_cout << "No such option: " << name << sync_endl;
+    if (Options.find(name) != Options.end()) {
+        Options[name] = value;
+        sync_cout << "info string Updated option " << name << " to " << value << sync_endl;
+        std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+        if (name == "uci_variant") {
+            Variant variant = UCI::variant_from_name(value);
+            sync_cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << sync_endl;
+        }
+    }
+    else {
+        sync_cout << "info string Given option " << name << " does not exist " << sync_endl;
+    }
+
 }
