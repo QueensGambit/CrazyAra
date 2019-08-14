@@ -71,7 +71,7 @@ StateInfo *Board::getStateInfo() const
     return st;
 }
 
-Board &Board::operator=(const Board &b)
+Board& Board::operator=(const Board &b)
 {
     std::copy(b.board, b.board+SQUARE_NB, this->board );
     std::copy(b.byTypeBB, b.byTypeBB+PIECE_TYPE_NB, this->byTypeBB);
@@ -101,6 +101,8 @@ Board &Board::operator=(const Board &b)
     chess960 = b.chess960;
     var = b.var;
     subvar = b.subvar;
+
+	return *this;
 }
 
 int Board::plies_from_null()

@@ -204,9 +204,9 @@ void SearchThread::create_mini_batch()
     size_t tranpositionEvents = 0;
     size_t terminalEvents = 0;
 
-    while (newNodes.size() < searchSettings->batchSize and
-           collisionNodes.size() < searchSettings->batchSize and
-           tranpositionEvents < searchSettings->batchSize and
+    while (newNodes.size() < searchSettings->batchSize &&
+           collisionNodes.size() < searchSettings->batchSize &&
+           tranpositionEvents < searchSettings->batchSize &&
            terminalEvents < searchSettings->batchSize) {
         parentNode = get_new_child_to_evaluate(childIdx, isCollision, isTerminal, depth);
 

@@ -29,7 +29,7 @@ using namespace std;
 #include "util/blazeutil.h"
 #include "uci.h"
 #include "misc.h"
-#include <experimental/random>
+#include <random>
 
 Board* Node::getPos()
 {
@@ -128,7 +128,7 @@ void Node::get_principal_variation(std::vector<Move> &pv)
         childIdx = argmax(mctsPolicy);
         pv.push_back(curNode->legalMoves[childIdx]);
         curNode = curNode->childNodes[childIdx];
-    } while (curNode != nullptr and !curNode->isTerminal);
+    } while (curNode != nullptr && !curNode->isTerminal);
 }
 
 Key Node::hash_key()
