@@ -49,7 +49,7 @@ void Agent::apply_temperature_to_policy(DynamicVector<double> &policyProbSmall)
 void Agent::set_best_move(EvalInfo &evalInfo, size_t moveCounter)
 {
     if (moveCounter <= temperatureMoves && temperature > 0.01f) {
-        DynamicVector<double> policyProbSmall = evalInfo.policyProbSmall;
+        DynamicVector<double> policyProbSmall = evalInfo.childNumberVisits / sum(evalInfo.childNumberVisits);
         apply_temperature_to_policy(policyProbSmall);
         size_t moveIdx = pick_move_idx(policyProbSmall);
         evalInfo.bestMove = evalInfo.legalMoves[moveIdx];

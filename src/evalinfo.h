@@ -46,6 +46,7 @@ public:
     float value;
     std::vector<Move> legalMoves;
     DynamicVector<float> policyProbSmall;
+    DynamicVector<float> childNumberVisits;
     int centipawns;
     size_t depth;
     int nodes;
