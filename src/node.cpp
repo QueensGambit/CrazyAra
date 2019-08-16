@@ -25,11 +25,11 @@
 
 #include "node.h"
 #include <iostream>
-using namespace std;
+#include <random>
 #include "util/blazeutil.h"
 #include "uci.h"
-#include "misc.h"
-#include <random>
+
+using namespace std;
 
 Board* Node::getPos()
 {
@@ -431,7 +431,7 @@ void Node::delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>
 void Node::delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable)
 {
     if (parentNode != nullptr) {
-        sync_cout << "info string delete unused subtrees" << sync_endl;
+        cout << "info string delete unused subtrees" << endl;
         size_t i = 0;
         for (Node *childNode: parentNode->childNodes) {
             if (childNode != nullptr && childNode != this) {

@@ -38,7 +38,6 @@
 #include "evalinfo.h"
 #include "domain/crazyhouse/constants.h"
 #include "util/sfutil.h"
-#include "uci.h"
 #include "constants.h"
 #include "board.h"
 #include "mxnet-cpp/MxNetCpp.h"
@@ -49,9 +48,9 @@
 using namespace std;
 
 // allocate memory
-std::string LABELS_MIRRORED[NB_LABELS];
-std::unordered_map<Move, size_t> MV_LOOKUP = {};
-std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
+string LABELS_MIRRORED[NB_LABELS];
+unordered_map<Move, size_t> MV_LOOKUP = {};
+unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
 
 CrazyAra::CrazyAra()
 {
@@ -61,7 +60,7 @@ CrazyAra::CrazyAra()
 void CrazyAra::welcome()
 {
     start_logger("CrazyAra.log");
-    sync_cout << intro << sync_endl;
+    cout << intro << endl;
 }
 
 void CrazyAra::uci_loop(int argc, char *argv[])
@@ -69,28 +68,33 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     Board pos;
     string token, cmd;
     EvalInfo evalInfo;
-    auto uiThread = std::make_shared<Thread>(0);
+    auto uiThread = make_shared<Thread>(0);
 
     StateInfo* newState = new StateInfo;
     pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, newState, uiThread.get());
     states->activeStates.push_back(newState);
 
     for (int i = 1; i < argc; ++i)
-        cmd += std::string(argv[i]) + " ";
+        cmd += string(argv[i]) + " ";
 
     size_t it = 0;
 
-    std::vector<std::string> commands = {
-//        "uci",
-//        "isready",
-//        "quit"
+	// this is debug vector which can contain uci commands which will be automaticly processed when the executable is launched
+    vector<string> commands = {
+        //"uci",
+        //"isready",
+		//"ucinewgame",
+		//"position startpos",
+		//"isready",
+		//"go wtime 60000 btime 60000 movestogo 40",
+        //"quit"
     };
 
     do {
 
         if (it < commands.size()) {
             cmd = commands[it];
-            sync_cout << ">>" << cmd << sync_endl;
+            cout << ">>" << cmd << endl;
         }
         else if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
             cmd = "quit";
@@ -100,29 +104,21 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         token.clear(); // Avoid a stale if getline() returns empty or blank line
         is >> skipws >> token;
 
-        if (    token == "quit"
-                ||  token == "stop")
-            Threads.stop = true;
-
-        // The GUI sends 'ponderhit' to tell us the user has played the expected move.
-        // So 'ponderhit' will be sent if we were told to ponder on the same move the
-        // user has played. We should continue searching but switch from pondering to
-        // normal search.
-        else if (token == "ponderhit")
-            Threads.main()->ponder = false; // Switch to normal search
-
-        else if (token == "uci")
-            sync_cout << engine_info()
-                      << Options << sync_endl
-                      << "uciok"  << sync_endl;
-
+		if (token == "quit") {
+			break;
+		}
+		else if (token == "uci") {
+			cout << engine_info()
+				<< Options << endl
+				<< "uciok" << endl;
+		}
         else if (token == "setoption")  OptionsUCI::setoption(is);
         else if (token == "go")         go(&pos, is, evalInfo);
         else if (token == "position")   position(&pos, is);
         else if (token == "ucinewgame") new_game();
         else if (token == "isready") {
             if (is_ready()) {
-                sync_cout << "readyok" << sync_endl;
+                cout << "readyok" << endl;
             }
         }
 
@@ -130,9 +126,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "benchmark")  benchmark(is);
         else if (token == "root")       mctsAgent->print_root_node();
         else if (token == "flip")       pos.flip();
-        else if (token == "d")          sync_cout << pos << sync_endl;
+        else if (token == "d")          cout << pos << endl;
         else
-            sync_cout << "Unknown command: " << cmd << sync_endl;
+            cout << "Unknown command: " << cmd << endl;
 
         ++it;
     } while (token != "quit" && argc == 1); // Command line args are one-shot
@@ -159,8 +155,6 @@ void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo, bool apply
         else if (token == "depth")     is >> searchLimits.depth;
         else if (token == "nodes")     is >> searchLimits.nodes;
         else if (token == "movetime")    is >> searchLimits.movetime;
-        //      else if (token == "mate")      is >> searchLimits.mate;
-        //      else if (token == "perft")     is >> searchLimits.perft;
         else if (token == "infinite")  searchLimits.infinite = true;
         else if (token == "ponder")    ponderMode = true;
     }
@@ -178,7 +172,7 @@ void CrazyAra::go(string fen, string goCommand, EvalInfo& evalInfo)
 {
     Board pos;
     string token, cmd;
-    auto uiThread = std::make_shared<Thread>(0);
+    auto uiThread = make_shared<Thread>(0);
 
     StateInfo* newState = new StateInfo;
     pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, newState, uiThread.get());
@@ -207,7 +201,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
     else
         return;
 
-    auto uiThread = std::make_shared<Thread>(0);
+    auto uiThread = make_shared<Thread>(0);
     pos->set(fen, false, CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
     states->clear_states();
     states->swap_states();
@@ -225,7 +219,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
     if (lastMove != MOVE_NULL) {
         mctsAgent->apply_move_to_tree(lastMove, false);
     }
-    sync_cout << "info string position " << pos->fen() << sync_endl;
+    cout << "info string position " << pos->fen() << endl;
 }
 
 void CrazyAra::benchmark(istringstream &is)
@@ -319,7 +313,7 @@ bool CrazyAra::is_ready()
 void CrazyAra::new_game()
 {
     mctsAgent->clear_game_history();
-    sync_cout << "info string newgame" << sync_endl;
+    cout << "info string newgame" << endl;
 }
 
 string CrazyAra::engine_info()

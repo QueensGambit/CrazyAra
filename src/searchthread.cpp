@@ -27,7 +27,6 @@
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
 #include "uci.h"
-#include "misc.h"
 
 SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, unordered_map<Key, Node *> *hashTable):
     netBatch(netBatch), isRunning(false), hashTable(hashTable), searchSettings(searchSettings)

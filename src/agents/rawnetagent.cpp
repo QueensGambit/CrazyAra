@@ -61,56 +61,16 @@ void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
         evalInfo.depth = 0;
         evalInfo.nodes = 0;
         evalInfo.pv = {evalInfo.legalMoves[0]};
-//        sync_cout << "bestmove " << UCI::move(evalInfo.legalMoves[0], pos->is_chess960()) << sync_endl;
     }
 
-//    float *input_planes_start = &input_planes[0][0][0];
-
     board_to_planes(pos, 0, true, begin(input_planes)); //input_planes_start);
-
-//    float sum = 0;
-//    float key = 0;
-//    for (int i = 0; i < 34*8*8; ++i) {
-////    std::cout << "input_planes" << *(input_planes_start+i) << std::endl;
-//    sum += *(input_planes_start+i);
-//    key += float(i)  * *(input_planes_start+i);
-//    }
-//    std::cout << "sum" << sum << std::endl;
-//    std::cout << "key" << key << std::endl;
-
-//    Eigen::VectorXf policyProb(NB_LABELS);
     float value;
 
-//    net->predict_single(begin(input_planes), valueOutput, probOutputs);
     NDArray probOutputs = net->predict(begin(input_planes), value);
-
-//    value = valueOutput.At(0, 0);
-//    cout << "value: " << value << endl;
-//    cout << "prob_vec: " << prob_vec << endl;
-
-//    int index;
-//    policyProb.maxCoeff(&index);
-
-    /*
-     * Find out the maximum accuracy and the index associated with that accuracy.
-     * This is done by using the argmax operator on NDArray.
-     */
     auto predicted = probOutputs.ArgmaxChannel();
-    /*
-     * Wait until all the previous write operations on the 'predicted'
-     * NDArray to be complete before we read it.
-     * This method guarantees that all previous write operations that pushed into the backend engine
-     * for execution are actually finished.
-     */
     predicted.WaitToRead();
 
-
     int best_idx = predicted.At(0, 0); //, 0);
-
-//    best_accuracy = array.At(0, best_idx);
-
-//    std::cout << "array " << array << std::endl;
-//    Constants::init();
 
     string bestmove_mxnet;
     if (pos->side_to_move() == WHITE) {
@@ -125,18 +85,12 @@ void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
                            !net->getSelectPolicyFromPlane(), evalInfo.policyProbSmall, net->getSelectPolicyFromPlane());
     size_t sel_idx = argmax(evalInfo.policyProbSmall);
 
-//    sync_cout << "sel_idx " << sel_idx << sync_endl;
-//    sync_cout << "policyProbSmall" << evalInfo.policyProbSmall/sum(evalInfo.policyProbSmall) << sync_endl;
     Move bestmove = evalInfo.legalMoves[sel_idx];
     assert(bestmove_mxnet == UCI::move(bestmove, pos->is_chess960()));
-
-//    sync_cout << "bestmove " << UCI::move(bestmove, pos->is_chess960()) << sync_endl;
 
     evalInfo.centipawns = value_to_centipawn(value);
     evalInfo.depth = 1;
     evalInfo.nodes = 1;
     evalInfo.is_chess960 = pos->is_chess960();
-    evalInfo.pv = {bestmove};
-//    eval_info.legalMoves = this->rootNode->getLegalMoves();
-//    eval_info.pVecSmall = this->rootNode->getPVecSmall();
+	evalInfo.pv = { bestmove };
 }

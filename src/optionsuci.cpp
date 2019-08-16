@@ -29,6 +29,8 @@
 #include <string>
 #include <algorithm>
 
+using namespace std;
+
 void OptionsUCI::init(OptionsMap &o)
 {
     // at most 2^32 clusters.
@@ -81,15 +83,15 @@ void OptionsUCI::setoption(istringstream &is)
 
     if (Options.find(name) != Options.end()) {
         Options[name] = value;
-        sync_cout << "info string Updated option " << name << " to " << value << sync_endl;
+        cout << "info string Updated option " << name << " to " << value << endl;
         std::transform(name.begin(), name.end(), name.begin(), ::tolower);
         if (name == "uci_variant") {
             Variant variant = UCI::variant_from_name(value);
-            sync_cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << sync_endl;
+            cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << endl;
         }
     }
     else {
-        sync_cout << "info string Given option " << name << " does not exist " << sync_endl;
+        cout << "info string Given option " << name << " does not exist " << endl;
     }
 
 }

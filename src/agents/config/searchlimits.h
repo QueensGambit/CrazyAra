@@ -48,7 +48,6 @@ public:
     bool ponder;
 
     SearchLimits();
-
 };
 
 extern std::ostream& operator<<(std::ostream& os, const SearchLimits& searchLimits);
