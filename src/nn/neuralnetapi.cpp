@@ -74,7 +74,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
     }
     if (jsonFilePath == "" || paramterFilePath == "") {
         throw invalid_argument( "The given directory at " + modelDirectory
-                                     + " doesn't containa .json and a .parmas file.");
+                                     + " doesn't contain a .json and a .params file.");
     }
 
 	cout << "info string json file: " << jsonFilePath << endl;
