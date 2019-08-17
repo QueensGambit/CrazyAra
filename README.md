@@ -45,7 +45,7 @@ Windows | **Intel MKL** | Intel CPUs
 Windows | **OpenCL** | AMD CPUs & GPUs
 
 The following models are available for download.
-By default the model unpacked model should be placed in the same directory as the engine executable.
+By default the unpacked model should be placed in the same directory as the engine executable.
 The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
 
 Model | Policy Loss | Value Loss | Policy Accuracy | Trained on data set | Best suited for
