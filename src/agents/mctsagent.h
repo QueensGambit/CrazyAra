@@ -81,6 +81,9 @@ private:
     StatesManager* states;
     float lastValueEval;
 
+    // boolean which indicates if the same node was requested twice for analysis
+    bool reusedFullTree;
+
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
      * The old tree or former subtrees will be freed from memory.

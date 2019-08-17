@@ -52,7 +52,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     ownNextRoot(nullptr),
     opponentsNextRoot(nullptr),
     states(states),
-    lastValueEval(-1.0f)
+    lastValueEval(-1.0f),
+    reusedFullTree(false)
 {
     hashTable = new unordered_map<Key, Node*>;
     hashTable->reserve(1e6);
@@ -95,8 +96,11 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 {
     if (same_hash_key(rootNode, pos)) {
         cout << "info string reuse the full tree" << endl;
+        reusedFullTree = true;
         return rootNode;
     }
+    reusedFullTree = false;
+
     if (same_hash_key(ownNextRoot, pos)) {
         ownNextRoot->delete_sibling_subtrees(hashTable);
         opponentsNextRoot->delete_sibling_subtrees(hashTable);
@@ -136,7 +140,6 @@ void MCTSAgent::stop_search()
 
 bool MCTSAgent::early_stopping()
 {
-    //    if (false && max(rootNode->childNumberVisits) > 0.9f * rootNode->numberVisits) {
     if (max(rootNode->policyProbSmall) > 0.9f && argmax(rootNode->policyProbSmall) == argmax(rootNode->qValues)) {
         cout << "info string Early stopping" << endl;
         return true;
@@ -178,17 +181,20 @@ void MCTSAgent::create_new_root_node(Board *pos)
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 {
-    cout << "info string apply move to tree" << endl;
-    if (ownMove) {
-        opponentsNextRoot = pick_next_node(move, rootNode);
-        if (opponentsNextRoot != nullptr && opponentsNextRoot->hasNNResults) {
-            gameNodes.push_back(opponentsNextRoot);
+    if (!reusedFullTree) {
+        if (ownMove) {
+            opponentsNextRoot = pick_next_node(move, rootNode);
+            if (opponentsNextRoot != nullptr && opponentsNextRoot->hasNNResults) {
+                cout << "info string apply move to tree" << endl;
+                gameNodes.push_back(opponentsNextRoot);
+            }
         }
-    }
-    else {
-        ownNextRoot = pick_next_node(move, opponentsNextRoot);
-        if (ownNextRoot != nullptr && ownNextRoot->hasNNResults) {
-            gameNodes.push_back(ownNextRoot);
+        else {
+            ownNextRoot = pick_next_node(move, opponentsNextRoot);
+            if (ownNextRoot != nullptr && ownNextRoot->hasNNResults) {
+                cout << "info string apply move to tree" << endl;
+                gameNodes.push_back(ownNextRoot);
+            }
         }
     }
 }
