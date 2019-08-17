@@ -201,6 +201,7 @@ void MCTSAgent::clear_game_history()
     gameNodes.clear();
     hashTable->clear();
     oldestRootNode = nullptr;
+    rootNode = nullptr;
     lastValueEval = -1.0f;
 }
 
