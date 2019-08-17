@@ -30,7 +30,32 @@ The training scripts, preprocessing and neural network definition source files c
 CrazyAra is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://github.com/cutechess/cutechess), [XBoard](https://www.gnu.org/software/xboard/), [WinBoard](http://hgm.nubati.net/)) for convinient usage.
 
 ## Download
+
 __TODO__
+
+A binary release is provided for the following plattforms:
+
+Operating System | Backend | Best suited for
+--- | --- | ---
+Linux | **CUDA 10.0, cuDNN v7.5.1.10** | NVIDIA GPUs
+Linux | **Intel MKL** | Intel CPUs
+Linux | **OpenCL** | AMD CPUs & GPUs
+Windows | **CUDA 10.1, cuDNN v7.5.1.10** | NVIDIA GPUs
+Windows | **Intel MKL** | Intel CPUs
+Windows | **OpenCL** | AMD CPUs & GPUs
+
+The following models are available for download.
+By default the model unpacked model should be placed in the same directory as the engine executable.
+The directory can be changed by adjusting the UCI-parameter 
+
+Model | Policy Loss | Value Loss | Policy Accuracy | Trained on data set | Best suited for
+---   | ---         | ---        | ---             | ---        | ---
+**4-value-8-policy**                  | 1.2184 | 0.7596 | 0.5986 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU
+**8-value-16-policy**                 | 1.2212 | 0.7601 | 0.5965 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU
+**8-value-policy-map**                | 1.2008 | **0.7577** | 0.6023 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU 
+**8-value-policy-map-mobile**         | 1.1968 | 0.7619 | 0.6032 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | CPU 
+**8-value-policy-map-preAct-relu+bn** | **1.1938** | 0.7663 | **0.6042** | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU 
+**RISEv1, [Info](https://github.com/QueensGambit/CrazyAra/wiki/Model-architecture)** | 1.3358 | 0.4407 | 0.5658 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training), [Stockfish](https://github.com/QueensGambit/CrazyAra/wiki/Stockfish-10:-Crazyhouse-Self-Play) | GPU (strongest)
 
 ## Variants
 The current list of available chess variants include:
@@ -44,10 +69,11 @@ Clone the CrazyAra repository:
 
 ```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
 
-### Linux
 1. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6**:
 	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 	* https://bitbucket.org/blaze-lib/blaze/downloads/
+
+### Linux
 
 2. Build the MXNet C++ package (OpenCV is not required for CrazyAra)
 
@@ -79,7 +105,7 @@ The following libraries are used to run CrazyAra:
 * [:earth_africa: Project Website](https://crazyara.org/)
 * [♞ Lichess.org account](https://lichess.org/@/CrazyAra/all)
 * [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
-* :notebook_with_decorative_cover: Paper __TODO__
+* :notebook_with_decorative_cover: Crazya Paper __TODO__
 
 ## Licence
 
