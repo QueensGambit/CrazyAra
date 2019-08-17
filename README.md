@@ -53,7 +53,7 @@ Model | Policy Loss | Value Loss | Policy Accuracy | Trained on data set | Best 
 **4-value-8-policy**                  | 1.2184 | 0.7596 | 0.5986 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU
 **8-value-16-policy**                 | 1.2212 | 0.7601 | 0.5965 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU
 **8-value-policy-map**                | 1.2008 | **0.7577** | 0.6023 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU 
-**8-value-policy-map-mobile**         | 1.1968 | 0.7619 | 0.6032 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | CPU 
+**8-value-policy-map-mobile / RISEv2**         | 1.1968 | 0.7619 | 0.6032 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | CPU 
 **8-value-policy-map-preAct-relu+bn** | **1.1938** | 0.7663 | **0.6042** | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU 
 **RISEv1, [Info](https://github.com/QueensGambit/CrazyAra/wiki/Model-architecture)** | 1.3358 | 0.4407 | 0.5658 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training), [Stockfish](https://github.com/QueensGambit/CrazyAra/wiki/Stockfish-10:-Crazyhouse-Self-Play) | GPU (strongest)
 
