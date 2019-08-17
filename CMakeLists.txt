@@ -1,24 +1,22 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(CrazyAraMCTS CXX)
+project(CrazyAra CXX)
 
-# set(CMAKE_CXX_STANDARD 17)
-# set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(USE_PROFILING             "Build with profiling"   FALSE)
 
 # -pg performance profiling flags
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
-#SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
-#SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
-
-# find_package(xtl REQUIRED)
-# find_package(xtensor REQUIRED)
-# if xtensor was built with xsimd support:
-# find_package(xsimd REQUIRED)
+if (USE_PROFILING)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+endif()
 
 find_package( blaze )
 if( blaze_FOUND )
    add_library( blaze_target INTERFACE )
    target_link_libraries( blaze_target INTERFACE blaze::blaze )
+else()
+    include_directories("$ENV{BLAZE_PATH}include")
 endif()
 
 file(GLOB source_files
@@ -65,16 +63,16 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
 find_package (Threads)
 include_directories("lib/Stockfish/src")
 include_directories("lib/catch-2.9.1")
-include_directories("libs/Eigen")
+
+# incude dirent library seperately because it's missing in the stdlib
+if(MSVC OR MSYS OR MINGW)
+    include_directories("lib/dirent")
+endif()
+
 include_directories("src/domain/crazyhouse")
 include_directories("src/agents")
 include_directories("src/agents/config")
 include_directories("src/nn")
-
-#set(MXNET_PATH
-#    "/media/queensgambit/Volume/Deep_Learning/libraries/mxnet/"
-#    # "/home/queensgambit/libs/mxnet/
-#    )
 
 IF(DEFINED ENV{MXNET_PATH})
     MESSAGE(STATUS "MXNET_PATH set to: $ENV{MXNET_PATH}")
@@ -86,22 +84,19 @@ include_directories("$ENV{MXNET_PATH}cpp-package/include")
 include_directories("$ENV{MXNET_PATH}include/")
 include_directories("$ENV{MXNET_PATH}3rdparty/tvm/nnvm/include")
 include_directories("$ENV{MXNET_PATH}3rdparty/dmlc-core/include")
+link_directories($ENV{MXNET_PATH}lib)
 
-#include_directories("/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/include")
-#link_directories(/home/queensgambit/libs/intelMKL/mklml_lnx_2019.0.5.20190502/lib)
+add_executable(${PROJECT_NAME} ${source_files})
+
+if(UNIX)
+    target_link_libraries(${PROJECT_NAME} mxnet)
+else()
+    target_link_libraries(${PROJECT_NAME} libmxnet)
+endif()
 
 find_package(Threads REQUIRED)
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
-
-# link_directories(${MXNET_PATH}lib)
-link_directories($ENV{MXNET_PATH}lib)
-
-add_executable(${PROJECT_NAME} ${source_files})
-# add_executable(${PROJECT_NAME} "main.cpp")
-# target_link_libraries (${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
-# target_link_libraries( ${PROJECT_NAME} pthread)
-target_link_libraries(${PROJECT_NAME} mxnet)
 
 if(THREADS_HAVE_PTHREAD_ARG)
   target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
@@ -109,7 +104,3 @@ endif()
 if(CMAKE_THREAD_LIBS_INIT)
   target_link_libraries(${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
 endif()
-
-#set(THREADS_PREFER_PTHREAD_FLAG ON)
-#find_package(Threads REQUIRED)
-#target_link_libraries(${PROJECT_NAME} Threads::Threads)
