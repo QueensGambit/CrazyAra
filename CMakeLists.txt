@@ -11,12 +11,23 @@ SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
 endif()
 
-find_package( blaze )
-if( blaze_FOUND )
-   add_library( blaze_target INTERFACE )
-   target_link_libraries( blaze_target INTERFACE blaze::blaze )
+
+if(DEFINED ENV{BLAZE_PATH})
+    MESSAGE(STATUS "BLAZE_PATH set to: $ENV{BLAZE_PATH}")
 else()
-    include_directories("$ENV{BLAZE_PATH}include")
+    MESSAGE(STATUS "BLAZE_PATH not set")
+endif()
+
+if(MSVC OR MSYS OR MINGW)
+	include_directories("$ENV{BLAZE_PATH}include")
+else()
+find_package( blaze )
+	if( blaze_FOUND )
+	   add_library( blaze_target INTERFACE )
+	   target_link_libraries( blaze_target INTERFACE blaze::blaze )
+	else()
+		include_directories("$ENV{BLAZE_PATH}include")
+	endif()
 endif()
 
 file(GLOB source_files
@@ -84,7 +95,11 @@ include_directories("$ENV{MXNET_PATH}cpp-package/include")
 include_directories("$ENV{MXNET_PATH}include/")
 include_directories("$ENV{MXNET_PATH}3rdparty/tvm/nnvm/include")
 include_directories("$ENV{MXNET_PATH}3rdparty/dmlc-core/include")
-link_directories($ENV{MXNET_PATH}lib)
+
+link_directories("$ENV{MXNET_PATH}lib")
+link_directories("$ENV{MXNET_PATH}Release/lib")
+link_directories("$ENV{MXNET_PATH}build/lib")
+link_directories("$ENV{MXNET_PATH}build/Release")
 
 add_executable(${PROJECT_NAME} ${source_files})
 

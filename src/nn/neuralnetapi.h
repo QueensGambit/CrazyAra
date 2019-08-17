@@ -33,6 +33,7 @@
 #include <iostream>
 using namespace std;
 #include <sys/stat.h>
+#include <mutex>
 #include "mxnet-cpp/MxNetCpp.h"
 
 using namespace mxnet::cpp;
