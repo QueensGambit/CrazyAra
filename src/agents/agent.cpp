@@ -25,21 +25,24 @@
  * Please describe what the content of this file is about
  */
 
-#include "agent.h"
+#include <iostream>
 #include <chrono>
+
+#include "agent.h"
 #include "misc.h"
 #include "uci.h"
+
+using namespace std;
 
 size_t Agent::pick_move_idx(DynamicVector<double>& policyProbSmall)
 {
     double* prob = policyProbSmall.data();
-    std::discrete_distribution<> d(prob, prob+policyProbSmall.size());
+    discrete_distribution<> d(prob, prob+policyProbSmall.size());
     return size_t(d(gen));
 }
 
 void Agent::apply_temperature_to_policy(DynamicVector<double> &policyProbSmall)
 {
-    assert(currentTemperature > 0.01f);
     // apply exponential scaling
     policyProbSmall = pow(policyProbSmall, 1.0f / temperature);
     // re-normalize the values to probabilities again
@@ -49,6 +52,7 @@ void Agent::apply_temperature_to_policy(DynamicVector<double> &policyProbSmall)
 void Agent::set_best_move(EvalInfo &evalInfo, size_t moveCounter)
 {
     if (moveCounter <= temperatureMoves && temperature > 0.01f) {
+        cout << "info string Sample move" << endl;
         DynamicVector<double> policyProbSmall = evalInfo.childNumberVisits / sum(evalInfo.childNumberVisits);
         apply_temperature_to_policy(policyProbSmall);
         size_t moveIdx = pick_move_idx(policyProbSmall);
@@ -64,16 +68,16 @@ Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
     this->temperature = temperature;
     this->temperatureMoves = temperature_moves;
     this->verbose = verbose;
-    std::mt19937 gen(rd());
+    mt19937 gen(rd());
 }
 
 void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo)
 {
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    chrono::steady_clock::time_point start = chrono::steady_clock::now();
     this->searchLimits = searchLimits;
     this->evalute_board_state(pos, evalInfo);
-    std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-    evalInfo.elapsedTimeMS = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    chrono::steady_clock::time_point end= chrono::steady_clock::now();
+    evalInfo.elapsedTimeMS = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     evalInfo.nps = int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f);
     set_best_move(evalInfo, pos->total_move_cout());
     sync_cout << evalInfo << sync_endl;

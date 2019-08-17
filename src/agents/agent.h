@@ -58,7 +58,6 @@ private:
 
 protected:
     float temperature;
-    float currentTemperature;
     unsigned int temperatureMoves;
     bool verbose;
     SearchLimits* searchLimits;
