@@ -218,6 +218,9 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     if (rootNode->nbDirectChildNodes == 1) {
         cout << "info string Only single move available -> early stopping" << endl;
     }
+    else if (rootNode->checkmateIdx != -1) {
+        cout << "info string Checkmate in one -> early stopping" << endl;
+    }
     else if (rootNode->nbDirectChildNodes == 0) {
         cout << "info string The given position has no legal moves" << endl;
     }
