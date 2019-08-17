@@ -94,12 +94,17 @@ size_t MCTSAgent::init_root_node(Board *pos)
 
 Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 {
+    reusedFullTree = false;
+
+    if (rootNode == nullptr) {
+        return nullptr;
+    }
+
     if (same_hash_key(rootNode, pos)) {
         cout << "info string reuse the full tree" << endl;
         reusedFullTree = true;
         return rootNode;
     }
-    reusedFullTree = false;
 
     if (same_hash_key(ownNextRoot, pos)) {
         ownNextRoot->delete_sibling_subtrees(hashTable);
