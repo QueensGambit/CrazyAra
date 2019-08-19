@@ -121,9 +121,9 @@ The following libraries are used to run _CrazyAra_:
 
 ## Licence
 
-_CrazyAra_ is free software, and distributed under the terms of the GNU General Public License version 3 (GPL v3).
+_CrazyAra_ is free software, and distributed under the terms of the [GNU General Public License version 3 (GPL v3)](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
-For details, please refer to the GPL v3 license definition which ca be found in the file [LICENSE](https://github.com/QueensGambit/CrazyAraMCTS/blob/master/LICENSE).
+For details about the GPL v3 license, refer to the file [LICENSE](https://github.com/QueensGambit/CrazyAraMCTS/blob/master/LICENSE).
 
 ## Publication
 * J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**
