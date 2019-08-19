@@ -33,18 +33,17 @@ The training scripts, preprocessing and neural network definition source files c
 CrazyAra is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://github.com/cutechess/cutechess), [XBoard](https://www.gnu.org/software/xboard/), [WinBoard](http://hgm.nubati.net/)) for convinient usage.
 
 ## Links
-
-* [:earth_africa: Project website](https://crazyara.org/)
-* [♞ Lichess.org account](https://lichess.org/@/CrazyAra/all)
 * [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
-* :notebook_with_decorative_cover: Crazya paper __TODO__
+* :notebook_with_decorative_cover: CrazyAra paper __TODO__
+* [:earth_africa: Project website](https://crazyara.org/)
+* [♞ CrazyAra@Lichess.org](https://lichess.org/@/CrazyAra)
+* [♞ CrazyAraFish@Lichess.org account](https://lichess.org/@/CrazyAraFish)
 
 ## Download
 
-__TODO__
 ### Binaries
 
-A binary release is provided for the following plattforms:
+We provide binary releases for the following plattforms:
 
 Operating System | Backend | Compatible with
 --- | --- | ---
@@ -77,24 +76,26 @@ The current list of available chess variants include:
 
 Please follow these steps to build CrazyAra from source:
 
-Clone the CrazyAra repository:
+### Linux
+
+1. Clone the CrazyAra repository:
 
 ```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
 
-1. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6** or current master:
+2. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6** or current master:
 	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 	* https://bitbucket.org/blaze-lib/blaze/downloads/
 
-### Linux
 
-2. Build the MXNet C++ package (e.g. IntelMKL). Building with OpenCV is not required:
+
+3. Build the MXNet C++ package (e.g. IntelMKL). Building with OpenCV is not required:
 
    ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
    
    Detailed build instruction can be found here:
    	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
 
-3. Build the CrazyAra binary
+4. Build the CrazyAra binary
 ```
 $ export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
 $ mkdir build
@@ -104,57 +105,7 @@ $ make
 ```
 
 ### Windows
-
-2. Build the MXNet C++ package
-
-Install all premilaries and depending on your preference follow the CUDA or MKL guide.
-
-Make sure to install Visual Studio together with the VC++ toolset and enable Visual Studio support when installing CUDA.
-
-* https://mxnet.incubator.apache.org/versions/master/install/windows_setup.html#build-from-source
-
-_At the time of writing building the MXNet C++ package from master is causing issues on Windows._
-
-_Therefore we use a fork where the bug in generating the op.h files has already been fixed._
-
-* https://github.com/apache/incubator-mxnet/issues/15632
-
-Clone the MXNet library:
-
-```
-$ git clone https://github.com/Vigilans/incubator-mxnet.git  --recursive```
-$ git checkout patch-1
-```
-
-Configure the library with the options you need (e.g. CUDA, CUDNN). Building with OpenCV is not required:
-```
-$ mkdir build
-$ cd build
-$ cmake -G "Visual Studio 15 2017 Win64" -T cuda=10.1,host=x64 -DUSE_CUDA=1 -DUSE_CUDNN=1 -DUSE_CPP_PACKAGE=1 -DUSE_NVRTC=1 -DUSE_OPENCV=0 -DUSE_OPENMP=1 -DUSE_BLAS=open -DUSE_LAPACK=1 -DUSE_DIST_KVSTORE=0 -DCUDA_ARCH_LIST=Common -DCUDA_TOOLSET=10.1 -DCUDNN_INCLUDE="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -DCUDNN_LIBRARY="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\lib\x64\cudnn.lib" ..
-```
-
-Start the building process:
-```
-$ msbuild mxnet.sln /p:Configuration=Release;Platform=x64 /maxcpucount
-```
-
-Generate the "op.h" file:
-```
-$ python OpWrapperGenerator.py "\your\build\Release\libmxnet.dll"
-```
-If this doesn't work on your system due to encoding errors, you can try downloading the file instead:
-* https://github.com/dmlc/MXNet.cpp/blob/master/include/mxnet-cpp/op.h
-
-3. Build the CrazyAra binary
-
-```
-$ set MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
-$ set BLAZE_PATH=<path_to_blaze>/Blaze_3.6/
-$ mkdir build
-$ cd build
-$ cmake -G "Visual Studio 15 2017 Win64" ..
-$ msbuild CrazyAra.sln /p:Configuration=Release;Platform=x64 /maxcpucount
-```
+Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Compile-instructions-for-Windows).
 
 ## Libraries
 The following libraries are used to run CrazyAra:
