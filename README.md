@@ -19,25 +19,25 @@
 
 ## Description
 
-[CrazyAra](https://crazyara.org/) is an open-source neural network based engine, initially developed in pure python by [Johannes Czech](https://github.com/QueensGambit), [Moritz Willig](https://github.com/MoritzWillig) and Alena Beyer in 2018.
-It started as a semester project at the [Technische Universität Darmstadt](https://www.tu-darmstadt.de/index.en.jsp) with the goal to train a neural network to play the chess variant [crazyhouse](https://en.wikipedia.org/wiki/Crazyhouse) via supervised learning on human data.
+[_CrazyAra_](https://crazyara.org/) is an open-source neural network based engine, initially developed in pure python by [Johannes Czech](https://github.com/QueensGambit), [Moritz Willig](https://github.com/MoritzWillig) and Alena Beyer in 2018.
+It started as a semester project at the [TU Darmstadt](https://www.tu-darmstadt.de/index.en.jsp) with the goal to train a neural network to play the chess variant [crazyhouse](https://en.wikipedia.org/wiki/Crazyhouse) via supervised learning on human data.
 The project was part of the course [_"Deep Learning: Architectures & Methods"_](https://piazza.com/tu-darmstadt.de/summer2019/20001034iv/home) held by [Kristian Kersting](https://ml-research.github.io/people/kkersting/index.html), [Johannes Fürnkranz](http://www.ke.tu-darmstadt.de/staff/juffi) et al. in summer 2018.
 
-The development was continued and the engine ported to C++ by [Johannes Czech](https://github.com/QueensGambit). In the course of a master thesis supervised by [Karl Stelzner](https://ml-research.github.io/people/kstelzner/) and [Kristian Kersting](https://ml-research.github.io/people/kkersting/index.html), the engine will learn crazyhouse in a reinforcement learning setting and ported to play other chess variants including classical chess.
+The development was continued and the engine ported to C++ by [Johannes Czech](https://github.com/QueensGambit). In the course of a master thesis supervised by [Karl Stelzner](https://ml-research.github.io/people/kstelzner/) and [Kristian Kersting](https://ml-research.github.io/people/kkersting/index.html), the engine will learn crazyhouse in a reinforcement learning setting and learn to play other chess variants including classical chess.
 
 The project is mainly inspired by the techniques described in the [Alpha-(Go)-Zero papers](https://arxiv.org/abs/1712.01815) by [David Silver](https://arxiv.org/search/cs?searchtype=author&query=Silver%2C+D), [Thomas Hubert](https://arxiv.org/search/cs?searchtype=author&query=Hubert%2C+T), [Julian Schrittwieser](https://arxiv.org/search/cs?searchtype=author&query=Schrittwieser%2C+J), [Ioannis Antonoglou](https://arxiv.org/search/cs?searchtype=author&query=Antonoglou%2C+I), [Matthew Lai](https://arxiv.org/search/cs?searchtype=author&query=Lai%2C+M), [Arthur Guez](https://arxiv.org/search/cs?searchtype=author&query=Guez%2C+A), [Marc Lanctot](https://arxiv.org/search/cs?searchtype=author&query=Lanctot%2C+M), [Laurent Sifre](https://arxiv.org/search/cs?searchtype=author&query=Sifre%2C+L), [Dharshan Kumaran](https://arxiv.org/search/cs?searchtype=author&query=Kumaran%2C+D), [Thore Graepel](https://arxiv.org/search/cs?searchtype=author&query=Graepel%2C+T), [Timothy Lillicrap](https://arxiv.org/search/cs?searchtype=author&query=Lillicrap%2C+T), [Karen Simonyan](https://arxiv.org/search/cs?searchtype=author&query=Simonyan%2C+K), [Demis Hassabis](https://arxiv.org/search/cs?searchtype=author&query=Hassabis%2C+D).
 
 This repository contains the source code of the engine search written in C++ based on the previous [Python version](https://github.com/QueensGambit/CrazyAra).
 The training scripts, preprocessing and neural network definition source files can be found in the [Python version](https://github.com/QueensGambit/CrazyAra).
 
-CrazyAra is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://github.com/cutechess/cutechess), [XBoard](https://www.gnu.org/software/xboard/), [WinBoard](http://hgm.nubati.net/)) for convinient usage.
+_CrazyAra_ is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://github.com/cutechess/cutechess), [XBoard](https://www.gnu.org/software/xboard/), [WinBoard](http://hgm.nubati.net/)) for convinient usage.
 
 ## Links
 * [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
 * :notebook_with_decorative_cover: CrazyAra paper __TODO__
 * [:earth_africa: Project website](https://crazyara.org/)
-* [♞ CrazyAra@Lichess.org](https://lichess.org/@/CrazyAra)
-* [♞ CrazyAraFish@Lichess.org account](https://lichess.org/@/CrazyAraFish)
+* [♞ CrazyAra@lichess.org](https://lichess.org/@/CrazyAra)
+* [♞ CrazyAraFish@lichess.org](https://lichess.org/@/CrazyAraFish)
 
 ## Download
 
@@ -74,11 +74,11 @@ The current list of available chess variants include:
 
 ## Compilation
 
-Please follow these steps to build CrazyAra from source:
+Please follow these steps to build _CrazyAra_ from source:
 
 ### Linux
 
-1. Clone the CrazyAra repository:
+1. Clone the _CrazyAra_ repository:
 
 ```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
 
@@ -95,7 +95,7 @@ Please follow these steps to build CrazyAra from source:
    Detailed build instruction can be found here:
    	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
 
-4. Build the CrazyAra binary
+4. Build the _CrazyAra_ binary
 ```
 $ export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
 $ mkdir build
@@ -108,7 +108,7 @@ $ make
 Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Compile-instructions-for-Windows).
 
 ## Libraries
-The following libraries are used to run CrazyAra:
+The following libraries are used to run _CrazyAra_:
 
 * [**Multi Variant Stockfish**](https://github.com/ddugovic/Stockfish): Stockfish fork specialized to play chess and some chess variants
 	* Used for move generation and board representation as a replacement for [python-chess](https://github.com/niklasf/python-chess).
@@ -121,7 +121,7 @@ The following libraries are used to run CrazyAra:
 
 ## Licence
 
-CrazyAra is free software, and distributed under the terms of the GNU General Public License version 3 (GPL v3).
+_CrazyAra_ is free software, and distributed under the terms of the GNU General Public License version 3 (GPL v3).
 
 For details, please refer to the GPL v3 license definition which ca be found in the file [LICENSE](https://github.com/QueensGambit/CrazyAraMCTS/blob/master/LICENSE).
 
