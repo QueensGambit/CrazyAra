@@ -31,24 +31,24 @@
 #define NEURALNETAPI_H
 
 #include <iostream>
-using namespace std;
 #include <sys/stat.h>
 #include <mutex>
 #include "mxnet-cpp/MxNetCpp.h"
 
 using namespace mxnet::cpp;
+using namespace std;
 
 class NeuralNetAPI
 {
 private:
     std::mutex mtx;
-    std::map<std::string, NDArray> args_map;
-    std::map<std::string, NDArray> aux_map;
-    std::vector<std::string> output_labels;
+    std::map<std::string, NDArray> argsMap;
+    std::map<std::string, NDArray> auxMap;
+    std::vector<std::string> outputLabels;
     Symbol net;
     Executor *executor;
-    Shape input_shape;
-    Context global_ctx = Context::cpu();
+    Shape inputShape;
+    Context globalCtx = Context::cpu();
     unsigned int batchSize;
     bool selectPolicyFromPlane;
 
@@ -106,7 +106,7 @@ public:
      * @param value Value prediction for the board by the neural network
      * @param probOutputs Policy NDArray of the raw network output (including illegal moves). It's assumend that the memory has already been allocated.
      */
-    void predict(float *input_planes, NDArray &valueOutput, NDArray &probOutputs);
+    void predict(float *inputPlanes, NDArray &valueOutput, NDArray &probOutputs);
 
     bool getSelectPolicyFromPlane() const;
 };

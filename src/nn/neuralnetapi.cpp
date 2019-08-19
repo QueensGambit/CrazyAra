@@ -51,9 +51,9 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
     batchSize(batchSize)
 {
     if (ctx == "cpu" || ctx == "CPU") {
-        global_ctx = Context::cpu();
+        globalCtx = Context::cpu();
     } else if (ctx == "gpu" || ctx == "GPU") {
-        global_ctx = Context::gpu();
+        globalCtx = Context::gpu();
     } else {
         throw "unsupported context " + ctx + " given";
     }
@@ -79,7 +79,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
 
 	cout << "info string json file: " << jsonFilePath << endl;
 
-    input_shape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
+    inputShape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
 
     load_model(jsonFilePath);
     load_parameters(paramterFilePath);
@@ -119,40 +119,40 @@ void NeuralNetAPI::load_parameters(const string& paramterFilePath) {
     for (const auto &k : parameters) {
         if (k.first.substr(0, 4) == "aux:") {
             auto name = k.first.substr(4, k.first.size() - 4);
-            aux_map[name] = k.second.Copy(global_ctx);
+            auxMap[name] = k.second.Copy(globalCtx);
         }
         if (k.first.substr(0, 4) == "arg:") {
             auto name = k.first.substr(4, k.first.size() - 4);
-            args_map[name] = k.second.Copy(global_ctx);
+            argsMap[name] = k.second.Copy(globalCtx);
         }
     }
-    // WaitAll is need when we copy data between GPU and the main memory
+    // WaitAll is needed when data is copied between GPU and the main memory
     NDArray::WaitAll();
 }
 
 void NeuralNetAPI::bind_executor()
 {
     // Create an executor after binding the model to input parameters.
-    args_map["data"] = NDArray(input_shape, global_ctx, false);
+    argsMap["data"] = NDArray(inputShape, globalCtx, false);
     /* new */
-    vector<NDArray> arg_arrays;
-    vector<NDArray> grad_arrays;
-    vector<OpReqType> grad_reqs;
-    vector<NDArray> aux_arrays;
-    Shape value_label_shape(input_shape[0]);
-    Shape policy_label_shape(input_shape[0]);
+    vector<NDArray> argArrays;
+    vector<NDArray> gradArrays;
+    vector<OpReqType> gradReqs;
+    vector<NDArray> auxArrays;
+    Shape value_label_shape(inputShape[0]);
+    Shape policy_label_shape(inputShape[0]);
 
-    args_map["value_label"] = NDArray(value_label_shape, global_ctx, false);
-    args_map["policy_label"] = NDArray(policy_label_shape, global_ctx, false);
+    argsMap["value_label"] = NDArray(value_label_shape, globalCtx, false);
+    argsMap["policy_label"] = NDArray(policy_label_shape, globalCtx, false);
 
-    net.InferExecutorArrays(global_ctx, &arg_arrays, &grad_arrays, &grad_reqs,
-                            &aux_arrays, args_map, map<string, NDArray>(),
-                            map<string, OpReqType>(), aux_map);
-    for (size_t i = 0; i < grad_reqs.size(); ++i) {
-        grad_reqs[i] = kNullOp;
+    net.InferExecutorArrays(globalCtx, &argArrays, &gradArrays, &gradReqs,
+                            &auxArrays, argsMap, map<string, NDArray>(),
+                            map<string, OpReqType>(), auxMap);
+    for (size_t i = 0; i < gradReqs.size(); ++i) {
+        gradReqs[i] = kNullOp;
     }
 
-    executor = new Executor(net, global_ctx, arg_arrays, grad_arrays, grad_reqs, aux_arrays);
+    executor = new Executor(net, globalCtx, argArrays, gradArrays, gradReqs, auxArrays);
 	cout << "info string Bind successfull!" << endl;
 }
 

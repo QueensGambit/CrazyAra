@@ -192,7 +192,7 @@ bool SearchThread::nodes_limits_ok()
 
 void SearchThread::create_mini_batch()
 {
-    // select nodes to add to the mini-batchel
+    // select nodes to add to the mini-batch
     Node *parentNode;
     unsigned int childIdx;
     bool isCollision;
