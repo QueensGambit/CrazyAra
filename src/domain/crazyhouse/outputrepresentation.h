@@ -22,8 +22,7 @@
  * Created on 13.05.2019
  * @author: queensgambit
  *
- * Provides all methods to convert a move to policy representation and back
- * Loads all needed constants for the Crazyhouse game internally.
+ * Provides all methods to convert a move to policy representation and back.
  */
 
 #ifndef OUTPUTREPRESENTATION_H

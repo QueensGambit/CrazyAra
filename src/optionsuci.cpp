@@ -33,9 +33,6 @@ using namespace std;
 
 void OptionsUCI::init(OptionsMap &o)
 {
-    // at most 2^32 clusters.
-    constexpr int MaxHashMB = Is64Bit ? 131072 : 2048;
-
     o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
     o["Search_Type"]              << Option("mcts", {"mcts"});
     o["Context"]                  << Option("cpu", {"cpu", "gpu"});

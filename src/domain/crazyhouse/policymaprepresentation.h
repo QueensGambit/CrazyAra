@@ -22,14 +22,17 @@
  * Created on 09.07.2019
  * @author: queensgambit
  *
- * Please describe what the content of this file is about
+ * Functionality for representing all possible moves in the policy feature maps.
+ * Note, most of the entries in the policy feature map are unusable because the represent illegal moves
+ * which would go beyond the board.
  */
 
 #ifndef POLICYMAPREPRESENTATION_H
 #define POLICYMAPREPRESENTATION_H
 
 
-// generated conversion list which describes the plane index for each move in the policy LABELS list
+// generated conversion list which describes the plane index for each move in the policy LABELS list using the python script at:
+// https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/domain/crazyhouse/plane_policy_representation.py
 const unsigned long FLAT_PLANE_IDX[] = {
     896,
     960,

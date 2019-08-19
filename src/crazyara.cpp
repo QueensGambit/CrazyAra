@@ -81,13 +81,16 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
 	// this is debug vector which can contain uci commands which will be automaticly processed when the executable is launched
     vector<string> commands = {
-        //"uci",
-        //"isready",
-		//"ucinewgame",
-		//"position startpos",
-		//"isready",
-		//"go wtime 60000 btime 60000 movestogo 40",
-        //"quit"
+//        "isready",
+//        "ucinewgame",
+//        "position startpos",
+//        "position startpos moves e2e3",
+//        "position startpos moves e2e3 g8f6",
+//        "isready",
+//        "go wtime 60000 btime 60000",
+//        "position startpos moves e2e3 g8f6 d2d4 g7g6",
+//        "isready",
+//        "go wtime 58839 btime 58835"
     };
 
     do {
@@ -154,7 +157,7 @@ void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo, bool apply
         else if (token == "movestogo") is >> searchLimits.movestogo;
         else if (token == "depth")     is >> searchLimits.depth;
         else if (token == "nodes")     is >> searchLimits.nodes;
-        else if (token == "movetime")    is >> searchLimits.movetime;
+        else if (token == "movetime")  is >> searchLimits.movetime;
         else if (token == "infinite")  searchLimits.infinite = true;
         else if (token == "ponder")    ponderMode = true;
     }
