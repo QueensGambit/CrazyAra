@@ -61,6 +61,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Use_Transposition_Table"]  << Option(true);
     o["Model_Directory"]          << Option("model/");
     o["Move_Overhead"]            << Option(50, 0, 5000);
+    o["Centi_Random_Move_Factor"] << Option(0, 0, 99);
 }
 
 

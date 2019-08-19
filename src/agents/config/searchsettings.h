@@ -53,6 +53,7 @@ struct SearchSettings
     float qThreshInit;
     float qThreshMax;
     float qThreshBase;
+    float randomMoveFactor;
 
     SearchSettings();
 

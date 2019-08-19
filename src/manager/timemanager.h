@@ -37,21 +37,38 @@ private:
     int curMovetime;
     int timeBuffer;
 
+    float randomMoveFactor;
     int expectedGameLength;
     int threshMove;
     float moveFactor;
     float incrementFactor;
     int timeBufferFactor;
+
+    /**
+     * @brief apply_random_factor Applies the current randomly generated move factor on the given movetime.
+     * In case the randomMoveFactor is 0.0 the function returns the original curMovetime instead.
+     * @param curMovetime Movetime in ms
+     * @return adjusted movetime with curMovetime +/- currentRandomMoveFactor * curMovetime
+     */
+    int inline apply_random_factor(int curMovetime);
+
+    /**
+     * @brief get_current_random_factor Return a randomly generated move factor in [-randomMoveFactor, +randomMoveFactor]
+     * @return randomly generated factor
+     */
+    float inline get_current_random_factor();
 public:
 
     /**
      * @brief TimeManager
+     * @param randomMoveFactor Factor which is used to apply a slight random modification on the final calculated movetime.
+     * (e.g. when randomMoveFactor is 0.1, on every move the movtime will be either increased or decreased by a factor of between -10% and +10%)
      * @param expectedGameLength Expected game length for the game in full moves
      * @param threshMove Threshold move on which the constant move regime will switch to a proportional one
      * @param moveFactor Portion of the current move time which will be used in the proportional movetime regime
      * @param timeBufferFactor Factor which is applied on the moveOverhead to calculate a time buffer for avoiding losing on time
      */
-    TimeManager(int expectedGameLength=50, int threshMove=40, float moveFactor=0.05f, float incrementFactor=0.7f, int timeBufferFactor=30.0f);
+    TimeManager(float randomMoveFactor=0, int expectedGameLength=50, int threshMove=40, float moveFactor=0.05f, float incrementFactor=0.7f, int timeBufferFactor=30.0f);
 
     /**
      * @brief get_time_for_move Calculates the movetime based on the searchSettigs
@@ -64,5 +81,6 @@ public:
      */
     int get_time_for_move(SearchLimits* searchLimits, Color me, int moveNumber);
 };
+
 
 #endif // TIMEMANAGER_H

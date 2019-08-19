@@ -69,7 +69,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     } else {
         probOutputs = new NDArray(Shape(1, NB_LABELS), Context::cpu());
     }
-    timeManager = new TimeManager();
+    timeManager = new TimeManager(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
 }
 

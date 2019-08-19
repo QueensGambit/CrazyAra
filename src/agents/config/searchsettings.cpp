@@ -43,7 +43,8 @@ SearchSettings::SearchSettings():
         uBase(1965.0f),
         qThreshInit(0.5f),
         qThreshMax(0.9f),
-        qThreshBase(1965.0f)
+        qThreshBase(1965.0f),
+        randomMoveFactor(0.0f)
 {
 
 }

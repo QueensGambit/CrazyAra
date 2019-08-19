@@ -295,6 +295,7 @@ bool CrazyAra::is_ready()
         searchSettings->qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
         searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
         searchSettings->qThreshBase = Options["Q_Thresh_Base"];
+        searchSettings->randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
 
         playSettings = new PlaySettings();
         playSettings->temperature = Options["Centi_Temperature"] / 100.0f;

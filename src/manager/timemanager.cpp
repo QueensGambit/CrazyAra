@@ -29,7 +29,8 @@
 using namespace std;
 
 
-TimeManager::TimeManager(int expectedGameLength, int threshMove, float moveFactor, float incrementFactor, int timeBufferFactor):
+TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int threshMove, float moveFactor, float incrementFactor, int timeBufferFactor):
+    randomMoveFactor(randomMoveFactor),
     expectedGameLength(expectedGameLength),
     threshMove(threshMove),
     moveFactor(moveFactor),
@@ -72,5 +73,18 @@ int TimeManager::get_time_for_move(SearchLimits* searchLimits, Color me, int mov
     if (curMovetime <= 0) {
         curMovetime = searchLimits->moveOverhead * 2;
     }
+    return apply_random_factor(curMovetime);
+}
+
+int TimeManager::apply_random_factor(int curMovetime)
+{
+    if (randomMoveFactor > 0) {
+        return curMovetime + int(get_current_random_factor() * curMovetime);
+    }
     return curMovetime;
+}
+
+float TimeManager::get_current_random_factor()
+{
+    return (float(rand()) / RAND_MAX) * randomMoveFactor * 2 - randomMoveFactor;
 }
