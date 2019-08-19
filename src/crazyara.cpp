@@ -322,7 +322,7 @@ void CrazyAra::new_game()
 string CrazyAra::engine_info()
 {
     stringstream ss;
-    ss << "id name " << name << " " << version << "\n";
+    ss << "id name " << name << " " << version << " (" << __DATE__ << ")" << "\n";
     ss << "id author " << authors;
     return ss.str();
 }
