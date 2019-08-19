@@ -113,7 +113,7 @@ Make sure to install Visual Studio together with the VC++ toolset and enable Vis
 
 * https://mxnet.incubator.apache.org/versions/master/install/windows_setup.html#build-from-source
 
-_At the time of writing building the MXNet C++ package from master is causing issues._
+_At the time of writing building the MXNet C++ package from master is causing issues on Windows._
 
 _Therefore we use a fork where the bug in generating the op.h files has already been fixed._
 
@@ -128,16 +128,19 @@ $ git checkout patch-1
 
 Configure the library with the options you need (e.g. CUDA, CUDNN). Building with OpenCV is not required:
 ```
-cmake -G "Visual Studio 15 2017 Win64" -T cuda=10.1,host=x64 -DUSE_CUDA=1 -DUSE_CUDNN=1 -DUSE_CPP_PACKAGE=1 -DUSE_NVRTC=1 -DUSE_OPENCV=0 -DUSE_OPENMP=1 -DUSE_BLAS=open -DUSE_LAPACK=1 -DUSE_DIST_KVSTORE=0 -DCUDA_ARCH_LIST=Common -DCUDA_TOOLSET=10.1 -DCUDNN_INCLUDE="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -DCUDNN_LIBRARY="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\lib\x64\cudnn.lib" "D:\libs\incubator-mxnet"
+$ mkdir build
+$ cd build
+$ cmake -G "Visual Studio 15 2017 Win64" -T cuda=10.1,host=x64 -DUSE_CUDA=1 -DUSE_CUDNN=1 -DUSE_CPP_PACKAGE=1 -DUSE_NVRTC=1 -DUSE_OPENCV=0 -DUSE_OPENMP=1 -DUSE_BLAS=open -DUSE_LAPACK=1 -DUSE_DIST_KVSTORE=0 -DCUDA_ARCH_LIST=Common -DCUDA_TOOLSET=10.1 -DCUDNN_INCLUDE="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -DCUDNN_LIBRARY="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\lib\x64\cudnn.lib" ..
 ```
+
 Start the building process:
 ```
-msbuild mxnet.sln /p:Configuration=Release;Platform=x64 /maxcpucount
+$ msbuild mxnet.sln /p:Configuration=Release;Platform=x64 /maxcpucount
 ```
 
 Generate the "op.h" file:
 ```
-python OpWrapperGenerator.py "\your\build\Release\libmxnet.dll"
+$ python OpWrapperGenerator.py "\your\build\Release\libmxnet.dll"
 ```
 If this doesn't work on your system due to encoding errors, you can try downloading the file instead:
 * https://github.com/dmlc/MXNet.cpp/blob/master/include/mxnet-cpp/op.h
