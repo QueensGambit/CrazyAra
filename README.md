@@ -4,6 +4,8 @@
 ## Contents
 * [Description](#description)
 * [Download](#download)
+    * [Binaries](#binaries)
+    * [Models](#models)
 * [Variants](#variants)
 * [Compilation](#compilation)
     * [Linux](#linux)
@@ -29,10 +31,17 @@ The training scripts, preprocessing and neural network definition source files c
 
 CrazyAra is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://github.com/cutechess/cutechess), [XBoard](https://www.gnu.org/software/xboard/), [WinBoard](http://hgm.nubati.net/)) for convinient usage.
 
+## Links
+
+* [:earth_africa: Project Website](https://crazyara.org/)
+* [♞ Lichess.org account](https://lichess.org/@/CrazyAra/all)
+* [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
+* :notebook_with_decorative_cover: Crazya Paper __TODO__
+
 ## Download
 
 __TODO__
-### Executables
+### Binaries
 
 A binary release is provided for the following plattforms:
 
@@ -53,7 +62,7 @@ The following models are freely available for download:
 * 8-value-policy-map
 * 8-value-policy-map-mobile / RISEv2
 * 8-value-policy-map-preAct-relu+bn
-* RISEv1
+* RISEv1 (CrazyAraFish weights)
 
 The extracted model should be placed in the same directory as the engine executable.
 The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
@@ -73,7 +82,7 @@ Clone the CrazyAra repository:
 
 ```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
 
-1. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6**:
+1. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6** or current master:
 	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 	* https://bitbucket.org/blaze-lib/blaze/downloads/
 
@@ -83,7 +92,7 @@ Clone the CrazyAra repository:
 
    ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
    
-   Detailed instruction can be found here:
+   Detailed build instruction can be found here:
    	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
 
 
@@ -104,12 +113,12 @@ The following libraries are used to run CrazyAra:
 * [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
 	* Used as the testing framework as a replacmenet for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
 
-## Links
+## Publication
+* J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**
+```
+__TODO__
+```
 
-* [:earth_africa: Project Website](https://crazyara.org/)
-* [♞ Lichess.org account](https://lichess.org/@/CrazyAra/all)
-* [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
-* :notebook_with_decorative_cover: Crazya Paper __TODO__
 
 ## Licence
 
