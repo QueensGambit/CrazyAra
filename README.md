@@ -32,6 +32,7 @@ CrazyAra is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://gi
 ## Download
 
 __TODO__
+### Executables
 
 A binary release is provided for the following plattforms:
 
@@ -44,18 +45,21 @@ Windows | **CUDA 10.1, cuDNN v7.5.1.10** | NVIDIA GPUs
 Windows | **Intel MKL** | Intel CPUs
 Windows | **OpenCL** | AMD CPUs & GPUs
 
-The following models are available for download.
-By default the unpacked model should be placed in the same directory as the engine executable.
-The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
+### Models
 
-Model | Policy Loss | Value Loss | Policy Accuracy | Trained on data set | Best suited for
----   | ---         | ---        | ---             | ---        | ---
-**4-value-8-policy**                  | 1.2184 | 0.7596 | 0.5986 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU
-**8-value-16-policy**                 | 1.2212 | 0.7601 | 0.5965 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU
-**8-value-policy-map**                | 1.2008 | **0.7577** | 0.6023 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU 
-**8-value-policy-map-mobile / RISEv2**         | 1.1968 | 0.7619 | 0.6032 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | CPU 
-**8-value-policy-map-preAct-relu+bn** | **1.1938** | 0.7663 | **0.6042** | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) | GPU 
-**RISEv1, [Info](https://github.com/QueensGambit/CrazyAra/wiki/Model-architecture)** | 1.3358 | 0.4407 | 0.5658 | [lichess.org](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training), [Stockfish](https://github.com/QueensGambit/CrazyAra/wiki/Stockfish-10:-Crazyhouse-Self-Play) | GPU (strongest)
+The following models are freely available for download:
+* 4-value-8-policy
+* 8-value-16-policy
+* 8-value-policy-map
+* 8-value-policy-map-mobile / RISEv2
+* 8-value-policy-map-preAct-relu+bn
+* RISEv1
+
+The extracted model should be placed in the same directory as the engine executable.
+The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
+Each model is compatible with all executables.
+
+More information about the different models can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Model-description).
 
 ## Variants
 The current list of available chess variants include:
