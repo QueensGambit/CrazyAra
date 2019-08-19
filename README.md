@@ -46,14 +46,12 @@ __TODO__
 
 A binary release is provided for the following plattforms:
 
-Operating System | Backend | Best suited for
+Operating System | Backend | Compatible with
 --- | --- | ---
-Linux | **CUDA 10.0, cuDNN v7.5.1.10** | NVIDIA GPUs
+Linux | **CUDA 10.0, cuDNN v7.5.1.10, openBlas** | NVIDIA GPUs and CPU
 Linux | **Intel MKL** | Intel CPUs
-Linux | **OpenCL** | AMD CPUs & GPUs
-Windows | **CUDA 10.1, cuDNN v7.5.1.10** | NVIDIA GPUs
+Windows | **CUDA 10.1, cuDNN v7.5.1.10, openBlas** | NVIDIA GPUs and CPU
 Windows | **Intel MKL** | Intel CPUs
-Windows | **OpenCL** | AMD CPUs & GPUs
 
 ### Models
 
@@ -89,18 +87,71 @@ Clone the CrazyAra repository:
 
 ### Linux
 
-2. Build the MXNet C++ package (OpenCV is not required for CrazyAra)
+2. Build the MXNet C++ package (e.g. IntelMKL). Building with OpenCV is not required:
 
    ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
    
    Detailed build instruction can be found here:
    	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
 
+3. Build the CrazyAra binary
+```
+$ export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
+$ mkdir build
+$ cd build
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ make
+```
 
 ### Windows
-__TODO__
+
+2. Build the MXNet C++ package
+
+Install all premilaries and depending on your preference follow the CUDA or MKL guide.
+
+Make sure to install Visual Studio together with the VC++ toolset and enable Visual Studio support when installing CUDA.
+
 * https://mxnet.incubator.apache.org/versions/master/install/windows_setup.html#build-from-source
+
+_At the time of writing building the MXNet C++ package from master is causing issues._
+
+_Therefore we use a fork where the bug in generating the op.h files has already been fixed._
+
 * https://github.com/apache/incubator-mxnet/issues/15632
+
+Clone the MXNet library:
+
+```
+$ git clone https://github.com/Vigilans/incubator-mxnet.git  --recursive```
+$ git checkout patch-1
+```
+
+Configure the library with the options you need (e.g. CUDA, CUDNN). Building with OpenCV is not required:
+```
+cmake -G "Visual Studio 15 2017 Win64" -T cuda=10.1,host=x64 -DUSE_CUDA=1 -DUSE_CUDNN=1 -DUSE_CPP_PACKAGE=1 -DUSE_NVRTC=1 -DUSE_OPENCV=0 -DUSE_OPENMP=1 -DUSE_BLAS=open -DUSE_LAPACK=1 -DUSE_DIST_KVSTORE=0 -DCUDA_ARCH_LIST=Common -DCUDA_TOOLSET=10.1 -DCUDNN_INCLUDE="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -DCUDNN_LIBRARY="C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\lib\x64\cudnn.lib" "D:\libs\incubator-mxnet"
+```
+Start the building process:
+```
+msbuild mxnet.sln /p:Configuration=Release;Platform=x64 /maxcpucount
+```
+
+Generate the "op.h" file:
+```
+python OpWrapperGenerator.py "\your\build\Release\libmxnet.dll"
+```
+If this doesn't work on your system due to encoding errors, you can try downloading the file instead:
+* https://github.com/dmlc/MXNet.cpp/blob/master/include/mxnet-cpp/op.h
+
+3. Build the CrazyAra binary
+
+```
+$ set MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
+$ set BLAZE_PATH=<path_to_blaze>/Blaze_3.6/
+$ mkdir build
+$ cd build
+$ cmake -G "Visual Studio 15 2017 Win64" ..
+$ msbuild CrazyAra.sln /p:Configuration=Release;Platform=x64 /maxcpucount
+```
 
 ## Libraries
 The following libraries are used to run CrazyAra:
