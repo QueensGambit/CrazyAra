@@ -3,6 +3,7 @@
 
 ## Contents
 * [Description](#description)
+* [Links](#links)
 * [Download](#download)
     * [Binaries](#binaries)
     * [Models](#models)
@@ -11,8 +12,8 @@
     * [Linux](#linux)
     * [Windows](#windows)
 * [Libraries](#libraries)
-* [Links](#links)
 * [Licence](#licence)
+* [Publication](#publication)
 
 <img align="right" src="media/TU_logo.png" width="128">
 
@@ -33,10 +34,10 @@ CrazyAra is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://gi
 
 ## Links
 
-* [:earth_africa: Project Website](https://crazyara.org/)
+* [:earth_africa: Project website](https://crazyara.org/)
 * [♞ Lichess.org account](https://lichess.org/@/CrazyAra/all)
 * [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
-* :notebook_with_decorative_cover: Crazya Paper __TODO__
+* :notebook_with_decorative_cover: Crazya paper __TODO__
 
 ## Download
 
@@ -113,16 +114,15 @@ The following libraries are used to run CrazyAra:
 * [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
 	* Used as the testing framework as a replacmenet for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
 
-## Publication
-* J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**
-```
-__TODO__
-```
-
-
 ## Licence
 
 CrazyAra is free software, and distributed under the terms of the GNU General Public License version 3 (GPL v3).
 
 For details, please refer to the GPL v3 license definition which ca be found in the file [LICENSE](https://github.com/QueensGambit/CrazyAraMCTS/blob/master/LICENSE).
+
+## Publication
+* J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**
+```
+__TODO__
+```
 
