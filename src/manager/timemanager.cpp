@@ -37,6 +37,8 @@ TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int thr
     incrementFactor(incrementFactor),
     timeBufferFactor(timeBufferFactor)
 {
+    auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    srand(unsigned(int(seed)));
     assert(threshMove < expectedGameLength);
 }
 
