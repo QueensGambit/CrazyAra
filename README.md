@@ -34,7 +34,7 @@ _CrazyAra_ is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://
 
 ## Links
 * [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
-* :notebook_with_decorative_cover: CrazyAra paper __TODO__
+* :notebook_with_decorative_cover: [CrazyAra paper](https://arxiv.org/pdf/1908.06660.pdf)
 * [:earth_africa: Project website](https://crazyara.org/)
 * [♞ CrazyAra@lichess.org](https://lichess.org/@/CrazyAra)
 * [♞ CrazyAraFish@lichess.org](https://lichess.org/@/CrazyAraFish)
@@ -133,6 +133,11 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 ## Publication
 * J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**
 ```
-__TODO__
+@article{czech_learning_2019,
+	title = {Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data},
+	author = {Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and Fürnkranz, Johannes},
+	year = {2019},
+	pages = {35}
+}
 ```
 
