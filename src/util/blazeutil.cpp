@@ -24,11 +24,13 @@
  */
 
 #include "blazeutil.h"
-
+#include <chrono>
 
 DynamicVector<float> get_dirichlet_noise(size_t length, const float alpha)
 {
     DynamicVector<float> dirichletNoise(length);
+    auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    generator.seed(seed);
 
     for (size_t i = 0; i < length; ++i) {
         std::gamma_distribution<float> distribution(alpha, 1.0f);
