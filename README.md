@@ -47,10 +47,10 @@ We provide binary releases for the following plattforms:
 
 Operating System | Backend | Compatible with
 --- | --- | ---
-Linux | **CUDA 10.0, cuDNN v7.5.1.10, openBlas** | NVIDIA GPUs and CPU
-Linux | **Intel MKL** | Intel CPUs
-Windows | **CUDA 10.1, cuDNN v7.5.1.10, openBlas** | NVIDIA GPUs and CPU
-Windows | **Intel MKL** | Intel CPUs
+Linux | [**CUDA 10.0, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Linux_CUDA.zip) | NVIDIA GPUs and CPU
+Linux | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Linux_MKL.zip) | Intel CPUs
+Windows | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Win_CUDA.zip) | NVIDIA GPUs and CPU
+Windows | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Win_MKL.zip) | Intel CPUs
 
 _For Intel MKL the network inference is optimized when defining the following environment variable:_
 ```
@@ -60,12 +60,12 @@ MXNET_SUBGRAPH_BACKEND=MKLDNN
 ### Models
 
 The following models are freely available for download:
-* 4-value-8-policy
-* 8-value-16-policy
-* 8-value-policy-map
-* 8-value-policy-map-mobile / RISEv2
-* 8-value-policy-map-preAct-relu+bn
-* RISEv1 (CrazyAraFish weights)
+* [4-value-8-policy](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/4-value-8-policy.zip)
+* [8-value-16-policy](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/8-value-16-policy.zip)
+* [8-value-policy-map](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/4-value-8-policy.zip)
+* [8-value-policy-map-mobile / RISEv2-mobile](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/RISEv2-mobile.zip)
+* [8-value-policy-map-preAct-relu+bn](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/RISEv2-mobile.zip)
+* [RISEv1 (CrazyAraFish weights)](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAraFish_RISEv1.zip)
 
 The extracted model should be placed in the same directory as the engine executable.
 The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
