@@ -1,6 +1,10 @@
 
 # CrazyAra - Deep Learning for Crazyhouse <img src="https://raw.githubusercontent.com/QueensGambit/CrazyAra/master/etc/media/CrazyAra_Logo.png" width="64">
 
+
+**The new C++ version for the MCTS can be found at: https://github.com/QueensGambit/CrazyAra-Engine**
+
+
                                       _                                                                      
                        _..           /   ._   _.  _        /\   ._   _.                                      
                      .' _ `\         \_  |   (_|  /_  \/  /--\  |   (_|                                      
@@ -23,7 +27,6 @@
                                     
 Official Repository of the Crazyhouse-Bot CrazyAra which is powered by a Deep Convolutional Neural Network and is compatible with the Universial-Chess-Interface (UCI).
 
-
 ## Installation Guide
 Please follow the instructions in the wiki-page at:
 * [Installation guide](https://github.com/QueensGambit/CrazyAra/wiki/Installation-Guide)
@@ -43,6 +46,13 @@ For more details about the training procedure visit the wiki pages:
 
 You can also find our original project proposal document as well as our presentation about CrazyAra 0.1:
 * https://github.com/QueensGambit/CrazyAra/tree/master/etc/doc
+
+## Links
+* [:fire: C++ version](https://github.com/QueensGambit/CrazyAra-Engine/)
+* :notebook_with_decorative_cover: [CrazyAra paper](https://arxiv.org/abs/1908.06660)
+* [:earth_africa: Project website](https://crazyara.org/)
+* [♞ CrazyAra@lichess.org](https://lichess.org/@/CrazyAra)
+* [♞ CrazyAraFish@lichess.org](https://lichess.org/@/CrazyAraFish)
 
 ## Playing strength evaluation
 
@@ -146,3 +156,14 @@ http://tim.hibal.org/blog/alpha-zero-how-and-why-it-works/
 
 Simple Chess AI implementation
 https://github.com/mnahinkhan/Chess/blob/master/Chess/chess.py
+
+## Publication
+* J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [preprint](https://arxiv.org/abs/1908.06660)
+```
+@article{czech_learning_2019,
+	title = {Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data},
+	author = {Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and Fürnkranz, Johannes},
+	year = {2019},
+	pages = {35}
+}
+```
