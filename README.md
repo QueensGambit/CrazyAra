@@ -52,6 +52,11 @@ Linux | **Intel MKL** | Intel CPUs
 Windows | **CUDA 10.1, cuDNN v7.5.1.10, openBlas** | NVIDIA GPUs and CPU
 Windows | **Intel MKL** | Intel CPUs
 
+_For Intel MKL the network inference is optimized when defining the following environment variable:_
+```
+MXNET_SUBGRAPH_BACKEND=MKLDNN
+```
+
 ### Models
 
 The following models are freely available for download:
