@@ -68,6 +68,8 @@ Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
     this->temperature = temperature;
     this->temperatureMoves = temperature_moves;
     this->verbose = verbose;
+    auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    gen.seed(seed);
     mt19937 gen(rd());
 }
 
