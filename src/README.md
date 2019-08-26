@@ -17,6 +17,6 @@ Install the plotting utility for [gprof](https://ftp.gnu.org/old-gnu/Manuals/gpr
 Activate the -pg flags in `CMakeLists.txt` and rebuild.
 Run the executable and generate the plot:
 ```
-$ ./CrazyAraMCTS
-$ gprof CrazyAraMCTS | gprof2dot | dot -Tpng -o output.png
+$ ./CrazyAra
+$ gprof CrazyAra | gprof2dot | dot -Tpng -o output.png
 ```
