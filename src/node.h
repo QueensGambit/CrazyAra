@@ -47,11 +47,18 @@ class Node
 private:
     std::mutex mtx;
     float value;
-    Board *pos;
+    Board* pos;
     DynamicVector<float> policyProbSmall;
     DynamicVector<float> childNumberVisits;
     DynamicVector<float> actionValues;
     DynamicVector<float> qValues;
+
+    // singular values
+    double probValue;
+    double qValue;
+    double actionValue;
+    double visits;
+    Move move;
 
     std::vector<Move> legalMoves;
     bool isTerminal;
@@ -61,7 +68,9 @@ private:
     int numberVisits = 0;
     std::vector<Node*> childNodes;
 
-    Node *parentNode;
+    Node* canidateNode;
+    Node* secondCandidateNode;
+    Node* parentNode;
     unsigned int childIdxForParent;
     bool hasNNResults;
 
@@ -95,10 +104,16 @@ private:
     inline float get_current_q_thresh();
 
     /**
-     * @brief get_current_u_values Calucates anCalucates and returns the current u-values for this node
+     * @brief get_current_u_values Calucates and returns the current u-values for this node
      * @return DynamicVector<float>
      */
     DynamicVector<float> get_current_u_values();
+
+    /**
+     * @brief get_current_u_values Calucates anCalucates and returns the current u-values for this node
+     * @return DynamicVector<float>
+     */
+    inline double get_current_u_value();
 
     /**
       * @brief enhance_checks Enhances all possible checking moves below threshCheck by incrementCheck and returns true if a modification
@@ -140,6 +155,8 @@ public:
     float getValue() const;
     void setValue(float value);
     size_t select_child_node();
+    Node* select_node();
+
     /**
      * @brief get_child_node Returns the child node at the given index.
      * A nullptr is returned if the child node wasn't expanded yet and no check is done if the childIdx is smaller than
@@ -190,6 +207,12 @@ public:
 
     friend class SearchThread;
     friend class MCTSAgent;
+    friend bool operator> (const Node& n1, const Node& n2);
+//    friend bool operator<= (const Node& n1, const Node& n2);
+
+//    friend bool operator< (const Node& n1, const Node& n2);
+//    friend bool operator>= (const Node& n1, const Node& n2);
+    inline double get_score_value();
 
     DynamicVector<float> getPolicyProbSmall();
     void setPolicyProbSmall(const DynamicVector<float> &value);

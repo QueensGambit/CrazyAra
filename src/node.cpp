@@ -195,6 +195,16 @@ DynamicVector<float> Node::get_current_u_values()
     return get_current_cput() * policyProbSmall * (sqrt(numberVisits) / (childNumberVisits + get_current_u_divisor()));
 }
 
+double Node::get_current_u_value()
+{
+    return parentNode->get_current_cput() * probValue * (sqrt(parentNode->visits) / (visits + parentNode->get_current_u_divisor()));
+}
+
+double Node::get_score_value()
+{
+    return (qValue + get_current_u_value());
+}
+
 bool Node::enhance_checks(const float incrementCheck, float threshCheck)
 {
     bool update = false;
@@ -351,6 +361,32 @@ size_t Node::select_child_node()
     return argmax(qValues + get_current_u_values());
 }
 
+Node* Node::select_node()
+{
+    if (*childNodes.rbegin() < *(childNodes.rbegin()+1)) {
+        // an update is required
+        if (*childNodes.rbegin() > *(childNodes.rbegin()+2)) {
+            // only swap first two
+            Node* temp = *childNodes.end();
+            *childNodes.end() = *(childNodes.rbegin()+1);
+            *(childNodes.rbegin()+1) = temp;
+        }
+    }
+    else {
+        // put former last element at according location
+        Node* element = *childNodes.end();
+        childNodes.pop_back();
+
+        for(auto it = childNodes.rbegin(); it != childNodes.rend(); ++it) {
+            if (*it < element) {
+                childNodes.insert(it.base(), element);
+                break;
+            }
+        }
+    }
+    return *childNodes.end();
+}
+
 Node *Node::get_child_node(size_t childIdx)
 {
     assert(childIdx < nbDirectChildNodes);
@@ -453,4 +489,8 @@ ostream &operator<<(ostream &os, const Node *node)
     }
     os << " initial value: " << node->getValue() << endl;
     return os;
+}
+
+bool operator< (const Node& n1, const Node& n2) {
+    return n1.get_score_value() < n2.get_score_value();
 }
