@@ -37,8 +37,9 @@ using namespace std;
 size_t Agent::pick_move_idx(DynamicVector<double>& policyProbSmall)
 {
     double* prob = policyProbSmall.data();
+    default_random_engine eng{static_cast<long unsigned int>(time(0))};
     discrete_distribution<> d(prob, prob+policyProbSmall.size());
-    return size_t(d(gen));
+    return size_t(d(eng));
 }
 
 void Agent::apply_temperature_to_policy(DynamicVector<double> &policyProbSmall)
