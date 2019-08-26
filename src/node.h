@@ -113,7 +113,7 @@ private:
      * @brief get_current_u_values Calucates anCalucates and returns the current u-values for this node
      * @return DynamicVector<float>
      */
-    inline double get_current_u_value();
+    inline double get_current_u_value() const;
 
     /**
       * @brief enhance_checks Enhances all possible checking moves below threshCheck by incrementCheck and returns true if a modification
@@ -132,6 +132,7 @@ private:
        * @return bool
        */
      inline bool enhance_captures(const float incrementCapture, float threshCapture);
+
 public:
 
     Node(Board *pos,
@@ -212,7 +213,7 @@ public:
 
 //    friend bool operator< (const Node& n1, const Node& n2);
 //    friend bool operator>= (const Node& n1, const Node& n2);
-    inline double get_score_value();
+    inline double get_score_value() const;
 
     DynamicVector<float> getPolicyProbSmall();
     void setPolicyProbSmall(const DynamicVector<float> &value);
@@ -280,8 +281,33 @@ public:
      * @return Respective child index for the given move in its move list
      */
     int find_move_idx(Move m);
+
+    /**
+     * @brief sort_nodes_by_probabilities Sorts all child nodes in ascending order based on their probability value
+     */
+    void sort_nodes_by_probabilities();
+
+    void assign_values_to_child_nodes();
+
+    std::vector<Node *> getChildNodes() const;
+    double getProbValue() const;
+    double getQValue() const;
+    double getActionValue() const;
+    double getVisits() const;
+    Move getMove() const;
+
+    /**
+     * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
+     */
+    void print_node_statistics();
 };
 
-extern std::ostream& operator<<(std::ostream& os, const Node *node);
+/**
+ * @brief operator << Overload of stdout operator. Prints move, number visits, probability Value and Q-value
+ * @param os ostream handle
+ * @param node Node object to print
+ * @return ostream
+ */
+extern std::ostream& operator<<(std::ostream& os, Node* node);
 
 #endif // NODE_H

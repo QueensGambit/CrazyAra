@@ -278,7 +278,7 @@ void MCTSAgent::print_root_node()
         cout << "info string You must do a search before you can print the root node statistics" << endl;
         return;
     }
-    cout << rootNode << endl;
+    rootNode->print_node_statistics();
 }
 
 

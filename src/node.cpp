@@ -148,6 +148,49 @@ int Node::find_move_idx(Move move)
     return -1;
 }
 
+void Node::assign_values_to_child_nodes()
+{
+    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
+        if (childNodes[i] == nullptr) {
+            childNodes[i] = new Node(pos, this, -1, searchSettings);
+        }
+        childNodes[i]->probValue = policyProbSmall[i];
+        childNodes[i]->qValue = qValues[i];
+        childNodes[i]->visits = childNumberVisits[i];
+        childNodes[i]->move = legalMoves[i];
+    }
+}
+
+std::vector<Node *> Node::getChildNodes() const
+{
+    return childNodes;
+}
+
+double Node::getProbValue() const
+{
+    return probValue;
+}
+
+double Node::getQValue() const
+{
+    return qValue;
+}
+
+double Node::getActionValue() const
+{
+    return actionValue;
+}
+
+double Node::getVisits() const
+{
+    return visits;
+}
+
+Move Node::getMove() const
+{
+    return move;
+}
+
 void Node::check_for_terminal()
 {
     if (legalMoves.size() == 0) {
@@ -195,12 +238,12 @@ DynamicVector<float> Node::get_current_u_values()
     return get_current_cput() * policyProbSmall * (sqrt(numberVisits) / (childNumberVisits + get_current_u_divisor()));
 }
 
-double Node::get_current_u_value()
+double Node::get_current_u_value() const
 {
     return parentNode->get_current_cput() * probValue * (sqrt(parentNode->visits) / (visits + parentNode->get_current_u_divisor()));
 }
 
-double Node::get_score_value()
+double Node::get_score_value() const
 {
     return (qValue + get_current_u_value());
 }
@@ -228,6 +271,13 @@ bool Node::enhance_captures(const float incrementCapture, float threshCapture)
     }
 
     return update;
+}
+
+void Node::sort_nodes_by_probabilities()
+{
+    sort(childNodes.begin(), childNodes.end(), [=](const Node* n1, const Node* n2) {
+        return n1->probValue > n2->probValue; // <
+    });
 }
 
 void Node::enhance_moves(const float threshCheck, const float checkFactor, const float threshCapture, const float captureFactor)
@@ -479,16 +529,24 @@ void Node::delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable)
     }
 }
 
-ostream &operator<<(ostream &os, const Node *node)
+ostream& operator<<(ostream &os, Node *node)
 {
-    for (size_t childIdx = 0; childIdx < node->getNbDirectChildNodes(); ++childIdx) {
-        os << childIdx << ".move " << UCI::move(node->getLegalMoves()[childIdx], false)
-           << " n " << node->getChildNumberVisits()[childIdx]
-              << " p " << node->getPVecSmall()[childIdx]
-                 << " Q " << node->getQValues()[childIdx] << endl;
-    }
-    os << " initial value: " << node->getValue() << endl;
+    os << "move " << UCI::move(node->getMove(), false)
+       << " n " << node->getVisits()
+       << " p " << node->getProbValue()
+       << " Q " << node->getQValue();
     return os;
+}
+
+void Node::print_node_statistics()
+{
+    assign_values_to_child_nodes();
+    sort_nodes_by_probabilities();
+
+    for (size_t childIdx = 0; childIdx < nbDirectChildNodes; ++childIdx) {
+        cout << childIdx << "." << childNodes[childIdx] << endl;
+    }
+    cout << " initial value: " << value << endl;
 }
 
 bool operator< (const Node& n1, const Node& n2) {
