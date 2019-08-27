@@ -91,9 +91,15 @@ Please follow these steps to build _CrazyAra_ from source:
    ```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
 
 2. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6** or current master:
-	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 	* https://bitbucket.org/blaze-lib/blaze/downloads/
-
+	```
+	$ tar -xvzf blaze-3.6.tar.gz
+	$ cd blaze-3.6
+	$ cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
+	$ sudo make install
+	```
+	Detailed build instruction can be found here:
+	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 
 
 3. Build the MXNet C++ package. Building with OpenCV is not required:
