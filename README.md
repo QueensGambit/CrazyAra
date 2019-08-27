@@ -1,5 +1,6 @@
 # CrazyAra - A Deep Learning Chess Variant Engine
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/ad5bb9057b5e4b82bde3569af92b86e9)](https://app.codacy.com/app/QueensGambit/CrazyAra-Engine?utm_source=github.com&utm_medium=referral&utm_content=QueensGambit/CrazyAra-Engine&utm_campaign=Badge_Grade_Dashboard)
 
 ![CRAZYARA_LOGO](media/crazyara_logo_medium.png "rc")
