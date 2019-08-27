@@ -89,15 +89,17 @@ Please follow these steps to build _CrazyAra_ from source:
 
 1. Clone the _CrazyAra_ repository:
 
-   ```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
+   ```
+   git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive
+   ```
 
 2. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6** or current master:
 	* https://bitbucket.org/blaze-lib/blaze/downloads/
 	```
-	$ tar -xvzf blaze-3.6.tar.gz
-	$ cd blaze-3.6
-	$ cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
-	$ sudo make install
+	tar -xvzf blaze-3.6.tar.gz
+	cd blaze-3.6
+	cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
+	sudo make install
 	```
 	Detailed build instruction can be found here:
 	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
@@ -114,8 +116,17 @@ Please follow these steps to build _CrazyAra_ from source:
    sudo apt-get install -y graphviz
    ```
    
-   ```$ git clone https://github.com/apache/incubator-mxnet --recursive```
+   ```
+   git clone https://github.com/apache/incubator-mxnet --recursive
+   ```
 
+   Chekout to version 1.4.1 due to performance issue in 1.5.0 ([#15640](https://github.com/apache/incubator-mxnet/issues/15640)):
+   
+   ```
+   git checkout 1a7199691f5cbc6012bb53eecbf884bed5ae6590
+   ```
+   
+   
    [IntelMKL](https://github.com/intel/mkl-dnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
    
    [CUDA](https://developer.nvidia.com/cuda-zone) / [cuDNN](https://developer.nvidia.com/cudnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=0 USE_CUDA=1 USE_CUDNN=1```
@@ -128,11 +139,11 @@ Please follow these steps to build _CrazyAra_ from source:
 
 4. Build the _CrazyAra_ binary
    ```
-   $ export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
-   $ mkdir build
-   $ cd build
-   $ cmake -DCMAKE_BUILD_TYPE=Release ..
-   $ make
+   export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
+   mkdir build
+   cd build
+   cmake -DCMAKE_BUILD_TYPE=Release ..
+   make
    ```
 
 ### Windows
