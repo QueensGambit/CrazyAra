@@ -300,6 +300,9 @@ public:
      * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
      */
     void print_node_statistics();
+
+    void fill_child_node_moves();
+
 };
 
 /**

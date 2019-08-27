@@ -549,6 +549,15 @@ void Node::print_node_statistics()
     cout << " initial value: " << value << endl;
 }
 
+void Node::fill_child_node_moves()
+{
+    // generate the legal moves and save them in the list
+    for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
+        legalMoves.push_back(move);
+    }
+}
+
+
 bool operator< (const Node& n1, const Node& n2) {
     return n1.get_score_value() < n2.get_score_value();
 }
