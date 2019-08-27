@@ -105,6 +105,15 @@ Please follow these steps to build _CrazyAra_ from source:
 
 3. Build the MXNet C++ package. Building with OpenCV is not required:
 
+   Install the prerequesites (e.g. for IntelMKL):
+   * https://github.com/intel/mkl-dnn/releases
+   ```
+   sudo apt-get update
+   sudo apt-get install -y build-essential git
+   sudo apt-get install -y libopenblas-dev liblapack-dev
+   sudo apt-get install -y graphviz
+   ```
+   
    ```$ git clone https://github.com/apache/incubator-mxnet --recursive```
 
    [IntelMKL](https://github.com/intel/mkl-dnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
@@ -115,6 +124,7 @@ Please follow these steps to build _CrazyAra_ from source:
    
    Detailed build instruction can be found here:
    	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
+	* IntelMKL: https://github.com/apache/incubator-mxnet/blob/master/docs/tutorials/mkldnn/MKLDNN_README.md
 
 4. Build the _CrazyAra_ binary
    ```
