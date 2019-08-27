@@ -88,29 +88,41 @@ Please follow these steps to build _CrazyAra_ from source:
 
 1. Clone the _CrazyAra_ repository:
 
-```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
+   ```$ git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive```
 
 2. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6** or current master:
-	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 	* https://bitbucket.org/blaze-lib/blaze/downloads/
+	```
+	$ tar -xvzf blaze-3.6.tar.gz
+	$ cd blaze-3.6
+	$ cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
+	$ sudo make install
+	```
+	Detailed build instruction can be found here:
+	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
 
 
+3. Build the MXNet C++ package. Building with OpenCV is not required:
 
-3. Build the MXNet C++ package (e.g. IntelMKL). Building with OpenCV is not required:
+   ```$ git clone https://github.com/apache/incubator-mxnet --recursive```
 
-   ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
+   [IntelMKL](https://github.com/intel/mkl-dnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
+   
+   [CUDA](https://developer.nvidia.com/cuda-zone) / [cuDNN](https://developer.nvidia.com/cudnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=0 USE_CUDA=1 USE_CUDNN=1```
+   
+   _You might have to reduce the number of jobs to run in paralell e.g. `-j 4` if you run out of memory (RAM) during building. Building the MXNet-C++ examples is not required._
    
    Detailed build instruction can be found here:
    	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
 
 4. Build the _CrazyAra_ binary
-```
-$ export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
-$ mkdir build
-$ cd build
-$ cmake -DCMAKE_BUILD_TYPE=Release ..
-$ make
-```
+   ```
+   $ export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
+   $ mkdir build
+   $ cd build
+   $ cmake -DCMAKE_BUILD_TYPE=Release ..
+   $ make
+   ```
 
 ### Windows
 Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Compile-instructions-for-Windows).
