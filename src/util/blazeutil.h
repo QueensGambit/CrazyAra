@@ -30,6 +30,7 @@
 
 #include <blaze/Math.h>
 
+using namespace std;
 using blaze::StaticVector;
 using blaze::DynamicVector;
 
@@ -45,5 +46,21 @@ static std::default_random_engine generator(r());
  */
 DynamicVector<float> get_dirichlet_noise(size_t length, const float alpha);
 
+/**
+ * @brief based on sort_indexes() by Lukasz Wiklendt https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
+ */
+template <typename T>
+vector<size_t> argsort(const DynamicVector<T>& v)
+{
+    // initialize original index locations
+    vector<size_t> idx(v.size());
+    iota(idx.begin(), idx.end(), 0);
+
+    // sort indexes based on comparing values in v
+    sort(idx.begin(), idx.end(),
+         [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+
+    return idx;
+}
 
 #endif // BLAZEUTIL_H
