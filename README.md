@@ -106,9 +106,11 @@ Please follow these steps to build _CrazyAra_ from source:
 
    ```$ git clone https://github.com/apache/incubator-mxnet --recursive```
 
-   [IntelMKL](https://github.com/intel/mkl-dnn): ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
+   [IntelMKL](https://github.com/intel/mkl-dnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
    
-   [CUDA](https://developer.nvidia.com/cuda-zone) / [cuDNN](https://developer.nvidia.com/cudnn): ```$ make -j USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=0 USE_CUDA=1 USE_CUDNN=1```
+   [CUDA](https://developer.nvidia.com/cuda-zone) / [cuDNN](https://developer.nvidia.com/cudnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=0 USE_CUDA=1 USE_CUDNN=1```
+   
+   _You might have to reduce the number of jobs to run in paralell e.g. `-j 4` if you run out of memory (RAM) during building. Building the MXNet-C++ examples is not required._
    
    Detailed build instruction can be found here:
    	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
