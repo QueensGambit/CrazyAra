@@ -50,7 +50,7 @@ private:
     Shape inputShape;
     Context globalCtx = Context::cpu();
     unsigned int batchSize;
-    bool selectPolicyFromPlane;
+    bool isPolicyMap;
 
     /**
      * @brief FileExists Function to check if a file exists in a given path
@@ -80,7 +80,7 @@ private:
      * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
      * and sets the selectPolicyFromPlane boolean accordingly
      */
-    void infer_select_policy_from_planes();
+    void check_if_policy_map();
 
 public:
     /**
@@ -108,7 +108,7 @@ public:
      */
     void predict(float *inputPlanes, NDArray &valueOutput, NDArray &probOutputs);
 
-    bool getSelectPolicyFromPlane() const;
+    bool is_policy_map() const;
 };
 
 #endif // NEURALNETAPI_H

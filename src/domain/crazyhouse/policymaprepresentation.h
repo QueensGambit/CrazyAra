@@ -30,7 +30,6 @@
 #ifndef POLICYMAPREPRESENTATION_H
 #define POLICYMAPREPRESENTATION_H
 
-
 // generated conversion list which describes the plane index for each move in the policy LABELS list using the python script at:
 // https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/domain/crazyhouse/plane_policy_representation.py
 const unsigned long FLAT_PLANE_IDX[] = {

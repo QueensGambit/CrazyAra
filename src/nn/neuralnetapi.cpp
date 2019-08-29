@@ -84,12 +84,12 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
     load_model(jsonFilePath);
     load_parameters(paramterFilePath);
     bind_executor();
-    infer_select_policy_from_planes();
+    check_if_policy_map();
 }
 
-bool NeuralNetAPI::getSelectPolicyFromPlane() const
+bool NeuralNetAPI::is_policy_map() const
 {
-    return selectPolicyFromPlane;
+    return isPolicyMap;
 }
 
 bool NeuralNetAPI::file_exists(const string &name)
@@ -156,15 +156,15 @@ void NeuralNetAPI::bind_executor()
 	cout << "info string Bind successfull!" << endl;
 }
 
-void NeuralNetAPI::infer_select_policy_from_planes()
+void NeuralNetAPI::check_if_policy_map()
 {
     float* inputPlanes = new float[batchSize*NB_VALUES_TOTAL];
     fill(inputPlanes, inputPlanes+batchSize*NB_VALUES_TOTAL, 0.0f);
 
     float value;
     NDArray probOutputs = predict(inputPlanes, value);
-    selectPolicyFromPlane = probOutputs.GetShape()[1] != NB_LABELS;
-	cout << "info string selectPolicyFromPlane: " << selectPolicyFromPlane << endl;
+    isPolicyMap = probOutputs.GetShape()[1] != NB_LABELS;
+    cout << "info string selectPolicyFromPlane: " << isPolicyMap << endl;
 	delete inputPlanes;
 }
 
