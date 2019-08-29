@@ -141,6 +141,16 @@ public:
      * @param is Movetime in ms
      */
     void benchmark(istringstream &is);
+
+    /**
+     * @brief init_search_settings Initializes the search settings with the current UCI parameters
+     */
+    void init_search_settings();
+
+    /**
+     * @brief init_play_settings Initializes the play settings with the current UCI parameters
+     */
+    void init_play_settings();
 };
 
 #endif // CRAZYARA_H
