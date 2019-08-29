@@ -39,6 +39,7 @@
 #include "types.h"
 #include "../../util/sfutil.h"
 #include <iostream>
+#include "policymaprepresentation.h"
 
 // Define the board size
 const int BOARD_WIDTH = 8;
@@ -2367,18 +2368,18 @@ extern std::string LABELS_MIRRORED[NB_LABELS];
 std::string mirror_move(std::string moveUCI);
 
 namespace Constants {
-inline void init() {
+inline void init(bool isPolicyMap) {
 
     // fill mirrored label list and look-up table
     for (size_t mvIdx=0; mvIdx < NB_LABELS; mvIdx++) {
         LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);
         std::vector<Move> moves = make_move(LABELS[mvIdx]);
         for (Move move : moves) {
-            MV_LOOKUP.insert({move, mvIdx});
+            isPolicyMap ? MV_LOOKUP.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP.insert({move, mvIdx});
         }
         std::vector<Move> moves_mirrored = make_move(LABELS_MIRRORED[mvIdx]);
         for (Move move : moves_mirrored) {
-            MV_LOOKUP_MIRRORED.insert({move, mvIdx});
+            isPolicyMap ? MV_LOOKUP_MIRRORED.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP_MIRRORED.insert({move, mvIdx});
         }
     }
 }
