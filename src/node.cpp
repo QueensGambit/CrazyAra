@@ -19,192 +19,189 @@
 
 /*
  * @file: node.cpp
- * Created on 13.05.2019
+ * Created on 28.08.2019
  * @author: queensgambit
  */
 
 #include "node.h"
-#include <iostream>
-#include <random>
-#include "util/blazeutil.h"
-#include "uci.h"
 
-using namespace std;
-
-Board* Node::getPos()
-{
-    return pos;
-}
-
-Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent, SearchSettings* searchSettings):
-    pos(pos),
+Node::Node(Node *parentNode, Move move):
     parentNode(parentNode),
-    childIdxForParent(childIdxForParent),
-    checkmateIdx(-1),
-    searchSettings(searchSettings)
+    move(move),
+    value(0),
+    probValue(0),
+    qValue(-1),
+    actionValue(0),
+    visits(0),
+    virtualLossCounter(0),
+    isTerminal(false), // will be later recomputed
+    isExpanded(false),
+    hasNNResults(false),
+    isCalibrated(false),
+    areChildNodesSorted(false),
+    checkmateNode(nullptr)
 {
-    // generate the legal moves and save them in the list
-    for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
-        legalMoves.push_back(move);
-    }
 
+}
+
+Node::Node(Board *pos, Node *parentNode, Move move):
+    Node(parentNode, move)
+{
+    this->pos = pos;
+}
+
+void Node::sort_child_nodes_by_probabilities()
+{
+    sort(childNodes.begin(), childNodes.end(), [=](const Node* n1, const Node* n2) {
+        return n1->probValue > n2->probValue; // <
+    });
+    areChildNodesSorted = true;
+}
+
+void Node::expand()
+{
+    create_child_nodes(this, pos, childNodes);
+    numberChildNodes = childNodes.size();
     check_for_terminal();
-
-    // # store the initial value prediction of the current board position
-    initialValue = value;
-
-    // specify thisTerminale number of direct child nodes from this node
-    nbDirectChildNodes = unsigned(int(legalMoves.size()));
-
-    // # visit count of all its child nodes
-    childNumberVisits = DynamicVector<float>(nbDirectChildNodes);
-    childNumberVisits = 0;
-
-    // total action value estimated by MCTS for each child node also denoted as w
-    actionValues = DynamicVector<float>(nbDirectChildNodes);
-    actionValues = 0;
-
-    // q: combined action value which is calculated by the averaging over all action values
-    // u: exploration metric for each child node
-    // (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-    qValues = DynamicVector<float>(nbDirectChildNodes);
-    qValues = -1;
-
-    // number of total visits to this node
-    numberVisits = 1;  // we initialize with 1 because if the node was created it must have been visited
-
-    childNodes.resize(nbDirectChildNodes);
-    policyProbSmall.resize(nbDirectChildNodes);
-
-    //    waitForNNResults.resize(nbDirectChildNodes);
-    //    waitForNNResults = 0.0f;
-    hasNNResults = false;
-    //    numberWaitingChildNodes = 0;
+    isExpanded = true;
 }
 
-Node::Node(const Node &b)
-{
-    value = b.value;
-    pos = b.pos;
-    nbDirectChildNodes = b.nbDirectChildNodes;
-    policyProbSmall.resize(nbDirectChildNodes);
-    policyProbSmall = b.policyProbSmall;
-    childNumberVisits.resize(nbDirectChildNodes);
-    childNumberVisits = 0;
-    actionValues.resize(nbDirectChildNodes);
-    actionValues = 0;
-    qValues.resize(nbDirectChildNodes);
-    qValues = -1;
-    legalMoves = b.legalMoves;
-    isTerminal = b.isTerminal;
-    initialValue = b.initialValue;
-    numberVisits = 1;
-    childNodes.resize(nbDirectChildNodes);
-    //    parentNode = // is not copied
-    //    childIdxForParent = // is not copied
-    hasNNResults = b.hasNNResults;
-    checkmateIdx = b.checkmateIdx;
-    searchSettings = b.searchSettings;
-}
-
-Node::~Node()
-{
-    delete pos;
-}
-
-int Node::getNumberVisits() const
-{
-    return numberVisits;
-}
-
-void Node::get_principal_variation(std::vector<Move> &pv)
-{
-    pv.clear();
-    Node* curNode = this;
-    size_t childIdx;
-    do {
-        DynamicVector<float> mctsPolicy(curNode->nbDirectChildNodes);
-        curNode->get_mcts_policy(mctsPolicy);
-        childIdx = argmax(mctsPolicy);
-        pv.push_back(curNode->legalMoves[childIdx]);
-        curNode = curNode->childNodes[childIdx];
-    } while (curNode != nullptr && !curNode->isTerminal);
-}
-
-Key Node::hash_key()
-{
-    return pos->hash_key();
-}
-
-int Node::find_move_idx(Move move)
-{
-    int idx = 0;
-    for (Move childMove : legalMoves) {
-        if (childMove == move) {
-            return idx;
-        }
-        ++idx;
-    }
-    return -1;
-}
-
-void Node::assign_values_to_child_nodes()
-{
-    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
-        if (childNodes[i] == nullptr) {
-            childNodes[i] = new Node(pos, this, -1, searchSettings);
-        }
-        childNodes[i]->probValue = policyProbSmall[i];
-        childNodes[i]->qValue = qValues[i];
-        childNodes[i]->visits = childNumberVisits[i];
-        childNodes[i]->move = legalMoves[i];
-    }
-}
-
-std::vector<Node *> Node::getChildNodes() const
-{
-    return childNodes;
-}
-
-double Node::getProbValue() const
-{
-    return probValue;
-}
-
-double Node::getQValue() const
-{
-    return qValue;
-}
-
-double Node::getActionValue() const
-{
-    return actionValue;
-}
-
-double Node::getVisits() const
-{
-    return visits;
-}
-
-Move Node::getMove() const
+Move Node::get_move() const
 {
     return move;
 }
 
+vector<Node*> Node::get_child_nodes() const
+{
+    return childNodes;
+}
+
+bool Node::is_terminal() const
+{
+    return isTerminal;
+}
+
+bool Node::has_nn_results() const
+{
+    return hasNNResults;
+}
+
+Color Node::side_to_move() const
+{
+    return pos->side_to_move();
+}
+
+Board* Node::get_pos() const
+{
+    return pos;
+}
+
+void Node::set_nn_results(float nn_value, const DynamicVector<float> &policyProbSmall)
+{
+    mtx.lock();
+    value = nn_value;
+    for (size_t i = 0; i < childNodes.size(); ++i) {
+        childNodes[i]->set_prob_value(policyProbSmall[i]);
+    }
+    hasNNResults = true;
+    mtx.unlock();
+}
+
+void Node::apply_virtual_loss()
+{
+    mtx.lock();
+    ++virtualLossCounter;
+    mtx.unlock();
+}
+
+void Node::set_prob_value(float value)
+{
+    probValue = value;
+}
+
+Node *Node::get_parent_node() const
+{
+    return parentNode;
+}
+
+void Node::increment_visits()
+{
+    ++visits;
+}
+
+float Node::get_value() const
+{
+    return value;
+}
+
+bool Node::is_expanded() const
+{
+    return isExpanded;
+}
+
+bool Node::are_child_nodes_sorted() const
+{
+    return areChildNodesSorted;
+}
+
+bool Node::is_calibrated() const
+{
+    return isCalibrated;
+}
+
+Node* Node::first_child_node() const
+{
+    return childNodes.front();
+}
+
+Node *Node::second_child_node() const
+{
+    return childNodes[1];
+}
+
+Key Node::hash_key() const
+{
+    return pos->hash_key();
+}
+
+size_t Node::get_number_child_nodes() const
+{
+    return numberChildNodes;
+}
+
+Node *Node::get_checkmate_node() const
+{
+    return checkmateNode;
+}
+
+unsigned int Node::get_visits() const
+{
+    return visits;
+}
+
+float Node::get_prob_value() const
+{
+    return probValue;
+}
+
+double Node::get_q_value() const
+{
+    return qValue;
+}
+
 void Node::check_for_terminal()
 {
-    if (legalMoves.size() == 0) {
+    if (childNodes.size() == 0) {
+        isTerminal = true;
         // test if we have a check-mate
-        if (parentNode->pos->gives_check(parentNode->legalMoves[childIdxForParent])) {
+        if (parentNode->pos->gives_check(move)) {
             value = -1;
-            isTerminal = true;
             parentNode->mtx.lock();
-            parentNode->checkmateIdx = int(childIdxForParent);
+            parentNode->checkmateNode = this;
             parentNode->mtx.unlock();
         } else {
             // we reached a stalmate
             value = 0;
-            isTerminal = true;
         }
     }
     else if (pos->is_draw(pos->game_ply())) {
@@ -218,81 +215,102 @@ void Node::check_for_terminal()
     }
 }
 
-float Node::get_current_cput()
+void Node::make_to_root()
 {
-    return log((numberVisits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
+    parentNode = nullptr;
 }
 
-float Node::get_current_u_divisor()
+void Node::revert_virtual_loss()
 {
-    return searchSettings->uMin - exp(-numberVisits / searchSettings->uBase) * (searchSettings->uMin - searchSettings->uInit);
+    mtx.lock();
+    --virtualLossCounter;
+    mtx.unlock();
 }
 
-float Node::get_current_q_thresh()
+void Node::revert_virtual_loss_and_update(float value)
 {
-    return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
+    mtx.lock();
+    ++visits;
+    actionValue += double(value);
+    qValue = actionValue / double(visits);
+    mtx.unlock();
 }
 
-DynamicVector<float> Node::get_current_u_values()
+void Node::init_board()
 {
-    return get_current_cput() * policyProbSmall * (sqrt(numberVisits) / (childNumberVisits + get_current_u_divisor()));
+    StateInfo* newState = new StateInfo;
+    pos = new Board(*parentNode->get_pos());
+    pos->do_move(move, *newState);
 }
 
-double Node::get_current_u_value() const
+void backup_value(Node* currentNode, float value)
 {
-    return parentNode->get_current_cput() * probValue * (sqrt(parentNode->visits) / (visits + parentNode->get_current_u_divisor()));
+    do {
+        currentNode->revert_virtual_loss_and_update(value);
+        value = -value;
+        currentNode = currentNode->get_parent_node();
+    } while(currentNode != nullptr);
 }
 
-double Node::get_score_value() const
+void backup_collision(Node *currentNode)
 {
-    return (qValue + get_current_u_value());
+    do {
+        currentNode->revert_virtual_loss();
+        currentNode = currentNode->get_parent_node();
+    } while(currentNode != nullptr);
 }
 
-bool Node::enhance_checks(const float incrementCheck, float threshCheck)
+ vector<Move> retrieve_legal_moves(const vector<Node*>& childNodes)
+{
+    vector<Move> legalMoves;
+    for (auto node: childNodes) {
+        legalMoves.push_back(node->get_move());
+    }
+    return legalMoves;
+}
+
+void create_child_nodes(Node* parentNode, const Board* pos, vector<Node*> &childNodes)
+{
+    for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
+        childNodes.push_back(new Node(parentNode, move));
+    }
+}
+
+bool enhance_move_type(float increment, float thresh, const Board* pos, const vector<Move>& legalMoves, vFunctionMoveType func, DynamicVector<float>& policyProbSmall)
 {
     bool update = false;
-    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
-        if (policyProbSmall[i] < threshCheck && pos->gives_check(legalMoves[i])) {
-            policyProbSmall[i] += incrementCheck;
+    for (size_t i = 0; i < legalMoves.size(); ++i) {
+        if (policyProbSmall[i] < thresh && func(pos, legalMoves[i])) {
+            policyProbSmall[i] += increment;
             update = true;
         }
     }
     return update;
 }
 
-bool Node::enhance_captures(const float incrementCapture, float threshCapture)
+bool isCheck(const Board* pos, Move move)
 {
-    bool update = false;
-    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
-        if (policyProbSmall[i] < threshCapture && pos->capture(legalMoves[i])) {
-            policyProbSmall[i] += incrementCapture;
-            update = true;
-        }
-    }
-
-    return update;
+    return pos->gives_check(move);
 }
 
-void Node::sort_nodes_by_probabilities()
+bool isCapture(const Board* pos, Move move)
 {
-    sort(childNodes.begin(), childNodes.end(), [=](const Node* n1, const Node* n2) {
-        return n1->probValue > n2->probValue; // <
-    });
+    return pos->capture(move);
 }
 
-void Node::enhance_moves(const float threshCheck, const float checkFactor, const float threshCapture, const float captureFactor)
+void enhance_moves(const SearchSettings* searchSettings, const Board* pos, const vector<Move>& legalMoves, DynamicVector<float>& policyProbSmall)
 {
     float maxPolicyValue = max(policyProbSmall);
     bool checkUpdate = false;
     bool captureUpdate = false;
 
     if (searchSettings->enhanceChecks) {
-        float incrementCheck = min(threshCheck, maxPolicyValue*checkFactor);
-        checkUpdate = enhance_checks(incrementCheck, threshCheck);
+        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, maxPolicyValue*searchSettings->checkFactor),
+                                        searchSettings->threshCheck, pos, legalMoves, isCheck, policyProbSmall);
     }
     if (searchSettings->enhanceCaptures) {
-        float incrementCapture = min(threshCapture, maxPolicyValue*captureFactor);
-        captureUpdate = enhance_captures(incrementCapture, threshCapture);
+        captureUpdate = enhance_move_type( min(searchSettings->threshCapture, maxPolicyValue*searchSettings->captureFactor),
+                                           searchSettings->threshCheck, pos, legalMoves, isCapture, policyProbSmall);
     }
 
     if (checkUpdate || captureUpdate) {
@@ -300,264 +318,119 @@ void Node::enhance_moves(const float threshCheck, const float checkFactor, const
     }
 }
 
-DynamicVector<float> Node::getPolicyProbSmall()
+Node* select_child_node(Node* node)
 {
-    return policyProbSmall;
-}
-
-void Node::setPolicyProbSmall(const DynamicVector<float> &value)
-{
-    policyProbSmall = value;
-}
-
-void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy)
-{
-    if (searchSettings->qValueWeight > 0) {
-        DynamicVector<float> qValuePruned(nbDirectChildNodes);
-        qValuePruned = (qValues + 1) * 0.5f;
-        float visitThresh = get_current_q_thresh() * max(childNumberVisits);
-        for (size_t idx = 0; idx < nbDirectChildNodes; ++idx) {
-            if (childNumberVisits[idx] < visitThresh) {
-                qValuePruned[idx] = 0;
-            }
-        }
-        mctsPolicy = (1.0f - searchSettings->qValueWeight) * (childNumberVisits / numberVisits) + searchSettings->qValueWeight * qValuePruned;
-        mctsPolicy /= sum(mctsPolicy);
-    } else {
-        mctsPolicy = childNumberVisits / numberVisits;
-    }
-}
-
-DynamicVector<float> Node::getQValues() const
-{
-    return qValues;
-}
-
-void Node::apply_dirichlet_noise_to_prior_policy()
-{
-    DynamicVector<float> dirichlet_noise = get_dirichlet_noise(nbDirectChildNodes, searchSettings->dirichletAlpha);
-    policyProbSmall = (1 - searchSettings->dirichletEpsilon ) * policyProbSmall + searchSettings->dirichletEpsilon  * dirichlet_noise;
-}
-
-void Node::setQValues(const DynamicVector<float> &value)
-{
-    qValues = value;
-}
-
-DynamicVector<float> Node::getChildNumberVisits() const
-{
-    return childNumberVisits;
-}
-
-unsigned int Node::getNbDirectChildNodes() const
-{
-    return nbDirectChildNodes;
-}
-
-DynamicVector<float> Node::getPVecSmall() const
-{
-    return policyProbSmall;
-}
-
-void Node::setPVecSmall(const DynamicVector<float> &value)
-{
-    policyProbSmall = value;
-}
-
-std::vector<Move> Node::getLegalMoves() const
-{
-    return legalMoves;
-}
-
-void Node::setLegalMoves(const std::vector<Move> &value)
-{
-    legalMoves = value;
-}
-
-void Node::apply_virtual_loss_to_child(unsigned int childIdx)
-{
-    mtx.lock();
-    // update the stats of the parent node
-    // temporarily reduce the attraction of this node by applying a virtual loss /
-    // the effect of virtual loss will be undone if the playout is over
-    // virtual increase the number of visits
-    numberVisits += searchSettings->virtualLoss;
-    childNumberVisits[childIdx] +=  searchSettings->virtualLoss;
-    // make it look like if one has lost X games from this node forward where X is the virtual loss value
-    // self.action_value[child_idx] -= virtual_loss
-    actionValues[childIdx] -=  searchSettings->virtualLoss;
-    qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
-    mtx.unlock();
-}
-
-float Node::getValue() const
-{
-    return value;
-}
-
-void Node::setValue(float value)
-{
-    value = value;
-}
-
-size_t Node::select_child_node()
-{
-    if (checkmateIdx != -1) {
-        return size_t(checkmateIdx);
-    }
-    // find the move according to the q- and u-values for each move
-    // calculate the current u values
-    // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    return argmax(qValues + get_current_u_values());
-}
-
-Node* Node::select_node()
-{
-    if (*childNodes.rbegin() < *(childNodes.rbegin()+1)) {
-        // an update is required
-        if (*childNodes.rbegin() > *(childNodes.rbegin()+2)) {
-            // only swap first two
-            Node* temp = *childNodes.end();
-            *childNodes.end() = *(childNodes.rbegin()+1);
-            *(childNodes.rbegin()+1) = temp;
-        }
-    }
-    else {
-        // put former last element at according location
-        Node* element = *childNodes.end();
-        childNodes.pop_back();
-
-        for(auto it = childNodes.rbegin(); it != childNodes.rend(); ++it) {
-            if (*it < element) {
-                childNodes.insert(it.base(), element);
-                break;
-            }
-        }
-    }
-    return *childNodes.end();
-}
-
-Node *Node::get_child_node(size_t childIdx)
-{
-    assert(childIdx < nbDirectChildNodes);
-    return childNodes[childIdx];
-}
-
-void Node::backup_value(unsigned int childIdx, float value)
-{
-    Node* currentNode = this;
-    do {
-        currentNode->revert_virtual_loss_and_update(childIdx, value);
-        childIdx = currentNode->childIdxForParent;
-        value = -value;
-        currentNode = currentNode->parentNode;
-    } while(currentNode != nullptr);
-}
-
-void Node::revert_virtual_loss_and_update(unsigned int childIdx, float value)
-{
-    mtx.lock();
-    numberVisits -= searchSettings->virtualLoss - 1;
-    childNumberVisits[childIdx] -= searchSettings->virtualLoss - 1;
-    actionValues[childIdx] += searchSettings->virtualLoss + value;
-    qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
-    mtx.unlock();
-}
-
-void Node::backup_collision(unsigned int childIdx)
-{
-    Node* currentNode = this;
-    do {
-        currentNode->revert_virtual_loss(childIdx);
-        childIdx = currentNode->childIdxForParent;
-        currentNode = currentNode->parentNode;
-    } while (currentNode != nullptr);
-}
-
-void Node::revert_virtual_loss(unsigned int childIdx)
-{
-    mtx.lock();
-    numberVisits -= searchSettings->virtualLoss;
-    childNumberVisits[childIdx] -= searchSettings->virtualLoss;
-    actionValues[childIdx] += searchSettings->virtualLoss;
-    qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
-    mtx.unlock();
-}
-
-void Node::make_to_root()
-{
-    parentNode = nullptr;
-}
-
-void Node::delete_subtree(Node *node)
-{
-    for (Node *childNode: node->childNodes) {
-        if (childNode != nullptr) {
-            delete_subtree(childNode);
-        }
-    }
-    delete node;
-}
-
-void Node::delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>* hashTable)
-{
-    for (Node *childNode: node->childNodes) {
-        if (childNode != nullptr) {
-            delete_subtree_and_hash_entries(childNode, hashTable);
+    // TODO
+    if (!node->is_calibrated()) {
+        if (!node->are_child_nodes_sorted()) {
+            node->sort_child_nodes_by_probabilities();
         }
     }
 
-    auto it = hashTable->find(node->pos->hash_key());
-    if(it != hashTable->end()) {
-        hashTable->erase(node->hash_key());
-    }
-    delete node;
+    return node->first_child_node();
 }
 
-void Node::delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable)
+ostream& operator<<(ostream &os, Node *node)
 {
-    if (parentNode != nullptr) {
+    os << "move " << UCI::move(node->get_move(), false)
+       << " n " << node->get_visits()
+       << " p " << node->get_prob_value()
+       << " Q " << node->get_q_value();
+    return os;
+}
+
+void print_node_statistics(Node *node)
+{
+    for (size_t childIdx = 0; childIdx < node->get_child_nodes().size(); ++childIdx) {
+        cout << childIdx << "." << node->get_child_nodes()[childIdx] << endl;
+    }
+    cout << " initial value: " << node->get_value() << endl;
+}
+
+void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
+{
+    if (node->get_parent_node() != nullptr) {
         cout << "info string delete unused subtrees" << endl;
         size_t i = 0;
-        for (Node *childNode: parentNode->childNodes) {
-            if (childNode != nullptr && childNode != this) {
-                Node::delete_subtree_and_hash_entries(childNode, hashTable);
-                parentNode->childNodes[i] = nullptr;
+        for (Node* childNode: node->get_parent_node()->get_child_nodes()) {
+            if (childNode != nullptr && childNode != node) {
+                delete_subtree_and_hash_entries(childNode, hashTable);
+//                node->get_parent_node()->childNodes[i] = nullptr;
             }
             ++i;
         }
     }
 }
 
-ostream& operator<<(ostream &os, Node *node)
+void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>* hashTable)
 {
-    os << "move " << UCI::move(node->getMove(), false)
-       << " n " << node->getVisits()
-       << " p " << node->getProbValue()
-       << " Q " << node->getQValue();
-    return os;
-}
-
-void Node::print_node_statistics()
-{
-    assign_values_to_child_nodes();
-    sort_nodes_by_probabilities();
-
-    for (size_t childIdx = 0; childIdx < nbDirectChildNodes; ++childIdx) {
-        cout << childIdx << "." << childNodes[childIdx] << endl;
+    for (Node* childNode: node->get_child_nodes()) {
+        if (childNode != nullptr) {
+            delete_subtree_and_hash_entries(childNode, hashTable);
+        }
     }
-    cout << " initial value: " << value << endl;
+
+    auto it = hashTable->find(node->hash_key());
+    if(it != hashTable->end()) {
+        hashTable->erase(node->hash_key());
+    }
+    delete node;
 }
 
-void Node::fill_child_node_moves()
+void get_mcts_policy(const Node *node, const float qValueWeight, const float qThresh, DynamicVector<float> &mctsPolicy)
 {
-    // generate the legal moves and save them in the list
-    for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
-        legalMoves.push_back(move);
+    DynamicVector<float> childNumberVisits = retrieve_visits(node);
+    if (qValueWeight > 0) {
+        DynamicVector<float> qValuePruned = retrieve_q_values(node);
+        qValuePruned = (qValuePruned + 1) * 0.5f;
+        float visitThresh = qThresh * max(childNumberVisits);
+        for (size_t idx = 0; idx < node->get_number_child_nodes(); ++idx) {
+            if (childNumberVisits[idx] < visitThresh) {
+                qValuePruned[idx] = 0;
+            }
+        }
+        mctsPolicy = (1.0f - qValueWeight) * (childNumberVisits / node->get_visits()) + qValueWeight * qValuePruned;
+        mctsPolicy /= sum(mctsPolicy);
+    } else {
+        mctsPolicy = childNumberVisits / node->get_visits();
     }
 }
 
+DynamicVector<float> retrieve_dynamic_vector(const vector<Node *> &childNodes, vFunctionValue func)
+{
+    DynamicVector<float> values(childNodes.size());
+    for (size_t i = 0; i < childNodes.size(); ++i) {
+        values[i] = func(childNodes[i]);
+    }
+    return values;
+}
 
-bool operator< (const Node& n1, const Node& n2) {
-    return n1.get_score_value() < n2.get_score_value();
+float get_visits(Node *node)
+{
+    return node->get_visits();
+}
+
+float get_q_value(Node *node)
+{
+    return node->get_q_value();
+}
+
+DynamicVector<float> retrieve_visits(const Node* node)
+{
+    return retrieve_dynamic_vector(node->get_child_nodes(), get_visits);
+}
+
+DynamicVector<float> retrieve_q_values(const Node* node)
+{
+    return retrieve_dynamic_vector(node->get_child_nodes(), get_q_value);
+}
+
+ float get_current_q_thresh(SearchSettings* searchSettings, int numberVisits)
+{
+    return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
+}
+
+double updated_value(const Node* node)
+{
+    return node->first_child_node()->get_q_value();
 }

@@ -37,15 +37,16 @@ class SearchThread
 {
 private:
     Node* rootNode;
-    NeuralNetAPI *netBatch;
+    NeuralNetAPI* netBatch;
 
-    float *inputPlanes;
+    // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
+    float* inputPlanes;
 
     // list of all node objects which have been selected for expansion
-    std::vector<Node*> newNodes;
-    std::vector<Node*> transpositionNodes;
-    std::vector<Node*> collisionNodes;
-    std::vector<Node*> terminalNodes;
+    vector<Node*> newNodes;
+    vector<Node*> transpositionNodes;
+    vector<Node*> collisionNodes;
+    vector<Node*> terminalNodes;
 
     // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
     // sufficient memory according to the batch-size will be allocated in the constructor
@@ -57,17 +58,6 @@ private:
     unordered_map<Key, Node*> *hashTable;
     SearchSettings* searchSettings;
     SearchLimits* searchLimits;
-
-    /**
-     * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
-     * In the case a collision event occured the isCollision flag will be set and for a terminal node the isTerminal flag is set.
-     * @param childIdx Move index for the parent node in order to expand the next node
-     * @param isCollision Flag signaling a collision event, same node was selected multiple time
-     * @param isTerminal Flag signaling a terminal state
-     * @param depth Depth which was reached on this rollout
-     * @return
-     */
-    inline Node* get_new_child_to_evaluate(unsigned int &childIdx, bool &isCollision,  bool &isTerminal, size_t &depth);
 
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
@@ -83,15 +73,6 @@ private:
      * @brief backup_collisions Reverts the applied virtual loss for all rollouts which ended in a collision event
      */
     void backup_collisions();
-
-    /**
-     * @brief create_new_node Creates a new node which will be added to the tree
-     * @param newPos Board position which belongs to the node
-     * @param parentNode Parent node of the new node
-     * @param childIdx Index on how to visit the child node from its parent
-     * @param numberNewNodes Index of the new node in the current batch
-     */
-    inline void create_new_node(Board* newPos, Node* parentNode, size_t childIdx, size_t numberNewNodes);
 
     /**
      * @brief copy_node Copies the node with the NN evaluation based on a preexisting node
@@ -147,5 +128,28 @@ public:
 
 void go(SearchThread *t);
 
+/**
+ * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
+ * In the case a collision event occured the isCollision flag will be set and for a terminal node the isTerminal flag is set.
+ * @param childIdx Move index for the parent node in order to expand the next node
+ * @param isCollision Flag signaling a collision event, same node was selected multiple time
+ * @param isTerminal Flag signaling a terminal state
+ * @param depth Depth which was reached on this rollout
+ * @return
+ */
+inline Node* get_new_child_to_evaluate(Node* rootNode, bool &isCollision,  bool &isTerminal, size_t &depth);
+
+void backup_values(vector<Node*>& nodes);
+
+/**
+ * @brief create_new_node Creates a new node which will be added to the tree
+ * @param newPos Board position which belongs to the node
+ * @param parentNode Parent node of the new node
+ * @param childIdx Index on how to visit the child node from its parent
+ * @param numberNewNodes Index of the new node in the current batch
+ */
+inline void prepare_node_for_nn(Node* newNode,  size_t numberNewNodes, vector<Node*>& newNodes, float* inputPlanes);
+
+void fill_nn_results(size_t batchIdx, bool is_policy_map, const SearchSettings* searchSettings, NDArray* valueOutputs, NDArray* probOutputs, Node *node);
 
 #endif // SEARCHTHREAD_H

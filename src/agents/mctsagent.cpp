@@ -64,7 +64,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
 
     valueOutput = new NDArray(Shape(1, 1), Context::cpu());
 
-    if (netSingle->getSelectPolicyFromPlane()) {
+    if (netSingle->is_policy_map()) {
         probOutputs = new NDArray(Shape(1, NB_LABELS_POLICY_MAP), Context::cpu());
     } else {
         probOutputs = new NDArray(Shape(1, NB_LABELS), Context::cpu());
@@ -82,7 +82,7 @@ size_t MCTSAgent::init_root_node(Board *pos)
         // swap the states because now the old states are used
         // This way the memory won't be freed for the next new move
         states->swap_states();
-        nodesPreSearch = rootNode->numberVisits;
+        nodesPreSearch = rootNode->get_visits();
         cout << "info string reuse the tree with " << nodesPreSearch << " nodes" << endl;
     }
     else {
@@ -107,13 +107,13 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     }
 
     if (same_hash_key(ownNextRoot, pos)) {
-        ownNextRoot->delete_sibling_subtrees(hashTable);
-        opponentsNextRoot->delete_sibling_subtrees(hashTable);
+        delete_sibling_subtrees(ownNextRoot, hashTable);
+        delete_sibling_subtrees(opponentsNextRoot, hashTable);
         ownNextRoot->make_to_root();
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, pos)) {
-        opponentsNextRoot->delete_sibling_subtrees(hashTable);
+        delete_sibling_subtrees(opponentsNextRoot, hashTable);
         opponentsNextRoot->make_to_root();
         return opponentsNextRoot;
     }
@@ -122,7 +122,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 
 void MCTSAgent::stop_search_based_on_limits()
 {
-    int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->pos->side_to_move(), rootNode->pos->plies_from_null()/2);
+    int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->get_pos()->side_to_move(), rootNode->get_pos()->plies_from_null()/2);
     cout << "info string movetime " << curMovetime << endl;
     this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
     if (early_stopping()) {
@@ -145,7 +145,7 @@ void MCTSAgent::stop_search()
 
 bool MCTSAgent::early_stopping()
 {
-    if (max(rootNode->policyProbSmall) > 0.9f && argmax(rootNode->policyProbSmall) == argmax(rootNode->qValues)) {
+    if (rootNode->first_child_node()->get_prob_value() > 0.9f && rootNode->first_child_node()->get_q_value() > rootNode->second_child_node()->get_q_value()) {
         cout << "info string Early stopping" << endl;
         return true;
     }
@@ -153,7 +153,7 @@ bool MCTSAgent::early_stopping()
 }
 
 bool MCTSAgent::continue_search() {
-    if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->qValues[argmax(rootNode->childNumberVisits)]+0.1f < lastValueEval) {
+    if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->first_child_node()->get_q_value()+0.1f < lastValueEval) {
         cout << "info Increase search time" << endl;
         return true;
     }
@@ -167,18 +167,16 @@ void MCTSAgent::create_new_root_node(Board *pos)
     if (oldestRootNode != nullptr) {
         cout << "info string delete the old tree " << endl;
         if (opponentsNextRoot != nullptr) {
-            opponentsNextRoot->delete_sibling_subtrees(hashTable);
+            delete_sibling_subtrees(opponentsNextRoot, hashTable);
         }
     }
     cout << "info string create new tree" << endl;
-    rootNode = new Node(newPos, nullptr, 0, searchSettings);
+    rootNode = new Node(pos, nullptr, MOVE_NONE);
+    rootNode->expand();
     oldestRootNode = rootNode;
     board_to_planes(pos, 0, true, begin(input_planes));
     netSingle->predict(input_planes, *valueOutput, *probOutputs);
-    get_probs_of_move_list(0, probOutputs, rootNode->legalMoves, newPos->side_to_move(),
-                           !netSingle->getSelectPolicyFromPlane(), rootNode->policyProbSmall, netSingle->getSelectPolicyFromPlane());
-    rootNode->value = valueOutput->At(0, 0);
-    rootNode->enhance_moves();
+    fill_nn_results(0, probOutputs, searchSettings, valueOutput, probOutputs, rootNode);
     rootNode->make_to_root();
     gameNodes.push_back(rootNode);
 }
@@ -189,14 +187,14 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
     if (!reusedFullTree) {
         if (ownMove) {
             opponentsNextRoot = pick_next_node(move, rootNode);
-            if (opponentsNextRoot != nullptr && opponentsNextRoot->hasNNResults) {
+            if (opponentsNextRoot != nullptr && opponentsNextRoot->has_nn_results()) {
                 cout << "info string apply move to tree" << endl;
                 gameNodes.push_back(opponentsNextRoot);
             }
         }
         else {
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
-            if (ownNextRoot != nullptr && ownNextRoot->hasNNResults) {
+            if (ownNextRoot != nullptr && ownNextRoot->has_nn_results()) {
                 cout << "info string apply move to tree" << endl;
                 gameNodes.push_back(ownNextRoot);
             }
@@ -220,40 +218,41 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 {
     size_t nodesPreSearch = init_root_node(pos);
 
-    if (rootNode->nbDirectChildNodes == 1) {
+    if (rootNode->get_number_child_nodes() == 1) {
         cout << "info string Only single move available -> early stopping" << endl;
     }
-    else if (rootNode->checkmateIdx != -1) {
+    else if (rootNode->get_checkmate_node() != nullptr) {
         cout << "info string Checkmate in one -> early stopping" << endl;
     }
-    else if (rootNode->nbDirectChildNodes == 0) {
+    else if (rootNode->get_number_child_nodes() == 0) {
         cout << "info string The given position has no legal moves" << endl;
     }
     else {
-        cout << "info string apply dirichlet" << endl;
-        rootNode->apply_dirichlet_noise_to_prior_policy();
+        cout << "info string apply dirichlet TODO" << endl;
+//        rootNode->apply_dirichlet_noise_to_prior_policy();
         run_mcts_search();
     }
 
-	evalInfo.childNumberVisits.resize(rootNode->nbDirectChildNodes);
-	evalInfo.childNumberVisits = rootNode->childNumberVisits;
+    evalInfo.childNumberVisits.resize(rootNode->get_number_child_nodes());
+    evalInfo.childNumberVisits = rootNode->get_visits();
 
-    evalInfo.policyProbSmall.resize(rootNode->nbDirectChildNodes);
+    evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
 	
-    rootNode->get_mcts_policy(evalInfo.policyProbSmall);
+    get_mcts_policy(rootNode, searchSettings->qValueWeight,
+                    get_current_q_thresh(searchSettings, rootNode->get_visits()),
+                    evalInfo.policyProbSmall);
     size_t bestIdx = argmax(evalInfo.policyProbSmall);
-
-    if (bestIdx != argmax(rootNode->childNumberVisits)) {
-        cout << "info string Select different move due to higher Q-value" << endl;
-    }
-
-    evalInfo.centipawns = value_to_centipawn(this->rootNode->getQValues()[bestIdx]);
-    lastValueEval = rootNode->qValues[bestIdx];
-    evalInfo.legalMoves = rootNode->getLegalMoves();
-    this->rootNode->get_principal_variation(evalInfo.pv);
+//    if (bestIdx != argmax(rootNode->childNumberVisits)) {
+//        cout << "info string Select different move due to higher Q-value" << endl;
+//    }
+    evalInfo.centipawns = value_to_centipawn(updated_value(rootNode));
+    lastValueEval = updated_value(rootNode);
+    evalInfo.legalMoves = retrieve_legal_moves(rootNode->get_child_nodes());
+//    this->rootNode->get_principal_variation(evalInfo.pv); // TODO
+    evalInfo.pv = {rootNode->first_child_node()->get_move()};
     evalInfo.depth = evalInfo.pv.size();
     evalInfo.is_chess960 = pos->is_chess960();
-    evalInfo.nodes = rootNode->numberVisits;
+    evalInfo.nodes = rootNode->get_visits();
     evalInfo.nodesPreSearch = nodesPreSearch;
 }
 
@@ -278,7 +277,7 @@ void MCTSAgent::print_root_node()
         cout << "info string You must do a search before you can print the root node statistics" << endl;
         return;
     }
-    rootNode->print_node_statistics();
+    print_node_statistics(rootNode);
 }
 
 

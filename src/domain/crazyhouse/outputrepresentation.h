@@ -37,6 +37,24 @@ using blaze::HybridVector;
 using blaze::DynamicVector;
 
 using namespace mxnet::cpp;
+using namespace std;
+
+
+/**
+ * @brief get_policy_data_batch Returns the pointer of the batch for the policy predictions
+ * @param batchIdx Batch index for the current predicion
+ * @param policyProb All policy predicitons from the batch
+ * @param isPolicyMap Sets if the policy is encoded in policy map representation
+ * @return Starting pointer for predictions of the current batch
+ */
+const float*  get_policy_data_batch(const size_t batchIdx, const NDArray* policyProb, bool isPolicyMap);
+
+/**
+ * @brief get_current_move_lookup Returns the look-up table to use depending on the side to move
+ * @param sideToMove Current side to move
+ * @return Returns either MOVE_LOOK_UP or MOVE_LOOK_UP_MIRRORED
+ */
+unordered_map<Move, size_t>& get_current_move_lookup(Color sideToMove);
 
 /**
  * @brief get_probs_of_move_list Returns an array in which entry relates to the probability for the given move list.
@@ -53,11 +71,16 @@ using namespace mxnet::cpp;
 void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove,
                             bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance);
 
+void get_probs_of_moves(const float *data, const vector<Move>& legalMoves,
+                        unordered_map<Move, size_t>& moveLookup, DynamicVector<float> &policyProbSmall);
+
 /**
  * @brief value_to_centipawn Converts a value in A0-notation to roughly a centi-pawn loss
  * @param value floating value from [-1.,1.]
  * @return Returns centipawn conversion for value
  */
 int value_to_centipawn(float value);
+
+void apply_softmax(DynamicVector<float> &policyProbSmall);
 
 #endif // OUTPUTREPRESENTATION_H

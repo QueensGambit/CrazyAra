@@ -30,7 +30,7 @@ using namespace std;
 
 
 // TODO: Change this later to blaze::HybridVector<float, MAX_NB_LEGAL_MOVES>
-void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance)
+void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool selectPolicyFromPlane)
 {
 //    // allocate sufficient memory -> is assumed that it has already been done
 //    policyProbSmall.resize(legalMoves.size());
@@ -50,7 +50,7 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, co
         // set the right prob value
         // accessing the data on the raw floating point vector is faster
         // than calling policyProb.At(batchIdx, vectorIdx)
-        if (select_policy_from_plance) {
+        if (selectPolicyFromPlane) {
             policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS_POLICY_MAP+FLAT_PLANE_IDX[vectorIdx]];
         } else {
             policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS+vectorIdx];
@@ -62,7 +62,18 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, co
     }
 }
 
-
+void get_probs_of_moves(const float *data, const vector<Move>& legalMoves, unordered_map<Move, size_t>& moveLookup, DynamicVector<float> &policyProbSmall)
+{
+//    // allocate sufficient memory -> is assumed that it has already been done
+//    policyProbSmall.resize(legalMoves.size());
+    for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
+        // retrieve vector index from look-up table
+        // set the right prob value
+        // accessing the data on the raw floating point vector is faster
+        // than calling policyProb.At(batchIdx, vectorIdx)
+        policyProbSmall[mvIdx] = data[moveLookup[legalMoves[mvIdx]]];
+    }
+}
 // https://helloacm.com/how-to-implement-the-sgn-function-in-c/
 template <class T>
 inline int
@@ -80,3 +91,26 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
 }
 
+const float* get_policy_data_batch(const size_t batchIdx, const NDArray *probOutputs, bool isPolicyMap)
+{
+    if (isPolicyMap) {
+        return probOutputs->GetData() + batchIdx*NB_LABELS_POLICY_MAP;
+    }
+    return probOutputs->GetData() + batchIdx*NB_LABELS;
+}
+
+unordered_map<Move, size_t>& get_current_move_lookup(Color sideToMove)
+{
+    if (sideToMove == WHITE) {
+        // use the look-up table for the first player
+        return MV_LOOKUP;
+    }
+    // use the mirrored look-up table instead
+    return MV_LOOKUP_MIRRORED;
+}
+
+
+void apply_softmax(DynamicVector<float> &policyProbSmall)
+{
+    policyProbSmall = softmax(policyProbSmall);
+}
