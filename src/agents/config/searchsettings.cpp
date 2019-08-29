@@ -44,7 +44,11 @@ SearchSettings::SearchSettings():
         qThreshInit(0.5f),
         qThreshMax(0.9f),
         qThreshBase(1965.0f),
-        randomMoveFactor(0.0f)
+        randomMoveFactor(0.0f),
+        threshCheck(0.1f),
+        checkFactor(0.5f),
+        threshCapture(0.1f),
+        captureFactor(0.05f)
 {
 
 }
