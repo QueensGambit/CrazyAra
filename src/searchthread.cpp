@@ -82,10 +82,11 @@ SearchLimits *SearchThread::get_search_limits() const
 inline Node* get_new_child_to_evaluate(Node* rootNode, bool &isCollision, bool &isTerminal, size_t &depth)
 {
     Node *currentNode = rootNode;
+    rootNode->apply_virtual_loss();
     depth = 0;
     while (true) {
-        currentNode->apply_virtual_loss();
         currentNode = select_child_node(currentNode);
+        currentNode->apply_virtual_loss();
         depth++;
         if (!currentNode->is_expanded()) {
             currentNode->init_board();
@@ -209,6 +210,7 @@ void SearchThread::thread_iteration()
         netBatch->predict(inputPlanes, *valueOutputs, *probOutputs);
         set_nn_results_to_child_nodes();
     }
+//    cout << "backup values" << endl;
     backup_value_outputs();
     backup_collisions();
 //    rootNode->numberVisits = sum(rootNode->childNumberVisits);
@@ -220,7 +222,6 @@ void go(SearchThread *t)
 
     do {
         t->thread_iteration();
-        break;
     } while(t->get_is_running() && t->nodes_limits_ok());
 }
 
