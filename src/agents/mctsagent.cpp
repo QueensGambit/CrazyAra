@@ -145,7 +145,7 @@ void MCTSAgent::stop_search()
 
 bool MCTSAgent::early_stopping()
 {
-    if (rootNode->first_child_node()->get_prob_value() > 0.9f && rootNode->first_child_node()->get_q_value() > rootNode->second_child_node()->get_q_value()) {
+    if (rootNode->candidate_child_node()->get_prob_value() > 0.9f && rootNode->candidate_child_node()->get_q_value() > rootNode->alternative_child_node()->get_q_value()) {
         cout << "info string Early stopping" << endl;
         return true;
     }
@@ -153,7 +153,7 @@ bool MCTSAgent::early_stopping()
 }
 
 bool MCTSAgent::continue_search() {
-    if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->first_child_node()->get_q_value()+0.1f < lastValueEval) {
+    if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->candidate_child_node()->get_q_value()+0.1f < lastValueEval) {
         cout << "info Increase search time" << endl;
         return true;
     }
@@ -171,7 +171,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
         }
     }
     cout << "info string create new tree" << endl;
-    rootNode = new Node(pos, nullptr, MOVE_NONE);
+    rootNode = new Node(pos, nullptr, MOVE_NONE, searchSettings);
     rootNode->expand();
     oldestRootNode = rootNode;
     board_to_planes(pos, 0, true, begin(input_planes));
@@ -249,7 +249,7 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     lastValueEval = updated_value(rootNode);
     evalInfo.legalMoves = retrieve_legal_moves(rootNode->get_child_nodes());
 //    this->rootNode->get_principal_variation(evalInfo.pv); // TODO
-    evalInfo.pv = {rootNode->first_child_node()->get_move()};
+    evalInfo.pv = {rootNode->candidate_child_node()->get_move()};
     evalInfo.depth = evalInfo.pv.size();
     evalInfo.is_chess960 = pos->is_chess960();
     evalInfo.nodes = rootNode->get_visits();

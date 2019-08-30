@@ -57,18 +57,22 @@ private:
     float probValue;
     double qValue;
     double actionValue;
-    unsigned int visits;
+    float visits;
     int virtualLossCounter;
 
     bool isTerminal;
     size_t numberChildNodes;
+    size_t nodeIdxUpdate;
 
     vector<Node*> childNodes;
 
     bool isExpanded;
     bool hasNNResults;
-    bool isCalibrated;  // determines if the nodes are ordered
+    bool isCalibrated;           // determines if the nodes are ordered
     bool areChildNodesSorted;
+
+    double uParentFactor;         // stores all parts of the u-value as there a observable by the parent node
+    float uDivisorSummand;       // summand which is added to the divisor of the u-divisor
 
     // if checkmateNode is != nullptr it will always be preferred over all other nodes
     Node* checkmateNode;
@@ -78,14 +82,14 @@ private:
     inline void check_for_terminal();
 
 public:
-    Node(Node* parentNode, Move move);
+    Node(Node* parentNode, Move move, SearchSettings* searchSettings);
     /**
      * @brief Node Constructor used for creating a new root node
      * @param parentNode Pointer to parent node
      * @param move Move which led to current board state
      * @param pos Current board position
      */
-    Node(Board *pos, Node *parentNode, Move move);
+    Node(Board *pos, Node *parentNode, Move move, SearchSettings* searchSettings);
 
     void expand();
     Move get_move() const;
@@ -106,8 +110,8 @@ public:
     bool is_expanded() const;
     bool are_child_nodes_sorted() const;
     bool is_calibrated() const;
-    Node* first_child_node() const;
-    Node* second_child_node() const;
+    Node* candidate_child_node() const;
+    Node* alternative_child_node() const;
     Key hash_key() const;
 
     size_t get_number_child_nodes() const;
@@ -119,13 +123,20 @@ public:
     void sort_child_nodes_by_probabilities();
 
     /**
+     * @brief calibrate_child_node_order Applies a partial sort for the previously updated nodes depending on nodeIdxUpdate
+     */
+    void calibrate_child_node_order();
+
+    /**
      * @brief make_to_root Makes the node to the current root node by setting its parent to a nullptr
      */
     void make_to_root();
 
-    unsigned int get_visits() const;
+    float get_visits() const;
     float get_prob_value() const;
     double get_q_value() const;
+
+    void update_q_value();
 
     /**
      * @brief init_board Initializes the board position given the previous position and move to play
@@ -135,6 +146,22 @@ public:
      */
     void init_board();
 
+    /**
+     * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
+     * @return float
+     */
+    void update_u_divisor();
+
+    void update_u_parent_factor();
+
+    double get_current_u_value() const;
+    double get_score_value() const;
+    double get_u_parent_factor() const;
+    float get_u_divisor_summand() const;
+
+    void validate_candidate_node();
+    void swap_candidate_node_with_alternative();
+    void readjust_candidate_node_position();
 };
 
 // generate the legal moves and save them in the list
@@ -161,7 +188,7 @@ vector<Move> retrieve_legal_moves(const vector<Node*>& childNodes);
  * @param pos Board position
  * @param childNodes Empty vector which will be filled for every legal move
  */
-inline void create_child_nodes(Node* parentNode, const Board* pos, vector<Node*> &childNodes);
+inline void create_child_nodes(Node* parentNode, const Board* pos, vector<Node*> &childNodes, SearchSettings* searchSettings);
 
 // https://stackoverflow.com/questions/6339970/c-using-function-as-parameter
 typedef bool (* vFunctionMoveType)(const Board* pos, Move move);
@@ -196,6 +223,8 @@ Node* select_child_node(Node* node);
  * @return ostream
  */
 extern std::ostream& operator<<(std::ostream& os, Node* node);
+
+extern bool operator< (const Node& n1, const Node& n2);
 
 /**
  * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
@@ -238,5 +267,17 @@ void get_mcts_policy(const Node *node, const float qValueWeight, const float qTh
 float get_current_q_thresh(SearchSettings* searchSettings, int numberVisits);
 
 double updated_value(const Node* node);
+
+/**
+ * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
+ * @return float
+ */
+double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit);
+
+/**
+ * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
+ * @return float
+ */
+float get_current_u_divisor(float numberVisits, float uMin, float uInit, float uBase);
 
 #endif // NODE_H
