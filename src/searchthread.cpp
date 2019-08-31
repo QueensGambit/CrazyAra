@@ -252,6 +252,9 @@ void fill_nn_results(size_t batchIdx, bool is_policy_map, const SearchSettings* 
                        legalMoves,
                        get_current_move_lookup(node->side_to_move()),
                        policyProbSmall);
+    if (!is_policy_map) {
+        apply_softmax(policyProbSmall);
+    }
     enhance_moves(searchSettings, node->get_pos(), legalMoves, policyProbSmall);
     node->set_nn_results(valueOutputs->At(batchIdx, 0), policyProbSmall);
 }
