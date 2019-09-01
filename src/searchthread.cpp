@@ -88,23 +88,28 @@ inline Node* get_new_child_to_evaluate(Node* rootNode, bool &isCollision, bool &
         currentNode = select_child_node(currentNode);
         currentNode->apply_virtual_loss();
         depth++;
+        currentNode->lock();
         if (!currentNode->is_expanded()) {
             currentNode->init_board();
             currentNode->expand();
             isCollision = false;
             isTerminal = currentNode->is_terminal();
+            currentNode->unlock();
             return currentNode;
         }
         if (currentNode->is_terminal()) {
             isCollision = false;
             isTerminal = true;
+            currentNode->unlock();
             return currentNode;
         }
         if (!currentNode->has_nn_results()) {
             isCollision = true;
             isTerminal = false;
+            currentNode->unlock();
             return currentNode;
         }
+        currentNode->unlock();
     }
 }
 
@@ -247,6 +252,7 @@ void prepare_node_for_nn(Node* newNode,  size_t numberNewNodes, vector<Node*>& n
 void fill_nn_results(size_t batchIdx, bool is_policy_map, const SearchSettings* searchSettings, NDArray* valueOutputs, NDArray* probOutputs, Node *node)
 {
     vector<Move> legalMoves = retrieve_legal_moves(node->get_child_nodes());
+    assert(legalMoves.size() == node->get_number_child_nodes());
     DynamicVector<float> policyProbSmall(legalMoves.size());
     get_probs_of_moves(get_policy_data_batch(batchIdx, probOutputs, is_policy_map),
                        legalMoves,

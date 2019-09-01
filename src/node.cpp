@@ -75,10 +75,13 @@ void Node::calibrate_child_node_order()
 
 void Node::expand()
 {
-    create_child_nodes(this, pos, childNodes, searchSettings);
+//    mtx.lock();
+//    create_child_nodes(this, pos, childNodes, searchSettings);
+    create_child_nodes();
     numberChildNodes = childNodes.size();
     check_for_terminal();
     isExpanded = true;
+//    mtx.unlock();
 }
 
 Move Node::get_move() const
@@ -113,21 +116,21 @@ Board* Node::get_pos() const
 
 void Node::set_nn_results(float nn_value, const DynamicVector<float> &policyProbSmall)
 {
-    mtx.lock();
+//    mtx.lock();
     value = nn_value;
     for (size_t i = 0; i < childNodes.size(); ++i) {
         childNodes[i]->set_prob_value(policyProbSmall[i]);
     }
     hasNNResults = true;
-    mtx.unlock();
+//    mtx.unlock();
 }
 
 void Node::apply_virtual_loss()
 {
-    mtx.lock();
+//    mtx.lock();
     ++virtualLossCounter;
     update_q_value();
-    mtx.unlock();
+//    mtx.unlock();
 }
 
 void Node::set_prob_value(float value)
@@ -223,14 +226,17 @@ float Node::get_u_divisor_summand() const
 
 void Node::validate_candidate_node()
 {
-    if (numberChildNodes != 1 && *childNodes.rbegin() < *(childNodes.rbegin()+1)) {
+    if (numberChildNodes != 1 && childNodes.back() < *(childNodes.end()-2)) {
         // an update is required
-        if (*childNodes.rbegin() > *(childNodes.rbegin()+2)) {
-            swap_candidate_node_with_alternative();
-        }
-        else if (numberChildNodes != 2) {
+//        if (*childNodes.rbegin() > *(childNodes.rbegin()+2)) {
+//            swap_candidate_node_with_alternative();
+//        }
+//        else if (numberChildNodes != 2) {
             readjust_candidate_node_position();
-        }
+//        }
+    }
+    else {
+//        cout << "no adjust" << endl;
     }
 }
 
@@ -247,18 +253,22 @@ void Node::swap_candidate_node_with_alternative()
 void Node::readjust_candidate_node_position()
 {
     // put former last element at according location
-    Node* element = *childNodes.end();
-    childNodes.pop_back();
+    Node* element = childNodes.back();
+//    childNodes.pop_back();
 
-    size_t idx = 0;
-    for(auto it = childNodes.rbegin(); it != childNodes.rend(); ++it) {
+    size_t idx = 2;
+    for(auto it = childNodes.rbegin()+1; it != childNodes.rend(); ++it) {
         if (*it < element) {
-            childNodes.insert(it.base(), element);
+//            childNodes.insert(it.base(), element);
             break;
         }
         ++idx;
     }
 
+//    cout << numberChildNodes << endl;
+//    cout << nodeIdxUpdate << endl;
+    assert(idx >= 2);
+    std::rotate(childNodes.end()-idx,childNodes.end()-1, childNodes.end());
     nodeIdxUpdate = max(idx, nodeIdxUpdate);
 }
 
@@ -269,9 +279,9 @@ void Node::check_for_terminal()
         // test if we have a check-mate
         if (parentNode->pos->gives_check(move)) {
             value = -1;
-            parentNode->mtx.lock();
+//            parentNode->mtx.lock();
             parentNode->checkmateNode = this;
-            parentNode->mtx.unlock();
+//            parentNode->mtx.unlock();
         } else {
             // we reached a stalmate
             value = 0;
@@ -285,6 +295,9 @@ void Node::check_for_terminal()
     else {
         // normal game position
         isTerminal = false;
+    }
+    if (isTerminal) {
+        cout << "terminal" << endl;
     }
 }
 
@@ -302,12 +315,12 @@ void Node::revert_virtual_loss()
 
 void Node::revert_virtual_loss_and_update(float value)
 {
-    mtx.lock();
+//    mtx.lock();
     ++visits;
     actionValue += double(value);
     revert_virtual_loss();
 //    qValue = actionValue / double(visits);
-    mtx.unlock();
+//    mtx.unlock();
 }
 
 void Node::init_board()
@@ -335,6 +348,26 @@ double Node::get_current_u_value() const
 double Node::get_score_value() const
 {
     return qValue + get_current_u_value();
+}
+
+void Node::create_child_nodes()
+{
+    for (const ExtMove move : MoveList<LEGAL>(*pos)) {
+//        cout << "move " << UCI::move(move, false) << endl;
+        childNodes.push_back(new Node(this, move, searchSettings));
+//        cout << childNodes.back() << endl;
+    }
+    numberChildNodes = childNodes.size();
+}
+
+void Node::lock()
+{
+    mtx.lock();
+}
+
+void Node::unlock()
+{
+    mtx.unlock();
 }
 
 void backup_value(Node* currentNode, float value)
@@ -365,7 +398,7 @@ void backup_collision(Node *currentNode)
 
 void create_child_nodes(Node* parentNode, const Board* pos, vector<Node*> &childNodes, SearchSettings* searchSettings)
 {
-    for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
+    for (const ExtMove move : MoveList<LEGAL>(*pos)) {
 //        cout << "move " << UCI::move(move, false) << endl;
         childNodes.push_back(new Node(parentNode, move, searchSettings));
 //        cout << childNodes.back() << endl;
@@ -417,11 +450,11 @@ void enhance_moves(const SearchSettings* searchSettings, const Board* pos, const
 Node* select_child_node(Node* node)
 {
     if (node->is_calibrated()) {
-        node->validate_candidate_node();
+//        node->validate_candidate_node();
     }
     else {
         if (node->are_child_nodes_sorted()) {
-            node->calibrate_child_node_order();
+//            node->calibrate_child_node_order();
         }
         else {
             node->sort_child_nodes_by_probabilities();
@@ -443,16 +476,16 @@ bool operator< (const Node& n1, const Node& n2) {
     return n1.get_score_value() < n2.get_score_value();
 }
 
-void print_node_statistics(Node *node)
+void Node::print_node_statistics()
 {
     size_t candidateIdx = 0;
-//    for (auto childNodeIt = node->get_child_nodes().rbegin(); childNodeIt != node->get_child_nodes().rend(); ++childNodeIt) {
-//        cout << candidateIdx++ << "." << *childNodeIt << endl;
-//    }
-    for (auto node : node->get_child_nodes()) {
-        cout << candidateIdx++ << "." << node << endl;
+    for (auto childNodeIt = childNodes.rbegin(); childNodeIt != childNodes.rend(); ++childNodeIt) {
+        cout << candidateIdx++ << "." << *childNodeIt << endl;
     }
-    cout << " initial value: " << node->get_value() << endl;
+//    for (auto node : node->get_child_nodes()) {
+//        cout << candidateIdx++ << "." << node << endl;
+//    }
+    cout << " initial value: " << this->get_value() << endl;
 }
 
 void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)

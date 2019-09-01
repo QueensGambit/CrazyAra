@@ -162,6 +162,15 @@ public:
     void validate_candidate_node();
     void swap_candidate_node_with_alternative();
     void readjust_candidate_node_position();
+
+    void create_child_nodes();
+    void lock();
+    void unlock();
+
+    /**
+     * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
+     */
+    void print_node_statistics();
 };
 
 // generate the legal moves and save them in the list
@@ -225,11 +234,6 @@ Node* select_child_node(Node* node);
 extern std::ostream& operator<<(std::ostream& os, Node* node);
 
 extern bool operator< (const Node& n1, const Node& n2);
-
-/**
- * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
- */
-void print_node_statistics(Node* node);
 
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
