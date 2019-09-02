@@ -164,8 +164,8 @@ void NeuralNetAPI::check_if_policy_map()
     float value;
     NDArray probOutputs = predict(inputPlanes, value);
     isPolicyMap = probOutputs.GetShape()[1] != NB_LABELS;
-    cout << "info string selectPolicyFromPlane: " << isPolicyMap << endl;
-	delete inputPlanes;
+    cout << "info string isPolicyMap: " << isPolicyMap << endl;
+    delete[] inputPlanes;
 }
 
 NDArray NeuralNetAPI::predict(float *inputPlanes, float &value)

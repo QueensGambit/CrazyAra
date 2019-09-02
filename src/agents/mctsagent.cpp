@@ -176,7 +176,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
     oldestRootNode = rootNode;
     board_to_planes(pos, 0, true, begin(input_planes));
     netSingle->predict(input_planes, *valueOutput, *probOutputs);
-    fill_nn_results(0, probOutputs, searchSettings, valueOutput, probOutputs, rootNode);
+    fill_nn_results(0, netSingle->is_policy_map(), searchSettings, valueOutput, probOutputs, rootNode);
     rootNode->make_to_root();
     gameNodes.push_back(rootNode);
 }
