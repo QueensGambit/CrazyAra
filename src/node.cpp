@@ -30,7 +30,7 @@ Node::Node(Node *parentNode, Move move,  SearchSettings* searchSettings):
     move(move),
     value(0),
     probValue(0),
-    qValue(-1),
+    qValue(-1.0),
     actionValue(0),
     visits(0),
     virtualLossCounter(0),
@@ -53,24 +53,36 @@ Node::Node(Board *pos, Node *parentNode, Move move,  SearchSettings* searchSetti
 
 void Node::sort_child_nodes_by_probabilities()
 {
-    sort(childNodes.begin(), childNodes.end(), [=](const Node* n1, const Node* n2) {
-        return n1->probValue < n2->probValue; // <
-    });
+    sort(childNodes.begin(), childNodes.end(), prob_value_comparision);
+
     areChildNodesSorted = true;
-    isCalibrated = true;
-    nodeIdxUpdate = 0;
+    isCalibrated = true; //true; // !
+    nodeIdxUpdate = 1;
 }
 
 void Node::calibrate_child_node_order()
 {
-    std::partial_sort(childNodes.rbegin(), childNodes.rbegin() + nodeIdxUpdate, childNodes.rend(),
-        [=](const Node* n1, const Node* n2) {
-        return n1 < n2;
-    });
-
+//    nodeIdxUpdate = numberChildNodes; // !
+//    cout << "nodeIdxUpdate" << nodeIdxUpdate << endl;
+//    if (nodeIdxUpdate != 0) {
+        nodeIdxUpdate = min(nodeIdxUpdate+1, numberChildNodes);
+//        std::partial_sort(childNodes.begin(), childNodes.begin()+int(nodeIdxUpdate), childNodes.end(), //childNodes.begin()+nodeIdxUpdate,
+//            [=](const Node* n1, const Node* n2) {
+//            return n1->get_q_plus_u() > n2->get_q_plus_u();
+//        });
+        std::sort(childNodes.begin(), childNodes.begin()+int(nodeIdxUpdate), q_plus_u_comparision);
+//    }
+    // sorting
     areChildNodesSorted = true;
     isCalibrated = true;
-    nodeIdxUpdate = 0;
+
+    // DEBUG
+//    if (!is_ordering_correct(childNodes)) {
+//        print_node_statistics(this);
+    assert(is_ordering_correct(childNodes));
+//    }
+//    nodeIdxUpdate = 1;
+//    nodeIdxUpdate = 0;
 }
 
 void Node::expand()
@@ -170,12 +182,12 @@ bool Node::is_calibrated() const
 
 Node* Node::candidate_child_node() const
 {
-    return childNodes.back();
+    return childNodes[0];
 }
 
 Node *Node::alternative_child_node() const
 {
-    return *(childNodes.rbegin()+1);
+    return childNodes[1];
 }
 
 Key Node::hash_key() const
@@ -226,13 +238,16 @@ float Node::get_u_divisor_summand() const
 
 void Node::validate_candidate_node()
 {
-    if (numberChildNodes != 1 && childNodes.back() < *(childNodes.end()-2)) {
+    if (numberChildNodes != 1 && childNodes[0]->get_q_plus_u() < childNodes[1]->get_q_plus_u()) {
         // an update is required
-//        if (*childNodes.rbegin() > *(childNodes.rbegin()+2)) {
-//            swap_candidate_node_with_alternative();
-//        }
-//        else if (numberChildNodes != 2) {
+        if (numberChildNodes == 2 || childNodes[0]->get_q_plus_u() > childNodes[2]->get_q_plus_u()) {
+            swap_candidate_node_with_alternative();
+        }
+        else {
+//             cout << "readjust" << endl;
             readjust_candidate_node_position();
+        }
+//        else if (numberChildNodes != 2) {
 //        }
     }
     else {
@@ -243,22 +258,24 @@ void Node::validate_candidate_node()
 void Node::swap_candidate_node_with_alternative()
 {
     // only swap first two
-    Node* temp = *childNodes.end();
-    *childNodes.end() = *(childNodes.rbegin()+1);
-    *(childNodes.rbegin()+1) = temp;
-
-    nodeIdxUpdate = 1;
+    Node* temp = childNodes[0];
+    childNodes[0] = childNodes[1];
+    childNodes[1] = temp;
+//    if (nodeIdxUpdate == 0) {
+//        nodeIdxUpdate = 2;
+//    }
 }
 
 void Node::readjust_candidate_node_position()
 {
     // put former last element at according location
-    Node* element = childNodes.back();
+//    Node* element = childNodes.back();
 //    childNodes.pop_back();
 
-    size_t idx = 2;
-    for(auto it = childNodes.rbegin()+1; it != childNodes.rend(); ++it) {
-        if (*it < element) {
+    size_t idx = 3;
+    for(auto it = childNodes.begin()+3; it != childNodes.end(); ++it) {
+        Node* curElement = *it;
+        if (curElement->get_q_plus_u() < childNodes[0]->get_q_plus_u()) {
 //            childNodes.insert(it.base(), element);
             break;
         }
@@ -267,8 +284,9 @@ void Node::readjust_candidate_node_position()
 
 //    cout << numberChildNodes << endl;
 //    cout << nodeIdxUpdate << endl;
-    assert(idx >= 2);
-    std::rotate(childNodes.end()-idx,childNodes.end()-1, childNodes.end());
+//    std::rotate(childNodes.end()-idx,childNodes.end()-1, childNodes.end());
+    std::rotate(childNodes.begin(), childNodes.begin()+1, childNodes.begin()+idx);
+
     nodeIdxUpdate = max(idx, nodeIdxUpdate);
 }
 
@@ -345,7 +363,7 @@ double Node::get_current_u_value() const
     return parentNode->get_u_parent_factor() * (probValue / (visits + virtualLossCounter + parentNode->get_u_divisor_summand()));
 }
 
-double Node::get_score_value() const
+double Node::get_q_plus_u() const
 {
     return qValue + get_current_u_value();
 }
@@ -370,11 +388,17 @@ void Node::unlock()
     mtx.unlock();
 }
 
+void Node::mark_as_uncalibrated()
+{
+    isCalibrated = false;
+}
+
 void backup_value(Node* currentNode, float value)
 {
     do {
         currentNode->revert_virtual_loss_and_update(value);
         value = -value;
+        currentNode->mark_as_uncalibrated();
         currentNode = currentNode->get_parent_node();
     } while(currentNode != nullptr);
 }
@@ -449,12 +473,14 @@ void enhance_moves(const SearchSettings* searchSettings, const Board* pos, const
 
 Node* select_child_node(Node* node)
 {
+    node->update_u_divisor();
+    node->update_u_parent_factor();
     if (node->is_calibrated()) {
-//        node->validate_candidate_node();
+        node->validate_candidate_node();
     }
     else {
         if (node->are_child_nodes_sorted()) {
-//            node->calibrate_child_node_order();
+            node->calibrate_child_node_order();
         }
         else {
             node->sort_child_nodes_by_probabilities();
@@ -466,26 +492,11 @@ Node* select_child_node(Node* node)
 ostream& operator<<(ostream &os, Node *node)
 {
     os << "move " << UCI::move(node->get_move(), false)
-       << " n " << node->get_visits()
-       << " p " << node->get_prob_value()
-       << " Q " << node->get_q_value();
+       << "\tn " << node->get_visits()
+       << "\tp " << node->get_prob_value()
+       << "\tQ " << node->get_q_value()
+       << "\tQ+U " << node->get_q_plus_u();
     return os;
-}
-
-bool operator< (const Node& n1, const Node& n2) {
-    return n1.get_score_value() < n2.get_score_value();
-}
-
-void Node::print_node_statistics()
-{
-    size_t candidateIdx = 0;
-    for (auto childNodeIt = childNodes.rbegin(); childNodeIt != childNodes.rend(); ++childNodeIt) {
-        cout << candidateIdx++ << "." << *childNodeIt << endl;
-    }
-//    for (auto node : node->get_child_nodes()) {
-//        cout << candidateIdx++ << "." << node << endl;
-//    }
-    cout << " initial value: " << this->get_value() << endl;
 }
 
 void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
@@ -584,4 +595,37 @@ double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit)
 float get_current_u_divisor(float numberVisits, float uMin, float uInit, float uBase)
 {
     return uMin - exp(-numberVisits / uBase) * (uMin - uInit);
+}
+
+void print_node_statistics(Node* node)
+{
+    size_t candidateIdx = 0;
+//    for (auto childNodeIt = childNodes.rbegin(); childNodeIt != childNodes.rend(); ++childNodeIt) {
+//        cout << candidateIdx++ << "." << *childNodeIt << endl;
+//    }
+    cout << "info string position " << node->get_pos()->fen() << endl;
+    for (auto node : node->get_child_nodes()) {
+        cout << candidateIdx++ << "." << node << endl;
+    }
+    cout << " initial value: " << node->get_value() << endl;
+}
+
+bool is_ordering_correct(vector<Node*> &childNodes)
+{
+    for (size_t i = 0; i < childNodes.size()-1; ++i) {
+        if (childNodes[i]->get_q_plus_u() < childNodes[i+1]->get_q_plus_u()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool prob_value_comparision(const Node* n1, const Node* n2)
+{
+    return n1->get_prob_value() > n2->get_prob_value();
+}
+
+bool q_plus_u_comparision(const Node* n1, const Node* n2)
+{
+    return n1->get_q_plus_u() > n2->get_q_plus_u();
 }

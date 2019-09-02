@@ -155,7 +155,7 @@ public:
     void update_u_parent_factor();
 
     double get_current_u_value() const;
-    double get_score_value() const;
+    double get_q_plus_u() const;
     double get_u_parent_factor() const;
     float get_u_divisor_summand() const;
 
@@ -167,10 +167,7 @@ public:
     void lock();
     void unlock();
 
-    /**
-     * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
-     */
-    void print_node_statistics();
+    void mark_as_uncalibrated();
 };
 
 // generate the legal moves and save them in the list
@@ -233,8 +230,6 @@ Node* select_child_node(Node* node);
  */
 extern std::ostream& operator<<(std::ostream& os, Node* node);
 
-extern bool operator< (const Node& n1, const Node& n2);
-
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
  * @param node Node of the subtree to delete
@@ -283,5 +278,21 @@ double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit);
  * @return float
  */
 float get_current_u_divisor(float numberVisits, float uMin, float uInit, float uBase);
+
+/**
+ * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
+ */
+void print_node_statistics(Node* node);
+
+/**
+ * @brief is_ordering_correct Validates if the ordering of the child nodes is still valid
+ * @param childNodes List of nodes, assumed to be ordered based on q+u
+ * @return boolean
+ */
+bool is_ordering_correct(vector<Node*>& childNodes);
+
+bool prob_value_comparision(const Node* n1, const Node* n2);
+
+bool q_plus_u_comparision(const Node* n1, const Node* n2);
 
 #endif // NODE_H
