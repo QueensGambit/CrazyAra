@@ -233,7 +233,7 @@ void go(SearchThread *t)
 void backup_values(vector<Node*>& nodes)
 {
     for (auto node: nodes) {
-        backup_value(node, node->get_value());
+        backup_value(node, -node->get_value());
     }
     nodes.clear();
 }
