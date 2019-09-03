@@ -99,7 +99,6 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     if (rootNode == nullptr) {
         return nullptr;
     }
-
     if (same_hash_key(rootNode, pos)) {
         cout << "info string reuse the full tree" << endl;
         reusedFullTree = true;
@@ -171,13 +170,12 @@ void MCTSAgent::create_new_root_node(Board *pos)
         }
     }
     cout << "info string create new tree" << endl;
-    rootNode = new Node(pos, nullptr, MOVE_NONE, searchSettings);
+    rootNode = new Node(newPos, nullptr, MOVE_NONE, searchSettings);
     rootNode->expand();
     oldestRootNode = rootNode;
     board_to_planes(pos, 0, true, begin(input_planes));
     netSingle->predict(input_planes, *valueOutput, *probOutputs);
     fill_nn_results(0, netSingle->is_policy_map(), searchSettings, valueOutput, probOutputs, rootNode);
-    rootNode->make_to_root();
     gameNodes.push_back(rootNode);
 }
 
@@ -245,8 +243,8 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 //    if (bestIdx != argmax(rootNode->childNumberVisits)) {
 //        cout << "info string Select different move due to higher Q-value" << endl;
 //    }
-    evalInfo.centipawns = value_to_centipawn(updated_value(rootNode));
-    lastValueEval = updated_value(rootNode);
+    lastValueEval = updated_value(rootNode, evalInfo.policyProbSmall);
+    evalInfo.centipawns = value_to_centipawn(lastValueEval);
     evalInfo.legalMoves = retrieve_legal_moves(rootNode->get_child_nodes());
     get_principal_variation(rootNode, searchSettings, evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
