@@ -506,6 +506,7 @@ void enhance_moves(const SearchSettings* searchSettings, const Board* pos, const
 
 Node* select_child_node(Node* node)
 {
+    node->lock();
     node->update_u_divisor();
     node->update_u_parent_factor();
     if (node->is_calibrated()) {
@@ -519,6 +520,7 @@ Node* select_child_node(Node* node)
             node->sort_child_nodes_by_probabilities();
         }
     }
+    node->unlock();
     return node->candidate_child_node();
 }
 
