@@ -199,7 +199,7 @@ void SearchThread::create_mini_batch()
 void SearchThread::thread_iteration()
 {
     create_mini_batch();
-    if (newNodes.size() > 0) {
+    if (newNodes.size() != 0) {
         netBatch->predict(inputPlanes, *valueOutputs, *probOutputs);
         set_nn_results_to_child_nodes();
     }
@@ -212,7 +212,6 @@ void SearchThread::thread_iteration()
 void go(SearchThread *t)
 {
     t->set_is_running(true);
-
     do {
         t->thread_iteration();
     } while(t->get_is_running() && t->nodes_limits_ok());
