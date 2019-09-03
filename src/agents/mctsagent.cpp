@@ -228,8 +228,8 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
         cout << "info string The given position has no legal moves" << endl;
     }
     else {
-        cout << "info string apply dirichlet TODO" << endl;
-//        rootNode->apply_dirichlet_noise_to_prior_policy();
+        cout << "info string apply dirichlet" << endl;
+        rootNode->apply_dirichlet_noise_to_prior_policy();
         run_mcts_search();
     }
 

@@ -176,6 +176,14 @@ public:
     void unlock();
 
     void mark_as_uncalibrated();
+
+    /**
+     * @brief apply_dirichlet_noise_to_prior_policy Applies dirichlet noise of strength searchSettings->dirichletEpsilon with
+     * alpha value searchSettings->dirichletAlpha to the prior policy of the root node. This encourages exploration of nodes with initially low
+     * low activations.
+     */
+    void apply_dirichlet_noise_to_prior_policy();
+
 };
 
 // generate the legal moves and save them in the list

@@ -24,6 +24,7 @@
  */
 
 #include "node.h"
+#include "util/blazeutil.h" // get_dirichlet_noise()
 
 Node::Node(Node *parentNode, Move move,  SearchSettings* searchSettings):
     parentNode(parentNode),
@@ -413,6 +414,16 @@ void Node::unlock()
 void Node::mark_as_uncalibrated()
 {
     isCalibrated = false;
+}
+
+void Node::apply_dirichlet_noise_to_prior_policy()
+{
+    DynamicVector<float> dirichletNoise = get_dirichlet_noise(numberChildNodes, searchSettings->dirichletAlpha);
+    size_t idx = 0;
+    float probEpsilon = (1 - searchSettings->dirichletEpsilon);
+    for (Node* node : childNodes) {
+        node->probValue = probEpsilon * node->probValue + searchSettings->dirichletEpsilon * dirichletNoise[idx++];
+    }
 }
 
 void backup_value(Node* currentNode, float value)
