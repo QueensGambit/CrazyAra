@@ -2,7 +2,7 @@
 # CrazyAra - Deep Learning for Crazyhouse <img src="https://raw.githubusercontent.com/QueensGambit/CrazyAra/master/etc/media/CrazyAra_Logo.png" width="64">
 
 
-**The new C++ version for the MCTS can be found at: https://github.com/QueensGambit/CrazyAra-Engine**
+**The new C++ version of the engine can be found at: https://github.com/QueensGambit/CrazyAra-Engine**
 
 
                                       _                                                                      
@@ -160,10 +160,10 @@ https://github.com/mnahinkhan/Chess/blob/master/Chess/chess.py
 ## Publication
 * J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [preprint](https://arxiv.org/abs/1908.06660)
 ```
-@article{czech_learning_2019,
-	title = {Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data},
-	author = {Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and Fürnkranz, Johannes},
-	year = {2019},
-	pages = {35}
+@article{czech2019learning,
+  title={Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data},
+  author={Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and F{\"u}rnkranz, Johannes},
+  journal={arXiv preprint arXiv:1908.06660},
+  year={2019}
 }
 ```
