@@ -91,6 +91,14 @@ public:
      */
     Node(Board *pos, Node *parentNode, Move move, SearchSettings* searchSettings);
 
+    /**
+     * @brief operator= Assignment which copies the value evaluation and prior policy of the child nodes.
+     * The qValues, actionValues and visits of the child nodes aren't copied over.
+     * This operator is used during a transposition event.
+     * @param b Node from which the stats will be copied
+     */
+    void operator=(const Node& b);
+
     void expand();
     Move get_move() const;
     vector<Node*> get_child_nodes() const;

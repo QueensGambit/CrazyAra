@@ -51,6 +51,28 @@ Node::Node(Board *pos, Node *parentNode, Move move,  SearchSettings* searchSetti
     this->pos = pos;
 }
 
+void Node::operator=(const Node& b)
+{
+    value = b.value;
+    pos = b.pos;
+    numberChildNodes = b.numberChildNodes;
+    // copy the probability values for all child nodes
+    for (Node* node : b.childNodes) {
+        Node* newChild = new Node(this, node->move, node->searchSettings);
+        newChild->probValue = node->probValue;
+        childNodes.push_back(newChild);
+    }
+    isTerminal = b.isTerminal;
+    value = b.value;
+    visits = 1;
+    childNodes.resize(numberChildNodes);
+    //    parentNode = // is not copied
+    hasNNResults = b.hasNNResults;
+    searchSettings = b.searchSettings;
+    isTerminal = b.isTerminal;
+    isExpanded = true;
+}
+
 void Node::sort_child_nodes_by_probabilities()
 {
     sort(childNodes.begin(), childNodes.end(), prob_value_comparision);

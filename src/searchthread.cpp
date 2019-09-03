@@ -79,33 +79,55 @@ SearchLimits *SearchThread::get_search_limits() const
     return searchLimits;
 }
 
-inline Node* get_new_child_to_evaluate(Node* rootNode, bool &isCollision, bool &isTerminal, size_t &depth)
+bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo) {
+    return  it->second->has_nn_results() &&
+            it->second->get_pos()->getStateInfo()->pliesFromNull == stateInfo->pliesFromNull &&
+            it->second->get_pos()->getStateInfo()->rule50 == stateInfo->rule50 &&
+            stateInfo->repetition == 0;
+}
+
+Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, unordered_map<Key, Node*>* hashTable, NodeDescription& description)
 {
     Node *currentNode = rootNode;
     rootNode->apply_virtual_loss();
-    depth = 0;
+    description.depth = 0;
     while (true) {
         currentNode = select_child_node(currentNode);
         currentNode->apply_virtual_loss();
-        depth++;
+        description.depth++;
         currentNode->lock();
         if (!currentNode->is_expanded()) {
             currentNode->init_board();
-            currentNode->expand();
-            isCollision = false;
-            isTerminal = currentNode->is_terminal();
-            currentNode->unlock();
-            return currentNode;
+            unordered_map<Key, Node*>::const_iterator it = hashTable->find(currentNode->hash_key());
+            if(useTranspositionTable && it != hashTable->end() &&
+                    is_transposition_verified(it, currentNode->get_pos()->getStateInfo())) {
+                *currentNode = *it->second;  // call of assignment operator
+                description.isCollision = false;
+                description.isTerminal = currentNode->is_terminal();
+                description.isTranposition = true;
+                currentNode->unlock();
+                return currentNode;
+            }
+            else {
+                currentNode->expand();
+                description.isCollision = false;
+                description.isTerminal = currentNode->is_terminal();
+                description.isTranposition = false;
+                currentNode->unlock();
+                return currentNode;
+            }
         }
         if (currentNode->is_terminal()) {
-            isCollision = false;
-            isTerminal = true;
+            description.isCollision = false;
+            description.isTerminal = true;
+            description.isTranposition = false;
             currentNode->unlock();
             return currentNode;
         }
         if (!currentNode->has_nn_results()) {
-            isCollision = true;
-            isTerminal = false;
+            description.isCollision = true;
+            description.isTerminal = false;
+            description.isTranposition = false;
             currentNode->unlock();
             return currentNode;
         }
@@ -140,20 +162,6 @@ void SearchThread::backup_collisions()
     collisionNodes.clear();
 }
 
-void SearchThread::copy_node(const unordered_map<Key,Node*>::const_iterator &it, Board* newPos, Node* parentNode, size_t childIdx)
-{
-//    Node *newNode = new Node(*it->second);
-//    newNode->mtx.lock();
-//    newNode->pos = newPos;
-//    newNode->parentNode = parentNode;
-//    newNode->childIdxForParent = childIdx;
-//    newNode->hasNNResults = true;
-//    newNode->mtx.unlock();
-//    parentNode->mtx.lock();
-//    parentNode->childNodes[childIdx] = newNode;
-//    parentNode->mtx.unlock();
-}
-
 bool SearchThread::nodes_limits_ok()
 {
     return searchLimits->nodes == 0 || (rootNode->get_visits() < searchLimits->nodes);
@@ -163,49 +171,29 @@ void SearchThread::create_mini_batch()
 {
     // select nodes to add to the mini-batch
     Node *currentNode;
-    unsigned int childIdx;
-    bool isCollision;
-    bool isTerminal;
-
-    size_t depth;
-    size_t numberNewNodes = 0;
-    size_t tranpositionEvents = 0;
-    size_t terminalEvents = 0;
+    NodeDescription description;
 
     while (newNodes.size() < searchSettings->batchSize &&
            collisionNodes.size() < searchSettings->batchSize &&
-           tranpositionEvents < searchSettings->batchSize &&
-           terminalEvents < searchSettings->batchSize) {
-        currentNode = get_new_child_to_evaluate(rootNode, isCollision, isTerminal, depth);
+           transpositionNodes.size() < searchSettings->batchSize &&
+           terminalNodes.size() < searchSettings->batchSize) {
+        currentNode = get_new_child_to_evaluate(rootNode, searchSettings->useTranspositionTable, hashTable, description);
 
-        if(isTerminal) {
+        if (description.isTranposition) {
+            transpositionNodes.push_back(currentNode);
+        }
+        else if(description.isTerminal) {
             //            terminalNodes.push_back(parentNode->childNodes[childIdx]);
             backup_value(currentNode, currentNode->get_value());
-            ++terminalEvents;
         }
-        else if (isCollision) {
+        else if (description.isCollision) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
             collisionNodes.push_back(currentNode);
         }
         else {
-            auto it = hashTable->find(currentNode->hash_key());
-//            if(searchSettings->useTranspositionTable && it != hashTable->end() && it->second->hasNNResults &&
-//                    it->second->pos->getStateInfo()->pliesFromNull == newState->pliesFromNull &&
-//                    it->second->pos->getStateInfo()->rule50 == newState->rule50 &&
-//                    newState->repetition == 0)
-//            {
-//                copy_node(it, newPos, currentNode, childIdx);
-//                transpositionNodes.push_back(currentNode->childNodes[childIdx]);
-////                parentNode->backup_value(childIdx, -parentNode->childNodes[childIdx]->value);
-//                ++tranpositionEvents;
-//            }
-//            else {
-                prepare_node_for_nn(currentNode, numberNewNodes, newNodes, inputPlanes);
-                ++numberNewNodes;
-//            }
+            prepare_node_for_nn(currentNode, newNodes, inputPlanes);
         }
     }
-
 }
 
 void SearchThread::thread_iteration()
@@ -215,10 +203,10 @@ void SearchThread::thread_iteration()
         netBatch->predict(inputPlanes, *valueOutputs, *probOutputs);
         set_nn_results_to_child_nodes();
     }
-//    cout << "backup values" << endl;
+    //    cout << "backup values" << endl;
     backup_value_outputs();
     backup_collisions();
-//    rootNode->numberVisits = sum(rootNode->childNumberVisits);
+    //    rootNode->numberVisits = sum(rootNode->childNumberVisits);
 }
 
 void go(SearchThread *t)
@@ -238,15 +226,15 @@ void backup_values(vector<Node*>& nodes)
     nodes.clear();
 }
 
-void prepare_node_for_nn(Node* newNode,  size_t numberNewNodes, vector<Node*>& newNodes, float* inputPlanes)
+void prepare_node_for_nn(Node* newNode, vector<Node*>& newNodes, float* inputPlanes)
 {
+    // fill a new board in the input_planes vector
+    // we shift the index by NB_VALUES_TOTAL each time
+    board_to_planes(newNode->get_pos(), newNode->get_pos()->getStateInfo()->repetition, true, inputPlanes+newNodes.size()*NB_VALUES_TOTAL);
+
     // save a reference newly created list in the temporary list for node creation
     // it will later be updated with the evaluation of the NN
     newNodes.push_back(newNode);
-
-    // fill a new board in the input_planes vector
-    // we shift the index by NB_VALUES_TOTAL each time
-    board_to_planes(newNode->get_pos(), newNode->get_pos()->getStateInfo()->repetition, true, inputPlanes+numberNewNodes*NB_VALUES_TOTAL);
 }
 
 void fill_nn_results(size_t batchIdx, bool is_policy_map, const SearchSettings* searchSettings, NDArray* valueOutputs, NDArray* probOutputs, Node *node)

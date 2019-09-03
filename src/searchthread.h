@@ -74,15 +74,6 @@ private:
      */
     void backup_collisions();
 
-    /**
-     * @brief copy_node Copies the node with the NN evaluation based on a preexisting node
-     * @param it Iterator which from the hash table
-     * @param newPos Board position which belongs to the node
-     * @param parentNode Parent node of the new node
-     * @param childIdx Index on how to visit the child node from its parent
-     */
-    inline void copy_node(const unordered_map<Key,Node*>::const_iterator &it, Board* newPos, Node* parentNode, size_t childIdx);
-
 public:
     /**
      * @brief SearchThread
@@ -128,16 +119,27 @@ public:
 
 void go(SearchThread *t);
 
+struct NodeDescription
+{
+    // flag signaling a collision event, same node was selected multiple time
+    bool isCollision;
+    // flag signaling a terminal state
+    bool isTerminal;
+    // flag signaling a transposition state
+    bool isTranposition;
+    // depth which was reached on this rollout
+    size_t depth;
+};
+
 /**
  * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
- * In the case a collision event occured the isCollision flag will be set and for a terminal node the isTerminal flag is set.
- * @param childIdx Move index for the parent node in order to expand the next node
- * @param isCollision Flag signaling a collision event, same node was selected multiple time
- * @param isTerminal Flag signaling a terminal state
- * @param depth Depth which was reached on this rollout
- * @return
+ * @param rootNode Root node where all simulations start
+ * @param useTranspositionTable Flag if the transposition table shall be used
+ * @param hashTable Pointer to the hashTable
+ * @param description Output struct which holds information what type of node it is
+ * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
  */
-inline Node* get_new_child_to_evaluate(Node* rootNode, bool &isCollision,  bool &isTerminal, size_t &depth);
+Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, unordered_map<Key, Node*>* hashTable, NodeDescription& description);
 
 void backup_values(vector<Node*>& nodes);
 
@@ -148,7 +150,7 @@ void backup_values(vector<Node*>& nodes);
  * @param childIdx Index on how to visit the child node from its parent
  * @param numberNewNodes Index of the new node in the current batch
  */
-inline void prepare_node_for_nn(Node* newNode,  size_t numberNewNodes, vector<Node*>& newNodes, float* inputPlanes);
+inline void prepare_node_for_nn(Node* newNode, vector<Node*>& newNodes, float* inputPlanes);
 
 void fill_nn_results(size_t batchIdx, bool is_policy_map, const SearchSettings* searchSettings, NDArray* valueOutputs, NDArray* probOutputs, Node *node);
 
