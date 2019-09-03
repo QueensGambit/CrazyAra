@@ -279,7 +279,7 @@ void get_mcts_policy(const Node *node, const float qValueWeight, const float qTh
  * for the final move selection after the search
  * @return float
  */
-float get_current_q_thresh(SearchSettings* searchSettings, int numberVisits);
+float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits);
 
 double updated_value(const Node* node);
 
@@ -310,5 +310,12 @@ bool is_ordering_correct(vector<Node*>& childNodes);
 bool prob_value_comparision(const Node* n1, const Node* n2);
 
 bool q_plus_u_comparision(const Node* n1, const Node* n2);
+
+/**
+ * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
+ * The moves a are pushed into the pv vector.
+ * @param pv Vector in which moves will be pushed.
+ */
+void get_principal_variation(const Node* rootNode, const SearchSettings* searchSettings, vector<Move>& pv);
 
 #endif // NODE_H

@@ -241,15 +241,14 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     get_mcts_policy(rootNode, searchSettings->qValueWeight,
                     get_current_q_thresh(searchSettings, rootNode->get_visits()),
                     evalInfo.policyProbSmall);
-    size_t bestIdx = argmax(evalInfo.policyProbSmall);
+//    size_t bestIdx = argmax(evalInfo.policyProbSmall);
 //    if (bestIdx != argmax(rootNode->childNumberVisits)) {
 //        cout << "info string Select different move due to higher Q-value" << endl;
 //    }
     evalInfo.centipawns = value_to_centipawn(updated_value(rootNode));
     lastValueEval = updated_value(rootNode);
     evalInfo.legalMoves = retrieve_legal_moves(rootNode->get_child_nodes());
-//    this->rootNode->get_principal_variation(evalInfo.pv); // TODO
-    evalInfo.pv = {rootNode->candidate_child_node()->get_move()};
+    get_principal_variation(rootNode, searchSettings, evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
     evalInfo.is_chess960 = pos->is_chess960();
     evalInfo.nodes = rootNode->get_visits();

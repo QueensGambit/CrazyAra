@@ -547,7 +547,7 @@ void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
     }
 }
 
-void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>* hashTable)
+void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hashTable)
 {
     for (Node* childNode: node->get_child_nodes()) {
         if (childNode != nullptr) {
@@ -562,7 +562,7 @@ void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>* hash
     delete node;
 }
 
-void get_mcts_policy(const Node *node, const float qValueWeight, const float qThresh, DynamicVector<float> &mctsPolicy)
+void get_mcts_policy(const Node *node, const float qValueWeight, const float qThresh, DynamicVector<float>& mctsPolicy)
 {
     DynamicVector<float> childNumberVisits = retrieve_visits(node);
     if (qValueWeight > 0) {
@@ -581,7 +581,7 @@ void get_mcts_policy(const Node *node, const float qValueWeight, const float qTh
     }
 }
 
-DynamicVector<float> retrieve_dynamic_vector(const vector<Node *> &childNodes, vFunctionValue func)
+DynamicVector<float> retrieve_dynamic_vector(const vector<Node *>& childNodes, vFunctionValue func)
 {
     DynamicVector<float> values(childNodes.size());
     for (size_t i = 0; i < childNodes.size(); ++i) {
@@ -590,12 +590,12 @@ DynamicVector<float> retrieve_dynamic_vector(const vector<Node *> &childNodes, v
     return values;
 }
 
-float get_visits(Node *node)
+float get_visits(Node* node)
 {
     return node->get_visits();
 }
 
-float get_q_value(Node *node)
+float get_q_value(Node* node)
 {
     return node->get_q_value();
 }
@@ -610,7 +610,7 @@ DynamicVector<float> retrieve_q_values(const Node* node)
     return retrieve_dynamic_vector(node->get_child_nodes(), get_q_value);
 }
 
- float get_current_q_thresh(SearchSettings* searchSettings, int numberVisits)
+ float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits)
 {
     return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
 }
@@ -661,4 +661,20 @@ bool prob_value_comparision(const Node* n1, const Node* n2)
 bool q_plus_u_comparision(const Node* n1, const Node* n2)
 {
     return n1->get_q_plus_u() > n2->get_q_plus_u();
+}
+
+void get_principal_variation(const Node* rootNode, const SearchSettings* searchSettings, vector<Move>& pv)
+{
+    pv.clear();
+    const Node* curNode = rootNode;
+    size_t childIdx;
+    do {
+        DynamicVector<float> mctsPolicy(curNode->get_number_child_nodes());
+        get_mcts_policy(curNode, searchSettings->qValueWeight,
+                        get_current_q_thresh(searchSettings, int(rootNode->get_visits())),
+                        mctsPolicy);
+        childIdx = argmax(mctsPolicy);
+        pv.push_back(curNode->get_child_nodes()[childIdx]->get_move());
+        curNode = curNode->get_child_nodes()[childIdx];
+    } while (curNode->is_expanded() && !curNode->is_terminal());
 }
