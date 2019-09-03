@@ -82,14 +82,28 @@ private:
     inline void check_for_terminal();
 
 public:
-    Node(Node* parentNode, Move move, SearchSettings* searchSettings);
     /**
-     * @brief Node Constructor used for creating a new root node
+     * @brief Node Primary constructor which is used when expanding a node during search
      * @param parentNode Pointer to parent node
      * @param move Move which led to current board state
+     * @param searchSettings Pointer to the searchSettings
+     */
+    Node(Node* parentNode, Move move, SearchSettings* searchSettings);
+
+    /**
+     * @brief Node Constructor used for creating a root node when it wasn't found in the search tree.
+     * The position is only assigned by reference.
      * @param pos Current board position
+     * @param parentNode Pointer to parent node
+     * @param move Move which led to current board state
+     * @param searchSettings Pointer to the searchSettings
      */
     Node(Board *pos, Node *parentNode, Move move, SearchSettings* searchSettings);
+
+    /**
+     * @brief ~Node Destructor which frees memory and the board position
+     */
+    ~Node();
 
     /**
      * @brief operator= Assignment which copies the value evaluation and prior policy of the child nodes.
@@ -281,7 +295,7 @@ void get_mcts_policy(const Node *node, const float qValueWeight, const float qTh
  */
 float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits);
 
-double updated_value(const Node* node);
+double updated_value(const Node* node, DynamicVector<float>& mctsPolicy);
 
 /**
  * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits

@@ -52,10 +52,19 @@ Node::Node(Board *pos, Node *parentNode, Move move,  SearchSettings* searchSetti
     this->pos = pos;
 }
 
+Node::~Node()
+{
+    if (isExpanded) {
+        delete pos;
+    }
+}
+
 void Node::operator=(const Node& b)
 {
     value = b.value;
-    pos = b.pos;
+    // deep copy of position and stateInfo -> probably change this
+    pos = new Board(*b.pos);
+    pos->setStateInfo(new StateInfo(*(b.pos->getStateInfo())));
     numberChildNodes = b.numberChildNodes;
     // copy the probability values for all child nodes
     for (Node* node : b.childNodes) {
@@ -538,28 +547,27 @@ void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
 {
     if (node->get_parent_node() != nullptr) {
         cout << "info string delete unused subtrees" << endl;
-        size_t i = 0;
         for (Node* childNode: node->get_parent_node()->get_child_nodes()) {
-            if (childNode != nullptr && childNode != node) {
+            if (childNode != node) {
                 delete_subtree_and_hash_entries(childNode, hashTable);
-//                node->get_parent_node()->childNodes[i] = nullptr;
             }
-            ++i;
         }
     }
 }
 
 void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hashTable)
 {
+    // if the current node hasn't been expanded or is a terminal node then childNodes is empty and the recursion ends
     for (Node* childNode: node->get_child_nodes()) {
-        if (childNode != nullptr) {
             delete_subtree_and_hash_entries(childNode, hashTable);
-        }
     }
 
-    auto it = hashTable->find(node->hash_key());
-    if(it != hashTable->end()) {
-        hashTable->erase(node->hash_key());
+    if (node->is_expanded()) {
+        // the board position is only filled if the node has been extended
+        auto it = hashTable->find(node->hash_key());
+        if(it != hashTable->end()) {
+            hashTable->erase(node->hash_key());
+        }
     }
     delete node;
 }
@@ -617,9 +625,9 @@ DynamicVector<float> retrieve_q_values(const Node* node)
     return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
 }
 
-double updated_value(const Node* node)
+double updated_value(const Node* node, DynamicVector<float>& mctsPolicy)
 {
-    return node->candidate_child_node()->get_q_value();
+    return node->get_child_nodes()[argmax(mctsPolicy)]->get_q_value();
 }
 
 double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit)
