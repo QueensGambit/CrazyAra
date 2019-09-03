@@ -118,7 +118,7 @@ public:
      * @param evalInfo Returns the evalutation information
      * @param applyMoveToTree Tells if the given move shall be applied to the tree for future reusage
      */
-    void go(Board *pos, istringstream& is, EvalInfo& evalInfo, bool applyMoveToTree=true);
+    void go(Board* pos, istringstream& is, EvalInfo& evalInfo, bool applyMoveToTree=true);
 
     /**
      * @brief go Wrapper function for go() which accepts a FEN string
@@ -134,13 +134,13 @@ public:
      * @param pos Position object which will be set
      * @param is List of command line arguments which describe the position
      */
-    void position(Board *pos, istringstream &is);
+    void position(Board* pos, istringstream& is);
 
     /**
      * @brief benchmark Runs a list of benchmark position for a given time
      * @param is Movetime in ms
      */
-    void benchmark(istringstream &is);
+    void benchmark(istringstream& is);
 
     /**
      * @brief init_search_settings Initializes the search settings with the current UCI parameters
