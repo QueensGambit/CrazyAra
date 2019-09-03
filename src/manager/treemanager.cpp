@@ -31,9 +31,11 @@
 
 Node* pick_next_node(Move move, const Node* parentNode)
 {
-    for (Node* node : parentNode->get_child_nodes()) {
-        if (node->get_move() == move) {
-            return node;
+    if (parentNode != nullptr) {
+        for (Node* node : parentNode->get_child_nodes()) {
+            if (node->get_move() == move) {
+                return node;
+            }
         }
     }
     return nullptr;
