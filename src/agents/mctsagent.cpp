@@ -108,12 +108,14 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     if (same_hash_key(ownNextRoot, pos)) {
         delete_sibling_subtrees(ownNextRoot, hashTable);
         delete_sibling_subtrees(opponentsNextRoot, hashTable);
-        ownNextRoot->make_to_root();
+//        cout << "rootNode->get_parent_node()->get_pos()->fen() " << ownNextRoot->get_parent_node()->get_pos()->fen() << endl;
+//        ownNextRoot->make_to_root();
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, pos)) {
         delete_sibling_subtrees(opponentsNextRoot, hashTable);
-        opponentsNextRoot->make_to_root();
+//        cout << "rootNode->get_parent_node()->get_pos()->fen() " << opponentsNextRoot->get_parent_node()->get_pos()->fen() << endl;
+//        opponentsNextRoot->make_to_root();
         return opponentsNextRoot;
     }
     return nullptr;
@@ -183,17 +185,16 @@ void MCTSAgent::create_new_root_node(Board *pos)
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 {
     if (!reusedFullTree) {
+        cout << "info string apply move to tree" << endl;
         if (ownMove) {
             opponentsNextRoot = pick_next_node(move, rootNode);
-            if (opponentsNextRoot != nullptr && opponentsNextRoot->has_nn_results()) {
-                cout << "info string apply move to tree" << endl;
+            if (opponentsNextRoot != nullptr) { // && opponentsNextRoot->has_nn_results()) {
                 gameNodes.push_back(opponentsNextRoot);
             }
         }
         else {
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
-            if (ownNextRoot != nullptr && ownNextRoot->has_nn_results()) {
-                cout << "info string apply move to tree" << endl;
+            if (ownNextRoot != nullptr) { // && ownNextRoot->has_nn_results()) {
                 gameNodes.push_back(ownNextRoot);
             }
         }
@@ -228,6 +229,14 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     else {
         cout << "info string apply dirichlet" << endl;
         rootNode->apply_dirichlet_noise_to_prior_policy();
+        if (rootNode->get_parent_node() == nullptr) {
+            rootNode->sort_child_nodes_by_probabilities();
+        }
+        else {
+            rootNode->sort_child_nodes_by_q_plus_u();
+            rootNode->mark_as_uncalibrated();
+            rootNode->make_to_root();
+        }
         run_mcts_search();
     }
 
