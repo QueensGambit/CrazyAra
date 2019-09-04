@@ -71,7 +71,7 @@ private:
     bool isCalibrated;           // determines if the nodes are ordered
     bool areChildNodesSorted;
 
-    double uParentFactor;         // stores all parts of the u-value as there a observable by the parent node
+    double uParentFactor;        // stores all parts of the u-value as there a observable by the parent node
     float uDivisorSummand;       // summand which is added to the divisor of the u-divisor
 
     // if checkmateNode is != nullptr it will always be preferred over all other nodes
@@ -143,6 +143,7 @@ public:
      * @brief sort_nodes_by_probabilities Sorts all child nodes in ascending order based on their probability value
      */
     void sort_child_nodes_by_probabilities();
+    void sort_child_nodes_by_q_plus_u();
 
     /**
      * @brief calibrate_child_node_order Applies a partial sort for the previously updated nodes depending on nodeIdxUpdate

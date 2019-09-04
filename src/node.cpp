@@ -88,8 +88,15 @@ void Node::sort_child_nodes_by_probabilities()
     sort(childNodes.begin(), childNodes.end(), prob_value_comparision);
 
     areChildNodesSorted = true;
-    isCalibrated = true; //true; // !
-    nodeIdxUpdate = 1;
+    isCalibrated = true;
+    nodeIdxUpdate = 2; //2;
+}
+
+void Node::sort_child_nodes_by_q_plus_u()
+{
+    sort(childNodes.begin(), childNodes.end(), q_plus_u_comparision);
+    areChildNodesSorted = true;
+    isCalibrated = true;
 }
 
 void Node::calibrate_child_node_order()
@@ -102,16 +109,19 @@ void Node::calibrate_child_node_order()
 //            [=](const Node* n1, const Node* n2) {
 //            return n1->get_q_plus_u() > n2->get_q_plus_u();
 //        });
-        std::sort(childNodes.begin(), childNodes.begin()+int(nodeIdxUpdate), q_plus_u_comparision);
+//        std::sort(childNodes.begin(), childNodes.begin()+int(nodeIdxUpdate), q_plus_u_comparision);
 //    }
+    partial_sort(childNodes.begin(), childNodes.begin()+1, childNodes.end(), q_plus_u_comparision);
+
     // sorting
     areChildNodesSorted = true;
     isCalibrated = true;
 
     // DEBUG
 //    if (!is_ordering_correct(childNodes)) {
+//        cout << "nodeIdxUpdate: " << nodeIdxUpdate << endl;
 //        print_node_statistics(this);
-    assert(is_ordering_correct(childNodes));
+        assert(is_ordering_correct(childNodes));
 //    }
 //    nodeIdxUpdate = 1;
 //    nodeIdxUpdate = 0;
@@ -346,9 +356,6 @@ void Node::check_for_terminal()
         // normal game position
         isTerminal = false;
     }
-    if (isTerminal) {
-        cout << "terminal" << endl;
-    }
 }
 
 void Node::make_to_root()
@@ -376,7 +383,7 @@ void Node::revert_virtual_loss_and_update(float value)
 void Node::init_board()
 {
     StateInfo* newState = new StateInfo;
-    pos = new Board(*parentNode->get_pos());
+    pos = new Board(*parentNode->pos);
     pos->do_move(move, *newState);
 }
 
@@ -655,8 +662,8 @@ void print_node_statistics(Node* node)
 
 bool is_ordering_correct(vector<Node*> &childNodes)
 {
-    for (size_t i = 0; i < childNodes.size()-1; ++i) {
-        if (childNodes[i]->get_q_plus_u() < childNodes[i+1]->get_q_plus_u()) {
+    for (size_t i = 0; i < childNodes.size(); ++i) {
+        if (childNodes[0]->get_q_plus_u() < childNodes[i]->get_q_plus_u()) {
             return false;
         }
     }
