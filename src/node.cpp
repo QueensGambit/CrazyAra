@@ -111,18 +111,19 @@ void Node::calibrate_child_node_order()
 //        });
 //        std::sort(childNodes.begin(), childNodes.begin()+int(nodeIdxUpdate), q_plus_u_comparision);
 //    }
-    partial_sort(childNodes.begin(), childNodes.begin()+1, childNodes.end(), q_plus_u_comparision);
+    // sorts until the first n elements are correct
+    partial_sort(childNodes.begin(), childNodes.begin()+nodeIdxUpdate, childNodes.end(), q_plus_u_comparision);
 
     // sorting
     areChildNodesSorted = true;
     isCalibrated = true;
 
     // DEBUG
-//    if (!is_ordering_correct(childNodes)) {
-//        cout << "nodeIdxUpdate: " << nodeIdxUpdate << endl;
-//        print_node_statistics(this);
+    if (!is_ordering_correct(childNodes)) {
+        cout << "nodeIdxUpdate: " << nodeIdxUpdate << endl;
+        print_node_statistics(this);
         assert(is_ordering_correct(childNodes));
-//    }
+    }
 //    nodeIdxUpdate = 1;
 //    nodeIdxUpdate = 0;
 }
@@ -662,8 +663,8 @@ void print_node_statistics(Node* node)
 
 bool is_ordering_correct(vector<Node*> &childNodes)
 {
-    for (size_t i = 0; i < childNodes.size(); ++i) {
-        if (childNodes[0]->get_q_plus_u() < childNodes[i]->get_q_plus_u()) {
+    for (size_t i = 0; i < childNodes.size()-1; ++i) {
+        if (childNodes[i]->get_q_plus_u() < childNodes[i+1]->get_q_plus_u()) {
             return false;
         }
     }
