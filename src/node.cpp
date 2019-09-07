@@ -89,7 +89,7 @@ void Node::sort_child_nodes_by_probabilities()
 
     areChildNodesSorted = true;
     isCalibrated = true;
-    nodeIdxUpdate = 2; //2;
+    nodeIdxUpdate = 2;
 }
 
 void Node::sort_child_nodes_by_q_plus_u()
@@ -105,6 +105,10 @@ void Node::calibrate_child_node_order()
 //    cout << "nodeIdxUpdate" << nodeIdxUpdate << endl;
 //    if (nodeIdxUpdate != 0) {
         nodeIdxUpdate = min(nodeIdxUpdate+1, numberChildNodes);
+
+//        nodeIdxUpdate = numberChildNodes < 5 ? numberChildNodes : 5;
+//        size_t nodeIdxEnd = numberChildNodes < 15 ? numberChildNodes : 15;
+
 //        std::partial_sort(childNodes.begin(), childNodes.begin()+int(nodeIdxUpdate), childNodes.end(), //childNodes.begin()+nodeIdxUpdate,
 //            [=](const Node* n1, const Node* n2) {
 //            return n1->get_q_plus_u() > n2->get_q_plus_u();
@@ -113,17 +117,19 @@ void Node::calibrate_child_node_order()
 //    }
     // sorts until the first n elements are correct
     partial_sort(childNodes.begin(), childNodes.begin()+nodeIdxUpdate, childNodes.end(), q_plus_u_comparision);
+//    partial_sort(childNodes.begin(), childNodes.begin()+nodeIdxUpdate, childNodes.begin()+nodeIdxEnd, q_plus_u_comparision);
+//    stable_sort(childNodes.begin(), childNodes.end(), q_plus_u_comparision);
 
     // sorting
     areChildNodesSorted = true;
     isCalibrated = true;
 
     // DEBUG
-    if (!is_ordering_correct(childNodes)) {
-        cout << "nodeIdxUpdate: " << nodeIdxUpdate << endl;
-        print_node_statistics(this);
-        assert(is_ordering_correct(childNodes));
-    }
+//    if (!is_ordering_correct(childNodes)) {
+//        cout << "nodeIdxUpdate: " << nodeIdxUpdate << endl;
+//        print_node_statistics(this);
+//        assert(is_ordering_correct(childNodes));
+//    }
 //    nodeIdxUpdate = 1;
 //    nodeIdxUpdate = 0;
 }
@@ -258,7 +264,7 @@ float Node::get_prob_value() const
     return probValue;
 }
 
-double Node::get_q_value() const
+float Node::get_q_value() const
 {
     return qValue;
 }
@@ -269,7 +275,7 @@ void Node::update_q_value()
     qValue = (actionValue - virtualLossCounter * searchSettings->virtualLoss) / (visits + virtualLossCounter);
 }
 
-double Node::get_u_parent_factor() const
+float Node::get_u_parent_factor() const
 {
     return uParentFactor;
 }
@@ -281,9 +287,12 @@ float Node::get_u_divisor_summand() const
 
 void Node::validate_candidate_node()
 {
-    if (numberChildNodes != 1 && childNodes[0]->get_q_plus_u() < childNodes[1]->get_q_plus_u()) {
+    const float firstScore = childNodes[0]->get_q_plus_u();
+    const float secondScore = childNodes[1]->get_q_plus_u();
+
+    if (numberChildNodes != 1 && firstScore < secondScore) {
         // an update is required
-        if (numberChildNodes == 2 || childNodes[0]->get_q_plus_u() > childNodes[2]->get_q_plus_u()) {
+        if (numberChildNodes == 2 || firstScore > childNodes[2]->get_q_plus_u()) {
             swap_candidate_node_with_alternative();
         }
         else {
@@ -294,6 +303,7 @@ void Node::validate_candidate_node()
 //        }
     }
     else {
+//        cout << "f-s: " << firstScore - secondScore << endl;
 //        cout << "no adjust" << endl;
     }
 }
@@ -331,6 +341,11 @@ void Node::readjust_candidate_node_position()
     std::rotate(childNodes.begin(), childNodes.begin()+1, childNodes.begin()+idx);
 
     nodeIdxUpdate = max(idx, nodeIdxUpdate);
+}
+
+float Node::get_action_value() const
+{
+    return actionValue;
 }
 
 void Node::check_for_terminal()
@@ -375,7 +390,7 @@ void Node::revert_virtual_loss_and_update(float value)
 {
 //    mtx.lock();
     ++visits;
-    actionValue += double(value);
+    actionValue += value;
     revert_virtual_loss();
 //    qValue = actionValue / double(visits);
 //    mtx.unlock();
@@ -398,12 +413,12 @@ void Node::update_u_parent_factor()
     uParentFactor = get_current_cput(visits, searchSettings->cpuctBase, searchSettings->cpuctInit) * sqrt(visits + virtualLossCounter);
 }
 
-double Node::get_current_u_value() const
+float Node::get_current_u_value() const
 {
     return parentNode->get_u_parent_factor() * (probValue / (visits + virtualLossCounter + parentNode->get_u_divisor_summand()));
 }
 
-double Node::get_q_plus_u() const
+float Node::get_q_plus_u() const
 {
     return qValue + get_current_u_value();
 }
@@ -559,6 +574,9 @@ void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
             if (childNode != node) {
                 delete_subtree_and_hash_entries(childNode, hashTable);
             }
+            else {
+                cout << "info string Don't delete fen: " << node->get_pos()->fen() << endl;
+            }
         }
     }
 }
@@ -695,4 +713,14 @@ void get_principal_variation(const Node* rootNode, const SearchSettings* searchS
         pv.push_back(curNode->get_child_nodes()[childIdx]->get_move());
         curNode = curNode->get_child_nodes()[childIdx];
     } while (curNode->is_expanded() && !curNode->is_terminal());
+}
+
+int estimate_visits_to_switch(const float secondScore, const float cpuct, Node* n)
+{
+    //    s = (a-x*v)/(n) + c * p * ((sqrt(n))/(u+x)); solve for x
+    // x = -(a * u + c * n^(1.5) * p - n * s * u) / (a - n * s)
+    return -int((n->get_action_value() * n->get_parent_node()->get_u_divisor_summand() +
+             cpuct * float(pow(n->get_visits(), 1.5)) * n->get_prob_value() - n->get_visits() *
+             secondScore * n->get_parent_node()->get_u_divisor_summand()) / (n->get_action_value() - n->get_visits() * secondScore));
+//    return -(n->get_ * n-)
 }

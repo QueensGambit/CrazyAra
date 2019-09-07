@@ -55,8 +55,8 @@ private:
     Move move;
     float value;
     float probValue;
-    double qValue;
-    double actionValue;
+    float qValue;
+    float actionValue;
     float visits;
     int virtualLossCounter;
 
@@ -71,7 +71,7 @@ private:
     bool isCalibrated;           // determines if the nodes are ordered
     bool areChildNodesSorted;
 
-    double uParentFactor;        // stores all parts of the u-value as there a observable by the parent node
+    float uParentFactor;        // stores all parts of the u-value as there a observable by the parent node
     float uDivisorSummand;       // summand which is added to the divisor of the u-divisor
 
     // if checkmateNode is != nullptr it will always be preferred over all other nodes
@@ -157,7 +157,7 @@ public:
 
     float get_visits() const;
     float get_prob_value() const;
-    double get_q_value() const;
+    float get_q_value() const;
 
     void update_q_value();
 
@@ -177,9 +177,9 @@ public:
 
     void update_u_parent_factor();
 
-    double get_current_u_value() const;
-    double get_q_plus_u() const;
-    double get_u_parent_factor() const;
+    float get_current_u_value() const;
+    float get_q_plus_u() const;
+    float get_u_parent_factor() const;
     float get_u_divisor_summand() const;
 
     void validate_candidate_node();
@@ -199,6 +199,7 @@ public:
      */
     void apply_dirichlet_noise_to_prior_policy();
 
+    float get_action_value() const;
 };
 
 // generate the legal moves and save them in the list
@@ -332,5 +333,7 @@ bool q_plus_u_comparision(const Node* n1, const Node* n2);
  * @param pv Vector in which moves will be pushed.
  */
 void get_principal_variation(const Node* rootNode, const SearchSettings* searchSettings, vector<Move>& pv);
+
+int estimate_visits_to_switch(const float secondScore, const float cpuct, Node* n);
 
 #endif // NODE_H
