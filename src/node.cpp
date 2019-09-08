@@ -62,9 +62,7 @@ Node::~Node()
 void Node::operator=(const Node& b)
 {
     value = b.value;
-    // deep copy of position and stateInfo -> probably change this
-    pos = new Board(*b.pos);
-    pos->setStateInfo(new StateInfo(*(b.pos->getStateInfo())));
+    // the position has already been expanded, no copy is required
     numberChildNodes = b.numberChildNodes;
     // copy the probability values for all child nodes
     for (Node* node : b.childNodes) {
