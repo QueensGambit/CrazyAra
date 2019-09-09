@@ -51,6 +51,7 @@ private:
     Context globalCtx = Context::cpu();
     unsigned int batchSize;
     bool isPolicyMap;
+    bool enableTensorrt;
 
     /**
      * @brief FileExists Function to check if a file exists in a given path
@@ -81,6 +82,28 @@ private:
      * and sets the selectPolicyFromPlane boolean accordingly
      */
     void check_if_policy_map();
+
+    /**
+     * @brief SplitParamMap Splits loaded param map into arg parm and aux param with target context
+     * @param paramMap Parameter map
+     * @param argParamInTargetContext Output intermediate parameter map
+     * @param auxParamInTargetContext Output intermediate auxiliary map
+     * @param targetContext Computation context e.g. Context::cpu(), Context::gpu()
+     */
+    void SplitParamMap(const std::map<std::string, NDArray> &paramMap,
+        std::map<std::string, NDArray> *argParamInTargetContext,
+        std::map<std::string, NDArray> *auxParamInTargetContext,
+        Context targetContext);
+
+    /**
+     * @brief ConvertParamMapToTargetContext Copies the param map into the target context
+     * @param paramMap Parameter map
+     * @param paramMapInTargetContext Output parameter map
+     * @param targetContext Computation context e.g. Context::cpu(), Context::gpu()
+     */
+    void ConvertParamMapToTargetContext(const std::map<std::string, NDArray> &paramMap,
+        std::map<std::string, NDArray> *paramMapInTargetContext,
+        Context targetContext);
 
 public:
     /**

@@ -80,6 +80,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
 	cout << "info string json file: " << jsonFilePath << endl;
 
     inputShape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
+    enableTensorrt = false; //true;
 
     load_model(jsonFilePath);
     load_parameters(paramterFilePath);
@@ -106,6 +107,32 @@ void NeuralNetAPI::load_model(const string &jsonFilePath)
     }
 	cout << "info string Loading the model from " << jsonFilePath << endl;
     net = Symbol::Load(jsonFilePath);
+    if (enableTensorrt) {
+      net = net.GetBackendSymbol("TensorRT");
+    }
+}
+
+void NeuralNetAPI::SplitParamMap(const std::map<std::string, NDArray> &paramMap,
+    std::map<std::string, NDArray> *argParamInTargetContext,
+    std::map<std::string, NDArray> *auxParamInTargetContext,
+    Context targetContext) {
+  for (const auto& pair : paramMap) {
+    std::string type = pair.first.substr(0, 4);
+    std::string name = pair.first.substr(4);
+    if (type == "arg:") {
+      (*argParamInTargetContext)[name] = pair.second.Copy(targetContext);
+    } else if (type == "aux:") {
+      (*auxParamInTargetContext)[name] = pair.second.Copy(targetContext);
+    }
+  }
+}
+
+void NeuralNetAPI::ConvertParamMapToTargetContext(const std::map<std::string, NDArray> &paramMap,
+    std::map<std::string, NDArray> *paramMapInTargetContext,
+    Context targetContext) {
+  for (const auto& pair : paramMap) {
+    (*paramMapInTargetContext)[pair.first] = pair.second.Copy(targetContext);
+  }
 }
 
 void NeuralNetAPI::load_parameters(const string& paramterFilePath) {
@@ -116,16 +143,18 @@ void NeuralNetAPI::load_parameters(const string& paramterFilePath) {
 	cout << "info string Loading the model parameters from " << paramterFilePath << endl;
     map<string, NDArray> parameters;
     NDArray::Load(paramterFilePath, 0, &parameters);
-    for (const auto &k : parameters) {
-        if (k.first.substr(0, 4) == "aux:") {
-            auto name = k.first.substr(4, k.first.size() - 4);
-            auxMap[name] = k.second.Copy(globalCtx);
-        }
-        if (k.first.substr(0, 4) == "arg:") {
-            auto name = k.first.substr(4, k.first.size() - 4);
-            argsMap[name] = k.second.Copy(globalCtx);
-        }
+
+    if (enableTensorrt) {
+      std::map<std::string, NDArray> intermediate_args_map;
+      std::map<std::string, NDArray> intermediate_aux_map;
+      SplitParamMap(parameters, &intermediate_args_map, &intermediate_aux_map, Context::cpu());
+      contrib::InitTensorRTParams(net, &intermediate_args_map, &intermediate_aux_map);
+      ConvertParamMapToTargetContext(intermediate_args_map, &argsMap, globalCtx);
+      ConvertParamMapToTargetContext(intermediate_aux_map, &auxMap, globalCtx);
+    } else {
+      SplitParamMap(parameters, &argsMap, &auxMap, globalCtx);
     }
+
     // WaitAll is needed when data is copied between GPU and the main memory
     NDArray::WaitAll();
 }
