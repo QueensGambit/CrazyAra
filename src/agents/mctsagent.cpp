@@ -229,6 +229,7 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     else {
         cout << "info string apply dirichlet" << endl;
         rootNode->apply_dirichlet_noise_to_prior_policy();
+
         if (rootNode->get_parent_node() == nullptr) {
             rootNode->sort_child_nodes_by_probabilities();
         }
