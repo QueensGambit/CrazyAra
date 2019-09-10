@@ -60,16 +60,17 @@ private:
     float visits;
     int virtualLossCounter;
 
-    bool isTerminal;
     size_t numberChildNodes;
-    size_t nodeIdxUpdate;
+    size_t numberExpandedNodes;
 
     vector<Node*> childNodes;
 
+    bool isTerminal;
     bool isExpanded;
     bool hasNNResults;
     bool isCalibrated;           // determines if the nodes are ordered
     bool areChildNodesSorted;
+    bool isFullyExpanded;        // is true if every child node has at least 1 visit
 
     float uParentFactor;        // stores all parts of the u-value as there a observable by the parent node
     float uDivisorSummand;       // summand which is added to the divisor of the u-divisor
@@ -129,6 +130,7 @@ public:
     void revert_virtual_loss_and_update(float value);
     Node* get_parent_node() const;
     void increment_visits();
+    void increment_no_visit_idx();
     bool is_expanded() const;
     bool are_child_nodes_sorted() const;
     bool is_calibrated() const;
@@ -177,14 +179,11 @@ public:
 
     void update_u_parent_factor();
 
-    float get_current_u_value() const;
-    float get_q_plus_u() const;
+    float compute_current_u_value() const;
+    float compute_q_plus_u() const;
+
     float get_u_parent_factor() const;
     float get_u_divisor_summand() const;
-
-    void validate_candidate_node();
-    void swap_candidate_node_with_alternative();
-    void readjust_candidate_node_position();
 
     void create_child_nodes();
     void lock();
@@ -201,8 +200,6 @@ public:
 
     float get_action_value() const;
 };
-
-// generate the legal moves and save them in the list
 
 /**
  * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.

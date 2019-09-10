@@ -95,10 +95,7 @@ Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, unor
         currentNode = select_child_node(currentNode);
         currentNode->apply_virtual_loss();
         description.depth++;
-//        if (description.depth == 2 && currentNode->is_expanded() && currentNode->get_pos()->fen() == "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR[] b KQkq - 0 1") {
-//            cout << "move " << UCI::move(currentNode->get_move(), false) << endl;
-//        }
-//        cout << "string info depth " << description.depth << endl;
+
         currentNode->lock();
         if (!currentNode->is_expanded()) {
             currentNode->init_board();
@@ -187,7 +184,7 @@ void SearchThread::create_mini_batch()
             transpositionNodes.push_back(currentNode);
         }
         else if(description.isTerminal) {
-//                        terminalNodes.push_back(parentNode->childNodes[childIdx]);
+            //                        terminalNodes.push_back(parentNode->childNodes[childIdx]);
             backup_value(currentNode, -currentNode->get_value());
         }
         else if (description.isCollision) {

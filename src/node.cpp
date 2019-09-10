@@ -35,11 +35,13 @@ Node::Node(Node *parentNode, Move move,  SearchSettings* searchSettings):
     actionValue(0),
     visits(0),
     virtualLossCounter(0),
+    numberExpandedNodes(0),
     isTerminal(false), // will be later recomputed
     isExpanded(false),
     hasNNResults(false),
     isCalibrated(false),
     areChildNodesSorted(false),
+    isFullyExpanded(false),
     checkmateNode(nullptr),
     searchSettings(searchSettings)
 {
@@ -84,14 +86,14 @@ void Node::operator=(const Node& b)
 void Node::sort_child_nodes_by_probabilities()
 {
     sort(childNodes.begin(), childNodes.end(), prob_value_comparision);
-
     areChildNodesSorted = true;
     isCalibrated = true;
-    nodeIdxUpdate = 2;
 }
 
 void Node::sort_child_nodes_by_q_plus_u()
 {
+    update_u_divisor();
+    update_u_parent_factor();
     sort(childNodes.begin(), childNodes.end(), q_plus_u_comparision);
     areChildNodesSorted = true;
     isCalibrated = true;
@@ -99,48 +101,37 @@ void Node::sort_child_nodes_by_q_plus_u()
 
 void Node::calibrate_child_node_order()
 {
-//    nodeIdxUpdate = numberChildNodes; // !
-//    cout << "nodeIdxUpdate" << nodeIdxUpdate << endl;
-//    if (nodeIdxUpdate != 0) {
-        nodeIdxUpdate = min(nodeIdxUpdate+1, numberChildNodes);
-
-//        nodeIdxUpdate = numberChildNodes < 5 ? numberChildNodes : 5;
-//        size_t nodeIdxEnd = numberChildNodes < 15 ? numberChildNodes : 15;
-
-//        std::partial_sort(childNodes.begin(), childNodes.begin()+int(nodeIdxUpdate), childNodes.end(), //childNodes.begin()+nodeIdxUpdate,
-//            [=](const Node* n1, const Node* n2) {
-//            return n1->get_q_plus_u() > n2->get_q_plus_u();
-//        });
-//        std::sort(childNodes.begin(), childNodes.begin()+int(nodeIdxUpdate), q_plus_u_comparision);
-//    }
-    // sorts until the first n elements are correct
-    partial_sort(childNodes.begin(), childNodes.begin()+nodeIdxUpdate, childNodes.end(), q_plus_u_comparision);
-//    partial_sort(childNodes.begin(), childNodes.begin()+nodeIdxUpdate, childNodes.begin()+nodeIdxEnd, q_plus_u_comparision);
-//    stable_sort(childNodes.begin(), childNodes.end(), q_plus_u_comparision);
+    // sort the child nodes which have already been expanded
+    // we are only interested in the first two highest Q+U values
+    // the unvisited nodes are still in order respective to themselves
+    // however, it is is necessary to check if the first two nodes are worthy to be elected
+    size_t idx = min(numberChildNodes, numberExpandedNodes+2);
+    partial_sort(childNodes.begin(), childNodes.begin()+2, childNodes.begin()+idx,
+                 q_plus_u_comparision);
 
     // sorting
-    areChildNodesSorted = true;
     isCalibrated = true;
 
     // DEBUG
-//    if (!is_ordering_correct(childNodes)) {
-//        cout << "nodeIdxUpdate: " << nodeIdxUpdate << endl;
-//        print_node_statistics(this);
-//        assert(is_ordering_correct(childNodes));
-//    }
-//    nodeIdxUpdate = 1;
-//    nodeIdxUpdate = 0;
+    //        if (!is_ordering_correct(childNodes)) {
+    //            cout << "nodeIdxUpdate: " << nodeIdxUpdate << endl;
+    //            print_node_statistics(this);
+    //    //        assert(is_ordering_correct(childNodes));
+    //        }
 }
 
 void Node::expand()
 {
-//    mtx.lock();
-//    create_child_nodes(this, pos, childNodes, searchSettings);
+    //    mtx.lock();
+    //    create_child_nodes(this, pos, childNodes, searchSettings);
     create_child_nodes();
     numberChildNodes = childNodes.size();
     check_for_terminal();
     isExpanded = true;
-//    mtx.unlock();
+    if (parentNode != nullptr) {
+        parentNode->increment_no_visit_idx();
+    }
+    //    mtx.unlock();
 }
 
 Move Node::get_move() const
@@ -175,21 +166,21 @@ Board* Node::get_pos() const
 
 void Node::set_nn_results(float nn_value, const DynamicVector<float> &policyProbSmall)
 {
-//    mtx.lock();
+    //    mtx.lock();
     value = nn_value;
     for (size_t i = 0; i < childNodes.size(); ++i) {
         childNodes[i]->set_prob_value(policyProbSmall[i]);
     }
     hasNNResults = true;
-//    mtx.unlock();
+    //    mtx.unlock();
 }
 
 void Node::apply_virtual_loss()
 {
-//    mtx.lock();
+    //    mtx.lock();
     ++virtualLossCounter;
     update_q_value();
-//    mtx.unlock();
+    //    mtx.unlock();
 }
 
 void Node::set_prob_value(float value)
@@ -205,6 +196,14 @@ Node *Node::get_parent_node() const
 void Node::increment_visits()
 {
     ++visits;
+}
+
+void Node::increment_no_visit_idx()
+{
+    ++numberExpandedNodes;
+    if (numberExpandedNodes == numberChildNodes) {
+        isFullyExpanded = true;
+    }
 }
 
 float Node::get_value() const
@@ -283,64 +282,6 @@ float Node::get_u_divisor_summand() const
     return uDivisorSummand;
 }
 
-void Node::validate_candidate_node()
-{
-    const float firstScore = childNodes[0]->get_q_plus_u();
-    const float secondScore = childNodes[1]->get_q_plus_u();
-
-    if (numberChildNodes != 1 && firstScore < secondScore) {
-        // an update is required
-        if (numberChildNodes == 2 || firstScore > childNodes[2]->get_q_plus_u()) {
-            swap_candidate_node_with_alternative();
-        }
-        else {
-//             cout << "readjust" << endl;
-            readjust_candidate_node_position();
-        }
-//        else if (numberChildNodes != 2) {
-//        }
-    }
-    else {
-//        cout << "f-s: " << firstScore - secondScore << endl;
-//        cout << "no adjust" << endl;
-    }
-}
-
-void Node::swap_candidate_node_with_alternative()
-{
-    // only swap first two
-    Node* temp = childNodes[0];
-    childNodes[0] = childNodes[1];
-    childNodes[1] = temp;
-//    if (nodeIdxUpdate == 0) {
-//        nodeIdxUpdate = 2;
-//    }
-}
-
-void Node::readjust_candidate_node_position()
-{
-    // put former last element at according location
-//    Node* element = childNodes.back();
-//    childNodes.pop_back();
-
-    size_t idx = 3;
-    for(auto it = childNodes.begin()+3; it != childNodes.end(); ++it) {
-        Node* curElement = *it;
-        if (curElement->get_q_plus_u() < childNodes[0]->get_q_plus_u()) {
-//            childNodes.insert(it.base(), element);
-            break;
-        }
-        ++idx;
-    }
-
-//    cout << numberChildNodes << endl;
-//    cout << nodeIdxUpdate << endl;
-//    std::rotate(childNodes.end()-idx,childNodes.end()-1, childNodes.end());
-    std::rotate(childNodes.begin(), childNodes.begin()+1, childNodes.begin()+idx);
-
-    nodeIdxUpdate = max(idx, nodeIdxUpdate);
-}
-
 float Node::get_action_value() const
 {
     return actionValue;
@@ -353,9 +294,9 @@ void Node::check_for_terminal()
         // test if we have a check-mate
         if (parentNode->pos->gives_check(move)) {
             value = -1;
-//            parentNode->mtx.lock();
+            //            parentNode->mtx.lock();
             parentNode->checkmateNode = this;
-//            parentNode->mtx.unlock();
+            //            parentNode->mtx.unlock();
         } else {
             // we reached a stalmate
             value = 0;
@@ -386,12 +327,12 @@ void Node::revert_virtual_loss()
 
 void Node::revert_virtual_loss_and_update(float value)
 {
-//    mtx.lock();
+    //    mtx.lock();
     ++visits;
     actionValue += value;
     revert_virtual_loss();
-//    qValue = actionValue / double(visits);
-//    mtx.unlock();
+    //    qValue = actionValue / double(visits);
+    //    mtx.unlock();
 }
 
 void Node::init_board()
@@ -411,22 +352,22 @@ void Node::update_u_parent_factor()
     uParentFactor = get_current_cput(visits, searchSettings->cpuctBase, searchSettings->cpuctInit) * sqrt(visits + virtualLossCounter);
 }
 
-float Node::get_current_u_value() const
+float Node::compute_current_u_value() const
 {
     return parentNode->get_u_parent_factor() * (probValue / (visits + virtualLossCounter + parentNode->get_u_divisor_summand()));
 }
 
-float Node::get_q_plus_u() const
+float Node::compute_q_plus_u() const
 {
-    return qValue + get_current_u_value();
+    return qValue + compute_current_u_value();
 }
 
 void Node::create_child_nodes()
 {
     for (const ExtMove move : MoveList<LEGAL>(*pos)) {
-//        cout << "move " << UCI::move(move, false) << endl;
+        //        cout << "move " << UCI::move(move, false) << endl;
         childNodes.push_back(new Node(this, move, searchSettings));
-//        cout << childNodes.back() << endl;
+        //        cout << childNodes.back() << endl;
     }
     numberChildNodes = childNodes.size();
 }
@@ -474,7 +415,7 @@ void backup_collision(Node *currentNode)
     } while(currentNode != nullptr);
 }
 
- vector<Move> retrieve_legal_moves(const vector<Node*>& childNodes)
+vector<Move> retrieve_legal_moves(const vector<Node*>& childNodes)
 {
     vector<Move> legalMoves;
     for (auto node: childNodes) {
@@ -486,9 +427,9 @@ void backup_collision(Node *currentNode)
 void create_child_nodes(Node* parentNode, const Board* pos, vector<Node*> &childNodes, SearchSettings* searchSettings)
 {
     for (const ExtMove move : MoveList<LEGAL>(*pos)) {
-//        cout << "move " << UCI::move(move, false) << endl;
+        //        cout << "move " << UCI::move(move, false) << endl;
         childNodes.push_back(new Node(parentNode, move, searchSettings));
-//        cout << childNodes.back() << endl;
+        //        cout << childNodes.back() << endl;
     }
 }
 
@@ -537,20 +478,23 @@ void enhance_moves(const SearchSettings* searchSettings, const Board* pos, const
 Node* select_child_node(Node* node)
 {
     node->lock();
-    node->update_u_divisor();
-    node->update_u_parent_factor();
-    if (node->is_calibrated()) {
-        node->validate_candidate_node();
+
+    if (!node->are_child_nodes_sorted()) {
+        node->sort_child_nodes_by_probabilities();
     }
-    else {
-        if (node->are_child_nodes_sorted()) {
+
+    else if (node->get_number_child_nodes() != 1) {
+        node->update_u_divisor();
+        node->update_u_parent_factor();
+
+        if (!node->is_calibrated() ||
+                node->candidate_child_node()->compute_q_plus_u() < node->alternative_child_node()->compute_q_plus_u()) {
             node->calibrate_child_node_order();
         }
-        else {
-            node->sort_child_nodes_by_probabilities();
-        }
     }
+
     node->unlock();
+
     return node->candidate_child_node();
 }
 
@@ -560,7 +504,7 @@ ostream& operator<<(ostream &os, Node *node)
        << "\tn " << node->get_visits()
        << "\tp " << node->get_prob_value()
        << "\tQ " << node->get_q_value()
-       << "\tQ+U " << node->get_q_plus_u();
+       << "\tQ+U " << node->compute_q_plus_u();
     return os;
 }
 
@@ -583,7 +527,7 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hash
 {
     // if the current node hasn't been expanded or is a terminal node then childNodes is empty and the recursion ends
     for (Node* childNode: node->get_child_nodes()) {
-            delete_subtree_and_hash_entries(childNode, hashTable);
+        delete_subtree_and_hash_entries(childNode, hashTable);
     }
 
     if (node->is_expanded()) {
@@ -644,7 +588,7 @@ DynamicVector<float> retrieve_q_values(const Node* node)
     return retrieve_dynamic_vector(node->get_child_nodes(), get_q_value);
 }
 
- float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits)
+float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits)
 {
     return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
 }
@@ -667,9 +611,9 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
 void print_node_statistics(Node* node)
 {
     size_t candidateIdx = 0;
-//    for (auto childNodeIt = childNodes.rbegin(); childNodeIt != childNodes.rend(); ++childNodeIt) {
-//        cout << candidateIdx++ << "." << *childNodeIt << endl;
-//    }
+    //    for (auto childNodeIt = childNodes.rbegin(); childNodeIt != childNodes.rend(); ++childNodeIt) {
+    //        cout << candidateIdx++ << "." << *childNodeIt << endl;
+    //    }
     cout << "info string position " << node->get_pos()->fen() << endl;
     for (auto node : node->get_child_nodes()) {
         cout << candidateIdx++ << "." << node << endl;
@@ -680,7 +624,7 @@ void print_node_statistics(Node* node)
 bool is_ordering_correct(vector<Node*> &childNodes)
 {
     for (size_t i = 0; i < childNodes.size()-1; ++i) {
-        if (childNodes[i]->get_q_plus_u() < childNodes[i+1]->get_q_plus_u()) {
+        if (childNodes[i]->compute_q_plus_u() < childNodes[i+1]->compute_q_plus_u()) {
             return false;
         }
     }
@@ -694,7 +638,7 @@ bool prob_value_comparision(const Node* n1, const Node* n2)
 
 bool q_plus_u_comparision(const Node* n1, const Node* n2)
 {
-    return n1->get_q_plus_u() > n2->get_q_plus_u();
+    return n1->compute_q_plus_u() > n2->compute_q_plus_u();
 }
 
 void get_principal_variation(const Node* rootNode, const SearchSettings* searchSettings, vector<Move>& pv)
@@ -715,10 +659,11 @@ void get_principal_variation(const Node* rootNode, const SearchSettings* searchS
 
 int estimate_visits_to_switch(const float secondScore, const float cpuct, Node* n)
 {
+    // TODO
     //    s = (a-x*v)/(n) + c * p * ((sqrt(n))/(u+x)); solve for x
     // x = -(a * u + c * n^(1.5) * p - n * s * u) / (a - n * s)
     return -int((n->get_action_value() * n->get_parent_node()->get_u_divisor_summand() +
-             cpuct * float(pow(n->get_visits(), 1.5)) * n->get_prob_value() - n->get_visits() *
-             secondScore * n->get_parent_node()->get_u_divisor_summand()) / (n->get_action_value() - n->get_visits() * secondScore));
-//    return -(n->get_ * n-)
+                 cpuct * float(pow(n->get_visits(), 1.5)) * n->get_prob_value() - n->get_visits() *
+                 secondScore * n->get_parent_node()->get_u_divisor_summand()) / (n->get_action_value() - n->get_visits() * secondScore));
+    //    return -(n->get_ * n-)
 }
