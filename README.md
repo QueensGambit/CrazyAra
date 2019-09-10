@@ -170,11 +170,11 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 ## Publication
 * J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [preprint](https://arxiv.org/abs/1908.06660)
 ```
-@article{czech_learning_2019,
-	title = {Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data},
-	author = {Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and Fürnkranz, Johannes},
-	year = {2019},
-	pages = {35}
+@article{czech2019learning,
+  title={Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data},
+  author={Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and F{\"u}rnkranz, Johannes},
+  journal={arXiv preprint arXiv:1908.06660},
+  year={2019}
 }
 ```
 
