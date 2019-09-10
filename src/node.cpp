@@ -113,11 +113,11 @@ void Node::calibrate_child_node_order()
     isCalibrated = true;
 
     // DEBUG
-    //        if (!is_ordering_correct(childNodes)) {
-    //            cout << "nodeIdxUpdate: " << nodeIdxUpdate << endl;
-    //            print_node_statistics(this);
-    //    //        assert(is_ordering_correct(childNodes));
-    //        }
+    //            if (!is_ordering_correct(childNodes)) {
+    //                cout << "nodeIdxUpdate: " << numberExpandedNodes << endl;
+    //                print_node_statistics(this);
+    //                assert(is_ordering_correct(childNodes));
+    //            }
 }
 
 void Node::expand()

@@ -100,6 +100,9 @@ link_directories("$ENV{MXNET_PATH}lib")
 link_directories("$ENV{MXNET_PATH}Release/lib")
 link_directories("$ENV{MXNET_PATH}build/lib")
 link_directories("$ENV{MXNET_PATH}build/Release")
+link_directories("$ENV{MXNET_PATH}build")
+
+link_directories("/home/queensgambit/Downloads/driver/cuda_10.1/TensorRT-5.1.5.0.Ubuntu-18.04.2.x86_64-gnu.cuda-10.1.cudnn7.5/TensorRT-5.1.5.0/lib")
 
 add_executable(${PROJECT_NAME} ${source_files})
 
