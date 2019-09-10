@@ -54,15 +54,15 @@ private:
     DynamicVector<float> qValues;
 
     // singular values
-    double probValue;
-    double qValue;
-    double actionValue;
-    double visits;
-    Move move;
+//    double probValue;
+//    double qValue;
+//    double actionValue;
+//    double visits;
+//    Move move;
 
     std::vector<Move> legalMoves;
     bool isTerminal;
-    unsigned int nbDirectChildNodes;
+    size_t nbDirectChildNodes;
 
     float initialValue;
     int numberVisits = 0;
@@ -76,6 +76,7 @@ private:
 
     // if checkMateIdx is != -1 it will always be preferred over all other nodes
     int checkmateIdx;
+    size_t numberExpandedNodes;
 
     SearchSettings* searchSettings;
 
@@ -108,12 +109,7 @@ private:
      * @return DynamicVector<float>
      */
     DynamicVector<float> get_current_u_values();
-
-    /**
-     * @brief get_current_u_values Calucates anCalucates and returns the current u-values for this node
-     * @return DynamicVector<float>
-     */
-    inline double get_current_u_value() const;
+    DynamicVector<float> get_current_u_values_from_root();
 
     /**
       * @brief enhance_checks Enhances all possible checking moves below threshCheck by incrementCheck and returns true if a modification
@@ -156,6 +152,8 @@ public:
     float getValue() const;
     void setValue(float value);
     size_t select_child_node();
+    size_t select_child_node_from_root();
+
     Node* select_node();
 
     /**
@@ -208,12 +206,10 @@ public:
 
     friend class SearchThread;
     friend class MCTSAgent;
-    friend bool operator> (const Node& n1, const Node& n2);
 //    friend bool operator<= (const Node& n1, const Node& n2);
 
 //    friend bool operator< (const Node& n1, const Node& n2);
 //    friend bool operator>= (const Node& n1, const Node& n2);
-    inline double get_score_value() const;
 
     DynamicVector<float> getPolicyProbSmall();
     void setPolicyProbSmall(const DynamicVector<float> &value);
@@ -285,21 +281,11 @@ public:
     /**
      * @brief sort_nodes_by_probabilities Sorts all child nodes in ascending order based on their probability value
      */
-    void sort_nodes_by_probabilities();
+    void sort_moves_by_probabilities();
 
     void assign_values_to_child_nodes();
 
     std::vector<Node *> getChildNodes() const;
-    double getProbValue() const;
-    double getQValue() const;
-    double getActionValue() const;
-    double getVisits() const;
-    Move getMove() const;
-
-    /**
-     * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
-     */
-    void print_node_statistics();
 
     void fill_child_node_moves();
 
@@ -311,6 +297,6 @@ public:
  * @param node Node object to print
  * @return ostream
  */
-extern std::ostream& operator<<(std::ostream& os, Node* node);
+extern std::ostream& operator<<(std::ostream& os, const Node *node);
 
 #endif // NODE_H

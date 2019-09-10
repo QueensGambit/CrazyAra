@@ -28,6 +28,7 @@
 #include <random>
 #include "util/blazeutil.h"
 #include "uci.h"
+#include <blaze/math/Subvector.h>
 
 using namespace std;
 
@@ -41,6 +42,7 @@ Node::Node(Board *pos, Node *parentNode, unsigned int childIdxForParent, SearchS
     parentNode(parentNode),
     childIdxForParent(childIdxForParent),
     checkmateIdx(-1),
+    numberExpandedNodes(1),
     searchSettings(searchSettings)
 {
     // generate the legal moves and save them in the list
@@ -102,6 +104,7 @@ Node::Node(const Node &b)
     childNodes.resize(nbDirectChildNodes);
     //    parentNode = // is not copied
     //    childIdxForParent = // is not copied
+    numberExpandedNodes = 1; // reset counter
     hasNNResults = b.hasNNResults;
     checkmateIdx = b.checkmateIdx;
     searchSettings = b.searchSettings;
@@ -148,47 +151,9 @@ int Node::find_move_idx(Move move)
     return -1;
 }
 
-void Node::assign_values_to_child_nodes()
-{
-    for (size_t i = 0; i < nbDirectChildNodes; ++i) {
-        if (childNodes[i] == nullptr) {
-            childNodes[i] = new Node(pos, this, -1, searchSettings);
-        }
-        childNodes[i]->probValue = policyProbSmall[i];
-        childNodes[i]->qValue = qValues[i];
-        childNodes[i]->visits = childNumberVisits[i];
-        childNodes[i]->move = legalMoves[i];
-    }
-}
-
 std::vector<Node *> Node::getChildNodes() const
 {
     return childNodes;
-}
-
-double Node::getProbValue() const
-{
-    return probValue;
-}
-
-double Node::getQValue() const
-{
-    return qValue;
-}
-
-double Node::getActionValue() const
-{
-    return actionValue;
-}
-
-double Node::getVisits() const
-{
-    return visits;
-}
-
-Move Node::getMove() const
-{
-    return move;
 }
 
 void Node::check_for_terminal()
@@ -233,19 +198,16 @@ float Node::get_current_q_thresh()
     return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
 }
 
-DynamicVector<float> Node::get_current_u_values()
+DynamicVector<float> Node::get_current_u_values_from_root()
 {
     return get_current_cput() * policyProbSmall * (sqrt(numberVisits) / (childNumberVisits + get_current_u_divisor()));
 }
 
-double Node::get_current_u_value() const
+DynamicVector<float> Node::get_current_u_values()
 {
-    return parentNode->get_current_cput() * probValue * (sqrt(parentNode->visits) / (visits + parentNode->get_current_u_divisor()));
-}
-
-double Node::get_score_value() const
-{
-    return (qValue + get_current_u_value());
+//    return get_current_cput() * policyProbSmall * (sqrt(numberVisits) / (childNumberVisits + get_current_u_divisor()));
+//    size_t size = min(numberExpandedNodes+1, nbDirectChildNodes);
+    return get_current_cput() * blaze::subvector(policyProbSmall, 0, numberExpandedNodes) * (sqrt(numberVisits) / (blaze::subvector(childNumberVisits, 0, numberExpandedNodes) + get_current_u_divisor()));
 }
 
 bool Node::enhance_checks(const float incrementCheck, float threshCheck)
@@ -273,11 +235,17 @@ bool Node::enhance_captures(const float incrementCapture, float threshCapture)
     return update;
 }
 
-void Node::sort_nodes_by_probabilities()
+void Node::sort_moves_by_probabilities()
 {
-    sort(childNodes.begin(), childNodes.end(), [=](const Node* n1, const Node* n2) {
-        return n1->probValue > n2->probValue; // <
-    });
+    auto p = sort_permutation(policyProbSmall,
+        std::greater<float>());
+
+    apply_permutation_in_place(policyProbSmall, p);
+    apply_permutation_in_place(legalMoves, p);
+
+//    sort(childNodes.begin(), childNodes.end(), [=](const Node* n1, const Node* n2) {
+//        return n1->probValue > n2->probValue; // <
+//    });
 }
 
 void Node::enhance_moves(const float threshCheck, const float checkFactor, const float threshCapture, const float captureFactor)
@@ -400,6 +368,17 @@ void Node::setValue(float value)
     value = value;
 }
 
+size_t Node::select_child_node_from_root()
+{
+    if (checkmateIdx != -1) {
+        return size_t(checkmateIdx);
+    }
+    // find the move according to the q- and u-values for each move
+    // calculate the current u values
+    // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
+    return argmax(qValues + get_current_u_values_from_root());
+}
+
 size_t Node::select_child_node()
 {
     if (checkmateIdx != -1) {
@@ -408,7 +387,9 @@ size_t Node::select_child_node()
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    return argmax(qValues + get_current_u_values());
+//    size_t size = min(numberExpandedNodes+1, nbDirectChildNodes);
+//    return argmax(qValues + get_current_u_values());
+    return argmax( blaze::subvector(qValues, 0, numberExpandedNodes) + get_current_u_values());
 }
 
 Node* Node::select_node()
@@ -529,24 +510,16 @@ void Node::delete_sibling_subtrees(unordered_map<Key, Node*>* hashTable)
     }
 }
 
-ostream& operator<<(ostream &os, Node *node)
+ostream &operator<<(ostream &os, const Node *node)
 {
-    os << "move " << UCI::move(node->getMove(), false)
-       << " n " << node->getVisits()
-       << " p " << node->getProbValue()
-       << " Q " << node->getQValue();
-    return os;
-}
-
-void Node::print_node_statistics()
-{
-    assign_values_to_child_nodes();
-    sort_nodes_by_probabilities();
-
-    for (size_t childIdx = 0; childIdx < nbDirectChildNodes; ++childIdx) {
-        cout << childIdx << "." << childNodes[childIdx] << endl;
+    for (size_t childIdx = 0; childIdx < node->getNbDirectChildNodes(); ++childIdx) {
+        os << childIdx << ".move " << UCI::move(node->getLegalMoves()[childIdx], false)
+           << " n " << node->getChildNumberVisits()[childIdx]
+              << " p " << node->getPVecSmall()[childIdx]
+                 << " Q " << node->getQValues()[childIdx] << endl;
     }
-    cout << " initial value: " << value << endl;
+    os << " initial value: " << node->getValue() << endl;
+    return os;
 }
 
 void Node::fill_child_node_moves()
@@ -557,7 +530,3 @@ void Node::fill_child_node_moves()
     }
 }
 
-
-bool operator< (const Node& n1, const Node& n2) {
-    return n1.get_score_value() < n2.get_score_value();
-}

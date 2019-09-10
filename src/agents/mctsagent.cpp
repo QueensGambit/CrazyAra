@@ -232,6 +232,7 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     else {
         cout << "info string apply dirichlet" << endl;
         rootNode->apply_dirichlet_noise_to_prior_policy();
+        rootNode->sort_moves_by_probabilities();
         run_mcts_search();
     }
 
@@ -278,7 +279,7 @@ void MCTSAgent::print_root_node()
         cout << "info string You must do a search before you can print the root node statistics" << endl;
         return;
     }
-    rootNode->print_node_statistics();
+    cout << rootNode << endl;
 }
 
 

@@ -28,7 +28,6 @@
 #include "policymaprepresentation.h"
 using namespace std;
 
-
 // TODO: Change this later to blaze::HybridVector<float, MAX_NB_LEGAL_MOVES>
 void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance)
 {
@@ -61,7 +60,6 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, co
         policyProbSmall = softmax(policyProbSmall);
     }
 }
-
 
 // https://helloacm.com/how-to-implement-the-sgn-function-in-c/
 template <class T>

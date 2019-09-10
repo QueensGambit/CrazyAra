@@ -120,7 +120,14 @@ void SearchThread::set_nn_results_to_child_nodes()
             node->value = valueOutputs->At(batchIdx, 0);
             node->hasNNResults = true;
             node->enhance_moves();
+            node->sort_moves_by_probabilities();
             node->mtx.unlock();
+
+            node->parentNode->mtx.lock();
+            if (node->parentNode->numberExpandedNodes != node->parentNode->nbDirectChildNodes) {
+                ++node->parentNode->numberExpandedNodes;
+            }
+            node->parentNode->mtx.unlock();
         }
         ++batchIdx;
         hashTable->insert({node->pos->hash_key(), node});
