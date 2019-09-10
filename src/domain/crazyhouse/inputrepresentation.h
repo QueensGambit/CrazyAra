@@ -31,7 +31,7 @@
 #include "../../board.h"
 
 /**
- * @brief board_to_planes Converts the given board represetntation into the plane representation.
+ * @brief board_to_planes Converts the given board representation into the plane representation.
  *                        The plane representation will be encoded on a flat float array.
  *                        No history and only the single current board position will be encoded.
  * @param pos Board position

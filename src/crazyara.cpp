@@ -271,36 +271,13 @@ void CrazyAra::init()
     Position::init();
     Bitbases::init();
     Search::init();
-    Constants::init();
 }
 
 bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
-        searchSettings = new SearchSettings();
-        searchSettings->threads = Options["Threads"];
-        searchSettings->batchSize = Options["Batch_Size"];
-        searchSettings->useTranspositionTable = Options["Use_Transposition_Table"];
-        searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;
-        searchSettings->uMin = Options["Centi_U_Min"] / 100.0f;
-        searchSettings->uBase = Options["U_Base"];
-        searchSettings->qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
-        searchSettings->enhanceChecks = Options["Enhance_Checks"];
-        searchSettings->enhanceCaptures = Options["Enhance_Captures"];
-        searchSettings->cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
-        searchSettings->cpuctBase = Options["CPuct_Base"];
-        searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
-        searchSettings->dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
-        searchSettings->virtualLoss = Options["Virtual_Loss"];
-        searchSettings->qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
-        searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
-        searchSettings->qThreshBase = Options["Q_Thresh_Base"];
-        searchSettings->randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
-
-        playSettings = new PlaySettings();
-        playSettings->temperature = Options["Centi_Temperature"] / 100.0f;
-        playSettings->temperatureMoves = Options["Temperature_Moves"];
-
+        init_search_settings();
+        init_play_settings();
         string modelDirectory = Options["Model_Directory"];
         netSingle = new NeuralNetAPI(Options["Context"], 1, modelDirectory);
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
@@ -308,6 +285,7 @@ bool CrazyAra::is_ready()
         for (size_t i = 0; i < searchSettings->threads; ++i) {
             netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory);
         }
+        Constants::init(netSingle->is_policy_map());
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);
         networkLoaded = true;
     }
@@ -326,4 +304,34 @@ string CrazyAra::engine_info()
     ss << "id name " << name << " " << version << " (" << __DATE__ << ")" << "\n";
     ss << "id author " << authors;
     return ss.str();
+}
+
+void CrazyAra::init_search_settings()
+{
+    searchSettings = new SearchSettings();
+    searchSettings->threads = Options["Threads"];
+    searchSettings->batchSize = Options["Batch_Size"];
+    searchSettings->useTranspositionTable = Options["Use_Transposition_Table"];
+    searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;
+    searchSettings->uMin = Options["Centi_U_Min"] / 100.0f;
+    searchSettings->uBase = Options["U_Base"];
+    searchSettings->qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
+    searchSettings->enhanceChecks = Options["Enhance_Checks"];
+    searchSettings->enhanceCaptures = Options["Enhance_Captures"];
+    searchSettings->cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
+    searchSettings->cpuctBase = Options["CPuct_Base"];
+    searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
+    searchSettings->dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
+    searchSettings->virtualLoss = Options["Virtual_Loss"];
+    searchSettings->qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
+    searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
+    searchSettings->qThreshBase = Options["Q_Thresh_Base"];
+    searchSettings->randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
+}
+
+void CrazyAra::init_play_settings()
+{
+    playSettings = new PlaySettings();
+    playSettings->temperature = Options["Centi_Temperature"] / 100.0f;
+    playSettings->temperatureMoves = Options["Temperature_Moves"];
 }

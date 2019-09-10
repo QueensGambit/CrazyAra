@@ -55,6 +55,16 @@ struct SearchSettings
     float qThreshBase;
     float randomMoveFactor;
 
+    // adaption of checking and capture moves (currently not as UCI parameters)
+    // Threshold probability for checking moves
+    float threshCheck;
+    // Factor based on the maximum probability with which checks will be increased
+    float checkFactor;
+    // Threshold probability for capture moves
+    float threshCapture;
+    // Factor based on the maximum probability with which captures will be increased
+    float captureFactor;
+
     SearchSettings();
 
 };
