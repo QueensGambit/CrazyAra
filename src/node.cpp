@@ -327,12 +327,10 @@ void Node::revert_virtual_loss()
 
 void Node::revert_virtual_loss_and_update(float value)
 {
-    //    mtx.lock();
     ++visits;
     actionValue += value;
     revert_virtual_loss();
     //    qValue = actionValue / double(visits);
-    //    mtx.unlock();
 }
 
 void Node::init_board()
@@ -400,9 +398,11 @@ void Node::apply_dirichlet_noise_to_prior_policy()
 void backup_value(Node* currentNode, float value)
 {
     do {
+        currentNode->lock();
         currentNode->revert_virtual_loss_and_update(value);
-        value = -value;
         currentNode->mark_as_uncalibrated();
+        currentNode->unlock();
+        value = -value;
         currentNode = currentNode->get_parent_node();
     } while(currentNode != nullptr);
 }
@@ -410,7 +410,9 @@ void backup_value(Node* currentNode, float value)
 void backup_collision(Node *currentNode)
 {
     do {
+        currentNode->lock();
         currentNode->revert_virtual_loss();
+        currentNode->unlock();
         currentNode = currentNode->get_parent_node();
     } while(currentNode != nullptr);
 }
