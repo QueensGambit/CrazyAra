@@ -108,7 +108,9 @@ void NeuralNetAPI::load_model(const string &jsonFilePath)
 	cout << "info string Loading the model from " << jsonFilePath << endl;
     net = Symbol::Load(jsonFilePath);
     if (enableTensorrt) {
+      #ifdef TENSORRT
       net = net.GetBackendSymbol("TensorRT");
+      #endif
     }
 }
 
@@ -145,12 +147,14 @@ void NeuralNetAPI::load_parameters(const string& paramterFilePath) {
     NDArray::Load(paramterFilePath, 0, &parameters);
 
     if (enableTensorrt) {
+      #ifdef TENSORRT
       std::map<std::string, NDArray> intermediate_args_map;
       std::map<std::string, NDArray> intermediate_aux_map;
       SplitParamMap(parameters, &intermediate_args_map, &intermediate_aux_map, Context::cpu());
       contrib::InitTensorRTParams(net, &intermediate_args_map, &intermediate_aux_map);
       ConvertParamMapToTargetContext(intermediate_args_map, &argsMap, globalCtx);
       ConvertParamMapToTargetContext(intermediate_aux_map, &auxMap, globalCtx);
+      #endif TENSORRT
     } else {
       SplitParamMap(parameters, &argsMap, &auxMap, globalCtx);
     }
