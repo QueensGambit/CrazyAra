@@ -46,6 +46,10 @@
 #include "../manager/statesmanager.h"
 #include "../manager/timemanager.h"
 
+#ifdef USE_RL
+#include "../rl/traindataexporter.h"
+#endif
+
 class MCTSAgent : public Agent
 {
 private:
@@ -162,6 +166,11 @@ public:
      * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them
      */
     void clear_game_history();
+
+#ifdef USE_RL
+    void export_game_training_data();
+#endif
+
 };
 
 #endif // MCTSAGENT_H

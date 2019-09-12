@@ -206,12 +206,27 @@ void MCTSAgent::clear_game_history()
     for (Node* node: gameNodes) {
         delete node;
     }
+#ifdef USE_RL
+    if (gameNodes.size() != 0) {
+        export_game_training_data();
+    }
+#endif
     gameNodes.clear();
     hashTable->clear();
     oldestRootNode = nullptr;
     rootNode = nullptr;
     lastValueEval = -1.0f;
 }
+
+#ifdef USE_RL
+void MCTSAgent::export_game_training_data()
+{
+    Result res = gameNodes.back()->get_pos()->side_to_move() == WHITE ? LOST : WON;
+    cout << "result: " << res << endl;
+    TrainDataExporter e;
+    e.export_positions(gameNodes, res);
+}
+#endif
 
 void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 {
