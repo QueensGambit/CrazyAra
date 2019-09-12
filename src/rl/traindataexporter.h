@@ -55,7 +55,7 @@ private:
     void export_pos(const Board *pos, Result result, size_t idxOffset);
 public:
     TrainDataExporter();
-    void export_positions(const std::vector<Node*> nodes, Result result);
+    void export_positions(const std::vector<Node*>& nodes, Result result);
 };
 
 #endif // TRAINDATAEXPORTER_H

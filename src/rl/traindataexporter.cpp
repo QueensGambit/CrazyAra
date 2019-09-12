@@ -82,7 +82,7 @@ TrainDataExporter::TrainDataExporter()
     dPolicy = z5::createDataset(f, "y_policy", "float32", { chunckSize, NB_LABELS }, { chunckSize, NB_LABELS });
 }
 
-void TrainDataExporter::export_positions(const std::vector<Node*> nodes, Result result)
+void TrainDataExporter::export_positions(const std::vector<Node*>& nodes, Result result)
 {
     size_t offset = 0;
     for (auto node : nodes) {
