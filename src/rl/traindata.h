@@ -28,11 +28,72 @@
 #ifndef TRAINDATA_H
 #define TRAINDATA_H
 
+#include <inttypes.h>
+#include <zlib.h>
 
-class TrainData
-{
+#include "../domain/crazyhouse/constants.h"
+
+using namespace std;
+
+struct TrainDataExport {
+    // Training sample information / inputs / x
+    // -----------------------------------------
+    // P1 defines the current player to move, (us/me)
+    // P2 defines the opposing player (them/you)
+    // Note: bool is exported as one byte and not one bit
+
+    // Bitboard information
+    // P1 {PAWN,KNIGHT,BISHOP,ROOK,QUEEN,KING}
+    // P2 {PAWN,KNIGHT,BISHOP,ROOK,QUEEN,KING}
+    // P1 Promoted Pawns
+    // P2 Promoted Pawns
+    // En-passant square
+    Bitboard pieces[NB_PIECE_TYPES * NB_PLAYERS];
+
+    // number of how often this position already occured
+    uint8_t repetitions;
+
+#ifdef CRAZYHOUSE
+    // pocket pieces for player P1 followed by P2
+    // the king is excluded
+    uint8_t pocketCount[(NB_PIECE_TYPES-1) * NB_PLAYERS];
+    // promoted pawns (is flipped for P=BLACK)
+    Bitboard promotedPawns[NB_PLAYERS];
+#endif
+    // en-passent square (is flipped for sideToMove=BLACK)
+    uint64_t enPassentSquare;
+
+    // color/sideToMove: false for black and true for white
+    bool color;
+    // sets the full move count (FEN notation)
+    uint8_t totalMoveCount;
+
+    // castling rights
+    // {P1_KING_SIDE, P1_QUEEN_SIDE, P2_KING_SIDE, P2_QUEEN_SIDE}
+    bool castlingRights[NB_PLAYERS * 2];
+
+    // No-progress count / FEN halfmove clock / rule50 count
+    uint8_t noProgressCount;
+
+    // Learning targets / output / y
+    // -----------------------------
+    float probabilities[NB_VALUES_TOTAL];
+    int8_t gameResult;
+
+    // misc
+    uint32_t version;
+    float moveQvalue;
+    float highestQvalue;
+};
+
+class Exporter {
+private:
+    string filename = "/home/queensgambit/Desktop/Programming/C++/build-HelloQt-Desktop-Release/data.gz";
+    gzFile fout;
 public:
-    TrainData();
+    Exporter();
+    int export_training_sample(const TrainDataExport& trainData);
+    void close_gz();
 };
 
 #endif // TRAINDATA_H

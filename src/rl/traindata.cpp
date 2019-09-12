@@ -27,7 +27,23 @@
 
 #include "traindata.h"
 
-TrainData::TrainData()
+Exporter::Exporter()
 {
+    fout = gzopen(filename.c_str(), "wb");
+}
 
+int Exporter::export_training_sample(const TrainDataExport &trainData)
+{
+    auto bytes_written =
+        gzwrite(fout, reinterpret_cast<const char*>(&trainData), sizeof(trainData));
+    if (bytes_written != sizeof(trainData)) {
+      cerr << "Unable to write into " + filename << endl;
+      return -1;
+    }
+    return 0;
+}
+
+void Exporter::close_gz()
+{
+    gzclose(fout);
 }
