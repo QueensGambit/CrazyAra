@@ -52,6 +52,10 @@ const int NB_CHANNELS_CONST = 7;
 const int NB_CHANNELS_TOTAL = NB_CHANNELS_POS + NB_CHANNELS_CONST;
 const int NB_VALUES_TOTAL = NB_CHANNELS_TOTAL * BOARD_HEIGHT * BOARD_WIDTH;
 
+// number of players of the game
+const int NB_PLAYERS = 2;
+// the number of different piece types in the game
+const int NB_PIECE_TYPES = 6;
 // define the number of different pieces one can have in his pocket (the king is excluded)
 const int POCKETS_SIZE_PIECE_TYPE = 5;
 
@@ -76,6 +80,9 @@ const int NB_LABELS = 2272;
 const int NB_CHANNELS_POLICY_MAP = 81;
 const int NB_LABELS_POLICY_MAP = NB_CHANNELS_POLICY_MAP * BOARD_HEIGHT * BOARD_WIDTH;
 
+enum Result {
+  LOST=-1, DRAW=0, WON=1
+};
 
 const std::string LABELS[] = {
     "a1b1",
