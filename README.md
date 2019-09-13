@@ -1,16 +1,17 @@
-<div id="badges" align="center">
-
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-&nbsp; 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ad5bb9057b5e4b82bde3569af92b86e9)](https://app.codacy.com/app/QueensGambit/CrazyAra-Engine?utm_source=github.com&utm_medium=referral&utm_content=QueensGambit/CrazyAra-Engine&utm_campaign=Badge_Grade_Dashboard)
-
-</div>
 
 <div id="crazyara-logo" align="center">
     <br/>
     <img src="./media/crazyara_logo_medium.png" alt="CrazyAra Logo" width="512"/>
     <h1>CrazyAra</h1>
     <h3>A Deep Learning Chess Variant Engine</h3>
+</div>
+
+<div id="badges" align="center">
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+&nbsp; 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ad5bb9057b5e4b82bde3569af92b86e9)](https://app.codacy.com/app/QueensGambit/CrazyAra-Engine?utm_source=github.com&utm_medium=referral&utm_content=QueensGambit/CrazyAra-Engine&utm_campaign=Badge_Grade_Dashboard)
+
 </div>
 
 ## Contents
