@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(CrazyAra CXX)
 
-option(USE_PROFILING             "Build with profiling"   FALSE)
+option(USE_PROFILING             "Build with profiling"   OFF)
+option(USE_RL                    "Build with reinforcment learning support"  ON)
 
 # -pg performance profiling flags
 if (USE_PROFILING)
@@ -10,7 +11,6 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
 endif()
-
 
 if(DEFINED ENV{BLAZE_PATH})
     MESSAGE(STATUS "BLAZE_PATH set to: $ENV{BLAZE_PATH}")
@@ -57,6 +57,8 @@ file(GLOB source_files
         "src/nn/*.h"
         "src/manager/*.cpp"
         "src/manager/*.h"
+        "src/rl/*.cpp"
+        "src/rl/*.h"
 )
 
 set(CPP_EXAMPLE_LIBS
@@ -110,6 +112,24 @@ if(UNIX)
     target_link_libraries(${PROJECT_NAME} mxnet)
 else()
     target_link_libraries(${PROJECT_NAME} libmxnet)
+endif()
+
+if (USE_RL)
+#find_package(ZLIB, REQUIRED)
+include_directories($ENV{ZLIB_PATH})
+link_directories($ENV{ZLIB_PATH})
+target_link_libraries(${PROJECT_NAME} z )
+
+if(DEFINED ENV{Z5_PATH})
+    MESSAGE(STATUS "Z5_PATH set to: $ENV{Z5_PATH}")
+else()
+    MESSAGE(STATUS "Z5_PATH not set")
+endif()
+include_directories($ENV{Z5_PATH}include)
+# include filesystem (needed for z5)
+target_link_libraries(${PROJECT_NAME} stdc++fs)
+include_directories("lib/json-3.7.0")
+add_definitions(-DUSE_RL)
 endif()
 
 find_package(Threads REQUIRED)
