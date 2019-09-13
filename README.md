@@ -2,7 +2,6 @@
 <div id="crazyara-logo" align="center">
     <br/>
     <img src="./media/crazyara_logo_medium.png" alt="CrazyAra Logo" width="512"/>
-    <h1>CrazyAra</h1>
     <h3>A Deep Learning Chess Variant Engine</h3>
 </div>
 
