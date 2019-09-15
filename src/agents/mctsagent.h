@@ -88,6 +88,10 @@ private:
     // boolean which indicates if the same node was requested twice for analysis
     bool reusedFullTree;
 
+#ifdef USE_RL
+    TrainDataExporter exporter;
+#endif
+
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
      * The old tree or former subtrees will be freed from memory.
@@ -140,6 +144,8 @@ public:
               SearchSettings* searchSettings,
               PlaySettings playSettings,
               StatesManager* states);
+
+    ~MCTSAgent();
 
     void evalute_board_state(Board *pos, EvalInfo& evalInfo);
 

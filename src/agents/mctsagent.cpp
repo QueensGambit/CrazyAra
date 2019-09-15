@@ -73,6 +73,14 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     generator = default_random_engine(r());
 }
 
+MCTSAgent::~MCTSAgent()
+{
+    delete netSingle;
+    delete netBatches;
+    delete searchSettings;
+    delete hashTable;
+}
+
 size_t MCTSAgent::init_root_node(Board *pos)
 {
     size_t nodesPreSearch;
@@ -221,10 +229,8 @@ void MCTSAgent::clear_game_history()
 #ifdef USE_RL
 void MCTSAgent::export_game_training_data()
 {
-    Result res = gameNodes.back()->get_pos()->side_to_move() == WHITE ? LOST : WON;
-    cout << "result: " << res << endl;
-    TrainDataExporter e;
-    e.export_positions(gameNodes, res);
+    Result result = gameNodes.back()->get_pos()->side_to_move() == WHITE ? LOST : WON;
+    exporter.export_game_result(result, 0, gameNodes.size());
 }
 #endif
 
@@ -276,6 +282,10 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     evalInfo.is_chess960 = pos->is_chess960();
     evalInfo.nodes = rootNode->get_visits();
     evalInfo.nodesPreSearch = nodesPreSearch;
+
+#ifdef USE_RL
+    exporter.export_pos(pos, evalInfo, pos->game_ply());
+#endif
 }
 
 void MCTSAgent::run_mcts_search()
