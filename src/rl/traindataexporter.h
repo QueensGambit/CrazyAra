@@ -44,6 +44,7 @@
 #include "../board.h"
 #include "../domain/crazyhouse/constants.h"
 #include "../node.h"
+#include "../evalinfo.h"
 
 class TrainDataExporter
 {
@@ -52,9 +53,40 @@ private:
     std::unique_ptr<z5::Dataset> dx;
     std::unique_ptr<z5::Dataset> dValue;
     std::unique_ptr<z5::Dataset> dPolicy;
-    void export_pos(const Board *pos, Result result, size_t idxOffset);
+
+    /**
+     * @brief export_planes Exports the board in plane representation (x)
+     * @param pos Board position to export
+     * @param idxOffset Batch-Offset where to save it in the matrix
+     */
+    void export_planes(const Board *pos, size_t idxOffset);
+
+    /**
+     * @brief export_policy Export the policy (e.g. mctsPolicy) to the matrix
+     * @param legalMoves List of legal moves
+     * @param policyProbSmall Probability for each move
+     * @param sideToMove Current side to move
+     * @param idxOffset Batch-Offset where to save it in the matrix
+     */
+    void export_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset);
 public:
     TrainDataExporter();
+
+    /**
+     * @brief export_pos Exports a given board position with result to the current training set
+     * @param pos
+     * @param result
+     * @param idxOffset
+     */
+    void export_pos(const Board *pos, const EvalInfo& eval, size_t idxOffset);
+
+    void export_game_result(const Result result, size_t idxOffset, size_t plys);
+
+    /**
+     * @brief export_positions Export a list of nodes as training data
+     * @param nodes List of nodes (usually all nodes which have been played in a game)
+     * @param result Game result, needed to assign the target value
+     */
     void export_positions(const std::vector<Node*>& nodes, Result result);
 };
 
