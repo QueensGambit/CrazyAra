@@ -51,6 +51,8 @@ using namespace std;
 string LABELS_MIRRORED[NB_LABELS];
 unordered_map<Move, size_t> MV_LOOKUP = {};
 unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
+unordered_map<Move, size_t> MV_LOOKUP_CLASSIC = {};
+unordered_map<Move, size_t> MV_LOOKUP_MIRRORED_CLASSIC = {};
 
 CrazyAra::CrazyAra()
 {

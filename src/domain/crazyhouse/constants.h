@@ -2364,6 +2364,10 @@ const std::string LABELS[] = {
 extern std::unordered_map<Move, size_t> MV_LOOKUP;
 extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED;
 
+// classical look up tables, which are later used for policy export
+extern std::unordered_map<Move, size_t> MV_LOOKUP_CLASSIC;
+extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED_CLASSIC;
+
 //https://stackoverflow.com/questions/23390034/c-change-global-variable-value-in-different-files
 extern std::string LABELS_MIRRORED[NB_LABELS];
 
@@ -2383,10 +2387,12 @@ inline void init(bool isPolicyMap) {
         std::vector<Move> moves = make_move(LABELS[mvIdx]);
         for (Move move : moves) {
             isPolicyMap ? MV_LOOKUP.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP.insert({move, mvIdx});
+            MV_LOOKUP_CLASSIC.insert({move, mvIdx});
         }
         std::vector<Move> moves_mirrored = make_move(LABELS_MIRRORED[mvIdx]);
         for (Move move : moves_mirrored) {
             isPolicyMap ? MV_LOOKUP_MIRRORED.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP_MIRRORED.insert({move, mvIdx});
+            MV_LOOKUP_MIRRORED_CLASSIC.insert({move, mvIdx});
         }
     }
 }
