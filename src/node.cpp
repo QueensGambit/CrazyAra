@@ -36,7 +36,7 @@ Node::Node(Node *parentNode, Move move,  SearchSettings* searchSettings):
     visits(0),
     virtualLossCounter(0),
     numberExpandedNodes(0),
-    isTerminal(false), // will be later recomputed
+    isTerminal(false),  // will be later recomputed
     isExpanded(false),
     hasNNResults(false),
     isCalibrated(false),
@@ -81,6 +81,7 @@ void Node::operator=(const Node& b)
     searchSettings = b.searchSettings;
     isTerminal = b.isTerminal;
     isExpanded = true;
+    checkmateNode = nullptr;  // might be set later
 }
 
 void Node::sort_child_nodes_by_probabilities()

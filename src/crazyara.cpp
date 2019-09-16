@@ -54,9 +54,11 @@ unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
 unordered_map<Move, size_t> MV_LOOKUP_CLASSIC = {};
 unordered_map<Move, size_t> MV_LOOKUP_MIRRORED_CLASSIC = {};
 
-CrazyAra::CrazyAra()
+CrazyAra::CrazyAra():
+    searchSettings(nullptr),  // will be initialized in init_search_settings()
+    playSettings(nullptr),    // will be initialized in init_play_settings()
+    states(new StatesManager())
 {
-    states = new StatesManager();
 }
 
 void CrazyAra::welcome()

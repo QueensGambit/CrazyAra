@@ -45,7 +45,7 @@ class RawNetAgent: public Agent
 private:
     NeuralNetAPI *net;
     PlaySettings playSettings;
-    float input_planes[NB_VALUES_TOTAL];
+    float inputPlanes[NB_VALUES_TOTAL];
     NDArray valueOutput = NDArray(Shape(1, 1), Context::cpu());
     NDArray probOutputs = NDArray(Shape(1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH), Context::cpu());
 

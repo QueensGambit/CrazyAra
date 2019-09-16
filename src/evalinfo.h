@@ -40,9 +40,6 @@ using blaze::DynamicVector;
 
 struct EvalInfo
 {
-public:
-    EvalInfo();
-
     float value;
     std::vector<Move> legalMoves;
     DynamicVector<float> policyProbSmall;
@@ -53,7 +50,7 @@ public:
     size_t nodesPreSearch;
     float elapsedTimeMS;
     float nps;
-    bool is_chess960;
+    bool isChess960;
     std::vector<Move> pv;
     Move bestMove;
 };

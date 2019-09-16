@@ -26,11 +26,6 @@
 #include "evalinfo.h"
 #include "uci.h"
 
-EvalInfo::EvalInfo()
-{
-
-}
-
 std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
 {
     os << "info score cp " << evalInfo.centipawns
@@ -40,7 +35,7 @@ std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
        << " nps " << evalInfo.nps
        << " pv";
     for (Move move: evalInfo.pv) {
-        os << " " << UCI::move(move, evalInfo.is_chess960);
+        os << " " << UCI::move(move, evalInfo.isChess960);
     }
     return os;
 }

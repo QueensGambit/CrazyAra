@@ -42,6 +42,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     } else {
         probOutputs = new NDArray(Shape(searchSettings->batchSize, NB_LABELS), Context::cpu());
     }
+    searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
 }
 
 void SearchThread::set_root_node(Node *value)

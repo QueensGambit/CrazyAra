@@ -279,7 +279,7 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     evalInfo.legalMoves = retrieve_legal_moves(rootNode->get_child_nodes());
     get_principal_variation(rootNode, searchSettings, evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
-    evalInfo.is_chess960 = pos->is_chess960();
+    evalInfo.isChess960 = pos->is_chess960();
     evalInfo.nodes = rootNode->get_visits();
     evalInfo.nodesPreSearch = nodesPreSearch;
 
@@ -301,6 +301,7 @@ void MCTSAgent::run_mcts_search()
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
+    delete[] threads;
 }
 
 void MCTSAgent::print_root_node()

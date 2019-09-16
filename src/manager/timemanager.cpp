@@ -30,6 +30,8 @@ using namespace std;
 
 
 TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int threshMove, float moveFactor, float incrementFactor, int timeBufferFactor):
+    curMovetime(0),  // will be updated later
+    timeBuffer(0),   // will be updated later
     randomMoveFactor(randomMoveFactor),
     expectedGameLength(expectedGameLength),
     threshMove(threshMove),

@@ -21,8 +21,6 @@
  * @file: rawnetagent.cpp
  * Created on 12.06.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include <blaze/Math.h>
@@ -36,9 +34,9 @@
 
 using blaze::HybridVector;
 
-RawNetAgent::RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings, float temperature, unsigned int temperature_moves, bool verbose) : Agent (temperature, temperature_moves, verbose)
+RawNetAgent::RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings, float temperature, unsigned int temperature_moves, bool verbose):
+    Agent (temperature, temperature_moves, verbose)
 {
-
     this->net = net;
     this->playSettings = playSettings;
 }
@@ -63,21 +61,21 @@ void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
         evalInfo.pv = {evalInfo.legalMoves[0]};
     }
 
-    board_to_planes(pos, 0, true, begin(input_planes)); //input_planes_start);
+    board_to_planes(pos, 0, true, begin(inputPlanes));
     float value;
 
-    NDArray probOutputs = net->predict(begin(input_planes), value);
+    NDArray probOutputs = net->predict(begin(inputPlanes), value);
     auto predicted = probOutputs.ArgmaxChannel();
     predicted.WaitToRead();
 
-    int best_idx = predicted.At(0, 0); //, 0);
+    int bestIdx = predicted.At(0, 0);
 
     string bestmove_mxnet;
     if (pos->side_to_move() == WHITE) {
-        bestmove_mxnet = LABELS[best_idx];
+        bestmove_mxnet = LABELS[bestIdx];
     }
     else {
-        bestmove_mxnet = LABELS_MIRRORED[best_idx];
+        bestmove_mxnet = LABELS_MIRRORED[bestIdx];
     }
 
     evalInfo.policyProbSmall.resize(evalInfo.legalMoves.size());
@@ -91,6 +89,6 @@ void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     evalInfo.centipawns = value_to_centipawn(value);
     evalInfo.depth = 1;
     evalInfo.nodes = 1;
-    evalInfo.is_chess960 = pos->is_chess960();
+    evalInfo.isChess960 = pos->is_chess960();
 	evalInfo.pv = { bestmove };
 }
