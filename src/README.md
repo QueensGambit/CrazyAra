@@ -8,7 +8,7 @@
 *   **`manager`**: Contains manager classes for different aspects e.g. the search tree, the time and the states list
 *   **`nn`**: Contains the functionality methods for loading the neural network and predicting the policy and value evaluation
 *   **`util`**: Contains additional utility methods for the blaze library and stockfish backend
-*   **`rl`**: Functionality for 
+*   **`rl`**: Contains functionality methods for applying reinforcmenet learning which is only used for `USE_RL=ON`
 
 ## Performance Profiling 
 
