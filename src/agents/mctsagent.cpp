@@ -117,14 +117,10 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     if (same_hash_key(ownNextRoot, pos)) {
         delete_sibling_subtrees(ownNextRoot, hashTable);
         delete_sibling_subtrees(opponentsNextRoot, hashTable);
-//        cout << "rootNode->get_parent_node()->get_pos()->fen() " << ownNextRoot->get_parent_node()->get_pos()->fen() << endl;
-//        ownNextRoot->make_to_root();
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, pos)) {
         delete_sibling_subtrees(opponentsNextRoot, hashTable);
-//        cout << "rootNode->get_parent_node()->get_pos()->fen() " << opponentsNextRoot->get_parent_node()->get_pos()->fen() << endl;
-//        opponentsNextRoot->make_to_root();
         return opponentsNextRoot;
     }
     return nullptr;
@@ -297,8 +293,10 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(go, searchThreads[i]);
     }
-    stop_search_based_on_limits();
-
+    if (searchLimits->nodes == 0) {
+        // otherwise will the threads stop by themselves
+        stop_search_based_on_limits();
+    }
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
