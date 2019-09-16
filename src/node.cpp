@@ -29,11 +29,11 @@
 Node::Node(Node *parentNode, Move move,  SearchSettings* searchSettings):
     parentNode(parentNode),
     move(move),
-    value(0),
-    probValue(0),
-    qValue(-1.0),
-    actionValue(0),
-    visits(0),
+    value(0.0f),
+    probValue(0.0f),
+    qValue(-1.0f),
+    actionValue(0.0f),
+    visits(0.0f),
     virtualLossCounter(0),
     numberExpandedNodes(0),
     isTerminal(false),  // will be later recomputed
@@ -42,6 +42,8 @@ Node::Node(Node *parentNode, Move move,  SearchSettings* searchSettings):
     isCalibrated(false),
     areChildNodesSorted(false),
     isFullyExpanded(false),
+    uParentFactor(0.0f),
+    uDivisorSummand(0.0f),
     checkmateNode(nullptr),
     searchSettings(searchSettings)
 {
@@ -82,6 +84,8 @@ void Node::operator=(const Node& b)
     isTerminal = b.isTerminal;
     isExpanded = true;
     checkmateNode = nullptr;  // might be set later
+    uDivisorSummand = 0.0f;
+    uParentFactor = 0.0f;
 }
 
 void Node::sort_child_nodes_by_probabilities()
@@ -123,8 +127,6 @@ void Node::calibrate_child_node_order()
 
 void Node::expand()
 {
-    //    mtx.lock();
-    //    create_child_nodes(this, pos, childNodes, searchSettings);
     create_child_nodes();
     numberChildNodes = childNodes.size();
     check_for_terminal();
@@ -132,7 +134,6 @@ void Node::expand()
     if (parentNode != nullptr) {
         parentNode->increment_no_visit_idx();
     }
-    //    mtx.unlock();
 }
 
 Move Node::get_move() const
@@ -167,21 +168,17 @@ Board* Node::get_pos() const
 
 void Node::set_nn_results(float nn_value, const DynamicVector<float> &policyProbSmall)
 {
-    //    mtx.lock();
     value = nn_value;
     for (size_t i = 0; i < childNodes.size(); ++i) {
         childNodes[i]->set_prob_value(policyProbSmall[i]);
     }
     hasNNResults = true;
-    //    mtx.unlock();
 }
 
 void Node::apply_virtual_loss()
 {
-    //    mtx.lock();
     ++virtualLossCounter;
     update_q_value();
-    //    mtx.unlock();
 }
 
 void Node::set_prob_value(float value)
@@ -331,7 +328,6 @@ void Node::revert_virtual_loss_and_update(float value)
     ++visits;
     actionValue += value;
     revert_virtual_loss();
-    //    qValue = actionValue / double(visits);
 }
 
 void Node::init_board()
@@ -364,9 +360,7 @@ float Node::compute_q_plus_u() const
 void Node::create_child_nodes()
 {
     for (const ExtMove move : MoveList<LEGAL>(*pos)) {
-        //        cout << "move " << UCI::move(move, false) << endl;
         childNodes.push_back(new Node(this, move, searchSettings));
-        //        cout << childNodes.back() << endl;
     }
     numberChildNodes = childNodes.size();
 }
@@ -430,9 +424,7 @@ vector<Move> retrieve_legal_moves(const vector<Node*>& childNodes)
 void create_child_nodes(Node* parentNode, const Board* pos, vector<Node*> &childNodes, SearchSettings* searchSettings)
 {
     for (const ExtMove move : MoveList<LEGAL>(*pos)) {
-        //        cout << "move " << UCI::move(move, false) << endl;
         childNodes.push_back(new Node(parentNode, move, searchSettings));
-        //        cout << childNodes.back() << endl;
     }
 }
 
@@ -614,9 +606,6 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
 void print_node_statistics(Node* node)
 {
     size_t candidateIdx = 0;
-    //    for (auto childNodeIt = childNodes.rbegin(); childNodeIt != childNodes.rend(); ++childNodeIt) {
-    //        cout << candidateIdx++ << "." << *childNodeIt << endl;
-    //    }
     cout << "info string position " << node->get_pos()->fen() << endl;
     for (auto node : node->get_child_nodes()) {
         cout << candidateIdx++ << "." << node << endl;

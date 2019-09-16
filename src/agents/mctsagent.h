@@ -61,7 +61,7 @@ private:
 
     std::vector<SearchThread*> searchThreads;
 
-    float input_planes[NB_VALUES_TOTAL];
+    float inputPlanes[NB_VALUES_TOTAL];
     NDArray* valueOutput;
     NDArray* probOutputs;
 

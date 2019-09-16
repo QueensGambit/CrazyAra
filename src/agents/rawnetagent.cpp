@@ -39,6 +39,7 @@ RawNetAgent::RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings, float tem
 {
     this->net = net;
     this->playSettings = playSettings;
+    fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);  // will be filled in evalute_board_state()
 }
 
 void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)

@@ -68,7 +68,6 @@ private:
     RawNetAgent* rawAgent;
     MCTSAgent* mctsAgent;
     NeuralNetAPI* netSingle;
-    NeuralNetAPI* netBatch;
     SearchSettings* searchSettings;
     PlaySettings* playSettings;
     bool networkLoaded = false;

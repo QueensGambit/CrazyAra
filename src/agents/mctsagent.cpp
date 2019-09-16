@@ -71,6 +71,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     }
     timeManager = new TimeManager(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
+    fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);  // will be filled in evalute_board_state()
 }
 
 MCTSAgent::~MCTSAgent()
@@ -183,8 +184,8 @@ void MCTSAgent::create_new_root_node(Board *pos)
     rootNode = new Node(newPos, nullptr, MOVE_NONE, searchSettings);
     rootNode->expand();
     oldestRootNode = rootNode;
-    board_to_planes(pos, 0, true, begin(input_planes));
-    netSingle->predict(input_planes, *valueOutput, *probOutputs);
+    board_to_planes(pos, 0, true, begin(inputPlanes));
+    netSingle->predict(inputPlanes, *valueOutput, *probOutputs);
     fill_nn_results(0, netSingle->is_policy_map(), searchSettings, valueOutput, probOutputs, rootNode);
     gameNodes.push_back(rootNode);
 }

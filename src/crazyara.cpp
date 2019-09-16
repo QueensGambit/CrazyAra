@@ -54,11 +54,12 @@ unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
 unordered_map<Move, size_t> MV_LOOKUP_CLASSIC = {};
 unordered_map<Move, size_t> MV_LOOKUP_MIRRORED_CLASSIC = {};
 
-CrazyAra::CrazyAra():
-    searchSettings(nullptr),  // will be initialized in init_search_settings()
-    playSettings(nullptr),    // will be initialized in init_play_settings()
-    states(new StatesManager())
+CrazyAra::CrazyAra()
 {
+    searchSettings = nullptr;  // will be initialized in init_search_settings()
+    playSettings = nullptr;    // will be initialized in init_play_settings()
+    netSingle = nullptr;       // will be initialized in is_ready()
+    states = new StatesManager();
 }
 
 void CrazyAra::welcome()
@@ -312,6 +313,7 @@ string CrazyAra::engine_info()
 
 void CrazyAra::init_search_settings()
 {
+    delete searchSettings;
     searchSettings = new SearchSettings();
     searchSettings->threads = Options["Threads"];
     searchSettings->batchSize = Options["Batch_Size"];
@@ -335,6 +337,7 @@ void CrazyAra::init_search_settings()
 
 void CrazyAra::init_play_settings()
 {
+    delete playSettings;
     playSettings = new PlaySettings();
     playSettings->temperature = Options["Centi_Temperature"] / 100.0f;
     playSettings->temperatureMoves = Options["Temperature_Moves"];
