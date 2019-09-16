@@ -14,18 +14,18 @@
 </div>
 
 ## Contents
-* [Description](#description)
-* [Links](#links)
-* [Download](#download)
-    * [Binaries](#binaries)
-    * [Models](#models)
-* [Variants](#variants)
-* [Compilation](#compilation)
-    * [Linux](#linux)
-    * [Windows](#windows)
-* [Libraries](#libraries)
-* [Licence](#licence)
-* [Publication](#publication)
+*   [Description](#description)
+*   [Links](#links)
+*   [Download](#download)
+    *   [Binaries](#binaries)
+    *   [Models](#models)
+*   [Variants](#variants)
+*   [Compilation](#compilation)
+    *   [Linux](#linux)
+    *   [Windows](#windows)
+*   [Libraries](#libraries)
+*   [Licence](#licence)
+*   [Publication](#publication)
 
 <img align="right" src="media/TU_logo.png" width="128">
 
@@ -45,11 +45,11 @@ The training scripts, preprocessing and neural network definition source files c
 _CrazyAra_ is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://github.com/cutechess/cutechess), [XBoard](https://www.gnu.org/software/xboard/), [WinBoard](http://hgm.nubati.net/)) for convinient usage.
 
 ## Links
-* [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
-* :notebook_with_decorative_cover: [CrazyAra paper](https://arxiv.org/abs/1908.06660)
-* [:earth_africa: Project website](https://crazyara.org/)
-* [♞ CrazyAra@lichess.org](https://lichess.org/@/CrazyAra)
-* [♞ CrazyAraFish@lichess.org](https://lichess.org/@/CrazyAraFish)
+*   [:snake: Python version](https://github.com/QueensGambit/CrazyAra/)
+*   :notebook_with_decorative_cover: [CrazyAra paper](https://arxiv.org/abs/1908.06660)
+*   [:earth_africa: Project website](https://crazyara.org/)
+*   [♞ CrazyAra@lichess.org](https://lichess.org/@/CrazyAra)
+*   [♞ CrazyAraFish@lichess.org](https://lichess.org/@/CrazyAraFish)
 
 ## Download
 
@@ -57,27 +57,27 @@ _CrazyAra_ is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://
 
 We provide binary releases for the following plattforms:
 
-Operating System | Backend | Compatible with
---- | --- | ---
-Linux | [**CUDA 10.0, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Linux_CUDA.zip) | NVIDIA GPUs and CPU
-Linux | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Linux_MKL.zip) | Intel CPUs
-Windows | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Win_CUDA.zip) | NVIDIA GPUs and CPU
-Windows | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Win_MKL.zip) | Intel CPUs
+Operating System | Backend                                                                                                                                           | Compatible with
+---              | ---                                                                                                                                               | ---
+Linux            | [**CUDA 10.0, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Linux_CUDA.zip) | NVIDIA GPUs and CPU
+Linux            | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Linux_MKL.zip)                             | Intel CPUs
+Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Win_CUDA.zip)   | NVIDIA GPUs and CPU
+Windows          | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Win_MKL.zip)                               | Intel CPUs
 
 _For Intel MKL the network inference is optimized when defining the following environment variable:_
-```
+```bash
 MXNET_SUBGRAPH_BACKEND=MKLDNN
 ```
 
 ### Models
 
 The following models are freely available for download:
-* [4-value-8-policy](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/4-value-8-policy.zip)
-* [8-value-16-policy](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/8-value-16-policy.zip)
-* [8-value-policy-map](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/4-value-8-policy.zip)
-* [8-value-policy-map-mobile / RISEv2-mobile](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/RISEv2-mobile.zip)
-* [8-value-policy-map-preAct-relu+bn](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/RISEv2-mobile.zip)
-* [RISEv1 (CrazyAraFish weights)](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAraFish_RISEv1.zip)
+*   [4-value-8-policy](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/4-value-8-policy.zip)
+*   [8-value-16-policy](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/8-value-16-policy.zip)
+*   [8-value-policy-map](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/4-value-8-policy.zip)
+*   [8-value-policy-map-mobile / RISEv2-mobile](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/RISEv2-mobile.zip)
+*   [8-value-policy-map-preAct-relu+bn](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/RISEv2-mobile.zip)
+*   [RISEv1 (CrazyAraFish weights)](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAraFish_RISEv1.zip)
 
 The extracted model should be placed in the same directory as the engine executable.
 The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
@@ -87,7 +87,7 @@ More information about the different models can be found in the [wiki](https://g
 
 ## Variants
 The current list of available chess variants include:
-* [Crazyhouse](https://lichess.org/variant/crazyhouse)
+*   [Crazyhouse](https://lichess.org/variant/crazyhouse)
 
 ## Compilation
 
@@ -97,40 +97,41 @@ Please follow these steps to build _CrazyAra_ from source:
 
 1. Clone the _CrazyAra_ repository:
 
-   ```
+   ```bash
    git clone https://github.com/QueensGambit/CrazyAra-Engine.git --recursive
    ```
 
 2. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6** or current master:
-	* https://bitbucket.org/blaze-lib/blaze/downloads/
-	```
+	*   <https://bitbucket.org/blaze-lib/blaze/downloads/>
+	```bash
 	tar -xvzf blaze-3.6.tar.gz
 	cd blaze-3.6
 	cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
 	sudo make install
 	```
 	Detailed build instruction can be found here:
-	* https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation
+
+    *   <https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation>
 
 
 3. Build the MXNet C++ package. Building with OpenCV is not required:
 
    Install the prerequesites (e.g. for IntelMKL):
    * https://github.com/intel/mkl-dnn/releases
-   ```
+   ```bash
    sudo apt-get update
    sudo apt-get install -y build-essential git
    sudo apt-get install -y libopenblas-dev liblapack-dev
    sudo apt-get install -y graphviz
    ```
    
-   ```
+   ```bash
    git clone https://github.com/apache/incubator-mxnet --recursive
    ```
 
    Chekout to version 1.4.1 due to performance issue in 1.5.0 ([#15640](https://github.com/apache/incubator-mxnet/issues/15640)):
    
-   ```
+   ```bash
    git checkout 1a7199691f5cbc6012bb53eecbf884bed5ae6590
    ```
    
@@ -142,11 +143,11 @@ Please follow these steps to build _CrazyAra_ from source:
    _You might have to reduce the number of jobs to run in paralell e.g. `-j 4` if you run out of memory (RAM) during building. Building the MXNet-C++ examples is not required._
    
    Detailed build instruction can be found here:
-   	* https://mxnet.incubator.apache.org/versions/master/api/c++/index.html
-	* IntelMKL: https://github.com/apache/incubator-mxnet/blob/master/docs/tutorials/mkldnn/MKLDNN_README.md
+   *   <https://mxnet.incubator.apache.org/versions/master/api/c++/index.html>
+   *   IntelMKL: <https://github.com/apache/incubator-mxnet/blob/master/docs/tutorials/mkldnn/MKLDNN_README.md>
 
 4. Build the _CrazyAra_ binary
-   ```
+   ```bash
    export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
    mkdir build
    cd build
@@ -160,14 +161,14 @@ Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra
 ## Libraries
 The following libraries are used to run _CrazyAra_:
 
-* [**Multi Variant Stockfish**](https://github.com/ddugovic/Stockfish): Stockfish fork specialized to play chess and some chess variants
-	* Used for move generation and board representation as a replacement for [python-chess](https://github.com/niklasf/python-chess).
-* [**MXNet C++ Package**](https://github.com/apache/incubator-mxnet/tree/master/cpp-package): A flexible and efficient library for deep learning
-	* Used as the deep learning backend for loading and inference of the trained neural network
-* [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/): An open-source, high-performance C++ math library for dense and sparse arithmetic
-	* Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
-* [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
-	* Used as the testing framework as a replacmenet for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
+*   [**Multi Variant Stockfish**](https://github.com/ddugovic/Stockfish): Stockfish fork specialized to play chess and some chess variants
+    *   Used for move generation and board representation as a replacement for [python-chess](https://github.com/niklasf/python-chess).
+*   [**MXNet C++ Package**](https://github.com/apache/incubator-mxnet/tree/master/cpp-package): A flexible and efficient library for deep learning
+	*   Used as the deep learning backend for loading and inference of the trained neural network
+*   [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/): An open-source, high-performance C++ math library for dense and sparse arithmetic
+    *   Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
+*   [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
+	*   Used as the testing framework as a replacmenet for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
 
 ## Licence
 
@@ -176,8 +177,8 @@ _CrazyAra_ is free software, and distributed under the terms of the [GNU General
 For details about the GPL v3 license, refer to the file [LICENSE](https://github.com/QueensGambit/CrazyAraMCTS/blob/master/LICENSE).
 
 ## Publication
-* J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [preprint](https://arxiv.org/abs/1908.06660)
-```
+*   J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [preprint](https://arxiv.org/abs/1908.06660)
+```latex
 @article{czech2019learning,
   title={Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data},
   author={Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and F{\"u}rnkranz, Johannes},
@@ -185,4 +186,3 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
   year={2019}
 }
 ```
-
