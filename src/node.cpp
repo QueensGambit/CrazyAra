@@ -511,9 +511,6 @@ void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
             if (childNode != node) {
                 delete_subtree_and_hash_entries(childNode, hashTable);
             }
-            else {
-                cout << "info string Don't delete fen: " << node->get_pos()->fen() << endl;
-            }
         }
     }
 }
