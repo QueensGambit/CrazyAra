@@ -4,6 +4,7 @@ project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcment learning support"  ON)
+option(USE_TENSORRT              "Build with reinforcment learning support"  OFF)
 
 # -pg performance profiling flags
 if (USE_PROFILING)
@@ -133,8 +134,10 @@ find_package(Threads REQUIRED)
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
 
-# build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
-# add_definitions(-DTENSORRT)
+if (USE_TENSORRT)
+    # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
+    add_definitions(-DTENSORRT)
+endif()
 
 if(THREADS_HAVE_PTHREAD_ARG)
     target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
