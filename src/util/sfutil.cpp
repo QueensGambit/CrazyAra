@@ -28,26 +28,27 @@
 #include <algorithm>
 #include <stdexcept>
 #include "types.h"
+#include "uci.h"
 
 const std::unordered_map<char, File> FILE_LOOKUP = {
-               {'a', FILE_A},
-               {'b', FILE_B},
-               {'c', FILE_C},
-               {'d', FILE_D},
-               {'e', FILE_E},
-               {'f', FILE_F},
-               {'g', FILE_G},
-               {'h', FILE_H}};
+    {'a', FILE_A},
+    {'b', FILE_B},
+    {'c', FILE_C},
+    {'d', FILE_D},
+    {'e', FILE_E},
+    {'f', FILE_F},
+    {'g', FILE_G},
+    {'h', FILE_H}};
 
 const std::unordered_map<char, Rank> RANK_LOOKUP = {
-               {'1', RANK_1},
-               {'2', RANK_2},
-               {'3', RANK_3},
-               {'4', RANK_4},
-               {'5', RANK_5},
-               {'6', RANK_6},
-               {'7', RANK_7},
-               {'8', RANK_8}};
+    {'1', RANK_1},
+    {'2', RANK_2},
+    {'3', RANK_3},
+    {'4', RANK_4},
+    {'5', RANK_5},
+    {'6', RANK_6},
+    {'7', RANK_7},
+    {'8', RANK_8}};
 
 const std::unordered_map<char, PieceType> PIECE_TYPE_LOOKUP = {
     {'p', PAWN},
@@ -212,4 +213,64 @@ Bitboard flip_vertical(Bitboard x)
             ( (x >> 24) & 0x0000000000ff0000 ) |
             ( (x >> 40) & 0x000000000000ff00 ) |
             ( (x >> 56) );
+}
+
+std::string pgnMove(Move m, bool chess960, const Board& pos, bool leadsToTerminal)
+{
+    std::string move;
+
+    Square from = from_sq(m);
+    Square to = to_sq(m);
+
+    if (m == MOVE_NONE)
+        return "(none)";
+
+    if (m == MOVE_NULL)
+        return "0000";
+
+    if (type_of(m) == CASTLING && !chess960) {
+        if (file_of(to) == FILE_G || file_of(to) == FILE_H) {
+            move = "O-O";
+        }
+        else {
+            move = "O-O-O";
+        }
+    }
+    else if (pos.capture(m)) {
+        if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
+            move = std::string{"abcdefgh "[file_of(from)]} + "x";
+        }
+        else {
+            move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + "x";
+        }
+        move += UCI::square(to);
+    }
+
+#ifdef CRAZYHOUSE
+    else if (type_of(m) == DROP) {
+        move = std::string{" PNBRQK  PNBRQK "[dropped_piece(m)], '@'} + UCI::square(to);
+    }
+#endif
+    else {
+        if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
+            move = UCI::square(to);
+        }
+        else {
+            move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + UCI::square(to);
+        }
+    }
+
+    if (type_of(m) == PROMOTION) {
+        move += " PNBRQK"[promotion_type(m)];
+    }
+
+    if (pos.gives_check(m)) {
+        if (leadsToTerminal) {
+            move += "#";
+        }
+        else {
+            move += "+";
+        }
+    }
+    return move;
 }

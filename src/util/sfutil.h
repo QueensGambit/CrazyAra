@@ -30,6 +30,7 @@
 
 #include <string>
 #include "types.h"
+#include "../board.h"
 
 /**
  * @brief get_origin_square Returns the origin square for a valid uciMove
@@ -94,5 +95,15 @@ void fill_en_passent_moves(std::vector<std::string> &enPassentMoves);
  * @return bitboard x flipped vertically
  */
 Bitboard flip_vertical(Bitboard x);
+
+/**
+ * @brief pgnMove Converts a given move into PGN move notation
+ * @param m Move
+ * @param chess960 True if 960 mode
+ * @param pos Board position
+ * @param leadsToTerminal True if the given move leads to a terminal state
+ * @return String representation of move in PGN format
+ */
+std::string pgnMove(Move m, bool chess960, const Board& pos, bool leadsToTerminal=false);
 
 #endif // SFUTIL_H
