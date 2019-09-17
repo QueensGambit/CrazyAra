@@ -50,9 +50,15 @@ class TrainDataExporter
 {
 private:
     size_t chunckSize;
+    std::unique_ptr<z5::Dataset> dStartIndex;
     std::unique_ptr<z5::Dataset> dx;
     std::unique_ptr<z5::Dataset> dValue;
     std::unique_ptr<z5::Dataset> dPolicy;
+
+    // current number of games - 1
+    size_t gameIdx;
+    // current sample index to insert
+    size_t startIdx;
 
     /**
      * @brief export_planes Exports the board in plane representation (x)
@@ -69,6 +75,13 @@ private:
      * @param idxOffset Batch-Offset where to save it in the matrix
      */
     void export_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset);
+
+    void export_start_idx();
+
+    void open_dataset_from_file(const z5::filesystem::handle::File& file);
+
+    void create_new_dataset_file(const z5::filesystem::handle::File& file);
+
 public:
     TrainDataExporter();
 

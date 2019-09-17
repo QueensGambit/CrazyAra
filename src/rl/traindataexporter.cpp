@@ -36,41 +36,39 @@ void TrainDataExporter::export_pos(const Board *pos, const EvalInfo& eval, size_
 void TrainDataExporter::export_game_result(const Result result, size_t idxOffset, size_t plys)
 {
     // value
-    // write array to roi
-    z5::types::ShapeType offsetValue = { idxOffset };
+    // write value to roi
+    z5::types::ShapeType offsetValue = { startIdx+idxOffset };
     xt::xarray<int16_t>::shape_type shapeValue = { plys };
-    xt::xarray<int16_t> array2(shapeValue, result);
+    xt::xarray<int16_t> valueArray(shapeValue, result);
 
     if (result != DRAW) {
-    // invert the result on every second ply
+        // invert the result on every second ply
         for (size_t idx = 1; idx < plys; idx+=2) {
-            array2.data()[idx] = -result;
+            valueArray.data()[idx] = -result;
         }
     }
 
-    z5::multiarray::writeSubarray<int16_t>(dValue, array2, offsetValue.begin());
+    z5::multiarray::writeSubarray<int16_t>(dValue, valueArray, offsetValue.begin());
+    startIdx += plys;
+    gameIdx++;
+    export_start_idx();
 }
 
 TrainDataExporter::TrainDataExporter()
 {
-    const string fileName = "data.zr";
-    // get handle to a File on the filesystem
-    z5::filesystem::handle::File f(fileName);
-
-    // create the file in zarr format
-    const bool createAsZarr = true;
-    z5::createFile(f, createAsZarr);
-
-    z5::createGroup(f, "group");
+    gameIdx = 0;
+    startIdx = 0;
     chunckSize = 128;
+    const string fileName = "data.zarr";  // TODO: Change to a generic filename
+    // get handle to a File on the filesystem
+    z5::filesystem::handle::File file(fileName);
 
-    // create a new zarr dataset
-    const std::string dsName = "x";
-    std::vector<size_t> shape = { chunckSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
-    std::vector<size_t> chunks = { chunckSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
-    dx = z5::createDataset(f, dsName, "int16", shape, chunks);
-    dValue = z5::createDataset(f, "y_value", "int16", { chunckSize }, { chunckSize });
-    dPolicy = z5::createDataset(f, "y_policy", "float32", { chunckSize, NB_LABELS }, { chunckSize, NB_LABELS });
+    if (file.exists()) {
+        open_dataset_from_file(file);
+    }
+    else {
+        create_new_dataset_file(file);
+    }
 }
 
 void TrainDataExporter::export_planes(const Board *pos, size_t idxOffset)
@@ -79,13 +77,13 @@ void TrainDataExporter::export_planes(const Board *pos, size_t idxOffset)
     float inputPlanes[NB_VALUES_TOTAL];
     board_to_planes(pos, 0, false, inputPlanes);
     // write array to roi
-    z5::types::ShapeType offsetPlanes = { idxOffset, 0, 0, 0 };
-    xt::xarray<int16_t>::shape_type shape1 = { 1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
-    xt::xarray<int16_t> array1(shape1);
+    z5::types::ShapeType offsetPlanes = { startIdx+idxOffset, 0, 0, 0 };
+    xt::xarray<int16_t>::shape_type policyShape = { 1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
+    xt::xarray<int16_t> policy(policyShape);
     for (size_t idx = 0; idx < NB_VALUES_TOTAL; ++idx) {
-        array1.data()[idx] = int16_t(inputPlanes[idx]);
+        policy.data()[idx] = int16_t(inputPlanes[idx]);
     }
-    z5::multiarray::writeSubarray<int16_t>(dx, array1, offsetPlanes.begin());
+    z5::multiarray::writeSubarray<int16_t>(dx, policy, offsetPlanes.begin());
 }
 
 void TrainDataExporter::export_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset)
@@ -93,7 +91,7 @@ void TrainDataExporter::export_policy(const vector<Move>& legalMoves, const Dyna
     assert(legalMoves.size() == policyProbSmall.size());
 
     // write array to roi
-    z5::types::ShapeType offsetPolicy = { idxOffset, 0 };
+    z5::types::ShapeType offsetPolicy = { startIdx+idxOffset, 0 };
     xt::xarray<float>::shape_type shapePolicy = { 1, NB_LABELS };
     xt::xarray<float> policy(shapePolicy, 0);
 
@@ -111,13 +109,65 @@ void TrainDataExporter::export_policy(const vector<Move>& legalMoves, const Dyna
 
 }
 
+void TrainDataExporter::export_start_idx()
+{
+    // gameStartIdx
+    // write value to roi
+    z5::types::ShapeType offsetStartIdx = { gameIdx };
+    xt::xarray<int32_t> arrayGameStartIdx({ 1 }, int32_t(startIdx));
+    z5::multiarray::writeSubarray<int32_t>(dStartIndex, arrayGameStartIdx, offsetStartIdx.begin());
+
+    ofstream startIdxFile;
+    startIdxFile.open("startIdx.txt");
+    // set the next startIdx to continue
+    startIdxFile << startIdx;
+    startIdxFile.close();
+    ofstream gameIdxFile;
+    gameIdxFile.open("gameIdxFile.txt");
+    gameIdxFile << gameIdx;
+    gameIdxFile.close();
+}
+
+void TrainDataExporter::open_dataset_from_file(const z5::filesystem::handle::File& file)
+{
+    dStartIndex = z5::openDataset(file,"starting_idx");
+    dx = z5::openDataset(file,"x");
+    dValue = z5::openDataset(file,"y_value");
+    dPolicy = z5::openDataset(file,"y_policy");
+    ifstream startIdxFile;
+    startIdxFile.open("startIdx.txt");
+    startIdxFile >> startIdx;
+    startIdxFile.close();
+    ifstream gameIdxFile;
+    gameIdxFile.open("gameIdxFile.txt");
+    gameIdxFile >> gameIdx;
+    gameIdxFile.close();
+}
+
+void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::File &file)
+{
+    // create the file in zarr format
+    const bool createAsZarr = true;
+    z5::createFile(file, createAsZarr);
+
+    z5::createGroup(file, "group");
+    const size_t numberChunks = 8;
+
+    // create a new zarr dataset
+    std::vector<size_t> shape = { chunckSize*numberChunks, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
+    std::vector<size_t> chunks = { chunckSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
+    dStartIndex = z5::createDataset(file, "starting_idx", "int32", { chunckSize*numberChunks }, { chunckSize });
+    dx = z5::createDataset(file, "x", "int16", shape, chunks);
+    dValue = z5::createDataset(file, "y_value", "int16", { chunckSize*numberChunks }, { chunckSize });
+    dPolicy = z5::createDataset(file, "y_policy", "float32", { chunckSize*numberChunks, NB_LABELS }, { chunckSize, NB_LABELS });
+    export_start_idx();
+}
+
 void TrainDataExporter::export_positions(const std::vector<Node*>& nodes, Result result)
 {
-    size_t offset = 0;
     for (auto node : nodes) {
         DynamicVector<float> mctsPolicy(node->get_number_child_nodes());
         get_mcts_policy(node, 0.2f, 0.2f, mctsPolicy);
-
         vector<Move> legalMoves = retrieve_legal_moves(node->get_child_nodes());
     }
 }

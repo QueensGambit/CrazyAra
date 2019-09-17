@@ -135,6 +135,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "root")       mctsAgent->print_root_node();
         else if (token == "flip")       pos.flip();
         else if (token == "d")          cout << pos << endl;
+#ifdef USE_RL
+        else if (token == "selfplay")   selfplay(is, pos);
+#endif
         else
             cout << "Unknown command: " << cmd << endl;
 
@@ -218,7 +221,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(*pos, token)) != MOVE_NONE)
     {
-        StateInfo *newState = new StateInfo;
+        StateInfo* newState = new StateInfo;
         pos->do_move(m, *newState);
         states->activeStates.push_back(newState);
         lastMove = m;
@@ -268,6 +271,19 @@ void CrazyAra::benchmark(istringstream &is)
     cout << "NPS:\t\t" << setw(2) << totalNPS /  benchmark.positions.size() << endl;
     cout << "PV-Depth:\t" << setw(2) << totalDepth /  benchmark.positions.size() << endl;
 }
+
+#ifdef USE_RL
+void CrazyAra::selfplay(istringstream &is, Board& pos)
+{
+    selfPlay = new SelfPlay(mctsAgent);
+    SearchLimits searchLimits;
+    searchLimits.nodes = Options["Nodes"];
+
+    size_t numberOfGames;
+    is >> numberOfGames;
+    selfPlay->go(numberOfGames, searchLimits);
+}
+#endif
 
 void CrazyAra::init()
 {

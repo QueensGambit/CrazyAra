@@ -38,6 +38,9 @@
 #include "agents/config/playsettings.h"
 #include "node.h"
 #include "manager/statesmanager.h"
+#ifdef USE_RL
+#include "rl/selfplay.h"
+#endif
 
 class CrazyAra
 {
@@ -73,6 +76,9 @@ private:
     bool networkLoaded = false;
     StatesManager* states;
 
+#ifdef USE_RL
+    SelfPlay* selfPlay;
+#endif
     /**
      * @brief engine_info Returns a string about the engine version and authors
      * @return string
@@ -140,6 +146,14 @@ public:
      * @param is Movetime in ms
      */
     void benchmark(istringstream& is);
+
+#ifdef USE_RL
+    /**
+     * @brief selfplay Starts self play for a given number of games
+     * @param is Number of games to generate
+     */
+    void selfplay(istringstream &is, Board& pos);
+#endif
 
     /**
      * @brief init_search_settings Initializes the search settings with the current UCI parameters
