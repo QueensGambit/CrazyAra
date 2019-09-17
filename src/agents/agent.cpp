@@ -96,5 +96,8 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
 //    else {
         cout << "bestmove " << UCI::move(evalInfo.bestMove, pos->is_chess960()) << endl;
 //    }
+#ifdef USE_RL
+    exporter.export_pos(pos, evalInfo, pos->game_ply());
+#endif
 }
 

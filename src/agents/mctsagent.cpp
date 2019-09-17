@@ -82,6 +82,16 @@ MCTSAgent::~MCTSAgent()
     delete hashTable;
 }
 
+Node* MCTSAgent::get_opponents_next_root() const
+{
+    return opponentsNextRoot;
+}
+
+Node* MCTSAgent::get_root_node() const
+{
+    return rootNode;
+}
+
 size_t MCTSAgent::init_root_node(Board *pos)
 {
     size_t nodesPreSearch;
@@ -211,11 +221,6 @@ void MCTSAgent::clear_game_history()
     for (Node* node: gameNodes) {
         delete node;
     }
-#ifdef USE_RL
-    if (gameNodes.size() != 0) {
-        export_game_training_data();
-    }
-#endif
     gameNodes.clear();
     hashTable->clear();
     oldestRootNode = nullptr;
@@ -224,10 +229,11 @@ void MCTSAgent::clear_game_history()
 }
 
 #ifdef USE_RL
-void MCTSAgent::export_game_training_data()
+void MCTSAgent::export_game_results()
 {
     Result result = gameNodes.back()->get_pos()->side_to_move() == WHITE ? LOST : WON;
-    exporter.export_game_result(result, 0, gameNodes.size());
+    // we set one less than actual plys because the last terminal node isn't part of the training data
+    exporter.export_game_result(result, 0, gameNodes.size()-1);
 }
 #endif
 
@@ -279,10 +285,6 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     evalInfo.isChess960 = pos->is_chess960();
     evalInfo.nodes = rootNode->get_visits();
     evalInfo.nodesPreSearch = nodesPreSearch;
-
-#ifdef USE_RL
-    exporter.export_pos(pos, evalInfo, pos->game_ply());
-#endif
 }
 
 void MCTSAgent::run_mcts_search()

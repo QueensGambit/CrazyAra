@@ -31,6 +31,9 @@
 #include "../board.h"
 #include "../evalinfo.h"
 #include "config/searchlimits.h"
+#ifdef USE_RL
+#include "../rl/traindataexporter.h"
+#endif
 
 class Agent
 {
@@ -64,6 +67,9 @@ protected:
     // used for sampling from the mcts policy
     std::random_device rd;
     std::mt19937 gen;
+#ifdef USE_RL
+    TrainDataExporter exporter;
+#endif
 public:
     Agent(float temperature, unsigned int temperatureMoves, bool verbose);
 

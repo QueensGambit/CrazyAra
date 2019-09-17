@@ -46,10 +46,6 @@
 #include "../manager/statesmanager.h"
 #include "../manager/timemanager.h"
 
-#ifdef USE_RL
-#include "../rl/traindataexporter.h"
-#endif
-
 class MCTSAgent : public Agent
 {
 private:
@@ -87,10 +83,6 @@ private:
 
     // boolean which indicates if the same node was requested twice for analysis
     bool reusedFullTree;
-
-#ifdef USE_RL
-    TrainDataExporter exporter;
-#endif
 
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
@@ -174,9 +166,12 @@ public:
     void clear_game_history();
 
 #ifdef USE_RL
-    void export_game_training_data();
+    void export_game_results();
 #endif
 
+    Node *get_opponents_next_root() const;
+
+    Node* get_root_node() const;
 };
 
 #endif // MCTSAGENT_H
