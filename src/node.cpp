@@ -285,6 +285,11 @@ float Node::get_action_value() const
     return actionValue;
 }
 
+SearchSettings* Node::get_search_settings() const
+{
+    return searchSettings;
+}
+
 void Node::check_for_terminal()
 {
     if (childNodes.size() == 0) {
@@ -532,9 +537,11 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hash
     delete node;
 }
 
-void get_mcts_policy(const Node *node, const float qValueWeight, const float qThresh, DynamicVector<float>& mctsPolicy)
+void get_mcts_policy(const Node* node, const DynamicVector<float>& childNumberVisits, DynamicVector<float>& mctsPolicy)
 {
-    DynamicVector<float> childNumberVisits = retrieve_visits(node);
+    const float qThresh = get_current_q_thresh(node->get_search_settings(), node->get_visits());
+    const float qValueWeight = node->get_search_settings()->qValueWeight;
+
     if (qValueWeight > 0) {
         DynamicVector<float> qValuePruned = retrieve_q_values(node);
         qValuePruned = (qValuePruned + 1) * 0.5f;
@@ -637,9 +644,7 @@ void get_principal_variation(const Node* rootNode, const SearchSettings* searchS
     size_t childIdx;
     do {
         DynamicVector<float> mctsPolicy(curNode->get_number_child_nodes());
-        get_mcts_policy(curNode, searchSettings->qValueWeight,
-                        get_current_q_thresh(searchSettings, int(rootNode->get_visits())),
-                        mctsPolicy);
+        get_mcts_policy(curNode, retrieve_visits(curNode), mctsPolicy);
         childIdx = argmax(mctsPolicy);
         pv.push_back(curNode->get_child_nodes()[childIdx]->get_move());
         curNode = curNode->get_child_nodes()[childIdx];

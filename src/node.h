@@ -199,6 +199,7 @@ public:
     void apply_dirichlet_noise_to_prior_policy();
 
     float get_action_value() const;
+    SearchSettings* get_search_settings() const;
 };
 
 /**
@@ -283,9 +284,11 @@ DynamicVector<float> retrieve_q_values(const Node* node);
 /**
  * @brief get_mcts_policy Returns the final policy after the mcts search which is used for move selection, in most cases argmax(mctsPolicy).
  * Depending on the searchSettings, Q-values will be taken into account for creating this.
+ * @param node Node for which the mcts policy should be calculated
+ * @param childNumberVisits Number of visits for each child node after search
  * @param mctsPolicy Output of the final mcts policy after search
  */
-void get_mcts_policy(const Node *node, const float qValueWeight, const float qThresh, DynamicVector<float> &mctsPolicy);
+void get_mcts_policy(const Node* node, const DynamicVector<float>& childNumberVisits, DynamicVector<float>& mctsPolicy);
 
 /**
  * @brief get_current_q_thresh Calculates the current q-thresh factor which is used to disable the effect of the q-value for low visited nodes

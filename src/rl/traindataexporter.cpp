@@ -167,7 +167,7 @@ void TrainDataExporter::export_positions(const std::vector<Node*>& nodes, Result
 {
     for (auto node : nodes) {
         DynamicVector<float> mctsPolicy(node->get_number_child_nodes());
-        get_mcts_policy(node, 0.2f, 0.2f, mctsPolicy);
+        get_mcts_policy(node, retrieve_visits(node), mctsPolicy);
         vector<Move> legalMoves = retrieve_legal_moves(node->get_child_nodes());
     }
 }

@@ -265,14 +265,10 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
         run_mcts_search();
     }
 
-    evalInfo.childNumberVisits.resize(rootNode->get_number_child_nodes());
-    evalInfo.childNumberVisits = rootNode->get_visits();
-
+    evalInfo.childNumberVisits = retrieve_visits(rootNode);
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
-	
-    get_mcts_policy(rootNode, searchSettings->qValueWeight,
-                    get_current_q_thresh(searchSettings, rootNode->get_visits()),
-                    evalInfo.policyProbSmall);
+    get_mcts_policy(rootNode, evalInfo.childNumberVisits, evalInfo.policyProbSmall);
+
 //    size_t bestIdx = argmax(evalInfo.policyProbSmall);
 //    if (bestIdx != argmax(rootNode->childNumberVisits)) {
 //        cout << "info string Select different move due to higher Q-value" << endl;
