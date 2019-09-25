@@ -147,14 +147,14 @@ class ChessServer:
         if move not in list(self._gamestate.board.legal_moves):
             raise ValueError("The given move %s is invalid for the current position" % move)
         self._gamestate.apply_move(move)
-        if self._gamestate.is_won():
+        if self._gamestate.is_loss():
             logging.debug("Checkmate")
             return False
         return None
 
     def perform_agent_move(self):
         """TODO: docstring"""
-        if self._gamestate.is_won():
+        if self._gamestate.is_loss():
             logging.debug("Checkmate")
             return False
 

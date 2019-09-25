@@ -36,8 +36,12 @@ class AbsGameState(ABC):
         return self.board.can_claim_draw()
 
     @abstractmethod
-    def is_won(self):
-        """Force the child to implement is_won method"""
+    def is_win(self):
+        """Force the child to implement is_win method"""
+
+    @abstractmethod
+    def is_loss(self):
+        """Force the child to implement is_loss method"""
 
     def get_legal_moves(self):
         """ Find legal moves based on the board state"""

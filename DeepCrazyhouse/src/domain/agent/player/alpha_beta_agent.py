@@ -58,7 +58,7 @@ class AlphaBetaAgent(AbsAgent):
         :return: best_value - Best value for the current player until search depth
         """
 
-        if state.is_won():  # check for draw is neglected for now due to bad runtime
+        if state.is_loss():  # check for draw is neglected for now due to bad runtime
             return -1
 
         if state.get_pythonchess_board().can_claim_draw():

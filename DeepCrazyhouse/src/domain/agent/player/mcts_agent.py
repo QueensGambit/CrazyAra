@@ -438,8 +438,14 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
             state_child.apply_move(legal_moves[0])
             is_leaf = False  # initialize is_leaf by default to false
             # we don't need to check for is_lost() because the game is already over
-            if state.is_won():  # check if the current player has won the game
+            if state.is_loss():  # check if the current player has won the game
                 value = -1
+                is_leaf = True
+                legal_moves_child = []
+                p_vec_small_child = None
+            elif state.board.uci_variant == "giveaway" and state.is_win():
+                # giveaway chess is a variant in which you win on your own turn
+                value = +1
                 is_leaf = True
                 legal_moves_child = []
                 p_vec_small_child = None
@@ -670,7 +676,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 # (we don't need to check for is_lost() because the game is already over
                 #  if the current player checkmated his opponent)
                 if state.is_check():
-                    if state.is_won():
+                    if state.is_loss():
                         is_won = True
 
                 if is_won:

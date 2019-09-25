@@ -7,7 +7,29 @@ Last changed on 16.01.19
 File to group everything to recognize the game state
 """
 import chess
+
+## Variants Includes:
+
+# handled separately
 from chess.variant import CrazyhouseBoard
+
+# other variants: In the following order. Names in "" are given as uci_variant name:
+# 0 - "chess" (lichess: "Standard")
+# 1 - "chess", self.chess960 = True (lichess: "Chess960")
+# from chess import Board
+# 2 - "kingofthehill" (lichess: "King of the Hill")
+# from chess.variant import KingOfTheHillBoard
+# 3- "3check" (lichess: "Three-check")
+# from chess.variant import ThreeCheckBoard
+# 4- "giveaway" (lichess: "Antichess")
+# from chess.variant import GiveawayBoard
+# 5- "atomic" (lichess: "Atomic")
+# from chess.variant import AtomicBoard
+# 6- "horde" (lichess: "Horde")
+# from chess.variant import HordeBoard
+# 7- "racingkings" (lichess: "Racing Kings")
+# from chess.variant import RacingKingsBoard
+
 from DeepCrazyhouse.src.domain.crazyhouse.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 
@@ -21,12 +43,9 @@ class GameState(AbsGameState):
         self._fen_dic = {}
         self._board_occ = 0
 
-    def apply_move(self, move: chess.Move):  # , remember_state=False):
+    def apply_move(self, move: chess.Move):
         """ Apply the move on the board"""
         self.board.push(move)
-
-        # if remember_state is True:
-        #    self._remember_board_state()
 
     def get_state_planes(self):
         """Transform the current board state to a plane"""
@@ -39,7 +58,7 @@ class GameState(AbsGameState):
 
     def is_draw(self):
         """ Check if you can claim a draw - its assumed that the draw is always claimed """
-        return self.can_claim_threefold_repetition() or self.board.can_claim_fifty_moves()
+        return self.is_variant_draw() or self.can_claim_threefold_repetition() or self.board.can_claim_fifty_moves()
         # return self.board.can_claim_draw()
 
     def can_claim_threefold_repetition(self):
@@ -49,18 +68,28 @@ class GameState(AbsGameState):
         """
         return self._board_occ >= 2
 
-    def is_won(self):
+    def is_win(self):
         """ Check if you can claim the win by checkmate"""
+        if self.board.uci_variant in ["giveaway"]:
+            return self.board.is_variant_win()
+        else:
+            raise NotImplementedError
+
+    def is_loss(self):
+        """ Check if the current player to move has lost due checkmate or the variant_loss definition"""
         # only a is_won() and no is_lost() function is needed because the game is over
-        return self.board.is_checkmate()  # after the player found checkmate successfully
+        if self.board.uci_variant in ["crazyhouse", "chess"]:
+            return self.board.is_checkmate()  # after the player found checkmate successfully
+        elif self.board.uci_variant in ["kingofthehill", "3check", "horde", "atomic"]:
+            return self.board.is_checkmate() or self.board.is_variant_loss()
+        elif self.board.uci_variant in ["giveaway", "racingkings"]:
+            return self.board.is_variant_loss()
+        else:
+            raise Exception("Unhandled variant: %s" % self.board.uci_variant)
 
     def get_legal_moves(self):
         """ Returns the legal moves based on current board state"""
         return [*self.board.legal_moves]  # is same as list(self.board.legal_moves)
-        # legal_moves = []
-        # for move in self.board.generate_legal_moves():
-        #     legal_moves.append(move)
-        # return legal_moves
 
     def is_white_to_move(self):
         """ Returns true if its whites turn"""
@@ -71,24 +100,12 @@ class GameState(AbsGameState):
 
     def new_game(self):
         """ Create a new board on the starting position"""
-        self.board = CrazyhouseBoard()
-        self.board.is_variant_end()
+        self.board.reset()
         self._fen_dic = {}
 
     def set_fen(self, fen):  # , remember_state=True
         """ Returns the fen of the current state"""
         self.board.set_fen(fen)
-
-        # if remember_state is True:
-        #    self._remember_board_state()
-
-    # def _remember_board_state(self):
-    # calculate the transposition key
-    #    transposition_key = self.get_transposition_key()
-    # update the number of board occurrences
-    # self._board_occ = self._transposition_table[transposition_key]
-    # increase the counter for this transposition key
-    #    self._transposition_table.update((transposition_key,))
 
     def is_check(self):
         """ Check if the king of the player of the turn is in check"""
@@ -100,4 +117,4 @@ class GameState(AbsGameState):
 
     def is_variant_end(self):
         """ Checks if the current game state is a terminal state"""
-        return self.is_won() or self.is_draw()
+        return self.is_loss() or self.is_draw()
