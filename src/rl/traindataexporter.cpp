@@ -33,6 +33,16 @@ void TrainDataExporter::export_pos(const Board *pos, const EvalInfo& eval, size_
     // value will be set later in export_game_result()
 }
 
+void TrainDataExporter::export_best_move_q(const EvalInfo &eval, size_t idxOffset)
+{
+    // Q value of "best" move (a.k.a selected move after mcts search)
+    // write value to roi
+    z5::types::ShapeType offsetValue = { startIdx+idxOffset };
+    xt::xarray<float> qArray({ 1 }, eval.bestMoveQ);
+
+    z5::multiarray::writeSubarray<float>(dbestMoveQ, qArray, offsetValue.begin());
+}
+
 void TrainDataExporter::export_game_result(const Result result, size_t idxOffset, size_t plys)
 {
     // value
@@ -134,6 +144,7 @@ void TrainDataExporter::open_dataset_from_file(const z5::filesystem::handle::Fil
     dx = z5::openDataset(file,"x");
     dValue = z5::openDataset(file,"y_value");
     dPolicy = z5::openDataset(file,"y_policy");
+    dbestMoveQ = z5::openDataset(file, "y_best_move_q");
     ifstream startIdxFile;
     startIdxFile.open("startIdx.txt");
     startIdxFile >> startIdx;
@@ -160,14 +171,7 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     dx = z5::createDataset(file, "x", "int16", shape, chunks);
     dValue = z5::createDataset(file, "y_value", "int16", { chunckSize*numberChunks }, { chunckSize });
     dPolicy = z5::createDataset(file, "y_policy", "float32", { chunckSize*numberChunks, NB_LABELS }, { chunckSize, NB_LABELS });
-    export_start_idx();
-}
+    dbestMoveQ = z5::createDataset(file, "y_best_move_q", "float32", { chunckSize*numberChunks }, { chunckSize });
 
-void TrainDataExporter::export_positions(const std::vector<Node*>& nodes, Result result)
-{
-    for (auto node : nodes) {
-        DynamicVector<float> mctsPolicy(node->get_number_child_nodes());
-        get_mcts_policy(node, retrieve_visits(node), mctsPolicy);
-        vector<Move> legalMoves = retrieve_legal_moves(node->get_child_nodes());
-    }
+    export_start_idx();
 }

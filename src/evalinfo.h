@@ -40,7 +40,7 @@ using blaze::DynamicVector;
 
 struct EvalInfo
 {
-    float value;
+    float bestMoveQ;
     std::vector<Move> legalMoves;
     DynamicVector<float> policyProbSmall;
     DynamicVector<float> childNumberVisits;

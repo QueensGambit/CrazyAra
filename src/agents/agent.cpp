@@ -98,6 +98,7 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
 //    }
 #ifdef USE_RL
     exporter.export_pos(pos, evalInfo, pos->game_ply());
+    exporter.export_best_move_q(evalInfo, pos->game_ply());
 #endif
 }
 

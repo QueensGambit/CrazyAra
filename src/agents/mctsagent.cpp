@@ -274,6 +274,7 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 //        cout << "info string Select different move due to higher Q-value" << endl;
 //    }
     lastValueEval = updated_value(rootNode, evalInfo.policyProbSmall);
+    evalInfo.bestMoveQ = lastValueEval;
     evalInfo.centipawns = value_to_centipawn(lastValueEval);
     evalInfo.legalMoves = retrieve_legal_moves(rootNode->get_child_nodes());
     get_principal_variation(rootNode, searchSettings, evalInfo.pv);

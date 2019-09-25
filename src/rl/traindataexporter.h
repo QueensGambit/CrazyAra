@@ -54,6 +54,7 @@ private:
     std::unique_ptr<z5::Dataset> dx;
     std::unique_ptr<z5::Dataset> dValue;
     std::unique_ptr<z5::Dataset> dPolicy;
+    std::unique_ptr<z5::Dataset> dbestMoveQ;
 
     // current number of games - 1
     size_t gameIdx;
@@ -76,10 +77,21 @@ private:
      */
     void export_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset);
 
+    /**
+     * @brief export_start_idx Writes the current starting index where to continue inserting in a .txt-file
+     */
     void export_start_idx();
 
+    /**
+     * @brief open_dataset_from_file Reads a previously exported training set back into memory
+     * @param file filesystem handle
+     */
     void open_dataset_from_file(const z5::filesystem::handle::File& file);
 
+    /**
+     * @brief open_dataset_from_file Creates a new zarr data set given a filesystem handle
+     * @param file filesystem handle
+     */
     void create_new_dataset_file(const z5::filesystem::handle::File& file);
 
 public:
@@ -87,20 +99,28 @@ public:
 
     /**
      * @brief export_pos Exports a given board position with result to the current training set
-     * @param pos
-     * @param result
-     * @param idxOffset
+     * @param pos Current board position
+     * @param eval Filled EvalInfo struct after mcts search
+     * @param idxOffset Starting index where to start storing the training sample
      */
     void export_pos(const Board *pos, const EvalInfo& eval, size_t idxOffset);
 
-    void export_game_result(const Result result, size_t idxOffset, size_t plys);
+    /**
+     * @brief export_best_move_q Export the Q-value of the move which was selected after MCTS search(Optional training sample feature)
+     * @param eval Filled EvalInfo struct after mcts search
+     * @param idxOffset Starting index where to start storing the training sample
+     */
+    void export_best_move_q(const EvalInfo& eval, size_t idxOffset);
 
     /**
-     * @brief export_positions Export a list of nodes as training data
-     * @param nodes List of nodes (usually all nodes which have been played in a game)
-     * @param result Game result, needed to assign the target value
+     * @brief export_game_result Assigns the game result, (Monte-Carlo value result) to every training sample.
+     * The value is inversed after each step.
+     * @param result Game match result: LOST, DRAW, WON
+     * @param idxOffset Starting index where to start assigning values
+     * @param plys Number of training samples (halfmoves/plys) for the current match
      */
-    void export_positions(const std::vector<Node*>& nodes, Result result);
+    void export_game_result(const Result result, size_t idxOffset, size_t plys);
+
 };
 
 #endif // TRAINDATAEXPORTER_H
