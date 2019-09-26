@@ -14,8 +14,8 @@ import logging
 import chess
 import chess.pgn
 import numpy as np
-from DeepCrazyhouse.src.domain.crazyhouse.input_representation import planes_to_board
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import policy_to_move
+from DeepCrazyhouse.src.domain.variants.crazyhouse.input_representation import planes_to_board
+from DeepCrazyhouse.src.domain.variants.output_representation import policy_to_move
 from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesConverter
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 

@@ -13,7 +13,7 @@ table for retrieving the move probability from the policy feature maps, so this 
 """
 import numpy as np
 import chess
-from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_WIDTH, BOARD_HEIGHT, LABELS, P_MAP
+from DeepCrazyhouse.src.domain.variants.crazyhouse.constants import BOARD_WIDTH, BOARD_HEIGHT, LABELS, P_MAP
 from DeepCrazyhouse.src.domain.util import get_row_col
 
 

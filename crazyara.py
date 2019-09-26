@@ -155,7 +155,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
         :return:
         """
         if not self.setup_done:
-            from DeepCrazyhouse.src.domain.crazyhouse.game_state import GameState
+            from DeepCrazyhouse.src.domain.variants.game_state import GameState
             from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
             from DeepCrazyhouse.src.domain.agent.player.raw_net_agent import RawNetAgent
             from DeepCrazyhouse.src.domain.agent.player.mcts_agent import MCTSAgent

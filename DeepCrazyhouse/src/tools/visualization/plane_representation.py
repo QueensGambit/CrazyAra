@@ -8,7 +8,7 @@ Please describe what the content of this file is about
 """
 import numpy as np
 from DeepCrazyhouse.src.domain.util import multi_axis_by_vec
-from DeepCrazyhouse.src.domain.crazyhouse.constants import (
+from DeepCrazyhouse.src.domain.variants.crazyhouse.constants import (
     BOARD_HEIGHT,
     BOARD_WIDTH,
     CHANNEL_MAPPING_CONST,

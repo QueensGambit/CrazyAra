@@ -14,8 +14,8 @@ from multiprocessing import Queue
 import mxnet as mx
 import numpy as np
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
-from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLAT_PLANE_IDX
+from DeepCrazyhouse.src.domain.variants.crazyhouse.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
+from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 
 
 class NeuralNetAPI:

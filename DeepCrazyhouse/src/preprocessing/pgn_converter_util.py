@@ -9,8 +9,8 @@ Converts a given board state defined by a python-chess object to the plane repre
 
 import numpy as np
 import chess.pgn
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import move_to_policy
-from DeepCrazyhouse.src.domain.crazyhouse.input_representation import board_to_planes
+from DeepCrazyhouse.src.domain.variants.output_representation import move_to_policy
+from DeepCrazyhouse.src.domain.variants.crazyhouse.input_representation import board_to_planes
 
 NB_ITEMS_METADATA = 17  # constant which defines how many meta data items will be stored in a matrix
 

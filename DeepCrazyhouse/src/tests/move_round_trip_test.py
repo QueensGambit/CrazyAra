@@ -9,13 +9,13 @@ Tests the functionality of the LABEL and LABEL_MIRRORED list based on the conver
 
 import unittest
 import chess.variant
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import (
+from DeepCrazyhouse.src.domain.variants.output_representation import (
     policy_to_move,
     move_to_policy,
     policy_to_moves,
     policy_to_best_move,
 )
-from DeepCrazyhouse.src.domain.crazyhouse.constants import LABELS, LABELS_MIRRORED
+from DeepCrazyhouse.src.domain.variants.crazyhouse.constants import LABELS, LABELS_MIRRORED
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 

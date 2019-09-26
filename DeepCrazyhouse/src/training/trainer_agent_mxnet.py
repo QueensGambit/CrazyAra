@@ -14,8 +14,7 @@ import mxnet as mx
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
-from multiprocessing import Process, Lock, Queue
-from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLAT_PLANE_IDX
+from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 

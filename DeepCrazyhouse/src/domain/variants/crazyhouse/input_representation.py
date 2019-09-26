@@ -8,7 +8,7 @@ Input representation for the Crazyhouse board state which is passed to the neura
 """
 
 from chess.variant import CrazyhouseBoard
-from DeepCrazyhouse.src.domain.crazyhouse.constants import (
+from DeepCrazyhouse.src.domain.variants.crazyhouse.constants import (
     BOARD_HEIGHT,
     BOARD_WIDTH,
     CHANNEL_MAPPING_CONST,

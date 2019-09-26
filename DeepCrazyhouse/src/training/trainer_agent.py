@@ -15,7 +15,7 @@ from mxnet import autograd, gluon, nd
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
-from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLAT_PLANE_IDX
+from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 

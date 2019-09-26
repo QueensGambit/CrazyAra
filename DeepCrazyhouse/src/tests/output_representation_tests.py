@@ -11,7 +11,7 @@ This file contains the test cases for testing the outputs
 import unittest
 import chess
 import numpy as np
-from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import (
+from DeepCrazyhouse.src.domain.variants.plane_policy_representation import (
     get_plane_index_queen_move,
     get_move_planes,
 )

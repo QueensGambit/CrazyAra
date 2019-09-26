@@ -17,7 +17,7 @@ import numpy as np
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
-from DeepCrazyhouse.src.domain.crazyhouse.output_representation import value_to_centipawn, get_probs_of_move_list
+from DeepCrazyhouse.src.domain.variants.output_representation import value_to_centipawn, get_probs_of_move_list
 from DeepCrazyhouse.src.domain.util import get_check_move_indices
 
 

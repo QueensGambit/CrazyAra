@@ -12,7 +12,7 @@ from time import time
 import mxnet as mx
 import numpy as np
 from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
-from DeepCrazyhouse.src.domain.crazyhouse.plane_policy_representation import FLAT_PLANE_IDX
+from DeepCrazyhouse.src.domain.variants.crazyhouse import FLAT_PLANE_IDX
 
 
 class NetPredService:  # Too many instance attributes (9/7) - Too few public methods (1/2)

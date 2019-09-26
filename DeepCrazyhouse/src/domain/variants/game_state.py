@@ -30,7 +30,7 @@ from chess.variant import CrazyhouseBoard
 # 7- "racingkings" (lichess: "Racing Kings")
 # from chess.variant import RacingKingsBoard
 
-from DeepCrazyhouse.src.domain.crazyhouse.input_representation import board_to_planes
+from DeepCrazyhouse.src.domain.variants.crazyhouse.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 
 
