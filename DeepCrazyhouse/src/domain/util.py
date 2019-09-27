@@ -11,7 +11,7 @@ import copy
 import numpy as np
 
 
-from DeepCrazyhouse.src.domain.crazyhouse.constants import (
+from DeepCrazyhouse.src.domain.variants.constants import (
     BOARD_HEIGHT,
     BOARD_WIDTH,
     CHANNEL_MAPPING_CONST,
@@ -19,7 +19,7 @@ from DeepCrazyhouse.src.domain.crazyhouse.constants import (
     MAX_NB_MOVES,
     MAX_NB_NO_PROGRESS,
     MAX_NB_PRISONERS,
-    NB_CHANNELS_FULL,
+    NB_CHANNELS_FULL_CZ,
     NB_CHANNELS_POS,
     POCKETS_SIZE_PIECE_TYPE,
     chess,
@@ -157,7 +157,7 @@ def normalize_input_planes(x):
 
 
 # use a constant matrix for normalization to allow broad cast operations
-MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH)))
+MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL_CZ, BOARD_HEIGHT, BOARD_WIDTH)))
 
 
 def customize_input_planes(x):

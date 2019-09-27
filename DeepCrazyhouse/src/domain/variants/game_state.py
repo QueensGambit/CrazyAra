@@ -13,22 +13,26 @@ import chess
 # handled separately
 from chess.variant import CrazyhouseBoard
 
-# other variants: In the following order. Names in "" are given as uci_variant name:
-# 0 - "chess" (lichess: "Standard")
-# 1 - "chess", self.chess960 = True (lichess: "Chess960")
+# 0 - "is960", board.chess960 = True (lichess: "Chess960")
+# from chess import Board(chess960=True), CrazyhouseBoard(chess960=True), ...
+
+# variants: In the following order. Names in "" are given as uci_variant name:
+# 1 - "chess" (lichess: "Standard")
 # from chess import Board
-# 2 - "kingofthehill" (lichess: "King of the Hill")
+# 2 - "crazyhouse" (lichess: "Crazyhouse")
+# from chess.variant import CrazyhouseBoard
+# 3 - "kingofthehill" (lichess: "King of the Hill")
 # from chess.variant import KingOfTheHillBoard
-# 3- "3check" (lichess: "Three-check")
-# from chess.variant import ThreeCheckBoard
-# 4- "giveaway" (lichess: "Antichess")
+# 4- "3check" (lichess: "Three-check")
+from chess.variant import ThreeCheckBoard
+# 5- "giveaway" (lichess: "Antichess")
 # from chess.variant import GiveawayBoard
-# 5- "atomic" (lichess: "Atomic")
+# 6- "atomic" (lichess: "Atomic")
 # from chess.variant import AtomicBoard
-# 6- "horde" (lichess: "Horde")
+# 7- "horde" (lichess: "Horde")
 # from chess.variant import HordeBoard
-# 7- "racingkings" (lichess: "Racing Kings")
-# from chess.variant import RacingKingsBoard
+# 8- "racingkings" (lichess: "Racing Kings")
+from chess.variant import RacingKingsBoard
 
 from DeepCrazyhouse.src.domain.variants.crazyhouse.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState

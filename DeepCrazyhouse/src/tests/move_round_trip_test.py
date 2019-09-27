@@ -15,7 +15,7 @@ from DeepCrazyhouse.src.domain.variants.output_representation import (
     policy_to_moves,
     policy_to_best_move,
 )
-from DeepCrazyhouse.src.domain.variants.crazyhouse.constants import LABELS, LABELS_MIRRORED
+from DeepCrazyhouse.src.domain.variants.constants import LABELS, LABELS_MIRRORED
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
