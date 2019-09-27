@@ -24,7 +24,7 @@ from chess.variant import CrazyhouseBoard
 # 3 - "kingofthehill" (lichess: "King of the Hill")
 # from chess.variant import KingOfTheHillBoard
 # 4- "3check" (lichess: "Three-check")
-from chess.variant import ThreeCheckBoard
+# from chess.variant import ThreeCheckBoard
 # 5- "giveaway" (lichess: "Antichess")
 # from chess.variant import GiveawayBoard
 # 6- "atomic" (lichess: "Atomic")
@@ -32,7 +32,7 @@ from chess.variant import ThreeCheckBoard
 # 7- "horde" (lichess: "Horde")
 # from chess.variant import HordeBoard
 # 8- "racingkings" (lichess: "Racing Kings")
-from chess.variant import RacingKingsBoard
+# from chess.variant import RacingKingsBoard
 
 from DeepCrazyhouse.src.domain.variants.crazyhouse.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState

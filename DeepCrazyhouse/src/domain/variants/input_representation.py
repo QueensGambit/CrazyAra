@@ -375,7 +375,7 @@ def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
             nb_prisoners *= MAX_NB_PRISONERS
             nb_prisoners = int(round(nb_prisoners))
 
-        for i in range(nb_prisoners):
+        for _ in range(nb_prisoners):
             board.pockets[chess.BLACK].add(p_type)
 
     # (I.5) En Passant Square
