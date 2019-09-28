@@ -5,9 +5,9 @@ Created on 26.09.19
 @author: queensgambit
 
 Definition of all constants for the variants:
-# 0 - "chess"
-# 1 - "crazyhouse"
-# 2 - self.chess960 = True (can be combined with other variants)
+# 0 - self.chess960 = True (can be combined with other variants)
+# 1 - "chess"
+# 2 - "crazyhouse"
 # 3 - "kingofthehill"
 # 4- "3check"
 # 5- "giveaway"

@@ -47,7 +47,7 @@ class PGN2PlanesConverter:
         limit_nb_games_to_analyze=4096,
         nb_games_per_file=1000,
         max_nb_files=2,
-        min_elo_both=1700,
+        min_elo_both=None,
         termination_conditions=None,
         compression="lz4",
         clevel=5,
@@ -63,7 +63,8 @@ class PGN2PlanesConverter:
         :param nb_games_per_file: Number of selected games which are exported in one exported part
         :param max_nb_files: Maximum number of hdf5-files to create
                              (if 0 process all batches of the file)
-        :param min_elo_both: only selects games in which either black or white has at least this elo rating
+        :param min_elo_both: Dictionary for each variant to only selects games in which either black or white has
+        at least this elo rating. (default: min_elo_both = {"Crazyhouse": 2000})
         :param termination_conditions: only select games in which one of the given termination conditions is hold
         :param compression: Compression type for compressing the image planes
                             Available options are:
@@ -89,6 +90,9 @@ class PGN2PlanesConverter:
         self._batch_size = nb_games_per_file
         self._max_nb_files = max_nb_files
         self._min_elo_both = min_elo_both
+        if min_elo_both is None:
+            self._min_elo_both = {"Crazyhouse": 2000}
+        self._cur_min_elo_both = None  # is updated to the minimum elo for the current variant
         self._termination_conditions = termination_conditions
         self._compression = compression
         self._clevel = clevel
@@ -157,6 +161,7 @@ class PGN2PlanesConverter:
         batch_white_won = queue.get()
         batch_black_won = queue.get()
         batch_draw = queue.get()
+        self._cur_min_elo_both = queue.get()
         process.join()  # this blocks until the process terminates
         logging.debug("subprocess finished")
         return all_pgn_sel, nb_games_sel, batch_white_won, batch_black_won, batch_draw
@@ -172,10 +177,12 @@ class PGN2PlanesConverter:
         - batch_white_won: list of number of games which have been won by the white player in this batch
         - batch_black_won: list of number of games which have been won by the black player in this batch
         - batch_draw: list of number of games which have been drawn in this batch
+        - _cur_min_elo_both: Current elo threshold for the selected variant
         """
         # Too many local variables (26/15) - Too many branches (18/12) - Too many statements (53/50)
         content = pgn.read()  # read the pgn content into a string
-        nb_games = content.count("Crazy")
+        nb_games = content.count("[Result")
+        # replace the FEN "?" with the default starting position in case of chess960 games
         logging.debug("nb_games: %d", nb_games)
         all_games = content.split("[Event")  # split the content for each single game
 
@@ -192,7 +199,12 @@ class PGN2PlanesConverter:
 
         for game in games:
             # only add game with at least one move played
-            if "1. " in game:
+            game_start_char = game.find("1. ")
+            if game_start_char != -1:
+                if game[:game_start_char].find('Variant "Chess960"'):
+                    # 2019-09-28: fix for chess960 because in the default position lichess denotes FEN as "?"
+                    game = game.replace('[FEN "?"]', '[FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]')
+
                 # for mate in one make sure the game ended in a checkmate
                 if not self._mate_in_one:
                     pgns.append(io.StringIO(game))
@@ -213,17 +225,20 @@ class PGN2PlanesConverter:
         batch_white_won = []
         batch_black_won = []
         batch_draw = []
+        _cur_min_elo_both = None
 
         for game_pgn in pgns:
             # we need to create a deep copy, otherwise the end of the file is reached for later
             game_pgn_copy = deepcopy(game_pgn)
             for _, headers in chess.pgn.scan_headers(game_pgn_copy):
+                _cur_min_elo_both = self._min_elo_both[headers["Variant"]]
                 for term_cond in self._termination_conditions:
                     if self.use_all_games or (
                         term_cond in headers["Termination"]
-                        and (
-                            int(headers["WhiteElo"]) >= self._min_elo_both
-                            and int(headers["BlackElo"]) >= self._min_elo_both
+                        and (headers["WhiteElo"] != "?" and
+                             headers["BlackElo"] != "?" and
+                             int(headers["WhiteElo"]) >= _cur_min_elo_both
+                             and int(headers["BlackElo"]) >= _cur_min_elo_both
                         )
                     ):
                         if headers["Result"] == "1-0":
@@ -266,6 +281,7 @@ class PGN2PlanesConverter:
         queue.put(batch_white_won)
         queue.put(batch_black_won)
         queue.put(batch_draw)
+        queue.put(_cur_min_elo_both)
 
     def filter_all_pgns(self):
         """
@@ -321,6 +337,9 @@ class PGN2PlanesConverter:
         # export one batch of pgn games
         process.start()
         games_exported = queue.get()  # receive the return argument from the Queue()
+        if games_exported is None:
+            raise Exception('The current specifications did not select any game.'
+                            ' You might need to increase limit_nb_games_to_analyze')
         process.join()  # this blocks until the process terminates
         return games_exported
 
@@ -408,6 +427,9 @@ class PGN2PlanesConverter:
         :param nb_draws: Number of draws in the current part
         :return:
         """
+        if self._cur_min_elo_both is None:
+            raise Exception("self._cur_min_elo_both")
+
         # Refactoring is probably a good idea
         # Too many arguments (8/5) - Too many local variables (32/15) - Too many statements (69/50)
         params_inp = []  # create a param input list which will concatenate the pgn with it's corresponding game index
@@ -421,6 +443,7 @@ class PGN2PlanesConverter:
         x_dic = {}
         y_value_dic = {}
         y_policy_dic = {}
+        plys_to_end_dic = {}
         metadata_dic = {}
 
         if not os.path.exists(self._export_dir):
@@ -436,12 +459,12 @@ class PGN2PlanesConverter:
         zarr_file = zarr.group(store=store, overwrite=True)
         # the games occur in random order due to multiprocessing
         # in order to keep structure we store the result in a dictionary first
-        for metadata, game_idx, x, y_value, y_policy in pool.map(get_planes_from_pgn, params_inp):
+        for metadata, game_idx, x, y_value, y_policy, plys_to_end in pool.map(get_planes_from_pgn, params_inp):
             metadata_dic[game_idx] = metadata
             x_dic[game_idx] = x
             y_value_dic[game_idx] = y_value
             y_policy_dic[game_idx] = y_policy
-
+            plys_to_end_dic[game_idx] = plys_to_end
         pool.close()
         pool.join()
         t_e = time() - t_s
@@ -453,6 +476,7 @@ class PGN2PlanesConverter:
         x = get_dic_sorted_by_key(x_dic)
         y_value = get_dic_sorted_by_key(y_value_dic)
         y_policy = get_dic_sorted_by_key(y_policy_dic)
+        plys_to_end = get_dic_sorted_by_key(plys_to_end_dic)
         start_indices = np.zeros(len(x))  # create a list which describes where each game starts
 
         for i, x_cur in enumerate(x[:-1]):
@@ -463,6 +487,7 @@ class PGN2PlanesConverter:
         x = np.concatenate(x, axis=0)
         y_value = np.concatenate(y_value, axis=0)
         y_policy = np.concatenate(y_policy, axis=0)
+        plys_to_end = np.concatenate(plys_to_end, axis=0)
         logging.debug("metadata.shape %s", metadata.shape)
         logging.debug("x.shape %s", x.shape)
         logging.debug("y_value.shape %s", y_value.shape)
@@ -504,6 +529,13 @@ class PGN2PlanesConverter:
             compression=compressor,
         )
         zarr_file.create_dataset(
+            name="plys_to_end",
+            shape=plys_to_end.shape,
+            dtype=np.int16,
+            data=plys_to_end,
+            synchronizer=zarr.ThreadSynchronizer()
+        )
+        zarr_file.create_dataset(
             name="start_indices",
             shape=start_indices.shape,
             dtype=np.int32,
@@ -541,7 +573,7 @@ class PGN2PlanesConverter:
             name="/parameters/min_elo_both",
             shape=(1,),
             dtype=np.int16,
-            data=[self._min_elo_both],
+            data=[self._cur_min_elo_both],
             compression=compressor,
         )
         if self._compression:

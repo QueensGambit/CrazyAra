@@ -23,6 +23,8 @@ def _load_dataset_file(dataset_filepath):
             y_value: nd.array - Numpy array which describes the winner for each board position
             y_policy: nd.array - Numpy array which describes the policy distribution for each board state
                                  (in case of a pgn dataset the move is one hot encoded)
+            plys_to_end - array of how many plys to the end of the game for each position.
+             This can be used to apply discounting
     """
     return get_numpy_arrays(zarr.group(store=zarr.ZipStore(dataset_filepath, mode="r")))
 
@@ -72,7 +74,7 @@ def load_pgn_dataset(
         logging.debug("")
 
     pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
-    starting_idx, x, y_value, y_policy = get_numpy_arrays(pgn_dataset)  # Get the data
+    starting_idx, x, y_value, y_policy, plys_to_end = get_numpy_arrays(pgn_dataset)  # Get the data
 
     if print_statistics:
         logging.info("STATISTICS:")
@@ -91,4 +93,4 @@ def load_pgn_dataset(
         y_policy = y_policy.astype(np.float32)
         # apply rescaling using a predefined scaling constant (this makes use of vectorized operations)
         x *= MATRIX_NORMALIZER
-    return starting_idx, x, y_value, y_policy, pgn_dataset
+    return starting_idx, x, y_value, y_policy, plys_to_end, pgn_dataset

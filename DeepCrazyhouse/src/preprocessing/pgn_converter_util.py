@@ -10,9 +10,10 @@ Converts a given board state defined by a python-chess object to the plane repre
 import numpy as np
 import chess.pgn
 from DeepCrazyhouse.src.domain.variants.output_representation import move_to_policy
-from DeepCrazyhouse.src.domain.variants.crazyhouse.input_representation import board_to_planes
+from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 
-NB_ITEMS_METADATA = 17  # constant which defines how many meta data items will be stored in a matrix
+NB_ITEMS_METADATA = 18  # constant which defines how many meta data items will be stored in a matrix
+# 2019-09-28: Increased NB_ITEMS_METADATA from 17 to 18 for chess 960
 
 
 def get_planes_from_pgn(params):
@@ -25,6 +26,8 @@ def get_planes_from_pgn(params):
              x: nd.array - All boards of a game which corresponds to the given pgn-file
              y_value: nd.array - Vector which describes the game outcome either [-1, 0, 1]
              y_policy: nd.array - Numpy matrix defining the policy distribution for each board state
+             plys_to_end - array of how many plys to the end of the game for each position.
+             This can be used to apply discounting
     """
     (pgn, game_idx, mate_in_one) = params
 
@@ -51,7 +54,9 @@ def get_planes_from_pgn(params):
         if i == NB_ITEMS_METADATA - 1:
             break
 
-    return metadata, game_idx, get_planes_from_game(game, mate_in_one)
+    results = get_planes_from_game(game, mate_in_one)
+
+    return metadata, game_idx, results[0], results[1], results[2], results[3]
 
 
 def get_planes_from_game(game, mate_in_one=False):
@@ -69,6 +74,8 @@ def get_planes_from_game(game, mate_in_one=False):
                   returns -1 if the current player lost, +1 if the current player won, 0 for draw
              y_policy - the policy vector one-hot encoded indicating the next move the player current player chose
               in this position
+             plys_to_end - array of how many plys to the end of the game for each position.
+              This can be used to apply discounting
     """
 
     fen_dic = {}  # A dictionary which maps the fen description to its number of occurrences
@@ -93,22 +100,23 @@ def get_planes_from_game(game, mate_in_one=False):
     # you don't want to push the last move on the board because you had no movement policy to learn from in this case
     # The moves get pushed at the end of the for-loop and is only used in the next loop.
     # Therefore we can iterate over 'all' moves
-    for i, move in enumerate(all_moves):
+    plys = 0
+    for move in all_moves:
         board_occ = 0  # by default the positions hasn't occurred before
         fen = board.fen()
         # remove the halfmove counter & move counter from this fen to make repetitions possible
         fen = fen[: fen.find(" ") + 2]
         # save the board state to the fen dictionary
         if fen in list(fen_dic.keys()):
-            fen_dic[fen] += 1
             board_occ = fen_dic[fen]
+            fen_dic[fen] += 1
         else:
             fen_dic[fen] = 1  # create a new entry
         # we insert the move i (and not i+1), because the start is the empty board position
-        next_move = all_moves[i]
+        next_move = all_moves[plys]
 
         # check if you need to export a mate_in_one_scenario
-        if not mate_in_one or i == len(all_moves) - 1:
+        if not mate_in_one or plys == len(all_moves) - 1:
             # receive the board and the evaluation of the current position in plane representation
             # We don't want to store float values because the integer datatype is cheaper,
             #  that's why normalize is set to false
@@ -122,6 +130,9 @@ def get_planes_from_game(game, mate_in_one=False):
 
         y_init *= -1  # flip the y_init value after each move
         board.push(move)  # push the next move on the board
+        plys += 1
+
+    plys_to_end = np.arange(plys)[::-1]
 
     # check if there has been any moves
     if x and y_value and y_policy:
@@ -133,4 +144,4 @@ def get_planes_from_game(game, mate_in_one=False):
         print(game.headers)
         raise Exception("The given pgn file's mainline is empty!")
 
-    return x, y_value, y_policy
+    return x, y_value, y_policy, plys_to_end
