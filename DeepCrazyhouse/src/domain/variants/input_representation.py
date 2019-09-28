@@ -58,15 +58,15 @@ def _fill_position_planes(planes_pos, board, board_occ=0):
             planes_pos[channel + 1, :, :] = 1
 
     # Fill in the Prisoners / Pocket Pieces
+    if board.uci_variant == "crazyhouse":
+        # iterate over all pieces except the king
+        for p_type in chess.PIECE_TYPES[:-1]:
+            # p_type -1 because p_type starts with 1
+            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-    # iterate over all pieces except the king
-    for p_type in chess.PIECE_TYPES[:-1]:
-        # p_type -1 because p_type starts with 1
-        channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
-
-        planes_pos[channel, :, :] = board.pockets[chess.WHITE].count(p_type)
-        # the prison for black begins 5 channels later
-        planes_pos[channel + 5, :, :] = board.pockets[chess.BLACK].count(p_type)
+            planes_pos[channel, :, :] = board.pockets[chess.WHITE].count(p_type)
+            # the prison for black begins 5 channels later
+            planes_pos[channel + 5, :, :] = board.pockets[chess.BLACK].count(p_type)
 
     # (III) Fill in the promoted pieces
     # iterate over all promoted pieces according to the mask and set the according bit
@@ -87,6 +87,7 @@ def _fill_position_planes(planes_pos, board, board_occ=0):
         planes_pos[channel, row, col] = 1
 
     return planes_pos
+
 
 def _fill_constant_planes(planes_const, board, board_turn):
 
@@ -155,7 +156,7 @@ def _fill_variants_plane(board, planes_variants):
         planes_variants[CHANNEL_MAPPING_VARIANTS["is960"], :, :] = 1
 
     # set the current active variant as a one-hot encoded entry
-    for variant_name in CHANNEL_MAPPING_VARIANTS:
+    for variant_name in VARIANT_MAPPING_BOARDS:  # exclude "is960"
         if variant_name == board.uci_variant:
             planes_variants[CHANNEL_MAPPING_VARIANTS[variant_name], :, :] = 1
             break
@@ -313,8 +314,8 @@ def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
 
         # iterate through all available variants
         board = None
-        for variant in CHANNEL_MAPPING_VARIANTS:
-            if planes_variants[CHANNEL_MAPPING_VARIANTS[variant]] == 1:
+        for variant in VARIANT_MAPPING_BOARDS:  # exclude "is960"
+            if planes_variants[CHANNEL_MAPPING_VARIANTS[variant], 0, 0] == 1:
                 board = VARIANT_MAPPING_BOARDS[variant](chess960=is960)
                 break
 
@@ -322,6 +323,9 @@ def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
             raise Exception("No chess variant was recognized in your given input planes")
     else:
         board = CrazyhouseBoard()
+
+    # clear the full board (the pieces will be set later)
+    board.clear()
 
     # iterate over all piece types
     for idx, piece in enumerate(PIECES):
@@ -350,33 +354,33 @@ def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
     # ch = channel_mapping['repetitions']
 
     # Fill in the Prisoners / Pocket Pieces
+    if crazyhouse_only is True or board.uci_variant == "crazyhouse":
+        # iterate over all pieces except the king
+        for p_type in chess.PIECE_TYPES[:-1]:
+            # p_type -1 because p_type starts with 1
+            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-    # iterate over all pieces except the king
-    for p_type in chess.PIECE_TYPES[:-1]:
-        # p_type -1 because p_type starts with 1
-        channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+            # the full board is filled with the same value
+            # it's sufficient to take only the first value
+            nb_prisoners = planes_pos[channel, 0, 0]
 
-        # the full board is filled with the same value
-        # it's sufficient to take only the first value
-        nb_prisoners = planes_pos[channel, 0, 0]
+            # add prisoners for the current player
+            # the whole board is set with the same entry, we can just take the first one
+            if normalized_input is True:
+                nb_prisoners *= MAX_NB_PRISONERS
+                nb_prisoners = int(round(nb_prisoners))
 
-        # add prisoners for the current player
-        # the whole board is set with the same entry, we can just take the first one
-        if normalized_input is True:
-            nb_prisoners *= MAX_NB_PRISONERS
-            nb_prisoners = int(round(nb_prisoners))
+            for _ in range(nb_prisoners):
+                board.pockets[chess.WHITE].add(p_type)
 
-        for _ in range(nb_prisoners):
-            board.pockets[chess.WHITE].add(p_type)
+            # add prisoners for the opponent
+            nb_prisoners = planes_pos[channel + 5, 0, 0]
+            if normalized_input is True:
+                nb_prisoners *= MAX_NB_PRISONERS
+                nb_prisoners = int(round(nb_prisoners))
 
-        # add prisoners for the opponent
-        nb_prisoners = planes_pos[channel + 5, 0, 0]
-        if normalized_input is True:
-            nb_prisoners *= MAX_NB_PRISONERS
-            nb_prisoners = int(round(nb_prisoners))
-
-        for _ in range(nb_prisoners):
-            board.pockets[chess.BLACK].add(p_type)
+            for _ in range(nb_prisoners):
+                board.pockets[chess.BLACK].add(p_type)
 
     # (I.5) En Passant Square
     # mark the square where an en-passant capture is possible

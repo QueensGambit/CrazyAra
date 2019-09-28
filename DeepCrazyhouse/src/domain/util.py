@@ -20,10 +20,12 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     MAX_NB_NO_PROGRESS,
     MAX_NB_PRISONERS,
     NB_CHANNELS_FULL_CZ,
+    NB_CHANNELS_FULL,
     NB_CHANNELS_POS,
     POCKETS_SIZE_PIECE_TYPE,
     chess,
 )
+from DeepCrazyhouse.configs.main_config import main_config
 
 
 def get_row_col(position, mirror=False):
@@ -114,14 +116,16 @@ def get_numpy_arrays(pgn_dataset):
             x - the board representation for all games
             y_value - the game outcome (-1,0,1) for each board position
             y_policy - the movement policy for the next_move played
-            pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
+            plys_to_end - array of how many plys to the end of the game for each position.
+             This can be used to apply discounting
     """
     # Get the data
     starting_idx = np.array(pgn_dataset["start_indices"])
     x = np.array(pgn_dataset["x"])
     y_value = np.array(pgn_dataset["y_value"])
     y_policy = np.array(pgn_dataset["y_policy"])
-    return starting_idx, x, y_value, y_policy
+    plys_to_end = np.array(pgn_dataset["plys_to_end"])
+    return starting_idx, x, y_value, y_policy, plys_to_end
 
 
 def normalize_input_planes(x):
@@ -157,7 +161,14 @@ def normalize_input_planes(x):
 
 
 # use a constant matrix for normalization to allow broad cast operations
-MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL_CZ, BOARD_HEIGHT, BOARD_WIDTH)))
+MATRIX_NORMALIZER = None
+# in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
+if main_config['policy_version'] == 1:
+    MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL_CZ, BOARD_HEIGHT, BOARD_WIDTH)))
+elif main_config['policy_version'] == 2:
+    MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH)))
+else:
+    raise Exception('unsupported "policy_version" specification in main_config.py')
 
 
 def customize_input_planes(x):

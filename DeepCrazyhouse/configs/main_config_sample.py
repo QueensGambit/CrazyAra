@@ -36,4 +36,8 @@ main_config = {
     "model_architecture_dir": "/home/demo_user/models/Crazyhouse/symbol/",
     # the weight directory contains the of the network in mxnet .params format
     "model_weights_dir": "/home/demo_user/models/Crazyhouse/params/",
+
+    # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
+    # set to policy version 1 for old behaviour (available versions: [1, 2])
+    "policy_version": 2,
 }
