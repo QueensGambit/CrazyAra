@@ -203,6 +203,6 @@ if __name__ == "__main__":
     # test out all supported variants
     nb_variants = 8
     for part_id in range(nb_variants):
-        t = FullRoundTripTests(part_id=0)
+        t = FullRoundTripTests(part_id=part_id)
         t.test_board_states()
         t.test_moves()
