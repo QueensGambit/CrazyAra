@@ -338,8 +338,9 @@ class PGN2PlanesConverter:
         process.start()
         games_exported = queue.get()  # receive the return argument from the Queue()
         if games_exported is None:
-            raise Exception('The current specifications did not select any game.'
+            logging.warning('The current specifications did not select any game.'
                             ' You might need to increase limit_nb_games_to_analyze')
+            games_exported = 0
         process.join()  # this blocks until the process terminates
         return games_exported
 
