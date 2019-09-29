@@ -54,6 +54,7 @@ class PGN2PlanesConverter:
         log_lvl=logging.DEBUG,
         dataset_type="train",
         use_all_games=False,
+        first_pgn_to_analyze=None,
     ):  # Too many arguments (11/5)
         """
         Set the member variables and loads the config file
@@ -81,6 +82,8 @@ class PGN2PlanesConverter:
         :param use_all_games: A boolean if set to true all conditions are ignored and all games are converted in the
                               pgn files. This has the condition that the pgns have been properly preprocessed before.
                               (This was option was added for the Stockfish self play dataset).
+        :param first_pgn_to_analyze: Optional parameter in which you can define the first pgn file to select.
+         If None it will automaticly choose the first file in the specified directory
         :return:
         """
         if termination_conditions is None:
@@ -106,7 +109,7 @@ class PGN2PlanesConverter:
 
         logging.info("SCRIPT START")
 
-        logging.info("reading in config.json file...")
+        logging.info("reading in config file...")
 
         # show the contents of the config file
         logging.debug("%s", main_config)
@@ -134,7 +137,10 @@ class PGN2PlanesConverter:
             )
 
         # initialize the png_name to the first pgn file in the import directory
-        self._pgn_name = os.listdir(self._import_dir)[0]
+        if first_pgn_to_analyze is None:
+            self._pgn_name = os.listdir(self._import_dir)[0]
+        else:
+            self._pgn_name = first_pgn_to_analyze
         # include current timestamp in dataset export file
         timestmp = datetime.datetime.fromtimestamp(time()).strftime("%Y-%m-%d-%H-%M-%S")
         self._timestmp_dir = self._export_dir + timestmp + "/"

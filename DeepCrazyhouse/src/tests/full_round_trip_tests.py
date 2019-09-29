@@ -14,7 +14,7 @@ import logging
 import chess
 import chess.pgn
 import numpy as np
-from DeepCrazyhouse.src.domain.variants.crazyhouse.input_representation import planes_to_board
+from DeepCrazyhouse.src.domain.variants.input_representation import planes_to_board
 from DeepCrazyhouse.src.domain.variants.output_representation import policy_to_move
 from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesConverter
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
@@ -98,16 +98,33 @@ def moves_single_game(params_inp):
 class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10/7)
     """ Load all games from the pgn and test all moves"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, part_id=0, *args, **kwargs):
+        """
+        Constructor
+        :param part_id: Part id to choose for file selection. This way you can test different variants at a time.
+        :param args:
+        :param kwargs:
+        """
         super(FullRoundTripTests, self).__init__(*args, **kwargs)
         logging.info("loading test dataset...")
-        self._s_idcs_test, self._x_test, self._yv_test, self._yp_test, self._pgn_datasets_test = load_pgn_dataset(
-            dataset_type="test", part_id=0, print_statistics=True, normalize=False, print_parameters=True
+        self._s_idcs_test, self._x_test, self._yv_test, self._yp_test, _, self._pgn_datasets_test = load_pgn_dataset(
+            dataset_type="test", part_id=part_id, print_statistics=True, normalize=False, print_parameters=True
         )
         logging.info("loading test pgn file...")
         self._pgn_filename = self._pgn_datasets_test["parameters/pgn_name"][0].decode("UTF8")
         self._batch_size = self._pgn_datasets_test["parameters/batch_size"][0]
-        self._min_elo_both = self._pgn_datasets_test["parameters/min_elo_both"][0]
+        # self._min_elo_both = self._pgn_datasets_test["parameters/min_elo_both"][0]
+        # Rating cap at 90% cumulative rating for all varaints
+        self._min_elo_both = {
+            "Crazyhouse": 2000,
+            "Chess960": 1950,
+            "King of the Hill": 1925,
+            "Three-check": 1900,
+            "Antichess": 1925,
+            "Atomic": 1900,
+            "Horde": 1900,
+            "Racing Kings": 1900
+        }
         self._start_indices = self._pgn_datasets_test["start_indices"]
 
         converter = PGN2PlanesConverter(
@@ -120,6 +137,7 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
             compression="lz4",
             clevel=5,
             dataset_type="test",
+            first_pgn_to_analyze=self._pgn_filename
         )
         self._all_pgn_sel, _, _, _, _ = converter.filter_pgn()
         print(len(self._all_pgn_sel))
@@ -181,6 +199,10 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
         logging.info("move comparision test done...")
 
 
-# t = FullRoundTripTests()
-# t.test_board_states()
-# t.test_moves()
+if __name__ == "__main__":
+    # test out all supported variants
+    nb_variants = 8
+    for part_id in range(nb_variants):
+        t = FullRoundTripTests(part_id=0)
+        t.test_board_states()
+        t.test_moves()
