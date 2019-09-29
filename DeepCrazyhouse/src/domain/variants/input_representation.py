@@ -102,24 +102,23 @@ def _fill_constant_planes(planes_const, board, board_turn):
     # alternatively, you could use the half-moves-counter: len(board.move_stack)
 
     # (IV.3) Castling Rights
+    # has_kingside_castling_rights() and has_queenside_castling_rights() support chess960, too
     channel = CHANNEL_MAPPING_CONST["castling"]
 
     # WHITE
     # check for King Side Castling
-    if bool(board.castling_rights & chess.BB_H1) is True:
-        # White can castle with the h1 rook
+    if board.has_kingside_castling_rights(chess.WHITE):
         planes_const[channel, :, :] = 1
     # check for Queen Side Castling
-    if bool(board.castling_rights & chess.BB_A1) is True:
+    if board.has_queenside_castling_rights(chess.WHITE):
         planes_const[channel + 1, :, :] = 1
 
     # BLACK
     # check for King Side Castling
-    if bool(board.castling_rights & chess.BB_H8) is True:
-        # White can castle with the h1 rook
+    if board.has_kingside_castling_rights(chess.BLACK):
         planes_const[channel + 2, :, :] = 1
     # check for Queen Side Castling
-    if bool(board.castling_rights & chess.BB_A8) is True:
+    if board.has_queenside_castling_rights(chess.BLACK):
         planes_const[channel + 3, :, :] = 1
 
     # (IV.4) No Progress Count
@@ -412,20 +411,30 @@ def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
     # check for King Side Castling
     # White can castle with the h1 rook
 
-    # add castling option by applying logical-OR operation
+    # add castling option by modifying the castling fen
+    castling_fen = ""
+    # check for King Side Castling
     if planes_const[channel, 0, 0] == 1:
+        castling_fen += "K"
         board.castling_rights |= chess.BB_H1
     # check for Queen Side Castling
     if planes_const[channel + 1, 0, 0] == 1:
+        castling_fen += "Q"
         board.castling_rights |= chess.BB_A1
 
     # BLACK
     # check for King Side Castling
     if planes_const[channel + 2, 0, 0] == 1:
+        castling_fen += "k"
         board.castling_rights |= chess.BB_H8
     # check for Queen Side Castling
     if planes_const[channel + 3, 0, 0] == 1:
+        castling_fen += "q"
         board.castling_rights |= chess.BB_A8
+
+    # configure the castling rights
+    if castling_fen:
+        board.set_castling_fen(castling_fen)
 
     # (II.3) No Progress Count
     channel = CHANNEL_MAPPING_CONST["no_progress_cnt"]
