@@ -8,6 +8,7 @@ Converts a given board state defined by a python-chess object to the plane repre
 """
 
 import numpy as np
+import logging
 import chess.pgn
 from DeepCrazyhouse.src.domain.variants.output_representation import move_to_policy
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
@@ -44,6 +45,9 @@ def get_planes_from_pgn(params):
         metadata = np.zeros((2, NB_ITEMS_METADATA), dtype="S128")
 
         for i, key in enumerate(game.headers):
+            if i == NB_ITEMS_METADATA:
+                logging.warning("The number of meta data items exceeded the metadata items of the current game.")
+                break
             metadata[row, i] = key.encode("ascii", "ignore")
         row = 1
 
