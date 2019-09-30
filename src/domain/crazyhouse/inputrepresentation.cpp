@@ -34,17 +34,17 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
     // set the individual bits for the pieces
     // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
     while (bitboard != 0) {
-      if (bitboard & 0x1) {
-          if (color == WHITE) {
-            inputPlanes[channel * NB_SQUARES + p] = 1;
-          }
-          else {
-              //                                         row            col
-              inputPlanes[channel * NB_SQUARES + (7 - (p / 8)) * 8 + (p % 8)] = 1;
-          }
-      }
-      bitboard >>= 1;
-      p++;
+        if (bitboard & 0x1) {
+            if (color == WHITE) {
+                inputPlanes[channel * NB_SQUARES + p] = 1;
+            }
+            else {
+                //                                         row            col
+                inputPlanes[channel * NB_SQUARES + (7 - (p / 8)) * 8 + (p % 8)] = 1;
+            }
+        }
+        bitboard >>= 1;
+        p++;
     }
 }
 
@@ -65,7 +65,6 @@ void board_to_planes(const Board *pos, int boardRepetition, bool normalize, floa
     for (Color color : {me, you}) {
         for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
             Bitboard pieces = pos->pieces(color, piece);
-//            size_t p = 0;
             // set the individual bits for the pieces
             // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
             set_bits_from_bitmap(pieces, current_channel, inputPlanes, me);
@@ -121,7 +120,6 @@ void board_to_planes(const Board *pos, int boardRepetition, bool normalize, floa
     }
     current_channel++;
 
-//    std::cout << "pos->game_ply()" << pos->game_ply() << std::endl;
     // (VI.2) Total Move Count
     std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
               // stockfish starts counting from 0, the full move counter starts at 1 in FEN
@@ -166,7 +164,6 @@ void board_to_planes(const Board *pos, int boardRepetition, bool normalize, floa
         current_channel++;
 
     }
-//    std::cout << "last channel" << current_channel << std::endl;
     // (VI.4) No Progress Count
     // define a no 'progress' counter
     // it gets incremented by 1 each move
@@ -176,5 +173,36 @@ void board_to_planes(const Board *pos, int boardRepetition, bool normalize, floa
     std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
               normalize ? pos->rule50_count() / MAX_NB_NO_PROGRESS: pos->rule50_count());
     current_channel++;
+
+#ifndef CRAZYHOUSE_ONLY
+    // set the remaining checks (only needed for "3check")
+    if (pos->is_three_check()) {
+        for (Color color : {me, you}) {
+            if (pos->checks_given(color) != 0) {
+                std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+                current_channel++;
+                if (pos->checks_given(color) >= 2) {
+                    std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+                }
+                current_channel++;
+            }
+            else {
+                current_channel += 2;
+            }
+        }
+    }
+
+    // (V) Variants specification
+
+    // set the is960 boolean flag when active
+    if (pos->is_chess960()) {
+        std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+    }
+
+    // set the current active variant as a one-hot encoded entry
+    current_channel += CHANNEL_MAPPING_VARIANTS.at(pos->variant());
+    std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+#endif
+
 }
 

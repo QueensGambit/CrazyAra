@@ -133,6 +133,15 @@ endif()
 find_package(Threads REQUIRED)
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
+add_definitions(-DKOTH)
+add_definitions(-DTHREECHECK)
+add_definitions(-DANTI)
+add_definitions(-DATOMIC)
+add_definitions(-DHORDE)
+add_definitions(-DRACE)
+
+# enable this for legacy Crazyhouse only support
+# add_definitions(-DCRAZYHOUSE_ONLY)
 
 if (USE_TENSORRT)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package

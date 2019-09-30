@@ -78,7 +78,7 @@ Board& Board::operator=(const Board &b)
     std::copy(b.byColorBB, b.byColorBB+COLOR_NB, this->byColorBB);
     std::copy(b.pieceCount, b.pieceCount+PIECE_NB, this->pieceCount);
   #ifdef HORDE
-    std::copy(&b.pieceList[0][0], &pieceList[0][0]+PIECE_NB*SQUARE_NB, &this->pieceList[0][0]);
+    std::copy(&b.pieceList[0][0], &b.pieceList[0][0]+PIECE_NB*SQUARE_NB, &this->pieceList[0][0]);
   #else
     std::copy(&b.pieceList[0][0], &b.pieceList[0][0]+PIECE_NB*16, &this->pieceList[0][0]);
   #endif
