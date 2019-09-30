@@ -10,9 +10,6 @@ import chess
 
 ## Variants Includes:
 
-# handled separately
-from chess.variant import CrazyhouseBoard
-
 # 0 - "is960", board.chess960 = True (lichess: "Chess960")
 # from chess import Board(chess960=True), CrazyhouseBoard(chess960=True), ...
 
@@ -34,18 +31,15 @@ from chess.variant import CrazyhouseBoard
 # 8- "racingkings" (lichess: "Racing Kings")
 # from chess.variant import RacingKingsBoard
 
-from DeepCrazyhouse.src.domain.variants.crazyhouse.input_representation import board_to_planes
+from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 
 
 class GameState(AbsGameState):
     """File to group everything to recognize the game state"""
 
-    def __init__(self, board=CrazyhouseBoard()):
+    def __init__(self, board: chess.Board):
         AbsGameState.__init__(self, board)
-        self.board = board
-        self._fen_dic = {}
-        self._board_occ = 0
 
     def apply_move(self, move: chess.Move):
         """ Apply the move on the board"""
@@ -54,7 +48,6 @@ class GameState(AbsGameState):
     def get_state_planes(self):
         """Transform the current board state to a plane"""
         return board_to_planes(self.board, board_occ=self._board_occ, normalize=True)
-        # return np.random.random((34, 8, 8))
 
     def get_pythonchess_board(self):
         """ Get the board by calling a method"""
@@ -62,7 +55,7 @@ class GameState(AbsGameState):
 
     def is_draw(self):
         """ Check if you can claim a draw - its assumed that the draw is always claimed """
-        return self.is_variant_draw() or self.can_claim_threefold_repetition() or self.board.can_claim_fifty_moves()
+        return self.board.is_variant_draw() or self.can_claim_threefold_repetition() or self.board.can_claim_fifty_moves()
         # return self.board.can_claim_draw()
 
     def can_claim_threefold_repetition(self):
@@ -91,6 +84,9 @@ class GameState(AbsGameState):
         else:
             raise Exception("Unhandled variant: %s" % self.board.uci_variant)
 
+    def is_variant_loss(self):
+        return self.board.is_variant_loss()
+
     def get_legal_moves(self):
         """ Returns the legal moves based on current board state"""
         return [*self.board.legal_moves]  # is same as list(self.board.legal_moves)
@@ -117,7 +113,7 @@ class GameState(AbsGameState):
 
     def are_pocket_empty(self):
         """ Checks if at least one player has a piece available in their pocket """
-        return not self.board.pockets[chess.WHITE] and not self.board.pockets[chess.BLACK]
+        return self.uci_variant == "crazyhouse" and not self.board.pockets[chess.WHITE] and not self.board.pockets[chess.BLACK]
 
     def is_variant_end(self):
         """ Checks if the current game state is a terminal state"""

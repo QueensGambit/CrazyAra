@@ -15,8 +15,10 @@ class AbsGameState(ABC):
     """Abstract class for the GameState child class"""
 
     def __init__(self, board):
+        self.uci_variant = board.uci_variant
         self.board = board
         self._fen_dic = {}
+        self._board_occ = 0
 
     @abstractmethod
     def apply_move(self, move: chess.Move):  # , remember_state=False):

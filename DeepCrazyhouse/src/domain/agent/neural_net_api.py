@@ -14,7 +14,7 @@ from multiprocessing import Queue
 import mxnet as mx
 import numpy as np
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.variants.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL_CZ, NB_LABELS
+from DeepCrazyhouse.src.domain.variants.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 
 
@@ -91,7 +91,7 @@ class NeuralNetAPI:
             executor = sym.simple_bind(
                 ctx=self.ctx,
                 # add a new length for each size starting with 1
-                data=(i + 1, NB_CHANNELS_FULL_CZ, BOARD_HEIGHT, BOARD_WIDTH),
+                data=(i + 1, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH),
                 grad_req="null",
                 force_rebind=True,
             )
@@ -129,10 +129,11 @@ class NeuralNetAPI:
         """
         # choose the first executor object which support length 1
         pred = self.executors[0].forward(is_train=False, data=np.expand_dims(x, axis=0))
-        policy_preds = pred[1].softmax().asnumpy()
 
         if self.select_policy_form_planes:
-            policy_preds = policy_preds[:, FLAT_PLANE_IDX]
+            policy_preds = pred[1].asnumpy()[:, FLAT_PLANE_IDX]
+        else:
+            policy_preds = pred[1].softmax().asnumpy()
 
         queue.put([pred[0].asnumpy()[0], policy_preds[0]])
 

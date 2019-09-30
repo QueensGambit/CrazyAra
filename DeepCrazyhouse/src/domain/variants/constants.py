@@ -61,16 +61,17 @@ NB_CHANNELS_CONST = 11
 # for crazyhouse only mode no remaining check counter is used
 NB_CHANNELS_CONST_CZ = 7
 NB_CHANNELS_VARIANTS = 9
-NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS
-NB_CHANNELS_FULL_CZ = NB_CHANNELS_POS + NB_CHANNELS_CONST_CZ
 
 # the number of channels used for the policy map representation
 NB_POLICY_MAP_CHANNELS = None
+NB_CHANNELS_FULL = None
 # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
 if main_config['policy_version'] == 1:
     NB_POLICY_MAP_CHANNELS = 81
+    NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST_CZ
 elif main_config['policy_version'] == 2:
     NB_POLICY_MAP_CHANNELS = 84
+    NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS
 else:
     raise Exception('unsupported "policy_version" specification in main_config.py')
 
