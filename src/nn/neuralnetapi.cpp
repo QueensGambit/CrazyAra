@@ -77,12 +77,9 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
         throw invalid_argument( "The given directory at " + modelDirectory
                                      + " doesn't contain a .json and a .params file.");
     }
-
 	cout << "info string json file: " << jsonFilePath << endl;
 
     inputShape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
-    enableTensorrt = enableTensorrt;
-
     load_model(jsonFilePath);
     load_parameters(paramterFilePath);
     bind_executor();
