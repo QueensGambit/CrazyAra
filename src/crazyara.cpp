@@ -300,11 +300,11 @@ bool CrazyAra::is_ready()
         init_search_settings();
         init_play_settings();
         string modelDirectory = Options["Model_Directory"];
-        netSingle = new NeuralNetAPI(Options["Context"], 1, modelDirectory);
+        netSingle = new NeuralNetAPI(Options["Context"], 1, modelDirectory, false);
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
         for (size_t i = 0; i < searchSettings->threads; ++i) {
-            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory);
+            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory, Options["TensorRT"]);
         }
         Constants::init(netSingle->is_policy_map());
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);

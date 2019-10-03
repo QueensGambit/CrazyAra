@@ -59,13 +59,13 @@ void OptionsUCI::init(OptionsMap &o)
     o["Enhance_Checks"]           << Option(true);
     o["Enhance_Captures"]         << Option(false);
     o["Use_Transposition_Table"]  << Option(true);
+#ifdef TENSORRT
+    o["Use_TensorRT"]             << Option(false);
+#endif
     o["Model_Directory"]          << Option("model/");
     o["Move_Overhead"]            << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"] << Option(0, 0, 99);
 }
-
-//r5nr/pkpP1ppp/4p3/3rN3/1b2b3/2PNB3/P1K2PPP/1N5R/QQpbppp b - - 0 22
-
 
 void OptionsUCI::setoption(istringstream &is)
 {

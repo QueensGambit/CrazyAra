@@ -113,7 +113,7 @@ public:
      * @param modelDirectory Directory where the network architecture is stored (.json file) and
      * where parameters a.k.a weights of the neural are stored (.params file) are stored
      */
-    NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory);
+    NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt);
 
     /**
      * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number

@@ -47,8 +47,9 @@ vector<string> get_directory_files(const string& dir) {
 }
 }  // namespace
 
-NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory):
-    batchSize(batchSize)
+NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
+    batchSize(batchSize),
+    enableTensorrt(enableTensorrt)
 {
     if (ctx == "cpu" || ctx == "CPU") {
         globalCtx = Context::cpu();
@@ -80,7 +81,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const stri
 	cout << "info string json file: " << jsonFilePath << endl;
 
     inputShape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
-    enableTensorrt = false; //true;
+    enableTensorrt = enableTensorrt;
 
     load_model(jsonFilePath);
     load_parameters(paramterFilePath);
