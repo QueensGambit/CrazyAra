@@ -28,6 +28,16 @@ def acc_sign(y_true, y_pred):
     return (np.sign(y_pred).flatten() == y_true).sum() / len(y_true)
 
 
+def fill_up_batch(x, batch_size):
+    """
+    Fills up an array by repeating the given array to achieve the given batch_size
+    :param x: Array to repeat
+    :param batch_size: Given batch-size
+    :return: Array with length of batch-size
+    """
+    return np.repeat(x, batch_size//len(x)+1, axis=0)[:batch_size]
+
+
 def evaluate_metrics(metrics, data_iterator, model): #, nb_batches=None, ctx=mx.gpu(), select_policy_from_plane=False):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
@@ -100,6 +110,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         val_loss_factor=0.01,
         policy_loss_factor=0.99,
         select_policy_from_plane=True,
+        discount=1,  # 0.995,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -130,6 +141,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self._val_loss_factor = val_loss_factor
         self._policy_loss_factor = policy_loss_factor
         self.x_train = self.yv_train = self.yp_train = None
+        self.discount = discount
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
@@ -220,10 +232,21 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             for part_id in tqdm_notebook(self.ordering):
 
                 # load one chunk of the dataset from memory
-                _, self.x_train, self.yv_train, self.yp_train, _ = load_pgn_dataset(dataset_type="train",
+                _, self.x_train, self.yv_train, self.yp_train, plys_to_end, _ = load_pgn_dataset(dataset_type="train",
                                                                                     part_id=part_id,
                                                                                     normalize=self._normalize,
                                                                                     verbose=False)
+                # fill_up_batch if there aren't enough games
+                if len(self.yv_train) < self._batch_size:
+                    logging.info("filling up batch with too few samples %d" % len(self.yv_train))
+                    self.x_train = fill_up_batch(self.x_train, self._batch_size)
+                    self.yv_train = fill_up_batch(self.yv_train, self._batch_size)
+                    self.yp_train = fill_up_batch(self.yp_train, self._batch_size)
+                    plys_to_end = fill_up_batch(plys_to_end, self._batch_size)
+
+                if self.discount != 1:
+                    self.yv_train *= self.discount**plys_to_end
+
                 self.yp_train = self.yp_train.argmax(axis=1)
 
                 if self.select_policy_from_plane:
