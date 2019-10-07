@@ -9,8 +9,6 @@ Utility functions which are use by the converter scripts
 
 import copy
 import numpy as np
-
-
 from DeepCrazyhouse.src.domain.variants.constants import (
     BOARD_HEIGHT,
     BOARD_WIDTH,
@@ -19,13 +17,11 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     MAX_NB_MOVES,
     MAX_NB_NO_PROGRESS,
     MAX_NB_PRISONERS,
-    NB_CHANNELS_FULL_CZ,
     NB_CHANNELS_FULL,
     NB_CHANNELS_POS,
     POCKETS_SIZE_PIECE_TYPE,
     chess,
 )
-from DeepCrazyhouse.configs.main_config import main_config
 
 
 def get_row_col(position, mirror=False):
@@ -161,14 +157,8 @@ def normalize_input_planes(x):
 
 
 # use a constant matrix for normalization to allow broad cast operations
-MATRIX_NORMALIZER = None
 # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-if main_config['policy_version'] == 1:
-    MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL_CZ, BOARD_HEIGHT, BOARD_WIDTH)))
-elif main_config['policy_version'] == 2:
-    MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH)))
-else:
-    raise Exception('unsupported "policy_version" specification in main_config.py')
+MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH)))
 
 
 def customize_input_planes(x):

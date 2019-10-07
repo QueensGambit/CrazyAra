@@ -9,11 +9,11 @@ Definition of all constants for the variants:
 # 1 - "chess"
 # 2 - "crazyhouse"
 # 3 - "kingofthehill"
-# 4- "3check"
-# 5- "giveaway"
-# 6- "atomic"
-# 7- "horde"
-# 8- "racingkings"
+# 4 - "3check"
+# 5 - "giveaway"
+# 6 - "atomic"
+# 7 - "horde"
+# 8 - "racingkings"
 
 ! DO NOT CHANGE THE LABEL LIST OTHERWISE YOU WILL BREAK THE MOVE MAPPING OF THE NETWORK !
 
