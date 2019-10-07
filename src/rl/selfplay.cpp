@@ -24,6 +24,7 @@
  *
  */
 
+#ifdef USE_RL
 #include "selfplay.h"
 
 #include "thread.h"
@@ -61,7 +62,6 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         const Node* nextRoot = mctsAgent->get_opponents_next_root();
         if (nextRoot != nullptr) {
-//            position = nextRoot->get_pos();
             isTerminal = nextRoot->is_terminal();
         }
         position->do_move(evalInfo.bestMove, *(new StateInfo));
@@ -108,3 +108,4 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits)
         generate_game(CRAZYHOUSE_VARIANT, searchLimits);
     }
 }
+#endif

@@ -32,6 +32,7 @@
 #include "gamepgn.h"
 #include "../manager/statesmanager.h"
 
+#ifdef USE_RL
 class SelfPlay
 {
 private:
@@ -66,5 +67,6 @@ public:
      */
     void go(size_t numberOfGames, SearchLimits& searchLimits);
 };
+#endif
 
 #endif // SELFPLAY_H

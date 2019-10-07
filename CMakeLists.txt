@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
-option(USE_RL                    "Build with reinforcment learning support"  ON)
+option(USE_RL                    "Build with reinforcment learning support"  OFF)
 option(USE_TENSORRT              "Build with reinforcment learning support"  OFF)
 
 # -pg performance profiling flags
@@ -127,7 +127,6 @@ if (USE_RL)
     include_directories("lib/json-3.7.0")
     include_directories($ENV{XTL_PATH}include)
     include_directories($ENV{XTENSOR_PATH}include)
-    add_definitions(-DUSE_RL)
 endif()
 
 find_package(Threads REQUIRED)
@@ -142,11 +141,16 @@ add_definitions(-DRACE)
 
 # enable this for legacy Crazyhouse only support
 # add_definitions(-DCRAZYHOUSE_ONLY)
+if (USE_RL)
+    add_definitions(-DUSE_RL)
+endif()
 
 if (USE_TENSORRT)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
     add_definitions(-DTENSORRT)
 endif()
+
+# add_definitions(-DBUILD_TESTS)
 
 if(THREADS_HAVE_PTHREAD_ARG)
     target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
