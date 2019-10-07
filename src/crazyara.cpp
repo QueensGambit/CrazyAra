@@ -76,7 +76,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     auto uiThread = make_shared<Thread>(0);
 
     StateInfo* newState = new StateInfo;
-    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, newState, uiThread.get());
+    Variant variant = UCI::variant_from_name(Options["UCI_Variant"]);
+    pos.set(StartFENs[variant], false, variant, newState, uiThread.get());
     states->activeStates.push_back(newState);
 
     for (int i = 1; i < argc; ++i)
@@ -184,9 +185,10 @@ void CrazyAra::go(string fen, string goCommand, EvalInfo& evalInfo)
     Board pos;
     string token, cmd;
     auto uiThread = make_shared<Thread>(0);
+    Variant variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
     StateInfo* newState = new StateInfo;
-    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, newState, uiThread.get());
+    pos.set(StartFENs[variant], false, variant, newState, uiThread.get());
 
     istringstream is("fen " + fen);
     position(&pos, is);
@@ -213,7 +215,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
         return;
 
     auto uiThread = make_shared<Thread>(0);
-    pos->set(fen, false, CRAZYHOUSE_VARIANT, new StateInfo, uiThread.get());
+    pos->set(fen, false, variant, new StateInfo, uiThread.get());
     states->clear_states();
     states->swap_states();
     Move lastMove = MOVE_NULL;
@@ -304,7 +306,7 @@ bool CrazyAra::is_ready()
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
         for (size_t i = 0; i < searchSettings->threads; ++i) {
-            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory, Options["TensorRT"]);
+            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory, Options["Use_TensorRT"]);
         }
         Constants::init(netSingle->is_policy_map());
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);

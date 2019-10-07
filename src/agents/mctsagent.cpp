@@ -240,7 +240,6 @@ void MCTSAgent::export_game_results()
 void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 {
     size_t nodesPreSearch = init_root_node(pos);
-
     if (rootNode->get_number_child_nodes() == 1) {
         cout << "info string Only single move available -> early stopping" << endl;
     }
