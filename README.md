@@ -9,7 +9,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 &nbsp; 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ad5bb9057b5e4b82bde3569af92b86e9)](https://app.codacy.com/app/QueensGambit/CrazyAra-Engine?utm_source=github.com&utm_medium=referral&utm_content=QueensGambit/CrazyAra-Engine&utm_campaign=Badge_Grade_Dashboard)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/39c3329d0cea4186b5e4d32cfb6a4d5d)](https://www.codacy.com/manual/QueensGambit/CrazyAra?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=QueensGambit/CrazyAra&amp;utm_campaign=Badge_Grade)
 
 </div>
 
@@ -67,12 +67,12 @@ _CrazyAra_ is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://
 
 We provide binary releases for the following plattforms:
 
-Operating System | Backend                                                                                                                                           | Compatible with
----              | ---                                                                                                                                               | ---
-Linux            | [**CUDA 10.0, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Linux_CUDA.zip) | NVIDIA GPUs and CPU
-Linux            | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Linux_MKL.zip)                             | Intel CPUs
-Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Win_CUDA.zip)   | NVIDIA GPUs and CPU
-Windows          | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAra_0.6.0_Win_MKL.zip)                               | Intel CPUs
+Operating System | Backend                                                                                                                                    | Compatible with
+---              | ---                                                                                                                                        | ---
+Linux            | [**CUDA 10.0, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAra_0.6.0_Linux_CUDA.zip) | NVIDIA GPUs and CPU
+Linux            | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAra_0.6.0_Linux_MKL.zip)                             | Intel CPUs
+Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAra_0.6.0_Win_CUDA.zip)   | NVIDIA GPUs and CPU
+Windows          | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAra_0.6.0_Win_MKL.zip)                               | Intel CPUs
 
 _For Intel MKL the network inference is optimized when defining the following environment variable:_
 ```bash
@@ -80,14 +80,13 @@ MXNET_SUBGRAPH_BACKEND=MKLDNN
 ```
 
 ### Models
-
 The following models are available for download:
-*   [4-value-8-policy](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/4-value-8-policy.zip)
-*   [8-value-16-policy](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/8-value-16-policy.zip)
-*   [8-value-policy-map](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/4-value-8-policy.zip)
-*   [8-value-policy-map-mobile / RISEv2-mobile](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/RISEv2-mobile.zip)
-*   [8-value-policy-map-preAct-relu+bn](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/RISEv2-mobile.zip)
-*   [RISEv1 (CrazyAraFish weights)](https://github.com/QueensGambit/CrazyAra-Engine/releases/download/0.6.0/CrazyAraFish_RISEv1.zip)
+*   [4-value-8-policy](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/4-value-8-policy.zip)
+*   [8-value-16-policy](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/8-value-16-policy.zip)
+*   [8-value-policy-map](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/4-value-8-policy.zip)
+*   [8-value-policy-map-mobile / RISEv2-mobile](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip)
+*   [8-value-policy-map-preAct-relu+bn](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip)
+*   [RISEv1 (CrazyAraFish weights)](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAraFish_RISEv1.zip)
 
 The extracted model should be placed in the same directory as the engine executable.
 The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
@@ -139,9 +138,9 @@ Please follow these steps to build _CrazyAra_ from source:
    git clone https://github.com/apache/incubator-mxnet --recursive
    ```
    
-   [IntelMKL](https://github.com/intel/mkl-dnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
+   [IntelMKL](https://github.com/intel/mkl-dnn): ```make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
    
-   [CUDA](https://developer.nvidia.com/cuda-zone) / [cuDNN](https://developer.nvidia.com/cudnn): ```$ make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=0 USE_CUDA=1 USE_CUDNN=1```
+   [CUDA](https://developer.nvidia.com/cuda-zone) / [cuDNN](https://developer.nvidia.com/cudnn): ```make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=0 USE_CUDA=1 USE_CUDNN=1```
    
    _You might have to reduce the number of jobs to run in paralell e.g. `-j 4` if you run out of memory (RAM) during building. Building the MXNet-C++ examples is not required._
    
@@ -263,7 +262,7 @@ For CrazyAra v.0.2.0 the MCTS was rewritten from scratch adding new functionalit
 
 ### Leela-Chess-Zero chess engine
 * http://lczero.org/
-* https://github.com/LeelaChessZero/lczero
+* https://github.com/LeelaChessZero/lc0
 
 ### Alli(Stein) chess engine
 * https://github.com/manyoso/allie
