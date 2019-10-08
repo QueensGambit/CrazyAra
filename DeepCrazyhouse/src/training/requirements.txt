@@ -1,0 +1,8 @@
+numpy
+python-chess
+zarr
+numcodecs
+tqdm
+mxboard
+tensorflow
+tensorboard
