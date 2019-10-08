@@ -264,7 +264,7 @@ For CrazyAra v.0.2.0 the MCTS was rewritten from scratch adding new functionalit
 * http://lczero.org/
 * https://github.com/LeelaChessZero/lc0
 
-### Alli(Stein) chess engine
+### Allie(Stein) chess engine
 * https://github.com/manyoso/allie
 
 ### Scorpio chess engine 
