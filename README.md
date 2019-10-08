@@ -1,7 +1,7 @@
 
 <div id="crazyara-logo" align="center">
     <br/>
-    <img src="./engine/media/crazyara_logo_medium.png" alt="CrazyAra Logo" width="512"/>
+    <img src="./etc/media/crazyara_logo_medium.png" alt="CrazyAra Logo" width="512"/>
     <h3>A Deep Learning Chess Variant Engine</h3>
 </div>
 
@@ -23,14 +23,15 @@
 *   [Compilation](#compilation)
     *   [Linux](#linux)
     *   [Windows](#windows)
+*   [Documentation](#documentation)
+*   [Rating](#rating)
 *   [Libraries](#libraries)
 *   [Players](#players)
-*   [Documentation](#documentation)
 *   [Related](#related)
 *   [Licence](#licence)
 *   [Publication](#publication)
 
-<img align="right" src="engine/media/TU_logo.png" width="128">
+<img align="right" src="etc/media/TU_logo.png" width="128">
 
 ## Description
 
@@ -161,75 +162,6 @@ Please follow these steps to build _CrazyAra_ from source:
 ### Windows
 Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Compile-instructions-for-Windows).
 
-## Strength
-
-The playing strength of _CrazyAra_ has been evaluated over the course of development.
-
-### Strength of CrazyAra 0.3.1
-
-_CrazyAra 0.3.1_ played multiple world champion Justin Tan (LM [JannLee](https://lichess.org/@/JannLee)) at 18:00 GMT
- on 21st December in five official matches and won 4-1.
-You can find a detailed report about the past event published by [okei](https://lichess.org/@/okei) here:
-* https://zhchess.blogspot.com/2018/12/crazyara-plays-jannlee-for-christmas.html
-
-_CrazyAra 0.3.1_ was also put to the test against known crazyhouse engines:
-* [Strength evaluation  v0.3.1](https://github.com/QueensGambit/CrazyAra/wiki/v0.3.1)
-
-### Strength of CrazyAra 0.5.0
-
-[Matuiss2](https://github.com/Matuiss2) generated 25 games (Intel i5 8600k, 5GHz) between _CrazyAra 0.3.1_ and _CrazyAra 0.5.0_:
-
-```python
-[TimeControl "40/300"]
-Score of CrazyAra 0.5.0 vs CrazyAra 0.3.1: 22 - 3 - 0 [0.88]
-Elo difference: 346 +/- NaN
-
-25 of 25 games finished.
-```
-
-### Strength of CrazyAra 0.6.0
-
-_CrazyAra 0.6.0_ is the first C++ release and has been evaluated in our [paper](https://arxiv.org/abs/1908.06660) (section **11 Experimental Evaluation**).
-
-
-## Libraries
-
-These libraries are used in the python version:
-
-*   [python-chess](https://python-chess.readthedocs.io/en/latest/index.html): A pure Python chess library
-*   [MXNet](https://mxnet.incubator.apache.org/): A flexible and efficient library for deep learning
-*   [numpy](http://www.numpy.org/): The fundamental package for scientific computing with Python
-*   [zarr](https://zarr.readthedocs.io/en/stable/): An implementation of chunked, compressed, N-dimensional arrays
-
-The following libraries are used to run the C++ version of _CrazyAra_:
-
-*   [**Multi Variant Stockfish**](https://github.com/ddugovic/Stockfish): Stockfish fork specialized to play chess and some chess variants
-    *   Used for move generation and board representation as a replacement for [python-chess](https://github.com/niklasf/python-chess).
-*   [**MXNet C++ Package**](https://github.com/apache/incubator-mxnet/tree/master/cpp-package): A flexible and efficient library for deep learning
-	*   Used as the deep learning backend for loading and inference of the trained neural network
-*   [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/): An open-source, high-performance C++ math library for dense and sparse arithmetic
-    *   Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
-*   [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
-	*   Used as the testing framework as a replacmenet for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
-
-## Players
-_CrazyAra's_ knowledge in the game of crazhyouse for supervised neural networks is based on human played games of the
-[lichess.org database](https://database.lichess.org/).
-
-The most active players which influenced the playstyle of CrazyAra the most are:
-1. [**mathace**](https://lichess.org/@/mathace)
-2. [**ciw**](https://lichess.org/@/ciw)
-3. [**retardedplatypus123**](https://lichess.org/@/retardedplatypus123)
-4. [**xuanet**](https://lichess.org/@/xuanet)
-5. [**dovijanic**](https://lichess.org/@/dovijanic)
-6. [KyleLegion](https://lichess.org/@/KyleLegion)
-7. [LM JannLee](https://lichess.org/@/JannLee)
-8. [crosky](https://lichess.org/@/crosky)
-9. [mariorton](https://lichess.org/@/mariorton)
-10. [IM opperwezen](https://lichess.org/@/opperwezen)
-
-Please have a look at [Supervised training](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) or our paper for more detailed information.
-
 ## Documentation
 For more details about the initial python version visit the wiki pages:
 * [Introduction](https://github.com/QueensGambit/CrazyAra/wiki)
@@ -243,6 +175,75 @@ For more details about the initial python version visit the wiki pages:
 * [Programmer's guide](https://github.com/QueensGambit/CrazyAra/wiki/Programmer's-guide)
 * [FAQ](https://github.com/QueensGambit/CrazyAra/wiki/FAQ)
 * [Stockfish-10: Crazyhouse-Self-Play](https://github.com/QueensGambit/CrazyAra/wiki/Stockfish-10:-Crazyhouse-Self-Play)
+
+## Rating
+
+The playing strength of _CrazyAra_ has been evaluated over the course of development.
+
+### Playing strength of CrazyAra 0.3.1
+
+_CrazyAra 0.3.1_ played multiple world champion Justin Tan (LM [JannLee](https://lichess.org/@/JannLee)) at 18:00 GMT
+ on 21st December in five official matches and won 4-1.
+You can find a detailed report about the past event published by [okei](https://lichess.org/@/okei) here:
+* https://zhchess.blogspot.com/2018/12/crazyara-plays-jannlee-for-christmas.html
+
+_CrazyAra 0.3.1_ was also put to the test against known crazyhouse engines:
+* [Strength evaluation  v0.3.1](https://github.com/QueensGambit/CrazyAra/wiki/v0.3.1)
+
+### Playing strength of CrazyAra 0.5.0
+
+[Matuiss2](https://github.com/Matuiss2) generated 25 games (Intel i5 8600k, 5GHz) between _CrazyAra 0.3.1_ and _CrazyAra 0.5.0_:
+
+```python
+[TimeControl "40/300"]
+Score of CrazyAra 0.5.0 vs CrazyAra 0.3.1: 22 - 3 - 0 [0.88]
+Elo difference: 346 +/- NaN
+
+25 of 25 games finished.
+```
+
+### Playing strength of CrazyAra 0.6.0
+
+_CrazyAra 0.6.0_ is the first C++ release and has been evaluated in our [paper](https://arxiv.org/abs/1908.06660) (section **11 Experimental Evaluation**).
+
+
+## Libraries
+
+These libraries are used in the python version:
+
+*   [**python-chess**](https://python-chess.readthedocs.io/en/latest/index.html): A pure Python chess library
+*   [**MXNet**](https://mxnet.incubator.apache.org/): A flexible and efficient library for deep learning
+*   [**numpy**](http://www.numpy.org/): The fundamental package for scientific computing with Python
+*   [**zarr**](https://zarr.readthedocs.io/en/stable/): An implementation of chunked, compressed, N-dimensional arrays
+
+The following libraries are used to run the C++ version of _CrazyAra_:
+
+*   [**Multi Variant Stockfish**](https://github.com/ddugovic/Stockfish): Stockfish fork specialized to play chess and some chess variants
+    *   Used for move generation and board representation as a replacement for [python-chess](https://github.com/niklasf/python-chess).
+*   [**MXNet C++ Package**](https://github.com/apache/incubator-mxnet/tree/master/cpp-package): A flexible and efficient library for deep learning
+	*   Used as the deep learning backend for loading and inference of the trained neural network
+*   [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/): An open-source, high-performance C++ math library for dense and sparse arithmetic
+    *   Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
+*   [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
+	*   Used as the testing framework as a replacement for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
+
+## Players
+_CrazyAra's_ knowledge in the game of crazhyouse for supervised neural networks is based on human played games of the
+[lichess.org database](https://database.lichess.org/).
+
+The most active players which influenced the play-style of CrazyAra the most are:
+1. [**mathace**](https://lichess.org/@/mathace)
+2. [**ciw**](https://lichess.org/@/ciw)
+3. [**retardedplatypus123**](https://lichess.org/@/retardedplatypus123)
+4. [**xuanet**](https://lichess.org/@/xuanet)
+5. [**dovijanic**](https://lichess.org/@/dovijanic)
+6. [KyleLegion](https://lichess.org/@/KyleLegion)
+7. [LM JannLee](https://lichess.org/@/JannLee)
+8. [crosky](https://lichess.org/@/crosky)
+9. [mariorton](https://lichess.org/@/mariorton)
+10. [IM opperwezen](https://lichess.org/@/opperwezen)
+
+Please have a look at [Supervised training](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training) or our paper for more detailed information.
 
 ## Related
 
@@ -310,7 +311,7 @@ https://github.com/mnahinkhan/Chess/blob/master/Chess/chess.py
 ## Licence
 
 _CrazyAra_ is free software, and distributed under the terms of the [GNU General Public License version 3 (GPL v3)](https://www.gnu.org/licenses/gpl-3.0.en.html).
-This source-code including all project files is licensed under the GPLv3-License if not stated otherwise.
+The source-code including all project files is licensed under the GPLv3-License if not stated otherwise.
 
 For details about the GPL v3 license, refer to the file [LICENSE](https://github.com/QueensGambit/CrazyAra/blob/master/LICENSE).
 
