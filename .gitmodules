@@ -1,6 +1,3 @@
-[submodule "libs/Stockfish"]
-	path = libs/Stockfish
-	url = https://github.com/QueensGambit/Stockfish.git
 [submodule "lib/Stockfish"]
-	path = lib/Stockfish
+	path = engine/lib/Stockfish
 	url = https://github.com/QueensGambit/Stockfish.git
