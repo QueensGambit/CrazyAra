@@ -48,6 +48,8 @@ def load_pgn_dataset(
             x - the board representation for all games
             y_value - the game outcome (-1,0,1) for each board position
             y_policy - the movement policy for the next_move played
+            plys_to_end - array of how many plys to the end of the game for each position.
+             This can be used to apply discounting
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
     """
 
