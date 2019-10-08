@@ -4,10 +4,10 @@ Created on 26.09.18
 @project: crazy_ara_refactor
 @author: queensgambit
 
-Please describe what the content of this file is about
+Utility methods for building the Rise NN
 """
-
-from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Dense, AvgPool2D
+import mxnet
+from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Dense, AvgPool2D, MaxPool2D
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.contrib.nn import HybridConcurrent
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act, get_pool
@@ -24,6 +24,52 @@ class _ChannelSqueezeExcitation(HybridBlock):
         nb_units_hidden = nb_act_maps // ratio
         with self.name_scope():
             self.body.add(AvgPool2D(pool_size=8))
+
+            self.body.add(Dense(nb_units_hidden))
+            self.body.add(get_act(act_type))
+            self.body.add(Dense(nb_act_maps))
+            self.body.add(get_act("sigmoid"))
+
+    def hybrid_forward(self, F, x):
+        """
+        Compute forward pass
+
+        :param F: Handle
+        :param x: Input data to the block
+        :return: Activation maps of the block
+        """
+        feature_scaling = self.body(x)
+        out = F.broadcast_mul(x, F.reshape(data=feature_scaling, shape=(-1, self.nb_act_maps, 1, 1)))
+
+        return out
+
+
+class _GatherExcitePlus(HybridBlock):
+    """
+    Parameterized gather and excite step: https://arxiv.org/pdf/1810.12348.pdf
+    """
+    def __init__(self, name, nb_act_maps, ratio=16, act_type="relu"):
+
+        super(_GatherExcitePlus, self).__init__(prefix=name)
+
+        self.nb_act_maps = nb_act_maps
+        self.body = HybridSequential(prefix="")
+
+        nb_units_hidden = nb_act_maps // ratio
+        with self.name_scope():
+            # depthwise convolution
+            # gather step
+            self.body.add(Conv2D(nb_act_maps, kernel_size=3, padding=1, groups=nb_act_maps, strides=2, use_bias=False))
+            self.body.add(get_act(act_type))
+            self.body.add(BatchNorm())
+            self.body.add(Conv2D(nb_act_maps, kernel_size=3, padding=1, groups=nb_act_maps, strides=2, use_bias=False))
+            self.body.add(get_act(act_type))
+            self.body.add(BatchNorm())
+            self.body.add(Conv2D(nb_act_maps, kernel_size=3, padding=1, groups=nb_act_maps, strides=2, use_bias=False))
+            self.body.add(get_act(act_type))
+            self.body.add(BatchNorm())
+
+            # get excitement parameters
             self.body.add(Dense(nb_units_hidden))
             self.body.add(get_act(act_type))
             self.body.add(Dense(nb_act_maps))
@@ -152,6 +198,7 @@ class _UpsampleBlock(HybridBlock):
         :param x: Input data to the block
         :return: Activation maps of the block
         """
+        mxnet.nd.UpSampling()
         return F.UpSampling(x, scale=self.scale, sample_type=self.sample_type)
 
 

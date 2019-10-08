@@ -50,7 +50,7 @@ class _ShuffleBlock(HybridBlock):
     """
     Default Shuffle Block
     """
-    def __init__(self, name, in_channels, groups=2, se_type="cSE", use_residual=True, act_type="relu", **kwargs):
+    def __init__(self, name, in_channels, groups=2, se_type="cSE", use_residual=False, act_type="relu", id=0, **kwargs):
 
         super(_ShuffleBlock, self).__init__(prefix=name + "_")
 
@@ -61,17 +61,18 @@ class _ShuffleBlock(HybridBlock):
 
         self.body = HybridSequential(prefix="")
         self.use_residual = use_residual
+        self.id = id
 
         with self.name_scope():
+            self.body.add(BatchNorm())
             self.body.add(
-                Conv2D(channels=self.nb_right_channels, kernel_size=3, strides=1, padding=1, groups=1, use_bias=False)
+                Conv2D(channels=self.nb_right_channels+28, kernel_size=3, strides=1, padding=1, groups=1, use_bias=False)
             )
             self.body.add(BatchNorm())
             self.body.add(get_act(act_type))
             self.body.add(
-                Conv2D(channels=self.nb_right_channels, kernel_size=3, strides=1, padding=1, groups=1, use_bias=False)
+                Conv2D(channels=self.nb_right_channels+28, kernel_size=3, strides=1, padding=1, groups=1, use_bias=False)
             )
-            self.body.add(BatchNorm())
             if se_type:
                 if se_type == "cSE":
                     # apply squeeze excitation
@@ -83,6 +84,8 @@ class _ShuffleBlock(HybridBlock):
                 else:
                     raise Exception('Unsupported Squeeze Excitation Module: Choose either [None, "cSE", "sSE", "scSE"')
 
+            self.body.add(BatchNorm())
+
         if self.use_residual:
             self.act = get_act(act_type)
         self.shufller = _ShuffleChannelsBlock(groups)
@@ -90,15 +93,15 @@ class _ShuffleBlock(HybridBlock):
     def hybrid_forward(self, F, x):
         left_in = F.slice_axis(x, axis=1, begin=0, end=self.nb_right_channels)
         right_in = F.slice_axis(x, axis=1, begin=self.nb_right_channels, end=self.in_channels)
-        right_out = self.body(right_in)
 
-        if self.use_residual:
-            right_out = right_in + right_out
-            right_out = self.act(right_out)
+        if self.id % 2 == 0:
+            right_in = self.body(right_in)
+        else:
+            left_in = self.body(left_in)
 
-        out = F.concat(left_in, right_out, dim=1)
+        out = F.concat(right_in, left_in, dim=1)
 
-        return self.shufller(out)
+        return out
 
 
 class _ShuffleBlockNeck(HybridBlock):
@@ -213,14 +216,15 @@ class ShuffleRise(HybridBlock):  # Too many arguments (15/5)
 
         for i in range(nb_res_blocks_x):
             unit_name = "res_unit%d" % i
-            se_type = None
-            self.body.add(ResidualBlockX(unit_name, channels=channels, bn_mom=0.9, act_type=act_type, se_type=se_type))
+            self.body.add(ResidualBlockX(unit_name, channels=channels, bn_mom=0.9, act_type=act_type,
+                                         se_type=squeeze_excitation_type))
 
         for i in range(nb_shuffle_blocks):
             unit_name = "shuffle_unit%d" % i
             self.body.add(
-                _ShuffleBlock(unit_name, in_channels=channels, se_type=squeeze_excitation_type, act_type=act_type)
+                _ShuffleBlock(unit_name, in_channels=channels, se_type=squeeze_excitation_type, act_type=act_type, id=i)
             )
+            channels += 28
 
         for i in range(nb_shuffle_blocks_neck):
             unit_name = "shuffle_unit_neck_%d" % i
