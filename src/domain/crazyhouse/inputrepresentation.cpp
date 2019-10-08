@@ -164,6 +164,7 @@ void board_to_planes(const Board *pos, int boardRepetition, bool normalize, floa
         current_channel++;
 
     }
+
     // (VI.4) No Progress Count
     // define a no 'progress' counter
     // it gets incremented by 1 each move
@@ -191,9 +192,11 @@ void board_to_planes(const Board *pos, int boardRepetition, bool normalize, floa
             }
         }
     }
+    else {
+        current_channel += 4;
+    }
 
     // (V) Variants specification
-
     // set the is960 boolean flag when active
     if (pos->is_chess960()) {
         std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
