@@ -33,6 +33,7 @@ using namespace std;
 
 // list of all current available variants fro CrazyAra
 static vector<string> availableVariants = {
+    "giveaway",  // antichess
     "crazyhouse"
 };
 
@@ -40,7 +41,11 @@ static vector<string> availableVariants = {
 const static string StartFENs[SUBVARIANT_NB] = {
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
     #ifdef ANTI
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    // "The king has no royal power and accordingly:
+    // it may be captured like any other piece
+    // there is no check or checkmate there is no castling"
+    // -- https://en.wikipedia.org/wiki/Losing_chess
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
     #endif
     #ifdef ATOMIC
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
