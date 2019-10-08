@@ -25,6 +25,8 @@
 
 #include "node.h"
 #include "util/blazeutil.h" // get_dirichlet_noise()
+#include "constants.h"
+#include "../util/sfutil.h"
 
 Node::Node(Node *parentNode, Move move,  SearchSettings* searchSettings):
     parentNode(parentNode),
@@ -292,28 +294,49 @@ SearchSettings* Node::get_search_settings() const
 
 void Node::check_for_terminal()
 {
-    if (childNodes.size() == 0) {
+    if (numberChildNodes == 0) {
         isTerminal = true;
+#ifdef ANTI
+        if (pos->is_anti()) {
+            // a stalmate is a win in antichess
+            value = WIN;
+            return;
+        }
+#endif
         // test if we have a check-mate
         if (parentNode->pos->gives_check(move)) {
-            value = -1;
-            //            parentNode->mtx.lock();
+            value = LOSS;
+            isTerminal = true;
             parentNode->checkmateNode = this;
-            //            parentNode->mtx.unlock();
-        } else {
-            // we reached a stalmate
-            value = 0;
+            return;
+        }
+        // we reached a stalmate
+        value = DRAW;
+        return;
+    }
+#ifdef ANTI
+    if (pos->is_anti()) {
+        if (pos->is_anti_win()) {
+            isTerminal = true;
+            value = WIN;
+            return;
+        }
+        if (pos->is_anti_loss()) {
+            isTerminal = true;
+            value = LOSS;
+            parentNode->checkmateNode = this;
+            return;
         }
     }
-    else if (pos->is_draw(pos->game_ply())) {
+#endif
+    if (pos->is_draw(pos->game_ply())) {
         // reached 50 moves rule
-        value = 0;
+        value = DRAW;
         isTerminal = true;
+        return;
     }
-    else {
-        // normal game position
-        isTerminal = false;
-    }
+    // normal game position
+    //    isTerminal = false;  // is the default value
 }
 
 void Node::make_to_root()
