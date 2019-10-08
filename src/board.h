@@ -53,4 +53,14 @@ public:
     size_t total_move_cout();
 };
 
+/**
+ * @brief pgnMove Converts a given move into PGN move notation
+ * @param m Move
+ * @param chess960 True if 960 mode
+ * @param pos Board position
+ * @param leadsToTerminal True if the given move leads to a terminal state
+ * @return String representation of move in PGN format
+ */
+std::string pgnMove(Move m, bool chess960, const Board& pos, bool leadsToTerminal=false);
+
 #endif // BOARD_H

@@ -21,11 +21,11 @@
  * @file: board.cpp
  * Created on 23.05.2019
  * @author: queensgambit
- *
- * Please describe what the content of this file is about
  */
 
 #include "board.h"
+#include "constants.h"
+#include "uci.h"
 #include <iostream>
 
 using namespace std;
@@ -77,20 +77,20 @@ Board& Board::operator=(const Board &b)
     std::copy(b.byTypeBB, b.byTypeBB+PIECE_TYPE_NB, this->byTypeBB);
     std::copy(b.byColorBB, b.byColorBB+COLOR_NB, this->byColorBB);
     std::copy(b.pieceCount, b.pieceCount+PIECE_NB, this->pieceCount);
-  #ifdef HORDE
+#ifdef HORDE
     std::copy(&b.pieceList[0][0], &b.pieceList[0][0]+PIECE_NB*SQUARE_NB, &this->pieceList[0][0]);
-  #else
+#else
     std::copy(&b.pieceList[0][0], &b.pieceList[0][0]+PIECE_NB*16, &this->pieceList[0][0]);
-  #endif
-  #ifdef CRAZYHOUSE
+#endif
+#ifdef CRAZYHOUSE
     std::copy(&b.pieceCountInHand[0][0], &b.pieceCountInHand[0][0]+COLOR_NB*PIECE_TYPE_NB, &this->pieceCountInHand[0][0]);
     promotedPieces = b.promotedPieces;
-  #endif
+#endif
     std::copy(b.index, b.index+SQUARE_NB, this->index);
     std::copy(b.castlingRightsMask, b.castlingRightsMask+SQUARE_NB, this->castlingRightsMask);
-  #if defined(ANTI) || defined(EXTINCTION) || defined(TWOKINGS)
+#if defined(ANTI) || defined(EXTINCTION) || defined(TWOKINGS)
     std::copy(b.castlingKingSquare, b.castlingKingSquare+COLOR_NB, this->castlingKingSquare);
-  #endif
+#endif
     std::copy(b.castlingRookSquare, b.castlingRookSquare+CASTLING_RIGHT_NB, castlingRookSquare);
     std::copy(b.castlingPath, b.castlingPath+CASTLING_RIGHT_NB, this->castlingPath);
     this->gamePly = b.gamePly;
@@ -102,7 +102,7 @@ Board& Board::operator=(const Board &b)
     var = b.var;
     subvar = b.subvar;
 
-	return *this;
+    return *this;
 }
 
 int Board::plies_from_null()
@@ -114,3 +114,64 @@ size_t Board::total_move_cout()
 {
     return st->pliesFromNull / 2 + 1;
 }
+
+std::string pgnMove(Move m, bool chess960, const Board& pos, bool leadsToTerminal)
+{
+    std::string move;
+
+    Square from = from_sq(m);
+    Square to = to_sq(m);
+
+    if (m == MOVE_NONE)
+        return "(none)";
+
+    if (m == MOVE_NULL)
+        return "0000";
+
+    if (type_of(m) == CASTLING && !chess960) {
+        if (file_of(to) == FILE_G || file_of(to) == FILE_H) {
+            move = "O-O";
+        }
+        else {
+            move = "O-O-O";
+        }
+    }
+    else if (pos.capture(m)) {
+        if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
+            move = std::string{"abcdefgh "[file_of(from)]} + "x";
+    }
+    else {
+        move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + "x";
+}
+move += UCI::square(to);
+}
+
+#ifdef CRAZYHOUSE
+else if (type_of(m) == DROP) {
+    move = std::string{" PNBRQK  PNBRQK "[dropped_piece(m)], '@'} + UCI::square(to);
+}
+#endif
+else {
+if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
+    move = UCI::square(to);
+}
+else {
+move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + UCI::square(to);
+}
+}
+
+if (type_of(m) == PROMOTION) {
+    move += " PNBRQK"[promotion_type(m)];
+}
+
+if (pos.gives_check(m)) {
+    if (leadsToTerminal) {
+        move += "#";
+    }
+    else {
+        move += "+";
+    }
+}
+return move;
+}
+

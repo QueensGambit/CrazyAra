@@ -105,9 +105,9 @@ const std::unordered_map<Variant, int> CHANNEL_MAPPING_VARIANTS = {
 #endif
 const int NB_LABELS_POLICY_MAP = NB_CHANNELS_POLICY_MAP * BOARD_HEIGHT * BOARD_WIDTH;
 
-enum Result {
-  LOST=-1, DRAW=0, WON=1
-};
+#define LOSS -1
+#define DRAW 0
+#define WIN 1
 
 #ifdef CRAZYHOUSE_ONLY
 const std::string LABELS[] = {
@@ -4717,13 +4717,6 @@ extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED_CLASSIC;
 
 //https://stackoverflow.com/questions/23390034/c-change-global-variable-value-in-different-files
 extern std::string LABELS_MIRRORED[NB_LABELS];
-
-/**
- * @brief mirror_move Mirrors an move in uci representation
- * @param moveUCI String uci
- * @return Returns corresponding mirrored uci string with the rank flipped
- */
-std::string mirror_move(std::string moveUCI);
 
 namespace Constants {
 inline void init(bool isPolicyMap) {

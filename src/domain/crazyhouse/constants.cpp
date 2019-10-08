@@ -23,22 +23,4 @@
  * @author: queensgambit
  */
 
-#include <stdlib.h>
 #include "constants.h"
-#include <iostream>
-
-std::string mirror_move(std::string moveUCI) {
-
-    // first copy the original move
-    std::string moveMirrored = std::string(moveUCI);
-
-    // replace the rank with the mirrored rank
-    for (unsigned int idx = 0; idx < moveUCI.length(); ++idx) {
-        if (isdigit(moveUCI[idx])) {
-            int rank = moveUCI[idx] - '0';
-            int rank_mirrored = 8 - rank + 1;
-            moveMirrored[idx] = char(rank_mirrored + '0');
-        }
-    }
-    return moveMirrored;
-}

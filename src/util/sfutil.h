@@ -30,7 +30,6 @@
 
 #include <string>
 #include "types.h"
-#include "../board.h"
 
 /**
  * @brief get_origin_square Returns the origin square for a valid uciMove
@@ -97,13 +96,18 @@ void fill_en_passent_moves(std::vector<std::string> &enPassentMoves);
 Bitboard flip_vertical(Bitboard x);
 
 /**
- * @brief pgnMove Converts a given move into PGN move notation
- * @param m Move
- * @param chess960 True if 960 mode
- * @param pos Board position
- * @param leadsToTerminal True if the given move leads to a terminal state
- * @return String representation of move in PGN format
+ * @brief mirror_move Mirrors a move in uci representation
+ * @param moveUCI String uci
+ * @return Returns corresponding mirrored uci string with the rank flipped
  */
-std::string pgnMove(Move m, bool chess960, const Board& pos, bool leadsToTerminal=false);
+std::string mirror_move(std::string moveUCI);
+
+/**
+ * @brief make_move Creates a move in coordinate representation given an uci string.
+ *                  Multiple sf moves are returned in case it's ambigious such as castling or en-passent moves.
+ * @param uciMove Valid uci string including crazyhouse dropping moves
+ * @return Move in coordinate representation
+ */
+std::vector<Move> make_move(std::string uciMove);
 
 #endif // SFUTIL_H

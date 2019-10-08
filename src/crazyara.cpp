@@ -34,10 +34,8 @@
 #include "syzygy/tbprobe.h"
 #include "movegen.h"
 #include "search.h"
-
 #include "evalinfo.h"
 #include "domain/crazyhouse/constants.h"
-#include "util/sfutil.h"
 #include "constants.h"
 #include "board.h"
 #include "mxnet-cpp/MxNetCpp.h"

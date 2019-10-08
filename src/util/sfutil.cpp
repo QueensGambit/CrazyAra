@@ -149,6 +149,34 @@ void fill_castle_moves(std::vector<std::string> &castleMoves, bool is_960) {
     }
 }
 
+Bitboard flip_vertical(Bitboard x)
+{
+    return  ( (x << 56)                           ) |
+            ( (x << 40) & 0x00ff000000000000 ) |
+            ( (x << 24) & 0x0000ff0000000000 ) |
+            ( (x <<  8) & 0x000000ff00000000 ) |
+            ( (x >>  8) & 0x00000000ff000000 ) |
+            ( (x >> 24) & 0x0000000000ff0000 ) |
+            ( (x >> 40) & 0x000000000000ff00 ) |
+            ( (x >> 56) );
+}
+
+std::string mirror_move(std::string moveUCI) {
+
+    // first copy the original move
+    std::string moveMirrored = std::string(moveUCI);
+
+    // replace the rank with the mirrored rank
+    for (unsigned int idx = 0; idx < moveUCI.length(); ++idx) {
+        if (isdigit(moveUCI[idx])) {
+            int rank = moveUCI[idx] - '0';
+            int rank_mirrored = 8 - rank + 1;
+            moveMirrored[idx] = char(rank_mirrored + '0');
+        }
+    }
+    return moveMirrored;
+}
+
 std::vector<Move> make_move(std::string uciMove) {
 
     std::vector<Move> sfMoves;
@@ -201,76 +229,4 @@ std::vector<Move> make_move(std::string uciMove) {
         }
     }
     return sfMoves;
-}
-
-Bitboard flip_vertical(Bitboard x)
-{
-    return  ( (x << 56)                           ) |
-            ( (x << 40) & 0x00ff000000000000 ) |
-            ( (x << 24) & 0x0000ff0000000000 ) |
-            ( (x <<  8) & 0x000000ff00000000 ) |
-            ( (x >>  8) & 0x00000000ff000000 ) |
-            ( (x >> 24) & 0x0000000000ff0000 ) |
-            ( (x >> 40) & 0x000000000000ff00 ) |
-            ( (x >> 56) );
-}
-
-std::string pgnMove(Move m, bool chess960, const Board& pos, bool leadsToTerminal)
-{
-    std::string move;
-
-    Square from = from_sq(m);
-    Square to = to_sq(m);
-
-    if (m == MOVE_NONE)
-        return "(none)";
-
-    if (m == MOVE_NULL)
-        return "0000";
-
-    if (type_of(m) == CASTLING && !chess960) {
-        if (file_of(to) == FILE_G || file_of(to) == FILE_H) {
-            move = "O-O";
-        }
-        else {
-            move = "O-O-O";
-        }
-    }
-    else if (pos.capture(m)) {
-        if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
-            move = std::string{"abcdefgh "[file_of(from)]} + "x";
-        }
-        else {
-            move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + "x";
-        }
-        move += UCI::square(to);
-    }
-
-#ifdef CRAZYHOUSE
-    else if (type_of(m) == DROP) {
-        move = std::string{" PNBRQK  PNBRQK "[dropped_piece(m)], '@'} + UCI::square(to);
-    }
-#endif
-    else {
-        if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
-            move = UCI::square(to);
-        }
-        else {
-            move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + UCI::square(to);
-        }
-    }
-
-    if (type_of(m) == PROMOTION) {
-        move += " PNBRQK"[promotion_type(m)];
-    }
-
-    if (pos.gives_check(m)) {
-        if (leadsToTerminal) {
-            move += "#";
-        }
-        else {
-            move += "+";
-        }
-    }
-    return move;
 }

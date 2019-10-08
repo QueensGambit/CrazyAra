@@ -43,7 +43,7 @@ void TrainDataExporter::export_best_move_q(const EvalInfo &eval, size_t idxOffse
     z5::multiarray::writeSubarray<float>(dbestMoveQ, qArray, offsetValue.begin());
 }
 
-void TrainDataExporter::export_game_result(const Result result, size_t idxOffset, size_t plys)
+void TrainDataExporter::export_game_result(const int16_t result, size_t idxOffset, size_t plys)
 {
     // value
     // write value to roi

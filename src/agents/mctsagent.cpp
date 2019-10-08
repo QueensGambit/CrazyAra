@@ -231,7 +231,7 @@ void MCTSAgent::clear_game_history()
 #ifdef USE_RL
 void MCTSAgent::export_game_results()
 {
-    Result result = gameNodes.back()->get_pos()->side_to_move() == WHITE ? LOST : WON;
+    int16_t result = gameNodes.back()->get_pos()->side_to_move() == WHITE ? LOSS : WIN;
     // we set one less than actual plys because the last terminal node isn't part of the training data
     exporter.export_game_result(result, 0, gameNodes.size()-1);
 }

@@ -119,8 +119,7 @@ public:
      * @param idxOffset Starting index where to start assigning values
      * @param plys Number of training samples (halfmoves/plys) for the current match
      */
-    void export_game_result(const Result result, size_t idxOffset, size_t plys);
-
+    void export_game_result(const int16_t result, size_t idxOffset, size_t plys);
 };
 
 #endif // TRAINDATAEXPORTER_H
