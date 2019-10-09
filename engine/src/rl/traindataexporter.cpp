@@ -140,7 +140,7 @@ void TrainDataExporter::export_start_idx()
 
 void TrainDataExporter::open_dataset_from_file(const z5::filesystem::handle::File& file)
 {
-    dStartIndex = z5::openDataset(file,"starting_idx");
+    dStartIndex = z5::openDataset(file,"start_indices");
     dx = z5::openDataset(file,"x");
     dValue = z5::openDataset(file,"y_value");
     dPolicy = z5::openDataset(file,"y_policy");
@@ -167,7 +167,7 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     // create a new zarr dataset
     std::vector<size_t> shape = { chunckSize*numberChunks, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
     std::vector<size_t> chunks = { chunckSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
-    dStartIndex = z5::createDataset(file, "starting_idx", "int32", { chunckSize*numberChunks }, { chunckSize });
+    dStartIndex = z5::createDataset(file, "start_indices", "int32", { chunckSize*numberChunks }, { chunckSize });
     dx = z5::createDataset(file, "x", "int16", shape, chunks);
     dValue = z5::createDataset(file, "y_value", "int16", { chunckSize*numberChunks }, { chunckSize });
     dPolicy = z5::createDataset(file, "y_policy", "float32", { chunckSize*numberChunks, NB_LABELS }, { chunckSize, NB_LABELS });
