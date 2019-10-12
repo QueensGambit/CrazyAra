@@ -86,7 +86,7 @@ class RLLoop:
                         stdin=PIPE,
                         stdout=PIPE,
                         stderr=PIPE,
-                        shell=True)
+                        shell=False)
         self.nb_games_to_update = nb_games_to_update
 
     def initialize(self):
