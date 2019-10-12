@@ -85,7 +85,8 @@ class RLLoop:
         self.proc = Popen([crazyara_binary_path],
                         stdin=PIPE,
                         stdout=PIPE,
-                        stderr=PIPE)
+                        stderr=PIPE,
+                        shell=True)
         self.nb_games_to_update = nb_games_to_update
 
     def initialize(self):
