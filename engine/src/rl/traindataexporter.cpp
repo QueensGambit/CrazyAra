@@ -161,7 +161,6 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     const bool createAsZarr = true;
     z5::createFile(file, createAsZarr);
 
-    z5::createGroup(file, "group");
     const size_t numberChunks = 8;
 
     // create a new zarr dataset
