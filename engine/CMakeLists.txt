@@ -32,14 +32,14 @@ else()
 endif()
 
 file(GLOB source_files
-    "lib/Stockfish/src/syzygy/*.h"
-    "lib/Stockfish/src/syzygy/*.cpp"
+    "3rdparty/Stockfish/src/syzygy/*.h"
+    "3rdparty/Stockfish/src/syzygy/*.cpp"
     "*.h"
     "*.cpp"
     "*.md"
-    "lib/Stockfish/src/*.h"
-    "lib/Stockfish/src/*.cpp"
-    "lib/catch-2.91/*.hpp"
+    "3rdparty/Stockfish/src/*.h"
+    "3rdparty/Stockfish/src/*.cpp"
+    "3rdparty/catch-2.91/*.hpp"
     "libs/Eigen/*h"
     "libs/Eigen/*.cpp"
     "src/*.h"
@@ -75,12 +75,12 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
     )
 
 find_package (Threads)
-include_directories("lib/Stockfish/src")
-include_directories("lib/catch-2.9.1")
+include_directories("3rdparty/Stockfish/src")
+include_directories("3rdparty/catch-2.9.1")
 
 # incude dirent library seperately because it's missing in the stdlib
 if(MSVC OR MSYS OR MINGW)
-    include_directories("lib/dirent")
+    include_directories("3rdparty/dirent")
 endif()
 
 include_directories("src/domain/crazyhouse")
@@ -124,7 +124,7 @@ if (USE_RL)
     include_directories($ENV{Z5_PATH}include)
     # include filesystem (needed for z5)
     target_link_libraries(${PROJECT_NAME} stdc++fs)
-    include_directories("lib/json-3.7.0")
+    include_directories("3rdparty/json-3.7.0")
     include_directories($ENV{XTL_PATH}include)
     include_directories($ENV{XTENSOR_PATH}include)
 endif()
