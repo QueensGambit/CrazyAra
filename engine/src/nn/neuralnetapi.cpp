@@ -36,7 +36,7 @@ vector<string> get_directory_files(const string& dir) {
     shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
     struct dirent *dirent_ptr;
     if (!directory_ptr) {
-		cout << "info string Error opening : " << strerror(errno) << dir << endl;
+        cout << "info string Error opening : " << strerror(errno) << " " << dir << endl;
         return files;
     }
 
