@@ -44,7 +44,7 @@ def load_pgn_dataset(
     :param normalize: True if the inputs shall be normalized to 0-1
     ! Note this only supported for hist-length=1 at the moment
     :return: numpy-arrays:
-            starting_idx - defines the index where each game starts
+            start_indices - defines the index where each game starts
             x - the board representation for all games
             y_value - the game outcome (-1,0,1) for each board position
             y_policy - the movement policy for the next_move played
@@ -76,7 +76,7 @@ def load_pgn_dataset(
         logging.debug("")
 
     pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
-    starting_idx, x, y_value, y_policy, plys_to_end = get_numpy_arrays(pgn_dataset)  # Get the data
+    start_indices, x, y_value, y_policy, plys_to_end = get_numpy_arrays(pgn_dataset)  # Get the data
 
     if print_statistics:
         logging.info("STATISTICS:")
@@ -95,4 +95,4 @@ def load_pgn_dataset(
         y_policy = y_policy.astype(np.float32)
         # apply rescaling using a predefined scaling constant (this makes use of vectorized operations)
         x *= MATRIX_NORMALIZER
-    return starting_idx, x, y_value, y_policy, plys_to_end, pgn_dataset
+    return start_indices, x, y_value, y_policy, plys_to_end, pgn_dataset

@@ -116,12 +116,12 @@ def get_numpy_arrays(pgn_dataset):
              This can be used to apply discounting
     """
     # Get the data
-    starting_idx = np.array(pgn_dataset["start_indices"])
+    start_indices = np.array(pgn_dataset["start_indices"])
     x = np.array(pgn_dataset["x"])
     y_value = np.array(pgn_dataset["y_value"])
     y_policy = np.array(pgn_dataset["y_policy"])
     plys_to_end = np.array(pgn_dataset["plys_to_end"])
-    return starting_idx, x, y_value, y_policy, plys_to_end
+    return start_indices, x, y_value, y_policy, plys_to_end
 
 
 def normalize_input_planes(x):
