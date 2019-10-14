@@ -8,6 +8,7 @@ Utility functions which are use by the converter scripts
 """
 
 import copy
+import logging
 import numpy as np
 from DeepCrazyhouse.src.domain.variants.constants import (
     BOARD_HEIGHT,
@@ -120,7 +121,11 @@ def get_numpy_arrays(pgn_dataset):
     x = np.array(pgn_dataset["x"])
     y_value = np.array(pgn_dataset["y_value"])
     y_policy = np.array(pgn_dataset["y_policy"])
-    plys_to_end = np.array(pgn_dataset["plys_to_end"])
+    try:
+        plys_to_end = np.array(pgn_dataset["plys_to_end"])
+    except KeyError:
+        logging.debug('"plys_to_end" key was not found in data set. Setting entry to "None" instead.')
+        plys_to_end = None
     return start_indices, x, y_value, y_policy, plys_to_end
 
 
