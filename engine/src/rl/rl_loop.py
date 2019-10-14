@@ -12,8 +12,14 @@ import datetime
 from time import time
 from numcodecs import Blosc
 import zarr
+import time
 import os
 import logging
+
+from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
+from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
+from DeepCrazyhouse.src.domain.neural_net.architectures.rise_mobile_symbol import rise_mobile_symbol
+from DeepCrazyhouse.configs.main_config import main_config
 
 
 def read_output(proc):
@@ -25,7 +31,7 @@ def read_output(proc):
     while True:
         line = proc.stdout.readline()
         print(line)
-        if line == b'\n' or line == b"readyok\n":
+        if line == b'\n' or line == b"readyok\n" or line == b'':
             break
 
 
@@ -75,18 +81,19 @@ class RLLoop:
     This class uses the C++ binary to generate games and updates the network from the newly acquired games
     """
 
-    def __init__(self, crazyara_binary_path='./CrazyAra', nb_games_to_update=1024):
+    def __init__(self, crazyara_binary_dir='./', nb_games_to_update=1024):
         """
         Constructor
-        :param crazyara_binary_path: Filepath to the C++ binary
+        :param crazyara_binary_dir: Directory to the C++ binary
         :param nb_games_to_update: Number of games to generate before the neural network will be updated
         """
 
-        self.proc = Popen([crazyara_binary_path],
-                        stdin=PIPE,
-                        stdout=PIPE,
-                        stderr=PIPE,
-                        shell=False)
+        self.crazyara_binary_dir = crazyara_binary_dir
+        self.proc = Popen([crazyara_binary_dir+'CrazyAra'],
+                          stdin=PIPE,
+                          stdout=PIPE,
+                          stderr=PIPE,
+                          shell=False)
         self.nb_games_to_update = nb_games_to_update
 
     def initialize(self):
@@ -97,12 +104,22 @@ class RLLoop:
         # initialize
 
         # CrazyAra header
+        time.sleep(0.1)
         read_output(self.proc)
+        time.sleep(0.1)
         read_output(self.proc)
+        time.sleep(1)
+
+        self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir, 'utf-8'))
+        self.proc.stdin.flush()
+        time.sleep(0.1)
+        read_output(self.proc)
+        time.sleep(0.1)
 
         # load network
         self.proc.stdin.write(b'isready\n')
         self.proc.stdin.flush()
+        time.sleep(1)
         read_output(self.proc)
 
     def generate_games(self):
@@ -115,7 +132,24 @@ class RLLoop:
         read_output(self.proc)
 
 
-def __main__():
-    rl_loop = RLLoop()
+def update_network():
+    """
+    Updates the neural network with the newly acquired games from the replay memory
+    :return:
+    """
+    cwd = os.getcwd() + '/'
+    logging.info("Current working directory %s" % cwd)
+    data = zarr.load('/home/queensgambit/Desktop/CrazyAra/engine/build-CrazyAra-Release/data.zarr')
+    compress_zarr_dataset(data, './export/')
+    main_config['planes_train_dir'] = cwd + "export/"
+    starting_idx, x, y_value, y_policy, pgn_dataset, _ = load_pgn_dataset()
+    print('len(starting_idx):', len(starting_idx))
+
+
+if __name__ == "__main__":
+    enable_color_logging()
+    rl_loop = RLLoop(crazyara_binary_dir="/home/queensgambit/Desktop/CrazyAra/engine/build-CrazyAra-Release/",
+                     nb_games_to_update=2)
     rl_loop.initialize()
     rl_loop.generate_games()
+    update_network()
