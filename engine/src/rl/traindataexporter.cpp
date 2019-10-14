@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#ifdef USE_RL
 #include "traindataexporter.h"
 #include <inttypes.h>
 
@@ -174,3 +175,4 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
 
     export_start_idx();
 }
+#endif

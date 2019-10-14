@@ -28,6 +28,7 @@
 #ifndef TRAINDATAEXPORTER_H
 #define TRAINDATAEXPORTER_H
 
+#ifdef USE_RL
 #include <string>
 
 #include "nlohmann/json.hpp"
@@ -121,5 +122,6 @@ public:
      */
     void export_game_result(const int16_t result, size_t idxOffset, size_t plys);
 };
+#endif
 
 #endif // TRAINDATAEXPORTER_H

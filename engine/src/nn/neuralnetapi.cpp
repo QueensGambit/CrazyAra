@@ -152,7 +152,7 @@ void NeuralNetAPI::load_parameters(const string& paramterFilePath) {
       contrib::InitTensorRTParams(net, &intermediate_args_map, &intermediate_aux_map);
       ConvertParamMapToTargetContext(intermediate_args_map, &argsMap, globalCtx);
       ConvertParamMapToTargetContext(intermediate_aux_map, &auxMap, globalCtx);
-      #endif TENSORRT
+      #endif
     } else {
       SplitParamMap(parameters, &argsMap, &auxMap, globalCtx);
     }

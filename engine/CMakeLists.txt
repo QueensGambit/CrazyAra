@@ -40,8 +40,6 @@ file(GLOB source_files
     "3rdparty/Stockfish/src/*.h"
     "3rdparty/Stockfish/src/*.cpp"
     "3rdparty/catch-2.91/*.hpp"
-    "libs/Eigen/*h"
-    "libs/Eigen/*.cpp"
     "src/*.h"
     "src/*.cpp"
     "src/tests/*.h"
