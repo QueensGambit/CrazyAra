@@ -115,18 +115,37 @@ size_t Board::total_move_cout()
     return st->pliesFromNull / 2 + 1;
 }
 
-std::string pgnMove(Move m, bool chess960, const Board& pos, bool leadsToTerminal)
+std::string pgnMove(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToTerminal)
 {
     std::string move;
 
-    Square from = from_sq(m);
-    Square to = to_sq(m);
+    const Square from = from_sq(m);
+    const Square to = to_sq(m);
 
     if (m == MOVE_NONE)
         return "(none)";
 
     if (m == MOVE_NULL)
         return "0000";
+
+    bool rank_ambiguous;
+    bool file_ambiguous;
+
+    string ambiguous = "";
+    if (is_pgn_move_ambiguous(m, pos, legalMoves, file_ambiguous, rank_ambiguous)) {
+        if (file_ambiguous && rank_ambiguous) {
+            ambiguous = UCI::square(from);
+        }
+        else if (file_ambiguous) {
+            ambiguous = char('1' + rank_of(from));
+        }
+        else {
+            ambiguous = char('a' + file_of(from));
+        }
+    }
+    else {
+        ambiguous = "";
+    }
 
     if (type_of(m) == CASTLING && !chess960) {
         if (file_of(to) == FILE_G || file_of(to) == FILE_H) {
@@ -138,40 +157,64 @@ std::string pgnMove(Move m, bool chess960, const Board& pos, bool leadsToTermina
     }
     else if (pos.capture(m)) {
         if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
-            move = std::string{"abcdefgh "[file_of(from)]} + "x";
+            move = std::string{"abcdefgh "[file_of(from)]} + ambiguous + "x";
+        }
+        else {
+            move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + ambiguous + "x";
+        }
+        move += UCI::square(to);
     }
-    else {
-        move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + "x";
-}
-move += UCI::square(to);
-}
 
 #ifdef CRAZYHOUSE
-else if (type_of(m) == DROP) {
-    move = std::string{" PNBRQK  PNBRQK "[dropped_piece(m)], '@'} + UCI::square(to);
-}
+    else if (type_of(m) == DROP) {
+        move = std::string{" PNBRQK  PNBRQK "[dropped_piece(m)], '@'} + UCI::square(to);
+    }
 #endif
-else {
-if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
-    move = UCI::square(to);
-}
-else {
-move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + UCI::square(to);
-}
-}
-
-if (type_of(m) == PROMOTION) {
-    move += " PNBRQK"[promotion_type(m)];
-}
-
-if (pos.gives_check(m)) {
-    if (leadsToTerminal) {
-        move += "#";
-    }
     else {
-        move += "+";
+        if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
+            move = UCI::square(to);
+        }
+        else {
+            move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + ambiguous + UCI::square(to);
+        }
     }
-}
-return move;
+
+    if (type_of(m) == PROMOTION) {
+        move += " PNBRQK"[promotion_type(m)];
+    }
+
+    if (pos.gives_check(m)) {
+        if (leadsToTerminal) {
+            move += "#";
+        }
+        else {
+            move += "+";
+        }
+    }
+    return move;
 }
 
+
+bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &legalMoves, bool &file_ambiguous, bool &rank_ambiguous)
+{
+    bool ambiguous = false;
+    file_ambiguous = false;
+    rank_ambiguous = false;
+    const Square from = from_sq(m);
+    const Square to = to_sq(m);
+
+    for (Move move: legalMoves) {
+        const Square cur_from = from_sq(move);
+        const Square cur_to = to_sq(move);
+        if (to == cur_to && from != cur_from && pos.piece_on(from) == pos.piece_on(cur_from)) {
+            ambiguous = true;
+            if (file_of(from) == file_of(cur_from)) {
+                file_ambiguous = true;
+            }
+            if (rank_of(from) == rank_of(cur_from)) {
+                rank_ambiguous = true;
+            }
+        }
+    }
+    return ambiguous;
+}

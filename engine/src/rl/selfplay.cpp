@@ -68,6 +68,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
         gamePGN.gameMoves.push_back(pgnMove(evalInfo.bestMove,
                                             false,
                                             *mctsAgent->get_root_node()->get_pos(),
+                                            evalInfo.legalMoves,
                                             isTerminal));
     }
     while(!isTerminal);

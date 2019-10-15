@@ -15,7 +15,7 @@ import zarr
 import os
 import logging
 
-from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
+# from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.main_config import main_config
 
@@ -81,7 +81,7 @@ class RLLoop:
     This class uses the C++ binary to generate games and updates the network from the newly acquired games
     """
 
-    def __init__(self, crazyara_binary_dir='./', nb_games_to_update=1024):
+    def __init__(self, crazyara_binary_dir="./", nb_games_to_update=1024):
         """
         Constructor
         :param crazyara_binary_dir: Directory to the C++ binary
@@ -89,7 +89,7 @@ class RLLoop:
         """
 
         self.crazyara_binary_dir = crazyara_binary_dir
-        self.proc = Popen([crazyara_binary_dir+'CrazyAra'],
+        self.proc = Popen([crazyara_binary_dir+"CrazyAra"],
                           stdin=PIPE,
                           stdout=PIPE,
                           stderr=PIPE,
@@ -104,27 +104,16 @@ class RLLoop:
         # initialize
 
         # CrazyAra header
-        time.sleep(0.1)
         read_output(self.proc)
-        time.sleep(0.1)
         read_output(self.proc)
-        time.sleep(1)
 
         # self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
         #                                                                            'utf-8'))
-        # self.proc.stdin.flush()
-        # time.sleep(0.1)
-        # read_output(self.proc)
-        # time.sleep(0.1)
         set_uci_param(self.proc, "Nodes", 300)
 
-        # read_output(self.proc)
-        # time.sleep(1)
-
         # load network
-        self.proc.stdin.write(b'isready\n')
+        self.proc.stdin.write(b"isready\n")
         self.proc.stdin.flush()
-        # time.sleep(1)
         read_output(self.proc)
 
     def generate_games(self):
@@ -145,8 +134,8 @@ def set_uci_param(proc, name, value):
     :param value: Value for the UCI-parameter
     :return:
     """
-    if type(value) == int:
-        proc.stdin.write(b'setoption name %b value %d\n' % (bytes(name, encoding="ascii"), 300))
+    if isinstance(value, int):
+        proc.stdin.write(b"setoption name %b value %d\n" % (bytes(name, encoding="ascii"), 300))
     else:
         raise NotImplementedError(f"To set uci-parameters of type {type(value)} has not been implemented yet.")
     proc.stdin.flush()
@@ -162,8 +151,8 @@ def update_network():
     data = zarr.load('/home/queensgambit/Desktop/CrazyAra/engine/build-CrazyAra-Release/data.zarr')
     compress_zarr_dataset(data, './export/')
     main_config['planes_train_dir'] = cwd + "export/"
-    starting_idx, x, y_value, y_policy, _, _ = load_pgn_dataset()
-    print('len(starting_idx):', len(starting_idx))
+    # starting_idx, x, y_value, y_policy, _, _ = load_pgn_dataset()
+    # print('len(starting_idx):', len(starting_idx))
 
 
 if __name__ == "__main__":
