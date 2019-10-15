@@ -9,16 +9,14 @@ Main reinforcement learning for generating games and train the neural network.
 
 from subprocess import PIPE, Popen
 import datetime
-from time import time
+import time
 from numcodecs import Blosc
 import zarr
-import time
 import os
 import logging
 
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
-from DeepCrazyhouse.src.domain.neural_net.architectures.rise_mobile_symbol import rise_mobile_symbol
 from DeepCrazyhouse.configs.main_config import main_config
 
 
@@ -30,7 +28,9 @@ def read_output(proc):
     """
     while True:
         line = proc.stdout.readline()
+        # error = proc.stderr.readline()
         print(line)
+        # print(error)
         if line == b'\n' or line == b"readyok\n" or line == b'':
             break
 
@@ -110,16 +110,21 @@ class RLLoop:
         read_output(self.proc)
         time.sleep(1)
 
-        self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir, 'utf-8'))
-        self.proc.stdin.flush()
-        time.sleep(0.1)
-        read_output(self.proc)
-        time.sleep(0.1)
+        # self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
+        #                                                                            'utf-8'))
+        # self.proc.stdin.flush()
+        # time.sleep(0.1)
+        # read_output(self.proc)
+        # time.sleep(0.1)
+        set_uci_param(self.proc, "Nodes", 300)
+
+        # read_output(self.proc)
+        # time.sleep(1)
 
         # load network
         self.proc.stdin.write(b'isready\n')
         self.proc.stdin.flush()
-        time.sleep(1)
+        # time.sleep(1)
         read_output(self.proc)
 
     def generate_games(self):
@@ -132,6 +137,21 @@ class RLLoop:
         read_output(self.proc)
 
 
+def set_uci_param(proc, name, value):
+    """
+    Sets the value for a given UCI-parameter in the binary.
+    :param proc: Process to set the parameter for
+    :param name: Name of the UCI-parameter
+    :param value: Value for the UCI-parameter
+    :return:
+    """
+    if type(value) == int:
+        proc.stdin.write(b'setoption name %b value %d\n' % (bytes(name, encoding="ascii"), 300))
+    else:
+        raise NotImplementedError(f"To set uci-parameters of type {type(value)} has not been implemented yet.")
+    proc.stdin.flush()
+
+
 def update_network():
     """
     Updates the neural network with the newly acquired games from the replay memory
@@ -142,14 +162,14 @@ def update_network():
     data = zarr.load('/home/queensgambit/Desktop/CrazyAra/engine/build-CrazyAra-Release/data.zarr')
     compress_zarr_dataset(data, './export/')
     main_config['planes_train_dir'] = cwd + "export/"
-    starting_idx, x, y_value, y_policy, pgn_dataset, _ = load_pgn_dataset()
+    starting_idx, x, y_value, y_policy, _, _ = load_pgn_dataset()
     print('len(starting_idx):', len(starting_idx))
 
 
 if __name__ == "__main__":
     enable_color_logging()
-    rl_loop = RLLoop(crazyara_binary_dir="/home/queensgambit/Desktop/CrazyAra/engine/build-CrazyAra-Release/",
+    rl_loop = RLLoop(crazyara_binary_dir="./",
                      nb_games_to_update=2)
     rl_loop.initialize()
     rl_loop.generate_games()
-    update_network()
+    # update_network()
