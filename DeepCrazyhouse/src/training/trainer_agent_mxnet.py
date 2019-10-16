@@ -78,6 +78,25 @@ def reset_metrics(metrics):
         metric.reset()
 
 
+def adjust_loss_weighting(symbol, grad_scale_value=1.0, grad_scale_policy=1.0,
+                          value_output_name="value_out", policy_output_name="policy_out"):
+    """
+    Adjusts the loss weighting for a given MXNet symbol.
+    :param symbol: MXNet symbol with both a value and policy head
+    :param grad_scale_value: Scaling factor for the value loss
+    :param grad_scale_policy: Scaling factor for the policy loss
+    :param value_output_name: Output name for the value output after applying tanh activation
+    :param policy_output_name: Output name for the policy output without applying softmax activation on it
+    :return: MXNet symbol with adjusted policy and value loss
+    """
+    value_out = symbol.get_internals()[value_output_name]
+    policy_out = symbol.get_internals()[policy_output_name]
+    value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
+    policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
+    # group value_out and policy_out together
+    return mx.symbol.Group([value_out, policy_out])
+
+
 class TrainerAgentMXNET:  # Probably needs refactoring
     """Main training loop"""   
     # x_train = yv_train = yp_train = None
