@@ -22,10 +22,9 @@ from multiprocessing import cpu_count
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, adjust_loss_weighting
+from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, adjust_loss_weighting, prepare_policy
 from DeepCrazyhouse.src.training.trainer_agent import acc_sign
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import ConstantSchedule, MomentumSchedule
-from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 
 
 def read_output(proc):
@@ -43,13 +42,15 @@ def read_output(proc):
             break
 
 
-def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5):
+def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, end_idx=0):
     """
     Loads in a zarr data set and exports it with a given compression type and level
-    :param data:
-    :param export_dir:
-    :param compression:
-    :param clevel:
+    :param data: Zarr data set which will be compressed
+    :param export_dir: Export directory for the compressed data set
+    :param compression: Compression type
+    :param clevel: Compression level
+    :param end_idx: If end_idx != 0 the data set will be exported to the specified index,
+    excluding the sample at end_idx (e.g. end_idx = len(x) will export it fully)
     :return:
     """
     # include current timestamp in dataset export file
@@ -67,7 +68,11 @@ def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5):
     zarr_file = zarr.group(store=store, overwrite=True)
 
     for key in data.keys():
-        x = data[key]
+        if end_idx == 0:
+            x = data[key]
+        else:
+            x = data[key][:end_idx]
+
         array_shape = list(x.shape)
         array_shape[0] = 128
         # export array
@@ -135,6 +140,17 @@ class RLLoop:
         self.proc.stdin.flush()
         read_output(self.proc)
 
+    def compress_dataset(self):
+        """
+        Loads the uncompressed data file, select all sample until the index specified in "startIdx.txt",
+        compresses it and exports it
+        :return:
+        """
+        with open("startIdx.txt", "r") as file:
+            end_idx = int(file.readline())
+        data = zarr.load(self.crazyara_binary_dir + "data.zarr")
+        compress_zarr_dataset(data, "./export/", end_idx=end_idx)
+
     def update_network(self):
         """
         Updates the neural network with the newly acquired games from the replay memory
@@ -142,8 +158,6 @@ class RLLoop:
         """
         cwd = os.getcwd() + '/'
         logging.info("Current working directory %s" % cwd)
-        data = zarr.load(self.crazyara_binary_dir + "data.zarr")
-        compress_zarr_dataset(data, "./export/")
         main_config['planes_train_dir'] = cwd + "export/"
         starting_idx, x, y_value, y_policy, _, _ = load_pgn_dataset()
 
@@ -198,9 +212,13 @@ class RLLoop:
         nb_epochs = 1  # 7 # define how many epoches the network will be trained
 
         select_policy_from_plane = True  # Boolean if potential legal moves will be selected from final policy output
+        # Boolean if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
+        sparse_policy_label = False
         # use_mxnet_style = True  # Decide between mxnet and gluon style for training
         # Fixing the random seed
         mx.random.seed(seed)
+
+        y_policy = prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label)
 
         symbol = mx.sym.load("model/" + symbol_file)
         symbol = adjust_loss_weighting(symbol, val_loss_factor, policy_loss_factor,
@@ -211,11 +229,10 @@ class RLLoop:
 
         if select_policy_from_plane:
             val_iter = mx.io.NDArrayIter({'data': x}, {'value_label': y_value,
-                                                           'policy_label': np.array(FLAT_PLANE_IDX)[
-                                                               y_policy.argmax(axis=1)]}, batch_size)
+                                                       'policy_label': y_policy}, batch_size)
         else:
             val_iter = mx.io.NDArrayIter({'data': x},
-                                         {'value_label': y_value, 'policy_label': y_policy.argmax(axis=1)}, batch_size)
+                                         {'value_label': y_value, 'policy_label': y_policy}, batch_size)
 
         nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
         nb_it_per_epoch = (len(x) * nb_parts) // batch_size  # calculate how many iterations per epoch exist
@@ -232,12 +249,12 @@ class RLLoop:
 
         metrics = [
             mx.metric.MSE(name='value_loss', output_names=['value_output'], label_names=['value_label']),
-            mx.metric.CrossEntropy(name='policy_loss', output_names=['policy_output'],
-                                   label_names=['policy_label']),
+            # mx.metric.CrossEntropy(name='policy_loss', output_names=['policy_output'],
+            #                        label_names=['policy_label']),
             mx.metric.create(acc_sign, name='value_acc_sign', output_names=['value_output'],
                              label_names=['value_label']),
-            mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
-                               label_names=['policy_label'])
+            # mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
+            #                    label_names=['policy_label'])
         ]
 
         train_agent = TrainerAgentMXNET(model, symbol, val_iter, nb_parts, lr_schedule, momentum_schedule, total_it,
@@ -249,7 +266,8 @@ class RLLoop:
                                         use_spike_recovery=use_spike_recovery, max_spikes=max_spikes,
                                         spike_thresh=spike_thresh, seed=seed,
                                         val_loss_factor=val_loss_factor, policy_loss_factor=policy_loss_factor,
-                                        select_policy_from_plane=select_policy_from_plane, discount=discount)
+                                        select_policy_from_plane=select_policy_from_plane, discount=discount,
+                                        sparse_policy_label=sparse_policy_label)
         train_agent.train(cur_it)
 
 
@@ -274,4 +292,5 @@ if __name__ == "__main__":
                      nb_games_to_update=2)
     #rl_loop.initialize()
     #rl_loop.generate_games()
+    #rl_loop.compress_dataset()
     rl_loop.update_network()
