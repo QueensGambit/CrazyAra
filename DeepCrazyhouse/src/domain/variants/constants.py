@@ -62,6 +62,10 @@ NB_CHANNELS_CONST = 11
 NB_CHANNELS_CONST_CZ = 7
 NB_CHANNELS_VARIANTS = 9
 
+# Define the board size
+BOARD_WIDTH = 8
+BOARD_HEIGHT = 8
+
 # the number of channels used for the policy map representation
 NB_POLICY_MAP_CHANNELS = None
 NB_CHANNELS_FULL = None
@@ -74,13 +78,11 @@ elif main_config['policy_version'] == 2:
     NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS
 else:
     raise Exception('unsupported "policy_version" specification in main_config.py')
+# number of labels of the corresponding flattened policy map. Most of these entries are unreachable (always 0)
+NB_LABELS_POLICY_MAP = NB_POLICY_MAP_CHANNELS * BOARD_HEIGHT * BOARD_WIDTH
 
 # define the number of different pieces one can have in his pocket (the king is excluded)
 POCKETS_SIZE_PIECE_TYPE = 5
-
-# Define the board size
-BOARD_WIDTH = 8
-BOARD_HEIGHT = 8
 
 #  (this used for normalization the input planes and setting an appropriate integer representation (e.g. int16)
 # use a constant matrix for normalization to allow broad cast operations

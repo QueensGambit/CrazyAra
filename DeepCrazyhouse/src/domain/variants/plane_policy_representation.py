@@ -4840,6 +4840,7 @@ elif main_config['policy_version'] == 2:
     FLAT_PLANE_IDX = FLAT_PLANE_IDX_V2
 else:
     raise Exception('unsupported "policy_version" specification in main_config.py')
+FLAT_PLANE_IDX = np.array(FLAT_PLANE_IDX)
 
 
 if __name__ == "__main__":

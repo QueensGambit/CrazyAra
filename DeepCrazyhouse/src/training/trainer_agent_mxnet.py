@@ -16,7 +16,7 @@ from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-
+from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
 
 def acc_sign(y_true, y_pred):
     """
@@ -97,6 +97,27 @@ def adjust_loss_weighting(symbol, grad_scale_value=1.0, grad_scale_policy=1.0,
     return mx.symbol.Group([value_out, policy_out])
 
 
+def prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label):
+    """
+    Modifies the layout of the policy vector in place according to the given definitions
+    :param y_policy: Target policy vector
+    :param select_policy_from_plane: If policy map representation shall be applied
+    :param sparse_policy_label: True, if the labels are sparse (one-hot-encoded)
+    :return: modified y_policy
+    """
+    if sparse_policy_label:
+        y_policy = y_policy.argmax(axis=1)
+
+        if select_policy_from_plane:
+            y_policy[:] = FLAT_PLANE_IDX[y_policy]
+    else:
+        if select_policy_from_plane:
+            tmp = np.zeros((len(y_policy), NB_LABELS_POLICY_MAP))
+            tmp[:, FLAT_PLANE_IDX] = y_policy[:, :]
+            y_policy = tmp
+    return y_policy
+
+
 class TrainerAgentMXNET:  # Probably needs refactoring
     """Main training loop"""   
     # x_train = yv_train = yp_train = None
@@ -130,6 +151,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         policy_loss_factor=0.99,
         select_policy_from_plane=True,
         discount=1,  # 0.995,
+        sparse_policy_label=True,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -161,6 +183,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self._policy_loss_factor = policy_loss_factor
         self.x_train = self.yv_train = self.yp_train = None
         self.discount = discount
+        # defines if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
+        self.sparse_policy_label = sparse_policy_label
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
@@ -176,10 +200,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
         # decides if the policy indices shall be selected directly from spatial feature maps without dense layer
         self.select_policy_from_plane = select_policy_from_plane
-
-        if self.select_policy_from_plane:
-            # create a numpy instance for FLAT_PLANE_IDX
-            self.FLAT_PLANE_IDX = np.array(FLAT_PLANE_IDX)
 
         self.batch_end_callbacks = [self.batch_callback]
 
@@ -261,15 +281,13 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                     self.x_train = fill_up_batch(self.x_train, self._batch_size)
                     self.yv_train = fill_up_batch(self.yv_train, self._batch_size)
                     self.yp_train = fill_up_batch(self.yp_train, self._batch_size)
-                    plys_to_end = fill_up_batch(plys_to_end, self._batch_size)
+                    if plys_to_end is not None:
+                        plys_to_end = fill_up_batch(plys_to_end, self._batch_size)
 
                 if self.discount != 1:
                     self.yv_train *= self.discount**plys_to_end
 
-                self.yp_train = self.yp_train.argmax(axis=1)
-
-                if self.select_policy_from_plane:
-                    self.yp_train[:] = self.FLAT_PLANE_IDX[self.yp_train]
+                self.yp_train = prepare_policy(self.yp_train, self.select_policy_from_plane, self.sparse_policy_label)
 
                 self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
                                                      {'value_label': self.yv_train, 'policy_label': self.yp_train},
