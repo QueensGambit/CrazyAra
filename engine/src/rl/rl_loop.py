@@ -23,7 +23,7 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, adjust_loss_weighting, prepare_policy
-from DeepCrazyhouse.src.training.trainer_agent import acc_sign
+from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import ConstantSchedule, MomentumSchedule
 
 
@@ -249,12 +249,12 @@ class RLLoop:
 
         metrics = [
             mx.metric.MSE(name='value_loss', output_names=['value_output'], label_names=['value_label']),
-            # mx.metric.CrossEntropy(name='policy_loss', output_names=['policy_output'],
-            #                        label_names=['policy_label']),
+            mx.metric.create(cross_entropy, name='policy_loss', output_names=['policy_output'],
+                             label_names=['policy_label']),
             mx.metric.create(acc_sign, name='value_acc_sign', output_names=['value_output'],
                              label_names=['value_label']),
-            # mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
-            #                    label_names=['policy_label'])
+            mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
+                               label_names=['policy_label'])
         ]
 
         train_agent = TrainerAgentMXNET(model, symbol, val_iter, nb_parts, lr_schedule, momentum_schedule, total_it,

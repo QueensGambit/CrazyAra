@@ -29,6 +29,17 @@ def acc_sign(y_true, y_pred):
     return (np.sign(y_pred).flatten() == y_true).sum() / len(y_true)
 
 
+def cross_entropy(y_true, y_pred, eps=1e-12):
+    """
+    Cross entropy metric with support for distributions (non-sparse/non-one-hot-encoded targets)
+    :param y_true: Ground truth value, which can be non-hot-encoded
+    :param y_pred: Predicted values
+    :param eps: Epsilon value to avoid taking log of 0
+    :return:
+    """
+    return -np.sum(y_true * np.log(y_pred+eps))
+
+
 def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(), select_policy_from_plane=False):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
