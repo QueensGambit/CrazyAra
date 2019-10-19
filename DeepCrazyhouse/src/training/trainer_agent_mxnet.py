@@ -18,6 +18,7 @@ from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
 
+
 def acc_sign(y_true, y_pred):
     """
     Custom metric which is used to predict the winner of a game
@@ -38,7 +39,7 @@ def fill_up_batch(x, batch_size):
     return np.repeat(x, batch_size//len(x)+1, axis=0)[:batch_size]
 
 
-def evaluate_metrics(metrics, data_iterator, model): #, nb_batches=None, ctx=mx.gpu(), select_policy_from_plane=False):
+def evaluate_metrics(metrics, data_iterator, model):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
     The metric results are returned as a dictionary object.

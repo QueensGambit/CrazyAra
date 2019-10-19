@@ -80,13 +80,19 @@ def load_pgn_dataset(
 
     if print_statistics:
         logging.info("STATISTICS:")
-        for member in pgn_dataset["statistics"]:
-            print(member, list(pgn_dataset["statistics"][member]))
+        try:
+            for member in pgn_dataset["statistics"]:
+                print(member, list(pgn_dataset["statistics"][member]))
+        except KeyError:
+            logging.warning("no statistics found")
 
     if print_parameters:
         logging.info("PARAMETERS:")
-        for member in pgn_dataset["parameters"]:
-            print(member, list(pgn_dataset["parameters"][member]))
+        try:
+            for member in pgn_dataset["parameters"]:
+                print(member, list(pgn_dataset["parameters"][member]))
+        except KeyError:
+            logging.warning("no parameters found")
 
     if normalize:
         x = x.astype(np.float32)

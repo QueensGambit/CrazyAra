@@ -162,18 +162,19 @@ class RLLoop:
         starting_idx, x, y_value, y_policy, _, _ = load_pgn_dataset()
 
         # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
-        ctx = mx.cpu() # mx.gpu(0)
-        # set a specific seed value for reproducability
+        ctx = mx.cpu()  # mx.gpu(0)
+        # set a specific seed value for reproducibility
         seed = 7  # 42
 
         export_weights = True
         log_metrics_to_tensorboard = True
         export_grad_histograms = True
-        div_factor = 4  # div factor is a constant which can be used to reduce the batch size and learning rate respectively
-        # use a value smaller 1 if you enconter memory allocation errors
+        #  div factor is a constant which can be used to reduce the batch size and learning rate respectively
+        div_factor = 4
+        # use a value smaller 1 if you encounter memory allocation errors
 
         # batch_steps = 1000 means for example that every 1000 batches the validation set gets processed
-        batch_steps = 100 * div_factor  # this defines how often a new checkpoint will be saved and the metrics evaluated
+        batch_steps = 1 * div_factor  # this defines how often a new checkpoint will be saved and the metrics evaluated
         # k_steps_initial defines how many steps have been trained before
         # (k_steps_initial != 0 if you continue training from a checkpoint)
         k_steps_initial = 0  # 498
@@ -209,7 +210,7 @@ class RLLoop:
         discount = 1.0
 
         normalize = True  # define whether to normalize input data to [0,1]
-        nb_epochs = 1  # 7 # define how many epoches the network will be trained
+        nb_epochs = 3  # 7 # define how many epochs the network will be trained
 
         select_policy_from_plane = True  # Boolean if potential legal moves will be selected from final policy output
         # Boolean if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
