@@ -159,10 +159,9 @@ class RLLoop:
         cwd = os.getcwd() + '/'
         logging.info("Current working directory %s" % cwd)
         main_config['planes_train_dir'] = cwd + "export/"
-        starting_idx, x, y_value, y_policy, _, _ = load_pgn_dataset()
 
         # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
-        ctx = mx.cpu()  # mx.gpu(0)
+        ctx = mx.gpu(0)
         # set a specific seed value for reproducibility
         seed = 7  # 42
 
@@ -191,8 +190,8 @@ class RLLoop:
 
         # optimization parameters
         optimizer_name = "nag"
-        max_lr = 0.0005  # 0.35 / div_factor #0.01 # default lr for adam
-        min_lr = 0.00001
+        max_lr = 0.35 / div_factor
+        min_lr = 0.2 / div_factor  # 0.00001
         max_momentum = 0.95
         min_momentum = 0.8
         # loads a previous checkpoint if the loss increased significanly
@@ -218,6 +217,11 @@ class RLLoop:
         # use_mxnet_style = True  # Decide between mxnet and gluon style for training
         # Fixing the random seed
         mx.random.seed(seed)
+
+        starting_idx, x, y_value, y_policy, _, _ = load_pgn_dataset(dataset_type="train",
+                                                                    part_id=0,
+                                                                    normalize=normalize,
+                                                                    verbose=False)
 
         y_policy = prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label)
 
@@ -250,13 +254,19 @@ class RLLoop:
 
         metrics = [
             mx.metric.MSE(name='value_loss', output_names=['value_output'], label_names=['value_label']),
-            mx.metric.create(cross_entropy, name='policy_loss', output_names=['policy_output'],
-                             label_names=['policy_label']),
             mx.metric.create(acc_sign, name='value_acc_sign', output_names=['value_output'],
                              label_names=['value_label']),
             mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
                                label_names=['policy_label'])
         ]
+
+        if sparse_policy_label:
+            # the default cross entropy only supports sparse lables
+            metrics.append(mx.metric.CrossEntropy(name='policy_loss', output_names=['policy_output'],
+                             label_names=['policy_label']))
+        else:
+            metrics.append(mx.metric.create(cross_entropy, name='policy_loss', output_names=['policy_output'],
+                             label_names=['policy_label']))
 
         train_agent = TrainerAgentMXNET(model, symbol, val_iter, nb_parts, lr_schedule, momentum_schedule, total_it,
                                         optimizer_name, wd=wd, batch_steps=batch_steps,
