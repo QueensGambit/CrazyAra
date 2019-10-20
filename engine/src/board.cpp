@@ -157,7 +157,7 @@ std::string pgnMove(Move m, bool chess960, const Board& pos, const std::vector<M
     }
     else if (pos.capture(m)) {
         if (pos.piece_on(from) == W_PAWN || pos.piece_on(from) == B_PAWN) {
-            move = std::string{"abcdefgh "[file_of(from)]} + ambiguous + "x";
+            move = std::string{"abcdefgh "[file_of(from)]} + "x";
         }
         else {
             move = std::string{" PNBRQK  PNBRQK "[pos.piece_on(from)]} + ambiguous + "x";
