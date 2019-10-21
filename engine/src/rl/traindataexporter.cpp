@@ -162,7 +162,7 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     const bool createAsZarr = true;
     z5::createFile(file, createAsZarr);
 
-    const size_t numberChunks = 8;
+    const size_t numberChunks = 200;
 
     // create a new zarr dataset
     std::vector<size_t> shape = { chunckSize*numberChunks, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };

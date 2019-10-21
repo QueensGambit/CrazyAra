@@ -122,7 +122,7 @@ class RLLoop:
 
         # self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
         #                                                                            'utf-8'))
-        set_uci_param(self.proc, "Nodes", 300)
+        set_uci_param(self.proc, "Nodes", 800)
         set_uci_param(self.proc, "Centi_Temperature", 10)
         set_uci_param(self.proc, "Temperature_Moves", 7)
 
@@ -218,7 +218,7 @@ class RLLoop:
         # Fixing the random seed
         mx.random.seed(seed)
 
-        starting_idx, x, y_value, y_policy, _, _ = load_pgn_dataset(dataset_type="train",
+        _, x, y_value, y_policy, _, _ = load_pgn_dataset(dataset_type="train",
                                                                     part_id=0,
                                                                     normalize=normalize,
                                                                     verbose=False)
@@ -297,11 +297,19 @@ def set_uci_param(proc, name, value):
     proc.stdin.flush()
 
 
+def compare_new_weights():
+    """
+    Compares the old nn-weights with the newly acquired one and returns the win-rate
+    :return:
+    """
+    pass
+
+
 if __name__ == "__main__":
     enable_color_logging()
     rl_loop = RLLoop(crazyara_binary_dir="./",
-                     nb_games_to_update=2)
-    #rl_loop.initialize()
-    #rl_loop.generate_games()
-    #rl_loop.compress_dataset()
+                     nb_games_to_update=250)
+    rl_loop.initialize()
+    rl_loop.generate_games()
+    rl_loop.compress_dataset()
     rl_loop.update_network()
