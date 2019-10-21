@@ -182,6 +182,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
     newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
     if (oldestRootNode != nullptr) {
         cout << "info string delete the old tree " << endl;
+        delete_sibling_subtrees(oldestRootNode, hashTable);
         if (opponentsNextRoot != nullptr) {
             delete_sibling_subtrees(opponentsNextRoot, hashTable);
         }
