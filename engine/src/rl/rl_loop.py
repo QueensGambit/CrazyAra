@@ -94,11 +94,13 @@ class RLLoop:
     This class uses the C++ binary to generate games and updates the network from the newly acquired games
     """
 
-    def __init__(self, crazyara_binary_dir="./", nb_games_to_update=1024):
+    def __init__(self, crazyara_binary_dir="./", nb_games_to_update=1024, nb_arena_games=100):
         """
         Constructor
         :param crazyara_binary_dir: Directory to the C++ binary
         :param nb_games_to_update: Number of games to generate before the neural network will be updated
+        :param nb_arena_games: Number of games which will be generated in a tournament setting in order to determine
+        if the updated NN weights are stronger than the old one and by how much.
         """
 
         self.crazyara_binary_dir = crazyara_binary_dir
@@ -108,6 +110,10 @@ class RLLoop:
                           stderr=PIPE,
                           shell=False)
         self.nb_games_to_update = nb_games_to_update
+        if nb_arena_games % 2 == 1:
+            raise Exception("The number of tournament games should be an even number to avoid giving one player more"
+                            "games as white.")
+        self.nb_arena_games = nb_arena_games
 
     def initialize(self):
         """
@@ -281,6 +287,15 @@ class RLLoop:
                                         sparse_policy_label=sparse_policy_label)
         train_agent.train(cur_it)
 
+    def compare_new_weights(self):
+        """
+        Compares the old nn-weights with the newly acquired one and returns the win-rate
+        :return:
+        """
+        self.proc.stdin.write(b"arena %d\n" % self.nb_arena_games)
+        self.proc.stdin.flush()
+        read_output(self.proc)
+
 
 def set_uci_param(proc, name, value):
     """
@@ -297,19 +312,13 @@ def set_uci_param(proc, name, value):
     proc.stdin.flush()
 
 
-def compare_new_weights():
-    """
-    Compares the old nn-weights with the newly acquired one and returns the win-rate
-    :return:
-    """
-    pass
-
-
 if __name__ == "__main__":
     enable_color_logging()
     rl_loop = RLLoop(crazyara_binary_dir="./",
-                     nb_games_to_update=250)
+                     nb_games_to_update=250,
+                     nb_arena_games=2)
     rl_loop.initialize()
-    rl_loop.generate_games()
-    rl_loop.compress_dataset()
-    rl_loop.update_network()
+    # rl_loop.generate_games()
+    # rl_loop.compress_dataset()
+    # rl_loop.update_network()
+    rl_loop.compare_new_weights()
