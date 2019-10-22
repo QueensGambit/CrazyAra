@@ -86,6 +86,16 @@ private:
      */
     string engine_info();
 
+    /**
+     * @brief create_new_mcts_agent Factory method to create a new MCTSAgent when loading new neural network weights
+     * @param modelDirectory Directory where the .params and .json files are stored
+     * @param states State-Manager, needed to keep track of 3-fold-repetition
+     * @param netSingle Neural net with batch-size 1. It will be loaded from file.
+     * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
+     * @return Pointer to the new MCTSAgent object
+     */
+    MCTSAgent* create_new_mcts_agent(const string& modelDirectory,  StatesManager* states, NeuralNetAPI* netSingle, NeuralNetAPI** netBatches);
+
 public:
     CrazyAra();
 
