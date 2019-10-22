@@ -31,6 +31,7 @@
 #include "../agents/mctsagent.h"
 #include "gamepgn.h"
 #include "../manager/statesmanager.h"
+#include "tournamentresult.h"
 
 #ifdef USE_RL
 class SelfPlay
@@ -92,7 +93,7 @@ public:
      * @return Score in respect to the contender, as floating point number.
      *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
      */
-    float go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits& searchLimits);
+    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits& searchLimits);
 };
 #endif
 

@@ -296,7 +296,16 @@ void CrazyAra::arena(istringstream &is)
     searchLimits.nodes = size_t(Options["Nodes"]);
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay->go_arena(mctsAgentContender, numberOfGames, searchLimits);
+    TournamentResult tournamentResult = selfPlay->go_arena(mctsAgentContender, numberOfGames, searchLimits);
+    cout << "info string Arena summary" << endl;
+    cout << "info string Score of Contender vs Producer: " << tournamentResult << endl;
+    if (tournamentResult.score() > 0.5f) {
+        cout << "info string Replacing producer NN with contender..." << endl;
+        mctsAgent = mctsAgentContender;
+    }
+    else {
+        cout << "info string Current producer is still superior than contender. NN weights won't be replaced." << endl;
+    }
     delete selfPlay;
 }
 #endif

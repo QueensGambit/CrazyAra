@@ -152,27 +152,33 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits)
     }
 }
 
-float SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits &searchLimits)
+TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits &searchLimits)
 {
-    float score = 0.0f;
-    Result res;
+    TournamentResult tournamentResult;
+    Result gameResult;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
-            res = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, searchLimits);
-            if (res == WHITE_WIN) {
-                score += 1.0f;
+            gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, searchLimits);
+            if (gameResult == WHITE_WIN) {
+                ++tournamentResult.numberWins;
+            }
+            else {
+                ++tournamentResult.numberLosses;
             }
         }
         else {
-            res = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, searchLimits);
-            if (res == BLACK_WIN) {
-                score += 1.0f;
+            gameResult = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, searchLimits);
+            if (gameResult == BLACK_WIN) {
+                ++tournamentResult.numberWins;
+            }
+            else {
+                ++tournamentResult.numberLosses;
             }
         }
-        if (res == DRAWN) {
-            score += 0.5f;
+        if (gameResult == DRAWN) {
+            ++tournamentResult.numberDraws;
         }
     }
-    return score;
+    return tournamentResult;
 }
 #endif
