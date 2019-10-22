@@ -47,12 +47,7 @@ SelfPlay::SelfPlay(MCTSAgent* mctsAgent):
 
 void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
 {
-    Board* position = new Board();
-    string token, cmd;
-    auto uiThread = make_shared<Thread>(0);
-
-    StateInfo* newState = new StateInfo;
-    position->set(StartFENs[variant], false, variant, newState, uiThread.get());
+    Board* position = init_board(variant);
     EvalInfo evalInfo;
 
     bool isTerminal = false;
@@ -75,32 +70,79 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
 
     cout << "info string terminal fen " << mctsAgent->get_opponents_next_root()->get_pos()->fen() << " move " << UCI::move(evalInfo.bestMove, evalInfo.isChess960)<< endl;
     mctsAgent->export_game_results();
-    set_game_result_to_pgn();
-    write_game_to_pgn();
+    set_game_result_to_pgn(mctsAgent->get_opponents_next_root());
+    write_game_to_pgn("games.pgn");
     gamePGN.new_game();
     mctsAgent->clear_game_history();
+    delete position;
 }
 
-void SelfPlay::write_game_to_pgn()
+Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits)
+{
+    Board* position = init_board(variant);
+    EvalInfo evalInfo;
+    bool isTerminal = false;
+
+    MCTSAgent* activePlayer;
+    MCTSAgent* passivePlayer;
+    const Node* nextRoot;
+    do {
+        searchLimits.startTime = now();
+        if (position->side_to_move() == WHITE) {
+            activePlayer = whitePlayer;
+            passivePlayer = blackPlayer;
+        }
+        else {
+            activePlayer = blackPlayer;
+            passivePlayer = whitePlayer;
+        }
+        activePlayer->perform_action(position, &searchLimits, evalInfo);
+
+        activePlayer->apply_move_to_tree(evalInfo.bestMove, true);
+        passivePlayer->apply_move_to_tree(evalInfo.bestMove, true);
+        nextRoot = activePlayer->get_opponents_next_root();
+        if (nextRoot != nullptr) {
+            isTerminal = nextRoot->is_terminal();
+        }
+        position->do_move(evalInfo.bestMove, *(new StateInfo));
+        gamePGN.gameMoves.push_back(pgnMove(evalInfo.bestMove,
+                                            false,
+                                            *activePlayer->get_root_node()->get_pos(),
+                                            evalInfo.legalMoves,
+                                            isTerminal));
+    }
+    while(!isTerminal);
+    set_game_result_to_pgn(nextRoot);
+    write_game_to_pgn("arena_games.pgn");
+    gamePGN.new_game();
+    activePlayer->clear_game_history();
+    passivePlayer->clear_game_history();
+    delete position;
+    return get_terminal_node_result(nextRoot);
+}
+
+void SelfPlay::write_game_to_pgn(const std::string& pngFileName)
 {
     ofstream pgnFile;
-    pgnFile.open("games.pgn", std::ios_base::app);  // TODO: Change to more meaningful filename
+    pgnFile.open(pngFileName, std::ios_base::app);  // TODO: Change to more meaningful filename
     cout << endl << gamePGN << endl;
     pgnFile << gamePGN << endl;
     pgnFile.close();
 }
 
-void SelfPlay::set_game_result_to_pgn()
+void SelfPlay::set_game_result_to_pgn(const Node* terminalNode)
 {
-    if (int(mctsAgent->get_opponents_next_root()->get_value()) == 0) {
-        gamePGN.result = "1/2-1/2";
-    }
-    else if ( mctsAgent->get_opponents_next_root()->get_pos()->side_to_move() == BLACK) {
-        gamePGN.result = "1-0";
-    }
-    else {
-        gamePGN.result = "0-1";
-    }
+    gamePGN.result = result[get_terminal_node_result(terminalNode)];
+}
+
+Board* SelfPlay::init_board(Variant variant)
+{
+    Board* position = new Board();
+    auto uiThread = make_shared<Thread>(0);
+
+    StateInfo* newState = new StateInfo;
+    position->set(StartFENs[variant], false, variant, newState, uiThread.get());
+    return position;
 }
 
 void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits)
@@ -108,5 +150,29 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits)
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         generate_game(CRAZYHOUSE_VARIANT, searchLimits);
     }
+}
+
+float SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits &searchLimits)
+{
+    float score = 0.0f;
+    Result res;
+    for (size_t idx = 0; idx < numberOfGames; ++idx) {
+        if (idx % 2 == 0) {
+            res = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, searchLimits);
+            if (res == WHITE_WIN) {
+                score += 1.0f;
+            }
+        }
+        else {
+            res = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, searchLimits);
+            if (res == BLACK_WIN) {
+                score += 1.0f;
+            }
+        }
+        if (res == DRAWN) {
+            score += 0.5f;
+        }
+    }
+    return score;
 }
 #endif

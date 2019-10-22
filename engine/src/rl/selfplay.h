@@ -48,15 +48,31 @@ private:
     void generate_game(Variant variant, SearchLimits& searchLimits);
 
     /**
+     * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
+     * @param whitePlayer MCTSAgent which will play with the white pieces
+     * @param blackPlayer MCTSAgent which will play with the black pieces
+     * @param variant Current chess variant
+     * @param searchLimits Search limits struct
+     */
+    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, SearchLimits& searchLimits);
+
+    /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
      */
-    void write_game_to_pgn();
+    void write_game_to_pgn(const std::string& pngFileName);
 
     /**
      * @brief set_game_result Sets the game result to the gamePGN object
+     * @param terminalNode Terminal node of the game
      */
-    void set_game_result_to_pgn();
+    void set_game_result_to_pgn(const Node* terminalNode);
 
+    /**
+     * @brief init_board
+     * @param variant
+     * @return
+     */
+    inline Board* init_board(Variant variant);
 public:
     SelfPlay(MCTSAgent* mctsAgent);
 
@@ -66,6 +82,17 @@ public:
      * @param searchLimits Search limit struct
      */
     void go(size_t numberOfGames, SearchLimits& searchLimits);
+
+    /**
+     * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
+     * the mctsContender which uses the new updated wieghts
+     * @param mctsContender MCTSAgent using different NN weights
+     * @param numberOfGames Number of games to compare
+     * @param searchLimits Search limit struct
+     * @return Score in respect to the contender, as floating point number.
+     *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
+     */
+    float go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits& searchLimits);
 };
 #endif
 

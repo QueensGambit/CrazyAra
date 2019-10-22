@@ -63,6 +63,9 @@ void OptionsUCI::init(OptionsMap &o)
     o["Use_TensorRT"]             << Option(false);
 #endif
     o["Model_Directory"]          << Option("model/");
+#ifdef USE_RL
+    o["Model_Directory_Contender"] << Option("model_contender/");
+#endif
     o["Move_Overhead"]            << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"] << Option(0, 0, 99);
 }

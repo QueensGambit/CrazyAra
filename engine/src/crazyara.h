@@ -78,6 +78,7 @@ private:
 
 #ifdef USE_RL
     SelfPlay* selfPlay;
+    MCTSAgent* mctsAgentContender;
 #endif
     /**
      * @brief engine_info Returns a string about the engine version and authors
@@ -152,7 +153,14 @@ public:
      * @brief selfplay Starts self play for a given number of games
      * @param is Number of games to generate
      */
-    void selfplay(istringstream &is, Board& pos);
+    void selfplay(istringstream &is);
+
+    /**
+     * @brief arena Starts the arena comparision between two different NN weights.
+     * The score can be used for logging and to decide if the current weights shall be replaced.
+     * @param is Number of games to generate
+     */
+    void arena(istringstream &is);
 #endif
 
     /**

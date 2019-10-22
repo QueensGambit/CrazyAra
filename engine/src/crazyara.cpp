@@ -135,7 +135,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "flip")       pos.flip();
         else if (token == "d")          cout << pos << endl;
 #ifdef USE_RL
-        else if (token == "selfplay")   selfplay(is, pos);
+        else if (token == "selfplay")   selfplay(is);
+        else if (token == "arena")      arena(is);
 #endif
         else
             cout << "Unknown command: " << cmd << endl;
@@ -273,15 +274,35 @@ void CrazyAra::benchmark(istringstream &is)
 }
 
 #ifdef USE_RL
-void CrazyAra::selfplay(istringstream &is, Board& pos)
+void CrazyAra::selfplay(istringstream &is)
 {
     selfPlay = new SelfPlay(mctsAgent);
     SearchLimits searchLimits;
     searchLimits.nodes = Options["Nodes"];
-
     size_t numberOfGames;
     is >> numberOfGames;
     selfPlay->go(numberOfGames, searchLimits);
+    delete selfPlay;
+}
+
+void CrazyAra::arena(istringstream &is)
+{
+    selfPlay = new SelfPlay(mctsAgent);
+    string modelDirectory = Options["Model_Directory"]; //_Contender
+    StatesManager* states = new StatesManager();
+    NeuralNetAPI* netSingle = new NeuralNetAPI(Options["Context"], 1, modelDirectory, false);
+    NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
+    mctsAgentContender = new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);
+    for (size_t i = 0; i < searchSettings->threads; ++i) {
+        netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory, Options["Use_TensorRT"]);
+    }
+    cout << "isPolicyMap " << netSingle->is_policy_map() << endl;
+    SearchLimits searchLimits;
+    searchLimits.nodes = Options["Nodes"];
+    size_t numberOfGames;
+    is >> numberOfGames;
+    selfPlay->go_arena(mctsAgentContender, numberOfGames, searchLimits);
+    delete selfPlay;
 }
 #endif
 
