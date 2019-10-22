@@ -166,6 +166,9 @@ public:
     void clear_game_history();
 
 #ifdef USE_RL
+    /**
+     * @brief export_game_results Calls export_game_result() from TrainDataExporter
+     */
     void export_game_results();
 #endif
 

@@ -109,6 +109,14 @@ const int NB_LABELS_POLICY_MAP = NB_CHANNELS_POLICY_MAP * BOARD_HEIGHT * BOARD_W
 #define DRAW 0
 #define WIN 1
 
+enum Result {
+    DRAWN = 0,
+    WHITE_WIN,
+    BLACK_WIN,
+};
+
+const std::string result[] = {"1/2-1/2", "1-0", "0-1"};
+
 #ifdef CRAZYHOUSE_ONLY
 const std::string LABELS[] = {
     "a1b1",

@@ -310,5 +310,3 @@ void MCTSAgent::print_root_node()
     }
     print_node_statistics(rootNode);
 }
-
-
