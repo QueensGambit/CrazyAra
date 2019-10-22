@@ -109,11 +109,12 @@ public:
     /**
      * @brief NeuralNetAPI
      * @param ctx Computation contex either "cpu" or "gpu"
+     * @param deviceID Device ID to use for computation. Only used for gpu context.
      * @param batchSize Constant batch size which is used for inference
      * @param modelDirectory Directory where the network architecture is stored (.json file) and
      * where parameters a.k.a weights of the neural are stored (.params file) are stored
      */
-    NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt);
+    NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt);
 
     /**
      * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number

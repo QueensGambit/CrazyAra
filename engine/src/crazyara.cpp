@@ -290,11 +290,11 @@ void CrazyAra::arena(istringstream &is)
     selfPlay = new SelfPlay(mctsAgent);
     string modelDirectory = Options["Model_Directory"]; //_Contender
     StatesManager* states = new StatesManager();
-    NeuralNetAPI* netSingle = new NeuralNetAPI(Options["Context"], 1, modelDirectory, false);
+    NeuralNetAPI* netSingle = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
     NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
     mctsAgentContender = new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);
     for (size_t i = 0; i < searchSettings->threads; ++i) {
-        netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory, Options["Use_TensorRT"]);
+        netBatches[i] = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, bool(Options["Use_TensorRT"]));
     }
     cout << "isPolicyMap " << netSingle->is_policy_map() << endl;
     SearchLimits searchLimits;
@@ -321,11 +321,11 @@ bool CrazyAra::is_ready()
         init_search_settings();
         init_play_settings();
         string modelDirectory = Options["Model_Directory"];
-        netSingle = new NeuralNetAPI(Options["Context"], 1, modelDirectory, false);
+        netSingle = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
         rawAgent = new RawNetAgent(netSingle, PlaySettings(), 0, 0, true);
         NeuralNetAPI** netBatches = new NeuralNetAPI*[searchSettings->threads];
         for (size_t i = 0; i < searchSettings->threads; ++i) {
-            netBatches[i] = new NeuralNetAPI(Options["Context"], searchSettings->batchSize, modelDirectory, Options["Use_TensorRT"]);
+            netBatches[i] = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, bool(Options["Use_TensorRT"]));
         }
         Constants::init(netSingle->is_policy_map());
         mctsAgent = new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);

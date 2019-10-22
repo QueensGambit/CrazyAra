@@ -47,14 +47,14 @@ vector<string> get_directory_files(const string& dir) {
 }
 }  // namespace
 
-NeuralNetAPI::NeuralNetAPI(const string& ctx, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
+NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
     batchSize(batchSize),
     enableTensorrt(enableTensorrt)
 {
     if (ctx == "cpu" || ctx == "CPU") {
         globalCtx = Context::cpu();
     } else if (ctx == "gpu" || ctx == "GPU") {
-        globalCtx = Context::gpu();
+        globalCtx = Context::gpu(deviceID);
     } else {
         throw "unsupported context " + ctx + " given";
     }
