@@ -684,3 +684,15 @@ int estimate_visits_to_switch(const float secondScore, const float cpuct, Node* 
                  secondScore * n->get_parent_node()->get_u_divisor_summand()) / (n->get_action_value() - n->get_visits() * secondScore));
     //    return -(n->get_ * n-)
 }
+
+Result get_terminal_node_result(const Node *terminalNode)
+{
+    assert(terminalNode->is_terminal());
+    if (int(terminalNode->get_value()) == 0) {
+        return DRAWN;
+    }
+    else if ( terminalNode->side_to_move() == BLACK) {
+        return WHITE_WIN;
+    }
+    return BLACK_WIN;
+}

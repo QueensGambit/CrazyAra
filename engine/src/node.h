@@ -39,6 +39,7 @@
 #include "board.h"
 
 #include "agents/config/searchsettings.h"
+#include "constants.h"
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
@@ -335,5 +336,13 @@ bool q_plus_u_comparision(const Node* n1, const Node* n2);
 void get_principal_variation(const Node* rootNode, const SearchSettings* searchSettings, vector<Move>& pv);
 
 int estimate_visits_to_switch(const float secondScore, const float cpuct, Node* n);
+
+/**
+ * @brief get_terminal_node_result Returns the game result of the terminal.
+ * This function assumes the node to be a terminal node.
+ * @param terminalNode Terminal node
+ * @return Game result, either DRAWN, WHITE_WIN, BLACK_WIN
+ */
+Result get_terminal_node_result(const Node* terminalNode);
 
 #endif // NODE_H
