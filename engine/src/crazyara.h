@@ -142,7 +142,7 @@ public:
      * @param goCommand Go command (such as "go movetime 5000")
      * @param evalInfo Returns the evalutation information
      */
-    void go(string fen, string goCommand, EvalInfo& evalInfo);
+    void go(const string& fen, string goCommand, EvalInfo& evalInfo);
 
     /**
      * @brief position Method which is called from the UCI command-line when a new position is described.

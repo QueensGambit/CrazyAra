@@ -26,13 +26,9 @@
 #include "benchmarkpositions.h"
 #include "uci.h"
 
-BenchmarkPositions::BenchmarkPositions()
-{
-    goCommand = "movetime 3000"; //60000; //60000";
-    totalNPS = 0;
-    totalDepth = 0;
-
-    positions = {
+BenchmarkPositions::BenchmarkPositions():
+    goCommand("movetime 3000"),
+    positions({
         TestPosition("r1b2bk1/pp3ppp/2pn1bn1/4r3/3Q3P/2N1PB1p/PPP1PPP1/3RK2R/NQp w K - 0 24", "h4h5", "Q@h2"),
         TestPosition("r1b2bk1/pp3ppp/2pn2n1/4r1P1/3Q2n1/2N1pB2/PPP1PPPP/R1B1K2R/Qp w KQ - 0 19", "f3g4", "c1e3"),
         TestPosition("r1bq1rk1/pppp1ppp/2n2n2/1Bb1p3/4P3/2NP1N2/PPP2PPP/R1BQ1RK1/ b - - 11 6", "c6d4", "f6g4"),
@@ -46,6 +42,8 @@ BenchmarkPositions::BenchmarkPositions()
         TestPosition("r2q4/1pp2kPp/5prP/2pP1N2/5PB1/2N2P2/PP3PPN/2r1rQ1K/Nbpbbp w - - 0 54", "N@h8", "f1e1"),
         TestPosition("r2q2kN/1pp3Pp/5prP/2pP1N2/5PB1/2N2P2/PP3PPN/4r2K/Rqbpbbp w - - 0 62", "R@g1", "R@f1"),
         TestPosition("r1bqk1r1/2p1bppp/p1p2n1P/3P4/2B5/2N2p2/PPP2PRP/R1BQK3/PNPn w Qq - 24 13", "d1f3", "g2g7")
-    };
+    }),
+    totalNPS(0),
+    totalDepth(0)
+{
 }
-

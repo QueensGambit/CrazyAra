@@ -179,7 +179,7 @@ void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo, bool apply
     }
 }
 
-void CrazyAra::go(string fen, string goCommand, EvalInfo& evalInfo)
+void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
 {
     Board pos;
     string token, cmd;
@@ -315,7 +315,6 @@ bool CrazyAra::is_ready()
     if (!networkLoaded) {
         init_search_settings();
         init_play_settings();
-        string modelDirectory = Options["Model_Directory"];
         NeuralNetAPI** netBatches = nullptr;
         mctsAgent = create_new_mcts_agent(Options["Model_Directory"], states, netSingle, netBatches);
         Constants::init(mctsAgent->is_policy_map());
