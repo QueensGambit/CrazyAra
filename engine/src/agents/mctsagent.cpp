@@ -238,6 +238,11 @@ void MCTSAgent::export_game_results()
 }
 #endif
 
+bool MCTSAgent::is_policy_map()
+{
+    return netSingle->is_policy_map();
+}
+
 void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 {
     size_t nodesPreSearch = init_root_node(pos);

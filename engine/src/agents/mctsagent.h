@@ -172,6 +172,12 @@ public:
     void export_game_results();
 #endif
 
+    /**
+     * @brief is_policy_map Checks if the current loaded network uses policy map representation.
+     * @return True, if policy map else false
+     */
+    bool is_policy_map();
+
     Node *get_opponents_next_root() const;
 
     Node* get_root_node() const;
