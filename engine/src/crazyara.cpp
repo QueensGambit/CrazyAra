@@ -348,9 +348,10 @@ string CrazyAra::engine_info()
 
 MCTSAgent *CrazyAra::create_new_mcts_agent(const string &modelDirectory, StatesManager* states, NeuralNetAPI* netSingle, NeuralNetAPI** netBatches)
 {
-    const bool useTensorRT = false;
 #ifdef TENSORRT
-    bool useTensorRT = bool(Options["Use_TensorRT"]);
+    const bool useTensorRT = bool(Options["Use_TensorRT"]);
+#else
+    const bool useTensorRT = false;
 #endif
     netSingle = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
     netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
