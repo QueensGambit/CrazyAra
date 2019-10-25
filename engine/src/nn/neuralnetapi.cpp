@@ -71,6 +71,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
         }
         else if (pos_params != string::npos) {
             paramterFilePath = modelDirectory + file;
+            modelName = file.substr(0, file.length()-string(".params").length());
         }
     }
     if (jsonFilePath == "" || paramterFilePath == "") {
@@ -89,6 +90,11 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
 bool NeuralNetAPI::is_policy_map() const
 {
     return isPolicyMap;
+}
+
+string NeuralNetAPI::get_model_name() const
+{
+    return modelName;
 }
 
 bool NeuralNetAPI::file_exists(const string &name)

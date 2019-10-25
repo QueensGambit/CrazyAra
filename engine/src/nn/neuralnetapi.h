@@ -52,6 +52,8 @@ private:
     unsigned int batchSize;
     bool isPolicyMap;
     bool enableTensorrt;
+    // defines the name for the model based on the loaded .params file
+    string modelName;
 
     /**
      * @brief FileExists Function to check if a file exists in a given path
@@ -133,6 +135,7 @@ public:
     void predict(float *inputPlanes, NDArray &valueOutput, NDArray &probOutputs);
 
     bool is_policy_map() const;
+    string get_model_name() const;
 };
 
 #endif // NEURALNETAPI_H
