@@ -90,6 +90,18 @@ def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, end_idx
     logging.debug("dataset was exported to: %s", zarr_path)
 
 
+def create_dir(directory):
+    """
+    Creates a given director in case it doesn't exists already
+    :param directory: Directory path
+    :return:
+    """
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        logging.info("Created directory %s" % directory)
+
+
 class RLLoop:
     """
     This class uses the C++ binary to generate games and updates the network from the newly acquired games
@@ -115,6 +127,13 @@ class RLLoop:
             raise Exception("The number of tournament games should be an even number to avoid giving one player more"
                             "games as white.")
         self.nb_arena_games = nb_arena_games
+
+        self.cwd = os.getcwd() + '/'
+        logging.info("Current working directory %s" % self.cwd)
+
+        # directories for training
+        create_dir("logs")
+        create_dir("weights")
 
     def initialize(self):
         """
@@ -163,9 +182,8 @@ class RLLoop:
         Updates the neural network with the newly acquired games from the replay memory
         :return:
         """
-        cwd = os.getcwd() + '/'
-        logging.info("Current working directory %s" % cwd)
-        main_config["planes_train_dir"] = cwd + "export/"
+
+        main_config["planes_train_dir"] = self.cwd + "export/"
 
         # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
         ctx = mx.gpu(0)
@@ -297,6 +315,19 @@ class RLLoop:
         self.proc.stdin.flush()
         read_output(self.proc, b"readyok\n")
 
+    def create_new_contender(self):
+        """
+        Moves neural network architecture definition and .params file into the "model_contender" directory
+        :return:
+        """
+        nn_files = os.listdir(self.cwd + "weights/")
+
+        for nn_file in nn_files:
+            nn_file_origin = self.cwd + "weights/" + nn_file
+            nn_file_destination = self.cwd + "model_contender/" + nn_file
+            os.rename(nn_file_origin, nn_file_destination)
+            logging.debug("moved %s into %s" % (nn_file, nn_file_destination))
+
 
 def set_uci_param(proc, name, value):
     """
@@ -321,5 +352,6 @@ if __name__ == "__main__":
     rl_loop.initialize()
     # rl_loop.generate_games()
     # rl_loop.compress_dataset()
+    rl_loop.create_new_contender()
     # rl_loop.update_network()
     rl_loop.compare_new_weights()
