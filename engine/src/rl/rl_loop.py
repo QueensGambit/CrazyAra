@@ -27,10 +27,11 @@ from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import ConstantSchedule, MomentumSchedule
 
 
-def read_output(proc):
+def read_output(proc, last_line=b"readyok\n"):
     """
-    Reads the output of a process pip until a '\n' or "readyok\n" has been reached
+    Reads the output of a process pip until the given last line has been reached.
     :param proc: Process to be read
+    :param last_line Content when to stop reading (e.g. b'\n', b'', b"readyok\n")
     :return:
     """
     while True:
@@ -38,7 +39,7 @@ def read_output(proc):
         # error = proc.stderr.readline()
         print(line)
         # print(error)
-        if line == b'\n' or line == b"readyok\n" or line == b'':
+        if line == last_line:
             break
 
 
@@ -123,8 +124,8 @@ class RLLoop:
         # initialize
 
         # CrazyAra header
-        read_output(self.proc)
-        read_output(self.proc)
+        read_output(self.proc, b'\n')
+        read_output(self.proc, b'\n')
 
         # self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
         #                                                                            'utf-8'))
@@ -135,7 +136,7 @@ class RLLoop:
         # load network
         self.proc.stdin.write(b"isready\n")
         self.proc.stdin.flush()
-        read_output(self.proc)
+        read_output(self.proc, b"readyok\n")
 
     def generate_games(self):
         """
@@ -144,7 +145,7 @@ class RLLoop:
         """
         self.proc.stdin.write(b"selfplay %d\n" % self.nb_games_to_update)
         self.proc.stdin.flush()
-        read_output(self.proc)
+        read_output(self.proc, b"readyok\n")
 
     def compress_dataset(self):
         """
@@ -164,7 +165,7 @@ class RLLoop:
         """
         cwd = os.getcwd() + '/'
         logging.info("Current working directory %s" % cwd)
-        main_config['planes_train_dir'] = cwd + "export/"
+        main_config["planes_train_dir"] = cwd + "export/"
 
         # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
         ctx = mx.gpu(0)
@@ -294,7 +295,7 @@ class RLLoop:
         """
         self.proc.stdin.write(b"arena %d\n" % self.nb_arena_games)
         self.proc.stdin.flush()
-        read_output(self.proc)
+        read_output(self.proc, b"readyok\n")
 
 
 def set_uci_param(proc, name, value):

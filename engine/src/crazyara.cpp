@@ -283,6 +283,7 @@ void CrazyAra::selfplay(istringstream &is)
     is >> numberOfGames;
     selfPlay->go(numberOfGames, searchLimits);
     delete selfPlay;
+    cout << "readyok" << endl;
 }
 
 void CrazyAra::arena(istringstream &is)
@@ -307,6 +308,7 @@ void CrazyAra::arena(istringstream &is)
         cout << "info string Current producer is still superior than contender. NN weights won't be replaced." << endl;
     }
     delete selfPlay;
+    cout << "readyok" << endl;
 }
 #endif
 
