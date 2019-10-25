@@ -306,7 +306,7 @@ def set_uci_param(proc, name, value):
     :return:
     """
     if isinstance(value, int):
-        proc.stdin.write(b"setoption name %b value %d\n" % (bytes(name, encoding="ascii"), 300))
+        proc.stdin.write(b"setoption name %b value %d\n" % (bytes(name, encoding="ascii"), value))
     else:
         raise NotImplementedError(f"To set uci-parameters of type {type(value)} has not been implemented yet.")
     proc.stdin.flush()
