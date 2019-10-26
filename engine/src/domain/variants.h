@@ -33,8 +33,8 @@ using namespace std;
 
 // list of all current available variants fro CrazyAra
 static vector<string> availableVariants = {
-    "giveaway",  // antichess
-    "crazyhouse"
+    "crazyhouse",
+    "giveaway"  // antichess
 };
 
 // FEN strings of the initial positions

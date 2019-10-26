@@ -89,21 +89,23 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
 
 Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, unordered_map<Key, Node*>* hashTable, NodeDescription& description)
 {
-    Node *currentNode = rootNode;
+    Node* parentNode = rootNode;
+    Node* currentNode;
     rootNode->apply_virtual_loss();
     description.depth = 0;
     while (true) {
-        currentNode = select_child_node(currentNode);
+        currentNode = select_child_node(parentNode);
+        currentNode->lock();
         currentNode->apply_virtual_loss();
         description.depth++;
-
-        currentNode->lock();
         if (!currentNode->is_expanded()) {
             currentNode->init_board();
             unordered_map<Key, Node*>::const_iterator it = hashTable->find(currentNode->hash_key());
             if(useTranspositionTable && it != hashTable->end() &&
                     is_transposition_verified(it, currentNode->get_pos()->getStateInfo())) {
                 *currentNode = *it->second;  // call of assignment operator
+                currentNode->set_parent_node(parentNode);
+                parentNode->increment_no_visit_idx();
                 description.isCollision = false;
                 description.isTerminal = currentNode->is_terminal();
                 description.isTranposition = true;
@@ -134,6 +136,7 @@ Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, unor
             return currentNode;
         }
         currentNode->unlock();
+        parentNode = currentNode;
     }
 }
 

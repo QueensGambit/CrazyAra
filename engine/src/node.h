@@ -201,6 +201,13 @@ public:
 
     float get_action_value() const;
     SearchSettings* get_search_settings() const;
+
+    /**
+     * @brief set_parent_node Sets the parent node of this node. This is required when operator()= is used because this operator
+     * doesn't set the value for the parent node itself.
+     * @param value
+     */
+    void set_parent_node(Node* value);
 };
 
 /**

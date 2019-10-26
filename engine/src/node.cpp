@@ -79,7 +79,6 @@ void Node::operator=(const Node& b)
     isTerminal = b.isTerminal;
     value = b.value;
     visits = 1;
-    childNodes.resize(numberChildNodes);
     //    parentNode = // is not copied
     hasNNResults = b.hasNNResults;
     searchSettings = b.searchSettings;
@@ -120,11 +119,17 @@ void Node::calibrate_child_node_order()
     isCalibrated = true;
 
     // DEBUG
-    //            if (!is_ordering_correct(childNodes)) {
-    //                cout << "nodeIdxUpdate: " << numberExpandedNodes << endl;
-    //                print_node_statistics(this);
-    //                assert(is_ordering_correct(childNodes));
-    //            }
+    assert(is_ordering_correct(childNodes));
+
+//    if (!is_ordering_correct(childNodes)) {
+//        cout << "nodeIdxUpdate: " << numberExpandedNodes << endl;
+//        cout << "idx " << idx << endl;
+//        cout << "numberExpandedNodes " << numberExpandedNodes << endl;
+//        cout << "parentNode == nullptr " << (parentNode == nullptr) << endl;
+//        cout << "numberChildNodes " << numberChildNodes << endl;
+//        print_node_statistics(this);
+//        assert(is_ordering_correct(childNodes));
+//    }
 }
 
 void Node::expand()
@@ -290,6 +295,11 @@ float Node::get_action_value() const
 SearchSettings* Node::get_search_settings() const
 {
     return searchSettings;
+}
+
+void Node::set_parent_node(Node* value)
+{
+    parentNode = value;
 }
 
 void Node::check_for_terminal()
@@ -642,8 +652,17 @@ void print_node_statistics(Node* node)
 
 bool is_ordering_correct(vector<Node*> &childNodes)
 {
-    for (size_t i = 0; i < childNodes.size()-1; ++i) {
-        if (childNodes[i]->compute_q_plus_u() < childNodes[i+1]->compute_q_plus_u()) {
+    // trivial case
+    if (childNodes.size() == 1) {
+        return true;
+    }
+    // make sure that the first node has a higher q+u than 2nd
+    if (childNodes[0]->compute_q_plus_u() < childNodes[1]->compute_q_plus_u()) {
+        return false;
+    }
+    // make sure that the 2nd highest node has a greater q+u than the remaining rest
+    for (size_t i = 2; i < childNodes.size(); ++i) {
+        if (childNodes[1]->compute_q_plus_u() < childNodes[i]->compute_q_plus_u()) {
             return false;
         }
     }
