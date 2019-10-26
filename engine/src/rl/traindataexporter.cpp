@@ -86,7 +86,7 @@ void TrainDataExporter::export_planes(const Board *pos, size_t idxOffset)
 {
     // x / plane representation
     float inputPlanes[NB_VALUES_TOTAL];
-    board_to_planes(pos, 0, false, inputPlanes);
+    board_to_planes(pos, pos->number_repetitions(), false, inputPlanes);
     // write array to roi
     z5::types::ShapeType offsetPlanes = { startIdx+idxOffset, 0, 0, 0 };
     xt::xarray<int16_t>::shape_type policyShape = { 1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };

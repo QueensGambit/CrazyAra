@@ -49,7 +49,7 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
 }
 
 
-void board_to_planes(const Board *pos, int boardRepetition, bool normalize, float *inputPlanes) {
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes) {
 
     // intialize the input_planes with 0
     std::fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);

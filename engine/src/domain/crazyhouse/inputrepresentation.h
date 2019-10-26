@@ -39,7 +39,7 @@
  * @param normalize Flag, telling if the representation should be rescaled into the [0,1] range using the scaling constants from "constants.h"
  * @param input_planes Output where the plane representation will be stored.
  */
-void board_to_planes(const Board *pos, int boardRepetition, bool normalize, float *inputPlanes);
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes);
 
 /**
  * @brief set_bits_from_bitmap Sets the individual bits from a given bitboard on the given channel for the inputPlanes

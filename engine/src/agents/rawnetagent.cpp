@@ -62,7 +62,7 @@ void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
         evalInfo.pv = {evalInfo.legalMoves[0]};
     }
 
-    board_to_planes(pos, 0, true, begin(inputPlanes));
+    board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     float value;
 
     NDArray probOutputs = net->predict(begin(inputPlanes), value);
