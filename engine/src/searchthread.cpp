@@ -82,8 +82,8 @@ SearchLimits *SearchThread::get_search_limits() const
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo) {
     return  it->second->has_nn_results() &&
-            it->second->get_pos()->getStateInfo()->pliesFromNull == stateInfo->pliesFromNull &&
-            it->second->get_pos()->getStateInfo()->rule50 == stateInfo->rule50 &&
+            it->second->get_pos()->get_state_info()->pliesFromNull == stateInfo->pliesFromNull &&
+            it->second->get_pos()->get_state_info()->rule50 == stateInfo->rule50 &&
             stateInfo->repetition == 0;
 }
 
@@ -104,7 +104,7 @@ Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, MapW
             unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable->find(currentNode->hash_key());
             mapWithMutex->mtx.unlock();
             if(useTranspositionTable && it != mapWithMutex->hashTable->end() &&
-                    is_transposition_verified(it, currentNode->get_pos()->getStateInfo())) {
+                    is_transposition_verified(it, currentNode->get_pos()->get_state_info())) {
                 *currentNode = *it->second;  // call of assignment operator
                 currentNode->set_parent_node(parentNode);
                 parentNode->increment_no_visit_idx();
@@ -238,7 +238,7 @@ void prepare_node_for_nn(Node* newNode, vector<Node*>& newNodes, float* inputPla
 {
     // fill a new board in the input_planes vector
     // we shift the index by NB_VALUES_TOTAL each time
-    board_to_planes(newNode->get_pos(), newNode->get_pos()->getStateInfo()->repetition, true, inputPlanes+newNodes.size()*NB_VALUES_TOTAL);
+    board_to_planes(newNode->get_pos(), newNode->get_pos()->number_repetitions(), true, inputPlanes+newNodes.size()*NB_VALUES_TOTAL);
 
     // save a reference newly created list in the temporary list for node creation
     // it will later be updated with the evaluation of the NN

@@ -48,23 +48,23 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
     Board* position = init_board(variant);
     EvalInfo evalInfo;
 
-    bool isTerminal = false;
+    bool leadsToTerminal = false;
     do {
         searchLimits.startTime = now();
         mctsAgent->perform_action(position, &searchLimits, evalInfo, true);
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         const Node* nextRoot = mctsAgent->get_opponents_next_root();
         if (nextRoot != nullptr) {
-            isTerminal = nextRoot->is_terminal();
+            leadsToTerminal = nextRoot->is_terminal();
         }
         position->do_move(evalInfo.bestMove, *(new StateInfo));
-        gamePGN.gameMoves.push_back(pgnMove(evalInfo.bestMove,
+        gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                             false,
                                             *mctsAgent->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,
-                                            isTerminal));
+                                            leadsToTerminal && int(nextRoot->get_value()) == 0));
     }
-    while(!isTerminal);
+    while(!leadsToTerminal);
 
     cout << "info string terminal fen " << mctsAgent->get_opponents_next_root()->get_pos()->fen() << " move " << UCI::move(evalInfo.bestMove, evalInfo.isChess960)<< endl;
     mctsAgent->export_game_results();
@@ -105,7 +105,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
             isTerminal = nextRoot->is_terminal();
         }
         position->do_move(evalInfo.bestMove, *(new StateInfo));
-        gamePGN.gameMoves.push_back(pgnMove(evalInfo.bestMove,
+        gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                             false,
                                             *activePlayer->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,

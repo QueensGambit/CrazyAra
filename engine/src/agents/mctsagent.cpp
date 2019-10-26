@@ -180,7 +180,7 @@ bool MCTSAgent::continue_search() {
 void MCTSAgent::create_new_root_node(Board *pos)
 {
     Board* newPos = new Board(*pos);
-    newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
+    newPos->set_state_info(new StateInfo(*(pos->get_state_info())));
     if (oldestRootNode != nullptr) {
         cout << "info string delete the old tree " << endl;
         delete_sibling_subtrees(oldestRootNode, mapWithMutex->hashTable);
@@ -192,7 +192,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
     rootNode = new Node(newPos, nullptr, MOVE_NONE, searchSettings);
     rootNode->expand();
     oldestRootNode = rootNode;
-    board_to_planes(pos, 0, true, begin(inputPlanes));
+    board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, *valueOutput, *probOutputs);
     fill_nn_results(0, netSingle->is_policy_map(), searchSettings, valueOutput, probOutputs, rootNode);
     gameNodes.push_back(rootNode);

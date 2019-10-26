@@ -40,17 +40,38 @@ public:
     Bitboard promoted_pieces() const;
     int get_pocket_count(Color c, PieceType pt) const;
     Key hash_key() const;
-    void setStateInfo(StateInfo* st);
-    StateInfo* getStateInfo() const;
+    void set_state_info(StateInfo* st);
+    StateInfo* get_state_info() const;
 
     Board& operator=(const Board &b);
-    int plies_from_null();
+    int plies_from_null() const;
 
     /**
      * @brief total_move_cout Returns the current full move counter
      * @return Total move number
      */
-    size_t total_move_cout();
+    size_t total_move_cout() const;
+
+    /**
+     * @brief number_repetitions Returns how often the position has already occured.
+     * Only possible returned values are 0, 1, 2
+     * @return number of repetitions
+     */
+    size_t number_repetitions() const;
+
+    /**
+     * @brief is_3fold_repetition Returns true, if the position is a 3-fold-repetition draw else false
+     * @return bool
+     */
+    bool can_claim_3fold_repetition() const;
+
+    /**
+     * @brief is_50_move_rule_draw Returns true, if the positions is a draw due to 50 move rule.
+     * Method is based on Position::is_draw(int ply).
+     * is_50_move_rule_draw() always returns false for the Crazyhouse variant for improved speed
+     * @return
+     */
+    bool is_50_move_rule_draw() const;
 };
 
 /**
@@ -79,9 +100,9 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move>& le
  * @param chess960 True if 960 mode
  * @param pos Board position
  * @param legalMoves List of legal moves in the position (avoid regneration in case it has already been done)
- * @param leadsToTerminal True if the given move leads to a terminal state
+ * @param leadsToWin True if the given move leads to a lost terminal state for the opponent
  * @return String representation of move in PGN format
  */
-std::string pgnMove(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToTerminal=false);
+std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin=false);
 
 #endif // BOARD_H

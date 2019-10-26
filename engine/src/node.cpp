@@ -339,8 +339,8 @@ void Node::check_for_terminal()
         }
     }
 #endif
-    if (pos->is_draw(pos->game_ply())) {
-        // reached 50 moves rule
+    if (pos->can_claim_3fold_repetition() || pos->is_50_move_rule_draw()) {
+        // reached 3-fold-repetition or 50 moves rule draw
         value = DRAW;
         isTerminal = true;
         return;
@@ -537,7 +537,8 @@ ostream& operator<<(ostream &os, Node *node)
        << "\tn " << node->get_visits()
        << "\tp " << node->get_prob_value()
        << "\tQ " << node->get_q_value()
-       << "\tQ+U " << node->compute_q_plus_u();
+       << "\tQ+U " << node->compute_q_plus_u()
+       << "\tterminal " << node->is_terminal();
     return os;
 }
 

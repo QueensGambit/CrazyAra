@@ -27,6 +27,7 @@
 #include "constants.h"
 #include "uci.h"
 #include <iostream>
+#include "movegen.h"
 
 using namespace std;
 
@@ -61,12 +62,12 @@ Key Board::hash_key() const
     return st->key; // + size_t(st->pliesFromNull);
 }
 
-void Board::setStateInfo(StateInfo *st)
+void Board::set_state_info(StateInfo *st)
 {
     this->st = st;
 }
 
-StateInfo *Board::getStateInfo() const
+StateInfo *Board::get_state_info() const
 {
     return st;
 }
@@ -105,28 +106,60 @@ Board& Board::operator=(const Board &b)
     return *this;
 }
 
-int Board::plies_from_null()
+int Board::plies_from_null() const
 {
     return st->pliesFromNull;
 }
 
-size_t Board::total_move_cout()
+size_t Board::total_move_cout() const
 {
     return st->pliesFromNull / 2 + 1;
 }
 
-std::string pgnMove(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToTerminal)
+size_t Board::number_repetitions() const
+{
+    if (st->repetition == 0) {
+        return 0;
+    }
+    else if (st->repetition) {
+        return 1;
+    }
+    return 2;
+}
+
+bool Board::can_claim_3fold_repetition() const
+{
+    // The repetition info stores the ply distance to the next previous
+    // occurrence of the same position.
+    // It is negative in the 3-fold case, or zero if the position was not repeated.
+    return st->repetition < 0;
+}
+
+bool Board::is_50_move_rule_draw() const
+{
+#ifdef CRAZYHOUSE
+    if (is_house()) {} else
+#endif
+        if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size())) {
+            return true;
+        }
+    return false;
+}
+
+std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin)
 {
     std::string move;
 
     const Square from = from_sq(m);
     const Square to = to_sq(m);
 
-    if (m == MOVE_NONE)
+    if (m == MOVE_NONE) {
         return "(none)";
+    }
 
-    if (m == MOVE_NULL)
+    if (m == MOVE_NULL) {
         return "0000";
+    }
 
     bool rank_ambiguous;
     bool file_ambiguous;
@@ -184,7 +217,7 @@ std::string pgnMove(Move m, bool chess960, const Board& pos, const std::vector<M
     }
 
     if (pos.gives_check(m)) {
-        if (leadsToTerminal) {
+        if (leadsToWin) {
             move += "#";
         }
         else {

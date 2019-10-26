@@ -62,7 +62,7 @@ TEST_CASE("Anti-Chess StartFEN"){
 
     StateInfo* newState = new StateInfo;
     pos.set(StartFENs[ANTI_VARIANT], false, ANTI_VARIANT, newState, uiThread.get());
-    board_to_planes(&pos, 0, false, inputPlanes);
+    board_to_planes(&pos, pos.number_repetitions(), false, inputPlanes);
     size_t sum = 0;
     float max_num = 0;
     int key = 0;
