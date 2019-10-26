@@ -72,7 +72,7 @@ Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
     mt19937 gen(rd());
 }
 
-void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo)
+void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo, bool exportSample)
 {
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     this->searchLimits = searchLimits;
@@ -95,8 +95,10 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
         cout << "bestmove " << UCI::move(evalInfo.bestMove, pos->is_chess960()) << endl;
 //    }
 #ifdef USE_RL
-    exporter.export_pos(pos, evalInfo, pos->game_ply());
-    exporter.export_best_move_q(evalInfo, pos->game_ply());
+    if (exportSample) {
+        exporter.export_pos(pos, evalInfo, pos->game_ply());
+        exporter.export_best_move_q(evalInfo, pos->game_ply());
+    }
 #endif
 }
 

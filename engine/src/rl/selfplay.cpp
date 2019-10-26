@@ -51,7 +51,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
     bool isTerminal = false;
     do {
         searchLimits.startTime = now();
-        mctsAgent->perform_action(position, &searchLimits, evalInfo);
+        mctsAgent->perform_action(position, &searchLimits, evalInfo, true);
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         const Node* nextRoot = mctsAgent->get_opponents_next_root();
         if (nextRoot != nullptr) {

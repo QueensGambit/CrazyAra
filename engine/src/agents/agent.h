@@ -78,8 +78,10 @@ public:
      * @param pos Board position to evaluate
      * @param limits Pointer to the search limit
      * @param evalInfo Returns the evaluation information
+     * @param exportSample Boolean which defines if the resulting sample should
+     * be exported to be used for NN training
      */
-    void perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo);
+    void perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo, bool exportSample=false);
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents
