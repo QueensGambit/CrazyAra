@@ -45,10 +45,7 @@
 class CrazyAra
 {
 private:
-    string name = "CrazyAra";
-    string version = "0.6.0";
-    string authors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
-    string intro =  string("\n") +
+    const string intro =  string("\n") +
                     string("                                  _                                           \n") +
                     string("                   _..           /   ._   _.  _        /\\   ._   _.           \n") +
                     string("                 .' _ `\\         \\_  |   (_|  /_  \\/  /--\\  |   (_|           \n") +

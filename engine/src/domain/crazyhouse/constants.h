@@ -41,6 +41,13 @@
 #include <iostream>
 #include "policymaprepresentation.h"
 
+using namespace std;
+
+// meta data
+const string engineName = "CrazyAra";
+const string engineVersion = "0.6.1";
+const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
+
 // Define the board size
 const int BOARD_WIDTH = 8;
 const int BOARD_HEIGHT = 8;

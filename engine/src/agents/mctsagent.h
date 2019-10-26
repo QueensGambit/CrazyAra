@@ -178,6 +178,12 @@ public:
      */
     bool is_policy_map();
 
+    /**
+     * @brief get_name Returns the name specification of the MCTSAgent using the CrazyAra version ID and loaded neural net
+     * @return
+     */
+    string get_name() const;
+
     Node *get_opponents_next_root() const;
 
     Node* get_root_node() const;

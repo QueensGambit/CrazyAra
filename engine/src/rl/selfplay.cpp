@@ -40,8 +40,6 @@ SelfPlay::SelfPlay(MCTSAgent* mctsAgent):
     gamePGN.site = "Darmstadt, GER";
     gamePGN.date = "?";  // TODO: Change this later
     gamePGN.round = "?";
-    gamePGN.white = "CrazyAra-0.6.0";  // TODO: Make version dependent
-    gamePGN.black = "CrazyAra-0.6.0";
     gamePGN.is960 = false;
 }
 
@@ -79,6 +77,8 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits)
 {
+    gamePGN.white = whitePlayer->get_name();
+    gamePGN.black = blackPlayer->get_name();
     Board* position = init_board(variant);
     EvalInfo evalInfo;
     bool isTerminal = false;
@@ -147,6 +147,8 @@ Board* SelfPlay::init_board(Variant variant)
 
 void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits)
 {
+    gamePGN.white = mctsAgent->get_name();
+    gamePGN.black = mctsAgent->get_name();
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         generate_game(CRAZYHOUSE_VARIANT, searchLimits);
     }
