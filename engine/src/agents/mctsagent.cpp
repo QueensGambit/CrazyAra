@@ -55,11 +55,12 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     lastValueEval(-1.0f),
     reusedFullTree(false)
 {
-    hashTable = new unordered_map<Key, Node*>;
-    hashTable->reserve(1e6);
+    mapWithMutex = new MapWithMutex();
+    mapWithMutex->hashTable = new unordered_map<Key, Node*>;
+    mapWithMutex->hashTable->reserve(1e6);
 
     for (auto i = 0; i < searchSettings->threads; ++i) {
-        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings, hashTable));
+        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings, mapWithMutex));
     }
 
     valueOutput = new NDArray(Shape(1, 1), Context::cpu());
@@ -79,7 +80,7 @@ MCTSAgent::~MCTSAgent()
     delete netSingle;
     delete netBatches;
     delete searchSettings;
-    delete hashTable;
+    delete mapWithMutex;
 }
 
 Node* MCTSAgent::get_opponents_next_root() const
@@ -125,12 +126,12 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     }
 
     if (same_hash_key(ownNextRoot, pos)) {
-        delete_sibling_subtrees(ownNextRoot, hashTable);
-        delete_sibling_subtrees(opponentsNextRoot, hashTable);
+        delete_sibling_subtrees(ownNextRoot, mapWithMutex->hashTable);
+        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, pos)) {
-        delete_sibling_subtrees(opponentsNextRoot, hashTable);
+        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
         return opponentsNextRoot;
     }
     return nullptr;
@@ -182,9 +183,9 @@ void MCTSAgent::create_new_root_node(Board *pos)
     newPos->setStateInfo(new StateInfo(*(pos->getStateInfo())));
     if (oldestRootNode != nullptr) {
         cout << "info string delete the old tree " << endl;
-        delete_sibling_subtrees(oldestRootNode, hashTable);
+        delete_sibling_subtrees(oldestRootNode, mapWithMutex->hashTable);
         if (opponentsNextRoot != nullptr) {
-            delete_sibling_subtrees(opponentsNextRoot, hashTable);
+            delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
         }
     }
     cout << "info string create new tree" << endl;
@@ -223,7 +224,7 @@ void MCTSAgent::clear_game_history()
         delete node;
     }
     gameNodes.clear();
-    hashTable->clear();
+    mapWithMutex->hashTable->clear();
     oldestRootNode = nullptr;
     rootNode = nullptr;
     lastValueEval = -1.0f;

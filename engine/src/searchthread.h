@@ -33,6 +33,16 @@
 #include "neuralnetapi.h"
 #include "config/searchlimits.h"
 
+// wrapper for unordered_map with a mutex for thread safe access
+struct MapWithMutex {
+    mutex mtx;
+    unordered_map<Key, Node*>* hashTable;
+    ~MapWithMutex() {
+        delete hashTable;
+    }
+};
+
+
 class SearchThread
 {
 private:
@@ -55,7 +65,7 @@ private:
 
     bool isRunning;
 
-    unordered_map<Key, Node*> *hashTable;
+    MapWithMutex* mapWithMutex;
     SearchSettings* searchSettings;
     SearchLimits* searchLimits;
 
@@ -79,9 +89,9 @@ public:
      * @brief SearchThread
      * @param netBatch Network API object which provides the prediction of the neural network
      * @param searchSettings Given settings for this search run
-     * @param hashTable Handle to the hash table
+     * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, unordered_map<Key, Node*>* hashTable);
+    SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

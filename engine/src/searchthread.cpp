@@ -28,8 +28,8 @@
 #include "outputrepresentation.h"
 #include "uci.h"
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, unordered_map<Key, Node *> *hashTable):
-    netBatch(netBatch), isRunning(false), hashTable(hashTable), searchSettings(searchSettings)
+SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+    netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
 {
     // allocate memory for all predictions and results
     inputPlanes = new float[searchSettings->batchSize * NB_VALUES_TOTAL];
@@ -87,7 +87,7 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
             stateInfo->repetition == 0;
 }
 
-Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, unordered_map<Key, Node*>* hashTable, NodeDescription& description)
+Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, MapWithMutex* mapWithMutex, NodeDescription& description)
 {
     Node* parentNode = rootNode;
     Node* currentNode;
@@ -100,8 +100,10 @@ Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, unor
         description.depth++;
         if (!currentNode->is_expanded()) {
             currentNode->init_board();
-            unordered_map<Key, Node*>::const_iterator it = hashTable->find(currentNode->hash_key());
-            if(useTranspositionTable && it != hashTable->end() &&
+            mapWithMutex->mtx.lock();
+            unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable->find(currentNode->hash_key());
+            mapWithMutex->mtx.unlock();
+            if(useTranspositionTable && it != mapWithMutex->hashTable->end() &&
                     is_transposition_verified(it, currentNode->get_pos()->getStateInfo())) {
                 *currentNode = *it->second;  // call of assignment operator
                 currentNode->set_parent_node(parentNode);
@@ -148,7 +150,9 @@ void SearchThread::set_nn_results_to_child_nodes()
             fill_nn_results(batchIdx, netBatch->is_policy_map(), searchSettings, valueOutputs, probOutputs, node);
         }
         ++batchIdx;
-        hashTable->insert({node->get_pos()->hash_key(), node});
+        mapWithMutex->mtx.lock();
+        mapWithMutex->hashTable->insert({node->get_pos()->hash_key(), node});
+        mapWithMutex->mtx.unlock();
     }
 }
 
@@ -182,7 +186,7 @@ void SearchThread::create_mini_batch()
            collisionNodes.size() < searchSettings->batchSize &&
            transpositionNodes.size() < searchSettings->batchSize &&
            terminalNodes.size() < searchSettings->batchSize) {
-        currentNode = get_new_child_to_evaluate(rootNode, searchSettings->useTranspositionTable, hashTable, description);
+        currentNode = get_new_child_to_evaluate(rootNode, searchSettings->useTranspositionTable, mapWithMutex, description);
 
         if (description.isTranposition) {
             transpositionNodes.push_back(currentNode);

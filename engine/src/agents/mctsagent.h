@@ -77,7 +77,7 @@ private:
     // this vector contains all nodes which have been played during a game
     vector<Node*> gameNodes;
 
-    unordered_map<Key, Node*>* hashTable;
+    MapWithMutex* mapWithMutex;
     StatesManager* states;
     float lastValueEval;
 
