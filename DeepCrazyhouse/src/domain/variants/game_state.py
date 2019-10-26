@@ -33,6 +33,7 @@ import chess
 
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
+from DeepCrazyhouse.configs.main_config import main_config
 
 
 class GameState(AbsGameState):
@@ -47,7 +48,8 @@ class GameState(AbsGameState):
 
     def get_state_planes(self):
         """Transform the current board state to a plane"""
-        return board_to_planes(self.board, board_occ=self._board_occ, normalize=True)
+        return board_to_planes(self.board, board_occ=self._board_occ, normalize=True,
+                               crazyhouse_only=main_config['policy_version'] == 1)
 
     def get_pythonchess_board(self):
         """ Get the board by calling a method"""

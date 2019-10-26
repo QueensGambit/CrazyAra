@@ -14,6 +14,7 @@ import collections
 import sys
 import traceback
 import chess.pgn
+import chess.variant
 import numpy as np
 import multiprocessing
 
@@ -207,7 +208,14 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
                 include_check_moves=False,
             )
 
-            self.gamestate = GameState()
+            if self.settings["UCI_Variant"] == "crazyhouse":
+                board = chess.variant.CrazyhouseBoard()
+            elif self.settings["UCI_Variant"] == "giveaway":
+                board = chess.variant.GiveawayBoard()
+            else:
+                raise Exception("Variant %s is not supported yet" % self.settings["UCI_Variant"])
+
+            self.gamestate = GameState(board)
             self.setup_done = True
 
     def validity_with_threads(self, optname: str):
