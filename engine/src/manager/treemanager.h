@@ -40,7 +40,8 @@
 Node* pick_next_node(Move move, const Node* parentNode);
 
 /**
- * @brief same_hash_key Checks if the given node isn't a nullptr and share the same hash key as the position
+ * @brief same_hash_key Checks if the given node isn't a nullptr and
+ *  shares the same hash key and plies from null as the position
  * @param node Node pointer
  * @param pos Position pointer
  * @return bool
