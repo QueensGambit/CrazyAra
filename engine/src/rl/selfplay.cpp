@@ -75,7 +75,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
     delete position;
 }
 
-Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits)
+Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits, StatesManager* states)
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
@@ -85,6 +85,8 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
 
     MCTSAgent* activePlayer;
     MCTSAgent* passivePlayer;
+    states->swap_states();
+
     const Node* nextRoot;
     do {
         searchLimits.startTime = now();
@@ -97,14 +99,17 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
             passivePlayer = whitePlayer;
         }
         activePlayer->perform_action(position, &searchLimits, evalInfo);
-
         activePlayer->apply_move_to_tree(evalInfo.bestMove, true);
-        passivePlayer->apply_move_to_tree(evalInfo.bestMove, true);
+        if (position->plies_from_null() != 0) {
+            passivePlayer->apply_move_to_tree(evalInfo.bestMove, false);
+        }
         nextRoot = activePlayer->get_opponents_next_root();
         if (nextRoot != nullptr) {
             isTerminal = nextRoot->is_terminal();
         }
-        position->do_move(evalInfo.bestMove, *(new StateInfo));
+        StateInfo* newState = new StateInfo;
+        states->activeStates.push_back(newState);
+        position->do_move(evalInfo.bestMove, *(newState));
         gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                             false,
                                             *activePlayer->get_root_node()->get_pos(),
@@ -115,10 +120,12 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     set_game_result_to_pgn(nextRoot);
     write_game_to_pgn("arena_games.pgn");
     gamePGN.new_game();
-    activePlayer->clear_game_history();
-    passivePlayer->clear_game_history();
-    delete position;
-    return get_terminal_node_result(nextRoot);
+    Result gameResult = get_terminal_node_result(nextRoot);
+    whitePlayer->clear_game_history();
+    blackPlayer->clear_game_history();
+    states->swap_states();
+    states->clear_states();
+    return gameResult;
 }
 
 void SelfPlay::write_game_to_pgn(const std::string& pngFileName)
@@ -154,13 +161,13 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits)
     }
 }
 
-TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits &searchLimits)
+TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits &searchLimits, StatesManager* states)
 {
     TournamentResult tournamentResult;
     Result gameResult;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
-            gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, searchLimits);
+            gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, searchLimits, states);
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
@@ -169,7 +176,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
             }
         }
         else {
-            gameResult = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, searchLimits);
+            gameResult = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, searchLimits, states);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }

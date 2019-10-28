@@ -289,7 +289,6 @@ void CrazyAra::selfplay(istringstream &is)
 void CrazyAra::arena(istringstream &is)
 {
     selfPlay = new SelfPlay(mctsAgent);
-    StatesManager* states = new StatesManager();
     NeuralNetAPI* netSingle = nullptr;
     NeuralNetAPI** netBatches = nullptr;
     MCTSAgent* mctsAgentContender = create_new_mcts_agent(Options["Model_Directory_Contender"], states, netSingle, netBatches);
@@ -297,7 +296,7 @@ void CrazyAra::arena(istringstream &is)
     searchLimits.nodes = size_t(Options["Nodes"]);
     size_t numberOfGames;
     is >> numberOfGames;
-    TournamentResult tournamentResult = selfPlay->go_arena(mctsAgentContender, numberOfGames, searchLimits);
+    TournamentResult tournamentResult = selfPlay->go_arena(mctsAgentContender, numberOfGames, searchLimits, states);
     cout << "info string Arena summary" << endl;
     cout << "info string Score of Contender vs Producer: " << tournamentResult << endl;
     if (tournamentResult.score() > 0.5f) {

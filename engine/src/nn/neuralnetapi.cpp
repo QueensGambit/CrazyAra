@@ -237,7 +237,7 @@ void NeuralNetAPI::predict(float *inputPlanes, NDArray &valueOutput, NDArray &pr
     valueOutput = executor->outputs[0].Copy(Context::cpu());
     probOutputs = executor->outputs[1].Copy(Context::cpu());
 
-    // Assign the value output to the return paramter
+    // Assign the value output to the return parameter
     valueOutput.WaitToRead();
     probOutputs.WaitToRead();
 }

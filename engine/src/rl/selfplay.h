@@ -55,7 +55,7 @@ private:
      * @param variant Current chess variant
      * @param searchLimits Search limits struct
      */
-    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, SearchLimits& searchLimits);
+    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, SearchLimits& searchLimits, StatesManager* states);
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
@@ -93,7 +93,7 @@ public:
      * @return Score in respect to the contender, as floating point number.
      *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
      */
-    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits& searchLimits);
+    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states);
 };
 #endif
 
