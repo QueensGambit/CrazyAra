@@ -281,7 +281,7 @@ void CrazyAra::selfplay(istringstream &is)
     searchLimits.nodes = Options["Nodes"];
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay->go(numberOfGames, searchLimits);
+    selfPlay->go(numberOfGames, searchLimits, states);
     delete selfPlay;
     cout << "readyok" << endl;
 }

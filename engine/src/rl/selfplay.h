@@ -45,8 +45,9 @@ private:
      * @brief generate_game Generates a new game in self play mode
      * @param variant Current chess variant
      * @param searchLimits Search limits struct
+     * @param states States manager for maintaining the states objects. Used for 3-fold repetition check.
      */
-    void generate_game(Variant variant, SearchLimits& searchLimits);
+    void generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
@@ -82,7 +83,7 @@ public:
      * @param numberOfGames Number of games to generate
      * @param searchLimits Search limit struct
      */
-    void go(size_t numberOfGames, SearchLimits& searchLimits);
+    void go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and

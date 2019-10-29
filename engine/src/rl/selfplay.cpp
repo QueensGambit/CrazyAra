@@ -43,11 +43,11 @@ SelfPlay::SelfPlay(MCTSAgent* mctsAgent):
     gamePGN.is960 = false;
 }
 
-void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
+void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states)
 {
     Board* position = init_board(variant);
     EvalInfo evalInfo;
-
+    states->swap_states();
     bool leadsToTerminal = false;
     do {
         searchLimits.startTime = now();
@@ -57,7 +57,9 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
         if (nextRoot != nullptr) {
             leadsToTerminal = nextRoot->is_terminal();
         }
-        position->do_move(evalInfo.bestMove, *(new StateInfo));
+        StateInfo* newState = new StateInfo;
+        states->activeStates.push_back(newState);
+        position->do_move(evalInfo.bestMove, *(newState));
         gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                             false,
                                             *mctsAgent->get_root_node()->get_pos(),
@@ -72,7 +74,8 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits)
     write_game_to_pgn("games.pgn");
     gamePGN.new_game();
     mctsAgent->clear_game_history();
-    delete position;
+    states->swap_states();
+    states->clear_states();
 }
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits, StatesManager* states)
@@ -85,6 +88,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
 
     MCTSAgent* activePlayer;
     MCTSAgent* passivePlayer;
+    // preserve the current active states
     states->swap_states();
 
     const Node* nextRoot;
@@ -152,12 +156,12 @@ Board* SelfPlay::init_board(Variant variant)
     return position;
 }
 
-void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits)
+void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states)
 {
     gamePGN.white = mctsAgent->get_name();
     gamePGN.black = mctsAgent->get_name();
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
-        generate_game(CRAZYHOUSE_VARIANT, searchLimits);
+        generate_game(CRAZYHOUSE_VARIANT, searchLimits, states);
     }
 }
 
