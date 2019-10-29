@@ -181,13 +181,18 @@ void MCTSAgent::create_new_root_node(Board *pos)
 {
     Board* newPos = new Board(*pos);
     newPos->set_state_info(new StateInfo(*(pos->get_state_info())));
-    if (oldestRootNode != nullptr) {
+    if (rootNode != nullptr) {
         cout << "info string delete the old tree " << endl;
-        delete_sibling_subtrees(oldestRootNode, mapWithMutex->hashTable);
+        delete_sibling_subtrees(rootNode, mapWithMutex->hashTable);
         if (opponentsNextRoot != nullptr) {
             delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
+            // also delete all of its expanded children since these won't be used anymore
+            for (Node* childNode : opponentsNextRoot->get_child_nodes()) {
+                delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
+            }
         }
     }
+
     cout << "info string create new tree" << endl;
     rootNode = new Node(newPos, nullptr, MOVE_NONE, searchSettings);
     rootNode->expand();
