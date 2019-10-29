@@ -43,7 +43,7 @@ def read_output(proc, last_line=b"readyok\n"):
             break
 
 
-def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, end_idx=0):
+def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, start_idx=0, end_idx=0):
     """
     Loads in a zarr data set and exports it with a given compression type and level
     :param data: Zarr data set which will be compressed
@@ -72,7 +72,7 @@ def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, end_idx
         if end_idx == 0:
             x = data[key]
         else:
-            x = data[key][:end_idx]
+            x = data[key][start_idx:end_idx]
 
         array_shape = list(x.shape)
         array_shape[0] = 128
@@ -166,16 +166,20 @@ class RLLoop:
         self.proc.stdin.flush()
         read_output(self.proc, b"readyok\n")
 
-    def compress_dataset(self):
+    def compress_dataset(self, validation_size=0.1):
         """
         Loads the uncompressed data file, select all sample until the index specified in "startIdx.txt",
         compresses it and exports it
+        :param validation_size: Floating value that should be in [0.0, 1.0] and defines the proportion of the data set that is
+         used as validation data
         :return:
         """
         with open("startIdx.txt", "r") as file:
             end_idx = int(file.readline())
+        end_idx_train = int(end_idx * (1-validation_size))
         data = zarr.load(self.crazyara_binary_dir + "data.zarr")
-        compress_zarr_dataset(data, "./export/", end_idx=end_idx)
+        compress_zarr_dataset(data, "./export/train/", start_idx=0, end_idx=end_idx_train)
+        compress_zarr_dataset(data, "./export/val/", start_idx=end_idx_train+1, end_idx=end_idx)
 
     def update_network(self):
         """
@@ -351,7 +355,7 @@ if __name__ == "__main__":
                      nb_arena_games=2)
     rl_loop.initialize()
     # rl_loop.generate_games()
-    # rl_loop.compress_dataset()
+    # rl_loop.compress_dataset(validation_size=0.1)
     rl_loop.create_new_contender()
     # rl_loop.update_network()
     rl_loop.compare_new_weights()
