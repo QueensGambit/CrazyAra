@@ -64,7 +64,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
                                             false,
                                             *mctsAgent->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,
-                                            leadsToTerminal && int(nextRoot->get_value()) == 0));
+                                            leadsToTerminal && int(nextRoot->get_value()) == -1));
     }
     while(!leadsToTerminal);
 
@@ -118,7 +118,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
                                             false,
                                             *activePlayer->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,
-                                            isTerminal));
+                                            isTerminal && int(nextRoot->get_value()) == -1));
     }
     while(!isTerminal);
     set_game_result_to_pgn(nextRoot);
@@ -160,8 +160,16 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManage
 {
     gamePGN.white = mctsAgent->get_name();
     gamePGN.black = mctsAgent->get_name();
-    for (size_t idx = 0; idx < numberOfGames; ++idx) {
-        generate_game(CRAZYHOUSE_VARIANT, searchLimits, states);
+
+    if (numberOfGames == 0) {
+        while(!mctsAgent->is_rl_export_file_full()) {
+            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states);
+        }
+    }
+    else {
+        for (size_t idx = 0; idx < numberOfGames; ++idx) {
+            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states);
+        }
     }
 }
 

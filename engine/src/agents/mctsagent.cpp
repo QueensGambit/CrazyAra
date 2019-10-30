@@ -240,7 +240,7 @@ void MCTSAgent::export_game_results()
 {
     int16_t result = gameNodes.back()->get_pos()->side_to_move() == WHITE ? LOSS : WIN;
     // we set one less than actual plys because the last terminal node isn't part of the training data
-    exporter.export_game_result(result, 0, gameNodes.size()-1);
+    exporter->export_game_result(result, 0, gameNodes.size()-1);
 }
 #endif
 

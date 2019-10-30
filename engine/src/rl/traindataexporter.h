@@ -50,7 +50,9 @@
 class TrainDataExporter
 {
 private:
-    size_t chunckSize;
+    size_t numberChunks;
+    size_t chunkSize;
+    size_t numberSamples;
     std::unique_ptr<z5::Dataset> dStartIndex;
     std::unique_ptr<z5::Dataset> dx;
     std::unique_ptr<z5::Dataset> dValue;
@@ -96,7 +98,14 @@ private:
     void create_new_dataset_file(const z5::filesystem::handle::File& file);
 
 public:
-    TrainDataExporter();
+    /**
+     * @brief TrainDataExporter
+     * @param numberChunks Defines how many chunks a single file should contain.
+     * The product of the number of chunks and its chunk size yields the total number of samples of a file.
+     * @param chunkSize Defines the chunk size of a single chunk
+     * @param fileNameExport File name of the uncompressed data to be exported in (e.g. "data.zarr")
+     */
+    TrainDataExporter(const string& fileNameExport, size_t numberChunks=200, size_t chunkSize=128);
 
     /**
      * @brief export_pos Exports a given board position with result to the current training set
@@ -121,6 +130,14 @@ public:
      * @param plys Number of training samples (halfmoves/plys) for the current match
      */
     void export_game_result(const int16_t result, size_t idxOffset, size_t plys);
+
+    size_t get_number_samples() const;
+
+    /**
+     * @brief is_file_full Returns true if the exported data set contains as many samples as initially specified, else false
+     * @return bool
+     */
+    bool is_file_full();
 };
 #endif
 

@@ -29,6 +29,10 @@
 
 void TrainDataExporter::export_pos(const Board *pos, const EvalInfo& eval, size_t idxOffset)
 {
+    if (startIdx+idxOffset >= numberSamples) {
+        cout << "string info Extended number of maximum samples" << endl;
+        return;
+    }
     export_planes(pos, idxOffset);
     export_policy(eval.legalMoves, eval.policyProbSmall, pos->side_to_move(), idxOffset);
     // value will be set later in export_game_result()
@@ -36,6 +40,10 @@ void TrainDataExporter::export_pos(const Board *pos, const EvalInfo& eval, size_
 
 void TrainDataExporter::export_best_move_q(const EvalInfo &eval, size_t idxOffset)
 {
+    if (startIdx+idxOffset >= numberSamples) {
+        cout << "string info Extended number of maximum samples" << endl;
+        return;
+    }
     // Q value of "best" move (a.k.a selected move after mcts search)
     // write value to roi
     z5::types::ShapeType offsetValue = { startIdx+idxOffset };
@@ -46,6 +54,15 @@ void TrainDataExporter::export_best_move_q(const EvalInfo &eval, size_t idxOffse
 
 void TrainDataExporter::export_game_result(const int16_t result, size_t idxOffset, size_t plys)
 {
+    if (startIdx+idxOffset >= numberSamples) {
+        cout << "string info Extended number of maximum samples" << endl;
+        return;
+    }
+    if (startIdx+idxOffset+plys > numberSamples) {
+        plys -= startIdx+idxOffset+plys - numberSamples;
+        cout << "string info Adjust samples to export to " << plys << endl;
+    }
+
     // value
     // write value to roi
     z5::types::ShapeType offsetValue = { startIdx+idxOffset };
@@ -65,12 +82,13 @@ void TrainDataExporter::export_game_result(const int16_t result, size_t idxOffse
     export_start_idx();
 }
 
-TrainDataExporter::TrainDataExporter()
+TrainDataExporter::TrainDataExporter(const string& fileName, size_t numberChunks, size_t chunkSize):
+    numberChunks(numberChunks),
+    chunkSize(chunkSize),
+    numberSamples(numberChunks * chunkSize),
+    gameIdx(0),
+    startIdx(0)
 {
-    gameIdx = 0;
-    startIdx = 0;
-    chunckSize = 128;
-    const string fileName = "data.zarr";  // TODO: Change to a generic filename
     // get handle to a File on the filesystem
     z5::filesystem::handle::File file(fileName);
 
@@ -80,6 +98,16 @@ TrainDataExporter::TrainDataExporter()
     else {
         create_new_dataset_file(file);
     }
+}
+
+size_t TrainDataExporter::get_number_samples() const
+{
+    return numberSamples;
+}
+
+bool TrainDataExporter::is_file_full()
+{
+    return startIdx >= numberSamples;
 }
 
 void TrainDataExporter::export_planes(const Board *pos, size_t idxOffset)
@@ -162,16 +190,14 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     const bool createAsZarr = true;
     z5::createFile(file, createAsZarr);
 
-    const size_t numberChunks = 200;
-
     // create a new zarr dataset
-    std::vector<size_t> shape = { chunckSize*numberChunks, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
-    std::vector<size_t> chunks = { chunckSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
-    dStartIndex = z5::createDataset(file, "start_indices", "int32", { chunckSize*numberChunks }, { chunckSize });
+    std::vector<size_t> shape = { numberSamples, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
+    std::vector<size_t> chunks = { chunkSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
+    dStartIndex = z5::createDataset(file, "start_indices", "int32", { numberSamples }, { chunkSize });
     dx = z5::createDataset(file, "x", "int16", shape, chunks);
-    dValue = z5::createDataset(file, "y_value", "int16", { chunckSize*numberChunks }, { chunckSize });
-    dPolicy = z5::createDataset(file, "y_policy", "float32", { chunckSize*numberChunks, NB_LABELS }, { chunckSize, NB_LABELS });
-    dbestMoveQ = z5::createDataset(file, "y_best_move_q", "float32", { chunckSize*numberChunks }, { chunckSize });
+    dValue = z5::createDataset(file, "y_value", "int16", { numberSamples }, { chunkSize });
+    dPolicy = z5::createDataset(file, "y_policy", "float32", { numberSamples, NB_LABELS }, { chunkSize, NB_LABELS });
+    dbestMoveQ = z5::createDataset(file, "y_best_move_q", "float32", { numberSamples }, { chunkSize });
 
     export_start_idx();
 }
