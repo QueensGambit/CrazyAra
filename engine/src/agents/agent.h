@@ -67,22 +67,16 @@ protected:
     // used for sampling from the mcts policy
     std::random_device rd;
     std::mt19937 gen;
-#ifdef USE_RL
-    TrainDataExporter* exporter;
-#endif
 public:
     Agent(float temperature, unsigned int temperatureMoves, bool verbose);
-    ~Agent();
 
     /**
      * @brief perform_action Selects an action based on the evaluation result
      * @param pos Board position to evaluate
      * @param limits Pointer to the search limit
      * @param evalInfo Returns the evaluation information
-     * @param exportSample Boolean which defines if the resulting sample should
-     * be exported to be used for NN training
      */
-    void perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo, bool exportSample=false);
+    void perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo);
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents
@@ -91,9 +85,6 @@ public:
      */
     virtual void evalute_board_state(Board *pos,  EvalInfo& evalInfo) = 0;
 
-#ifdef USE_RL
-    bool is_rl_export_file_full();
-#endif
 };
 
 #endif // AGENT_H

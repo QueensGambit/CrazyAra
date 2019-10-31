@@ -41,6 +41,7 @@ SelfPlay::SelfPlay(MCTSAgent* mctsAgent):
     gamePGN.date = "?";  // TODO: Change this later
     gamePGN.round = "?";
     gamePGN.is960 = false;
+    this->exporter = new TrainDataExporter("data.zarr", 200, 128);
 }
 
 void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states)
@@ -51,7 +52,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     bool leadsToTerminal = false;
     do {
         searchLimits.startTime = now();
-        mctsAgent->perform_action(position, &searchLimits, evalInfo, true);
+        mctsAgent->perform_action(position, &searchLimits, evalInfo);
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         const Node* nextRoot = mctsAgent->get_opponents_next_root();
         if (nextRoot != nullptr) {
@@ -65,11 +66,18 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
                                             *mctsAgent->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,
                                             leadsToTerminal && int(nextRoot->get_value()) == -1));
+        if (!exporter->is_file_full()) {
+            exporter->export_pos(position, evalInfo, size_t(position->game_ply()));
+            exporter->export_best_move_q(evalInfo, size_t(position->game_ply()));
+        }
     }
     while(!leadsToTerminal);
 
+    int16_t result = position->side_to_move() == WHITE ? LOSS : WIN;
+    // we set one less than actual plys because the last terminal node isn't part of the training data
+    exporter->export_game_result(result, 0, size_t(position->game_ply())-1);
+
     cout << "info string terminal fen " << mctsAgent->get_opponents_next_root()->get_pos()->fen() << " move " << UCI::move(evalInfo.bestMove, evalInfo.isChess960)<< endl;
-    mctsAgent->export_game_results();
     set_game_result_to_pgn(mctsAgent->get_opponents_next_root());
     write_game_to_pgn("games.pgn");
     gamePGN.new_game();
@@ -162,7 +170,7 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManage
     gamePGN.black = mctsAgent->get_name();
 
     if (numberOfGames == 0) {
-        while(!mctsAgent->is_rl_export_file_full()) {
+        while(!exporter->is_file_full()) {
             generate_game(CRAZYHOUSE_VARIANT, searchLimits, states);
         }
     }

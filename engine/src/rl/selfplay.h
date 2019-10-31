@@ -40,6 +40,7 @@ private:
     MCTSAgent* mctsAgent;
     GamePGN gamePGN;
     EvalInfo evalInfo;
+    TrainDataExporter* exporter;
 
     /**
      * @brief generate_game Generates a new game in self play mode

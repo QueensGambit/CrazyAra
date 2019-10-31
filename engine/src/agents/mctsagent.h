@@ -165,13 +165,6 @@ public:
      */
     void clear_game_history();
 
-#ifdef USE_RL
-    /**
-     * @brief export_game_results Calls export_game_result() from TrainDataExporter
-     */
-    void export_game_results();
-#endif
-
     /**
      * @brief is_policy_map Checks if the current loaded network uses policy map representation.
      * @return True, if policy map else false

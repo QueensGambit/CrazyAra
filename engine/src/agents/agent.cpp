@@ -70,15 +70,9 @@ Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
     auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     gen.seed(seed);
     mt19937 gen(rd());
-    this->exporter = new TrainDataExporter("data.zarr", 200, 128);
 }
 
-Agent::~Agent()
-{
-    delete exporter;
-}
-
-void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo, bool exportSample)
+void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo)
 {
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     this->searchLimits = searchLimits;
@@ -100,17 +94,5 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
 //    else {
         cout << "bestmove " << UCI::move(evalInfo.bestMove, pos->is_chess960()) << endl;
 //    }
-#ifdef USE_RL
-    if (exportSample && !is_rl_export_file_full()) {
-        exporter->export_pos(pos, evalInfo, pos->game_ply());
-        exporter->export_best_move_q(evalInfo, pos->game_ply());
-    }
-#endif
 }
 
-#ifdef USE_RL
-bool Agent::is_rl_export_file_full()
-{
-    return exporter->is_file_full();
-}
-#endif
