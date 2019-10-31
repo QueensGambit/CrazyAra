@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8)
 project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
-option(USE_RL                    "Build with reinforcment learning support"  OFF)
-option(USE_TENSORRT              "Build with reinforcment learning support"  OFF)
+option(USE_RL                    "Build with reinforcment learning support"  ON)
+option(USE_TENSORRT              "Build with reinforcment learning support"  ON)
 
 # -pg performance profiling flags
 if (USE_PROFILING)
@@ -138,7 +138,7 @@ add_definitions(-DHORDE)
 add_definitions(-DRACE)
 
 # enable this for legacy Crazyhouse only support
-# add_definitions(-DCRAZYHOUSE_ONLY)
+add_definitions(-DCRAZYHOUSE_ONLY)
 if (USE_RL)
     add_definitions(-DUSE_RL)
 endif()

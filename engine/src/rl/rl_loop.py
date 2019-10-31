@@ -24,7 +24,8 @@ from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, adjust_loss_weighting, prepare_policy
 from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
-from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import ConstantSchedule, MomentumSchedule
+from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import ConstantSchedule,\
+    MomentumSchedule, OneCycleSchedule, LinearWarmUp
 
 
 def read_output(proc, last_line=b"readyok\n"):
@@ -117,11 +118,7 @@ class RLLoop:
         """
 
         self.crazyara_binary_dir = crazyara_binary_dir
-        self.proc = Popen([crazyara_binary_dir+"CrazyAra"],
-                          stdin=PIPE,
-                          stdout=PIPE,
-                          stderr=PIPE,
-                          shell=False)
+        self.proc = None
         self.nb_games_to_update = nb_games_to_update
         if nb_arena_games % 2 == 1:
             raise Exception("The number of tournament games should be an even number to avoid giving one player more"
@@ -141,6 +138,11 @@ class RLLoop:
         :return:
         """
         # initialize
+        self.proc = Popen([self.crazyara_binary_dir+"CrazyAra"],
+                          stdin=PIPE,
+                          stdout=PIPE,
+                          stderr=PIPE,
+                          shell=False)
 
         # CrazyAra header
         read_output(self.proc, b'\n')
@@ -198,7 +200,7 @@ class RLLoop:
         log_metrics_to_tensorboard = True
         export_grad_histograms = True
         #  div factor is a constant which can be used to reduce the batch size and learning rate respectively
-        div_factor = 4
+        div_factor = 1 #4
         # use a value smaller 1 if you encounter memory allocation errors
 
         # batch_steps = 1000 means for example that every 1000 batches the validation set gets processed
@@ -208,6 +210,8 @@ class RLLoop:
         k_steps_initial = 0  # 498
         cur_it = k_steps_initial * batch_steps  # iteration counter used for the momentum and learning rate schedule
         # these are the weights to continue training with
+        # symbol_file = 'model_init-symbol.json' #model-1.19246-0.603-symbol.json'
+        # params_file = 'model_init-0000.params' #model-1.19246-0.603-0223.params'
         symbol_file = 'model-1.19246-0.603-symbol.json'
         params_file = 'model-1.19246-0.603-0223.params'
 
@@ -219,11 +223,11 @@ class RLLoop:
 
         # optimization parameters
         optimizer_name = "nag"
-        max_lr = 0.35 / div_factor
-        min_lr = 0.2 / div_factor  # 0.00001
+        max_lr = 0.1 / div_factor #0.35 / div_factor
+        min_lr = 0.00001 / div_factor #0.2 / div_factor  # 0.00001
         max_momentum = 0.95
         min_momentum = 0.8
-        # loads a previous checkpoint if the loss increased significanly
+        # loads a previous checkpoint if the loss increased significantly
         use_spike_recovery = True
         # stop training as soon as max_spikes has been reached
         max_spikes = 20
@@ -257,8 +261,18 @@ class RLLoop:
         symbol = mx.sym.load("model/" + symbol_file)
         symbol = adjust_loss_weighting(symbol, val_loss_factor, policy_loss_factor,
                                        "value_tanh0_output", "flatten0_output")
+                                        # "value_out_output", "policy_out_output")
 
-        lr_schedule = ConstantSchedule(min_lr)
+        nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
+        nb_it_per_epoch = (len(x) * nb_parts) // batch_size  # calculate how many iterations per epoch exist
+        # one iteration is defined by passing 1 batch and doing backprop
+        total_it = int(nb_it_per_epoch * nb_epochs)
+
+        # lr_schedule = ConstantSchedule(min_lr)
+        lr_schedule = OneCycleSchedule(start_lr=max_lr / 8, max_lr=max_lr, cycle_length=total_it * .3,
+                                       cooldown_length=total_it * .6, finish_lr=min_lr)
+        lr_schedule = LinearWarmUp(lr_schedule, start_lr=min_lr, length=total_it / 30)
+        # plot_schedule(lr_schedule, iterations=total_it)
         momentum_schedule = MomentumSchedule(lr_schedule, min_lr, max_lr, min_momentum, max_momentum)
 
         if select_policy_from_plane:
@@ -276,6 +290,10 @@ class RLLoop:
 
         input_shape = x[0].shape
         model = mx.mod.Module(symbol=symbol, context=ctx, label_names=['value_label', 'policy_label'])
+        mx.viz.print_summary(
+            symbol,
+            shape={'data': (1, input_shape[0], input_shape[1], input_shape[2])},
+        )
         model.bind(for_training=True,
                    data_shapes=[('data', (batch_size, input_shape[0], input_shape[1], input_shape[2]))],
                    label_shapes=val_iter.provide_label)
@@ -351,9 +369,9 @@ def set_uci_param(proc, name, value):
 if __name__ == "__main__":
     enable_color_logging()
     rl_loop = RLLoop(crazyara_binary_dir="./",
-                     nb_games_to_update=250,
-                     nb_arena_games=2)
-    rl_loop.initialize()
+                     nb_games_to_update=200,
+                     nb_arena_games=50)
+    # rl_loop.initialize()
     # rl_loop.generate_games()
     # rl_loop.compress_dataset(validation_size=0.1)
     rl_loop.create_new_contender()

@@ -35,10 +35,10 @@ void OptionsUCI::init(OptionsMap &o)
 {
     o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
     o["Search_Type"]              << Option("mcts", {"mcts"});
-    o["Context"]                  << Option("cpu", {"cpu", "gpu"});
+    o["Context"]                  << Option("gpu", {"cpu", "gpu"});
     o["Device_ID"]                << Option(0, 0, 99999);
     o["Batch_Size"]               << Option(8, 1, 8192);
-    o["Threads"]                  << Option(1, 1, 512);
+    o["Threads"]                  << Option(2, 1, 512);
     o["Centi_CPuct_Init"]         << Option(250, 1, 99999);
     o["CPuct_Base"]               << Option(19652, 1, 99999);
     o["Centi_Dirichlet_Epsilon"]  << Option(25, 1, 99999);
@@ -52,16 +52,16 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Q_Thresh_Max"]       << Option(90, 0, 100);
     o["Q_Thresh_Base"]            << Option(1965, 0, 99999);
     o["Max_Search_Depth"]         << Option(99, 1, 99999);
-    o["Centi_Temperature"]        << Option(0, 0, 99999);
-    o["Temperature_Moves"]        << Option(0, 0, 99999);
+    o["Centi_Temperature"]        << Option(70, 0, 99999);
+    o["Temperature_Moves"]        << Option(7, 0, 99999); //0
     o["Virtual_Loss"]             << Option(3, 0, 99999);
-    o["Nodes"]                    << Option(0, 0, 99999);
+    o["Nodes"]                    << Option(800, 0, 99999); //0
     o["Use_Raw_Network"]          << Option(false);
     o["Enhance_Checks"]           << Option(true);
     o["Enhance_Captures"]         << Option(false);
-    o["Use_Transposition_Table"]  << Option(true);
+    o["Use_Transposition_Table"]  << Option(true);  // true
 #ifdef TENSORRT
-    o["Use_TensorRT"]             << Option(false);
+    o["Use_TensorRT"]             << Option(false); // true
 #endif
     o["Model_Directory"]          << Option("model/");
 #ifdef USE_RL
