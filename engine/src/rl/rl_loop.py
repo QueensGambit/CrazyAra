@@ -15,7 +15,6 @@ import zarr
 import os
 import logging
 import mxnet as mx
-import numpy as np
 import glob
 from multiprocessing import cpu_count
 
@@ -24,8 +23,8 @@ from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, adjust_loss_weighting, prepare_policy
 from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
-from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import ConstantSchedule,\
-    MomentumSchedule, OneCycleSchedule, LinearWarmUp
+from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, OneCycleSchedule, LinearWarmUp
+from DeepCrazyhouse.configs.train_config import train_config
 
 
 def read_output(proc, last_line=b"readyok\n"):
@@ -192,100 +191,51 @@ class RLLoop:
         main_config["planes_train_dir"] = self.cwd + "export/"
 
         # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
-        ctx = mx.gpu(0)
+        ctx = mx.gpu(train_config["context"]) if train_config["device_id"] == "gpu"else mx.cpu()
         # set a specific seed value for reproducibility
-        seed = 7  # 42
 
-        export_weights = True
-        log_metrics_to_tensorboard = True
-        export_grad_histograms = True
-        #  div factor is a constant which can be used to reduce the batch size and learning rate respectively
-        div_factor = 1 #4
-        # use a value smaller 1 if you encounter memory allocation errors
-
-        # batch_steps = 1000 means for example that every 1000 batches the validation set gets processed
-        batch_steps = 1 * div_factor  # this defines how often a new checkpoint will be saved and the metrics evaluated
-        # k_steps_initial defines how many steps have been trained before
-        # (k_steps_initial != 0 if you continue training from a checkpoint)
-        k_steps_initial = 0  # 498
-        cur_it = k_steps_initial * batch_steps  # iteration counter used for the momentum and learning rate schedule
-        # these are the weights to continue training with
-        # symbol_file = 'model_init-symbol.json' #model-1.19246-0.603-symbol.json'
-        # params_file = 'model_init-0000.params' #model-1.19246-0.603-0223.params'
-        symbol_file = 'model-1.19246-0.603-symbol.json'
-        params_file = 'model-1.19246-0.603-0223.params'
-
-        batch_size = int(
-            1024 / div_factor)  # 1024 # the batch_size needed to be reduced to 1024 in order to fit in the GPU 1080Ti
-        # 4096 was originally used in the paper -> works slower for current GPU
-        # 2048 was used in the paper Mastering the game of Go without human knowledge and fits in GPU memory
-        # typically if you half the batch_size, you should double the lr
-
-        # optimization parameters
-        optimizer_name = "nag"
-        max_lr = 0.1 / div_factor #0.35 / div_factor
-        min_lr = 0.00001 / div_factor #0.2 / div_factor  # 0.00001
-        max_momentum = 0.95
-        min_momentum = 0.8
-        # loads a previous checkpoint if the loss increased significantly
-        use_spike_recovery = True
-        # stop training as soon as max_spikes has been reached
-        max_spikes = 20
-        # define spike threshold when the detection will be triggered
-        spike_thresh = 1.5
-        # weight decay
-        wd = 1e-4
-        # dropout_rate = 0  # 0.2
-        # weight the value loss a lot lower than the policy loss in order to prevent overfitting
-        val_loss_factor = 1  # 0.01
-        policy_loss_factor = 1  # 0.99
-        discount = 1.0
-
-        normalize = True  # define whether to normalize input data to [0,1]
-        nb_epochs = 3  # 7 # define how many epochs the network will be trained
-
-        select_policy_from_plane = True  # Boolean if potential legal moves will be selected from final policy output
-        # Boolean if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
-        sparse_policy_label = False
-        # use_mxnet_style = True  # Decide between mxnet and gluon style for training
         # Fixing the random seed
-        mx.random.seed(seed)
+        mx.random.seed(train_config["seed"])
 
         _, x, y_value, y_policy, _, _ = load_pgn_dataset(dataset_type="train",
                                                                     part_id=0,
-                                                                    normalize=normalize,
+                                                                    normalize=train_config["normalize"],
                                                                     verbose=False)
 
-        y_policy = prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label)
+        y_policy = prepare_policy(y_policy, train_config["select_policy_from_plane"],
+                                  train_config["sparse_policy_label"])
 
-        symbol = mx.sym.load("model/" + symbol_file)
-        symbol = adjust_loss_weighting(symbol, val_loss_factor, policy_loss_factor,
+        symbol = mx.sym.load("model/" + train_config["symbol_file"])
+        symbol = adjust_loss_weighting(symbol, train_config["val_loss_factor"], train_config["policy_loss_factor"],
                                        "value_tanh0_output", "flatten0_output")
                                         # "value_out_output", "policy_out_output")
 
-        nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
-        nb_it_per_epoch = (len(x) * nb_parts) // batch_size  # calculate how many iterations per epoch exist
+        nb_parts = len(glob.glob(main_config["planes_train_dir"] + '**/*'))
+        nb_it_per_epoch = (len(x) * nb_parts) // train_config["batch_size"]  # calculate how many iterations per epoch exist
         # one iteration is defined by passing 1 batch and doing backprop
-        total_it = int(nb_it_per_epoch * nb_epochs)
+        total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
 
         # lr_schedule = ConstantSchedule(min_lr)
-        lr_schedule = OneCycleSchedule(start_lr=max_lr / 8, max_lr=max_lr, cycle_length=total_it * .3,
-                                       cooldown_length=total_it * .6, finish_lr=min_lr)
-        lr_schedule = LinearWarmUp(lr_schedule, start_lr=min_lr, length=total_it / 30)
+        lr_schedule = OneCycleSchedule(start_lr=train_config["max_lr"] / 8, max_lr=train_config["max_lr"],
+                                       cycle_length=total_it * .3,
+                                       cooldown_length=total_it * .6, finish_lr="min_lr")
+        lr_schedule = LinearWarmUp(lr_schedule, start_lr=train_config["min_lr"], length=total_it / 30)
         # plot_schedule(lr_schedule, iterations=total_it)
-        momentum_schedule = MomentumSchedule(lr_schedule, min_lr, max_lr, min_momentum, max_momentum)
+        momentum_schedule = MomentumSchedule(lr_schedule, train_config["min_lr"], train_config["max_lr"],
+                                             train_config["min_momentum"], train_config["max_momentum"])
 
-        if select_policy_from_plane:
+        if train_config["select_policy_from_plane"]:
             val_iter = mx.io.NDArrayIter({'data': x}, {'value_label': y_value,
-                                                       'policy_label': y_policy}, batch_size)
+                                                       'policy_label': y_policy}, train_config["batch_size"])
         else:
             val_iter = mx.io.NDArrayIter({'data': x},
-                                         {'value_label': y_value, 'policy_label': y_policy}, batch_size)
+                                         {'value_label': y_value, 'policy_label': y_policy}, train_config["batch_size"])
 
         nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
-        nb_it_per_epoch = (len(x) * nb_parts) // batch_size  # calculate how many iterations per epoch exist
+        # calculate how many iterations per epoch exist
+        nb_it_per_epoch = (len(x) * nb_parts) // train_config["batch_size"]
         # one iteration is defined by passing 1 batch and doing backprop
-        total_it = int(nb_it_per_epoch * nb_epochs)
+        total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
         CPU_COUNT = cpu_count()
 
         input_shape = x[0].shape
@@ -295,9 +245,9 @@ class RLLoop:
             shape={'data': (1, input_shape[0], input_shape[1], input_shape[2])},
         )
         model.bind(for_training=True,
-                   data_shapes=[('data', (batch_size, input_shape[0], input_shape[1], input_shape[2]))],
+                   data_shapes=[('data', (train_config["batch_size"], input_shape[0], input_shape[1], input_shape[2]))],
                    label_shapes=val_iter.provide_label)
-        model.load_params("model/" + params_file)
+        model.load_params("model/" + train_config["params_file"])
 
         metrics = [
             mx.metric.MSE(name='value_loss', output_names=['value_output'], label_names=['value_label']),
@@ -307,7 +257,7 @@ class RLLoop:
                                label_names=['policy_label'])
         ]
 
-        if sparse_policy_label:
+        if train_config["sparse_policy_label"]:
             # the default cross entropy only supports sparse lables
             metrics.append(mx.metric.CrossEntropy(name='policy_loss', output_names=['policy_output'],
                              label_names=['policy_label']))
@@ -316,16 +266,21 @@ class RLLoop:
                              label_names=['policy_label']))
 
         train_agent = TrainerAgentMXNET(model, symbol, val_iter, nb_parts, lr_schedule, momentum_schedule, total_it,
-                                        optimizer_name, wd=wd, batch_steps=batch_steps,
-                                        k_steps_initial=k_steps_initial, cpu_count=CPU_COUNT - 2, batch_size=batch_size,
-                                        normalize=normalize, export_weights=export_weights,
-                                        export_grad_histograms=export_grad_histograms,
-                                        log_metrics_to_tensorboard=log_metrics_to_tensorboard, ctx=ctx, metrics=metrics,
-                                        use_spike_recovery=use_spike_recovery, max_spikes=max_spikes,
-                                        spike_thresh=spike_thresh, seed=seed,
-                                        val_loss_factor=val_loss_factor, policy_loss_factor=policy_loss_factor,
-                                        select_policy_from_plane=select_policy_from_plane, discount=discount,
-                                        sparse_policy_label=sparse_policy_label)
+                                        train_config["optimizer_name"], wd="wd", batch_steps="batch_steps",
+                                        k_steps_initial=train_config["k_steps_initial"], cpu_count=CPU_COUNT - 2,
+                                        batch_size="batch_size", normalize=train_config["normalize"],
+                                        export_weights=train_config["export_weights"],
+                                        export_grad_histograms=train_config["export_grad_histograms"],
+                                        log_metrics_to_tensorboard=train_config["log_metrics_to_tensorboard"], ctx=ctx,
+                                        metrics=metrics, use_spike_recovery=train_config["use_spike_recovery"],
+                                        max_spikes="max_spikes", spike_thresh=train_config["spike_thresh"],
+                                        seed=train_config["seed"], val_loss_factor=train_config["val_loss_factor"],
+                                        policy_loss_factor=train_config["policy_loss_factor"],
+                                        select_policy_from_plane=train_config["select_policy_from_plane"],
+                                        discount=train_config["discount"],
+                                        sparse_policy_label=train_config["sparse_policy_label"])
+        # iteration counter used for the momentum and learning rate schedule
+        cur_it = train_config["k_steps_initial"] * train_config["batch_steps"]
         train_agent.train(cur_it)
 
     def compare_new_weights(self):
