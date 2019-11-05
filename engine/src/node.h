@@ -322,7 +322,7 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
 /**
  * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
  */
-void print_node_statistics(Node* node);
+void print_node_statistics(const Node* node);
 
 /**
  * @brief is_ordering_correct Validates if the ordering of the child nodes is still valid

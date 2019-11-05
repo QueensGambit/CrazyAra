@@ -641,12 +641,12 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
     return uMin - exp(-numberVisits / uBase) * (uMin - uInit);
 }
 
-void print_node_statistics(Node* node)
+void print_node_statistics(const Node* node)
 {
     size_t candidateIdx = 0;
     cout << "info string position " << node->get_pos()->fen() << endl;
-    for (auto node : node->get_child_nodes()) {
-        cout << candidateIdx++ << "." << node << endl;
+    for (auto childNode : node->get_child_nodes()) {
+        cout << candidateIdx++ << "." << childNode << endl;
     }
     cout << " initial value: " << node->get_value() << endl;
 }

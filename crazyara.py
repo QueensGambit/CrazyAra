@@ -13,7 +13,6 @@ from __future__ import print_function
 import collections
 import sys
 import traceback
-import chess.pgn
 import chess.variant
 import numpy as np
 import multiprocessing
