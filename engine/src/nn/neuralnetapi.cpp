@@ -80,11 +80,16 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
     }
 	cout << "info string json file: " << jsonFilePath << endl;
 
-    inputShape =  Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
+    inputShape = Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
     load_model(jsonFilePath);
     load_parameters(paramterFilePath);
     bind_executor();
     check_if_policy_map();
+}
+
+NeuralNetAPI::~NeuralNetAPI()
+{
+    delete executor;
 }
 
 bool NeuralNetAPI::is_policy_map() const

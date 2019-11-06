@@ -92,6 +92,7 @@ public:
      * @param MapWithMutex Handle to the hash table
      */
     SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    ~SearchThread();
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

@@ -118,6 +118,8 @@ public:
      */
     NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt);
 
+    ~NeuralNetAPI();
+
     /**
      * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
      * @param inputPlanes Pointer to the input planes of a single board position

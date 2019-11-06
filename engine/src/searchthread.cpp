@@ -45,6 +45,13 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
 }
 
+SearchThread::~SearchThread()
+{
+    delete [] inputPlanes;
+    delete valueOutputs;
+    delete probOutputs;
+}
+
 void SearchThread::set_root_node(Node *value)
 {
     rootNode = value;
