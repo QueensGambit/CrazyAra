@@ -98,7 +98,9 @@ Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, MapW
 {
     Node* parentNode = rootNode;
     Node* currentNode;
+    rootNode->lock();
     rootNode->apply_virtual_loss();
+    rootNode->unlock();
     description.depth = 0;
     while (true) {
         currentNode = select_child_node(parentNode);
