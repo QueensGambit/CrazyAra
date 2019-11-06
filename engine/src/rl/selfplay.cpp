@@ -44,9 +44,14 @@ SelfPlay::SelfPlay(MCTSAgent* mctsAgent):
     this->exporter = new TrainDataExporter("data.zarr", 200, 128);
 }
 
+SelfPlay::~SelfPlay()
+{
+    delete exporter;
+}
+
 void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states)
 {
-    Board* position = init_board(variant);
+    Board* position = init_board(variant, states);
     EvalInfo evalInfo;
     states->swap_states();
     bool leadsToTerminal = false;
@@ -80,17 +85,14 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     cout << "info string terminal fen " << mctsAgent->get_opponents_next_root()->get_pos()->fen() << " move " << UCI::move(evalInfo.bestMove, evalInfo.isChess960)<< endl;
     set_game_result_to_pgn(mctsAgent->get_opponents_next_root());
     write_game_to_pgn("games.pgn");
-    gamePGN.new_game();
-    mctsAgent->clear_game_history();
-    states->swap_states();
-    states->clear_states();
+    clean_up(gamePGN, mctsAgent, states, position);
 }
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits, StatesManager* states)
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
-    Board* position = init_board(variant);
+    Board* position = init_board(variant, states);
     EvalInfo evalInfo;
     bool isTerminal = false;
 
@@ -131,13 +133,19 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     while(!isTerminal);
     set_game_result_to_pgn(nextRoot);
     write_game_to_pgn("arena_games.pgn");
-    gamePGN.new_game();
     Result gameResult = get_terminal_node_result(nextRoot);
-    whitePlayer->clear_game_history();
+    clean_up(gamePGN, whitePlayer, states, position);
     blackPlayer->clear_game_history();
+    return gameResult;
+}
+
+void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Board* position) {
+    gamePGN.new_game();
+    mctsAgent->clear_game_history();
     states->swap_states();
     states->clear_states();
-    return gameResult;
+    position->set_state_info(new StateInfo);
+    delete position;
 }
 
 void SelfPlay::write_game_to_pgn(const std::string& pngFileName)
@@ -154,13 +162,14 @@ void SelfPlay::set_game_result_to_pgn(const Node* terminalNode)
     gamePGN.result = result[get_terminal_node_result(terminalNode)];
 }
 
-Board* SelfPlay::init_board(Variant variant)
+Board* SelfPlay::init_board(Variant variant, StatesManager* states)
 {
     Board* position = new Board();
     auto uiThread = make_shared<Thread>(0);
 
     StateInfo* newState = new StateInfo;
     position->set(StartFENs[variant], false, variant, newState, uiThread.get());
+    states->activeStates.push_back(newState);
     return position;
 }
 

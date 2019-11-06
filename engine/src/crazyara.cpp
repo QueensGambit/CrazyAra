@@ -60,6 +60,14 @@ CrazyAra::CrazyAra()
     states = new StatesManager();
 }
 
+CrazyAra::~CrazyAra()
+{
+    delete searchSettings;
+    delete playSettings;
+    delete netSingle;
+    delete states;
+}
+
 void CrazyAra::welcome()
 {
     start_logger("CrazyAra.log");
@@ -276,19 +284,18 @@ void CrazyAra::benchmark(istringstream &is)
 #ifdef USE_RL
 void CrazyAra::selfplay(istringstream &is)
 {
-    selfPlay = new SelfPlay(mctsAgent);
+    SelfPlay selfPlay(mctsAgent);
     SearchLimits searchLimits;
     searchLimits.nodes = Options["Nodes"];
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay->go(numberOfGames, searchLimits, states);
-    delete selfPlay;
+    selfPlay.go(numberOfGames, searchLimits, states);
     cout << "readyok" << endl;
 }
 
 void CrazyAra::arena(istringstream &is)
 {
-    selfPlay = new SelfPlay(mctsAgent);
+    SelfPlay selfPlay(mctsAgent);
     NeuralNetAPI* netSingle = nullptr;
     NeuralNetAPI** netBatches = nullptr;
     MCTSAgent* mctsAgentContender = create_new_mcts_agent(Options["Model_Directory_Contender"], states, netSingle, netBatches);
@@ -296,7 +303,7 @@ void CrazyAra::arena(istringstream &is)
     searchLimits.nodes = size_t(Options["Nodes"]);
     size_t numberOfGames;
     is >> numberOfGames;
-    TournamentResult tournamentResult = selfPlay->go_arena(mctsAgentContender, numberOfGames, searchLimits, states);
+    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender, numberOfGames, searchLimits, states);
     cout << "info string Arena summary" << endl;
     cout << "info string Score of Contender vs Producer: " << tournamentResult << endl;
     if (tournamentResult.score() > 0.5f) {
@@ -306,7 +313,6 @@ void CrazyAra::arena(istringstream &is)
     else {
         cout << "info string Current producer is still superior than contender. NN weights won't be replaced." << endl;
     }
-    delete selfPlay;
     cout << "readyok" << endl;
 }
 #endif
@@ -364,7 +370,6 @@ MCTSAgent *CrazyAra::create_new_mcts_agent(const string &modelDirectory, StatesM
 
 void CrazyAra::init_search_settings()
 {
-    delete searchSettings;
     searchSettings = new SearchSettings();
     searchSettings->threads = Options["Threads"];
     searchSettings->batchSize = Options["Batch_Size"];
@@ -388,7 +393,6 @@ void CrazyAra::init_search_settings()
 
 void CrazyAra::init_play_settings()
 {
-    delete playSettings;
     playSettings = new PlaySettings();
     playSettings->temperature = Options["Centi_Temperature"] / 100.0f;
     playSettings->temperatureMoves = Options["Temperature_Moves"];

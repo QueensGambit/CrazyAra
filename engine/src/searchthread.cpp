@@ -45,6 +45,13 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
 }
 
+SearchThread::~SearchThread()
+{
+    delete [] inputPlanes;
+    delete valueOutputs;
+    delete probOutputs;
+}
+
 void SearchThread::set_root_node(Node *value)
 {
     rootNode = value;
@@ -91,7 +98,9 @@ Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, MapW
 {
     Node* parentNode = rootNode;
     Node* currentNode;
+    rootNode->lock();
     rootNode->apply_virtual_loss();
+    rootNode->unlock();
     description.depth = 0;
     while (true) {
         currentNode = select_child_node(parentNode);

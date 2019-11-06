@@ -74,7 +74,6 @@ private:
     StatesManager* states;
 
 #ifdef USE_RL
-    SelfPlay* selfPlay;
     MCTSAgent* mctsAgentContender;
 #endif
     /**
@@ -95,6 +94,7 @@ private:
 
 public:
     CrazyAra();
+    ~CrazyAra();
 
     /**
      * @brief welcome Prints a welcome message to std-out

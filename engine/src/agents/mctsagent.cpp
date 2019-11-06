@@ -77,10 +77,16 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
 
 MCTSAgent::~MCTSAgent()
 {
-    delete netSingle;
+    for (auto i = 0; i < searchSettings->threads; ++i) {
+        delete netBatches[i];
+    }
     delete netBatches;
-    delete searchSettings;
     delete mapWithMutex;
+    delete valueOutput;
+    delete probOutputs;
+    for (auto searchThread : searchThreads) {
+        delete searchThread;
+    }
 }
 
 Node* MCTSAgent::get_opponents_next_root() const

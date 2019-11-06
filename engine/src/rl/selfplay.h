@@ -71,13 +71,16 @@ private:
     void set_game_result_to_pgn(const Node* terminalNode);
 
     /**
-     * @brief init_board
-     * @param variant
+     * @brief init_board Initialies a new board with the starting position of the variant
+     * @param variant Variant to be played
+     * @param states State manager which takes over the newly created state object
      * @return
      */
-    inline Board* init_board(Variant variant);
+    inline Board* init_board(Variant variant, StatesManager* states);
+
 public:
     SelfPlay(MCTSAgent* mctsAgent);
+    ~SelfPlay();
 
     /**
      * @brief go Starts the self play game generation for a given number of games
@@ -98,5 +101,16 @@ public:
     TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states);
 };
 #endif
+
+/**
+ * @brief clean_up Applies a clean-up operation after a generated game.
+ * Deletes the position, clears the current active states of the StatesManager, clears the game history of the MCTSAgent,
+ * calls new_game() for the gamePGN struct
+ * @param gamePGN gamePGN struct
+ * @param mctsAgent mctsAgent object
+ * @param states StatesManager
+ * @param position Board position which will be deleted
+ */
+void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Board* position);
 
 #endif // SELFPLAY_H
