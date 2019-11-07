@@ -221,18 +221,16 @@ void SearchThread::thread_iteration()
         netBatch->predict(inputPlanes, *valueOutputs, *probOutputs);
         set_nn_results_to_child_nodes();
     }
-    //    cout << "backup values" << endl;
     backup_value_outputs();
     backup_collisions();
-    //    rootNode->numberVisits = sum(rootNode->childNumberVisits);
 }
 
 void go(SearchThread *t)
 {
     t->set_is_running(true);
-    do {
+    while(t->get_is_running() && t->nodes_limits_ok()) {
         t->thread_iteration();
-    } while(t->get_is_running() && t->nodes_limits_ok());
+    }
 }
 
 void backup_values(vector<Node*>& nodes)
