@@ -208,6 +208,7 @@ public:
      * @param value
      */
     void set_parent_node(Node* value);
+    size_t get_number_expanded_nodes() const;
 };
 
 /**
@@ -329,7 +330,7 @@ void print_node_statistics(const Node* node);
  * @param childNodes List of nodes, assumed to be ordered based on q+u
  * @return boolean
  */
-bool is_ordering_correct(vector<Node*>& childNodes);
+bool is_ordering_correct(const vector<Node*>& childNodes);
 
 bool prob_value_comparision(const Node* n1, const Node* n2);
 

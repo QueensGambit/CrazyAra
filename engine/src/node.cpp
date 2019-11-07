@@ -115,21 +115,10 @@ void Node::calibrate_child_node_order()
     partial_sort(childNodes.begin(), childNodes.begin()+2, childNodes.begin()+idx,
                  q_plus_u_comparision);
 
+    assert(is_ordering_correct(this->get_child_nodes()));
+
     // sorting
     isCalibrated = true;
-
-    // DEBUG
-    assert(is_ordering_correct(childNodes));
-
-//    if (!is_ordering_correct(childNodes)) {
-//        cout << "nodeIdxUpdate: " << numberExpandedNodes << endl;
-//        cout << "idx " << idx << endl;
-//        cout << "numberExpandedNodes " << numberExpandedNodes << endl;
-//        cout << "parentNode == nullptr " << (parentNode == nullptr) << endl;
-//        cout << "numberChildNodes " << numberChildNodes << endl;
-//        print_node_statistics(this);
-//        assert(is_ordering_correct(childNodes));
-//    }
 }
 
 void Node::expand()
@@ -300,6 +289,11 @@ SearchSettings* Node::get_search_settings() const
 void Node::set_parent_node(Node* value)
 {
     parentNode = value;
+}
+
+size_t Node::get_number_expanded_nodes() const
+{
+    return numberExpandedNodes;
 }
 
 void Node::check_for_terminal()
@@ -526,6 +520,8 @@ Node* select_child_node(Node* node)
         }
     }
 
+    assert(is_ordering_correct(node->get_child_nodes()));
+
     node->unlock();
 
     return node->candidate_child_node();
@@ -651,7 +647,7 @@ void print_node_statistics(const Node* node)
     cout << " initial value: " << node->get_value() << endl;
 }
 
-bool is_ordering_correct(vector<Node*> &childNodes)
+bool is_ordering_correct(const vector<Node*> &childNodes)
 {
     // trivial case
     if (childNodes.size() == 1) {
@@ -662,8 +658,12 @@ bool is_ordering_correct(vector<Node*> &childNodes)
         return false;
     }
     // make sure that the 2nd highest node has a greater q+u than the remaining rest
-    for (size_t i = 2; i < childNodes.size(); ++i) {
-        if (childNodes[1]->compute_q_plus_u() < childNodes[i]->compute_q_plus_u()) {
+    for (size_t i = 1; i < childNodes.size(); ++i) {
+        if (childNodes[0]->compute_q_plus_u() < childNodes[i]->compute_q_plus_u()) {
+            cout << "numberExpandedNodes " << childNodes[0]->get_parent_node()->get_number_expanded_nodes() << endl;
+            cout << "numberChildNodes " << childNodes[0]->get_parent_node()->get_number_child_nodes() << endl;
+            cout << "i=" << i << endl;
+            print_node_statistics(childNodes[0]->get_parent_node());
             return false;
         }
     }
