@@ -99,6 +99,11 @@ Node* MCTSAgent::get_root_node() const
     return rootNode;
 }
 
+string MCTSAgent::get_device_name() const
+{
+    return netSingle->get_device_name();
+}
+
 size_t MCTSAgent::init_root_node(Board *pos)
 {
     size_t nodesPreSearch;

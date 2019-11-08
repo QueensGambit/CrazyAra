@@ -35,7 +35,7 @@ void OptionsUCI::init(OptionsMap &o)
 {
     o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
     o["Search_Type"]              << Option("mcts", {"mcts"});
-    o["Context"]                  << Option("gpu", {"cpu", "gpu"});
+    o["Context"]                  << Option("cpu", {"cpu", "gpu"});
     o["Device_ID"]                << Option(0, 0, 99999);
     o["Batch_Size"]               << Option(8, 1, 8192);
     o["Threads"]                  << Option(2, 1, 512);
@@ -53,9 +53,9 @@ void OptionsUCI::init(OptionsMap &o)
     o["Q_Thresh_Base"]            << Option(1965, 0, 99999);
     o["Max_Search_Depth"]         << Option(99, 1, 99999);
     o["Centi_Temperature"]        << Option(70, 0, 99999);
-    o["Temperature_Moves"]        << Option(7, 0, 99999); //0
+    o["Temperature_Moves"]        << Option(0, 0, 99999);
     o["Virtual_Loss"]             << Option(3, 0, 99999);
-    o["Nodes"]                    << Option(800, 0, 99999); //0
+    o["Nodes"]                    << Option(0, 0, 99999);
     o["Use_Raw_Network"]          << Option(false);
     o["Enhance_Checks"]           << Option(true);
     o["Enhance_Captures"]         << Option(false);
@@ -66,6 +66,8 @@ void OptionsUCI::init(OptionsMap &o)
     o["Model_Directory"]          << Option("model/");
 #ifdef USE_RL
     o["Model_Directory_Contender"] << Option("model_contender/");
+    o["Selfplay_Number_Chunks"]    << Option(640, 1, 99999);
+    o["Selfplay_Chunk_Size"]       << Option(128, 1, 99999);
 #endif
     o["Move_Overhead"]            << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"] << Option(0, 0, 99);

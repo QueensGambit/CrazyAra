@@ -64,6 +64,9 @@ private:
     // current sample index to insert
     size_t startIdx;
 
+    string fileNameGameIdx;
+    string fileNameStartIdx;
+
     /**
      * @brief export_planes Exports the board in plane representation (x)
      * @param pos Board position to export
@@ -100,12 +103,13 @@ private:
 public:
     /**
      * @brief TrainDataExporter
+     * @param fileNameExport File name of the uncompressed data to be exported in (e.g. "data.zarr")
+     * @param deviceName Device name specification (e.g. gpu_0, or cpu_0)
      * @param numberChunks Defines how many chunks a single file should contain.
      * The product of the number of chunks and its chunk size yields the total number of samples of a file.
      * @param chunkSize Defines the chunk size of a single chunk
-     * @param fileNameExport File name of the uncompressed data to be exported in (e.g. "data.zarr")
      */
-    TrainDataExporter(const string& fileNameExport, size_t numberChunks=200, size_t chunkSize=128);
+    TrainDataExporter(const string& fileNameExport, const string& deviceName, size_t numberChunks=200, size_t chunkSize=128);
 
     /**
      * @brief export_pos Exports a given board position with result to the current training set

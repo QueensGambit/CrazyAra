@@ -54,6 +54,7 @@ private:
     bool enableTensorrt;
     // defines the name for the model based on the loaded .params file
     string modelName;
+    string deviceName;
 
     /**
      * @brief FileExists Function to check if a file exists in a given path
@@ -138,6 +139,12 @@ public:
 
     bool is_policy_map() const;
     string get_model_name() const;
+
+    /**
+     * @brief get_device_name Returns the device name (e.g. gpu_0, or cpu_0)
+     * @return string
+     */
+    string get_device_name() const;
 };
 
 #endif // NEURALNETAPI_H

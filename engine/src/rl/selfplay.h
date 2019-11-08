@@ -41,6 +41,8 @@ private:
     GamePGN gamePGN;
     EvalInfo evalInfo;
     TrainDataExporter* exporter;
+    string filenamePGNSelfplay;
+    string filenamePGNArena;
 
     /**
      * @brief generate_game Generates a new game in self play mode
@@ -79,7 +81,13 @@ private:
     inline Board* init_board(Variant variant, StatesManager* states);
 
 public:
-    SelfPlay(MCTSAgent* mctsAgent);
+    /**
+     * @brief SelfPlay
+     * @param mctsAgent MCTSAgent which is used during selfplay for game generation
+     * @param numberChunks Number of chunks for for one file in the exported data set
+     * @param chunkSize Size of a single chunk. The product of numberChunks and chunkSize is the number of samples in an export file.
+     */
+    SelfPlay(MCTSAgent* mctsAgent, size_t numberChunks, size_t chunkSize);
     ~SelfPlay();
 
     /**

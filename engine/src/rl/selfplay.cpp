@@ -32,7 +32,7 @@
 #include <fstream>
 #include "../domain/variants.h"
 
-SelfPlay::SelfPlay(MCTSAgent* mctsAgent):
+SelfPlay::SelfPlay(MCTSAgent* mctsAgent, size_t numberChunks, size_t chunkSize):
     mctsAgent(mctsAgent)
 {
     gamePGN.variant = "crazyhouse";
@@ -41,7 +41,10 @@ SelfPlay::SelfPlay(MCTSAgent* mctsAgent):
     gamePGN.date = "?";  // TODO: Change this later
     gamePGN.round = "?";
     gamePGN.is960 = false;
-    this->exporter = new TrainDataExporter("data.zarr", 200, 128);
+    this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
+                                           mctsAgent->get_device_name(), numberChunks, chunkSize);
+    filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");
+    filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");
 }
 
 SelfPlay::~SelfPlay()
@@ -84,7 +87,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
 
     cout << "info string terminal fen " << mctsAgent->get_opponents_next_root()->get_pos()->fen() << " move " << UCI::move(evalInfo.bestMove, evalInfo.isChess960)<< endl;
     set_game_result_to_pgn(mctsAgent->get_opponents_next_root());
-    write_game_to_pgn("games.pgn");
+    write_game_to_pgn(filenamePGNSelfplay);
     clean_up(gamePGN, mctsAgent, states, position);
 }
 
@@ -132,7 +135,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     }
     while(!isTerminal);
     set_game_result_to_pgn(nextRoot);
-    write_game_to_pgn("arena_games.pgn");
+    write_game_to_pgn(filenamePGNArena);
     Result gameResult = get_terminal_node_result(nextRoot);
     clean_up(gamePGN, whitePlayer, states, position);
     blackPlayer->clear_game_history();

@@ -284,9 +284,9 @@ void CrazyAra::benchmark(istringstream &is)
 #ifdef USE_RL
 void CrazyAra::selfplay(istringstream &is)
 {
-    SelfPlay selfPlay(mctsAgent);
+    SelfPlay selfPlay(mctsAgent, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
     SearchLimits searchLimits;
-    searchLimits.nodes = Options["Nodes"];
+    searchLimits.nodes = size_t(Options["Nodes"]);
     size_t numberOfGames;
     is >> numberOfGames;
     selfPlay.go(numberOfGames, searchLimits, states);
@@ -295,7 +295,7 @@ void CrazyAra::selfplay(istringstream &is)
 
 void CrazyAra::arena(istringstream &is)
 {
-    SelfPlay selfPlay(mctsAgent);
+    SelfPlay selfPlay(mctsAgent, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
     NeuralNetAPI* netSingle = nullptr;
     NeuralNetAPI** netBatches = nullptr;
     MCTSAgent* mctsAgentContender = create_new_mcts_agent(Options["Model_Directory_Contender"], states, netSingle, netBatches);

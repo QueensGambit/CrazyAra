@@ -82,7 +82,7 @@ void TrainDataExporter::export_game_result(const int16_t result, size_t idxOffse
     export_start_idx();
 }
 
-TrainDataExporter::TrainDataExporter(const string& fileName, size_t numberChunks, size_t chunkSize):
+TrainDataExporter::TrainDataExporter(const string& fileName, const string& deviceName, size_t numberChunks, size_t chunkSize):
     numberChunks(numberChunks),
     chunkSize(chunkSize),
     numberSamples(numberChunks * chunkSize),
@@ -91,6 +91,9 @@ TrainDataExporter::TrainDataExporter(const string& fileName, size_t numberChunks
 {
     // get handle to a File on the filesystem
     z5::filesystem::handle::File file(fileName);
+
+    fileNameGameIdx = string("gameIdx_") + deviceName + string(".txt");
+    fileNameStartIdx = string("startIdx_") + deviceName + string(".txt");
 
     if (file.exists()) {
         open_dataset_from_file(file);
@@ -157,12 +160,12 @@ void TrainDataExporter::export_start_idx()
     z5::multiarray::writeSubarray<int32_t>(dStartIndex, arrayGameStartIdx, offsetStartIdx.begin());
 
     ofstream startIdxFile;
-    startIdxFile.open("startIdx.txt");
+    startIdxFile.open(fileNameStartIdx);
     // set the next startIdx to continue
     startIdxFile << startIdx;
     startIdxFile.close();
     ofstream gameIdxFile;
-    gameIdxFile.open("gameIdxFile.txt");
+    gameIdxFile.open(fileNameGameIdx);
     gameIdxFile << gameIdx;
     gameIdxFile.close();
 }
@@ -175,11 +178,11 @@ void TrainDataExporter::open_dataset_from_file(const z5::filesystem::handle::Fil
     dPolicy = z5::openDataset(file,"y_policy");
     dbestMoveQ = z5::openDataset(file, "y_best_move_q");
     ifstream startIdxFile;
-    startIdxFile.open("startIdx.txt");
+    startIdxFile.open(fileNameStartIdx);
     startIdxFile >> startIdx;
     startIdxFile.close();
     ifstream gameIdxFile;
-    gameIdxFile.open("gameIdxFile.txt");
+    gameIdxFile.open(fileNameGameIdx);
     gameIdxFile >> gameIdx;
     gameIdxFile.close();
 }

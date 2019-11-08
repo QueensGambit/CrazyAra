@@ -58,6 +58,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
     } else {
         throw "unsupported context " + ctx + " given";
     }
+    deviceName = ctx + string("_") + to_string(deviceID);
 
     string jsonFilePath;
     string paramterFilePath;
@@ -100,6 +101,11 @@ bool NeuralNetAPI::is_policy_map() const
 string NeuralNetAPI::get_model_name() const
 {
     return modelName;
+}
+
+string NeuralNetAPI::get_device_name() const
+{
+    return deviceName;
 }
 
 bool NeuralNetAPI::file_exists(const string &name)

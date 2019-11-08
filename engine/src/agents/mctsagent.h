@@ -180,6 +180,8 @@ public:
     Node *get_opponents_next_root() const;
 
     Node* get_root_node() const;
+
+    string get_device_name() const;
 };
 
 #endif // MCTSAGENT_H
