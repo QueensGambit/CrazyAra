@@ -35,9 +35,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     inputPlanes = new float[searchSettings->batchSize * NB_VALUES_TOTAL];
     valueOutputs = new NDArray(Shape(searchSettings->batchSize, 1), Context::cpu());
 
-    bool select_policy_from_plane = true;
-
-    if (select_policy_from_plane) {
+    if (netBatch->is_policy_map()) {
         probOutputs = new NDArray(Shape(searchSettings->batchSize, NB_LABELS_POLICY_MAP), Context::cpu());
     } else {
         probOutputs = new NDArray(Shape(searchSettings->batchSize, NB_LABELS), Context::cpu());
@@ -97,13 +95,12 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
 Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, MapWithMutex* mapWithMutex, NodeDescription& description)
 {
     Node* parentNode = rootNode;
-    Node* currentNode;
     rootNode->lock();
     rootNode->apply_virtual_loss();
     rootNode->unlock();
     description.depth = 0;
     while (true) {
-        currentNode = select_child_node(parentNode);
+        Node* currentNode = select_child_node(parentNode);
         currentNode->lock();
         currentNode->apply_virtual_loss();
         description.depth++;

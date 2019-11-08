@@ -688,11 +688,10 @@ void get_principal_variation(const Node* rootNode, const SearchSettings* searchS
 {
     pv.clear();
     const Node* curNode = rootNode;
-    size_t childIdx;
     do {
         DynamicVector<float> mctsPolicy(curNode->get_number_child_nodes());
         get_mcts_policy(curNode, retrieve_visits(curNode), mctsPolicy);
-        childIdx = argmax(mctsPolicy);
+        size_t childIdx = argmax(mctsPolicy);
         pv.push_back(curNode->get_child_nodes()[childIdx]->get_move());
         curNode = curNode->get_child_nodes()[childIdx];
     } while (curNode->is_expanded() && !curNode->is_terminal());

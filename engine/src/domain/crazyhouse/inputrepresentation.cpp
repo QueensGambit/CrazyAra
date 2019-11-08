@@ -173,9 +173,9 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     //  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
     std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
               normalize ? pos->rule50_count() / MAX_NB_NO_PROGRESS: pos->rule50_count());
-    current_channel++;
 
 #ifndef CRAZYHOUSE_ONLY
+    current_channel++;
     // set the remaining checks (only needed for "3check")
     if (pos->is_three_check()) {
         for (Color color : {me, you}) {
