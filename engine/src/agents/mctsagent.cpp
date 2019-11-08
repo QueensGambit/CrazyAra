@@ -232,9 +232,11 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 void MCTSAgent::clear_game_history()
 {
     // clear all remaining node of the former root node
-    for (Node* childNode: rootNode->get_child_nodes()) {
-        if (childNode != opponentsNextRoot) {
-            delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
+    if (rootNode != nullptr) {
+        for (Node* childNode: rootNode->get_child_nodes()) {
+            if (childNode != opponentsNextRoot) {
+                delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
+            }
         }
     }
     // delete all gameNodes and their hashTable item
