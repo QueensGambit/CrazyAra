@@ -106,7 +106,9 @@ Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, MapW
         description.depth++;
         if (!currentNode->is_expanded()) {
             currentNode->init_board();
+            mapWithMutex->mtx.lock();
             unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable->find(currentNode->hash_key());
+            mapWithMutex->mtx.unlock();
             if(useTranspositionTable && it != mapWithMutex->hashTable->end() &&
                     is_transposition_verified(it, currentNode->get_pos()->get_state_info())) {
                 *currentNode = *it->second;  // call of assignment operator
