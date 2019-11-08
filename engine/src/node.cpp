@@ -200,6 +200,10 @@ void Node::increment_no_visit_idx()
     }
 }
 
+bool Node::is_fully_expanded() const {
+    return isFullyExpanded;
+}
+
 float Node::get_value() const
 {
     return value;

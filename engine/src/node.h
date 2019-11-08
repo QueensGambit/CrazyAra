@@ -209,6 +209,8 @@ public:
      */
     void set_parent_node(Node* value);
     size_t get_number_expanded_nodes() const;
+
+    bool is_fully_expanded() const;
 };
 
 /**
