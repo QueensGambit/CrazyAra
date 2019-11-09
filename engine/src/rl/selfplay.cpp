@@ -66,6 +66,10 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
         if (nextRoot != nullptr) {
             leadsToTerminal = nextRoot->is_terminal();
         }
+        if (!exporter->is_file_full()) {
+            exporter->export_pos(position, evalInfo, size_t(position->game_ply()));
+            exporter->export_best_move_q(evalInfo, size_t(position->game_ply()));
+        }
         StateInfo* newState = new StateInfo;
         states->activeStates.push_back(newState);
         position->do_move(evalInfo.bestMove, *(newState));
@@ -74,10 +78,6 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
                                             *mctsAgent->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,
                                             leadsToTerminal && int(nextRoot->get_value()) == -1));
-        if (!exporter->is_file_full()) {
-            exporter->export_pos(position, evalInfo, size_t(position->game_ply()));
-            exporter->export_best_move_q(evalInfo, size_t(position->game_ply()));
-        }
     }
     while(!leadsToTerminal);
 
