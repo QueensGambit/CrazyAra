@@ -113,7 +113,7 @@ def prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label):
             y_policy[:] = FLAT_PLANE_IDX[y_policy]
     else:
         if select_policy_from_plane:
-            tmp = np.zeros((len(y_policy), NB_LABELS_POLICY_MAP))
+            tmp = np.zeros((len(y_policy), NB_LABELS_POLICY_MAP), np.float32)
             tmp[:, FLAT_PLANE_IDX] = y_policy[:, :]
             y_policy = tmp
     return y_policy
@@ -198,7 +198,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         else:
             raise Exception("%s is currently not supported as an optimizer." % optimizer_name)
         self.ordering = list(range(nb_parts))  # define a list which describes the order of the processed batches
-
         # decides if the policy indices shall be selected directly from spatial feature maps without dense layer
         self.select_policy_from_plane = select_policy_from_plane
 

@@ -26,6 +26,8 @@ from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, OneCycleSchedule, LinearWarmUp
 from DeepCrazyhouse.configs.train_config import train_config
 
+device_name = "gpu_0"
+
 
 def read_output(proc, last_line=b"readyok\n"):
     """
@@ -89,6 +91,14 @@ def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, start_i
     store.close()
     logging.debug("dataset was exported to: %s", zarr_path)
 
+    # TODO: Move to single function
+    file_names = ["startIdx_" + device_name + ".txt",
+                  "games_" + device_name + ".pgn",
+                  "gameIdx_" + device_name + ".txt",
+                  "data_" + device_name + ".zarr"]
+    for file_name in file_names:
+        os.rename(file_name, timestmp_dir+file_name)
+
 
 def create_dir(directory):
     """
@@ -150,8 +160,8 @@ class RLLoop:
         # self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
         #                                                                            'utf-8'))
         set_uci_param(self.proc, "Nodes", 800)
-        set_uci_param(self.proc, "Centi_Temperature", 10)
-        set_uci_param(self.proc, "Temperature_Moves", 7)
+        # set_uci_param(self.proc, "Centi_Temperature", 10)
+        # set_uci_param(self.proc, "Temperature_Moves", 7)
 
         # load network
         self.proc.stdin.write(b"isready\n")
@@ -167,20 +177,14 @@ class RLLoop:
         self.proc.stdin.flush()
         read_output(self.proc, b"readyok\n")
 
-    def compress_dataset(self, validation_size=0.1):
+    def compress_dataset(self):
         """
         Loads the uncompressed data file, select all sample until the index specified in "startIdx.txt",
         compresses it and exports it
-        :param validation_size: Floating value that should be in [0.0, 1.0] and defines the proportion of the data set that is
-         used as validation data
         :return:
         """
-        with open("startIdx.txt", "r") as file:
-            end_idx = int(file.readline())
-        end_idx_train = int(end_idx * (1-validation_size))
-        data = zarr.load(self.crazyara_binary_dir + "data.zarr")
-        compress_zarr_dataset(data, "./export/train/", start_idx=0, end_idx=end_idx_train)
-        compress_zarr_dataset(data, "./export/val/", start_idx=end_idx_train+1, end_idx=end_idx)
+        data = zarr.load(self.crazyara_binary_dir + "data_" + device_name + ".zarr")
+        compress_zarr_dataset(data, "./export/train/", start_idx=0)
 
     def update_network(self):
         """
@@ -188,30 +192,31 @@ class RLLoop:
         :return:
         """
 
-        main_config["planes_train_dir"] = self.cwd + "export/"
+        # main_config["planes_train_dir"] = self.cwd + "export/"
 
         # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
-        ctx = mx.gpu(train_config["context"]) if train_config["device_id"] == "gpu"else mx.cpu()
+        ctx = mx.gpu(train_config["device_id"]) if train_config["context"] == "gpu"else mx.cpu()
         # set a specific seed value for reproducibility
 
         # Fixing the random seed
         mx.random.seed(train_config["seed"])
 
-        _, x, y_value, y_policy, _, _ = load_pgn_dataset(dataset_type="train",
-                                                                    part_id=0,
-                                                                    normalize=train_config["normalize"],
-                                                                    verbose=False)
+        _, x_val, y_val_value, y_val_policy, _, _ = load_pgn_dataset(dataset_type="val",
+                                                                     part_id=0,
+                                                                     normalize=train_config["normalize"],
+                                                                     verbose=False)
 
-        y_policy = prepare_policy(y_policy, train_config["select_policy_from_plane"],
-                                  train_config["sparse_policy_label"])
+        y_val_policy = prepare_policy(y_val_policy, train_config["select_policy_from_plane"],
+                                      train_config["sparse_policy_label"])
 
         symbol = mx.sym.load("model/" + train_config["symbol_file"])
         symbol = adjust_loss_weighting(symbol, train_config["val_loss_factor"], train_config["policy_loss_factor"],
                                        "value_tanh0_output", "flatten0_output")
                                         # "value_out_output", "policy_out_output")
 
-        nb_parts = len(glob.glob(main_config["planes_train_dir"] + '**/*'))
-        nb_it_per_epoch = (len(x) * nb_parts) // train_config["batch_size"]  # calculate how many iterations per epoch exist
+        nb_parts = len(glob.glob(main_config["planes_train_dir"] + '**/*.zip'))
+        logging.info("number parts: %d" % nb_parts)
+        nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]  # calculate how many iterations per epoch exist
         # one iteration is defined by passing 1 batch and doing backprop
         total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
 
@@ -225,20 +230,20 @@ class RLLoop:
                                              train_config["min_momentum"], train_config["max_momentum"])
 
         if train_config["select_policy_from_plane"]:
-            val_iter = mx.io.NDArrayIter({'data': x}, {'value_label': y_value,
-                                                       'policy_label': y_policy}, train_config["batch_size"])
+            val_iter = mx.io.NDArrayIter({'data': x_val}, {'value_label': y_val_value,
+                                                           'policy_label': y_val_policy}, train_config["batch_size"])
         else:
-            val_iter = mx.io.NDArrayIter({'data': x},
-                                         {'value_label': y_value, 'policy_label': y_policy}, train_config["batch_size"])
+            val_iter = mx.io.NDArrayIter({'data': x_val},
+                                         {'value_label': y_val_value, 'policy_label': y_val_policy},
+                                         train_config["batch_size"])
 
-        nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
         # calculate how many iterations per epoch exist
-        nb_it_per_epoch = (len(x) * nb_parts) // train_config["batch_size"]
+        nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]
         # one iteration is defined by passing 1 batch and doing backprop
         total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
         CPU_COUNT = cpu_count()
 
-        input_shape = x[0].shape
+        input_shape = x_val[0].shape
         model = mx.mod.Module(symbol=symbol, context=ctx, label_names=['value_label', 'policy_label'])
         mx.viz.print_summary(
             symbol,
@@ -266,14 +271,16 @@ class RLLoop:
                              label_names=['policy_label']))
 
         train_agent = TrainerAgentMXNET(model, symbol, val_iter, nb_parts, lr_schedule, momentum_schedule, total_it,
-                                        train_config["optimizer_name"], wd="wd", batch_steps="batch_steps",
+                                        train_config["optimizer_name"], wd=train_config["wd"],
+                                        batch_steps=train_config["batch_steps"],
                                         k_steps_initial=train_config["k_steps_initial"], cpu_count=CPU_COUNT - 2,
-                                        batch_size="batch_size", normalize=train_config["normalize"],
+                                        batch_size=train_config["batch_size"], normalize=train_config["normalize"],
                                         export_weights=train_config["export_weights"],
                                         export_grad_histograms=train_config["export_grad_histograms"],
                                         log_metrics_to_tensorboard=train_config["log_metrics_to_tensorboard"], ctx=ctx,
                                         metrics=metrics, use_spike_recovery=train_config["use_spike_recovery"],
-                                        max_spikes="max_spikes", spike_thresh=train_config["spike_thresh"],
+                                        max_spikes=train_config["max_spikes"],
+                                        spike_thresh=train_config["spike_thresh"],
                                         seed=train_config["seed"], val_loss_factor=train_config["val_loss_factor"],
                                         policy_loss_factor=train_config["policy_loss_factor"],
                                         select_policy_from_plane=train_config["select_policy_from_plane"],
@@ -324,11 +331,14 @@ def set_uci_param(proc, name, value):
 if __name__ == "__main__":
     enable_color_logging()
     rl_loop = RLLoop(crazyara_binary_dir="./",
-                     nb_games_to_update=200,
+                     nb_games_to_update=0,
                      nb_arena_games=50)
     # rl_loop.initialize()
-    # rl_loop.generate_games()
-    # rl_loop.compress_dataset(validation_size=0.1)
-    rl_loop.create_new_contender()
-    # rl_loop.update_network()
-    rl_loop.compare_new_weights()
+
+    # while True:
+    #     rl_loop.generate_games()
+    #     rl_loop.compress_dataset(validation_size=0.1)
+    # rl_loop.create_new_contender()
+
+    rl_loop.update_network()
+    # rl_loop.compare_new_weights()

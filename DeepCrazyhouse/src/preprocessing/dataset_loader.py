@@ -54,20 +54,21 @@ def load_pgn_dataset(
     """
 
     if dataset_type == "train":
-        zarr_filepaths = glob.glob(main_config["planes_train_dir"] + "**/*")
+        zarr_filepaths = glob.glob(main_config["planes_train_dir"] + "**/*.zip")
     elif dataset_type == "val":
-        zarr_filepaths = glob.glob(main_config["planes_val_dir"] + "**/*")
+        zarr_filepaths = glob.glob(main_config["planes_val_dir"] + "**/*.zip")
     elif dataset_type == "test":
-        zarr_filepaths = glob.glob(main_config["planes_test_dir"] + "**/*")
+        zarr_filepaths = glob.glob(main_config["planes_test_dir"] + "**/*.zip")
     elif dataset_type == "mate_in_one":
-        zarr_filepaths = glob.glob(main_config["planes_mate_in_one_dir"] + "**/*")
+        zarr_filepaths = glob.glob(main_config["planes_mate_in_one_dir"] + "**/*.zip")
     else:
         raise Exception(
             'Invalid dataset type "%s" given. It must be either "train", "val", "test" or "mate_in_one"' % dataset_type
         )
 
     if len(zarr_filepaths) < part_id + 1:
-        raise Exception("There aren't enough parts available in the given directory for partid=" + str(part_id))
+        raise Exception("There aren't enough parts available (%d parts) in the given directory for partid=%d"
+                        % (len(zarr_filepaths), part_id))
 
     # load the zarr-files
     pgn_datasets = zarr_filepaths
