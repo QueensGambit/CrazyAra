@@ -157,8 +157,8 @@ class RLLoop:
         read_output(self.proc, b'\n')
         read_output(self.proc, b'\n')
 
-        # self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
-        #                                                                            'utf-8'))
+        self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
+                                                                                   'utf-8'))
         set_uci_param(self.proc, "Nodes", 800)
         # set_uci_param(self.proc, "Centi_Temperature", 10)
         # set_uci_param(self.proc, "Temperature_Moves", 7)
@@ -333,12 +333,12 @@ if __name__ == "__main__":
     rl_loop = RLLoop(crazyara_binary_dir="./",
                      nb_games_to_update=0,
                      nb_arena_games=50)
-    # rl_loop.initialize()
+    rl_loop.initialize()
 
-    # while True:
-    #     rl_loop.generate_games()
-    #     rl_loop.compress_dataset(validation_size=0.1)
+    while True:
+        rl_loop.generate_games()
+        rl_loop.compress_dataset()
     # rl_loop.create_new_contender()
 
-    rl_loop.update_network()
+    # rl_loop.update_network()
     # rl_loop.compare_new_weights()

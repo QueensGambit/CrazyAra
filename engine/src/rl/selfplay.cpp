@@ -82,8 +82,8 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     while(!leadsToTerminal);
 
     int16_t result = position->side_to_move() == WHITE ? LOSS : WIN;
-    // we set one less than actual plys because the last terminal node isn't part of the training data
-    exporter->export_game_result(result, 0, size_t(position->game_ply())-1);
+    // game contains how many moves have been made at the end of the game
+    exporter->export_game_result(result, 0, size_t(position->game_ply()));
 
     cout << "info string terminal fen " << mctsAgent->get_opponents_next_root()->get_pos()->fen() << " move " << UCI::move(evalInfo.bestMove, evalInfo.isChess960)<< endl;
     set_game_result_to_pgn(mctsAgent->get_opponents_next_root());
@@ -154,7 +154,7 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Boa
 void SelfPlay::write_game_to_pgn(const std::string& pngFileName)
 {
     ofstream pgnFile;
-    pgnFile.open(pngFileName, std::ios_base::app);  // TODO: Change to more meaningful filename
+    pgnFile.open(pngFileName, std::ios_base::app);
     cout << endl << gamePGN << endl;
     pgnFile << gamePGN << endl;
     pgnFile.close();
