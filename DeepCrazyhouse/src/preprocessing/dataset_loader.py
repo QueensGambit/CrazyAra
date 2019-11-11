@@ -77,7 +77,7 @@ def load_pgn_dataset(
         logging.debug("")
 
     pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
-    start_indices, x, y_value, y_policy, plys_to_end = get_numpy_arrays(pgn_dataset)  # Get the data
+    start_indices, x, y_value, y_policy, plys_to_end, y_best_move_q = get_numpy_arrays(pgn_dataset)  # Get the data
 
     if print_statistics:
         logging.info("STATISTICS:")

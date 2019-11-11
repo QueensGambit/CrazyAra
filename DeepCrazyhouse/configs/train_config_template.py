@@ -56,6 +56,9 @@ train_config = {
     # weight the value loss a lot lower than the policy loss in order to prevent overfitting
     "val_loss_factor": 1,  # 0.01
     "policy_loss_factor": 1,  # 0.99
+    # ratio for mixing the value return with the corresponding q-value
+    # for a ratio of 0 no q-value information will be used
+    "q_value_ratio": 0.5,
     "discount": 1.0,
 
     "normalize": True,  # define whether to normalize input data to [0,1]

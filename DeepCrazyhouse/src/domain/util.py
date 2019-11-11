@@ -115,18 +115,23 @@ def get_numpy_arrays(pgn_dataset):
             y_policy - the movement policy for the next_move played
             plys_to_end - array of how many plys to the end of the game for each position.
              This can be used to apply discounting
+            y_best_move_q - Q-value for the position of the selected move
+             (this information is only available for generated data during selfplay)
     """
     # Get the data
     start_indices = np.array(pgn_dataset["start_indices"])
     x = np.array(pgn_dataset["x"])
     y_value = np.array(pgn_dataset["y_value"])
     y_policy = np.array(pgn_dataset["y_policy"])
-    try:
-        plys_to_end = np.array(pgn_dataset["plys_to_end"])
-    except KeyError:
-        logging.debug('"plys_to_end" key was not found in data set. Setting entry to "None" instead.')
-        plys_to_end = None
-    return start_indices, x, y_value, y_policy, plys_to_end
+
+    possible_entries = ["plys_to_end", "y_best_move_q"]
+    entries = [None] * 2
+    for idx, entry in enumerate(possible_entries):
+        try:
+            entries[idx] = np.array(pgn_dataset[entry])
+        except KeyError:
+            logging.debug('"%s" key was not found in data set. Setting entry to "None" instead.' % entry)
+    return start_indices, x, y_value, y_policy, entries[0], entries[1]
 
 
 def normalize_input_planes(x):

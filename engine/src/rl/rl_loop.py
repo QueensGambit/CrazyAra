@@ -223,7 +223,7 @@ class RLLoop:
         # lr_schedule = ConstantSchedule(min_lr)
         lr_schedule = OneCycleSchedule(start_lr=train_config["max_lr"] / 8, max_lr=train_config["max_lr"],
                                        cycle_length=total_it * .3,
-                                       cooldown_length=total_it * .6, finish_lr="min_lr")
+                                       cooldown_length=total_it * .6, finish_lr=train_config["min_lr"])
         lr_schedule = LinearWarmUp(lr_schedule, start_lr=train_config["min_lr"], length=total_it / 30)
         # plot_schedule(lr_schedule, iterations=total_it)
         momentum_schedule = MomentumSchedule(lr_schedule, train_config["min_lr"], train_config["max_lr"],
@@ -269,6 +269,9 @@ class RLLoop:
         else:
             metrics.append(mx.metric.create(cross_entropy, name='policy_loss', output_names=['policy_output'],
                              label_names=['policy_label']))
+
+        logging.info("Perfomance pre training")
+        print(model.score(val_iter, metrics))
 
         train_agent = TrainerAgentMXNET(model, symbol, val_iter, nb_parts, lr_schedule, momentum_schedule, total_it,
                                         train_config["optimizer_name"], wd=train_config["wd"],
