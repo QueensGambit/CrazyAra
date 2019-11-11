@@ -204,7 +204,8 @@ class RLLoop:
         _, x_val, y_val_value, y_val_policy, _, _ = load_pgn_dataset(dataset_type="val",
                                                                      part_id=0,
                                                                      normalize=train_config["normalize"],
-                                                                     verbose=False)
+                                                                     verbose=False,
+                                                                     q_value_ratio=train_config["q_value_ratio"])
 
         y_val_policy = prepare_policy(y_val_policy, train_config["select_policy_from_plane"],
                                       train_config["sparse_policy_label"])
@@ -288,7 +289,8 @@ class RLLoop:
                                         policy_loss_factor=train_config["policy_loss_factor"],
                                         select_policy_from_plane=train_config["select_policy_from_plane"],
                                         discount=train_config["discount"],
-                                        sparse_policy_label=train_config["sparse_policy_label"])
+                                        sparse_policy_label=train_config["sparse_policy_label"],
+                                        q_value_ratio=train_config["q_value_ratio"])
         # iteration counter used for the momentum and learning rate schedule
         cur_it = train_config["k_steps_initial"] * train_config["batch_steps"]
         train_agent.train(cur_it)

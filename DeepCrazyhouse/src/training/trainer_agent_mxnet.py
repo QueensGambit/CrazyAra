@@ -153,6 +153,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         select_policy_from_plane=True,
         discount=1,  # 0.995,
         sparse_policy_label=True,
+        q_value_ratio=0,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -184,6 +185,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self._policy_loss_factor = policy_loss_factor
         self.x_train = self.yv_train = self.yp_train = None
         self.discount = discount
+        self._q_value_ratio = q_value_ratio
         # defines if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
         self.sparse_policy_label = sparse_policy_label
         # define a summary writer that logs data and flushes to the file every 5 seconds
@@ -272,9 +274,10 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
                 # load one chunk of the dataset from memory
                 _, self.x_train, self.yv_train, self.yp_train, plys_to_end, _ = load_pgn_dataset(dataset_type="train",
-                                                                                    part_id=part_id,
-                                                                                    normalize=self._normalize,
-                                                                                    verbose=False)
+                                                                                                 part_id=part_id,
+                                                                                                 normalize=self._normalize,
+                                                                                                 verbose=False,
+                                                                                                 q_value_ratio=self._q_value_ratio)
                 # fill_up_batch if there aren't enough games
                 if len(self.yv_train) < self._batch_size:
                     logging.info("filling up batch with too few samples %d" % len(self.yv_train))

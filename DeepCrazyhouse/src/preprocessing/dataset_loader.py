@@ -30,19 +30,19 @@ def _load_dataset_file(dataset_filepath):
 
 
 def load_pgn_dataset(
-    dataset_type="train", part_id=0, print_statistics=False, print_parameters=False, verbose=True, normalize=False
-):  # Too many arguments (6/5)
+    dataset_type="train", part_id=0, verbose=True, normalize=False, q_value_ratio=0,
+):
     """
     Loads one part of the pgn dataset in form of planes / multidimensional numpy array.
     It reads all files which are located either in the main_config['test_dir'] or main_config['test_dir']
 
     :param dataset_type: either ['train', 'test', 'mate_in_one']
     :param part_id: Decides which part of the data set will be loaded
-    :param print_statistics: Decides whether to print file statistics
-    :param print_parameters: Decide whether to print the parameters with which the dataset was generated
     :param verbose: True if the log message shall be shown
     :param normalize: True if the inputs shall be normalized to 0-1
     ! Note this only supported for hist-length=1 at the moment
+    :param q_value_ratio: Ratio for mixing the value return with the corresponding q-value
+    For a ratio of 0 no q-value information will be used. Value must be in [0, 1]
     :return: numpy-arrays:
             start_indices - defines the index where each game starts
             x - the board representation for all games
@@ -79,7 +79,7 @@ def load_pgn_dataset(
     pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
     start_indices, x, y_value, y_policy, plys_to_end, y_best_move_q = get_numpy_arrays(pgn_dataset)  # Get the data
 
-    if print_statistics:
+    if verbose:
         logging.info("STATISTICS:")
         try:
             for member in pgn_dataset["statistics"]:
@@ -87,13 +87,15 @@ def load_pgn_dataset(
         except KeyError:
             logging.warning("no statistics found")
 
-    if print_parameters:
         logging.info("PARAMETERS:")
         try:
             for member in pgn_dataset["parameters"]:
                 print(member, list(pgn_dataset["parameters"][member]))
         except KeyError:
             logging.warning("no parameters found")
+
+    if q_value_ratio != 0:
+        y_value = (1-q_value_ratio) * y_value + q_value_ratio * y_best_move_q
 
     if normalize:
         x = x.astype(np.float32)
