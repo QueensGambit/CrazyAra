@@ -33,7 +33,7 @@
 #include "../domain/variants.h"
 
 SelfPlay::SelfPlay(MCTSAgent* mctsAgent, size_t numberChunks, size_t chunkSize):
-    mctsAgent(mctsAgent)
+    mctsAgent(mctsAgent), gameIdx(0), gamesPerMin(0), samplesPerMin(0)
 {
     gamePGN.variant = "crazyhouse";
     gamePGN.event = "CrazyAra-SelfPlay";
@@ -54,6 +54,7 @@ SelfPlay::~SelfPlay()
 
 void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states)
 {
+    chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
     Board* position = init_board(variant, states);
     EvalInfo evalInfo;
     states->swap_states();
@@ -89,6 +90,16 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     set_game_result_to_pgn(mctsAgent->get_opponents_next_root());
     write_game_to_pgn(filenamePGNSelfplay);
     clean_up(gamePGN, mctsAgent, states, position);
+
+    // measure time statistics
+    float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
+    // compute running cummulative average
+    gamesPerMin = (gameIdx * gamesPerMin + (1 / elapsedTimeMin)) / (gameIdx + 1);
+    samplesPerMin = (gameIdx * samplesPerMin + (position->game_ply() / elapsedTimeMin)) / (gameIdx + 1);
+    cout << std::setprecision(2)
+         << "games/min: " << gamesPerMin
+         << " samples/min: " << samplesPerMin
+         << " generated games: " << ++gameIdx << endl;
 }
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits, StatesManager* states)
@@ -176,8 +187,16 @@ Board* SelfPlay::init_board(Variant variant, StatesManager* states)
     return position;
 }
 
+void SelfPlay::reset_speed_statistics()
+{
+    gameIdx = 0;
+    gamesPerMin = 0;
+    samplesPerMin = 0;
+}
+
 void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states)
 {
+    reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
     gamePGN.black = mctsAgent->get_name();
 

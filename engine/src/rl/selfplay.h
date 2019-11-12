@@ -43,6 +43,9 @@ private:
     TrainDataExporter* exporter;
     string filenamePGNSelfplay;
     string filenamePGNArena;
+    size_t gameIdx;
+    float gamesPerMin;
+    float samplesPerMin;
 
     /**
      * @brief generate_game Generates a new game in self play mode
@@ -80,6 +83,10 @@ private:
      */
     inline Board* init_board(Variant variant, StatesManager* states);
 
+    /**
+     * @brief reset_speed_statistics Resets the interal measurements for gameIdx, gamesPerMin and samplesPerMin
+     */
+    void reset_speed_statistics();
 public:
     /**
      * @brief SelfPlay

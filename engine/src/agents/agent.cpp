@@ -77,22 +77,12 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     this->searchLimits = searchLimits;
     this->evalute_board_state(pos, evalInfo);
-    chrono::steady_clock::time_point end= chrono::steady_clock::now();
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
     evalInfo.elapsedTimeMS = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     evalInfo.nps = int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f);
     set_best_move(evalInfo, pos->total_move_cout());
     cout << evalInfo << endl;
     cout << pos->fen() << endl;
-    // TODO: Enable opening books in a more proper way
-//    if (string(pos->fen()) == string("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR[] b KQkq - 0 1")) {
-//        cout << "info string sample move from opening book" << endl;
-//        string replies[] = {"e7e5", "e7e5", "e7e5" , "g8f6", "g8f6", "g8f6", "e7e6", "e7e6", "d7d5", "b8c6"};
-//        auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-//        srand(unsigned(int(seed)));
-//        cout << "bestmove " << replies[seed % 10] << endl;
-//    }
-//    else {
-        cout << "bestmove " << UCI::move(evalInfo.bestMove, pos->is_chess960()) << endl;
-//    }
+    cout << "bestmove " << UCI::move(evalInfo.bestMove, pos->is_chess960()) << endl;
 }
 
