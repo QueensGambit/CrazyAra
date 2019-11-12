@@ -35,6 +35,7 @@
 #include "../manager/statesmanager.h"
 #include "../manager/treemanager.h"
 #include "../node.h"
+#include "../util/communication.h"
 
 using namespace mxnet::cpp;
 
@@ -114,7 +115,7 @@ size_t MCTSAgent::init_root_node(Board *pos)
         // This way the memory won't be freed for the next new move
         states->swap_states();
         nodesPreSearch = rootNode->get_visits();
-        cout << "info string reuse the tree with " << nodesPreSearch << " nodes" << endl;
+        info_string(nodesPreSearch, "nodes of former tree will be reused");
     }
     else {
         create_new_root_node(pos);
@@ -131,7 +132,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
         return nullptr;
     }
     if (same_hash_key(rootNode, pos)) {
-        cout << "info string reuse the full tree" << endl;
+        info_string("reuse the full tree");
         reusedFullTree = true;
         return rootNode;
     }
@@ -151,7 +152,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 void MCTSAgent::stop_search_based_on_limits()
 {
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->get_pos()->side_to_move(), rootNode->get_pos()->plies_from_null()/2);
-    cout << "info string movetime " << curMovetime << endl;
+    info_string("movetime", curMovetime);
     this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
     if (early_stopping()) {
         stop_search();
@@ -174,7 +175,7 @@ void MCTSAgent::stop_search()
 bool MCTSAgent::early_stopping()
 {
     if (rootNode->candidate_child_node()->get_prob_value() > 0.9f && rootNode->candidate_child_node()->get_q_value() > rootNode->alternative_child_node()->get_q_value()) {
-        cout << "info string Early stopping" << endl;
+        info_string("Early stopping");
         return true;
     }
     return false;
@@ -182,7 +183,7 @@ bool MCTSAgent::early_stopping()
 
 bool MCTSAgent::continue_search() {
     if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->candidate_child_node()->get_q_value()+0.1f < lastValueEval) {
-        cout << "info Increase search time" << endl;
+        info_string("Increase search time");
         return true;
     }
     return false;
@@ -193,7 +194,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
     Board* newPos = new Board(*pos);
     newPos->set_state_info(new StateInfo(*(pos->get_state_info())));
     if (rootNode != nullptr) {
-        cout << "info string delete the old tree " << endl;
+        info_string("delete the old tree");
         delete_sibling_subtrees(rootNode, mapWithMutex->hashTable);
         if (opponentsNextRoot != nullptr) {
             delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
@@ -204,7 +205,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
         }
     }
 
-    cout << "info string create new tree" << endl;
+    info_string("create new tree");
     rootNode = new Node(newPos, nullptr, MOVE_NONE, searchSettings);
     rootNode->expand();
     oldestRootNode = rootNode;
@@ -218,7 +219,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 {
     if (!reusedFullTree) {
-        cout << "info string apply move to tree" << endl;
+        info_string("apply move to tree");
         if (ownMove) {
             opponentsNextRoot = pick_next_node(move, rootNode);
             if (opponentsNextRoot != nullptr) { // && opponentsNextRoot->has_nn_results()) {
@@ -272,16 +273,16 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
 {
     size_t nodesPreSearch = init_root_node(pos);
     if (rootNode->get_number_child_nodes() == 1) {
-        cout << "info string Only single move available -> early stopping" << endl;
+        info_string("Only single move available -> early stopping");
     }
     else if (rootNode->get_checkmate_node() != nullptr) {
-        cout << "info string Checkmate in one -> early stopping" << endl;
+        info_string("Checkmate in one -> early stopping");
     }
     else if (rootNode->get_number_child_nodes() == 0) {
-        cout << "info string The given position has no legal moves" << endl;
+        info_string("The given position has no legal moves");
     }
     else {
-        cout << "info string apply dirichlet" << endl;
+        info_string("apply dirichlet noise");
         rootNode->apply_dirichlet_noise_to_prior_policy();
 
         if (rootNode->get_parent_node() == nullptr) {
@@ -299,10 +300,6 @@ void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
     get_mcts_policy(rootNode, evalInfo.childNumberVisits, evalInfo.policyProbSmall);
 
-//    size_t bestIdx = argmax(evalInfo.policyProbSmall);
-//    if (bestIdx != argmax(rootNode->childNumberVisits)) {
-//        cout << "info string Select different move due to higher Q-value" << endl;
-//    }
     lastValueEval = updated_value(rootNode, evalInfo.policyProbSmall);
     evalInfo.bestMoveQ = lastValueEval;
     evalInfo.centipawns = value_to_centipawn(lastValueEval);
@@ -335,7 +332,7 @@ void MCTSAgent::run_mcts_search()
 void MCTSAgent::print_root_node()
 {
     if (rootNode == nullptr) {
-        cout << "info string You must do a search before you can print the root node statistics" << endl;
+        info_string("You must do a search before you can print the root node statistics");
         return;
     }
     print_node_statistics(rootNode);

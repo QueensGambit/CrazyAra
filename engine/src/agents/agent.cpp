@@ -29,6 +29,7 @@
 #include "agent.h"
 #include "misc.h"
 #include "uci.h"
+#include "../util/communication.h"
 
 using namespace std;
 
@@ -51,7 +52,7 @@ void Agent::apply_temperature_to_policy(DynamicVector<double> &policyProbSmall)
 void Agent::set_best_move(EvalInfo &evalInfo, size_t moveCounter)
 {
     if (moveCounter <= temperatureMoves && temperature > 0.01f) {
-        cout << "info string Sample move" << endl;
+        info_string("Sample move");
         DynamicVector<double> policyProbSmall = evalInfo.childNumberVisits / sum(evalInfo.childNumberVisits);
         apply_temperature_to_policy(policyProbSmall);
         size_t moveIdx = pick_move_idx(policyProbSmall);
@@ -81,8 +82,8 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
     evalInfo.elapsedTimeMS = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     evalInfo.nps = int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f);
     set_best_move(evalInfo, pos->total_move_cout());
-    cout << evalInfo << endl;
-    cout << pos->fen() << endl;
-    cout << "bestmove " << UCI::move(evalInfo.bestMove, pos->is_chess960()) << endl;
+    info_score(evalInfo);
+    info_string(pos->fen());
+    info_bestmove(UCI::move(evalInfo.bestMove, pos->is_chess960()));
 }
 

@@ -44,7 +44,7 @@ namespace OptionsUCI {
 
     /**
      * @brief setoption Sets a given option value to the Options map.
-     * Method is based on lib/Stockfish/uci.cpp
+     * Method is based on 3rdparty/Stockfish/uci.cpp
      * @param is Stringstream
      */
     void setoption(istringstream& is);

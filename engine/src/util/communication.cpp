@@ -18,24 +18,11 @@
 */
 
 /*
- * @file: evalinfo.cpp
- * Created on 13.05.2019
+ * @file: communication.cpp
+ * Created on 12.11.2019
  * @author: queensgambit
  */
 
-#include "evalinfo.h"
-#include "uci.h"
+#include "communication.h"
 
-std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
-{
-    os << "cp " << evalInfo.centipawns
-       << " depth " << evalInfo.depth
-       << " nodes " << evalInfo.nodes
-       << " time " << evalInfo.elapsedTimeMS
-       << " nps " << evalInfo.nps
-       << " pv";
-    for (Move move: evalInfo.pv) {
-        os << " " << UCI::move(move, evalInfo.isChess960);
-    }
-    return os;
-}
+#include <iostream>

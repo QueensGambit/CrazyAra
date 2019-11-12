@@ -28,6 +28,7 @@
 #include <exception>
 #include <string>
 #include "../domain/crazyhouse/constants.h"
+#include "../util/communication.h"
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
@@ -36,7 +37,8 @@ vector<string> get_directory_files(const string& dir) {
     shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
     struct dirent *dirent_ptr;
     if (!directory_ptr) {
-        cout << "info string Error opening : " << strerror(errno) << " " << dir << endl;
+        info_string("Error opening :", strerror(errno));
+        info_string(dir);
         return files;
     }
 
@@ -79,7 +81,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
         throw invalid_argument( "The given directory at " + modelDirectory
                                      + " doesn't contain a .json and a .params file.");
     }
-	cout << "info string json file: " << jsonFilePath << endl;
+    info_string("json file:", jsonFilePath);
 
     inputShape = Shape(batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH);
     load_model(jsonFilePath);
@@ -117,10 +119,10 @@ bool NeuralNetAPI::file_exists(const string &name)
 void NeuralNetAPI::load_model(const string &jsonFilePath)
 {
     if (!file_exists(jsonFilePath)) {
-		cout << "info string Model file " << jsonFilePath << " does not exist";
+        info_string("Model file  does not exist", jsonFilePath);
         throw runtime_error("Model file does not exist");
     }
-	cout << "info string Loading the model from " << jsonFilePath << endl;
+    info_string("Loading the model from", jsonFilePath);
     net = Symbol::Load(jsonFilePath);
     if (enableTensorrt) {
       #ifdef TENSORRT
@@ -154,10 +156,10 @@ void NeuralNetAPI::ConvertParamMapToTargetContext(const std::map<std::string, ND
 
 void NeuralNetAPI::load_parameters(const string& paramterFilePath) {
     if (!file_exists(paramterFilePath)) {
-        cout << "info string Parameter file " << paramterFilePath << " does not exist";
+        info_string("Parameter file does not exist:", paramterFilePath);
         throw runtime_error("Model parameters does not exist");
     }
-	cout << "info string Loading the model parameters from " << paramterFilePath << endl;
+    info_string("Loading the model parameters from:", paramterFilePath);
     map<string, NDArray> parameters;
     NDArray::Load(paramterFilePath, 0, &parameters);
 
@@ -201,7 +203,7 @@ void NeuralNetAPI::bind_executor()
     }
 
     executor = new Executor(net, globalCtx, argArrays, gradArrays, gradReqs, auxArrays);
-	cout << "info string Bind successfull!" << endl;
+    info_string("Bind successfull!");
 }
 
 void NeuralNetAPI::check_if_policy_map()
@@ -212,7 +214,7 @@ void NeuralNetAPI::check_if_policy_map()
     float value;
     NDArray probOutputs = predict(inputPlanes, value);
     isPolicyMap = probOutputs.GetShape()[1] != NB_LABELS;
-    cout << "info string isPolicyMap: " << isPolicyMap << endl;
+    info_string("isPolicyMap:", isPolicyMap);
     delete[] inputPlanes;
 }
 

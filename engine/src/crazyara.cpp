@@ -42,6 +42,7 @@
 #include "domain/variants.h"
 #include "optionsuci.h"
 #include "tests/benchmarkpositions.h"
+#include "util/communication.h"
 
 using namespace std;
 
@@ -239,7 +240,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
     if (lastMove != MOVE_NULL) {
         mctsAgent->apply_move_to_tree(lastMove, false);
     }
-    cout << "info string position " << pos->fen() << endl;
+    info_string("position", pos->fen());
 }
 
 void CrazyAra::benchmark(istringstream &is)
@@ -304,14 +305,14 @@ void CrazyAra::arena(istringstream &is)
     size_t numberOfGames;
     is >> numberOfGames;
     TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender, numberOfGames, searchLimits, states);
-    cout << "info string Arena summary" << endl;
-    cout << "info string Score of Contender vs Producer: " << tournamentResult << endl;
+    info_string("Arena summary");
+    info_string("Score of Contender vs Producer: ", tournamentResult);
     if (tournamentResult.score() > 0.5f) {
-        cout << "info string Replacing producer NN with contender..." << endl;
+        info_string("Replacing producer NN with contender...");
         mctsAgent = mctsAgentContender;
     }
     else {
-        cout << "info string Current producer is still superior than contender. NN weights won't be replaced." << endl;
+        info_string("Current producer is still superior than contender. NN weights won't be replaced.");
     }
     cout << "readyok" << endl;
 }

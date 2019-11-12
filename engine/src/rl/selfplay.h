@@ -87,6 +87,12 @@ private:
      * @brief reset_speed_statistics Resets the interal measurements for gameIdx, gamesPerMin and samplesPerMin
      */
     void reset_speed_statistics();
+
+    /**
+     * @brief speed_statistic_report Updates the speed statistics and prints a summary to std-out
+     */
+    void speed_statistic_report(float elapsedTimeMin, int generatedSamples);
+
 public:
     /**
      * @brief SelfPlay

@@ -27,6 +27,7 @@
 #include "util/blazeutil.h" // get_dirichlet_noise()
 #include "constants.h"
 #include "../util/sfutil.h"
+#include "../util/communication.h"
 
 Node::Node(Node *parentNode, Move move,  SearchSettings* searchSettings):
     parentNode(parentNode),
@@ -545,7 +546,7 @@ ostream& operator<<(ostream &os, Node *node)
 void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
 {
     if (node->get_parent_node() != nullptr) {
-        cout << "info string delete unused subtrees" << endl;
+        info_string("delete unused subtrees");
         for (Node* childNode: node->get_parent_node()->get_child_nodes()) {
             if (childNode != node) {
                 delete_subtree_and_hash_entries(childNode, hashTable);
@@ -644,11 +645,11 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
 void print_node_statistics(const Node* node)
 {
     size_t candidateIdx = 0;
-    cout << "info string position " << node->get_pos()->fen() << endl;
+    info_string("position", node->get_pos()->fen());
     for (auto childNode : node->get_child_nodes()) {
         cout << candidateIdx++ << "." << childNode << endl;
     }
-    cout << " initial value: " << node->get_value() << endl;
+    info_string("initial value: ", node->get_value());
 }
 
 bool is_ordering_correct(const vector<Node*> &childNodes)
