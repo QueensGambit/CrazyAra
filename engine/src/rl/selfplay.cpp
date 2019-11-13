@@ -45,6 +45,7 @@ SelfPlay::SelfPlay(MCTSAgent* mctsAgent, size_t numberChunks, size_t chunkSize):
                                            mctsAgent->get_device_name(), numberChunks, chunkSize);
     filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");
     filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");
+    fileNameGameIdx = string("gameIdx_") + mctsAgent->get_device_name() + string(".txt");
 }
 
 SelfPlay::~SelfPlay()
@@ -201,6 +202,14 @@ void SelfPlay::speed_statistic_report(float elapsedTimeMin, int generatedSamples
          << setw(13) << samplesPerMin << endl << endl;
 }
 
+void SelfPlay::export_number_generated_games() const
+{
+    ofstream gameIdxFile;
+    gameIdxFile.open(fileNameGameIdx);
+    gameIdxFile << gameIdx;
+    gameIdxFile.close();
+}
+
 void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states)
 {
     reset_speed_statistics();
@@ -217,6 +226,7 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManage
             generate_game(CRAZYHOUSE_VARIANT, searchLimits, states);
         }
     }
+    export_number_generated_games();
 }
 
 TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits &searchLimits, StatesManager* states)

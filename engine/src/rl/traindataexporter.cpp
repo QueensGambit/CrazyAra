@@ -26,11 +26,12 @@
 #ifdef USE_RL
 #include "traindataexporter.h"
 #include <inttypes.h>
+#include "../util/communication.h"
 
 void TrainDataExporter::export_pos(const Board *pos, const EvalInfo& eval, size_t idxOffset)
 {
     if (startIdx+idxOffset >= numberSamples) {
-        cout << "string info Extended number of maximum samples" << endl;
+        info_string("Extended number of maximum samples");
         return;
     }
     export_planes(pos, idxOffset);
@@ -41,7 +42,7 @@ void TrainDataExporter::export_pos(const Board *pos, const EvalInfo& eval, size_
 void TrainDataExporter::export_best_move_q(const EvalInfo &eval, size_t idxOffset)
 {
     if (startIdx+idxOffset >= numberSamples) {
-        cout << "string info Extended number of maximum samples" << endl;
+        info_string("Extended number of maximum samples");
         return;
     }
     // Q value of "best" move (a.k.a selected move after mcts search)
@@ -55,12 +56,12 @@ void TrainDataExporter::export_best_move_q(const EvalInfo &eval, size_t idxOffse
 void TrainDataExporter::export_game_result(const int16_t result, size_t idxOffset, size_t plys)
 {
     if (startIdx+idxOffset >= numberSamples) {
-        cout << "string info Extended number of maximum samples" << endl;
+        info_string("Extended number of maximum samples");
         return;
     }
     if (startIdx+idxOffset+plys > numberSamples) {
         plys -= startIdx+idxOffset+plys - numberSamples;
-        cout << "string info Adjust samples to export to " << plys << endl;
+        info_string("Adjust samples to export to", plys);
     }
 
     // value
@@ -92,10 +93,8 @@ TrainDataExporter::TrainDataExporter(const string& fileName, const string& devic
     // get handle to a File on the filesystem
     z5::filesystem::handle::File file(fileName);
 
-    fileNameGameIdx = string("gameIdx_") + deviceName + string(".txt");
-    fileNameStartIdx = string("startIdx_") + deviceName + string(".txt");
-
     if (file.exists()) {
+        cout << "Warning: Export file already exists. It will be overwritten" << endl;
         open_dataset_from_file(file);
     }
     else {
@@ -148,7 +147,6 @@ void TrainDataExporter::export_policy(const vector<Move>& legalMoves, const Dyna
         policy[policyIdx] = policyProbSmall[idx];
     }
     z5::multiarray::writeSubarray<float>(dPolicy, policy, offsetPolicy.begin());
-
 }
 
 void TrainDataExporter::export_start_idx()
@@ -158,33 +156,15 @@ void TrainDataExporter::export_start_idx()
     z5::types::ShapeType offsetStartIdx = { gameIdx };
     xt::xarray<int32_t> arrayGameStartIdx({ 1 }, int32_t(startIdx));
     z5::multiarray::writeSubarray<int32_t>(dStartIndex, arrayGameStartIdx, offsetStartIdx.begin());
-
-    ofstream startIdxFile;
-    startIdxFile.open(fileNameStartIdx);
-    // set the next startIdx to continue
-    startIdxFile << startIdx;
-    startIdxFile.close();
-    ofstream gameIdxFile;
-    gameIdxFile.open(fileNameGameIdx);
-    gameIdxFile << gameIdx;
-    gameIdxFile.close();
 }
 
 void TrainDataExporter::open_dataset_from_file(const z5::filesystem::handle::File& file)
 {
-    dStartIndex = z5::openDataset(file,"start_indices");
-    dx = z5::openDataset(file,"x");
-    dValue = z5::openDataset(file,"y_value");
-    dPolicy = z5::openDataset(file,"y_policy");
+    dStartIndex = z5::openDataset(file, "start_indices");
+    dx = z5::openDataset(file, "x");
+    dValue = z5::openDataset(file, "y_value");
+    dPolicy = z5::openDataset(file, "y_policy");
     dbestMoveQ = z5::openDataset(file, "y_best_move_q");
-    ifstream startIdxFile;
-    startIdxFile.open(fileNameStartIdx);
-    startIdxFile >> startIdx;
-    startIdxFile.close();
-    ifstream gameIdxFile;
-    gameIdxFile.open(fileNameGameIdx);
-    gameIdxFile >> gameIdx;
-    gameIdxFile.close();
 }
 
 void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::File &file)

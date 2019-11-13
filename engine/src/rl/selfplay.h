@@ -43,6 +43,7 @@ private:
     TrainDataExporter* exporter;
     string filenamePGNSelfplay;
     string filenamePGNArena;
+    string fileNameGameIdx;
     size_t gameIdx;
     float gamesPerMin;
     float samplesPerMin;
@@ -92,6 +93,11 @@ private:
      * @brief speed_statistic_report Updates the speed statistics and prints a summary to std-out
      */
     void speed_statistic_report(float elapsedTimeMin, int generatedSamples);
+
+    /**
+     * @brief export_number_generated_games Creates a file which describes how many games have been generated in the newly created .zip-file
+     */
+    void export_number_generated_games() const;
 
 public:
     /**

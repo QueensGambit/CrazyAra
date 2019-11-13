@@ -64,9 +64,6 @@ private:
     // current sample index to insert
     size_t startIdx;
 
-    string fileNameGameIdx;
-    string fileNameStartIdx;
-
     /**
      * @brief export_planes Exports the board in plane representation (x)
      * @param pos Board position to export
