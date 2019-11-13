@@ -28,45 +28,51 @@
 #include <inttypes.h>
 #include "../util/communication.h"
 
-void TrainDataExporter::export_pos(const Board *pos, const EvalInfo& eval, size_t idxOffset)
+void TrainDataExporter::save_sample(const Board *pos, const EvalInfo& eval, size_t idxOffset)
 {
     if (startIdx+idxOffset >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
-    export_planes(pos, idxOffset);
-    export_policy(eval.legalMoves, eval.policyProbSmall, pos->side_to_move(), idxOffset);
+    save_planes(pos, idxOffset);
+    save_policy(eval.legalMoves, eval.policyProbSmall, pos->side_to_move(), idxOffset);
+    save_best_move_q(eval, idxOffset);
     // value will be set later in export_game_result()
+    firstMove = false;
 }
 
-void TrainDataExporter::export_best_move_q(const EvalInfo &eval, size_t idxOffset)
+void TrainDataExporter::save_best_move_q(const EvalInfo &eval, size_t idxOffset)
 {
     if (startIdx+idxOffset >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
     // Q value of "best" move (a.k.a selected move after mcts search)
-    // write value to roi
-    z5::types::ShapeType offsetValue = { startIdx+idxOffset };
     xt::xarray<float> qArray({ 1 }, eval.bestMoveQ);
 
-    z5::multiarray::writeSubarray<float>(dbestMoveQ, qArray, offsetValue.begin());
+    if (firstMove) {
+        gameBestMoveQ = qArray;
+    }
+    else {
+        // concatenate the sample to array for the current game
+        xt::concatenate(xtuple(gameBestMoveQ, qArray));
+    }
 }
 
-void TrainDataExporter::export_game_result(const int16_t result, size_t idxOffset, size_t plys)
+void TrainDataExporter::export_game_samples(const int16_t result, size_t plys)
 {
-    if (startIdx+idxOffset >= numberSamples) {
+    if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
-    if (startIdx+idxOffset+plys > numberSamples) {
-        plys -= startIdx+idxOffset+plys - numberSamples;
+    if (startIdx+plys > numberSamples) {
+        plys -= startIdx+plys - numberSamples;
         info_string("Adjust samples to export to", plys);
     }
 
     // value
     // write value to roi
-    z5::types::ShapeType offsetValue = { startIdx+idxOffset };
+    z5::types::ShapeType offsetValue = { startIdx };
     xt::xarray<int16_t>::shape_type shapeValue = { plys };
     xt::xarray<int16_t> valueArray(shapeValue, result);
 
@@ -77,16 +83,24 @@ void TrainDataExporter::export_game_result(const int16_t result, size_t idxOffse
         }
     }
 
+    // write arrays to roi
+    z5::types::ShapeType offsetPlanes = { startIdx, 0, 0, 0 };
+    z5::multiarray::writeSubarray<int16_t>(dx, gameX, offsetPlanes.begin());
     z5::multiarray::writeSubarray<int16_t>(dValue, valueArray, offsetValue.begin());
+    z5::multiarray::writeSubarray<float>(dbestMoveQ, gameBestMoveQ, offsetValue.begin());
+    z5::types::ShapeType offsetPolicy = { startIdx, 0 };
+    z5::multiarray::writeSubarray<float>(dPolicy, gamePolicy, offsetPolicy.begin());
+
     startIdx += plys;
     gameIdx++;
-    export_start_idx();
+    save_start_idx();
 }
 
-TrainDataExporter::TrainDataExporter(const string& fileName, const string& deviceName, size_t numberChunks, size_t chunkSize):
+TrainDataExporter::TrainDataExporter(const string& fileName, size_t numberChunks, size_t chunkSize):
     numberChunks(numberChunks),
     chunkSize(chunkSize),
     numberSamples(numberChunks * chunkSize),
+    firstMove(true),
     gameIdx(0),
     startIdx(0)
 {
@@ -112,27 +126,36 @@ bool TrainDataExporter::is_file_full()
     return startIdx >= numberSamples;
 }
 
-void TrainDataExporter::export_planes(const Board *pos, size_t idxOffset)
+void TrainDataExporter::new_game()
+{
+    firstMove = true;
+}
+
+void TrainDataExporter::save_planes(const Board *pos, size_t idxOffset)
 {
     // x / plane representation
     float inputPlanes[NB_VALUES_TOTAL];
     board_to_planes(pos, pos->number_repetitions(), false, inputPlanes);
     // write array to roi
-    z5::types::ShapeType offsetPlanes = { startIdx+idxOffset, 0, 0, 0 };
-    xt::xarray<int16_t>::shape_type policyShape = { 1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
-    xt::xarray<int16_t> policy(policyShape);
+    xt::xarray<int16_t>::shape_type planesShape = { 1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
+    xt::xarray<int16_t> planes(planesShape);
     for (size_t idx = 0; idx < NB_VALUES_TOTAL; ++idx) {
-        policy.data()[idx] = int16_t(inputPlanes[idx]);
+        planes.data()[idx] = int16_t(inputPlanes[idx]);
     }
-    z5::multiarray::writeSubarray<int16_t>(dx, policy, offsetPlanes.begin());
+
+    if (firstMove) {
+        gameX = planes;
+    }
+    else {
+        // concatenate the sample to array for the current game
+        xt::concatenate(xtuple(gameX, planes));
+    }
 }
 
-void TrainDataExporter::export_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset)
+void TrainDataExporter::save_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset)
 {
     assert(legalMoves.size() == policyProbSmall.size());
 
-    // write array to roi
-    z5::types::ShapeType offsetPolicy = { startIdx+idxOffset, 0 };
     xt::xarray<float>::shape_type shapePolicy = { 1, NB_LABELS };
     xt::xarray<float> policy(shapePolicy, 0);
 
@@ -146,10 +169,17 @@ void TrainDataExporter::export_policy(const vector<Move>& legalMoves, const Dyna
         }
         policy[policyIdx] = policyProbSmall[idx];
     }
-    z5::multiarray::writeSubarray<float>(dPolicy, policy, offsetPolicy.begin());
+
+    if (firstMove) {
+        gamePolicy = policy;
+    }
+    else {
+        // concatenate the sample to array for the current game
+        xt::concatenate(xtuple(gamePolicy, policy));
+    }
 }
 
-void TrainDataExporter::export_start_idx()
+void TrainDataExporter::save_start_idx()
 {
     // gameStartIdx
     // write value to roi
@@ -182,6 +212,7 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     dPolicy = z5::createDataset(file, "y_policy", "float32", { numberSamples, NB_LABELS }, { chunkSize, NB_LABELS });
     dbestMoveQ = z5::createDataset(file, "y_best_move_q", "float32", { numberSamples }, { chunkSize });
 
-    export_start_idx();
+    save_start_idx();
 }
+
 #endif

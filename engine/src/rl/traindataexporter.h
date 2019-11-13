@@ -59,6 +59,13 @@ private:
     std::unique_ptr<z5::Dataset> dPolicy;
     std::unique_ptr<z5::Dataset> dbestMoveQ;
 
+    xt::xarray<float> gameStartIndex;
+    xt::xarray<float> gameX;
+    xt::xarray<float> gameValue;
+    xt::xarray<float> gamePolicy;
+    xt::xarray<float> gameBestMoveQ;
+    bool firstMove;
+
     // current number of games - 1
     size_t gameIdx;
     // current sample index to insert
@@ -69,21 +76,28 @@ private:
      * @param pos Board position to export
      * @param idxOffset Batch-Offset where to save it in the matrix
      */
-    void export_planes(const Board *pos, size_t idxOffset);
+    void save_planes(const Board *pos, size_t idxOffset);
 
     /**
-     * @brief export_policy Export the policy (e.g. mctsPolicy) to the matrix
+     * @brief save_policy Saves the policy (e.g. mctsPolicy) to the matrix
      * @param legalMoves List of legal moves
      * @param policyProbSmall Probability for each move
      * @param sideToMove Current side to move
      * @param idxOffset Batch-Offset where to save it in the matrix
      */
-    void export_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset);
+    void save_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset);
 
     /**
-     * @brief export_start_idx Writes the current starting index where to continue inserting in a .txt-file
+     * @brief save_best_move_q Saves the Q-value of the move which was selected after MCTS search(Optional training sample feature)
+     * @param eval Filled EvalInfo struct after mcts search
+     * @param idxOffset Starting index where to start storing the training sample
      */
-    void export_start_idx();
+    void save_best_move_q(const EvalInfo& eval, size_t idxOffset);
+
+    /**
+     * @brief save_start_idx Saves the current starting index where the next game starts to the game array
+     */
+    void save_start_idx();
 
     /**
      * @brief open_dataset_from_file Reads a previously exported training set back into memory
@@ -101,36 +115,28 @@ public:
     /**
      * @brief TrainDataExporter
      * @param fileNameExport File name of the uncompressed data to be exported in (e.g. "data.zarr")
-     * @param deviceName Device name specification (e.g. gpu_0, or cpu_0)
      * @param numberChunks Defines how many chunks a single file should contain.
      * The product of the number of chunks and its chunk size yields the total number of samples of a file.
      * @param chunkSize Defines the chunk size of a single chunk
      */
-    TrainDataExporter(const string& fileNameExport, const string& deviceName, size_t numberChunks=200, size_t chunkSize=128);
+    TrainDataExporter(const string& fileNameExport, size_t numberChunks=200, size_t chunkSize=128);
 
     /**
-     * @brief export_pos Exports a given board position with result to the current training set
+     * @brief export_pos Saves a given board position, policy and Q-value to the specific game arrays
      * @param pos Current board position
      * @param eval Filled EvalInfo struct after mcts search
      * @param idxOffset Starting index where to start storing the training sample
      */
-    void export_pos(const Board *pos, const EvalInfo& eval, size_t idxOffset);
+    void save_sample(const Board *pos, const EvalInfo& eval, size_t idxOffset);
 
     /**
-     * @brief export_best_move_q Export the Q-value of the move which was selected after MCTS search(Optional training sample feature)
-     * @param eval Filled EvalInfo struct after mcts search
-     * @param idxOffset Starting index where to start storing the training sample
-     */
-    void export_best_move_q(const EvalInfo& eval, size_t idxOffset);
-
-    /**
-     * @brief export_game_result Assigns the game result, (Monte-Carlo value result) to every training sample.
-     * The value is inversed after each step.
+     * @brief export_game_samples Assigns the game result, (Monte-Carlo value result) to every training sample.
+     * The value is inversed after each step and export all training samples of a single game.
      * @param result Game match result: LOST, DRAW, WON
      * @param idxOffset Starting index where to start assigning values
      * @param plys Number of training samples (halfmoves/plys) for the current match
      */
-    void export_game_result(const int16_t result, size_t idxOffset, size_t plys);
+    void export_game_samples(const int16_t result, size_t plys);
 
     size_t get_number_samples() const;
 
@@ -139,6 +145,11 @@ public:
      * @return bool
      */
     bool is_file_full();
+
+    /**
+     * @brief new_game Sets firstMove to true
+     */
+    void new_game();
 };
 #endif
 

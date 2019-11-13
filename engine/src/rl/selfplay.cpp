@@ -42,7 +42,7 @@ SelfPlay::SelfPlay(MCTSAgent* mctsAgent, size_t numberChunks, size_t chunkSize):
     gamePGN.round = "?";
     gamePGN.is960 = false;
     this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
-                                           mctsAgent->get_device_name(), numberChunks, chunkSize);
+                                           numberChunks, chunkSize);
     filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");
     filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");
     fileNameGameIdx = string("gameIdx_") + mctsAgent->get_device_name() + string(".txt");
@@ -60,6 +60,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     EvalInfo evalInfo;
     states->swap_states();
     bool leadsToTerminal = false;
+    exporter->new_game();
     do {
         searchLimits.startTime = now();
         mctsAgent->perform_action(position, &searchLimits, evalInfo);
@@ -69,8 +70,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
             leadsToTerminal = nextRoot->is_terminal();
         }
         if (!exporter->is_file_full()) {
-            exporter->export_pos(position, evalInfo, size_t(position->game_ply()));
-            exporter->export_best_move_q(evalInfo, size_t(position->game_ply()));
+            exporter->save_sample(position, evalInfo, size_t(position->game_ply()));
         }
         StateInfo* newState = new StateInfo;
         states->activeStates.push_back(newState);
@@ -85,7 +85,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
 
     int16_t result = position->side_to_move() == WHITE ? LOSS : WIN;
     // game contains how many moves have been made at the end of the game
-    exporter->export_game_result(result, 0, size_t(position->game_ply()));
+    exporter->export_game_samples(result, size_t(position->game_ply()));
 
     set_game_result_to_pgn(mctsAgent->get_opponents_next_root());
     write_game_to_pgn(filenamePGNSelfplay);

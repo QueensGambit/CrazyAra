@@ -92,10 +92,8 @@ def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, start_i
     logging.debug("dataset was exported to: %s", zarr_path)
 
     # TODO: Move to single function
-    file_names = ["startIdx_" + device_name + ".txt",
-                  "games_" + device_name + ".pgn",
-                  "gameIdx_" + device_name + ".txt",
-                  "data_" + device_name + ".zarr"]
+    file_names = ["games_" + device_name + ".pgn",
+                  "gameIdx_" + device_name + ".txt"]
     for file_name in file_names:
         os.rename(file_name, timestmp_dir+file_name)
 
@@ -246,10 +244,10 @@ class RLLoop:
 
         input_shape = x_val[0].shape
         model = mx.mod.Module(symbol=symbol, context=ctx, label_names=['value_label', 'policy_label'])
-        mx.viz.print_summary(
-            symbol,
-            shape={'data': (1, input_shape[0], input_shape[1], input_shape[2])},
-        )
+        # mx.viz.print_summary(
+        #     symbol,
+        #     shape={'data': (1, input_shape[0], input_shape[1], input_shape[2])},
+        # )
         model.bind(for_training=True,
                    data_shapes=[('data', (train_config["batch_size"], input_shape[0], input_shape[1], input_shape[2]))],
                    label_shapes=val_iter.provide_label)
