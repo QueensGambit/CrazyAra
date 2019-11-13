@@ -74,25 +74,22 @@ private:
     /**
      * @brief export_planes Exports the board in plane representation (x)
      * @param pos Board position to export
-     * @param idxOffset Batch-Offset where to save it in the matrix
      */
-    void save_planes(const Board *pos, size_t idxOffset);
+    void save_planes(const Board *pos);
 
     /**
      * @brief save_policy Saves the policy (e.g. mctsPolicy) to the matrix
      * @param legalMoves List of legal moves
      * @param policyProbSmall Probability for each move
      * @param sideToMove Current side to move
-     * @param idxOffset Batch-Offset where to save it in the matrix
      */
-    void save_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset);
+    void save_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove);
 
     /**
      * @brief save_best_move_q Saves the Q-value of the move which was selected after MCTS search(Optional training sample feature)
      * @param eval Filled EvalInfo struct after mcts search
-     * @param idxOffset Starting index where to start storing the training sample
      */
-    void save_best_move_q(const EvalInfo& eval, size_t idxOffset);
+    void save_best_move_q(const EvalInfo& eval);
 
     /**
      * @brief save_start_idx Saves the current starting index where the next game starts to the game array

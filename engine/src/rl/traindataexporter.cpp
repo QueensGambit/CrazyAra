@@ -34,19 +34,15 @@ void TrainDataExporter::save_sample(const Board *pos, const EvalInfo& eval, size
         info_string("Extended number of maximum samples");
         return;
     }
-    save_planes(pos, idxOffset);
-    save_policy(eval.legalMoves, eval.policyProbSmall, pos->side_to_move(), idxOffset);
-    save_best_move_q(eval, idxOffset);
+    save_planes(pos);
+    save_policy(eval.legalMoves, eval.policyProbSmall, pos->side_to_move());
+    save_best_move_q(eval);
     // value will be set later in export_game_result()
     firstMove = false;
 }
 
-void TrainDataExporter::save_best_move_q(const EvalInfo &eval, size_t idxOffset)
+void TrainDataExporter::save_best_move_q(const EvalInfo &eval)
 {
-    if (startIdx+idxOffset >= numberSamples) {
-        info_string("Extended number of maximum samples");
-        return;
-    }
     // Q value of "best" move (a.k.a selected move after mcts search)
     xt::xarray<float> qArray({ 1 }, eval.bestMoveQ);
 
@@ -55,7 +51,7 @@ void TrainDataExporter::save_best_move_q(const EvalInfo &eval, size_t idxOffset)
     }
     else {
         // concatenate the sample to array for the current game
-        xt::concatenate(xtuple(gameBestMoveQ, qArray));
+        gameBestMoveQ = xt::concatenate(xtuple(gameBestMoveQ, qArray));
     }
 }
 
@@ -131,7 +127,7 @@ void TrainDataExporter::new_game()
     firstMove = true;
 }
 
-void TrainDataExporter::save_planes(const Board *pos, size_t idxOffset)
+void TrainDataExporter::save_planes(const Board *pos)
 {
     // x / plane representation
     float inputPlanes[NB_VALUES_TOTAL];
@@ -148,11 +144,11 @@ void TrainDataExporter::save_planes(const Board *pos, size_t idxOffset)
     }
     else {
         // concatenate the sample to array for the current game
-        xt::concatenate(xtuple(gameX, planes));
+        gameX = xt::concatenate(xtuple(gameX, planes));
     }
 }
 
-void TrainDataExporter::save_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove, size_t idxOffset)
+void TrainDataExporter::save_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove)
 {
     assert(legalMoves.size() == policyProbSmall.size());
 
@@ -175,7 +171,7 @@ void TrainDataExporter::save_policy(const vector<Move>& legalMoves, const Dynami
     }
     else {
         // concatenate the sample to array for the current game
-        xt::concatenate(xtuple(gamePolicy, policy));
+        gamePolicy = xt::concatenate(xtuple(gamePolicy, policy));
     }
 }
 
