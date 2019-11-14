@@ -28,6 +28,7 @@
 #ifndef BLAZEUTIL_H
 #define BLAZEUTIL_H
 
+#include <cfloat>
 #include <blaze/Math.h>
 
 using namespace std;
@@ -63,6 +64,42 @@ vector<size_t> argsort(const DynamicVector<T>& v)
     return idx;
 }
 
+
+/**
+ * @brief get_quantile Returns the value+FLT_EPSILON for the given quantil.
+ * @param vec Given vector which is assumed to have only positive values and to sum up to 1.
+ * @param quantile Quantil value must be in [0,1]
+ * @return Value of the former element as soon as the quantile has been reached.
+ * If the lowest entry already is higher than the given quantil, zero is returned.
+ */
+template <typename T>
+T get_quantile(const DynamicVector<T>& vec_input, float quantile) {
+
+    // quantil must be in [0,1]
+    assert(quantile >= 0.0 && quantile <= 1.0);
+
+    DynamicVector<T> vec = vec_input;
+    // sort the given vector
+    std::sort(vec.begin(), vec.end());
+    float sum = 0;
+
+    // fast return if first value is already greater than the given quantile
+    if (vec[0] >= quantile) {
+        return 0;
+    }
+
+    for (size_t idx = 1; idx < vec.size(); ++idx) {
+        sum += vec[idx];
+        if (sum >= quantile) {
+            // return the previous value and add a small floating epsilon
+            return (vec[idx-1] + FLT_EPSILON);
+        }
+    }
+
+    assert(false);
+    // this should never be reached
+    return -1.f;
+}
 
 // https://stackoverflow.com/questions/17074324/how-can-i-sort-two-vectors-in-the-same-way-with-criteria-that-uses-only-one-of#
 // Timothy Shields

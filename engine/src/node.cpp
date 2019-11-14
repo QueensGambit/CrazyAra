@@ -574,19 +574,19 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hash
 
 void get_mcts_policy(const Node* node, const DynamicVector<float>& childNumberVisits, DynamicVector<float>& mctsPolicy)
 {
-    const float qThresh = get_current_q_thresh(node->get_search_settings(), node->get_visits());
     const float qValueWeight = node->get_search_settings()->qValueWeight;
 
     if (qValueWeight > 0) {
         DynamicVector<float> qValuePruned = retrieve_q_values(node);
         qValuePruned = (qValuePruned + 1) * 0.5f;
-        float visitThresh = qThresh * max(childNumberVisits);
+        const DynamicVector<float> normalizedVisits = childNumberVisits / node->get_visits();
+        const float quantile = get_quantile(normalizedVisits, 0.25f);
         for (size_t idx = 0; idx < node->get_number_child_nodes(); ++idx) {
-            if (childNumberVisits[idx] < visitThresh) {
+            if (childNumberVisits[idx] < quantile) {
                 qValuePruned[idx] = 0;
             }
         }
-        mctsPolicy = (1.0f - qValueWeight) * (childNumberVisits / node->get_visits()) + qValueWeight * qValuePruned;
+        mctsPolicy = (1.0f - qValueWeight) * normalizedVisits + qValueWeight * qValuePruned;
         mctsPolicy /= sum(mctsPolicy);
     } else {
         mctsPolicy = childNumberVisits / node->get_visits();
