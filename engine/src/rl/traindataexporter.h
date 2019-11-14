@@ -59,9 +59,8 @@ private:
     std::unique_ptr<z5::Dataset> dPolicy;
     std::unique_ptr<z5::Dataset> dbestMoveQ;
 
-    xt::xarray<float> gameStartIndex;
-    xt::xarray<float> gameX;
-    xt::xarray<float> gameValue;
+    xt::xarray<int16_t> gameX;
+    xt::xarray<int16_t> gameValue;
     xt::xarray<float> gamePolicy;
     xt::xarray<float> gameBestMoveQ;
     bool firstMove;
@@ -92,6 +91,15 @@ private:
     void save_best_move_q(const EvalInfo& eval);
 
     /**
+     * @brief save_side_to_move Saves the current side to move as a +1 for WHITE and -1 for BLACK.
+     * The current side to move is either WHITE(0) or BLACK(1).
+     * Later if WHITE won the game the value array is inverted.
+     * For a draw it will be multiplied by 0.
+     * @param col current side to move
+     */
+    void save_side_to_move(Color col);
+
+    /**
      * @brief save_start_idx Saves the current starting index where the next game starts to the game array
      */
     void save_start_idx();
@@ -108,6 +116,12 @@ private:
      */
     void create_new_dataset_file(const z5::filesystem::handle::File& file);
 
+    /**
+     * @brief apply_result_to_value Inverts the gameValue array if WHITE lost the game.
+     * In the case of a draw, all entries are set to 0.
+     * @param result Possible values DRAWN, WHITE_WIN, BLACK_WIN,
+     */
+    void apply_result_to_value(Result result);
 public:
     /**
      * @brief TrainDataExporter
@@ -133,7 +147,7 @@ public:
      * @param idxOffset Starting index where to start assigning values
      * @param plys Number of training samples (halfmoves/plys) for the current match
      */
-    void export_game_samples(const int16_t result, size_t plys);
+    void export_game_samples(Result result, size_t plys);
 
     size_t get_number_samples() const;
 

@@ -37,6 +37,7 @@ void TrainDataExporter::save_sample(const Board *pos, const EvalInfo& eval, size
     save_planes(pos);
     save_policy(eval.legalMoves, eval.policyProbSmall, pos->side_to_move());
     save_best_move_q(eval);
+    save_side_to_move(pos->side_to_move());
     // value will be set later in export_game_result()
     firstMove = false;
 }
@@ -55,7 +56,21 @@ void TrainDataExporter::save_best_move_q(const EvalInfo &eval)
     }
 }
 
-void TrainDataExporter::export_game_samples(const int16_t result, size_t plys)
+void TrainDataExporter::save_side_to_move(Color col)
+{
+    // in the case of WHITE a +1 is saved else -1 for BLACK
+    xt::xarray<int16_t> valueArray({ 1 }, -(col * 2 - 1));
+
+    if (firstMove) {
+        gameValue = valueArray;
+    }
+    else {
+        // concatenate the sample to array for the current game
+        gameValue = xt::concatenate(xtuple(gameValue, valueArray));
+    }
+}
+
+void TrainDataExporter::export_game_samples(Result result, size_t plys)
 {
     if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
@@ -66,24 +81,15 @@ void TrainDataExporter::export_game_samples(const int16_t result, size_t plys)
         info_string("Adjust samples to export to", plys);
     }
 
-    // value
+    // game value update
+    apply_result_to_value(result);
+
     // write value to roi
-    z5::types::ShapeType offsetValue = { startIdx };
-    xt::xarray<int16_t>::shape_type shapeValue = { plys };
-    xt::xarray<int16_t> valueArray(shapeValue, result);
-
-    if (result != DRAW) {
-        // invert the result on every second ply
-        for (size_t idx = 1; idx < plys; idx+=2) {
-            valueArray.data()[idx] = -result;
-        }
-    }
-
-    // write arrays to roi
+    z5::types::ShapeType offset = { startIdx };
     z5::types::ShapeType offsetPlanes = { startIdx, 0, 0, 0 };
     z5::multiarray::writeSubarray<int16_t>(dx, gameX, offsetPlanes.begin());
-    z5::multiarray::writeSubarray<int16_t>(dValue, valueArray, offsetValue.begin());
-    z5::multiarray::writeSubarray<float>(dbestMoveQ, gameBestMoveQ, offsetValue.begin());
+    z5::multiarray::writeSubarray<int16_t>(dValue, gameValue, offset.begin());
+    z5::multiarray::writeSubarray<float>(dbestMoveQ, gameBestMoveQ, offset.begin());
     z5::types::ShapeType offsetPolicy = { startIdx, 0 };
     z5::multiarray::writeSubarray<float>(dPolicy, gamePolicy, offsetPolicy.begin());
 
@@ -209,6 +215,17 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     dbestMoveQ = z5::createDataset(file, "y_best_move_q", "float32", { numberSamples }, { chunkSize });
 
     save_start_idx();
+}
+
+void TrainDataExporter::apply_result_to_value(Result result)
+{
+    // value
+    if (result == BLACK_WIN) {
+        gameValue *= -1;
+    }
+    else if (result == DRAWN) {
+        gameValue *= 0;
+    }
 }
 
 #endif

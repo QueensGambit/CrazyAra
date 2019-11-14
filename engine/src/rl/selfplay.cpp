@@ -60,12 +60,13 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     EvalInfo evalInfo;
     states->swap_states();
     bool leadsToTerminal = false;
+    Node* nextRoot;
     exporter->new_game();
     do {
         searchLimits.startTime = now();
         mctsAgent->perform_action(position, &searchLimits, evalInfo);
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
-        const Node* nextRoot = mctsAgent->get_opponents_next_root();
+        nextRoot = mctsAgent->get_opponents_next_root();
         if (nextRoot != nullptr) {
             leadsToTerminal = nextRoot->is_terminal();
         }
@@ -83,11 +84,10 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     }
     while(!leadsToTerminal);
 
-    int16_t result = position->side_to_move() == WHITE ? LOSS : WIN;
-    // game contains how many moves have been made at the end of the game
-    exporter->export_game_samples(result, size_t(position->game_ply()));
+    // export all training samples of the generated game
+    exporter->export_game_samples(get_terminal_node_result(nextRoot), size_t(position->game_ply()));
 
-    set_game_result_to_pgn(mctsAgent->get_opponents_next_root());
+    set_game_result_to_pgn(nextRoot);
     write_game_to_pgn(filenamePGNSelfplay);
     clean_up(gamePGN, mctsAgent, states, position);
 
@@ -233,6 +233,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
 {
     TournamentResult tournamentResult;
     Result gameResult;
+    mctsContender->getSearchSettings()->qValueWeight = 0.5f;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
             gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, searchLimits, states);
