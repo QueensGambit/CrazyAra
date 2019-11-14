@@ -6,6 +6,7 @@ Created on 18.05.19
 
 Definition of the main training loop done in mxnet.
 """
+import os
 import datetime
 import logging
 import random
@@ -17,7 +18,6 @@ from tqdm import tqdm_notebook
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
-
 
 def acc_sign(y_true, y_pred):
     """
@@ -154,6 +154,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         discount=1,  # 0.995,
         sparse_policy_label=True,
         q_value_ratio=0,
+        cwd=None,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -188,9 +189,14 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self._q_value_ratio = q_value_ratio
         # defines if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
         self.sparse_policy_label = sparse_policy_label
+        # define the current working directory
+        if cwd is None:
+            self.cwd = os.getcwd()
+        else:
+            self.cwd = cwd
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if log_metrics_to_tensorboard:
-            self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
+            self.sum_writer = SummaryWriter(logdir="%s/logs" % self.cwd, flush_secs=5, verbose=False)
         # Define the two loss functions
         self.optimizer_name = optimizer_name
         if optimizer_name == "adam":
@@ -296,6 +302,10 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                                                      {'value_label': self.yv_train, 'policy_label': self.yp_train},
                                                      self._batch_size,
                                                      shuffle=True)
+
+                # avoid memory leaks by adding synchronization
+                mx.nd.waitall()
+
                 reset_metrics(self._metrics)
                 for batch in self._train_iter:
                     self._model.forward(batch, is_train=True)  # compute predictions
@@ -390,7 +400,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
         logging.debug("Recover to latest checkpoint")
         # Load the best model once again
-        prefix = "./weights/model-%.5f-%.3f" % (self.val_loss_best, self.val_p_acc_best)
+        prefix = "%s/weights/model-%.5f-%.3f" % (self.cwd, self.val_loss_best, self.val_p_acc_best)
 
         logging.debug("load current best model:%s", prefix)
         # self._net.load_parameters(model_path, ctx=self._ctx)
@@ -422,7 +432,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.k_steps_best = self.k_steps
 
             if self._export_weights:
-                prefix = "./weights/model-%.5f-%.3f" % (self.val_loss_best, self.val_p_acc_best)
+                prefix = "%s/weights/model-%.5f-%.3f" % (self.cwd, self.val_loss_best, self.val_p_acc_best)
                 # the export function saves both the architecture and the weights
                 print()
                 self._model.save_checkpoint(prefix, epoch=self.k_steps_best)

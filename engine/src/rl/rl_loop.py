@@ -132,12 +132,22 @@ class RLLoop:
                             "games as white.")
         self.nb_arena_games = nb_arena_games
 
-        self.cwd = os.getcwd() + '/'
-        logging.info("Current working directory %s" % self.cwd)
-
         # directories for training
-        create_dir("logs")
-        create_dir("weights")
+        create_dir(crazyara_binary_dir+"logs")
+        create_dir(crazyara_binary_dir+"weights")
+
+    def _get_current_model_arch_file(self):
+        """
+        Returns the filenames of the current active model architecture (.json) file
+        """
+        return glob.glob(self.crazyara_binary_dir + "model/*.json")[0]
+
+    def _get_current_model_weight_file(self):
+        """
+        Returns the filenames of the current active model weight (.params) file
+        :return:
+        """
+        return glob.glob(self.crazyara_binary_dir + "model/*.params")[0]
 
     def initialize(self):
         """
@@ -182,7 +192,7 @@ class RLLoop:
         :return:
         """
         data = zarr.load(self.crazyara_binary_dir + "data_" + device_name + ".zarr")
-        compress_zarr_dataset(data, "./export/train/", start_idx=0)
+        compress_zarr_dataset(data, self.crazyara_binary_dir + "export/train/", start_idx=0)
 
     def update_network(self):
         """
@@ -199,6 +209,13 @@ class RLLoop:
         # Fixing the random seed
         mx.random.seed(train_config["seed"])
 
+        nb_parts = len(glob.glob(main_config["planes_train_dir"] + '**/*.zip'))
+        logging.info("number parts: %d" % nb_parts)
+
+        if nb_parts <= 0:
+            raise Exception('No .zip files for training available. Check the path in main_config["planes_train_dir"]:'
+                            ' %s' % main_config["planes_train_dir"])
+
         _, x_val, y_val_value, y_val_policy, _, _ = load_pgn_dataset(dataset_type="val",
                                                                      part_id=0,
                                                                      normalize=train_config["normalize"],
@@ -208,13 +225,11 @@ class RLLoop:
         y_val_policy = prepare_policy(y_val_policy, train_config["select_policy_from_plane"],
                                       train_config["sparse_policy_label"])
 
-        symbol = mx.sym.load("model/" + train_config["symbol_file"])
+        symbol = mx.sym.load(self._get_current_model_arch_file())
         symbol = adjust_loss_weighting(symbol, train_config["val_loss_factor"], train_config["policy_loss_factor"],
                                        "value_tanh0_output", "flatten0_output")
                                         # "value_out_output", "policy_out_output")
 
-        nb_parts = len(glob.glob(main_config["planes_train_dir"] + '**/*.zip'))
-        logging.info("number parts: %d" % nb_parts)
         nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]  # calculate how many iterations per epoch exist
         # one iteration is defined by passing 1 batch and doing backprop
         total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
@@ -251,7 +266,7 @@ class RLLoop:
         model.bind(for_training=True,
                    data_shapes=[('data', (train_config["batch_size"], input_shape[0], input_shape[1], input_shape[2]))],
                    label_shapes=val_iter.provide_label)
-        model.load_params("model/" + train_config["params_file"])
+        model.load_params(self._get_current_model_weight_file())
 
         metrics = [
             mx.metric.MSE(name='value_loss', output_names=['value_output'], label_names=['value_label']),
@@ -288,7 +303,8 @@ class RLLoop:
                                         select_policy_from_plane=train_config["select_policy_from_plane"],
                                         discount=train_config["discount"],
                                         sparse_policy_label=train_config["sparse_policy_label"],
-                                        q_value_ratio=train_config["q_value_ratio"])
+                                        q_value_ratio=train_config["q_value_ratio"],
+                                        cwd=self.crazyara_binary_dir)
         # iteration counter used for the momentum and learning rate schedule
         cur_it = train_config["k_steps_initial"] * train_config["batch_steps"]
         train_agent.train(cur_it)
@@ -307,11 +323,11 @@ class RLLoop:
         Moves neural network architecture definition and .params file into the "model_contender" directory
         :return:
         """
-        nn_files = os.listdir(self.cwd + "weights/")
+        nn_files = os.listdir(self.crazyara_binary_dir + "weights/")
 
         for nn_file in nn_files:
-            nn_file_origin = self.cwd + "weights/" + nn_file
-            nn_file_destination = self.cwd + "model_contender/" + nn_file
+            nn_file_origin = self.crazyara_binary_dir + "weights/" + nn_file
+            nn_file_destination = self.crazyara_binary_dir + "model_contender/" + nn_file
             os.rename(nn_file_origin, nn_file_destination)
             logging.debug("moved %s into %s" % (nn_file, nn_file_destination))
 
@@ -333,7 +349,7 @@ def set_uci_param(proc, name, value):
 
 if __name__ == "__main__":
     enable_color_logging()
-    rl_loop = RLLoop(crazyara_binary_dir="./",
+    rl_loop = RLLoop(crazyara_binary_dir="/media/queensgambit/Volume/Deep_Learning/data/RL/",
                      nb_games_to_update=0,
                      nb_arena_games=50)
     rl_loop.initialize()
@@ -341,7 +357,7 @@ if __name__ == "__main__":
     while True:
         rl_loop.generate_games()
         rl_loop.compress_dataset()
-    # rl_loop.create_new_contender()
 
     # rl_loop.update_network()
+    # rl_loop.create_new_contender()
     # rl_loop.compare_new_weights()
