@@ -33,7 +33,6 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, co
 {
 //    // allocate sufficient memory -> is assumed that it has already been done
 //    policyProbSmall.resize(legalMoves.size());
-
     const float *data = policyProb->GetData();
     size_t vectorIdx;
     for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
@@ -50,7 +49,7 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, co
         // accessing the data on the raw floating point vector is faster
         // than calling policyProb.At(batchIdx, vectorIdx)
         if (selectPolicyFromPlane) {
-            policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS_POLICY_MAP+FLAT_PLANE_IDX[vectorIdx]];
+            policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS_POLICY_MAP+vectorIdx];
         } else {
             policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS+vectorIdx];
         }

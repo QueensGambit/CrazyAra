@@ -35,16 +35,23 @@
 #include "../rl/traindataexporter.h"
 #endif
 
+/**
+ * @brief pick_move_idx Picks a move according to the probability distribution
+ * @param policyProbSmall Probability distribution over all legal moves
+ * @return Random picked move index
+ */
+template <typename T>
+size_t pick_move_idx(const DynamicVector<T>& policyProbSmall)
+{
+    const T* prob = policyProbSmall.data();
+    default_random_engine eng{static_cast<long unsigned int>(time(0))};
+    discrete_distribution<> d(prob, prob+policyProbSmall.size());
+    return size_t(d(eng));
+}
+
 class Agent
 {
 private:
-    /**
-     * @brief pick_move_idx Picks a move according to the probability distribution
-     * @param policyProbSmall Probability distribution over all legal moves
-     * @return Random picked move index
-     */
-    size_t pick_move_idx(DynamicVector<double>& policyProbSmall);
-
     /**
      * @brief apply_temperature_to_policy Applies temperature rescaling to the policy distribution by enhancing higher probability values.
      * A temperature below 0.01 relates to one hot encoding.

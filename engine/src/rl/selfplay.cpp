@@ -62,11 +62,22 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     bool leadsToTerminal = false;
     Node* nextRoot;
     exporter->new_game();
+
+    srand(time(0));
     do {
         searchLimits.startTime = now();
+        const int rand_int = rand();
+        searchLimits.nodes = 800 + (rand_int % 160) - 80;
         mctsAgent->perform_action(position, &searchLimits, evalInfo);
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         nextRoot = mctsAgent->get_opponents_next_root();
+
+//        // sample from raw policy
+//        if (float(rand_int) / RAND_MAX < 0.5f && position->game_ply() <= 14) { // TODO: make dependend on temp
+//            size_t move_idx = pick_move_idx(retrieve_raw_policy(mctsAgent->get_root_node()));
+//            evalInfo.bestMove = evalInfo.legalMoves[move_idx];
+//        }
+
         if (nextRoot != nullptr) {
             leadsToTerminal = nextRoot->is_terminal();
         }
@@ -233,7 +244,6 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
 {
     TournamentResult tournamentResult;
     Result gameResult;
-    mctsContender->getSearchSettings()->qValueWeight = 0.5f;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
             gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, searchLimits, states);

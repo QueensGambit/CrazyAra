@@ -286,11 +286,13 @@ void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable);
 
 float get_visits(Node* node);
 float get_q_value(Node* node);
+float get_prob_value(Node* node);
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
 
 DynamicVector<float> retrieve_visits(const Node* node);
 DynamicVector<float> retrieve_q_values(const Node* node);
+DynamicVector<float> retrieve_raw_policy(const Node* node);
 
 /**
  * @brief get_mcts_policy Returns the final policy after the mcts search which is used for move selection, in most cases argmax(mctsPolicy).

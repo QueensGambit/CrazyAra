@@ -622,6 +622,11 @@ DynamicVector<float> retrieve_q_values(const Node* node)
     return retrieve_dynamic_vector(node->get_child_nodes(), get_q_value);
 }
 
+DynamicVector<float> retrieve_raw_policy(const Node *node)
+{
+    return retrieve_dynamic_vector(node->get_child_nodes(), get_prob_value);
+}
+
 float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits)
 {
     return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
@@ -719,4 +724,9 @@ Result get_terminal_node_result(const Node *terminalNode)
         return WHITE_WIN;
     }
     return BLACK_WIN;
+}
+
+float get_prob_value(Node *node)
+{
+    return node->get_prob_value();
 }

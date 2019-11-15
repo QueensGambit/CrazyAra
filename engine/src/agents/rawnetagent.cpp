@@ -66,10 +66,11 @@ void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     float value;
 
     NDArray probOutputs = net->predict(begin(inputPlanes), value);
+
     auto predicted = probOutputs.ArgmaxChannel();
     predicted.WaitToRead();
 
-    int bestIdx = predicted.At(0, 0);
+    int bestIdx = predicted.At(0);
 
     string bestmove_mxnet;
     if (pos->side_to_move() == WHITE) {
@@ -91,5 +92,5 @@ void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
     evalInfo.depth = 1;
     evalInfo.nodes = 1;
     evalInfo.isChess960 = pos->is_chess960();
-	evalInfo.pv = { bestmove };
+    evalInfo.pv = { bestmove };
 }
