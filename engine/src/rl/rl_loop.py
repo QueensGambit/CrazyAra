@@ -132,6 +132,9 @@ class RLLoop:
                             "games as white.")
         self.nb_arena_games = nb_arena_games
 
+        # change working directory (otherwise the .zip files would be generated at the .py location)
+        os.chdir(crazyara_binary_dir)
+
         # directories for training
         create_dir(crazyara_binary_dir+"logs")
         create_dir(crazyara_binary_dir+"weights")
