@@ -229,11 +229,12 @@ class RLLoop:
                                       train_config["sparse_policy_label"])
 
         symbol = mx.sym.load(self._get_current_model_arch_file())
-        symbol = add_non_sparse_cross_entropy(symbol, train_config["val_loss_factor"], train_config["policy_loss_factor"],
-                                       "value_tanh0_output", "flatten0_output")
+        symbol = add_non_sparse_cross_entropy(symbol, train_config["val_loss_factor"],
+                                              "value_tanh0_output", "flatten0_output")
                                         # "value_out_output", "policy_out_output")
 
-        nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]  # calculate how many iterations per epoch exist
+        # calculate how many iterations per epoch exist
+        nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]
         # one iteration is defined by passing 1 batch and doing backprop
         total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
 
