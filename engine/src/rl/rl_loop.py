@@ -21,7 +21,7 @@ from multiprocessing import cpu_count
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, adjust_loss_weighting, prepare_policy
+from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, add_non_sparse_cross_entropy, prepare_policy
 from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, OneCycleSchedule, LinearWarmUp
 from DeepCrazyhouse.configs.train_config import train_config
@@ -229,7 +229,7 @@ class RLLoop:
                                       train_config["sparse_policy_label"])
 
         symbol = mx.sym.load(self._get_current_model_arch_file())
-        symbol = adjust_loss_weighting(symbol, train_config["val_loss_factor"], train_config["policy_loss_factor"],
+        symbol = add_non_sparse_cross_entropy(symbol, train_config["val_loss_factor"], train_config["policy_loss_factor"],
                                        "value_tanh0_output", "flatten0_output")
                                         # "value_out_output", "policy_out_output")
 

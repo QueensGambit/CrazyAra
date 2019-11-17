@@ -17,6 +17,7 @@ from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
+from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy
 
 
 def acc_sign(y_true, y_pred):
@@ -26,21 +27,22 @@ def acc_sign(y_true, y_pred):
     :param y_pred: Predicted labels as numpy array
     :return:
     """
-    return (np.sign(y_pred).flatten() == y_true).sum() / len(y_true)
+    return (np.sign(y_pred).flatten() == np.sign(y_true)).sum() / len(y_true)
 
 
-def cross_entropy(y_true, y_pred, eps=1e-12):
+def cross_entropy(y_true, y_pred):
     """
-    Cross entropy metric with support for distributions (non-sparse/non-one-hot-encoded targets)
+    Cross entropy metric with support for distributions (non-sparse/non-one-hot-encoded targets).
+    Adds a small epsilon(1e-12) to avoid taking log() of 0.
     :param y_true: Ground truth value, which can be non-hot-encoded
     :param y_pred: Predicted values
     :param eps: Epsilon value to avoid taking log of 0
     :return:
     """
-    return -np.sum(y_true * np.log(y_pred+eps))
+    return -(np.sum(y_true * np.log(y_pred+1e-12), axis=1)).mean()
 
 
-def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(), select_policy_from_plane=False):
+def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(), sparse_policy_label=False):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
     The metric results are returned as a dictionary object.
@@ -52,7 +54,8 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(),
     :param nb_batches: Number of batches to evaluate (early stopping).
      If set to None all batches of the data_iterator will be evaluated
     :param ctx: MXNET data context
-    :param select_policy_from_plane: Boolean if potential legal moves will be selected from final policy output
+    :param sparse_policy_label: Should be set to true if the policy uses one-hot encoded targets
+     (e.g. supervised learning)
     :return:
     """
     reset_metrics(metrics)
@@ -62,13 +65,13 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(),
         policy_label = policy_label.as_in_context(ctx)
         [value_out, policy_out] = net(data)
         value_out[0][0].wait_to_read()
-        if select_policy_from_plane:
-            policy_out = policy_out[:, FLAT_PLANE_IDX]
         # update the metrics
         metrics["value_loss"].update(preds=value_out, labels=value_label)
-        metrics["policy_loss"].update(preds=nd.SoftmaxActivation(policy_out), labels=policy_label)
+        metrics["policy_loss"].update(preds=nd.SoftmaxActivation(policy_out),
+                                      labels=policy_label)
         metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
-        metrics["policy_acc"].update(preds=nd.argmax(policy_out, axis=1), labels=policy_label)
+        metrics["policy_acc"].update(preds=nd.argmax(policy_out, axis=1),
+                                     labels=policy_label if sparse_policy_label else nd.argmax(policy_label, axis=1))
         # stop after evaluating x batches (only recommended to use this for the train set evaluation)
         if nb_batches and i == nb_batches:
             break
@@ -120,33 +123,28 @@ class TrainerAgent:  # Probably needs refactoring
         val_loss_factor=0.01,
         policy_loss_factor=0.99,
         select_policy_from_plane=True,
+        sparse_policy_label=True,
+        q_value_ratio=0,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
-        # , lr_warmup_k_steps=30, lr_warmup_init=0.01):
-        # patience=25, nb_lr_drops=3, nb_k_steps=200,
         if metrics is None:
             metrics = {}
         self._log_metrics_to_tensorboard = log_metrics_to_tensorboard
         self._ctx = ctx
-        # lr_drop_fac=0.1,
         self._metrics = metrics
         self._net = net
         self._graph_exported = False
-        # self._lr = lr
         self._normalize = normalize
-        # self._nb_k_steps = nb_k_steps
-        # self._patience = patience
-        # self._nb_lr_drops = nb_lr_drops
         self._lr_schedule = lr_schedule
         self._momentum_schedule = momentum_schedule
         self._total_it = total_it
         self._batch_size = batch_size
         self._export_grad_histograms = export_grad_histograms
         self._cpu_count = cpu_count
-        # self._lr_drop_fac = lr_drop_fac
         self._k_steps_initial = k_steps_initial
         self._val_data = val_data
+        self._q_value_ratio = q_value_ratio
         self._export_weights = export_weights
         self._batch_steps = batch_steps
         self._use_spike_recovery = use_spike_recovery
@@ -155,14 +153,13 @@ class TrainerAgent:  # Probably needs refactoring
         self._seed = seed
         self._val_loss_factor = val_loss_factor
         self._policy_loss_factor = policy_loss_factor
-        # self._nb_lr_drops = nb_lr_drops
-        # self._warmup_k_steps = lr_warmup_k_steps
-        # self._lr_warmup_init = lr_warmup_init
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
         # Define the two loss functions
-        self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
+        #  sparse_policy_label defines if the policy target is one-hot encoded (sparse=True)
+        self._sparse_policy_label = sparse_policy_label
+        self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=sparse_policy_label)
         self._l2_loss = gluon.loss.L2Loss()
         if optimizer_name != "nag":
             raise NotImplementedError("The requested optimizer %s Isn't supported yet." % optimizer_name)
@@ -249,15 +246,7 @@ class TrainerAgent:  # Probably needs refactoring
             cur_it = self._k_steps_initial * 1000
         nb_spikes = 0  # count the number of spikes that have been detected
         # initialize the loss to compare with, with a very high value
-        old_val_loss = 9000
-        # self._lr = self._lr_warmup_init
-        # logging.info('Warmup-Schedule')
-        # logging.info('Initial learning rate: lr = %.5f', self._lr)
-        # logging.info('=========================================')
-        # set initial lr
-        # self._trainer.set_learning_rate(self._lr)
-        # log the current learning rate
-        # self.sw.add_scalar(tag='lr', value=self._lr, global_step=k_steps)
+        old_val_loss = np.inf
         graph_exported = False  # create a state variable to check if the net architecture has been reported yet
 
         if not self.ordering:  # safety check to prevent eternal loop
@@ -274,12 +263,17 @@ class TrainerAgent:  # Probably needs refactoring
 
             for part_id in tqdm_notebook(self.ordering):
                 # load one chunk of the dataset from memory
-                _, x_train, yv_train, yp_train, _ = load_pgn_dataset(
-                    dataset_type="train", part_id=part_id, normalize=self._normalize, verbose=False
+                _, x_train, yv_train, yp_train, _, _ = load_pgn_dataset(
+                    dataset_type="train", part_id=part_id, normalize=self._normalize, verbose=False,
+                    q_value_ratio=self._q_value_ratio
                 )
+
+                yp_train = prepare_policy(y_policy=yp_train, select_policy_from_plane=self.select_policy_from_plane,
+                                          sparse_policy_label=self._sparse_policy_label)
+
                 # update the train_data object
                 train_dataset = gluon.data.ArrayDataset(
-                    nd.array(x_train), nd.array(yv_train), nd.array(yp_train.argmax(axis=1))
+                    nd.array(x_train), nd.array(yv_train), nd.array(yp_train)
                 )
                 train_data = gluon.data.DataLoader(
                     train_dataset, batch_size=self._batch_size, shuffle=True, num_workers=self._cpu_count
@@ -298,13 +292,12 @@ class TrainerAgent:  # Probably needs refactoring
                     old_label = value_label
                     with autograd.record():
                         [value_out, policy_out] = self._net(data)
-                        if self.select_policy_from_plane:
-                            policy_out = policy_out[:, FLAT_PLANE_IDX]
+
                         value_loss = self._l2_loss(value_out, value_label)
                         policy_loss = self._softmax_cross_entropy(policy_out, policy_label)
                         # weight the components of the combined loss
                         combined_loss = (
-                            self._val_loss_factor * value_loss.sum() + self._policy_loss_factor * policy_loss.sum()
+                            self._val_loss_factor * value_loss + self._policy_loss_factor * policy_loss
                         )
                         # update a dummy metric to see a proper progress bar
                         # self._metrics['value_loss'].update(preds=value_out, labels=value_label)
@@ -323,13 +316,6 @@ class TrainerAgent:  # Probably needs refactoring
                         graph_exported = True
 
                     if batch_proc_tmp >= self._batch_steps:  # show metrics every thousands steps
-                        # if k_steps < self._warmup_k_steps:
-                        # update the learning rate
-                        # self._lr *= k_steps * ((self._lr_first - self._lr_warmup_init) / self._warmup_k_steps)
-                        # + self._lr_warmup_init #self._lr_drop_fac
-                        # self._trainer.set_learning_rate(self._lr)
-                        # logging.info('Learning rate update: lr = %.5f', self._lr)
-                        # logging.info('=========================================')
                         # log the current learning rate
                         # update batch_proc_tmp counter by subtracting the batch_steps
                         batch_proc_tmp = batch_proc_tmp - self._batch_steps
@@ -345,9 +331,10 @@ class TrainerAgent:  # Probably needs refactoring
                             self._metrics,
                             train_data,
                             self._net,
-                            nb_batches=25,
+                            nb_batches=10, #25,
                             ctx=self._ctx,
-                            select_policy_from_plane=self.select_policy_from_plane,
+                            sparse_policy_label=self._sparse_policy_label,
+                            from_logits=self._from_logits
                         )
                         val_metric_values = evaluate_metrics(
                             self._metrics,
@@ -355,12 +342,9 @@ class TrainerAgent:  # Probably needs refactoring
                             self._net,
                             nb_batches=None,
                             ctx=self._ctx,
-                            select_policy_from_plane=self.select_policy_from_plane,
+                            sparse_policy_label=self._sparse_policy_label,
+                            from_logits=self._from_logits
                         )
-                        # spike_detected = False
-                        # spike_detected = old_val_loss * 1.5 < val_metric_values['loss']
-                        # if np.isnan(val_metric_values['loss']):
-                        #    spike_detected = True
                         if self._use_spike_recovery and (
                             old_val_loss * self._spike_thresh < val_metric_values["loss"]
                             or np.isnan(val_metric_values["loss"])

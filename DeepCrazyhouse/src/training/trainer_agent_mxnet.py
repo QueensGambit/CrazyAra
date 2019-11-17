@@ -11,13 +11,14 @@ import datetime
 import logging
 import random
 from time import time
-import mxnet as mx
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
+from DeepCrazyhouse.src.training.crossentropy import *
+
 
 def acc_sign(y_true, y_pred):
     """
@@ -79,13 +80,11 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-def adjust_loss_weighting(symbol, grad_scale_value=1.0, grad_scale_policy=1.0,
-                          value_output_name="value_out", policy_output_name="policy_out"):
+def add_non_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name="value_out", policy_output_name="policy_out"):
     """
-    Adjusts the loss weighting for a given MXNet symbol.
+    Adds a cross entropy loss output which support non-sparse label as targets, but distributions with value in [0,1]
     :param symbol: MXNet symbol with both a value and policy head
     :param grad_scale_value: Scaling factor for the value loss
-    :param grad_scale_policy: Scaling factor for the policy loss
     :param value_output_name: Output name for the value output after applying tanh activation
     :param policy_output_name: Output name for the policy output without applying softmax activation on it
     :return: MXNet symbol with adjusted policy and value loss
@@ -93,7 +92,8 @@ def adjust_loss_weighting(symbol, grad_scale_value=1.0, grad_scale_policy=1.0,
     value_out = symbol.get_internals()[value_output_name]
     policy_out = symbol.get_internals()[policy_output_name]
     value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
-    policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
+    policy_out = mx.sym.SoftmaxActivation(data=policy_out, name='softmax')
+    policy_out = mx.symbol.Custom(data=policy_out, name='policy', op_type='CrossEntropyLoss')
     # group value_out and policy_out together
     return mx.symbol.Group([value_out, policy_out])
 
