@@ -40,12 +40,51 @@ static std::random_device r;
 static std::default_random_engine generator(r());
 
 /**
+ * @brief pick_move_idx Picks an index according to the probability distribution
+ * @param distribution Probability distribution which should sum to 1
+ * @return Random picked element index
+ */
+template <typename T>
+size_t random_choice(const DynamicVector<T>& distribution)
+{
+    const T* prob = distribution.data();
+    discrete_distribution<> d(prob, prob+distribution.size());
+    return size_t(d(generator));
+}
+
+/**
+ * @brief apply_temperature Applies temperature rescaling to the a given distribution by enhancing higher probability values.
+ * A temperature below 0.01 relates to one hot encoding. For values greater 1 the distribution is being flattened.
+ * @param distribution Arbitrary distribution
+ */
+template <typename T, typename U>
+void apply_temperature(DynamicVector<T>& distribution, U temperature)
+{
+    // apply exponential scaling
+    distribution = pow(distribution, 1.0f / temperature);
+    // re-normalize the values to probabilities again
+    distribution /= sum(distribution);
+}
+
+/**
  * @brief get_dirichlet_noise Returns a vector of size length of generated dirichlet noise with value alpha
  * @param length Lenght of the vector
  * @param alpha Alpha value for the distribution
  * @return Dirchlet noise vector
  */
-DynamicVector<float> get_dirichlet_noise(size_t length, const float alpha);
+template <typename T>
+DynamicVector<T> get_dirichlet_noise(size_t length, T alpha)
+{
+    DynamicVector<T> dirichletNoise(length);
+
+    for (size_t i = 0; i < length; ++i) {
+        std::gamma_distribution<T> distribution(alpha, 1.0f);
+        dirichletNoise[i] = distribution(generator);
+    }
+    dirichletNoise /= sum(dirichletNoise);
+    return  dirichletNoise;
+}
+
 
 /**
  * @brief based on sort_indexes() by Lukasz Wiklendt https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
@@ -63,7 +102,6 @@ vector<size_t> argsort(const DynamicVector<T>& v)
 
     return idx;
 }
-
 
 /**
  * @brief get_quantile Returns the value+FLT_EPSILON for the given quantil.

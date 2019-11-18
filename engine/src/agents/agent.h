@@ -35,29 +35,9 @@
 #include "../rl/traindataexporter.h"
 #endif
 
-/**
- * @brief pick_move_idx Picks a move according to the probability distribution
- * @param policyProbSmall Probability distribution over all legal moves
- * @return Random picked move index
- */
-template <typename T>
-size_t pick_move_idx(const DynamicVector<T>& policyProbSmall)
-{
-    const T* prob = policyProbSmall.data();
-    default_random_engine eng{static_cast<long unsigned int>(time(0))};
-    discrete_distribution<> d(prob, prob+policyProbSmall.size());
-    return size_t(d(eng));
-}
-
 class Agent
 {
 private:
-    /**
-     * @brief apply_temperature_to_policy Applies temperature rescaling to the policy distribution by enhancing higher probability values.
-     * A temperature below 0.01 relates to one hot encoding.
-     * @param policyProbSmall
-     */
-    void apply_temperature_to_policy(DynamicVector<double>& policyProbSmall);
 
     /**
      * @brief set_best_move Sets the "best" (chosen) move by the engine to the evalInformation
@@ -71,9 +51,6 @@ protected:
     unsigned int temperatureMoves;
     bool verbose;
     SearchLimits* searchLimits;
-    // used for sampling from the mcts policy
-    std::random_device rd;
-    std::mt19937 gen;
 public:
     Agent(float temperature, unsigned int temperatureMoves, bool verbose);
 
@@ -91,7 +68,6 @@ public:
      * @param evalInfo Returns the evaluation information
      */
     virtual void evalute_board_state(Board *pos,  EvalInfo& evalInfo) = 0;
-
 };
 
 #endif // AGENT_H

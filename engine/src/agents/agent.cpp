@@ -30,25 +30,18 @@
 #include "misc.h"
 #include "uci.h"
 #include "../util/communication.h"
+#include "../util/blazeutil.h"
 
 using namespace std;
 
-
-void Agent::apply_temperature_to_policy(DynamicVector<double> &policyProbSmall)
-{
-    // apply exponential scaling
-    policyProbSmall = pow(policyProbSmall, 1.0f / temperature);
-    // re-normalize the values to probabilities again
-    policyProbSmall /= sum(policyProbSmall);
-}
 
 void Agent::set_best_move(EvalInfo &evalInfo, size_t moveCounter)
 {
     if (moveCounter <= temperatureMoves && temperature > 0.01f) {
         info_string("Sample move");
         DynamicVector<double> policyProbSmall = evalInfo.childNumberVisits / sum(evalInfo.childNumberVisits);
-        apply_temperature_to_policy(policyProbSmall);
-        size_t moveIdx = pick_move_idx(policyProbSmall);
+        apply_temperature(policyProbSmall, temperature);
+        size_t moveIdx = random_choice(policyProbSmall);
         evalInfo.bestMove = evalInfo.legalMoves[moveIdx];
     }
     else {
@@ -61,9 +54,6 @@ Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
     this->temperature = temperature;
     this->temperatureMoves = temperature_moves;
     this->verbose = verbose;
-    auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-    gen.seed(seed);
-    mt19937 gen(rd());
 }
 
 void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo)
