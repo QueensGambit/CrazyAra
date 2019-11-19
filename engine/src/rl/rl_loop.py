@@ -7,26 +7,26 @@ Created on 12.10.19
 Main reinforcement learning for generating games and train the neural network.
 """
 
-from subprocess import PIPE, Popen
-import datetime
-import time
-from numcodecs import Blosc
-import zarr
 import os
-import logging
-import mxnet as mx
+import sys
+import time
 import glob
+import zarr
+import logging
+import datetime
+import argparse
+import mxnet as mx
+from numcodecs import Blosc
+from subprocess import PIPE, Popen
 from multiprocessing import cpu_count
 
-from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
+sys.path.append("../../../")
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, add_non_sparse_cross_entropy, prepare_policy
-from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
-from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, OneCycleSchedule, LinearWarmUp
 from DeepCrazyhouse.configs.train_config import train_config
-
-device_name = "gpu_0"
+from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
+from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
+from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, add_non_sparse_cross_entropy, prepare_policy
+from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, OneCycleSchedule, LinearWarmUp
 
 
 def read_output(proc, last_line=b"readyok\n"):
@@ -41,35 +41,27 @@ def read_output(proc, last_line=b"readyok\n"):
         print(line)
         if line == b'':
             error = proc.stderr.readline()
-            print(error)
+            logging.error(error)
             raise Exception("The process raised an error!")
         if line == last_line:
             break
 
 
-def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, start_idx=0, end_idx=0):
+def compress_zarr_dataset(data, file_path: str, compression='lz4', clevel=5, start_idx=0, end_idx=0):
     """
     Loads in a zarr data set and exports it with a given compression type and level
     :param data: Zarr data set which will be compressed
-    :param export_dir: Export directory for the compressed data set
+    :param file_path: File name path where the data will be exported (e.g. "./export/data.zip")
     :param compression: Compression type
     :param clevel: Compression level
     :param end_idx: If end_idx != 0 the data set will be exported to the specified index,
     excluding the sample at end_idx (e.g. end_idx = len(x) will export it fully)
-    :return:
+    :return: timestmp_dir: directory where the files have been exported
     """
-    # include current timestamp in dataset export file
-    timestmp = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M-%S")
-    timestmp_dir = export_dir + timestmp + "/"
-    # create a directory of the current timestmp
-    if not os.path.exists(timestmp_dir):
-        os.makedirs(timestmp_dir)
-
-    zarr_path = timestmp_dir + timestmp + ".zip"
     compressor = Blosc(cname=compression, clevel=clevel, shuffle=Blosc.SHUFFLE)
 
     # open a dataset file and create arrays
-    store = zarr.ZipStore(zarr_path, mode="w")
+    store = zarr.ZipStore(file_path, mode="w")
     zarr_file = zarr.group(store=store, overwrite=True)
 
     for key in data.keys():
@@ -91,14 +83,7 @@ def compress_zarr_dataset(data, export_dir, compression='lz4', clevel=5, start_i
             compression=compressor,
         )
     store.close()
-    logging.debug("dataset was exported to: %s", zarr_path)
-
-    # TODO: Move to single function
-    file_names = ["games_" + device_name + ".pgn",
-                  "gameIdx_" + device_name + ".txt"]
-    for file_name in file_names:
-        os.rename(file_name, timestmp_dir+file_name)
-
+    logging.debug("dataset was exported to: %s", file_path)
 
 def create_dir(directory):
     """
@@ -117,29 +102,33 @@ class RLLoop:
     This class uses the C++ binary to generate games and updates the network from the newly acquired games
     """
 
-    def __init__(self, crazyara_binary_dir="./", nb_games_to_update=1024, nb_arena_games=100):
+    def __init__(self, args, nb_games_to_update=1024, nb_arena_games=100):
         """
         Constructor
-        :param crazyara_binary_dir: Directory to the C++ binary
+        :param args: Command line arguments, see parse_args() for details.
         :param nb_games_to_update: Number of games to generate before the neural network will be updated
         :param nb_arena_games: Number of games which will be generated in a tournament setting in order to determine
         if the updated NN weights are stronger than the old one and by how much.
         """
 
-        self.crazyara_binary_dir = crazyara_binary_dir
+        self.crazyara_binary_dir = args.crazyara_binary_dir
         self.proc = None
         self.nb_games_to_update = nb_games_to_update
         if nb_arena_games % 2 == 1:
             raise Exception("The number of tournament games should be an even number to avoid giving one player more"
                             "games as white.")
         self.nb_arena_games = nb_arena_games
+        self.args = args
+        self.device_name = "%s_%d" % (args.context, args.device_id)
+
+        self.export_dir = self.crazyara_binary_dir + "export/train/"
 
         # change working directory (otherwise the .zip files would be generated at the .py location)
-        os.chdir(crazyara_binary_dir)
+        os.chdir(self.crazyara_binary_dir)
 
         # directories for training
-        create_dir(crazyara_binary_dir+"logs")
-        create_dir(crazyara_binary_dir+"weights")
+        create_dir(self.crazyara_binary_dir+"logs")
+        create_dir(self.crazyara_binary_dir+"weights")
 
     def _get_current_model_arch_file(self):
         """
@@ -172,9 +161,11 @@ class RLLoop:
 
         self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
                                                                                    'utf-8'))
+        set_uci_param(self.proc, "Context", self.args.context)
+        set_uci_param(self.proc, "Device_ID", self.args.device_id)
         set_uci_param(self.proc, "Nodes", 800)
-        # set_uci_param(self.proc, "Centi_Temperature", 10)
-        # set_uci_param(self.proc, "Temperature_Moves", 7)
+        set_uci_param(self.proc, "Centi_Temperature", 10)
+        set_uci_param(self.proc, "Temperature_Moves", 7)
 
         # load network
         self.proc.stdin.write(b"isready\n")
@@ -190,14 +181,41 @@ class RLLoop:
         self.proc.stdin.flush()
         read_output(self.proc, b"readyok\n")
 
+    def create_export_dir(self):
+        # include current timestamp in dataset export file
+        time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M-%S")
+        time_stamp_dir = self.export_dir + time_stamp + "-" + self.device_name + "/"
+        # create a directory of the current time_stamp
+        if not os.path.exists(time_stamp_dir):
+            os.makedirs(time_stamp_dir)
+
+        return time_stamp_dir, time_stamp
+
+    def _move_game_data_to_export_dir(self, export_dir: str):
+        """
+        Moves the generated games saved in .pgn format and the number how many games have been generated to the given export
+         directory
+        :param export_dir: Export directory for the newly generated data
+
+        :return:
+        """
+        file_names = ["games_" + self.device_name + ".pgn",
+                      "gameIdx_" + self.device_name + ".txt"]
+        for file_name in file_names:
+            os.rename(file_name, export_dir + file_name)
+
     def compress_dataset(self):
         """
         Loads the uncompressed data file, select all sample until the index specified in "startIdx.txt",
         compresses it and exports it
         :return:
         """
-        data = zarr.load(self.crazyara_binary_dir + "data_" + device_name + ".zarr")
-        compress_zarr_dataset(data, self.crazyara_binary_dir + "export/train/", start_idx=0)
+        data = zarr.load(self.crazyara_binary_dir + "data_" + self.device_name + ".zarr")
+
+        export_dir, time_stamp = self.create_export_dir()
+        zarr_path = export_dir + time_stamp + ".zip"
+        compress_zarr_dataset(data, zarr_path, start_idx=0)
+        self._move_game_data_to_export_dir(export_dir)
 
     def update_network(self):
         """
@@ -353,9 +371,90 @@ def set_uci_param(proc, name, value):
     proc.stdin.flush()
 
 
-if __name__ == "__main__":
-    enable_color_logging()
-    rl_loop = RLLoop(crazyara_binary_dir="/media/queensgambit/Volume/Deep_Learning/data/RL/",
+def parse_args(cmd_args: list):
+    """
+    Parses command-line argument and returns them as a dictionary object
+    :param cmd_args: Command-line arguments (sys.argv[1:])
+    :return: Parsed arguments as dictionary object
+    """
+    parser = argparse.ArgumentParser(description='Reinforcement learning loop')
+
+    parser.add_argument("--crazyara-binary-dir", type=str, default="data/RL/",
+                        help="directory where the CrazyAra executable is located and where the selfplay data will be "
+                             "stored")
+    parser.add_argument('--context', type=str, default="gpu",
+                        help='Computational device context to use. Possible values ["cpu", "gpu"]. (default: gpu)')
+    parser.add_argument("--device_id", type=int, default=0,
+                        help="GPU index to use for selfplay generation and/or network training. (default: 0)")
+    parser.add_argument("--trainer", default=False, action="store_true",
+                        help="The given GPU index is used for training the neural network."
+                             " The gpu trainer will stop generating games and update the network as soon as enough"
+                             " training samples have been acquired.  (default: False)")
+    parser.add_argument('--export-no-log', default=False, action="store_true",
+                        help="By default the log messages are stored in {context}_{device}.log."
+                             " If this parameter is enabled no log messages will be stored")
+
+    args = parser.parse_args(cmd_args)
+
+    if not os.path.exists(args.crazyara_binary_dir):
+        raise Exception("Your given args.crazyara_binary_dir: %s does not exist. Make sure to define a valid directory")
+
+    if args.crazyara_binary_dir[-1] != '/':
+        args.crazyara_binary_dir += '/'
+
+    if args.context not in ["cpu", "gpu"]:
+        raise ValueError('Given value: %s for context is invalid. It must be in ["cpu", "gpu"].' % args.context)
+
+    return args
+
+
+def enable_logging(logging_lvl=logging.DEBUG, log_filename=None):
+    """
+    Enables logging for a given level
+    :param logging_lvl: Specifies logging level (e.g. logging.DEBUG, logging.INFO...)
+    :param log_filename: Will export all log message into given logfile (append mode) if not None
+    :return:
+    """
+    root = logging.getLogger()
+    root.setLevel(logging_lvl)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging_lvl)
+
+    formatting_method = "%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s"
+    formatter = logging.Formatter(formatting_method, "%Y-%m-%d %H:%M:%S")
+    console_handler.setFormatter(formatter)
+    root.addHandler(console_handler)
+
+    if log_filename is not None:
+        fh = logging.FileHandler(log_filename)
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(formatter)
+        root.addHandler(fh)
+
+
+def get_log_filename(args):
+    """
+    Returns the file name for the log messages
+    :param args: Command line arguments
+    :return: Filename: str or None
+    """
+    if args.export_no_log is False:
+        return "%s_%d.log" % (args.context, args.device_id)
+    return None
+
+
+def main():
+    """
+    Main function which is executed on start-up
+    :return:
+    """
+    args = parse_args(sys.argv[1:])
+
+    enable_logging(logging.DEBUG, get_log_filename(args))
+    logging.info("Command line parameters:")
+    logging.info(str(args))
+
+    rl_loop = RLLoop(args,
                      nb_games_to_update=0,
                      nb_arena_games=50)
     rl_loop.initialize()
@@ -367,3 +466,7 @@ if __name__ == "__main__":
     # rl_loop.update_network()
     # rl_loop.create_new_contender()
     # rl_loop.compare_new_weights()
+
+
+if __name__ == "__main__":
+    main()
