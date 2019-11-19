@@ -47,7 +47,7 @@ def read_output(proc, last_line=b"readyok\n"):
             break
 
 
-def compress_zarr_dataset(data, file_path: str, compression='lz4', clevel=5, start_idx=0, end_idx=0):
+def compress_zarr_dataset(data, file_path, compression='lz4', clevel=5, start_idx=0, end_idx=0):
     """
     Loads in a zarr data set and exports it with a given compression type and level
     :param data: Zarr data set which will be compressed
@@ -366,6 +366,9 @@ def set_uci_param(proc, name, value):
     """
     if isinstance(value, int):
         proc.stdin.write(b"setoption name %b value %d\n" % (bytes(name, encoding="ascii"), value))
+    elif isinstance(value, str):
+        proc.stdin.write(b"setoption name %b value %b\n" % (bytes(name, encoding="ascii"),
+                                                            bytes(value, encoding="ascii")))
     else:
         raise NotImplementedError(f"To set uci-parameters of type {type(value)} has not been implemented yet.")
     proc.stdin.flush()
