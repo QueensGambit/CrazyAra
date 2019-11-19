@@ -35,9 +35,9 @@ void OptionsUCI::init(OptionsMap &o)
 {
     o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
     o["Search_Type"]              << Option("mcts", {"mcts"});
-    o["Context"]                  << Option("cpu", {"cpu", "gpu"});
+    o["Context"]                  << Option("gpu", {"cpu", "gpu"});
     o["Device_ID"]                << Option(0, 0, 99999);
-    o["Batch_Size"]               << Option(8, 1, 8192);
+    o["Batch_Size"]               << Option(32, 1, 8192);
     o["Threads"]                  << Option(2, 1, 512);
     o["Centi_CPuct_Init"]         << Option(250, 1, 99999);
     o["CPuct_Base"]               << Option(19652, 1, 99999);
@@ -47,21 +47,21 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_U_Min"]              << Option(25, 0, 100);
     o["U_Base"]                   << Option(1965, 0, 99999);
     o["Centi_U_Init_Divisor"]     << Option(100, 1, 99999);
-    o["Centi_Q_Value_Weight"]     << Option(70, 0, 99999);
+    o["Centi_Q_Value_Weight"]     << Option(0, 0, 99999);
     o["Centi_Q_Thresh_Init"]      << Option(50, 0, 100);
     o["Centi_Q_Thresh_Max"]       << Option(90, 0, 100);
     o["Q_Thresh_Base"]            << Option(1965, 0, 99999);
     o["Max_Search_Depth"]         << Option(99, 1, 99999);
     o["Centi_Temperature"]        << Option(70, 0, 99999);
-    o["Temperature_Moves"]        << Option(0, 0, 99999);
-    o["Virtual_Loss"]             << Option(3, 0, 99999);
-    o["Nodes"]                    << Option(0, 0, 99999);
+    o["Temperature_Moves"]        << Option(7, 0, 99999);
+    o["Virtual_Loss"]             << Option(1, 0, 99999);
+    o["Nodes"]                    << Option(800, 0, 99999);
     o["Use_Raw_Network"]          << Option(false);
     o["Enhance_Checks"]           << Option(true);
     o["Enhance_Captures"]         << Option(false);
-    o["Use_Transposition_Table"]  << Option(true);  // true
+    o["Use_Transposition_Table"]  << Option(true);
 #ifdef TENSORRT
-    o["Use_TensorRT"]             << Option(false); // true
+    o["Use_TensorRT"]             << Option(false);
 #endif
     o["Model_Directory"]          << Option("model/");
 #ifdef USE_RL
@@ -99,5 +99,4 @@ void OptionsUCI::setoption(istringstream &is)
     else {
         cout << "info string Given option " << name << " does not exist " << endl;
     }
-
 }
