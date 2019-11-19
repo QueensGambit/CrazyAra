@@ -52,7 +52,7 @@ Next you can start selplay from a given checkpoint file, which is stored in `mod
 
 ##### Generator
 ```shell script
-python rl_loop.py --gpu_idx 0
+python rl_loop.py --device_id 0
 ```
 
 ##### Trainer
@@ -60,5 +60,17 @@ You need to specify at least one gpu to also update the current neural network w
 The gpu trainer will stop generating games and update the network as soon as enough training samples have been acquired.
 
 ```shell script
-python rl_loop.py --gpu_idx 1 --trainer
+python rl_loop.py --device_id 1 --trainer
 ```
+
+---
+
+#### Useful commands
+
+* `nvidia-smi`: Shows GPU utilization
+* `docker images`: Lists all availabe docker images
+* `docker ps`: List all running docker containers
+* `Ctrl-p + Ctrl-q`: To detach the tty without exiting the shell. Processes will continue running in daemon mode.
+* `docker exec -it [container-id] bash`: Enter a running docker container in shell mode
+* `docker kill [OPTIONS] CONTAINER [CONTAINER...]`: Kill one or more running containers
+* `docker image rm [OPTIONS] IMAGE [IMAGE...]`: Remove one or more images
