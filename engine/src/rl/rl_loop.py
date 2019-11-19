@@ -439,7 +439,7 @@ def get_log_filename(args):
     :return: Filename: str or None
     """
     if args.export_no_log is False:
-        return "%s_%d.log" % (args.context, args.device_id)
+        return "%s/%s_%d.log" % (args.crazyara_binary_dir, args.context, args.device_id)
     return None
 
 
