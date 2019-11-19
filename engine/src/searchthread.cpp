@@ -167,6 +167,7 @@ void SearchThread::backup_value_outputs()
     backup_values(newNodes);
     backup_values(transpositionNodes);
     backup_values(collisionNodes);
+    backup_values(terminalNodes);
 }
 
 void SearchThread::backup_collisions()
@@ -198,8 +199,7 @@ void SearchThread::create_mini_batch()
             transpositionNodes.push_back(currentNode);
         }
         else if(description.isTerminal) {
-            //                        terminalNodes.push_back(parentNode->childNodes[childIdx]);
-            backup_value(currentNode, -currentNode->get_value());
+            terminalNodes.push_back(currentNode);
         }
         else if (description.isCollision) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
