@@ -379,7 +379,7 @@ def parse_args(cmd_args: list):
     """
     parser = argparse.ArgumentParser(description='Reinforcement learning loop')
 
-    parser.add_argument("--crazyara-binary-dir", type=str, default="data/RL/",
+    parser.add_argument("--crazyara-binary-dir", type=str, default="/data/RL/",
                         help="directory where the CrazyAra executable is located and where the selfplay data will be "
                              "stored")
     parser.add_argument('--context', type=str, default="gpu",
