@@ -164,7 +164,7 @@ class RLLoop:
         set_uci_param(self.proc, "Context", self.args.context)
         set_uci_param(self.proc, "Device_ID", self.args.device_id)
         set_uci_param(self.proc, "Nodes", 800)
-        set_uci_param(self.proc, "Centi_Temperature", 10)
+        set_uci_param(self.proc, "Centi_Temperature", 70)
         set_uci_param(self.proc, "Temperature_Moves", 7)
 
         # load network
