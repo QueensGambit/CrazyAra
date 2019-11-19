@@ -67,10 +67,10 @@ python rl_loop.py --device_id 1 --trainer
 
 #### Useful commands
 
-* `nvidia-smi`: Shows GPU utilization
-* `docker images`: Lists all availabe docker images
-* `docker ps`: List all running docker containers
-* `Ctrl-p + Ctrl-q`: To detach the tty without exiting the shell. Processes will continue running in daemon mode.
-* `docker exec -it [container-id] bash`: Enter a running docker container in shell mode
-* `docker kill [OPTIONS] CONTAINER [CONTAINER...]`: Kill one or more running containers
-* `docker image rm [OPTIONS] IMAGE [IMAGE...]`: Remove one or more images
+*   `nvidia-smi`: Shows GPU utilization
+*   `docker images`: Lists all availabe docker images
+*   `docker ps`: List all running docker containers
+*   `Ctrl-p + Ctrl-q`: To detach the tty without exiting the shell. Processes will continue running in daemon mode.
+*   `docker exec -it [container-id] bash`: Enter a running docker container in shell mode
+*   `docker kill [OPTIONS] CONTAINER [CONTAINER...]`: Kill one or more running containers
+*   `docker image rm [OPTIONS] IMAGE [IMAGE...]`: Remove one or more images
