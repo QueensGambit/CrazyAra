@@ -259,6 +259,19 @@ void MCTSAgent::clear_game_history()
     lastValueEval = -1.0f;
 }
 
+void MCTSAgent::selectMoveFromRawPolicy(EvalInfo &evalInfo)
+{
+    DynamicVector<float> rawPolicy = retrieve_raw_policy(rootNode);
+    DynamicVector<float> visits = retrieve_visits(rootNode);
+    for (size_t idx = 0; idx < visits.size(); ++idx) {
+        if (visits[idx] < 2) {
+            rawPolicy[idx] = 0;
+        }
+    }
+    rawPolicy /= sum(rawPolicy);
+    evalInfo.bestMove = evalInfo.legalMoves[random_choice(rawPolicy)];
+}
+
 bool MCTSAgent::is_policy_map()
 {
     return netSingle->is_policy_map();
@@ -269,7 +282,7 @@ string MCTSAgent::get_name() const
     return engineName + "-" + engineVersion + "-" + netSingle->get_model_name();
 }
 
-void MCTSAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
+void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
 {
     size_t nodesPreSearch = init_root_node(pos);
     if (rootNode->get_number_child_nodes() == 1) {

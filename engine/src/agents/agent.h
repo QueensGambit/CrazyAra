@@ -67,7 +67,7 @@ public:
      * @param pos Board position to evaluate
      * @param evalInfo Returns the evaluation information
      */
-    virtual void evalute_board_state(Board *pos,  EvalInfo& evalInfo) = 0;
+    virtual void evaluate_board_state(Board *pos,  EvalInfo& evalInfo) = 0;
 };
 
 #endif // AGENT_H

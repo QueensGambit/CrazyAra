@@ -42,7 +42,7 @@ RawNetAgent::RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings, float tem
     fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);  // will be filled in evalute_board_state()
 }
 
-void RawNetAgent::evalute_board_state(Board *pos, EvalInfo& evalInfo)
+void RawNetAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
 {
     for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
         evalInfo.legalMoves.push_back(move);

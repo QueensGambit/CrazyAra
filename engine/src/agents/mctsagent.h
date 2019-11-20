@@ -139,7 +139,7 @@ public:
 
     ~MCTSAgent();
 
-    void evalute_board_state(Board *pos, EvalInfo& evalInfo);
+    void evaluate_board_state(Board *pos, EvalInfo& evalInfo);
 
     /**
      * @brief run_mcts_search Starts the MCTS serach using all available search threads
@@ -164,6 +164,13 @@ public:
      * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them
      */
     void clear_game_history();
+
+    /**
+     * @brief selectMoveFromRawPolicy Samples a move from the raw root node policy which has been visited at least twice.
+     * The move will be set as evalInfo.bestMove
+     * @param evalInfo Evaluation information
+     */
+    void selectMoveFromRawPolicy(EvalInfo& evalInfo);
 
     /**
      * @brief is_policy_map Checks if the current loaded network uses policy map representation.

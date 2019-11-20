@@ -165,6 +165,9 @@ public:
     /**
      * @brief arena Starts the arena comparision between two different NN weights.
      * The score can be used for logging and to decide if the current weights shall be replaced.
+     * The arena ends with either the keywords "keep" or "replace".
+     * "keep": Signals that the current generator should be kept
+     * "replace": Signals that the current generator should be replaced by the contender
      * @param is Number of games to generate
      */
     void arena(istringstream &is);

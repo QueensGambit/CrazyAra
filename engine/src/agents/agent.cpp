@@ -60,7 +60,7 @@ void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& eva
 {
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     this->searchLimits = searchLimits;
-    this->evalute_board_state(pos, evalInfo);
+    this->evaluate_board_state(pos, evalInfo);
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
     evalInfo.elapsedTimeMS = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     evalInfo.nps = int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f);

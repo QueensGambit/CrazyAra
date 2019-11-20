@@ -53,7 +53,7 @@ SelfPlay::~SelfPlay()
     delete exporter;
 }
 
-void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states)
+void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, size_t temperatureMoves, float rawSamplingProb)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
     Board* position = init_board(variant, states);
@@ -63,20 +63,18 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     Node* nextRoot;
     exporter->new_game();
 
-    srand(time(0));
+    srand(unsigned(int(time(0))));
     do {
         searchLimits.startTime = now();
-        const int rand_int = rand();
-        searchLimits.nodes = 800 + (rand_int % 160) - 80;
+        const int randInt = rand();
+        searchLimits.nodes = 800 + (randInt % 160) - 80;
         mctsAgent->perform_action(position, &searchLimits, evalInfo);
+        // sample from raw policy
+        if (float(randInt) / RAND_MAX < rawSamplingProb && position->game_ply() <= int(temperatureMoves)) {
+            mctsAgent->selectMoveFromRawPolicy(evalInfo);
+        }
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         nextRoot = mctsAgent->get_opponents_next_root();
-
-//        // sample from raw policy
-//        if (float(rand_int) / RAND_MAX < 0.5f && position->game_ply() <= 14) { // TODO: make dependend on temp
-//            size_t move_idx = pick_move_idx(retrieve_raw_policy(mctsAgent->get_root_node()));
-//            evalInfo.bestMove = evalInfo.legalMoves[move_idx];
-//        }
 
         if (nextRoot != nullptr) {
             leadsToTerminal = nextRoot->is_terminal();
@@ -221,7 +219,8 @@ void SelfPlay::export_number_generated_games() const
     gameIdxFile.close();
 }
 
-void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states)
+
+void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states, size_t temperatureMoves, float rawSamplingProb)
 {
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
@@ -229,12 +228,12 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManage
 
     if (numberOfGames == 0) {
         while(!exporter->is_file_full()) {
-            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states);
+            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, temperatureMoves, rawSamplingProb);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states);
+            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, temperatureMoves, rawSamplingProb);
         }
     }
     export_number_generated_games();
