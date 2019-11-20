@@ -57,7 +57,7 @@ void write_tournament_result_to_csv(const TournamentResult &result, const string
     ofstream csvFile;
     const char delim = ',';
     csvFile.open(csvFileName, std::ios_base::app);
-    cout << result.playerA << delim << result.playerB << delim
+    csvFile << result.playerA << delim << result.playerB << delim
          << result.numberWins << delim << result.numberDraws << delim << result.numberLosses << endl;
     csvFile.close();
 }

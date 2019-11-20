@@ -30,6 +30,16 @@ def acc_sign(y_true, y_pred):
     return (np.sign(y_pred).flatten() == np.sign(y_true)).sum() / len(y_true)
 
 
+def acc_distribution(y_true, y_pred):
+    """
+    Custom metrics which measures the accuracy between two distributions, in the form if both argmax() are identical
+    :param y_true: Ground truth distribution
+    :param y_pred: Predicted distribution
+    :return:
+    """
+    return (np.argmax(y_pred, axis=1).flatten() == np.argmax(y_true, axis=1)).sum() / len(y_true)
+
+
 def cross_entropy(y_true, y_pred):
     """
     Cross entropy metric with support for distributions (non-sparse/non-one-hot-encoded targets).

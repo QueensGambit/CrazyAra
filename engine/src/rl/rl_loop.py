@@ -12,21 +12,17 @@ import sys
 import time
 import glob
 import zarr
+import numpy as np
 import logging
 import datetime
 import argparse
-import mxnet as mx
 from numcodecs import Blosc
 from subprocess import PIPE, Popen
-from multiprocessing import cpu_count
+from multiprocessing import Process, Queue
 
 sys.path.append("../../../")
-from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.configs.train_config import train_config
-from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, add_non_sparse_cross_entropy, prepare_policy
-from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, OneCycleSchedule, LinearWarmUp
+from engine.src.rl.rl_training import update_network
 
 
 def read_output(proc, last_line=b"readyok\n"):
@@ -83,7 +79,8 @@ def compress_zarr_dataset(data, file_path, compression='lz4', clevel=5, start_id
             compression=compressor,
         )
     store.close()
-    logging.debug("dataset was exported to: %s", file_path)
+    logging.info("dataset was exported to: %s", file_path)
+
 
 def create_dir(directory):
     """
@@ -97,18 +94,33 @@ def create_dir(directory):
         logging.info("Created directory %s" % directory)
 
 
+def move_all_files(from_dir, to_dir):
+    """
+    Moves all files from a given directory to a destination directory
+    :param from_dir: Origin directory where the files are located
+    :param to_dir: Destinataion directory where all files (including subdirectories directories) will be moved
+    :return:
+    """
+    file_names = os.listdir(from_dir)
+
+    for file_name in file_names:
+        os.rename(from_dir + file_name, to_dir + file_name)
+
+
 class RLLoop:
     """
     This class uses the C++ binary to generate games and updates the network from the newly acquired games
     """
 
-    def __init__(self, args, nb_games_to_update=1024, nb_arena_games=100):
+    def __init__(self, args, nb_games_to_update=1024, nb_arena_games=100, lr_reduction=0.0001, k_steps=0):
         """
         Constructor
         :param args: Command line arguments, see parse_args() for details.
         :param nb_games_to_update: Number of games to generate before the neural network will be updated
         :param nb_arena_games: Number of games which will be generated in a tournament setting in order to determine
+        :param lr_reduction: Learning rate reduction of maximum learning rate after a single NN update
         if the updated NN weights are stronger than the old one and by how much.
+        :param k_steps: Amount of total batch-updates for the NN so far (sets the tensorboard offset properly)
         """
 
         self.crazyara_binary_dir = args.crazyara_binary_dir
@@ -121,14 +133,45 @@ class RLLoop:
         self.args = args
         self.device_name = "%s_%d" % (args.context, args.device_id)
 
-        self.export_dir = self.crazyara_binary_dir + "export/train/"
+        self.export_dir_gen_data = self.crazyara_binary_dir + "export/new_data/"
+        self.train_dir = self.crazyara_binary_dir + "export/train/"
+        self.val_dir = self.crazyara_binary_dir + "export/val/"
+        self.weight_dir = self.crazyara_binary_dir+"weights/"
+        self.train_dir_archive = self.crazyara_binary_dir + "export/archive/train/"
+        self.val_dir_archive = self.crazyara_binary_dir + "export/archive/val/"
+        self.model_dir = self.crazyara_binary_dir + "model/"
+        self.model_contender_dir = self.crazyara_binary_dir + "model_contender/"
+        self.model_dir_archive = self.crazyara_binary_dir + "export/archive/model/"
 
         # change working directory (otherwise the .zip files would be generated at the .py location)
         os.chdir(self.crazyara_binary_dir)
 
+        self._create_directories()
+        self.model_name = ""  # will be set in initialize()
+        self.nn_update_index = args.nn_update_idx
+        self.max_lr = train_config["max_lr"]
+        self.lr_reduction = lr_reduction
+
+        self.k_steps = k_steps
+
+    def _create_directories(self):
+        """
+        Creates directories in the crazyara_binary_path which will be used during RL
+        :return:
+        """
         # directories for training
         create_dir(self.crazyara_binary_dir+"logs")
-        create_dir(self.crazyara_binary_dir+"weights")
+        create_dir(self.weight_dir)
+        create_dir(self.crazyara_binary_dir+"export")
+        create_dir(self.export_dir_gen_data)
+        create_dir(self.train_dir)
+        create_dir(self.val_dir)
+        create_dir(self.crazyara_binary_dir+"export/archive")
+        create_dir(self.train_dir_archive)
+        create_dir(self.val_dir_archive)
+        create_dir(self.crazyara_binary_dir+"export/archive/model")
+        create_dir(self.model_contender_dir)
+        create_dir(self.model_dir_archive)
 
     def _get_current_model_arch_file(self):
         """
@@ -141,20 +184,17 @@ class RLLoop:
         Returns the filenames of the current active model weight (.params) file
         :return:
         """
-        return glob.glob(self.crazyara_binary_dir + "model/*.params")[0]
+        model_params = glob.glob(self.crazyara_binary_dir + "model/*.params")
+        if len(model_params) == 0:
+            logging.warning("No model found in model directory")
+            return ""
+        return model_params[0]
 
-    def initialize(self):
+    def _set_uci_options(self):
         """
-        Initializes the CrazyAra binary and loads the neural network weights
+        Defines custom UCI options
         :return:
         """
-        # initialize
-        self.proc = Popen([self.crazyara_binary_dir+"CrazyAra"],
-                          stdin=PIPE,
-                          stdout=PIPE,
-                          stderr=PIPE,
-                          shell=False)
-
         # CrazyAra header
         read_output(self.proc, b'\n')
         read_output(self.proc, b'\n')
@@ -166,6 +206,48 @@ class RLLoop:
         set_uci_param(self.proc, "Nodes", 800)
         set_uci_param(self.proc, "Centi_Temperature", 70)
         set_uci_param(self.proc, "Temperature_Moves", 7)
+
+    def _read_output_arena(self):
+        """
+        Reads the output for arena matches and waits for the key-words "keep" or "replace"
+        :return: True - If current NN generator should be replaced
+                 False - If current NN generator should be kept
+        """
+        while True:
+            line = self.proc.stdout.readline()
+            print(line)
+            if line == b'':
+                error = self.proc.stderr.readline()
+                logging.error(error)
+                raise Exception("The process raised an error!")
+            if line == b"keep\n":
+                return False
+            if line == b"replace\n":
+                return True
+
+    def _stop_process(self):
+        """
+        Stops the current process by sending SIGTERM to all process groups
+        :return:
+        """
+        # os.killpg(os.getpgid(self.proc.pid), signal.SIGTERM)
+        self.proc.kill()
+        # sleep for 1 sec to ensure the process exited
+        time.sleep(1)
+
+    def initialize(self):
+        """
+        Initializes the CrazyAra binary and loads the neural network weights
+        :return:
+        """
+        # initialize
+        self.model_name = self._get_current_model_weight_file()
+        self.proc = Popen([self.crazyara_binary_dir+"CrazyAra"],
+                          stdin=PIPE,
+                          stdout=PIPE,
+                          stderr=PIPE,
+                          shell=False)
+        self._set_uci_options()
 
         # load network
         self.proc.stdin.write(b"isready\n")
@@ -184,7 +266,7 @@ class RLLoop:
     def create_export_dir(self):
         # include current timestamp in dataset export file
         time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M-%S")
-        time_stamp_dir = self.export_dir + time_stamp + "-" + self.device_name + "/"
+        time_stamp_dir = self.export_dir_gen_data + time_stamp + "-" + self.device_name + "/"
         # create a directory of the current time_stamp
         if not os.path.exists(time_stamp_dir):
             os.makedirs(time_stamp_dir)
@@ -204,6 +286,83 @@ class RLLoop:
         for file_name in file_names:
             os.rename(file_name, export_dir + file_name)
 
+    def _get_number_generated_files(self) -> int:
+        """
+        Returns the amount of file that have been newly generated
+        :return:
+        """
+        return len(glob.glob(self.export_dir_gen_data + "**/*.zip"))
+
+    def _move_previous_files_into_archive(self):
+        """
+        Moves previous training files into the archive directory
+        :return:
+        """
+        move_all_files(self.train_dir, self.train_dir_archive)
+        move_all_files(self.val_dir, self.val_dir_archive)
+        move_all_files(self.model_contender_dir, self.model_dir_archive)
+
+    def _move_generated_data_to_train_val(self):
+        """
+        Moves the generated samples, games (pgn format) and the number how many games have been generated to the given
+         training and validation directory
+        :return:
+        """
+        file_names = os.listdir(self.export_dir_gen_data)
+
+        # move the last file into the validation directory
+        os.rename(self.export_dir_gen_data + file_names[-1], self.val_dir + file_names[-1])
+
+        # move the rest into the training directory
+        for file_name in file_names[:-1]:
+            os.rename(self.export_dir_gen_data + file_name, self.train_dir + file_name)
+
+    def _include_data_from_replay_memory_into_training(self, nb_files=8, fraction_for_selection=0.1):
+        """
+        :param nb_files: Number of files to include from replay memory into training
+        :param fraction_for_selection: Proportion for selecting files from the replay memory
+        :return:
+        """
+        file_names = os.listdir(self.train_dir_archive)
+
+        # invert ordering (most recent files are on top)
+        file_names = file_names[::-1]
+
+        if len(file_names) == 0:
+            logging.info("No replay memory available. Only current data will be used")
+            return
+
+        thresh_idx = max(int(len(file_names) * fraction_for_selection), nb_files)
+
+        indices = np.arange(0, thresh_idx)
+        np.random.shuffle(indices)
+
+        # cap the index list
+        indices = indices[:nb_files]
+
+        # move selected files into train dir
+        for index in list(indices):
+            os.rename(self.train_dir_archive + file_names[index], self.train_dir + file_names[index])
+
+    def _remove_temporary_checkpoints(self):
+        """
+        Removes all checkpoint files in the weight/ directory
+        :return:
+        """
+        file_list = glob.glob(os.path.join(self.weight_dir, "model-*"))
+        for file in file_list:
+            os.remove(file)
+
+    def _prepare_data_for_training(self):
+        """
+        Moves the newly generated files into the training directory
+        :return:
+        """
+        self._move_previous_files_into_archive()
+        self._move_generated_data_to_train_val()
+        self._remove_temporary_checkpoints()
+        self._include_data_from_replay_memory_into_training(8, 0.1)
+
     def compress_dataset(self):
         """
         Loads the uncompressed data file, select all sample until the index specified in "startIdx.txt",
@@ -217,122 +376,6 @@ class RLLoop:
         compress_zarr_dataset(data, zarr_path, start_idx=0)
         self._move_game_data_to_export_dir(export_dir)
 
-    def update_network(self):
-        """
-        Updates the neural network with the newly acquired games from the replay memory
-        :return:
-        """
-
-        # main_config["planes_train_dir"] = self.cwd + "export/"
-
-        # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
-        ctx = mx.gpu(train_config["device_id"]) if train_config["context"] == "gpu"else mx.cpu()
-        # set a specific seed value for reproducibility
-
-        # Fixing the random seed
-        mx.random.seed(train_config["seed"])
-
-        nb_parts = len(glob.glob(main_config["planes_train_dir"] + '**/*.zip'))
-        logging.info("number parts: %d" % nb_parts)
-
-        if nb_parts <= 0:
-            raise Exception('No .zip files for training available. Check the path in main_config["planes_train_dir"]:'
-                            ' %s' % main_config["planes_train_dir"])
-
-        _, x_val, y_val_value, y_val_policy, _, _ = load_pgn_dataset(dataset_type="val",
-                                                                     part_id=0,
-                                                                     normalize=train_config["normalize"],
-                                                                     verbose=False,
-                                                                     q_value_ratio=train_config["q_value_ratio"])
-
-        y_val_policy = prepare_policy(y_val_policy, train_config["select_policy_from_plane"],
-                                      train_config["sparse_policy_label"])
-
-        symbol = mx.sym.load(self._get_current_model_arch_file())
-        symbol = add_non_sparse_cross_entropy(symbol, train_config["val_loss_factor"],
-                                              "value_tanh0_output", "flatten0_output")
-                                        # "value_out_output", "policy_out_output")
-
-        # calculate how many iterations per epoch exist
-        nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]
-        # one iteration is defined by passing 1 batch and doing backprop
-        total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
-
-        # lr_schedule = ConstantSchedule(min_lr)
-        lr_schedule = OneCycleSchedule(start_lr=train_config["max_lr"] / 8, max_lr=train_config["max_lr"],
-                                       cycle_length=total_it * .3,
-                                       cooldown_length=total_it * .6, finish_lr=train_config["min_lr"])
-        lr_schedule = LinearWarmUp(lr_schedule, start_lr=train_config["min_lr"], length=total_it / 30)
-        # plot_schedule(lr_schedule, iterations=total_it)
-        momentum_schedule = MomentumSchedule(lr_schedule, train_config["min_lr"], train_config["max_lr"],
-                                             train_config["min_momentum"], train_config["max_momentum"])
-
-        if train_config["select_policy_from_plane"]:
-            val_iter = mx.io.NDArrayIter({'data': x_val}, {'value_label': y_val_value,
-                                                           'policy_label': y_val_policy}, train_config["batch_size"])
-        else:
-            val_iter = mx.io.NDArrayIter({'data': x_val},
-                                         {'value_label': y_val_value, 'policy_label': y_val_policy},
-                                         train_config["batch_size"])
-
-        # calculate how many iterations per epoch exist
-        nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]
-        # one iteration is defined by passing 1 batch and doing backprop
-        total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
-        CPU_COUNT = cpu_count()
-
-        input_shape = x_val[0].shape
-        model = mx.mod.Module(symbol=symbol, context=ctx, label_names=['value_label', 'policy_label'])
-        # mx.viz.print_summary(
-        #     symbol,
-        #     shape={'data': (1, input_shape[0], input_shape[1], input_shape[2])},
-        # )
-        model.bind(for_training=True,
-                   data_shapes=[('data', (train_config["batch_size"], input_shape[0], input_shape[1], input_shape[2]))],
-                   label_shapes=val_iter.provide_label)
-        model.load_params(self._get_current_model_weight_file())
-
-        metrics = [
-            mx.metric.MSE(name='value_loss', output_names=['value_output'], label_names=['value_label']),
-            mx.metric.create(acc_sign, name='value_acc_sign', output_names=['value_output'],
-                             label_names=['value_label']),
-            mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
-                               label_names=['policy_label'])
-        ]
-
-        if train_config["sparse_policy_label"]:
-            # the default cross entropy only supports sparse lables
-            metrics.append(mx.metric.CrossEntropy(name='policy_loss', output_names=['policy_output'],
-                             label_names=['policy_label']))
-        else:
-            metrics.append(mx.metric.create(cross_entropy, name='policy_loss', output_names=['policy_output'],
-                             label_names=['policy_label']))
-
-        logging.info("Perfomance pre training")
-        print(model.score(val_iter, metrics))
-
-        train_agent = TrainerAgentMXNET(model, symbol, val_iter, nb_parts, lr_schedule, momentum_schedule, total_it,
-                                        train_config["optimizer_name"], wd=train_config["wd"],
-                                        batch_steps=train_config["batch_steps"],
-                                        k_steps_initial=train_config["k_steps_initial"], cpu_count=CPU_COUNT - 2,
-                                        batch_size=train_config["batch_size"], normalize=train_config["normalize"],
-                                        export_weights=train_config["export_weights"],
-                                        export_grad_histograms=train_config["export_grad_histograms"],
-                                        log_metrics_to_tensorboard=train_config["log_metrics_to_tensorboard"], ctx=ctx,
-                                        metrics=metrics, use_spike_recovery=train_config["use_spike_recovery"],
-                                        max_spikes=train_config["max_spikes"],
-                                        spike_thresh=train_config["spike_thresh"],
-                                        seed=train_config["seed"], val_loss_factor=train_config["val_loss_factor"],
-                                        policy_loss_factor=train_config["policy_loss_factor"],
-                                        select_policy_from_plane=train_config["select_policy_from_plane"],
-                                        discount=train_config["discount"],
-                                        sparse_policy_label=train_config["sparse_policy_label"],
-                                        q_value_ratio=train_config["q_value_ratio"],
-                                        cwd=self.crazyara_binary_dir)
-        # iteration counter used for the momentum and learning rate schedule
-        cur_it = train_config["k_steps_initial"] * train_config["batch_steps"]
-        train_agent.train(cur_it)
-
     def compare_new_weights(self):
         """
         Compares the old nn-weights with the newly acquired one and returns the win-rate
@@ -340,7 +383,7 @@ class RLLoop:
         """
         self.proc.stdin.write(b"arena %d\n" % self.nb_arena_games)
         self.proc.stdin.flush()
-        read_output(self.proc, b"readyok\n")
+        return self._read_output_arena()
 
     def create_new_contender(self):
         """
@@ -354,6 +397,59 @@ class RLLoop:
             nn_file_destination = self.crazyara_binary_dir + "model_contender/" + nn_file
             os.rename(nn_file_origin, nn_file_destination)
             logging.debug("moved %s into %s" % (nn_file, nn_file_destination))
+
+    def check_for_new_model(self):
+        """
+        Checks if the current neural network generator has been updated and restarts the executable if this is the case
+        :return:
+        """
+        model_name = self._get_current_model_weight_file()
+        if model_name != "" and model_name != self.model_name:
+            logging.info("Loading new model: %s" % model_name)
+            self._stop_process()
+            self.initialize()
+
+    def _replace_model_generator_weights(self):
+        """
+        Moves the previous model into archive directory and the model_contender into the model directory
+        :return:
+        """
+        move_all_files(self.model_dir, self.model_dir_archive)
+        move_all_files(self.model_contender_dir, self.model_dir)
+
+    def check_for_enough_train_data(self, number_files_to_update):
+        """
+        Checks if enough training games have been generated to trigger training a new network
+        :param number_files_to_update: Number of newly generated files needed to trigger a new NN update
+        :return:
+        """
+        if self._get_number_generated_files() >= number_files_to_update:
+            self._stop_process()
+            self._prepare_data_for_training()
+            # start training using a process to ensure memory clearing afterwards
+            queue = Queue()  # start a subprocess to be memory efficient
+            process = Process(target=update_network, args=(queue, self.nn_update_index, self.k_steps,
+                                                           self.max_lr, self._get_current_model_arch_file(),
+                                                           self._get_current_model_weight_file(),
+                                                           self.crazyara_binary_dir))
+            logging.info("start training")
+            process.start()
+            self.k_steps = queue.get() + 1
+            process.join()  # this blocks until the process terminates
+
+            if self.max_lr > train_config["min_lr"]:
+                self.max_lr = max(self.max_lr - self.lr_reduction, train_config["min_lr"] * 2)
+
+            self.nn_update_index += 1
+            self.initialize()
+            did_contender_win = self.compare_new_weights()
+            if did_contender_win is True:
+                logging.info("Replacing current generator with contender")
+                self._replace_model_generator_weights()
+            else:
+                logging.info("Keep current generator")
+            self._stop_process()
+            self.initialize()
 
 
 def set_uci_param(proc, name, value):
@@ -396,6 +492,9 @@ def parse_args(cmd_args: list):
     parser.add_argument('--export-no-log', default=False, action="store_true",
                         help="By default the log messages are stored in {context}_{device}.log."
                              " If this parameter is enabled no log messages will be stored")
+    parser.add_argument('--nn-update-idx', type=int, default=0,
+                        help="Index of how many NN updates have been done so far."
+                             " This will be used to label the NN weights (default: 0)")
 
     args = parser.parse_args(cmd_args)
 
@@ -430,7 +529,7 @@ def enable_logging(logging_lvl=logging.DEBUG, log_filename=None):
 
     if log_filename is not None:
         fh = logging.FileHandler(log_filename)
-        fh.setLevel(logging.DEBUG)
+        fh.setLevel(logging.INFO)
         fh.setFormatter(formatter)
         root.addHandler(fh)
 
@@ -459,16 +558,18 @@ def main():
 
     rl_loop = RLLoop(args,
                      nb_games_to_update=0,
-                     nb_arena_games=50)
+                     nb_arena_games=100,
+                     lr_reduction=0.0001)
     rl_loop.initialize()
 
     while True:
         rl_loop.generate_games()
         rl_loop.compress_dataset()
 
-    # rl_loop.update_network()
-    # rl_loop.create_new_contender()
-    # rl_loop.compare_new_weights()
+        if args.trainer:
+            rl_loop.check_for_enough_train_data(16)
+        else:
+            rl_loop.check_for_new_model()
 
 
 if __name__ == "__main__":

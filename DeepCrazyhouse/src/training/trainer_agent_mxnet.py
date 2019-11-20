@@ -80,7 +80,8 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-def add_non_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name="value_out", policy_output_name="policy_out"):
+def add_non_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name="value_out",
+                                 policy_output_name="policy_out"):
     """
     Adds a cross entropy loss output which support non-sparse label as targets, but distributions with value in [0,1]
     :param symbol: MXNet symbol with both a value and policy head
@@ -94,6 +95,24 @@ def add_non_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name
     value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
     policy_out = mx.sym.SoftmaxActivation(data=policy_out, name='softmax')
     policy_out = mx.symbol.Custom(data=policy_out, name='policy', op_type='CrossEntropyLoss')
+    # group value_out and policy_out together
+    return mx.symbol.Group([value_out, policy_out])
+
+
+def remove_no_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name="value_out",
+                                 policy_output_name="policy_out"):
+    """
+    Removes the last custom cross entropy loss layer to enable loading the model in the C++ API.
+    :param symbol: MXNet symbol with both a value and policy head
+    :param grad_scale_value: Scaling factor for the value loss
+    :param value_output_name: Output name for the value output after applying tanh activation
+    :param policy_output_name: Output name for the policy output without applying softmax activation on it
+    :return: MXNet symbol with removed CrossEntropy-Loss in final layer
+    """
+    value_out = symbol.get_internals()[value_output_name]
+    policy_out = symbol.get_internals()[policy_output_name]
+    value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
+    policy_out = mx.sym.SoftmaxActivation(data=policy_out, name='softmax')
     # group value_out and policy_out together
     return mx.symbol.Group([value_out, policy_out])
 
@@ -239,6 +258,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         Training model
         :param cur_it: Current iteration which is used for the learning rate and momentum schedule.
          If set to None it will be initialized
+        :return: self._return_metrics_and_stop_training()
         """
         # Too many local variables (44/15) - Too many branches (18/12) - Too many statements (108/50)
         # set a custom seed for reproducibility
@@ -318,17 +338,22 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                     self.batch_callback()
 
                     if not self.continue_training:
-                        print(
+                        logging.info(
                             'Elapsed time for training(hh:mm:ss): ' +
                             str(datetime.timedelta(seconds=round(time() - self.t_s))))
 
-                        return (self.k_steps, self.val_loss, self.val_p_acc), \
-                               (self.k_steps_best, self.val_loss_best, self.val_p_acc_best)
+                        return self._return_metrics_and_stop_training()
 
                 # add the graph representation of the network to the tensorboard log file
                 if not self.graph_exported and self._log_metrics_to_tensorboard:
-                    self.sum_writer.add_graph(self._symbol)
+                    # self.sum_writer.add_graph(self._symbol)
                     self.graph_exported = True
+
+    def _return_metrics_and_stop_training(self):
+        return (self.k_steps, self.val_metric_values["value_loss"],
+                self.val_metric_values["policy_loss"],
+                self.val_metric_values["value_acc_sign"], self.val_metric_values["policy_acc"]), \
+               (self.k_steps_best, self.val_loss_best, self.val_p_acc_best)
 
     def _fill_train_metrics(self):
         """
@@ -376,7 +401,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
     def handle_spike(self):
         """
         Handles the occurence of a spike during training, in the case validation loss increased dramatically.
-        :return:
+        :return: self._return_metrics_and_stop_training()
         """
         self.nb_spikes += 1
         logging.warning(
@@ -395,8 +420,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
             if self._log_metrics_to_tensorboard:
                 self.sum_writer.close()
-            return (self.k_steps, val_loss, val_p_acc), (self.k_steps_best, self.val_loss_best,
-                                                         self.val_p_acc_best)
+            return self._return_metrics_and_stop_training()
 
         logging.debug("Recover to latest checkpoint")
         # Load the best model once again
