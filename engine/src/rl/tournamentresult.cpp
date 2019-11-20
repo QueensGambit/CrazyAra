@@ -46,7 +46,18 @@ float TournamentResult::score() const
 
 std::ostream &operator<<(std::ostream &os, const TournamentResult &result)
 {
-    os << result.numberWins << " - " << result.numberDraws << " - " << result.numberLosses << " [" <<
+    os << result.playerA << "-" << result.playerB << ": " << result.numberWins
+       << " - " << result.numberDraws << " - " << result.numberLosses << " [" <<
           std::setprecision(2) << result.score() << "]";
     return os;
+}
+
+void write_tournament_result_to_csv(const TournamentResult &result, const string &csvFileName)
+{
+    ofstream csvFile;
+    const char delim = ',';
+    csvFile.open(csvFileName, std::ios_base::app);
+    cout << result.playerA << delim << result.playerB << delim
+         << result.numberWins << delim << result.numberDraws << delim << result.numberLosses << endl;
+    csvFile.close();
 }

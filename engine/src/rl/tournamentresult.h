@@ -32,8 +32,15 @@
 
 #include <cstddef>
 #include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
 
 struct TournamentResult {
+
+    string playerA;
+    string playerB;
     size_t numberWins;
     size_t numberDraws;
     size_t numberLosses;
@@ -56,12 +63,18 @@ struct TournamentResult {
 
 /**
  * @brief operator << Returns ostream for trounament result summary in the form
- *  "<NUMBER_WINS> - <NUMBER_DRAWS> - <NUMBER_LOSSES> [<SCORE>]"
+ *  "<PLAYER_A>-<PLAYER_B>: <NUMBER_WINS> - <NUMBER_DRAWS> - <NUMBER_LOSSES> [<SCORE>]"
  * @param os ostream
  * @param result Tournament result to print
  * @return osream
  */
 extern std::ostream& operator<<(std::ostream& os, const TournamentResult& result);
 
+/**
+ * @brief write_tournament_result_to_csv Appends the result of the tournamet to a given csvFile.
+ * <playerA>,<playerB>,<numberWinsA>,<numberDrawsA>,<numberLossesA>,
+ * @param csvFileName Filename of the csv
+ */
+void write_tournament_result_to_csv(const TournamentResult& result, const std::string& csvFileName);
 
 #endif // TOURNAMENTRESULT_H

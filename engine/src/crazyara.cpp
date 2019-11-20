@@ -308,13 +308,13 @@ void CrazyAra::arena(istringstream &is)
     cout << "Arena summary" << endl;
     cout << "Score of Contender vs Producer: " << tournamentResult << endl;
     if (tournamentResult.score() > 0.5f) {
-        cout << "Replacing producer NN with contender..." << endl;
+        cout << "replace" << endl;
         mctsAgent = mctsAgentContender;
     }
     else {
-        cout << "Current producer is still superior than contender. NN weights won't be replaced." << endl;
+        cout << "keep" << endl;
     }
-    cout << "readyok" << endl;
+    write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 #endif
 

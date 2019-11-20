@@ -243,6 +243,8 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManage
 TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits &searchLimits, StatesManager* states)
 {
     TournamentResult tournamentResult;
+    tournamentResult.playerA = mctsContender->get_name();
+    tournamentResult.playerB = mctsAgent->get_name();
     Result gameResult;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
