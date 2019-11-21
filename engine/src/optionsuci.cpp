@@ -68,7 +68,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Model_Directory_Contender"] << Option("model_contender/");
     o["Selfplay_Number_Chunks"]    << Option(640, 1, 99999);
     o["Selfplay_Chunk_Size"]       << Option(128, 1, 99999);
-    o["Centi_Raw_Policy_Sampling"] << Option(10, 0, 100);
+    o["Centi_Raw_Policy_Sampling"] << Option(5, 0, 100);
 #endif
     o["Move_Overhead"]            << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"] << Option(0, 0, 99);
