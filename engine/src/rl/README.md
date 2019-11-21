@@ -31,7 +31,7 @@ The parameter `-v` describes the mount directory, where the selfplay data will b
 For older docker version you can use the `nvidia-docker run` command instead:
 ```shell script
 nvidia-docker run -it --rm \
- -v local_dir:/data/RL crazyara_docker:latest
+ -v <local_dir>:/data/RL crazyara_docker:latest
 ```
 
 ---
@@ -52,7 +52,7 @@ Next you can start selplay from a given checkpoint file, which is stored in `mod
 
 ##### Generator
 ```shell script
-python rl_loop.py --device_id 0
+python rl_loop.py --device_id 0&
 ```
 
 ##### Trainer
@@ -60,7 +60,7 @@ You need to specify at least one gpu to also update the current neural network w
 The gpu trainer will stop generating games and update the network as soon as enough training samples have been acquired.
 
 ```shell script
-python rl_loop.py --device_id 1 --trainer
+python rl_loop.py --device_id 1 --trainer&
 ```
 
 ---
