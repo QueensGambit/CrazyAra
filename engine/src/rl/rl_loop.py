@@ -361,7 +361,7 @@ class RLLoop:
         self._move_previous_files_into_archive()
         self._move_generated_data_to_train_val()
         self._remove_temporary_checkpoints()
-        self._include_data_from_replay_memory_into_training(8, 0.1)
+        self._include_data_from_replay_memory_into_training(5, 0.1)
 
     def compress_dataset(self):
         """
@@ -567,7 +567,7 @@ def main():
         rl_loop.compress_dataset()
 
         if args.trainer:
-            rl_loop.check_for_enough_train_data(16)
+            rl_loop.check_for_enough_train_data(10)
         else:
             rl_loop.check_for_new_model()
 
