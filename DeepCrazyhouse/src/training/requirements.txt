@@ -2,6 +2,8 @@ numpy
 python-chess
 zarr
 numcodecs
+ipywidgets
+matplotlib
 tqdm
 mxboard
 tensorflow
