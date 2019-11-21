@@ -34,11 +34,11 @@ def read_output(proc, last_line=b"readyok\n"):
     """
     while True:
         line = proc.stdout.readline()
-        print(line)
-        if line == b'':
-            error = proc.stderr.readline()
-            logging.error(error)
-            raise Exception("The process raised an error!")
+        # print(line)
+        # if line == b'':
+        #     error = proc.stderr.readline()
+        #     logging.error(error)
+        #     raise Exception("The process raised an error!")
         if line == last_line:
             break
 
