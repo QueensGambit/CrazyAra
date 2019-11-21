@@ -328,8 +328,8 @@ class RLLoop:
         # invert ordering (most recent files are on top)
         file_names = file_names[::-1]
 
-        if len(file_names) == 0:
-            logging.info("No replay memory available. Only current data will be used")
+        if len(file_names) < nb_files:
+            logging.info("Not enough replay memory available. Only current data will be used")
             return
 
         thresh_idx = max(int(len(file_names) * fraction_for_selection), nb_files)
