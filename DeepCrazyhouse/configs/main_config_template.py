@@ -21,8 +21,8 @@ main_config = {
     "pgn_mate_in_one_dir": "/home/demo_user/datasets/lichess/Crazyhouse/pgn/mate_in_one/",
     # The plane directories contain the plane representation of the converted board state
     #  (.zip files which have been compressed by  the python zarr library)
-    "planes_train_dir": "/home/demo_user/datasets/lichess/Crazyhouse/planes/train/",
-    "planes_val_dir": "/home/demo_user/datasets/lichess/Crazyhouse/planes/val/",
+    "planes_train_dir": "/data/RL/export/train/",
+    "planes_val_dir": "/data/RL/export/val/",
     "planes_test_dir": "/home/demo_user/datasets/lichess/Crazyhouse/planes/test/",
     "planes_mate_in_one_dir": "/home/demo_user/datasets/lichess/Crazyhouse/planes/mate_in_one/",
     # The rec directory contains the plane representation which are used in the training loop of the network
