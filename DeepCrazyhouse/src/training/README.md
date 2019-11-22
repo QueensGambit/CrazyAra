@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 ### Training data specification
 Specify the directories `"planes_train_dir"`, `"planes_val_dir"`, `"planes_test_dir"`, `"planes_mate_in_one_dir"` at
-[main_config_sample.py](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/configs/main_config_sample.py)
+[main_config_template.py](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/configs/main_config_template.py)
 to the directories of the preprocessed training data on your system. All directories should end with a `/`.
 Then copy the configuration file and rename it to `main_config.py`.
 
