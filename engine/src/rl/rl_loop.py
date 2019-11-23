@@ -202,8 +202,8 @@ class RLLoop:
         set_uci_param(self.proc, "Device_ID", self.args.device_id)
         if is_arena is True:
             set_uci_param(self.proc, "Centi_Temperature", 50)
-            set_uci_param(self.proc, "Temperature_Moves", 7)
-            set_uci_param(self.proc, "Nodes", 400)
+            set_uci_param(self.proc, "Temperature_Moves", 15)
+            set_uci_param(self.proc, "Nodes", 800)
         else:
             set_uci_param(self.proc, "Centi_Temperature", 100)
             set_uci_param(self.proc, "Temperature_Moves", 15)
@@ -500,7 +500,7 @@ def parse_args(cmd_args: list):
                              " This will be used to label the NN weights (default: 0)")
     parser.add_argument("--nn-update-files", type=int, default=10,
                         help="How many new generated training files are needed to apply an update to the NN")
-    parser.add_argument("--arena-games", type=int, default=200,
+    parser.add_argument("--arena-games", type=int, default=100,
                         help="How many arena games will be done to judge the quality of the new network")
 
     args = parser.parse_args(cmd_args)
