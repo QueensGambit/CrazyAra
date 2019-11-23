@@ -320,7 +320,7 @@ class RLLoop:
         for file_name in file_names[:-1]:
             os.rename(self.export_dir_gen_data + file_name, self.train_dir + file_name)
 
-    def _include_data_from_replay_memory_into_training(self, nb_files=8, fraction_for_selection=0.1):
+    def _include_data_from_replay_memory_into_training(self, nb_files=8, fraction_for_selection=0.05):
         """
         :param nb_files: Number of files to include from replay memory into training
         :param fraction_for_selection: Proportion for selecting files from the replay memory
@@ -364,7 +364,7 @@ class RLLoop:
         self._move_previous_files_into_archive()
         self._move_generated_data_to_train_val()
         self._remove_temporary_checkpoints()
-        self._include_data_from_replay_memory_into_training(5, 0.1)
+        self._include_data_from_replay_memory_into_training(5, 0.05)
 
     def compress_dataset(self):
         """
