@@ -31,6 +31,7 @@
 #include <iostream>
 #include <fstream>
 #include "../domain/variants.h"
+#include "../util/blazeutil.h"
 
 SelfPlay::SelfPlay(MCTSAgent* mctsAgent, size_t numberChunks, size_t chunkSize):
     mctsAgent(mctsAgent), gameIdx(0), gamesPerMin(0), samplesPerMin(0)
@@ -53,7 +54,7 @@ SelfPlay::~SelfPlay()
     delete exporter;
 }
 
-void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, size_t temperatureMoves, float rawSamplingProb)
+void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
     Board* position = init_board(variant, states);
@@ -69,10 +70,11 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
         const int randInt = rand();
         searchLimits.nodes = 800 + (randInt % 160) - 80;
         mctsAgent->perform_action(position, &searchLimits, evalInfo);
+
         // sample from raw policy
-        if (float(randInt) / RAND_MAX < rawSamplingProb && position->game_ply() <= int(temperatureMoves)) {
-            mctsAgent->selectMoveFromRawPolicy(evalInfo);
-        }
+//        if (float(randInt) / RAND_MAX < rawSamplingProb && position->game_ply() <= int(temperatureMoves) / 2) {
+//            mctsAgent->selectMoveFromRawPolicy(evalInfo);
+//        }
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         nextRoot = mctsAgent->get_opponents_next_root();
 
@@ -80,6 +82,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
             leadsToTerminal = nextRoot->is_terminal();
         }
         if (!exporter->is_file_full()) {
+            apply_temperature(evalInfo.policyProbSmall, policySharpening);
             exporter->save_sample(position, evalInfo, size_t(position->game_ply()));
         }
         StateInfo* newState = new StateInfo;
@@ -220,7 +223,7 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
-void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states, size_t temperatureMoves, float rawSamplingProb)
+void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states, float policySharpening)
 {
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
@@ -228,12 +231,12 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManage
 
     if (numberOfGames == 0) {
         while(!exporter->is_file_full()) {
-            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, temperatureMoves, rawSamplingProb);
+            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, policySharpening);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, temperatureMoves, rawSamplingProb);
+            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, policySharpening);
         }
     }
     export_number_generated_games();

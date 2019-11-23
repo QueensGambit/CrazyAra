@@ -526,13 +526,12 @@ Node* select_child_node(Node* node)
     }
 
     assert(is_ordering_correct(node->get_child_nodes()));
-
     node->unlock();
 
     return node->candidate_child_node();
 }
 
-ostream& operator<<(ostream &os, Node *node)
+ostream& operator<<(ostream &os, const Node *node)
 {
     os << "move " << UCI::move(node->get_move(), false)
        << "\tn " << node->get_visits()

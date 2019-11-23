@@ -41,7 +41,7 @@ train_config = {
     #
     # # optimization parameters
     "optimizer_name": "nag",
-    "max_lr": 0.1 / div_factor,  # 0.35 / div_factor
+    "max_lr": 0.08 / div_factor,  # 0.35 / div_factor
     "min_lr": 0.00001 / div_factor,  # 0.2 / div_factor  # 0.00001
     "max_momentum": 0.95,
     "min_momentum": 0.8,
@@ -59,7 +59,7 @@ train_config = {
     "policy_loss_factor": 1,  # 0.99
     # ratio for mixing the value return with the corresponding q-value
     # for a ratio of 0 no q-value information will be used
-    "q_value_ratio": 0.5,
+    "q_value_ratio": 0.0,
     "discount": 1.0,
 
     "normalize": True,  # define whether to normalize input data to [0,1]

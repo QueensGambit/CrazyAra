@@ -53,10 +53,9 @@ private:
      * @param variant Current chess variant
      * @param searchLimits Search limits struct
      * @param states States manager for maintaining the states objects. Used for 3-fold repetition check.
-     * @param temperatureMoves Amount of moves where sampling from the raw network policy is possible
-     * @param rawSamplingProb Probability of sampling from the raw network policy after dirichlet noise has been applied
+     * @param policySharpening Temperature which is applied after move selection before exporting the policy to undo dirichlet noise
      */
-    void generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, size_t temperatureMoves, float rawSamplingProb);
+    void generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
@@ -115,10 +114,9 @@ public:
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
      * @param searchLimits Search limit struct
-     * @param temperatureMoves Amount of moves where sampling from the raw network policy is possible
-     * @param rawSamplingProb Probability of sampling from the raw network policy after dirichlet noise has been applied
+     * @param policySharpening Temperature which is applied after move selection before exporting the policy to undo dirichlet noise
      */
-    void go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states, size_t temperatureMoves, float rawSamplingProb);
+    void go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states, float policySharpening);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and

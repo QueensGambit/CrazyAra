@@ -190,22 +190,24 @@ class RLLoop:
             return ""
         return model_params[0]
 
-    def _set_uci_options(self):
+    def _set_uci_options(self, is_arena=False):
         """
         Defines custom UCI options
+        :param is_arena: Applies setting for the arena comparison
         :return:
         """
-        # CrazyAra header
-        read_output(self.proc, b'\n')
-        read_output(self.proc, b'\n')
-
         self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
                                                                                    'utf-8'))
         set_uci_param(self.proc, "Context", self.args.context)
         set_uci_param(self.proc, "Device_ID", self.args.device_id)
-        set_uci_param(self.proc, "Nodes", 800)
-        set_uci_param(self.proc, "Centi_Temperature", 70)
-        set_uci_param(self.proc, "Temperature_Moves", 7)
+        if is_arena is True:
+            set_uci_param(self.proc, "Centi_Temperature", 50)
+            set_uci_param(self.proc, "Temperature_Moves", 7)
+            set_uci_param(self.proc, "Nodes", 400)
+        else:
+            set_uci_param(self.proc, "Centi_Temperature", 100)
+            set_uci_param(self.proc, "Temperature_Moves", 15)
+            set_uci_param(self.proc, "Nodes", 800)
 
     def _read_output_arena(self):
         """
@@ -235,9 +237,10 @@ class RLLoop:
         # sleep for 1 sec to ensure the process exited
         time.sleep(1)
 
-    def initialize(self):
+    def initialize(self, is_arena=False):
         """
         Initializes the CrazyAra binary and loads the neural network weights
+        is_arena: Signals that UCI option should be set for arena comparision
         :return:
         """
         # initialize
@@ -247,7 +250,7 @@ class RLLoop:
                           stdout=PIPE,
                           stderr=PIPE,
                           shell=False)
-        self._set_uci_options()
+        self._set_uci_options(is_arena=is_arena)
 
         # load network
         self.proc.stdin.write(b"isready\n")
@@ -438,7 +441,7 @@ class RLLoop:
             process.join()  # this blocks until the process terminates
 
             if self.max_lr > train_config["min_lr"]:
-                self.max_lr = max(self.max_lr - self.lr_reduction, train_config["min_lr"] * 2)
+                self.max_lr = max(self.max_lr - self.lr_reduction, train_config["min_lr"] * 10)
 
             self.nn_update_index += 1
             self.initialize()
@@ -495,6 +498,10 @@ def parse_args(cmd_args: list):
     parser.add_argument('--nn-update-idx', type=int, default=0,
                         help="Index of how many NN updates have been done so far."
                              " This will be used to label the NN weights (default: 0)")
+    parser.add_argument("--nn-update-files", type=int, default=10,
+                        help="How many new generated training files are needed to apply an update to the NN")
+    parser.add_argument("--arena-games", type=int, default=200,
+                        help="How many arena games will be done to judge the quality of the new network")
 
     args = parser.parse_args(cmd_args)
 
@@ -558,7 +565,7 @@ def main():
 
     rl_loop = RLLoop(args,
                      nb_games_to_update=0,
-                     nb_arena_games=100,
+                     nb_arena_games=args.arena_games,
                      lr_reduction=0.0001)
     rl_loop.initialize()
 
@@ -567,7 +574,7 @@ def main():
         rl_loop.compress_dataset()
 
         if args.trainer:
-            rl_loop.check_for_enough_train_data(10)
+            rl_loop.check_for_enough_train_data(args.nn_update_files)
         else:
             rl_loop.check_for_new_model()
 

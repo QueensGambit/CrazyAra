@@ -269,7 +269,7 @@ Node* select_child_node(Node* node);
  * @param node Node object to print
  * @return ostream
  */
-extern std::ostream& operator<<(std::ostream& os, Node* node);
+extern std::ostream& operator<<(std::ostream& os, const Node* node);
 
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.

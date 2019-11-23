@@ -37,7 +37,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Search_Type"]              << Option("mcts", {"mcts"});
     o["Context"]                  << Option("gpu", {"cpu", "gpu"});
     o["Device_ID"]                << Option(0, 0, 99999);
-    o["Batch_Size"]               << Option(32, 1, 8192);
+    o["Batch_Size"]               << Option(8, 1, 8192);
     o["Threads"]                  << Option(2, 1, 512);
     o["Centi_CPuct_Init"]         << Option(250, 1, 99999);
     o["CPuct_Base"]               << Option(19652, 1, 99999);
@@ -52,12 +52,12 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Q_Thresh_Max"]       << Option(90, 0, 100);
     o["Q_Thresh_Base"]            << Option(1965, 0, 99999);
     o["Max_Search_Depth"]         << Option(99, 1, 99999);
-    o["Centi_Temperature"]        << Option(70, 0, 99999);
-    o["Temperature_Moves"]        << Option(7, 0, 99999);
-    o["Virtual_Loss"]             << Option(1, 0, 99999);
+    o["Centi_Temperature"]        << Option(100, 0, 99999);
+    o["Temperature_Moves"]        << Option(15, 0, 99999);
+    o["Virtual_Loss"]             << Option(3, 0, 99999);
     o["Nodes"]                    << Option(800, 0, 99999);
     o["Use_Raw_Network"]          << Option(false);
-    o["Enhance_Checks"]           << Option(true);
+    o["Enhance_Checks"]           << Option(false);
     o["Enhance_Captures"]         << Option(false);
     o["Use_Transposition_Table"]  << Option(true);
 #ifdef TENSORRT
@@ -68,7 +68,8 @@ void OptionsUCI::init(OptionsMap &o)
     o["Model_Directory_Contender"] << Option("model_contender/");
     o["Selfplay_Number_Chunks"]    << Option(640, 1, 99999);
     o["Selfplay_Chunk_Size"]       << Option(128, 1, 99999);
-    o["Centi_Raw_Policy_Sampling"] << Option(5, 0, 100);
+//    o["Centi_Raw_Policy_Sampling"] << Option(5, 0, 100);
+    o["Centi_Policy_Sharpening"]   << Option(75, 0, 100);
 #endif
     o["Move_Overhead"]            << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"] << Option(0, 0, 99);

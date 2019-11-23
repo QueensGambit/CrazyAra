@@ -60,6 +60,9 @@ size_t random_choice(const DynamicVector<T>& distribution)
 template <typename T, typename U>
 void apply_temperature(DynamicVector<T>& distribution, U temperature)
 {
+    if (temperature == 1) {
+        return;
+    }
     // apply exponential scaling
     distribution = pow(distribution, 1.0f / temperature);
     // re-normalize the values to probabilities again
