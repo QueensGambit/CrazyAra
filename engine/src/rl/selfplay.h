@@ -53,7 +53,7 @@ private:
      * @param variant Current chess variant
      * @param searchLimits Search limits struct
      * @param states States manager for maintaining the states objects. Used for 3-fold repetition check.
-     * @param policySharpening Temperature which is applied after move selection before exporting the policy to undo dirichlet noise
+     * @param policySharpening Threshold which is applied after move selection before exporting the policy to undo dirichlet noise
      */
     void generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening);
 
@@ -114,7 +114,7 @@ public:
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
      * @param searchLimits Search limit struct
-     * @param policySharpening Temperature which is applied after move selection before exporting the policy to undo dirichlet noise
+     * @param policySharpening Threshold which is applied after move selection before exporting the policy to undo dirichlet noise
      */
     void go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states, float policySharpening);
 

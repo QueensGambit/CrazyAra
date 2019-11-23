@@ -278,7 +278,11 @@ float Node::get_u_parent_factor() const
 
 float Node::get_u_divisor_summand() const
 {
+#ifdef USE_RL
+    return 1.0f;
+#else
     return uDivisorSummand;
+#endif
 }
 
 float Node::get_action_value() const
@@ -376,7 +380,9 @@ void Node::init_board()
 
 void Node::update_u_divisor()
 {
+#ifndef USE_RL
     uDivisorSummand = get_current_u_divisor(visits, searchSettings->uMin, searchSettings->uInit, searchSettings->uBase);
+#endif
 }
 
 void Node::update_u_parent_factor()

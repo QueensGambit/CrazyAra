@@ -70,6 +70,21 @@ void apply_temperature(DynamicVector<T>& distribution, U temperature)
 }
 
 /**
+ * @brief sharpen_distribution Sets all entries blow a given threshold to 0 and renormalizes afterwards
+ * @param distribution Distribution that sums to 1
+ * @param thresh Threshold which is substracted
+ */
+template <typename T, typename U>
+void sharpen_distribution(DynamicVector<T>& distribution, U thresh) {
+    for (auto it = distribution.begin(); it != distribution.end(); ++it) {
+        if (*it < thresh) {
+            *it = 0;
+        }
+    }
+    distribution /= sum(distribution);
+}
+
+/**
  * @brief get_dirichlet_noise Returns a vector of size length of generated dirichlet noise with value alpha
  * @param length Lenght of the vector
  * @param alpha Alpha value for the distribution

@@ -290,7 +290,7 @@ void CrazyAra::selfplay(istringstream &is)
     searchLimits.nodes = size_t(Options["Nodes"]);
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, searchLimits, states, float(Options["Centi_Policy_Sharpening"]/ 100.0));
+    selfPlay.go(numberOfGames, searchLimits, states, float(Options["Milli_Policy_Sharpening_Thresh"]/ 1000.0));
     cout << "readyok" << endl;
 }
 

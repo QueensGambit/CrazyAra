@@ -68,7 +68,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     do {
         searchLimits.startTime = now();
         const int randInt = rand();
-        searchLimits.nodes = 800 + (randInt % 160) - 80;
+        searchLimits.nodes = 800 + (randInt % 80) - 40;
         mctsAgent->perform_action(position, &searchLimits, evalInfo);
 
         // sample from raw policy
@@ -82,7 +82,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
             leadsToTerminal = nextRoot->is_terminal();
         }
         if (!exporter->is_file_full()) {
-            apply_temperature(evalInfo.policyProbSmall, policySharpening);
+            sharpen_distribution(evalInfo.policyProbSmall, policySharpening);
             exporter->save_sample(position, evalInfo, size_t(position->game_ply()));
         }
         StateInfo* newState = new StateInfo;

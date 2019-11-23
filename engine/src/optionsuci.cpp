@@ -69,7 +69,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Selfplay_Number_Chunks"]    << Option(640, 1, 99999);
     o["Selfplay_Chunk_Size"]       << Option(128, 1, 99999);
 //    o["Centi_Raw_Policy_Sampling"] << Option(5, 0, 100);
-    o["Centi_Policy_Sharpening"]   << Option(75, 0, 100);
+    o["Milli_Policy_Sharpening_Thresh"]   << Option(3, 0, 100);
 #endif
     o["Move_Overhead"]            << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"] << Option(0, 0, 99);
