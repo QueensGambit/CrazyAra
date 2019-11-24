@@ -179,7 +179,6 @@ class TrainerAgent:  # Probably needs refactoring
             {
                 "learning_rate": lr_schedule(0),
                 "momentum": momentum_schedule(0),
-                #'clip_gradient': clip_gradient,
                 "wd": wd,
             },
         )
@@ -344,7 +343,6 @@ class TrainerAgent:  # Probably needs refactoring
                             nb_batches=10, #25,
                             ctx=self._ctx,
                             sparse_policy_label=self._sparse_policy_label,
-                            from_logits=self._from_logits
                         )
                         val_metric_values = evaluate_metrics(
                             self._metrics,
@@ -353,7 +351,6 @@ class TrainerAgent:  # Probably needs refactoring
                             nb_batches=None,
                             ctx=self._ctx,
                             sparse_policy_label=self._sparse_policy_label,
-                            from_logits=self._from_logits
                         )
                         if self._use_spike_recovery and (
                             old_val_loss * self._spike_thresh < val_metric_values["loss"]

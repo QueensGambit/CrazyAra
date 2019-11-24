@@ -34,11 +34,6 @@ def read_output(proc, last_line=b"readyok\n"):
     """
     while True:
         line = proc.stdout.readline()
-        # print(line)
-        # if line == b'':
-        #     error = proc.stderr.readline()
-        #     logging.error(error)
-        #     raise Exception("The process raised an error!")
         if line == last_line:
             break
 
@@ -52,7 +47,7 @@ def compress_zarr_dataset(data, file_path, compression='lz4', clevel=5, start_id
     :param clevel: Compression level
     :param end_idx: If end_idx != 0 the data set will be exported to the specified index,
     excluding the sample at end_idx (e.g. end_idx = len(x) will export it fully)
-    :return: timestmp_dir: directory where the files have been exported
+    :return: True if a NaN value was detected
     """
     compressor = Blosc(cname=compression, clevel=clevel, shuffle=Blosc.SHUFFLE)
 
@@ -60,11 +55,15 @@ def compress_zarr_dataset(data, file_path, compression='lz4', clevel=5, start_id
     store = zarr.ZipStore(file_path, mode="w")
     zarr_file = zarr.group(store=store, overwrite=True)
 
+    nan_detected = False
     for key in data.keys():
         if end_idx == 0:
             x = data[key]
         else:
             x = data[key][start_idx:end_idx]
+
+        if np.isnan(x).any():
+            nan_detected = True
 
         array_shape = list(x.shape)
         array_shape[0] = 128
@@ -80,6 +79,7 @@ def compress_zarr_dataset(data, file_path, compression='lz4', clevel=5, start_id
         )
     store.close()
     logging.info("dataset was exported to: %s", file_path)
+    return nan_detected
 
 
 def create_dir(directory):
@@ -217,11 +217,6 @@ class RLLoop:
         """
         while True:
             line = self.proc.stdout.readline()
-            print(line)
-            if line == b'':
-                error = self.proc.stderr.readline()
-                logging.error(error)
-                raise Exception("The process raised an error!")
             if line == b"keep\n":
                 return False
             if line == b"replace\n":
@@ -376,7 +371,11 @@ class RLLoop:
 
         export_dir, time_stamp = self.create_export_dir()
         zarr_path = export_dir + time_stamp + ".zip"
-        compress_zarr_dataset(data, zarr_path, start_idx=0)
+        nan_detected = compress_zarr_dataset(data, zarr_path, start_idx=0)
+        if nan_detected is True:
+            logging.error("NaN value detected in file %s.zip" % time_stamp)
+            export_dir = self.crazyara_binary_dir + time_stamp
+            os.rename(export_dir, export_dir)
         self._move_game_data_to_export_dir(export_dir)
 
     def compare_new_weights(self):
