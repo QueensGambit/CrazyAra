@@ -36,15 +36,13 @@ class CrossEntropyLoss(mx.operator.CustomOp):
     d L / d y_pred_i = - (y_true_i / y_pred_i)
     """
 
-    eps = 1e-12
-
     def forward(self, is_train, req, in_data, out_data, aux):
         self.assign(out_data[0], req[0], in_data[0])
 
     def backward(self, req, out_grad, in_data, out_data, in_grad, aux):
         y_pred = in_data[0]
         y_true = in_data[1]
-        grad = -y_true / y_pred
+        grad = -y_true / (y_pred + 1e-12)
 
         self.assign(in_grad[0], req[0], grad)
 
