@@ -285,7 +285,7 @@ string MCTSAgent::get_name() const
 void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
 {
     size_t nodesPreSearch = init_root_node(pos);
-    if (rootNode->get_number_child_nodes() == 1) {
+    if (rootNode->get_number_child_nodes() == 1 && int(rootNode->get_visits()) != 0) {
         info_string("Only single move available -> early stopping");
     }
     else if (rootNode->get_checkmate_node() != nullptr) {
