@@ -108,6 +108,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
         const float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
         speed_statistic_report(elapsedTimeMin, position->game_ply());
     }
+    ++gameIdx;
 }
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits, StatesManager* states)
@@ -213,7 +214,7 @@ void SelfPlay::speed_statistic_report(float elapsedTimeMin, int generatedSamples
     cout << "    games    |  games/min  | samples/min " << endl
          << "-------------+-------------+-------------" << endl
          << std::setprecision(5)
-         << setw(13) << ++gameIdx << '|'
+         << setw(13) << gameIdx << '|'
          << setw(13) << gamesPerMin << '|'
          << setw(13) << samplesPerMin << endl << endl;
 }
