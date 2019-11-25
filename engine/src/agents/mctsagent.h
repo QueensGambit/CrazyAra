@@ -95,7 +95,7 @@ private:
     /**
      * @brief get_new_root_node Returns the pointer of the new root node for the given position in the case
      * it was either the old root node or an element of the potential root node list.
-     * Otherwise a nullptr will be returned.
+     * Otherwise a nullptr will be returned. The old tree is deleted except the game nodes.
      * @param pos Requested board position
      * @return Pointer to root node or nullptr
      */
@@ -129,6 +129,16 @@ private:
      * @param pos Board position
      */
     inline void create_new_root_node(Board *pos);
+
+    /**
+     * @brief delete_old_tree Clear the old tree except the gameNodes (rootNode, opponentNextRoot)
+     */
+    void delete_old_tree();
+
+    /**
+     * @brief delete_game_nodes Delete all gameNodes and their hashTable item
+     */
+    void delete_game_nodes();
 
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
