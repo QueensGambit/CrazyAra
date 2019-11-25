@@ -55,7 +55,7 @@ private:
      * @param states States manager for maintaining the states objects. Used for 3-fold repetition check.
      * @param policySharpening Threshold which is applied after move selection before exporting the policy to undo dirichlet noise
      */
-    void generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening);
+    void generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening, bool verbose);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
@@ -68,8 +68,10 @@ private:
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
+     * @param pngFileName Filename to export
+     * @param verbose If true, game will also be printed to stdout
      */
-    void write_game_to_pgn(const std::string& pngFileName);
+    void write_game_to_pgn(const std::string& pngFileName, bool verbose);
 
     /**
      * @brief set_game_result Sets the game result to the gamePGN object

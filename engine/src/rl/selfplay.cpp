@@ -54,7 +54,7 @@ SelfPlay::~SelfPlay()
     delete exporter;
 }
 
-void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening)
+void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening, bool verbose)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
     Board* position = init_board(variant, states);
@@ -100,12 +100,14 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     exporter->export_game_samples(get_terminal_node_result(nextRoot), size_t(position->game_ply()));
 
     set_game_result_to_pgn(nextRoot);
-    write_game_to_pgn(filenamePGNSelfplay);
+    write_game_to_pgn(filenamePGNSelfplay, verbose);
     clean_up(gamePGN, mctsAgent, states, position);
 
     // measure time statistics
-    const float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
-    speed_statistic_report(elapsedTimeMin, position->game_ply());
+    if (verbose) {
+        const float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
+        speed_statistic_report(elapsedTimeMin, position->game_ply());
+    }
 }
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits, StatesManager* states)
@@ -152,7 +154,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     }
     while(!isTerminal);
     set_game_result_to_pgn(nextRoot);
-    write_game_to_pgn(filenamePGNArena);
+    write_game_to_pgn(filenamePGNArena, false);
     Result gameResult = get_terminal_node_result(nextRoot);
     clean_up(gamePGN, whitePlayer, states, position);
     blackPlayer->clear_game_history();
@@ -168,11 +170,13 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Boa
     delete position;
 }
 
-void SelfPlay::write_game_to_pgn(const std::string& pngFileName)
+void SelfPlay::write_game_to_pgn(const std::string& pngFileName, bool verbose)
 {
     ofstream pgnFile;
     pgnFile.open(pngFileName, std::ios_base::app);
-    cout << endl << gamePGN << endl;
+    if (verbose) {
+        cout << endl << gamePGN << endl;
+    }
     pgnFile << gamePGN << endl;
     pgnFile.close();
 }
@@ -231,12 +235,12 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManage
 
     if (numberOfGames == 0) {
         while(!exporter->is_file_full()) {
-            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, policySharpening);
+            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, policySharpening, false);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, policySharpening);
+            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, policySharpening, true);
         }
     }
     export_number_generated_games();
