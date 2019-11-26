@@ -34,8 +34,9 @@
 #include "../util/blazeutil.h"
 #include "../util/randomgen.h"
 
-SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, PlaySettings* playSettings, size_t numberChunks, size_t chunkSize):
-    rawAgent(rawAgent), mctsAgent(mctsAgent), playSettings(playSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0)
+SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
+                   size_t numberChunks, size_t chunkSize):
+    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0)
 {
     gamePGN.variant = "crazyhouse";
     gamePGN.event = "CrazyAra-SelfPlay";
@@ -55,7 +56,7 @@ SelfPlay::~SelfPlay()
     delete exporter;
 }
 
-void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening, bool verbose)
+void SelfPlay::generate_game(Variant variant, StatesManager* states, float policySharpening, bool verbose)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
 
@@ -71,10 +72,10 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
 
     srand(unsigned(int(time(0))));
     do {
-        searchLimits.startTime = now();
+        searchLimits->startTime = now();
         const int randInt = rand();
-        searchLimits.nodes = 800 + (randInt % 80) - 40;
-        mctsAgent->perform_action(position, &searchLimits, evalInfo);
+        searchLimits->nodes = 800 + (randInt % 80) - 40;
+        mctsAgent->perform_action(position, searchLimits, evalInfo);
 
         // sample from raw policy
 //        if (float(randInt) / RAND_MAX < rawSamplingProb && position->game_ply() <= int(temperatureMoves) / 2) {
@@ -116,7 +117,7 @@ void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, States
     ++gameIdx;
 }
 
-Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, SearchLimits &searchLimits, StatesManager* states)
+Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, StatesManager* states)
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
@@ -131,7 +132,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
 
     const Node* nextRoot;
     do {
-        searchLimits.startTime = now();
+        searchLimits->startTime = now();
         if (position->side_to_move() == WHITE) {
             activePlayer = whitePlayer;
             passivePlayer = blackPlayer;
@@ -140,7 +141,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
             activePlayer = blackPlayer;
             passivePlayer = whitePlayer;
         }
-        activePlayer->perform_action(position, &searchLimits, evalInfo);
+        activePlayer->perform_action(position, searchLimits, evalInfo);
         activePlayer->apply_move_to_tree(evalInfo.bestMove, true);
         if (position->plies_from_null() != 0) {
             passivePlayer->apply_move_to_tree(evalInfo.bestMove, false);
@@ -222,7 +223,7 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
-void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states, float policySharpening)
+void SelfPlay::go(size_t numberOfGames, StatesManager* states, float policySharpening)
 {
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
@@ -230,18 +231,18 @@ void SelfPlay::go(size_t numberOfGames, SearchLimits& searchLimits, StatesManage
 
     if (numberOfGames == 0) {
         while(!exporter->is_file_full()) {
-            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, policySharpening, false);
+            generate_game(CRAZYHOUSE_VARIANT, states, policySharpening, false);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(CRAZYHOUSE_VARIANT, searchLimits, states, policySharpening, true);
+            generate_game(CRAZYHOUSE_VARIANT, states, policySharpening, true);
         }
     }
     export_number_generated_games();
 }
 
-TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits &searchLimits, StatesManager* states)
+TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states)
 {
     TournamentResult tournamentResult;
     tournamentResult.playerA = mctsContender->get_name();
@@ -249,7 +250,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     Result gameResult;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
-            gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, searchLimits, states);
+            gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, states);
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
@@ -258,7 +259,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
             }
         }
         else {
-            gameResult = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, searchLimits, states);
+            gameResult = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, states);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }

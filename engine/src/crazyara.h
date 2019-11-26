@@ -90,7 +90,21 @@ private:
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
      * @return Pointer to the new MCTSAgent object
      */
-    MCTSAgent* create_new_mcts_agent(const string& modelDirectory,  StatesManager* states, NeuralNetAPI** netBatches);
+    MCTSAgent* create_new_mcts_agent(NeuralNetAPI* netSingle, NeuralNetAPI** netBatches, StatesManager* states);
+
+    /**
+     * @brief create_new_net_single Factory to create and load a new model from a given directory
+     * @param modelDirectory Model directory where the .params and .json files are stored
+     * @return Pointer to the newly created object
+     */
+    NeuralNetAPI* create_new_net_single(const string& modelDirectory);
+
+    /**
+     * @brief create_new_net_batches Factory to create and load a new model for batch-size access
+     * @param modelDirectory Model directory where the .params and .json files are stored
+     * @return Pointer to the newly createded objects. For every thread a sepreate net
+     */
+    NeuralNetAPI** create_new_net_batches(const string& modelDirectory);
 
 public:
     CrazyAra();

@@ -41,6 +41,7 @@ class SelfPlay
 private:
     RawNetAgent* rawAgent;
     MCTSAgent* mctsAgent;
+    SearchLimits* searchLimits;
     PlaySettings* playSettings;
     GamePGN gamePGN;
     TrainDataExporter* exporter;
@@ -54,20 +55,18 @@ private:
     /**
      * @brief generate_game Generates a new game in self play mode
      * @param variant Current chess variant
-     * @param searchLimits Search limits struct
      * @param states States manager for maintaining the states objects. Used for 3-fold repetition check.
      * @param policySharpening Threshold which is applied after move selection before exporting the policy to undo dirichlet noise
      */
-    void generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening, bool verbose);
+    void generate_game(Variant variant, StatesManager* states, float policySharpening, bool verbose);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
      * @param whitePlayer MCTSAgent which will play with the white pieces
      * @param blackPlayer MCTSAgent which will play with the black pieces
      * @param variant Current chess variant
-     * @param searchLimits Search limits struct
      */
-    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, SearchLimits& searchLimits, StatesManager* states);
+    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, StatesManager* states);
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
@@ -102,31 +101,30 @@ public:
      * @brief SelfPlay
      * @param rawAgent Raw network agent which uses the raw network policy for e.g. game initiliation
      * @param mctsAgent MCTSAgent which is used during selfplay for game generation
+     * @param searchLimits Search limit configuration struct
      * @param playSettings Playing setting configuration struct
      * @param numberChunks Number of chunks for for one file in the exported data set
      * @param chunkSize Size of a single chunk. The product of numberChunks and chunkSize is the number of samples in an export file.
      */
-    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, PlaySettings* playSettings, size_t numberChunks, size_t chunkSize);
+    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings, size_t numberChunks, size_t chunkSize);
     ~SelfPlay();
 
     /**
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
-     * @param searchLimits Search limit struct
      * @param policySharpening Threshold which is applied after move selection before exporting the policy to undo dirichlet noise
      */
-    void go(size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states, float policySharpening);
+    void go(size_t numberOfGames, StatesManager* states, float policySharpening);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
      * the mctsContender which uses the new updated wieghts
      * @param mctsContender MCTSAgent using different NN weights
      * @param numberOfGames Number of games to compare
-     * @param searchLimits Search limit struct
      * @return Score in respect to the contender, as floating point number.
      *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
      */
-    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, SearchLimits& searchLimits, StatesManager* states);
+    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states);
 };
 #endif
 

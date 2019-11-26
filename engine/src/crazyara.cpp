@@ -285,36 +285,37 @@ void CrazyAra::benchmark(istringstream &is)
 #ifdef USE_RL
 void CrazyAra::selfplay(istringstream &is)
 {
-    SelfPlay selfPlay(rawAgent, mctsAgent, playSettings, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
+    SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, searchLimits, states, float(Options["Milli_Policy_Sharpening_Thresh"]/ 1000.0));
+    selfPlay.go(numberOfGames, states, float(Options["Milli_Policy_Sharpening_Thresh"]/ 1000.0));
     cout << "readyok" << endl;
 }
 
 void CrazyAra::arena(istringstream &is)
 {
-    SelfPlay selfPlay(rawAgent, mctsAgent, playSettings, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
-    NeuralNetAPI* netSingle = nullptr;
-    NeuralNetAPI** netBatches = nullptr;
-    MCTSAgent* mctsAgentContender = create_new_mcts_agent(Options["Model_Directory_Contender"], states, netBatches);
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
+    SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
+    NeuralNetAPI* netSingle = create_new_net_single(Options["Model_Directory_Contender"]);
+    NeuralNetAPI** netBatches = create_new_net_batches(Options["Model_Directory_Contender"]);
+    MCTSAgent* mctsAgentContender = create_new_mcts_agent(netSingle, netBatches, states);
     size_t numberOfGames;
     is >> numberOfGames;
-    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender, numberOfGames, searchLimits, states);
+    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender, numberOfGames, states);
     cout << "Arena summary" << endl;
     cout << "Score of Contender vs Producer: " << tournamentResult << endl;
     if (tournamentResult.score() > 0.5f) {
         cout << "replace" << endl;
-        mctsAgent = mctsAgentContender;
     }
     else {
         cout << "keep" << endl;
     }
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
+    delete mctsAgentContender;
+    delete netSingle;
 }
 #endif
 
@@ -332,8 +333,9 @@ bool CrazyAra::is_ready()
     if (!networkLoaded) {
         init_search_settings();
         init_play_settings();
-        NeuralNetAPI** netBatches = nullptr;
-        mctsAgent = create_new_mcts_agent(Options["Model_Directory"], states, netBatches);
+        netSingle = create_new_net_single(Options["Model_Directory"]);
+        NeuralNetAPI** netBatches = create_new_net_batches(Options["Model_Directory"]);
+        mctsAgent = create_new_mcts_agent(netSingle, netBatches, states);
         rawAgent = new RawNetAgent(netSingle, playSettings, false);
         Constants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
@@ -355,21 +357,27 @@ string CrazyAra::engine_info()
     return ss.str();
 }
 
-MCTSAgent *CrazyAra::create_new_mcts_agent(const string &modelDirectory, StatesManager* states, NeuralNetAPI** netBatches)
+NeuralNetAPI *CrazyAra::create_new_net_single(const string& modelDirectory)
+{
+    return new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
+}
+
+NeuralNetAPI **CrazyAra::create_new_net_batches(const string& modelDirectory)
 {
 #ifdef TENSORRT
     const bool useTensorRT = bool(Options["Use_TensorRT"]);
 #else
     const bool useTensorRT = false;
 #endif
-    if (netSingle != nullptr) {
-        delete netSingle;
-    }
-    netSingle = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
-    netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
+    NeuralNetAPI** netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
     for (size_t i = 0; i < size_t(searchSettings->threads); ++i) {
         netBatches[i] = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
     }
+    return netBatches;
+}
+
+MCTSAgent *CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, NeuralNetAPI** netBatches, StatesManager* states)
+{
     return new MCTSAgent(netSingle, netBatches, searchSettings, playSettings, states);
 }
 

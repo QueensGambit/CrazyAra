@@ -77,7 +77,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
 
 MCTSAgent::~MCTSAgent()
 {
-    for (auto i = 0; i < searchSettings->threads; ++i) {
+    for (size_t i = 0; i < searchSettings->threads; ++i) {
         delete netBatches[i];
     }
     delete netBatches;
