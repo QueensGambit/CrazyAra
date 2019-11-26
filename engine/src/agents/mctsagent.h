@@ -53,8 +53,6 @@ private:
     NeuralNetAPI** netBatches;
 
     SearchSettings* searchSettings;
-    PlaySettings playSettings;
-
     std::vector<SearchThread*> searchThreads;
 
     float inputPlanes[NB_VALUES_TOTAL];
@@ -144,7 +142,7 @@ public:
     MCTSAgent(NeuralNetAPI* netSingle,
               NeuralNetAPI** netBatches,
               SearchSettings* searchSettings,
-              PlaySettings playSettings,
+              PlaySettings* playSettings_,
               StatesManager* states);
 
     ~MCTSAgent();

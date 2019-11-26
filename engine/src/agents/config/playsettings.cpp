@@ -26,3 +26,8 @@
  */
 
 #include "playsettings.h"
+
+double get_current_temperature(const PlaySettings &play, size_t moveNumber)
+{
+    return play.initTemperature * std::pow(play.temperatureDecayFactor, moveNumber);
+}

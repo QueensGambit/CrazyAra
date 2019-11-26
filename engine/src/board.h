@@ -47,7 +47,8 @@ public:
     int plies_from_null() const;
 
     /**
-     * @brief total_move_cout Returns the current full move counter
+     * @brief total_move_cout Returns the current full move counter.
+     * In the initial starting position and after first half move of whites, it returns 0
      * @return Total move number
      */
     size_t total_move_cout() const;

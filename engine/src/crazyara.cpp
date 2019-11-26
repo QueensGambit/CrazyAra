@@ -334,7 +334,7 @@ bool CrazyAra::is_ready()
         init_play_settings();
         NeuralNetAPI** netBatches = nullptr;
         mctsAgent = create_new_mcts_agent(Options["Model_Directory"], states, netBatches);
-        rawAgent = new RawNetAgent(netSingle, *playSettings, float(Options["Temperature"]), unsigned(int(Options["Temperature_Moves"])), false);
+        rawAgent = new RawNetAgent(netSingle, playSettings, false);
         Constants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
     }
@@ -370,7 +370,7 @@ MCTSAgent *CrazyAra::create_new_mcts_agent(const string &modelDirectory, StatesM
     for (size_t i = 0; i < size_t(searchSettings->threads); ++i) {
         netBatches[i] = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
     }
-    return new MCTSAgent(netSingle, netBatches, searchSettings, *playSettings, states);
+    return new MCTSAgent(netSingle, netBatches, searchSettings, playSettings, states);
 }
 
 void CrazyAra::init_search_settings()
@@ -399,8 +399,9 @@ void CrazyAra::init_search_settings()
 void CrazyAra::init_play_settings()
 {
     playSettings = new PlaySettings();
-    playSettings->temperature = Options["Centi_Temperature"] / 100.0f;
+    playSettings->initTemperature = Options["Centi_Temperature"] / 100.0f;
     playSettings->temperatureMoves = Options["Temperature_Moves"];
+    playSettings->temperatureDecayFactor = Options["Centi_Temperature_Decay"] / 100.0f;
 #ifdef USE_RL
     playSettings->meanInitPly = Options["MeanInitPly"];
     playSettings->maxInitPly = Options["MaxInitPly"];

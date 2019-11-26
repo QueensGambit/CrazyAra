@@ -44,14 +44,12 @@ class RawNetAgent: public Agent
 {
 private:
     NeuralNetAPI *net;
-    PlaySettings playSettings;
     float inputPlanes[NB_VALUES_TOTAL];
     NDArray valueOutput = NDArray(Shape(1, 1), Context::cpu());
     NDArray probOutputs = NDArray(Shape(1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH), Context::cpu());
 
 public:
-    RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings,
-                float temperature, unsigned int temperatureMoves, bool verbose);
+    RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings_, bool verbose);
 
     void evaluate_board_state(Board *pos, EvalInfo& evalInfo);
 

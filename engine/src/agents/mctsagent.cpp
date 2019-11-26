@@ -40,14 +40,13 @@
 using namespace mxnet::cpp;
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
-                     SearchSettings* searchSettings, PlaySettings playSettings,
+                     SearchSettings* searchSettings, PlaySettings* playSettings_,
                      StatesManager *states
                      ):
-    Agent(playSettings.temperature, playSettings.temperatureMoves, true),
+    Agent(playSettings_, true),
     netSingle(netSingle),
     netBatches(netBatches),
     searchSettings(searchSettings),
-    playSettings(playSettings),
     rootNode(nullptr),
     oldestRootNode(nullptr),
     ownNextRoot(nullptr),
@@ -114,7 +113,7 @@ size_t MCTSAgent::init_root_node(Board *pos)
         // swap the states because now the old states are used
         // This way the memory won't be freed for the next new move
         states->swap_states();
-        nodesPreSearch = rootNode->get_visits();
+        nodesPreSearch = size_t(rootNode->get_visits());
         info_string(nodesPreSearch, "nodes of former tree will be reused");
     }
     else {
@@ -327,7 +326,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     get_principal_variation(rootNode, searchSettings, evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
     evalInfo.isChess960 = pos->is_chess960();
-    evalInfo.nodes = rootNode->get_visits();
+    evalInfo.nodes = size_t(rootNode->get_visits());
     evalInfo.nodesPreSearch = nodesPreSearch;
 }
 

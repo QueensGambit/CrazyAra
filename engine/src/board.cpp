@@ -113,7 +113,7 @@ int Board::plies_from_null() const
 
 size_t Board::total_move_cout() const
 {
-    return st->pliesFromNull / 2 + 1;
+    return size_t(gamePly / 2);
 }
 
 size_t Board::number_repetitions() const

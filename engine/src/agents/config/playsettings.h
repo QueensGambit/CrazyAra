@@ -29,14 +29,17 @@
 #define PLAYSETTINGS_H
 
 #include <stddef.h>
+#include <math.h>
 
 struct PlaySettings
 {
 public:
-    float temperature;
+    double initTemperature;
     size_t temperatureMoves;
     bool useTimeManagement;
-    size_t openingGuardMoves;
+    // exponential decay factor which reduces the intial temperature on every move (every 2nd ply, must be in [0.0,1.0]])
+    // plyTemp = initTemp * tempDecay^moveCount
+    double temperatureDecayFactor;
 #ifdef USE_RL
     // mean value of an exponentional distribution about how many samples are directly sampled from the raw NN policy
     size_t meanInitPly;
@@ -44,10 +47,18 @@ public:
     size_t maxInitPly;
 #endif
     PlaySettings():
-                 temperature(0.0),
+                 initTemperature(0.0),
                  temperatureMoves(4),
-                 useTimeManagement(true),
-                 openingGuardMoves(0) {}
+                 useTimeManagement(true) {}
 };
+
+/**
+ * @brief get_current_temperature
+ * @param play
+ * @param ply
+ * @return
+ */
+double get_current_temperature(const PlaySettings& play, size_t moveNumber);
+
 
 #endif // PLAYSETTINGS_H

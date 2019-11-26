@@ -46,7 +46,7 @@ struct EvalInfo
     DynamicVector<float> childNumberVisits;
     int centipawns;
     size_t depth;
-    int nodes;
+    size_t nodes;
     size_t nodesPreSearch;
     float elapsedTimeMS;
     float nps;

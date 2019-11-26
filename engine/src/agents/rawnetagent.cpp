@@ -34,11 +34,9 @@
 
 using blaze::HybridVector;
 
-RawNetAgent::RawNetAgent(NeuralNetAPI *net, PlaySettings playSettings, float temperature, unsigned int temperature_moves, bool verbose):
-    Agent (temperature, temperature_moves, verbose)
+RawNetAgent::RawNetAgent(NeuralNetAPI *net, PlaySettings* playSettings_, bool verbose_):
+    Agent(playSettings_, verbose_), net(net)
 {
-    this->net = net;
-    this->playSettings = playSettings;
     fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);  // will be filled in evalute_board_state()
 }
 
@@ -70,7 +68,7 @@ void RawNetAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     auto predicted = probOutputs.ArgmaxChannel();
     predicted.WaitToRead();
 
-    int bestIdx = predicted.At(0);
+    size_t bestIdx = size_t(predicted.At(0));
 
     string bestmove_mxnet;
     if (pos->side_to_move() == WHITE) {

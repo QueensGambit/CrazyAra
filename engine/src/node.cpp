@@ -642,7 +642,7 @@ float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisit
     return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
 }
 
-double updated_value(const Node* node, DynamicVector<float>& mctsPolicy)
+float updated_value(const Node* node, DynamicVector<float>& mctsPolicy)
 {
     return node->get_child_nodes()[argmax(mctsPolicy)]->get_q_value();
 }

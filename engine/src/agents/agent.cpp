@@ -37,10 +37,10 @@ using namespace std;
 
 void Agent::set_best_move(EvalInfo &evalInfo, size_t moveCounter)
 {
-    if (moveCounter <= temperatureMoves && temperature > 0.01f) {
+    if (moveCounter < playSettings->temperatureMoves && playSettings->initTemperature > 0.01) {
         info_string("Sample move");
         DynamicVector<double> policyProbSmall = evalInfo.childNumberVisits / sum(evalInfo.childNumberVisits);
-        apply_temperature(policyProbSmall, temperature);
+        apply_temperature(policyProbSmall, get_current_temperature(*playSettings, moveCounter));
         size_t moveIdx = random_choice(policyProbSmall);
         evalInfo.bestMove = evalInfo.legalMoves[moveIdx];
     }
@@ -49,11 +49,9 @@ void Agent::set_best_move(EvalInfo &evalInfo, size_t moveCounter)
     }
 }
 
-Agent::Agent(float temperature, unsigned int temperature_moves, bool verbose)
+Agent::Agent(PlaySettings* playSettings, bool verbose):
+    playSettings(playSettings), verbose(verbose)
 {
-    this->temperature = temperature;
-    this->temperatureMoves = temperature_moves;
-    this->verbose = verbose;
 }
 
 void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo)

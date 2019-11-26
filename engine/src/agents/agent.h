@@ -31,6 +31,7 @@
 #include "../board.h"
 #include "../evalinfo.h"
 #include "config/searchlimits.h"
+#include "config/playsettings.h"
 #ifdef USE_RL
 #include "../rl/traindataexporter.h"
 #endif
@@ -38,7 +39,6 @@
 class Agent
 {
 private:
-
     /**
      * @brief set_best_move Sets the "best" (chosen) move by the engine to the evalInformation
      * @param evalInfo Evaluation information
@@ -47,12 +47,12 @@ private:
     void set_best_move(EvalInfo& evalInfo, size_t moveCounter);
 
 protected:
-    float temperature;
-    unsigned int temperatureMoves;
-    bool verbose;
     SearchLimits* searchLimits;
+    PlaySettings* playSettings;
+    bool verbose;
+
 public:
-    Agent(float temperature, unsigned int temperatureMoves, bool verbose);
+    Agent(PlaySettings* playSettings, bool verbose);
 
     /**
      * @brief perform_action Selects an action based on the evaluation result

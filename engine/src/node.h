@@ -310,7 +310,13 @@ void get_mcts_policy(const Node* node, const DynamicVector<float>& childNumberVi
  */
 float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits);
 
-double updated_value(const Node* node, DynamicVector<float>& mctsPolicy);
+/**
+ * @brief updated_value Returns the new value evalue evaluation of the node based on the Q-value of the argmax mctsPolicy.
+ * @param node Node to be evaluated
+ * @param mctsPolicy MCTS policy after the search
+ * @return value eval based on the best move Q-value
+ */
+float updated_value(const Node* node, DynamicVector<float>& mctsPolicy);
 
 /**
  * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
