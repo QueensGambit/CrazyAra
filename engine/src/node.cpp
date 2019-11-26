@@ -517,6 +517,11 @@ Node* select_child_node(Node* node)
 {
     node->lock();
 
+    if (node->get_checkmate_node() != nullptr) {
+        node->unlock();
+        return node->get_checkmate_node();
+    }
+
     if (!node->are_child_nodes_sorted()) {
         node->sort_child_nodes_by_probabilities();
     }
