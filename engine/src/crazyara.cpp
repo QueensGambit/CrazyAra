@@ -285,7 +285,7 @@ void CrazyAra::benchmark(istringstream &is)
 #ifdef USE_RL
 void CrazyAra::selfplay(istringstream &is)
 {
-    SelfPlay selfPlay(mctsAgent, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
+    SelfPlay selfPlay(rawAgent, mctsAgent, playSettings, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
     size_t numberOfGames;
@@ -296,10 +296,10 @@ void CrazyAra::selfplay(istringstream &is)
 
 void CrazyAra::arena(istringstream &is)
 {
-    SelfPlay selfPlay(mctsAgent, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
+    SelfPlay selfPlay(rawAgent, mctsAgent, playSettings, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
     NeuralNetAPI* netSingle = nullptr;
     NeuralNetAPI** netBatches = nullptr;
-    MCTSAgent* mctsAgentContender = create_new_mcts_agent(Options["Model_Directory_Contender"], states, netSingle, netBatches);
+    MCTSAgent* mctsAgentContender = create_new_mcts_agent(Options["Model_Directory_Contender"], states, netBatches);
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
     size_t numberOfGames;
@@ -333,7 +333,8 @@ bool CrazyAra::is_ready()
         init_search_settings();
         init_play_settings();
         NeuralNetAPI** netBatches = nullptr;
-        mctsAgent = create_new_mcts_agent(Options["Model_Directory"], states, netSingle, netBatches);
+        mctsAgent = create_new_mcts_agent(Options["Model_Directory"], states, netBatches);
+        rawAgent = new RawNetAgent(netSingle, *playSettings, float(Options["Temperature"]), unsigned(int(Options["Temperature_Moves"])), false);
         Constants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
     }
@@ -354,13 +355,16 @@ string CrazyAra::engine_info()
     return ss.str();
 }
 
-MCTSAgent *CrazyAra::create_new_mcts_agent(const string &modelDirectory, StatesManager* states, NeuralNetAPI* netSingle, NeuralNetAPI** netBatches)
+MCTSAgent *CrazyAra::create_new_mcts_agent(const string &modelDirectory, StatesManager* states, NeuralNetAPI** netBatches)
 {
 #ifdef TENSORRT
     const bool useTensorRT = bool(Options["Use_TensorRT"]);
 #else
     const bool useTensorRT = false;
 #endif
+    if (netSingle != nullptr) {
+        delete netSingle;
+    }
     netSingle = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
     netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
     for (size_t i = 0; i < size_t(searchSettings->threads); ++i) {
@@ -397,4 +401,8 @@ void CrazyAra::init_play_settings()
     playSettings = new PlaySettings();
     playSettings->temperature = Options["Centi_Temperature"] / 100.0f;
     playSettings->temperatureMoves = Options["Temperature_Moves"];
+#ifdef USE_RL
+    playSettings->meanInitPly = Options["MeanInitPly"];
+    playSettings->maxInitPly = Options["MaxInitPly"];
+#endif
 }

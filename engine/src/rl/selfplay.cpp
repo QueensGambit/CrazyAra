@@ -32,9 +32,10 @@
 #include <fstream>
 #include "../domain/variants.h"
 #include "../util/blazeutil.h"
+#include "../util/randomgen.h"
 
-SelfPlay::SelfPlay(MCTSAgent* mctsAgent, size_t numberChunks, size_t chunkSize):
-    mctsAgent(mctsAgent), gameIdx(0), gamesPerMin(0), samplesPerMin(0)
+SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, PlaySettings* playSettings, size_t numberChunks, size_t chunkSize):
+    rawAgent(rawAgent), mctsAgent(mctsAgent), playSettings(playSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0)
 {
     gamePGN.variant = "crazyhouse";
     gamePGN.event = "CrazyAra-SelfPlay";
@@ -57,7 +58,11 @@ SelfPlay::~SelfPlay()
 void SelfPlay::generate_game(Variant variant, SearchLimits& searchLimits, StatesManager* states, float policySharpening, bool verbose)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
-    Board* position = init_board(variant, states);
+
+    size_t ply = size_t(random_exponential<float>(1.0f/playSettings->meanInitPly) + 0.5f);
+    ply = clip_ply(ply, playSettings->maxInitPly);
+
+    Board* position = init_starting_pos_from_raw_policy(*rawAgent, ply, gamePGN, variant, states);
     EvalInfo evalInfo;
     states->swap_states();
     bool leadsToTerminal = false;
@@ -187,17 +192,6 @@ void SelfPlay::set_game_result_to_pgn(const Node* terminalNode)
     gamePGN.result = result[get_terminal_node_result(terminalNode)];
 }
 
-Board* SelfPlay::init_board(Variant variant, StatesManager* states)
-{
-    Board* position = new Board();
-    auto uiThread = make_shared<Thread>(0);
-
-    StateInfo* newState = new StateInfo;
-    position->set(StartFENs[variant], false, variant, newState, uiThread.get());
-    states->activeStates.push_back(newState);
-    return position;
-}
-
 void SelfPlay::reset_speed_statistics()
 {
     gameIdx = 0;
@@ -278,4 +272,53 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     }
     return tournamentResult;
 }
+
+Board* init_board(Variant variant, StatesManager* states)
+{
+    Board* position = new Board();
+    auto uiThread = make_shared<Thread>(0);
+
+    StateInfo* newState = new StateInfo;
+    position->set(StartFENs[variant], false, variant, newState, uiThread.get());
+    states->activeStates.push_back(newState);
+    return position;
+}
+
 #endif
+
+Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, StatesManager *states)
+{
+    Board* position = init_board(variant, states);
+
+    for (size_t ply = 0; ply < plys; ++ply) {
+        EvalInfo eval;
+        rawAgent.evaluate_board_state(position, eval);
+        const size_t moveIdx = random_choice(eval.policyProbSmall);
+        eval.bestMove = eval.legalMoves[moveIdx];
+
+        if (leads_to_terminal(*position, eval.bestMove)) {
+            break;
+        }
+        else {
+            gamePGN.gameMoves.push_back(pgn_move(eval.legalMoves[moveIdx],
+                                                 false,
+                                                 *position,
+                                                 eval.legalMoves,
+                                                 false,
+                                                 true));
+            StateInfo* newState = new StateInfo;
+            states->activeStates.push_back(newState);
+            position->do_move(eval.bestMove, *(newState));
+        }
+    }
+
+    return position;
+}
+
+size_t clip_ply(size_t ply, size_t maxPly)
+{
+    if (ply > maxPly) {
+        return size_t(rand()) % maxPly;
+    }
+    return ply;
+}

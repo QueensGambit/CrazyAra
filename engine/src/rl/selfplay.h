@@ -29,15 +29,19 @@
 #define SELFPLAY_H
 
 #include "../agents/mctsagent.h"
+#include "../agents/rawnetagent.h"
 #include "gamepgn.h"
 #include "../manager/statesmanager.h"
 #include "tournamentresult.h"
+
 
 #ifdef USE_RL
 class SelfPlay
 {
 private:
+    RawNetAgent* rawAgent;
     MCTSAgent* mctsAgent;
+    PlaySettings* playSettings;
     GamePGN gamePGN;
     EvalInfo evalInfo;
     TrainDataExporter* exporter;
@@ -80,14 +84,6 @@ private:
     void set_game_result_to_pgn(const Node* terminalNode);
 
     /**
-     * @brief init_board Initialies a new board with the starting position of the variant
-     * @param variant Variant to be played
-     * @param states State manager which takes over the newly created state object
-     * @return
-     */
-    inline Board* init_board(Variant variant, StatesManager* states);
-
-    /**
      * @brief reset_speed_statistics Resets the interal measurements for gameIdx, gamesPerMin and samplesPerMin
      */
     void reset_speed_statistics();
@@ -105,11 +101,13 @@ private:
 public:
     /**
      * @brief SelfPlay
+     * @param rawAgent Raw network agent which uses the raw network policy for e.g. game initiliation
      * @param mctsAgent MCTSAgent which is used during selfplay for game generation
+     * @param playSettings Playing setting configuration struct
      * @param numberChunks Number of chunks for for one file in the exported data set
      * @param chunkSize Size of a single chunk. The product of numberChunks and chunkSize is the number of samples in an export file.
      */
-    SelfPlay(MCTSAgent* mctsAgent, size_t numberChunks, size_t chunkSize);
+    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, PlaySettings* playSettings, size_t numberChunks, size_t chunkSize);
     ~SelfPlay();
 
     /**
@@ -143,5 +141,31 @@ public:
  * @param position Board position which will be deleted
  */
 void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Board* position);
+
+/**
+ * @brief init_board Initialies a new board with the starting position of the variant
+ * @param variant Variant to be played
+ * @param states State manager which takes over the newly created state object
+ * @return New board object
+ */
+Board* init_board(Variant variant, StatesManager* states);
+
+/**
+ * @brief init_games_from_raw_policy Inits a new starting position by sampling from the raw policy with temperature 1.
+ * The iteration stops either when the number of plys is reached or when the next move would lead to a terminal state.
+ * @param rawAgent Handle to the raw agent
+ * @param plys Number of plys to generate
+ * @param gamePGN Game pgn struct where the moves will be stored
+ */
+Board* init_starting_pos_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, StatesManager* states);
+
+/**
+ * @brief clip_ply Clips a given ply touse maxPly as the maximum value. In case of an entry greater than max it is uniformly sampled from
+ * [0, maxPly] instead.
+ * @param ply Given ply which might be greater than maxPly
+ * @param maxPly Maximum ply value
+ * @return
+ */
+size_t clip_ply(size_t ply, size_t maxPly);
 
 #endif // SELFPLAY_H

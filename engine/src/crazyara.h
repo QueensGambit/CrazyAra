@@ -90,7 +90,7 @@ private:
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
      * @return Pointer to the new MCTSAgent object
      */
-    MCTSAgent* create_new_mcts_agent(const string& modelDirectory,  StatesManager* states, NeuralNetAPI* netSingle, NeuralNetAPI** netBatches);
+    MCTSAgent* create_new_mcts_agent(const string& modelDirectory,  StatesManager* states, NeuralNetAPI** netBatches);
 
 public:
     CrazyAra();

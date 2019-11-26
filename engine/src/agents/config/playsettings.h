@@ -22,21 +22,27 @@
  * Created on 12.06.2019
  * @author: queensgambit
  *
- * Please describe what the content of this file is about
+ * Struct which defines setting about general playing behaviour
  */
 
 #ifndef PLAYSETTINGS_H
 #define PLAYSETTINGS_H
 
+#include <stddef.h>
 
 struct PlaySettings
 {
 public:
     float temperature;
-    unsigned int temperatureMoves;
+    size_t temperatureMoves;
     bool useTimeManagement;
-    int openingGuardMoves;
-
+    size_t openingGuardMoves;
+#ifdef USE_RL
+    // mean value of an exponentional distribution about how many samples are directly sampled from the raw NN policy
+    size_t meanInitPly;
+    // maximum value for randomly sampled plys
+    size_t maxInitPly;
+#endif
     PlaySettings():
                  temperature(0.0),
                  temperatureMoves(4),
