@@ -30,14 +30,11 @@
 
 #include <cfloat>
 #include <blaze/Math.h>
+#include "randomgen.h"
 
 using namespace std;
 using blaze::StaticVector;
 using blaze::DynamicVector;
-
-// random generator used for dirchlet noise
-static std::random_device r;
-static std::default_random_engine generator(r());
 
 /**
  * @brief pick_move_idx Picks an index according to the probability distribution
