@@ -237,7 +237,7 @@ void MCTSAgent::delete_game_nodes()
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 {
-    if (!reusedFullTree) {
+    if (!reusedFullTree && rootNode != nullptr) {
         info_string("apply move to tree");
         if (ownMove) {
             opponentsNextRoot = pick_next_node(move, rootNode);
