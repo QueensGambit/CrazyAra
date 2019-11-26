@@ -39,7 +39,8 @@ BenchmarkPositions::BenchmarkPositions():
         TestPosition("1r1qr3/p1p3pk/2p3pp/3b1p1n/3P3p/1P2PP2/P1PB2PP/R3BQK1/NNBNr b - - 0 34", "b8b3", "R@g5"),
         TestPosition("r2q4/1pp2kPp/5prP/2pP1N2/5PB1/2N2P2/PP3PPN/2r1rQ1K/Nbpbbp w - - 0 54", "N@h8", "f1e1"),
         TestPosition("r2q2kN/1pp3Pp/5prP/2pP1N2/5PB1/2N2P2/PP3PPN/4r2K/Rqbpbbp w - - 0 62", "R@g1", "R@f1"),
-        TestPosition("r1bqk1r1/2p1bppp/p1p2n1P/3P4/2B5/2N2p2/PPP2PRP/R1BQK3/PNPn w Qq - 24 13", "d1f3", "g2g7")
+        TestPosition("r1bqk1r1/2p1bppp/p1p2n1P/3P4/2B5/2N2p2/PPP2PRP/R1BQK3/PNPn w Qq - 24 13", "d1f3", "g2g7"),
+        TestPosition("r1b2B2/pp2RP1p/3ppp2/k2Nq3/1NB5/P3NpP1/2PP1PpP/R3K1R1/qbnp w Q - 0 30", "a1b1", "b4c6")
     }),
     totalNPS(0),
     totalDepth(0)
