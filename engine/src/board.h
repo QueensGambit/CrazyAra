@@ -72,6 +72,12 @@ public:
      * @return
      */
     bool is_50_move_rule_draw() const;
+
+    /**
+     * @brief is_terminal Checks if move is a terminal based on the number of legal moves
+     * @return True for terminal, else false
+     */
+    bool is_terminal() const;
 };
 
 /**
@@ -101,8 +107,18 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move>& le
  * @param pos Board position
  * @param legalMoves List of legal moves in the position (avoid regneration in case it has already been done)
  * @param leadsToWin True if the given move leads to a lost terminal state for the opponent
+ * @param bookMove Appends " {book}" in case the move was a book move
  * @return String representation of move in PGN format
  */
-std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin=false);
+std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin=false, bool bookMove=false);
+
+/**
+ * @brief leads_to_terminal Checks if the next states is a terminal state if you would apply the given move
+ * @param pos Given board position
+ * @param m Move which is assumed to be legal
+ * @return True, if the next state would be a terminal, else false
+ */
+bool leads_to_terminal(const Board& pos, Move m);
+
 
 #endif // BOARD_H

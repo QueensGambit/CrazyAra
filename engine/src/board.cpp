@@ -146,7 +146,15 @@ bool Board::is_50_move_rule_draw() const
     return false;
 }
 
-std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin)
+bool Board::is_terminal() const
+{
+    for (const ExtMove move : MoveList<LEGAL>(*this)) {
+        return false;
+    }
+    return true;
+}
+
+std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin, bool bookMove)
 {
     std::string move;
 
@@ -224,6 +232,10 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
             move += "+";
         }
     }
+
+    if (bookMove) {
+        move += " {book}";
+    }
     return move;
 }
 
@@ -250,4 +262,11 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &le
         }
     }
     return ambiguous;
+}
+
+bool leads_to_terminal(const Board &pos, Move m)
+{
+    Board posCheckTerminal = Board(pos);
+    posCheckTerminal.do_move(m, *(new StateInfo));
+    return posCheckTerminal.is_terminal();
 }
