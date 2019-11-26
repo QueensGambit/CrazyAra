@@ -43,7 +43,6 @@ private:
     MCTSAgent* mctsAgent;
     PlaySettings* playSettings;
     GamePGN gamePGN;
-    EvalInfo evalInfo;
     TrainDataExporter* exporter;
     string filenamePGNSelfplay;
     string filenamePGNArena;
