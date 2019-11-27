@@ -68,8 +68,9 @@ private:
      * @param whitePlayer MCTSAgent which will play with the white pieces
      * @param blackPlayer MCTSAgent which will play with the black pieces
      * @param variant Current chess variant
+     * @param verbose If true the games will printed to stdout
      */
-    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, StatesManager* states);
+    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, StatesManager* states, bool verbose);
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file

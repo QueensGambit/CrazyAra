@@ -150,7 +150,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
     ++gameIdx;
 }
 
-Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, StatesManager* states)
+Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, StatesManager* states, bool verbose)
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
@@ -194,7 +194,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     }
     while(!isTerminal);
     set_game_result_to_pgn(nextRoot);
-    write_game_to_pgn(filenamePGNArena, false);
+    write_game_to_pgn(filenamePGNArena, verbose);
     Result gameResult = get_terminal_node_result(nextRoot);
     clean_up(gamePGN, whitePlayer, states, position);
     blackPlayer->clear_game_history();
@@ -264,7 +264,7 @@ void SelfPlay::go(size_t numberOfGames, StatesManager* states, float policySharp
 
     if (numberOfGames == 0) {
         while(!exporter->is_file_full()) {
-            generate_game(CRAZYHOUSE_VARIANT, states, false);
+            generate_game(CRAZYHOUSE_VARIANT, states, true);
         }
     }
     else {
@@ -283,7 +283,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     Result gameResult;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
-            gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, states);
+            gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, states, true);
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
@@ -292,7 +292,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
             }
         }
         else {
-            gameResult = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, states);
+            gameResult = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, states, true);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }
