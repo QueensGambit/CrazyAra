@@ -58,6 +58,7 @@ void RawNetAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         evalInfo.depth = 0;
         evalInfo.nodes = 0;
         evalInfo.pv = {evalInfo.legalMoves[0]};
+        return;
     }
 
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
@@ -68,23 +69,12 @@ void RawNetAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     auto predicted = probOutputs.ArgmaxChannel();
     predicted.WaitToRead();
 
-    size_t bestIdx = size_t(predicted.At(0));
-
-    string bestmove_mxnet;
-    if (pos->side_to_move() == WHITE) {
-        bestmove_mxnet = LABELS[bestIdx];
-    }
-    else {
-        bestmove_mxnet = LABELS_MIRRORED[bestIdx];
-    }
-
     evalInfo.policyProbSmall.resize(evalInfo.legalMoves.size());
     get_probs_of_move_list(0, &probOutputs, evalInfo.legalMoves, pos->side_to_move(),
                            !net->is_policy_map(), evalInfo.policyProbSmall, net->is_policy_map());
-    size_t sel_idx = argmax(evalInfo.policyProbSmall);
+    size_t selIdx = argmax(evalInfo.policyProbSmall);
 
-    Move bestmove = evalInfo.legalMoves[sel_idx];
-    assert(bestmove_mxnet == UCI::move(bestmove, pos->is_chess960()));
+    Move bestmove = evalInfo.legalMoves[selIdx];
 
     evalInfo.centipawns = value_to_centipawn(value);
     evalInfo.depth = 1;
