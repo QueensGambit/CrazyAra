@@ -25,15 +25,21 @@ from DeepCrazyhouse.configs.train_config import train_config
 from engine.src.rl.rl_training import update_network
 
 
-def read_output(proc, last_line=b"readyok\n"):
+def read_output(proc, last_line=b"readyok\n", check_error=False):
     """
     Reads the output of a process pip until the given last line has been reached.
     :param proc: Process to be read
     :param last_line Content when to stop reading (e.g. b'\n', b'', b"readyok\n")
+    :param check_error: Listens to stdout for errors
     :return:
     """
     while True:
         line = proc.stdout.readline()
+        # print(line)
+        if check_error and line == b'':
+            error = proc.stderr.readline()
+            logging.error(error)
+            raise Exception("error was raised %s" % error)
         if line == last_line:
             break
 
@@ -255,7 +261,7 @@ class RLLoop:
         """
         self.proc.stdin.write(b"selfplay %d\n" % self.nb_games_to_update)
         self.proc.stdin.flush()
-        read_output(self.proc, b"readyok\n")
+        read_output(self.proc, b"readyok\n", check_error=True)
 
     def create_export_dir(self):
         # include current timestamp in dataset export file
