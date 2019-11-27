@@ -69,6 +69,7 @@ private:
     size_t gameIdx;
     // current sample index to insert
     size_t startIdx;
+    size_t curSampleIdx;
 
     /**
      * @brief export_planes Exports the board in plane representation (x)
@@ -136,18 +137,15 @@ public:
      * @brief export_pos Saves a given board position, policy and Q-value to the specific game arrays
      * @param pos Current board position
      * @param eval Filled EvalInfo struct after mcts search
-     * @param idxOffset Starting index where to start storing the training sample
      */
-    void save_sample(const Board *pos, const EvalInfo& eval, size_t idxOffset);
+    void save_sample(const Board *pos, const EvalInfo& eval);
 
     /**
      * @brief export_game_samples Assigns the game result, (Monte-Carlo value result) to every training sample.
      * The value is inversed after each step and export all training samples of a single game.
      * @param result Game match result: LOST, DRAW, WON
-     * @param idxOffset Starting index where to start assigning values
-     * @param plys Number of training samples (halfmoves/plys) for the current match
      */
-    void export_game_samples(Result result, size_t plys);
+    void export_game_samples(Result result);
 
     size_t get_number_samples() const;
 

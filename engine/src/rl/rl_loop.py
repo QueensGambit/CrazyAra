@@ -370,8 +370,9 @@ class RLLoop:
         nan_detected = compress_zarr_dataset(data, zarr_path, start_idx=0)
         if nan_detected is True:
             logging.error("NaN value detected in file %s.zip" % time_stamp)
-            export_dir = self.crazyara_binary_dir + time_stamp
-            os.rename(export_dir, export_dir)
+            new_export_dir = self.crazyara_binary_dir + time_stamp
+            os.rename(export_dir, new_export_dir)
+            export_dir = new_export_dir
         self._move_game_data_to_export_dir(export_dir)
 
     def compare_new_weights(self):

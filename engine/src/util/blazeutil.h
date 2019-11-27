@@ -73,6 +73,9 @@ void apply_temperature(DynamicVector<T>& distribution, U temperature)
  */
 template <typename T, typename U>
 void sharpen_distribution(DynamicVector<T>& distribution, U thresh) {
+    if (max(distribution) < thresh) {
+        return;
+    }
     for (auto it = distribution.begin(); it != distribution.end(); ++it) {
         if (*it < thresh) {
             *it = 0;

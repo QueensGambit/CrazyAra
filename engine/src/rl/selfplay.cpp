@@ -120,7 +120,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         }
         if (!isQuickSearch && !exporter->is_file_full()) {
             sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
-            exporter->save_sample(position, evalInfo, size_t(position->game_ply()));
+            exporter->save_sample(position, evalInfo);
             ++generatedSamples;
         }
         StateInfo* newState = new StateInfo;
@@ -136,7 +136,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
     while(!leadsToTerminal);
 
     // export all training samples of the generated game
-    exporter->export_game_samples(get_terminal_node_result(nextRoot), size_t(position->game_ply()));
+    exporter->export_game_samples(get_terminal_node_result(nextRoot));
 
     set_game_result_to_pgn(nextRoot);
     write_game_to_pgn(filenamePGNSelfplay, verbose);

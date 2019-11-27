@@ -28,9 +28,9 @@
 #include <inttypes.h>
 #include "../util/communication.h"
 
-void TrainDataExporter::save_sample(const Board *pos, const EvalInfo& eval, size_t idxOffset)
+void TrainDataExporter::save_sample(const Board *pos, const EvalInfo& eval)
 {
-    if (startIdx+idxOffset >= numberSamples) {
+    if (startIdx+curSampleIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
@@ -38,6 +38,7 @@ void TrainDataExporter::save_sample(const Board *pos, const EvalInfo& eval, size
     save_policy(eval.legalMoves, eval.policyProbSmall, pos->side_to_move());
     save_best_move_q(eval);
     save_side_to_move(pos->side_to_move());
+    ++curSampleIdx;
     // value will be set later in export_game_result()
     firstMove = false;
 }
@@ -70,15 +71,11 @@ void TrainDataExporter::save_side_to_move(Color col)
     }
 }
 
-void TrainDataExporter::export_game_samples(Result result, size_t plys)
+void TrainDataExporter::export_game_samples(Result result)
 {
     if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
-    }
-    if (startIdx+plys > numberSamples) {
-        plys -= startIdx+plys - numberSamples;
-        info_string("Adjust samples to export to", plys);
     }
 
     // game value update
@@ -93,7 +90,7 @@ void TrainDataExporter::export_game_samples(Result result, size_t plys)
     z5::types::ShapeType offsetPolicy = { startIdx, 0 };
     z5::multiarray::writeSubarray<float>(dPolicy, gamePolicy, offsetPolicy.begin());
 
-    startIdx += plys;
+    startIdx += curSampleIdx;
     gameIdx++;
     save_start_idx();
 }
@@ -104,7 +101,8 @@ TrainDataExporter::TrainDataExporter(const string& fileName, size_t numberChunks
     numberSamples(numberChunks * chunkSize),
     firstMove(true),
     gameIdx(0),
-    startIdx(0)
+    startIdx(0),
+    curSampleIdx(0)
 {
     // get handle to a File on the filesystem
     z5::filesystem::handle::File file(fileName);
@@ -131,6 +129,7 @@ bool TrainDataExporter::is_file_full()
 void TrainDataExporter::new_game()
 {
     firstMove = true;
+    curSampleIdx = 0;
 }
 
 void TrainDataExporter::save_planes(const Board *pos)
