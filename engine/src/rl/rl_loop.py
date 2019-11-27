@@ -201,13 +201,9 @@ class RLLoop:
         set_uci_param(self.proc, "Context", self.args.context)
         set_uci_param(self.proc, "Device_ID", self.args.device_id)
         if is_arena is True:
-            set_uci_param(self.proc, "Centi_Temperature", 50)
-            set_uci_param(self.proc, "Temperature_Moves", 15)
-            set_uci_param(self.proc, "Nodes", 800)
+            set_uci_param(self.proc, "Centi_Temperature", 60)
         else:
-            set_uci_param(self.proc, "Centi_Temperature", 100)
-            set_uci_param(self.proc, "Temperature_Moves", 15)
-            set_uci_param(self.proc, "Nodes", 800)
+            set_uci_param(self.proc, "Centi_Temperature", 80)
 
     def _read_output_arena(self):
         """
