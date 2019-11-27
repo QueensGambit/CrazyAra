@@ -33,49 +33,54 @@ using namespace std;
 
 void OptionsUCI::init(OptionsMap &o)
 {
-    o["UCI_Variant"]              << Option(availableVariants.front().c_str(), availableVariants);
-    o["Search_Type"]              << Option("mcts", {"mcts"});
-    o["Context"]                  << Option("gpu", {"cpu", "gpu"});
-    o["Device_ID"]                << Option(0, 0, 99999);
-    o["Batch_Size"]               << Option(8, 1, 8192);
-    o["Threads"]                  << Option(2, 1, 512);
-    o["Centi_CPuct_Init"]         << Option(250, 1, 99999);
-    o["CPuct_Base"]               << Option(19652, 1, 99999);
-    o["Centi_Dirichlet_Epsilon"]  << Option(25, 0, 99999);
-    o["Centi_Dirichlet_Alpha"]    << Option(20, 1, 99999);
-    o["Centi_U_Init"]             << Option(100, 0, 100);
-    o["Centi_U_Min"]              << Option(25, 0, 100);
-    o["U_Base"]                   << Option(1965, 0, 99999);
-    o["Centi_U_Init_Divisor"]     << Option(100, 1, 99999);
-    o["Centi_Q_Value_Weight"]     << Option(0, 0, 99999);
-    o["Centi_Q_Thresh_Init"]      << Option(50, 0, 100);
-    o["Centi_Q_Thresh_Max"]       << Option(90, 0, 100);
-    o["Q_Thresh_Base"]            << Option(1965, 0, 99999);
-    o["Max_Search_Depth"]         << Option(99, 1, 99999);
-    o["Centi_Temperature"]        << Option(80, 0, 99999);
-    o["Temperature_Moves"]        << Option(50, 0, 99999);
-    o["Centi_Temperature_Decay"]  << Option(92, 0, 100);
-    o["Virtual_Loss"]             << Option(3, 0, 99999);
-    o["Nodes"]                    << Option(600, 0, 99999);
-    o["Use_Raw_Network"]          << Option(false);
-    o["Enhance_Checks"]           << Option(false);
-    o["Enhance_Captures"]         << Option(false);
-    o["Use_Transposition_Table"]  << Option(true);
+    o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), availableVariants);
+    o["Search_Type"]                   << Option("mcts", {"mcts"});
+    o["Context"]                       << Option("gpu", {"cpu", "gpu"});
+    o["Device_ID"]                     << Option(0, 0, 99999);
+    o["Batch_Size"]                    << Option(8, 1, 8192);  // 8
+    o["Threads"]                       << Option(2, 1, 512);
+    o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
+    o["CPuct_Base"]                    << Option(19652, 1, 99999);
+    o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);
+    o["Centi_Dirichlet_Alpha"]         << Option(20, 1, 99999);
+    o["Centi_U_Init"]                  << Option(100, 0, 100);
+    o["Centi_U_Min"]                   << Option(25, 0, 100);
+    o["U_Base"]                        << Option(1965, 0, 99999);
+    o["Centi_U_Init_Divisor"]          << Option(100, 1, 99999);
+    o["Centi_Q_Value_Weight"]          << Option(0, 0, 99999);
+    o["Centi_Q_Thresh_Init"]           << Option(50, 0, 100);
+    o["Centi_Q_Thresh_Max"]            << Option(90, 0, 100);
+    o["Q_Thresh_Base"]                 << Option(1965, 0, 99999);
+    o["Max_Search_Depth"]              << Option(99, 1, 99999);
+    o["Centi_Temperature"]             << Option(80, 0, 99999);
+    o["Temperature_Moves"]             << Option(50, 0, 99999);
+    o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
+    o["Virtual_Loss"]                  << Option(3, 0, 99999);
+    o["Nodes"]                         << Option(800, 0, 99999);
+    o["Use_Raw_Network"]               << Option(false);
+    o["Enhance_Checks"]                << Option(false);
+    o["Enhance_Captures"]              << Option(false);
+    o["Use_Transposition_Table"]       << Option(true);
 #ifdef TENSORRT
-    o["Use_TensorRT"]             << Option(false);
+    o["Use_TensorRT"]                  << Option(false);
 #endif
-    o["Model_Directory"]          << Option("model/");
+    o["Model_Directory"]               << Option("model/");
 #ifdef USE_RL
-    o["Model_Directory_Contender"] << Option("model_contender/");
-    o["Selfplay_Number_Chunks"]    << Option(640, 1, 99999);
-    o["Selfplay_Chunk_Size"]       << Option(128, 1, 99999);
-//    o["Centi_Raw_Policy_Sampling"] << Option(5, 0, 100);
-    o["Milli_Policy_Sharpening_Thresh"]   << Option(3, 0, 100);
-    o["MeanInitPly"]                << Option(15, 0, 99999);
-    o["MaxInitPly"]                 << Option(30, 0, 99999);
+    o["Model_Directory_Contender"]     << Option("model_contender/");
+    o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
+    o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
+//    o["Centi_Raw_Policy_Sampling"]     << Option(2, 0, 100);
+    o["Milli_Policy_Clip_Thresh"]      << Option(3, 0, 100);
+    o["MeanInitPly"]                   << Option(15, 0, 99999);
+    o["MaxInitPly"]                    << Option(30, 0, 99999);
+    o["Quick_Nodes"]                   << Option(100, 0, 99999);
+    o["Centi_Quick_Probability"]       << Option(0, 0, 100);
+    o["Centi_Quick_Q_Value_Weight"]    << Option(70, 0, 99999);
+    o["Centi_Quick_Dirichlet_Epsilon"] << Option(0, 0, 99999);
+    o["Centi_Node_Random_Factor"]      << Option(10, 0, 100);
 #endif
-    o["Move_Overhead"]            << Option(50, 0, 5000);
-    o["Centi_Random_Move_Factor"] << Option(0, 0, 99);
+    o["Move_Overhead"]                 << Option(50, 0, 5000);
+    o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
 }
 
 void OptionsUCI::setoption(istringstream &is)

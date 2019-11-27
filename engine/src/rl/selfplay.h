@@ -33,7 +33,7 @@
 #include "gamepgn.h"
 #include "../manager/statesmanager.h"
 #include "tournamentresult.h"
-
+#include "../agents/config/rlsettings.h"
 
 #ifdef USE_RL
 class SelfPlay
@@ -43,6 +43,7 @@ private:
     MCTSAgent* mctsAgent;
     SearchLimits* searchLimits;
     PlaySettings* playSettings;
+    RLSettings* rlSettings;
     GamePGN gamePGN;
     TrainDataExporter* exporter;
     string filenamePGNSelfplay;
@@ -51,14 +52,16 @@ private:
     size_t gameIdx;
     float gamesPerMin;
     float samplesPerMin;
+    size_t backupNodes;
+    float backupDirichletEpsilon;
+    float backupQValueWeight;
 
     /**
      * @brief generate_game Generates a new game in self play mode
      * @param variant Current chess variant
      * @param states States manager for maintaining the states objects. Used for 3-fold repetition check.
-     * @param policySharpening Threshold which is applied after move selection before exporting the policy to undo dirichlet noise
      */
-    void generate_game(Variant variant, StatesManager* states, float policySharpening, bool verbose);
+    void generate_game(Variant variant, StatesManager* states, bool verbose);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
@@ -89,12 +92,31 @@ private:
     /**
      * @brief speed_statistic_report Updates the speed statistics and prints a summary to std-out
      */
-    void speed_statistic_report(float elapsedTimeMin, int generatedSamples);
+    void speed_statistic_report(float elapsedTimeMin, size_t generatedSamples);
 
     /**
      * @brief export_number_generated_games Creates a file which describes how many games have been generated in the newly created .zip-file
      */
     void export_number_generated_games() const;
+
+    /**
+     * @brief adjust_node_count Adjusts the amount of nodes to search based on rlSettings->nodeRandomFactor to increase playing variety
+     * @param searchLimits searchLimit struct to be modified
+     * @param randInt Randomly generated integer
+     */
+    void adjust_node_count(SearchLimits* searchLimits, int randInt);
+
+    /**
+     * @brief is_quick_search Checks if a quick search sould be done
+     * @return True for quick search else false
+     */
+    bool is_quick_search();
+
+    /**
+     * @brief reset_search_params Resets all search parameters to their initial values
+     * @param Signals if a quick search was done
+     */
+    void reset_search_params(bool isQuickSearch);
 
 public:
     /**
@@ -103,10 +125,9 @@ public:
      * @param mctsAgent MCTSAgent which is used during selfplay for game generation
      * @param searchLimits Search limit configuration struct
      * @param playSettings Playing setting configuration struct
-     * @param numberChunks Number of chunks for for one file in the exported data set
-     * @param chunkSize Size of a single chunk. The product of numberChunks and chunkSize is the number of samples in an export file.
+     * @param RLSettings Additional settings for reinforcement learning usage
      */
-    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings, size_t numberChunks, size_t chunkSize);
+    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings);
     ~SelfPlay();
 
     /**

@@ -34,9 +34,9 @@
 #include "../util/blazeutil.h"
 #include "../util/randomgen.h"
 
-SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
-                   size_t numberChunks, size_t chunkSize):
-    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0)
+SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings):
+    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), rlSettings(rlSettings),
+    gameIdx(0), gamesPerMin(0), samplesPerMin(0)
 {
     gamePGN.variant = "crazyhouse";
     gamePGN.event = "CrazyAra-SelfPlay";
@@ -45,10 +45,14 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     gamePGN.round = "?";
     gamePGN.is960 = false;
     this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
-                                           numberChunks, chunkSize);
+                                           rlSettings->numberChunks, rlSettings->chunkSize);
     filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");
     filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");
     fileNameGameIdx = string("gameIdx_") + mctsAgent->get_device_name() + string(".txt");
+
+    backupNodes = searchLimits->nodes;
+    backupQValueWeight = mctsAgent->get_q_value_weight();
+    backupDirichletEpsilon = mctsAgent->get_dirichlet_noise();
 }
 
 SelfPlay::~SelfPlay()
@@ -56,7 +60,31 @@ SelfPlay::~SelfPlay()
     delete exporter;
 }
 
-void SelfPlay::generate_game(Variant variant, StatesManager* states, float policySharpening, bool verbose)
+void SelfPlay::adjust_node_count(SearchLimits* searchLimits, int randInt)
+{
+    size_t maxRandomNodes = size_t(searchLimits->nodes * rlSettings->nodeRandomFactor);
+    if (maxRandomNodes != 0) {
+        searchLimits->nodes += (size_t(randInt) % maxRandomNodes) - maxRandomNodes / 2;
+    }
+}
+
+bool SelfPlay::is_quick_search() {
+    if (rlSettings->quickSearchProbability < 0.01f) {
+        return false;
+    }
+    return float(rand()) / RAND_MAX < rlSettings->quickSearchProbability;
+}
+
+void SelfPlay::reset_search_params(bool isQuickSearch)
+{
+    searchLimits->nodes = backupNodes;
+    if (isQuickSearch) {
+        mctsAgent->update_q_value_weight(backupQValueWeight);
+        mctsAgent->update_dirichlet_epsilon(backupDirichletEpsilon);
+    }
+}
+
+void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbose)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
 
@@ -70,26 +98,30 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, float polic
     Node* nextRoot;
     exporter->new_game();
 
-    srand(unsigned(int(time(0))));
+    srand(unsigned(int(time(nullptr))));
+    size_t generatedSamples = 0;
     do {
         searchLimits->startTime = now();
         const int randInt = rand();
-        searchLimits->nodes = 800 + (randInt % 80) - 40;
-        mctsAgent->perform_action(position, searchLimits, evalInfo);
+        const bool isQuickSearch = is_quick_search();
 
-        // sample from raw policy
-//        if (float(randInt) / RAND_MAX < rawSamplingProb && position->game_ply() <= int(temperatureMoves) / 2) {
-//            mctsAgent->selectMoveFromRawPolicy(evalInfo);
-//        }
+        if (isQuickSearch) {
+            searchLimits->nodes = rlSettings->quickSearchNodes;
+            mctsAgent->update_q_value_weight(rlSettings->quickSearchQValueWeight);
+            mctsAgent->update_dirichlet_epsilon(rlSettings->quickDirichletEpsilon);
+        }
+        adjust_node_count(searchLimits, randInt);
+        mctsAgent->perform_action(position, searchLimits, evalInfo);
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         nextRoot = mctsAgent->get_opponents_next_root();
 
         if (nextRoot != nullptr) {
             leadsToTerminal = nextRoot->is_terminal();
         }
-        if (!exporter->is_file_full()) {
-            sharpen_distribution(evalInfo.policyProbSmall, policySharpening);
+        if (!isQuickSearch && !exporter->is_file_full()) {
+            sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
             exporter->save_sample(position, evalInfo, size_t(position->game_ply()));
+            ++generatedSamples;
         }
         StateInfo* newState = new StateInfo;
         states->activeStates.push_back(newState);
@@ -99,6 +131,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, float polic
                                             *mctsAgent->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,
                                             leadsToTerminal && int(nextRoot->get_value()) == -1));
+        reset_search_params(isQuickSearch);
     }
     while(!leadsToTerminal);
 
@@ -112,7 +145,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, float polic
     // measure time statistics
     if (verbose) {
         const float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
-        speed_statistic_report(elapsedTimeMin, position->game_ply());
+        speed_statistic_report(elapsedTimeMin, generatedSamples);
     }
     ++gameIdx;
 }
@@ -200,7 +233,7 @@ void SelfPlay::reset_speed_statistics()
     samplesPerMin = 0;
 }
 
-void SelfPlay::speed_statistic_report(float elapsedTimeMin, int generatedSamples)
+void SelfPlay::speed_statistic_report(float elapsedTimeMin, size_t generatedSamples)
 {
     // compute running cummulative average
     gamesPerMin = (gameIdx * gamesPerMin + (1 / elapsedTimeMin)) / (gameIdx + 1);
@@ -231,12 +264,12 @@ void SelfPlay::go(size_t numberOfGames, StatesManager* states, float policySharp
 
     if (numberOfGames == 0) {
         while(!exporter->is_file_full()) {
-            generate_game(CRAZYHOUSE_VARIANT, states, policySharpening, false);
+            generate_game(CRAZYHOUSE_VARIANT, states, false);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(CRAZYHOUSE_VARIANT, states, policySharpening, true);
+            generate_game(CRAZYHOUSE_VARIANT, states, true);
         }
     }
     export_number_generated_games();
@@ -285,8 +318,6 @@ Board* init_board(Variant variant, StatesManager* states)
     return position;
 }
 
-#endif
-
 Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, StatesManager *states)
 {
     Board* position = init_board(variant, states);
@@ -323,3 +354,4 @@ size_t clip_ply(size_t ply, size_t maxPly)
     }
     return ply;
 }
+#endif

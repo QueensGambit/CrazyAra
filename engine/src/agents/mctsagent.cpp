@@ -104,6 +104,26 @@ string MCTSAgent::get_device_name() const
     return netSingle->get_device_name();
 }
 
+float MCTSAgent::get_dirichlet_noise() const
+{
+    return searchSettings->dirichletEpsilon;
+}
+
+float MCTSAgent::get_q_value_weight() const
+{
+    return searchSettings->qValueWeight;
+}
+
+void MCTSAgent::update_q_value_weight(float value)
+{
+    searchSettings->qValueWeight = value;
+}
+
+void MCTSAgent::update_dirichlet_epsilon(float value)
+{
+    searchSettings->dirichletEpsilon = value;
+}
+
 size_t MCTSAgent::init_root_node(Board *pos)
 {
     size_t nodesPreSearch;
@@ -265,16 +285,17 @@ void MCTSAgent::clear_game_history()
     lastValueEval = -1.0f;
 }
 
-void MCTSAgent::selectMoveFromRawPolicy(EvalInfo &evalInfo)
+void MCTSAgent::selectMoveFromRawPolicy(EvalInfo &evalInfo, float temp)
 {
     DynamicVector<float> rawPolicy = retrieve_raw_policy(rootNode);
+    //  make sure the corresponding node has at least 2 visits
     DynamicVector<float> visits = retrieve_visits(rootNode);
     for (size_t idx = 0; idx < visits.size(); ++idx) {
         if (visits[idx] < 2) {
             rawPolicy[idx] = 0;
         }
     }
-    rawPolicy /= sum(rawPolicy);
+    apply_temperature(rawPolicy, temp);
     evalInfo.bestMove = evalInfo.legalMoves[random_choice(rawPolicy)];
 }
 
@@ -301,8 +322,10 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         info_string("The given position has no legal moves");
     }
     else {
-        info_string("apply dirichlet noise");
-        rootNode->apply_dirichlet_noise_to_prior_policy();
+        if (size_t(searchSettings->dirichletEpsilon) != 0) {
+            info_string("apply dirichlet noise");
+            rootNode->apply_dirichlet_noise_to_prior_policy();
+        }
 
         if (rootNode->get_parent_node() == nullptr) {
             rootNode->sort_child_nodes_by_probabilities();

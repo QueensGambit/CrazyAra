@@ -57,6 +57,9 @@ CrazyAra::CrazyAra()
 {
     searchSettings = nullptr;  // will be initialized in init_search_settings()
     playSettings = nullptr;    // will be initialized in init_play_settings()
+#ifdef USE_RL
+    rlSettings = nullptr;      // will be initialized in init_rl_settings()
+#endif
     netSingle = nullptr;       // will be initialized in is_ready()
     states = new StatesManager();
 }
@@ -65,6 +68,9 @@ CrazyAra::~CrazyAra()
 {
     delete searchSettings;
     delete playSettings;
+#ifdef USE_RL
+    delete rlSettings;
+#endif
     delete netSingle;
     delete states;
 }
@@ -287,10 +293,10 @@ void CrazyAra::selfplay(istringstream &is)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
-    SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
+    SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, rlSettings);
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, states, float(Options["Milli_Policy_Sharpening_Thresh"]/ 1000.0));
+    selfPlay.go(numberOfGames, states, float(Options["Milli_Policy_Clip_Thresh"]/ 1000.0));
     cout << "readyok" << endl;
 }
 
@@ -298,7 +304,7 @@ void CrazyAra::arena(istringstream &is)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
-    SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, size_t(Options["Selfplay_Number_Chunks"]), size_t(Options["Selfplay_Chunk_Size"]));
+    SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, rlSettings);
     NeuralNetAPI* netSingle = create_new_net_single(Options["Model_Directory_Contender"]);
     NeuralNetAPI** netBatches = create_new_net_batches(Options["Model_Directory_Contender"]);
     MCTSAgent* mctsAgentContender = create_new_mcts_agent(netSingle, netBatches, states);
@@ -317,6 +323,19 @@ void CrazyAra::arena(istringstream &is)
     delete mctsAgentContender;
     delete netSingle;
 }
+
+void CrazyAra::init_rl_settings()
+{
+    rlSettings = new RLSettings();
+    rlSettings->numberChunks = Options["Selfplay_Number_Chunks"];
+    rlSettings->chunkSize = Options["Selfplay_Chunk_Size"];
+    rlSettings->quickSearchNodes = Options["Quick_Nodes"];
+    rlSettings->quickSearchProbability = Options["Centi_Quick_Probability"] / 100.0f;
+    rlSettings->quickSearchQValueWeight = Options["Centi_Quick_Q_Value_Weight"] / 100.0f;
+    rlSettings->lowPolicyClipThreshold = Options["Milli_Policy_Clip_Thresh"] / 1000.0f;
+    rlSettings->quickDirichletEpsilon = Options["Centi_Quick_Dirichlet_Epsilon"] / 100.0f;
+    rlSettings->nodeRandomFactor = Options["Centi_Node_Random_Factor"] / 100.0f;
+}
 #endif
 
 void CrazyAra::init()
@@ -333,6 +352,9 @@ bool CrazyAra::is_ready()
     if (!networkLoaded) {
         init_search_settings();
         init_play_settings();
+#ifdef USE_RL
+        init_rl_settings();
+#endif
         netSingle = create_new_net_single(Options["Model_Directory"]);
         NeuralNetAPI** netBatches = create_new_net_batches(Options["Model_Directory"]);
         mctsAgent = create_new_mcts_agent(netSingle, netBatches, states);

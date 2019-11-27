@@ -40,6 +40,7 @@
 #include "manager/statesmanager.h"
 #ifdef USE_RL
 #include "rl/selfplay.h"
+#include "agents/config/rlsettings.h"
 #endif
 
 class CrazyAra
@@ -75,6 +76,7 @@ private:
 
 #ifdef USE_RL
     MCTSAgent* mctsAgentContender;
+    RLSettings* rlSettings;
 #endif
     /**
      * @brief engine_info Returns a string about the engine version and authors
@@ -185,6 +187,11 @@ public:
      * @param is Number of games to generate
      */
     void arena(istringstream &is);
+
+    /**
+     * @brief init_rl_settings Initializes the rl settings used for the mcts agent with the current UCI parameters
+     */
+    void init_rl_settings();
 #endif
 
     /**

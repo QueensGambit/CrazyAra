@@ -177,8 +177,9 @@ public:
      * @brief selectMoveFromRawPolicy Samples a move from the raw root node policy which has been visited at least twice.
      * The move will be set as evalInfo.bestMove
      * @param evalInfo Evaluation information
+     * @param temp Temperature which is used for sampling
      */
-    void selectMoveFromRawPolicy(EvalInfo& evalInfo);
+    void selectMoveFromRawPolicy(EvalInfo& evalInfo, float temp);
 
     /**
      * @brief is_policy_map Checks if the current loaded network uses policy map representation.
@@ -197,6 +198,22 @@ public:
     Node* get_root_node() const;
 
     string get_device_name() const;
+
+    float get_dirichlet_noise() const;
+
+    float get_q_value_weight() const;
+
+    /**
+     * @brief update_q_value_weight Updates the Q-value weights for the search (used for quick search)
+     * @param value New value to set
+     */
+    void update_q_value_weight(float value);
+
+    /**
+     * @brief update_dirichlet_epsilon Updates the amount of dirichlet noise (used for quick search)
+     * @param value New value to set
+     */
+    void update_dirichlet_epsilon(float value);
 };
 
 #endif // MCTSAGENT_H
