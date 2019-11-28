@@ -66,8 +66,7 @@ void RawNetAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
 
     NDArray probOutputs = net->predict(begin(inputPlanes), value);
 
-    auto predicted = probOutputs.ArgmaxChannel();
-    predicted.WaitToRead();
+    probOutputs.WaitToRead();
 
     evalInfo.policyProbSmall.resize(evalInfo.legalMoves.size());
     get_probs_of_move_list(0, &probOutputs, evalInfo.legalMoves, pos->side_to_move(),
