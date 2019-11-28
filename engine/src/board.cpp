@@ -148,6 +148,11 @@ bool Board::is_50_move_rule_draw() const
 
 bool Board::is_terminal() const
 {
+    // 3-fold-repetition and 50 move rul draw is handled outside move generation
+    if (can_claim_3fold_repetition() || is_50_move_rule_draw()) {
+        return true;
+    }
+
     for (const ExtMove move : MoveList<LEGAL>(*this)) {
         return false;
     }
