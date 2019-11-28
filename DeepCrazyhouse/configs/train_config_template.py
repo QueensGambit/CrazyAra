@@ -15,7 +15,7 @@ train_config = {
     # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
     "context": "gpu",
     "cpu_count": 4,
-    "device_id": 0,
+    "device_id": 11,
     # set a specific seed value for reproducibility
     "seed": 42,
 
