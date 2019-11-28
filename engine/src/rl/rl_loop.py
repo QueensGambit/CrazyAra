@@ -39,6 +39,8 @@ def read_output(proc, last_line=b"readyok\n", check_error=False):
         if check_error and line == b'':
             error = proc.stderr.readline()
             logging.error(error)
+            if error == b'':
+                raise Exception("Exception was raised")
         if line == last_line:
             break
 
