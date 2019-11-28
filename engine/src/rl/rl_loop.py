@@ -38,9 +38,8 @@ def read_output(proc, last_line=b"readyok\n", check_error=False):
         # print(line)
         if check_error and line == b'':
             error = proc.stderr.readline()
-            logging.error(error)
-            if error == b'':
-                raise Exception("Exception was raised")
+            if error != b'':
+                logging.error(error)
         if line == last_line:
             break
 
@@ -573,14 +572,13 @@ def main():
     rl_loop.initialize()
 
     while True:
-        rl_loop.generate_games()
-        rl_loop.compress_dataset()
-
         if args.trainer:
             rl_loop.check_for_enough_train_data(args.nn_update_files)
         else:
             rl_loop.check_for_new_model()
 
+        rl_loop.generate_games()
+        rl_loop.compress_dataset()
 
 if __name__ == "__main__":
     main()
