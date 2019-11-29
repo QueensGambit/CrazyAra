@@ -29,6 +29,7 @@
 #define BOARD_H
 
 #include <position.h>
+#include "domain/crazyhouse/constants.h"
 
 class Board : public Position
 {
@@ -121,5 +122,18 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
  */
 bool leads_to_terminal(const Board& pos, Move m);
 
+/**
+ * @brief get_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
+ * @param pos Board position
+ * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
+ */
+Result get_result(const Board& pos);
+
+/**
+ * @brief is_win Return true if the given result is a win, else false
+ * @param res Result
+ * @return Bool
+ */
+bool is_win(Result res);
 
 #endif // BOARD_H

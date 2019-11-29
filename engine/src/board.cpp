@@ -275,3 +275,24 @@ bool leads_to_terminal(const Board &pos, Move m)
     posCheckTerminal.do_move(m, *(new StateInfo));
     return posCheckTerminal.is_terminal();
 }
+
+Result get_result(const Board& pos)
+{
+    if (pos.is_terminal()) {
+        if (pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition()) {
+            return DRAWN;
+        }
+        if (pos.side_to_move() == BLACK) {
+            return WHITE_WIN;
+        }
+        else {
+            return BLACK_WIN;
+        }
+    }
+    return NO_RESULT;
+}
+
+bool is_win(Result res)
+{
+    return res == WHITE_WIN || res == BLACK_WIN;
+}

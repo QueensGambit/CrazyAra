@@ -247,8 +247,8 @@ void MCTSAgent::delete_old_tree()
 void MCTSAgent::delete_game_nodes()
 {
     for (Node* node: gameNodes) {
-        delete node;
         mapWithMutex->hashTable->erase(node->hash_key());
+        delete node;
     }
     gameNodes.clear();
 }
@@ -260,13 +260,13 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
         info_string("apply move to tree");
         if (ownMove) {
             opponentsNextRoot = pick_next_node(move, rootNode);
-            if (opponentsNextRoot != nullptr) { // && opponentsNextRoot->has_nn_results()) {
+            if (opponentsNextRoot != nullptr) {
                 gameNodes.push_back(opponentsNextRoot);
             }
         }
         else {
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
-            if (ownNextRoot != nullptr && ownNextRoot->has_nn_results()) {
+            if (ownNextRoot != nullptr) {
                 gameNodes.push_back(ownNextRoot);
             }
         }
@@ -281,6 +281,8 @@ void MCTSAgent::clear_game_history()
     assert(mapWithMutex->hashTable->size() == 0);
     mapWithMutex->hashTable->clear();
     oldestRootNode = nullptr;
+    ownNextRoot = nullptr;
+    opponentsNextRoot = nullptr;
     rootNode = nullptr;
     lastValueEval = -1.0f;
 }
@@ -322,7 +324,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         info_string("The given position has no legal moves");
     }
     else {
-        if (searchSettings->dirichletEpsilon != 0) {
+        if (searchSettings->dirichletEpsilon > 0.009f) {
             info_string("apply dirichlet noise");
             rootNode->apply_dirichlet_noise_to_prior_policy();
         }

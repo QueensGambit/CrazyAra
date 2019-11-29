@@ -31,7 +31,7 @@ Node* pick_next_node(Move move, const Node* parentNode)
 {
     if (parentNode != nullptr) {
         for (Node* node : parentNode->get_child_nodes()) {
-            if (node->get_move() == move && node->is_expanded()) {
+            if (node->get_move() == move && node->is_expanded() && node->has_nn_results()) {
                 return node;
             }
         }

@@ -81,9 +81,9 @@ private:
 
     /**
      * @brief set_game_result Sets the game result to the gamePGN object
-     * @param terminalNode Terminal node of the game
+     * @param res Game result
      */
-    void set_game_result_to_pgn(const Node* terminalNode);
+    void set_game_result_to_pgn(Result res);
 
     /**
      * @brief reset_speed_statistics Resets the interal measurements for gameIdx, gamesPerMin and samplesPerMin

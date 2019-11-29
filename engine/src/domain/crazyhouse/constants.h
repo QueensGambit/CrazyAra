@@ -120,6 +120,7 @@ enum Result {
     DRAWN = 0,
     WHITE_WIN,
     BLACK_WIN,
+    NO_RESULT,
 };
 
 const std::string result[] = {"1/2-1/2", "1-0", "0-1"};

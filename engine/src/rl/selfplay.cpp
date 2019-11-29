@@ -94,8 +94,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
     Board* position = init_starting_pos_from_raw_policy(*rawAgent, ply, gamePGN, variant, states);
     EvalInfo evalInfo;
     states->swap_states();
-    bool leadsToTerminal = false;
-    Node* nextRoot;
+    Result gameResult;
     exporter->new_game();
 
     srand(unsigned(int(time(nullptr))));
@@ -113,11 +112,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         adjust_node_count(searchLimits, randInt);
         mctsAgent->perform_action(position, searchLimits, evalInfo);
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
-        nextRoot = mctsAgent->get_opponents_next_root();
 
-        if (nextRoot != nullptr) {
-            leadsToTerminal = nextRoot->is_terminal();
-        }
         if (!isQuickSearch && !exporter->is_file_full()) {
             sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
             exporter->save_sample(position, evalInfo);
@@ -126,19 +121,20 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         StateInfo* newState = new StateInfo;
         states->activeStates.push_back(newState);
         position->do_move(evalInfo.bestMove, *(newState));
+        gameResult = get_result(*position);
         gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                             false,
                                             *mctsAgent->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,
-                                            leadsToTerminal && int(nextRoot->get_value()) == -1));
+                                            is_win(gameResult)));
         reset_search_params(isQuickSearch);
     }
-    while(!leadsToTerminal);
+    while(gameResult == NO_RESULT);
 
     // export all training samples of the generated game
-    exporter->export_game_samples(get_terminal_node_result(nextRoot));
+    exporter->export_game_samples(gameResult);
 
-    set_game_result_to_pgn(nextRoot);
+    set_game_result_to_pgn(gameResult);
     write_game_to_pgn(filenamePGNSelfplay, verbose);
     clean_up(gamePGN, mctsAgent, states, position);
 
@@ -156,14 +152,12 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     gamePGN.black = blackPlayer->get_name();
     Board* position = init_board(variant, states);
     EvalInfo evalInfo;
-    bool isTerminal = false;
 
     MCTSAgent* activePlayer;
     MCTSAgent* passivePlayer;
     // preserve the current active states
     states->swap_states();
-
-    const Node* nextRoot;
+    Result gameResult;
     do {
         searchLimits->startTime = now();
         if (position->side_to_move() == WHITE) {
@@ -179,23 +173,19 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
         if (position->plies_from_null() != 0) {
             passivePlayer->apply_move_to_tree(evalInfo.bestMove, false);
         }
-        nextRoot = activePlayer->get_opponents_next_root();
-        if (nextRoot != nullptr) {
-            isTerminal = nextRoot->is_terminal();
-        }
         StateInfo* newState = new StateInfo;
         states->activeStates.push_back(newState);
         position->do_move(evalInfo.bestMove, *(newState));
+        gameResult = get_result(*position);
         gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                             false,
                                             *activePlayer->get_root_node()->get_pos(),
                                             evalInfo.legalMoves,
-                                            isTerminal && int(nextRoot->get_value()) == -1));
+                                            is_win(gameResult)));
     }
-    while(!isTerminal);
-    set_game_result_to_pgn(nextRoot);
+    while(gameResult == NO_RESULT);
+    set_game_result_to_pgn(gameResult);
     write_game_to_pgn(filenamePGNArena, verbose);
-    Result gameResult = get_terminal_node_result(nextRoot);
     clean_up(gamePGN, whitePlayer, states, position);
     blackPlayer->clear_game_history();
     return gameResult;
@@ -221,9 +211,9 @@ void SelfPlay::write_game_to_pgn(const std::string& pngFileName, bool verbose)
     pgnFile.close();
 }
 
-void SelfPlay::set_game_result_to_pgn(const Node* terminalNode)
+void SelfPlay::set_game_result_to_pgn(Result res)
 {
-    gamePGN.result = result[get_terminal_node_result(terminalNode)];
+    gamePGN.result = result[res];
 }
 
 void SelfPlay::reset_speed_statistics()
