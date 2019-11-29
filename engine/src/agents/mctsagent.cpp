@@ -322,7 +322,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         info_string("The given position has no legal moves");
     }
     else {
-        if (size_t(searchSettings->dirichletEpsilon) != 0) {
+        if (searchSettings->dirichletEpsilon != 0) {
             info_string("apply dirichlet noise");
             rootNode->apply_dirichlet_noise_to_prior_policy();
         }
