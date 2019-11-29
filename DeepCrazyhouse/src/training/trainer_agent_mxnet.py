@@ -262,7 +262,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         """
         # Too many local variables (44/15) - Too many branches (18/12) - Too many statements (108/50)
         # set a custom seed for reproducibility
-        random.seed(self._seed)
+        if self._seed is not None:
+            random.seed(self._seed)
         # define and initialize the variables which will be used
         self.t_s = time()
         # track on how many batches have been processed in this epoch

@@ -21,7 +21,7 @@ from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, a
     remove_no_sparse_cross_entropy, prepare_policy
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, LinearWarmUp,\
     CosineAnnealingSchedule
-import random
+
 
 def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filename, params_filename, cwd):
     """
@@ -42,10 +42,6 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
     # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
     ctx = mx.gpu(train_config["device_id"]) if train_config["context"] == "gpu" else mx.cpu()
     # set a specific seed value for reproducibility
-
-    # Fixing the random seed
-    mx.random.seed(train_config["seed"])
-
     nb_parts = len(glob.glob(main_config["planes_train_dir"] + '**/*.zip'))
     logging.info("number parts: %d" % nb_parts)
 
@@ -134,7 +130,7 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
                                     metrics=metrics, use_spike_recovery=train_config["use_spike_recovery"],
                                     max_spikes=train_config["max_spikes"],
                                     spike_thresh=train_config["spike_thresh"],
-                                    seed=random.randint(0, 1e6), val_loss_factor=train_config["val_loss_factor"],
+                                    seed=None, val_loss_factor=train_config["val_loss_factor"],
                                     policy_loss_factor=train_config["policy_loss_factor"],
                                     select_policy_from_plane=train_config["select_policy_from_plane"],
                                     discount=train_config["discount"],
