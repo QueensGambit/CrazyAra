@@ -91,13 +91,14 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
     size_t ply = size_t(random_exponential<float>(1.0f/playSettings->meanInitPly) + 0.5f);
     ply = clip_ply(ply, playSettings->maxInitPly);
 
-    Board* position = init_starting_pos_from_raw_policy(*rawAgent, ply, gamePGN, variant, states);
+    srand(unsigned(int(time(nullptr))));
+    Board* position = init_starting_pos_from_raw_policy(*rawAgent, ply, gamePGN, variant, states,
+                                                        rlSettings->rawPolicyProbabilityTemperature);
     EvalInfo evalInfo;
     states->swap_states();
     Result gameResult;
     exporter->new_game();
 
-    srand(unsigned(int(time(nullptr))));
     size_t generatedSamples = 0;
     do {
         searchLimits->startTime = now();
@@ -308,13 +309,15 @@ Board* init_board(Variant variant, StatesManager* states)
     return position;
 }
 
-Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, StatesManager *states)
+Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, StatesManager *states,
+                                         float rawPolicyProbTemp)
 {
     Board* position = init_board(variant, states);
 
     for (size_t ply = 0; ply < plys; ++ply) {
         EvalInfo eval;
         rawAgent.evaluate_board_state(position, eval);
+        apply_raw_policy_temp(eval, rawPolicyProbTemp);
         const size_t moveIdx = random_choice(eval.policyProbSmall);
         eval.bestMove = eval.legalMoves[moveIdx];
 
@@ -333,7 +336,6 @@ Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, Gam
             position->do_move(eval.bestMove, *(newState));
         }
     }
-
     return position;
 }
 
@@ -345,3 +347,18 @@ size_t clip_ply(size_t ply, size_t maxPly)
     return ply;
 }
 #endif
+
+void apply_raw_policy_temp(EvalInfo &eval, float rawPolicyProbTemp)
+{
+    if (float(rand()) / RAND_MAX < rawPolicyProbTemp) {
+        float temp = 2.0f;
+        const float prob = float(rand()) / INT_MAX;
+        if (prob < 0.05f) {
+            temp = 10.0f;
+        }
+        else if (prob < 0.25f) {
+            temp = 5.0f;
+        }
+        apply_temperature(eval.policyProbSmall, temp);
+    }
+}

@@ -51,6 +51,9 @@ struct RLSettings
     float quickSearchQValueWeight;
     // dirchlet noise applied for quick search (recommended is 0, for maximum strength)
     float quickDirichletEpsilon;
+    // probability for applying a temperature on the raw policy for generating an opening position.
+    // (5% - Temp: 10, 20% - Temp: 5, 75% - Temp: 2)
+    float rawPolicyProbabilityTemperature;
 };
 
 #endif // RLSETTINGS_H

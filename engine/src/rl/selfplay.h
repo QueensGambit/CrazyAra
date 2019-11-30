@@ -175,8 +175,20 @@ Board* init_board(Variant variant, StatesManager* states);
  * @param rawAgent Handle to the raw agent
  * @param plys Number of plys to generate
  * @param gamePGN Game pgn struct where the moves will be stored
+ * @param rawPolicyProbTemp Probability for which a temperature scaling > 1.0f is applied
  */
-Board* init_starting_pos_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, StatesManager* states);
+Board* init_starting_pos_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, StatesManager* states,
+                                         float rawPolicyProbTemp);
+
+/**
+ * @brief apply_raw_policy_temp Applies a temperature scaling to the policyProbSmall of the eval struct.
+ * The temperature is applied given a certain probability.
+ * If this is the case in 5% of the times a temperature of 10 and in 20% a temperature of 5, and for the remaining a temperature of 2 is applied.
+ * This is meant to flatten the policy distribution.
+ * @param eval Evaluation struct
+ * @param rawPolicyProbTemp Probability for which a temperature scaling > 1.0f is applied
+ */
+void apply_raw_policy_temp(EvalInfo& eval, float rawPolicyProbTemp);
 
 /**
  * @brief clip_ply Clips a given ply touse maxPly as the maximum value. In case of an entry greater than max it is uniformly sampled from

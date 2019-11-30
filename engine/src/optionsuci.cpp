@@ -69,7 +69,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Model_Directory_Contender"]     << Option("model_contender/");
     o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
     o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
-//    o["Centi_Raw_Policy_Sampling"]     << Option(2, 0, 100);
+    o["Centi_Raw_Prob_Temperature"]    << Option(5, 0, 100);
     o["Milli_Policy_Clip_Thresh"]      << Option(3, 0, 100);
     o["MeanInitPly"]                   << Option(15, 0, 99999);
     o["MaxInitPly"]                    << Option(30, 0, 99999);

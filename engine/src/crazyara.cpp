@@ -335,6 +335,7 @@ void CrazyAra::init_rl_settings()
     rlSettings->lowPolicyClipThreshold = Options["Milli_Policy_Clip_Thresh"] / 1000.0f;
     rlSettings->quickDirichletEpsilon = Options["Centi_Quick_Dirichlet_Epsilon"] / 100.0f;
     rlSettings->nodeRandomFactor = Options["Centi_Node_Random_Factor"] / 100.0f;
+    rlSettings->rawPolicyProbabilityTemperature = Options["Centi_Raw_Prob_Temperature"] / 100.0f;
 }
 #endif
 
