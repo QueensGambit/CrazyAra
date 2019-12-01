@@ -346,7 +346,6 @@ size_t clip_ply(size_t ply, size_t maxPly)
     }
     return ply;
 }
-#endif
 
 void apply_raw_policy_temp(EvalInfo &eval, float rawPolicyProbTemp)
 {
@@ -362,3 +361,4 @@ void apply_raw_policy_temp(EvalInfo &eval, float rawPolicyProbTemp)
         apply_temperature(eval.policyProbSmall, temp);
     }
 }
+#endif
