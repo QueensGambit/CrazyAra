@@ -31,10 +31,13 @@ def get_act(data, act_type, name):
         return mx.sym.Activation(data=data, act_type=act_type, name=name)
     if act_type == "lrelu":
         return mx.sym.LeakyReLU(data=data, slope=0.2, act_type='leaky', name=name)
+    if act_type == "hard_sigmoid":
+        return mx.sym.clip(data=data + 3.0, a_min=0.0, a_max=6.0, name="relu6") / 6.0
+
     raise NotImplementedError
 
 
-def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu"):
+def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
     """
     Squeeze excitation block.
     :param data:
@@ -42,6 +45,8 @@ def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu"):
     :param name: Prefix name of the block
     :param ratio: Ration for the number of neurons to use.
     :param act_type: Activation function to use
+    :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
+     MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
     :return: mxnet symbol
     """
     avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_pool0')
@@ -49,7 +54,11 @@ def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu"):
     fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=channels // ratio, name=name + '_fc0')
     act1 = get_act(data=fc1, act_type=act_type, name=name + '_act0')
     fc2 = mx.symbol.FullyConnected(data=act1, num_hidden=channels, name=name + '_fc1')
-    act2 = get_act(data=fc2, act_type='sigmoid', name=name + '_act1')
+    if use_hard_sigmoid:
+        act_type = 'hard_sigmoid'
+    else:
+        act_type = 'sigmoid'
+    act2 = get_act(data=fc2, act_type=act_type, name=name + '_act1')
 
     return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
 
