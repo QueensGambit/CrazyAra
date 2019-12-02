@@ -115,7 +115,9 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
 
         if (!isQuickSearch && !exporter->is_file_full()) {
-            sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
+            if (rlSettings->lowPolicyClipThreshold > 0) {
+                sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
+            }
             exporter->save_sample(position, evalInfo);
             ++generatedSamples;
         }
@@ -247,7 +249,7 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
-void SelfPlay::go(size_t numberOfGames, StatesManager* states, float policySharpening)
+void SelfPlay::go(size_t numberOfGames, StatesManager* states)
 {
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();

@@ -296,7 +296,7 @@ void CrazyAra::selfplay(istringstream &is)
     SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, rlSettings);
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, states, float(Options["Milli_Policy_Clip_Thresh"]/ 1000.0));
+    selfPlay.go(numberOfGames, states);
     cout << "readyok" << endl;
 }
 

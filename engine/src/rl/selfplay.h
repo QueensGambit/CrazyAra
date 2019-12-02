@@ -134,9 +134,8 @@ public:
     /**
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
-     * @param policySharpening Threshold which is applied after move selection before exporting the policy to undo dirichlet noise
      */
-    void go(size_t numberOfGames, StatesManager* states, float policySharpening);
+    void go(size_t numberOfGames, StatesManager* states);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
