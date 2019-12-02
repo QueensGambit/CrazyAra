@@ -39,8 +39,7 @@ def mix_conv(data, name, channels, kernels):
     for kernel in kernels:
         conv_layers.append(mx.sym.Convolution(data=data, num_filter=channels//num_splits, kernel=kernel, pad=kernel//2,
                                    no_bias=True, name=name + '_conv3'))
-
-    return mx.sym.concat(conv_layers)
+    return mx.sym.Concat(*[conv_layers[0], conv_layers[1]], name=name + '_concat')
 
 
 def preact_residual_dmixconv_block(data, channels, channels_operating, name, kernels=None, act_type='relu', use_se=True):
@@ -116,7 +115,7 @@ def policy_head(data, channels, act_type, channels_policy_head, select_policy_fr
         policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
         policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')
         if use_se:
-            out = channel_squeeze_excitation(out, channels, name='policy_se', ratio=4, act_type=act_type)
+            policy_out = channel_squeeze_excitation(policy_out, channels, name='policy_se', ratio=4, act_type=act_type)
         policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(3, 3), pad=(1, 1),
                                         no_bias=True, name="policy_conv1")
         policy_out = mx.sym.flatten(data=policy_out, name='policy_out')
@@ -138,7 +137,7 @@ def policy_head(data, channels, act_type, channels_policy_head, select_policy_fr
 
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
                           channels_policy_head=81, dropout_ratio=0.15, select_policy_from_plane=True, use_se=True,
-                          res_blocks=13):
+                          res_blocks=13, n_labels=4992):
     """
     RISEv3 architecture
     :param channels:
@@ -155,22 +154,21 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     # get the input data
     data = mx.sym.Variable(name='data')
 
-    kernel_size = 3
-
     data = get_stem(data=data, channels=channels, act_type=act_type)
     cur_channels = channels_operating_init
     for idx in range(res_blocks):
         data = preact_residual_dmixconv_block(data=data, channels=channels, channels_operating=cur_channels,
-                                              kernels=[3,5], name='dconv_%d' % 0)
-    cur_channels += channel_expansion
-    data = mx.sym.BatchNorm(data=data, name='stem_bn0')
-    data = get_act(data=data, act_type=act_type, name='stem_act0')
+                                              kernels=[3, 5], name='dconv_%d' % idx)
+        cur_channels += channel_expansion
+    # return data
+    data = mx.sym.BatchNorm(data=data, name='stem_bn1')
+    data = get_act(data=data, act_type=act_type, name='stem_act1')
 
     if dropout_ratio != 0:
         data = mx.sym.Dropout(data, p=dropout_ratio)
 
     value_out = value_head(data=data, act_type=act_type, use_se=use_se, channels_value_head=channels)
-    policy_out = policy_head(data=data, act_type=act_type,channels_policy_head=channels_policy_head,
+    policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
                              select_policy_from_plane=select_policy_from_plane, use_se=use_se, channels=channels)
     # group value_out and policy_out together
     sym = mx.symbol.Group([value_out, policy_out])
