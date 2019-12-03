@@ -32,7 +32,7 @@ def get_act(data, act_type, name):
     if act_type == "lrelu":
         return mx.sym.LeakyReLU(data=data, slope=0.2, act_type='leaky', name=name)
     if act_type == "hard_sigmoid":
-        return mx.sym.clip(data=data + 3.0, a_min=0.0, a_max=6.0, name="relu6") / 6.0
+        return mx.sym.clip(data=data + 3.0, a_min=0.0, a_max=6.0, name=name) / 6.0
 
     raise NotImplementedError
 
