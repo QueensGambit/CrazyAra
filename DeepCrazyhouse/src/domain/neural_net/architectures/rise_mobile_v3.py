@@ -28,11 +28,11 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.rise_mobile_symbol impor
 def mix_conv(data, name, channels, kernels):
     """
     Mix depth-wise convolution layers
-    :param data:
-    :param name:
-    :param channels:
-    :param kernels:
-    :return:
+    :param data: Input data
+    :param name: Name of the block
+    :param channels: Number of convolutional channels
+    :param kernels: List of kernel sizes to use
+    :return: symbol
     """
     num_splits = len(kernels)
     conv_layers = []
@@ -51,7 +51,7 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     :param channels: Number of filters for all CNN-layers
     :param name: Name for the residual block
     :param act_type: Activation function to use
-    :return:
+    :return: symbol
     """
     bn1 = mx.sym.BatchNorm(data=data, name=name + '_bn1')
     conv1 = mx.sym.Convolution(data=bn1, num_filter=channels_operating, kernel=(1, 1), pad=(0, 0), no_bias=True,
@@ -67,9 +67,9 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     conv3 = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
                                pad=(0, 0), no_bias=True, name=name + '_conv3')
     bn4 = mx.sym.BatchNorm(data=conv3, name=name + '_bn4')
-    sum = mx.sym.broadcast_add(data, bn4, name=name + '_add')
+    out_sum = mx.sym.broadcast_add(data, bn4, name=name + '_add')
 
-    return sum
+    return out_sum
 
 
 def get_stem(data, channels, act_type):
@@ -78,7 +78,7 @@ def get_stem(data, channels, act_type):
     :param data:
     :param channels:
     :param act_type:
-    :return:
+    :return: symbol
     """
     body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(3, 3), pad=(1, 1),
                               no_bias=True, name="stem_conv0")
@@ -90,6 +90,16 @@ def get_stem(data, channels, act_type):
 
 def value_head(data, channels_value_head=256, value_kernelsize=1, act_type='relu', value_fc_size=256,
                grad_scale_value=0.01, use_se=False):
+    """
+    Value head of the network which outputs the value evaluation. A floating point number in the range [-1,+1].
+    :param data: Input data
+    :param channels_value_head
+    :param value_kernelsize Kernel size to use for the convolutional layer
+    :param act_type: Activation function to use
+    :param value_fc_size Number of units of the fully connected layer
+    :param grad_scale_value: Optional re-weighting of gradient
+    :param use_se: Indicates if a squeeze excitation layer shall be used
+    """
     # for value output
     value_out = mx.sym.Convolution(data=data, num_filter=channels_value_head,
                                    kernel=(value_kernelsize, value_kernelsize),
@@ -97,11 +107,12 @@ def value_head(data, channels_value_head=256, value_kernelsize=1, act_type='relu
                                    no_bias=True, name="value_conv0")
     value_out = mx.sym.BatchNorm(data=value_out, name='value_bn0')
     value_out = get_act(data=value_out, act_type=act_type, name='value_act0')
+    value_flatten = mx.sym.Flatten(data=value_out, name='value_flatten1')
     if use_se:
-        value_out = channel_squeeze_excitation(value_out, channels_value_head, name='value_se', ratio=1,
-                                               act_type=act_type, use_hard_sigmoid=True)
-    value_out = mx.sym.Flatten(data=value_out, name='value_flatten0')
-    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=value_fc_size, name='value_fc0')
+        avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name='value_pool0')
+        pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
+        value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
+    value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
     value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
     value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
     value_out = get_act(data=value_out, act_type='tanh', name='value_out')
@@ -111,6 +122,16 @@ def value_head(data, channels_value_head=256, value_kernelsize=1, act_type='relu
 
 def policy_head(data, channels, act_type, channels_policy_head, select_policy_from_plane, n_labels,
                 grad_scale_policy=1.0, use_se=False):
+    """
+    Policy head of the network which outputs the policy distribution for a given position
+    :param data: Input data
+    :param channels_policy_head:
+    :param act_type: Activation function to use
+    :param select_policy_from_plane: True for policy head move representation
+    :param n_labels: Number of possible move targets
+    :param grad_scale_policy: Optional re-weighting of gradient
+    :param use_se: Indicates if a squeeze excitation layer shall be used
+    """
     # for policy output
     if select_policy_from_plane:
         kernel = 3
@@ -142,20 +163,23 @@ def policy_head(data, channels, act_type, channels_policy_head, select_policy_fr
 
 
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
-                          channels_policy_head=81, dropout_rate=0.15, select_policy_from_plane=True, use_se=True,
-                          res_blocks=13, n_labels=4992):
+                          channels_value_head=32, channels_policy_head=81, value_fc_size=128, dropout_rate=0.15,
+                          select_policy_from_plane=True, use_se=True, res_blocks=13, n_labels=4992):
     """
     RISEv3 architecture
-    :param channels:
-    :param channels_operating_init:
-    :param channel_expansion:
-    :param act_type:
-    :param channels_policy_head:
-    :param dropout_rate:
-    :param select_policy_from_plane:
-    :param use_se:
-    :param res_blocks:
-    :return:
+    :param channels: Main number of channels
+    :param channels_operating_init: Initial number of channels at the start of the net for the depthwise convolution
+    :param channel_expansion: Number of channels to add after each residual block
+    :param act_type: Activation type to use
+    :param channels_value_head: Number of channels for the value head
+    :param value_fc_size: Number of units in the fully connected layer of the value head
+    :param channels_policy_head: Number of channels for the policy head
+    :param dropout_rate: Droput factor to use. If 0, no dropout will be applied. Value must be in [0,1]
+    :param select_policy_from_plane: True, if policy head type shall be used
+    :param use_se: Indicates if a squeeze excitation layer shall be used
+    :param res_blocks: Number of residual blocks
+    :param n_labels: Number of policy target labels (used for select_policy_from_plane=False)
+    :return: symbol
     """
     # get the input data
     data = mx.sym.Variable(name='data')
@@ -196,7 +220,8 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     if dropout_rate != 0:
         data = mx.sym.Dropout(data, p=dropout_rate)
 
-    value_out = value_head(data=data, act_type=act_type, use_se=use_se, channels_value_head=4)
+    value_out = value_head(data=data, act_type=act_type, use_se=use_se, channels_value_head=channels_value_head,
+                           value_fc_size=value_fc_size)
     policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
                              select_policy_from_plane=select_policy_from_plane, use_se=use_se, channels=channels)
     # group value_out and policy_out together
