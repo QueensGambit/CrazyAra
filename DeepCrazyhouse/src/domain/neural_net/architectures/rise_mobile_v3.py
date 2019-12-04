@@ -37,7 +37,13 @@ def mix_conv(data, name, channels, kernels):
     num_splits = len(kernels)
     conv_layers = []
 
-    for xi, kernel in zip(mx.sym.split(data, axis=1, num_outputs=num_splits), kernels):
+    if num_splits == 1:
+        kernel = kernels[0]
+        return mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel),
+                                              pad=(kernel//2, kernel//2), no_bias=True,
+                                              name=name + '_conv3_k%d' % kernel)
+
+    for xi, kernel in zip(mx.sym.split(data, axis=1, num_outputs=num_splits, name=name + '_split'), kernels):
         conv_layers.append(mx.sym.Convolution(data=xi, num_filter=channels//num_splits, kernel=(kernel, kernel),
                                               pad=(kernel//2, kernel//2), no_bias=True,
                                               name=name + '_conv3_k%d' % kernel))
@@ -60,14 +66,14 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     act1 = get_act(data=bn2, act_type=act_type, name=name + '_act1')
     conv2 = mix_conv(data=act1, channels=channels_operating, kernels=kernels, name=name + 'conv2')
     bn3 = mx.sym.BatchNorm(data=conv2, name=name + '_bn3')
-    out = get_act(data=bn3, act_type=act_type, name=name + '_act2')
+    act2 = get_act(data=bn3, act_type=act_type, name=name + '_act2')
+    conv3 = mx.sym.Convolution(data=act2, num_filter=channels, kernel=(1, 1),
+                               pad=(0, 0), no_bias=True, name=name + '_conv3')
+    out = mx.sym.BatchNorm(data=conv3, name=name + '_bn4')
     if use_se:
         out = channel_squeeze_excitation(out, channels_operating, name=name + '_se', ratio=4, act_type=act_type,
                                          use_hard_sigmoid=True)
-    conv3 = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
-                               pad=(0, 0), no_bias=True, name=name + '_conv3')
-    bn4 = mx.sym.BatchNorm(data=conv3, name=name + '_bn4')
-    out_sum = mx.sym.broadcast_add(data, bn4, name=name + '_add')
+    out_sum = mx.sym.broadcast_add(data, out, name=name + '_add')
 
     return out_sum
 
@@ -75,9 +81,9 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
 def get_stem(data, channels, act_type):
     """
     Creates the convolution stem before the residual head
-    :param data:
-    :param channels:
-    :param act_type:
+    :param data: Input data
+    :param channels: Number of channels for the stem
+    :param act_type: Activation function
     :return: symbol
     """
     body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(3, 3), pad=(1, 1),
@@ -88,17 +94,18 @@ def get_stem(data, channels, act_type):
     return body
 
 
-def value_head(data, channels_value_head=256, value_kernelsize=1, act_type='relu', value_fc_size=256,
-               grad_scale_value=0.01, use_se=False):
+def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu', value_fc_size=256,
+               grad_scale_value=0.01, use_se=False, use_mix_conv=False):
     """
     Value head of the network which outputs the value evaluation. A floating point number in the range [-1,+1].
     :param data: Input data
-    :param channels_value_head
+    :param channels_value_head Number of channels for the value head
     :param value_kernelsize Kernel size to use for the convolutional layer
     :param act_type: Activation function to use
     :param value_fc_size Number of units of the fully connected layer
     :param grad_scale_value: Optional re-weighting of gradient
     :param use_se: Indicates if a squeeze excitation layer shall be used
+    :param use_mix_conv: True, if an additional mix convolutional layer shall be used
     """
     # for value output
     value_out = mx.sym.Convolution(data=data, num_filter=channels_value_head,
@@ -107,6 +114,11 @@ def value_head(data, channels_value_head=256, value_kernelsize=1, act_type='relu
                                    no_bias=True, name="value_conv0")
     value_out = mx.sym.BatchNorm(data=value_out, name='value_bn0')
     value_out = get_act(data=value_out, act_type=act_type, name='value_act0')
+    if use_mix_conv:
+        mix_conv(value_out, channels=channels_value_head, kernels=[3, 5, 7, 9], name='value_mix_conv0')
+        value_out = mx.sym.BatchNorm(data=value_out, name='value_mix_bn1')
+        value_out = get_act(data=value_out, act_type=act_type, name='value_mix_act1')
+
     value_flatten = mx.sym.Flatten(data=value_out, name='value_flatten1')
     if use_se:
         avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name='value_pool0')
@@ -135,8 +147,8 @@ def policy_head(data, channels, act_type, channels_policy_head, select_policy_fr
     # for policy output
     if select_policy_from_plane:
         kernel = 3
-        policy_out = mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
-                                        no_bias=True, name="policy_conv0")
+        policy_out = mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel),
+                                        pad=(kernel//2, kernel//2), no_bias=True, name="policy_conv0")
         policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
         policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')
         if use_se:
@@ -191,27 +203,27 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     kernels = [
         [3],  # 0
         [3],  # 1
-        [3],  # 2
-        [3],  # 6
-        [3],  # 7
-        [3, 5, 7, 9],  # 11
+        [3, 5],  # 2
         [3, 5],  # 3
-        [3, 5],  # 4
+        [3, 5, 7, 9],  # 4
         [3, 5],  # 5
+        [3, 5],  # 6
+        [3, 5],  # 7
+        [3, 5],  # 8
         [3, 5],  # 9
         [3, 5],  # 10
         [3, 5, 7, 9],  # 11
-        [3, 5],  # 12
+        [3, 5, 7, 9],  # 12
     ]
     for idx in range(res_blocks):
 
         cur_kernels = kernels[idx]
-        if idx > 5:
+        if idx == 4 or idx >= 9:
             use_se = True
         else:
             use_se = False
         data = preact_residual_dmixconv_block(data=data, channels=channels, channels_operating=cur_channels,
-                                              kernels=cur_kernels, name='dconv_%d' % idx, use_se=True)
+                                              kernels=cur_kernels, name='dconv_%d' % idx, use_se=use_se)
         cur_channels += channel_expansion
     # return data
     data = mx.sym.BatchNorm(data=data, name='stem_bn1')
@@ -221,9 +233,9 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
         data = mx.sym.Dropout(data, p=dropout_rate)
 
     value_out = value_head(data=data, act_type=act_type, use_se=use_se, channels_value_head=channels_value_head,
-                           value_fc_size=value_fc_size)
+                           value_fc_size=value_fc_size, use_mix_conv=True)
     policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
-                             select_policy_from_plane=select_policy_from_plane, use_se=use_se, channels=channels)
+                             select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels)
     # group value_out and policy_out together
     sym = mx.symbol.Group([value_out, policy_out])
 
