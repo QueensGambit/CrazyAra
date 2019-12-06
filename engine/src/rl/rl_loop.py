@@ -35,7 +35,6 @@ def read_output(proc, last_line=b"readyok\n", check_error=False):
     """
     while True:
         line = proc.stdout.readline()
-        # print(line)
         if check_error and line == b'':
             error = proc.stderr.readline()
             if error != b'':
@@ -568,7 +567,7 @@ def main():
     rl_loop = RLLoop(args,
                      nb_games_to_update=0,
                      nb_arena_games=args.arena_games,
-                     lr_reduction=0.0001)
+                     lr_reduction=0)
     rl_loop.initialize()
 
     while True:
@@ -579,6 +578,7 @@ def main():
 
         rl_loop.generate_games()
         rl_loop.compress_dataset()
+
 
 if __name__ == "__main__":
     main()
