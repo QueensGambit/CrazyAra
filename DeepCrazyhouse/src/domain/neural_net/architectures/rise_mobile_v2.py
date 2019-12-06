@@ -23,44 +23,8 @@ Recent cuDNN version also improved the speed on GPU to factor of 3.
 """
 
 import mxnet as mx
-
-
-def get_act(data, act_type, name):
-    """Wrapper method for different non linear activation functions"""
-    if act_type in ["relu", "sigmoid", "softrelu", "softsign", "tanh"]:
-        return mx.sym.Activation(data=data, act_type=act_type, name=name)
-    if act_type == "lrelu":
-        return mx.sym.LeakyReLU(data=data, slope=0.2, act_type='leaky', name=name)
-    if act_type == "hard_sigmoid":
-        return mx.sym.clip(data=data + 3.0, a_min=0.0, a_max=6.0, name=name) / 6.0
-
-    raise NotImplementedError
-
-
-def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
-    """
-    Squeeze excitation block.
-    :param data:
-    :param channels: Number of filters
-    :param name: Prefix name of the block
-    :param ratio: Ration for the number of neurons to use.
-    :param act_type: Activation function to use
-    :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
-     MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
-    :return: mxnet symbol
-    """
-    avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_pool0')
-    flatten = mx.symbol.Flatten(data=avg_pool, name=name + '_flatten0')
-    fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=channels // ratio, name=name + '_fc0')
-    act1 = get_act(data=fc1, act_type=act_type, name=name + '_act0')
-    fc2 = mx.symbol.FullyConnected(data=act1, num_hidden=channels, name=name + '_fc1')
-    if use_hard_sigmoid:
-        act_type = 'hard_sigmoid'
-    else:
-        act_type = 'sigmoid'
-    act2 = get_act(data=fc2, act_type=act_type, name=name + '_act1')
-
-    return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
+from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, channel_squeeze_excitation,\
+    get_stem, policy_head, value_head
 
 
 def bottleneck_residual_block(data, channels, channels_operating, name, kernel=3, act_type='relu', use_se=False):
@@ -180,10 +144,7 @@ def rise_mobile_symbol(channels=256, channels_operating_init=128, channel_expans
     data = mx.sym.Variable(name='data')
 
     # first initial convolution layer followed by batchnormalization
-    body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(3, 3), pad=(1, 1),
-                              no_bias=True, name="stem_conv0")
-    body = mx.sym.BatchNorm(data=body, name='stem_bn0')
-    body = get_act(data=body, act_type=act_type, name='stem_act0')
+    body = get_stem(data=data, channels=channels, act_type=act_type)
     channels_operating = channels_operating_init
 
     # build residual tower
@@ -209,39 +170,14 @@ def rise_mobile_symbol(channels=256, channels_operating_init=128, channel_expans
         body = mx.sym.Dropout(body, p=dropout_rate)
 
     # for policy output
-    if select_policy_from_plane:
-        kernel = 3
-        policy_out = mx.sym.Convolution(data=body, num_filter=channels, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
-                                        no_bias=True, name="policy_conv0")
-        policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
-        policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')
-        kernel = 3
-        policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
-                                        no_bias=False, name="policy_conv1")
-        policy_out = mx.sym.flatten(data=policy_out, name='policy_out')
-        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
-    else:
-        kernel = 3
-        policy_out = mx.sym.Convolution(data=body, num_filter=channels_policy_head, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
-                                        no_bias=True, name="policy_conv0")
-        policy_out = mx.sym.BatchNorm(data=policy_out, fix_gamma=False, name='policy_bn0')
-        policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')
-        policy_out = mx.sym.Flatten(data=policy_out, name='policy_flatten0')
-        policy_out = mx.sym.FullyConnected(data=policy_out, num_hidden=n_labels, name='policy_out')
-        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
+    policy_out = policy_head(data=body, channels=channels, act_type=act_type, channels_policy_head=channels_policy_head,
+                             select_policy_from_plane=select_policy_from_plane, n_labels=n_labels,
+                             grad_scale_policy=grad_scale_policy, use_se=False, no_bias=True)
 
     # for value output
-    kernel = 1
-    value_out = mx.sym.Convolution(data=body, num_filter=channels_value_head, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
-                                   no_bias=True, name="value_conv0")
-    value_out = mx.sym.BatchNorm(data=value_out, name='value_bn0')
-    value_out = get_act(data=value_out, act_type=act_type, name='value_act0')
-    value_out = mx.sym.Flatten(data=value_out, name='value_flatten0')
-    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=value_fc_size, name='value_fc0')
-    value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
-    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
-    value_out = get_act(data=value_out, act_type='tanh', name='value_out')
-    value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
+    value_out = value_head(data=body, channels_value_head=channels_value_head, value_kernelsize=1, act_type=act_type,
+                           value_fc_size=value_fc_size, grad_scale_value=grad_scale_value, use_se=False,
+                           use_mix_conv=False)
 
     # group value_out and policy_out together
     sym = mx.symbol.Group([value_out, policy_out])
@@ -271,11 +207,7 @@ def preact_resnet_symbol(channels=256, channels_value_head=8,
     # get the input data
     data = mx.sym.Variable(name='data')
 
-    # first initial convolution layer followed by batchnormalization
-    body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(3, 3), pad=(1, 1),
-                              no_bias=True, name="stem_conv0")
-    body = mx.sym.BatchNorm(data=body, name='stem_bn0')
-    body = get_act(data=body, act_type=act_type, name='stem_act0')  # !!!
+    body = get_stem(data=data, channels=channels, act_type=act_type)
 
     for idx in range(res_blocks):
         body = preact_residual_block(body, channels, name='res_block%d' % idx, kernel=3,
@@ -285,39 +217,14 @@ def preact_resnet_symbol(channels=256, channels_value_head=8,
     body = get_act(data=body, act_type=act_type, name='stem_act1')
 
     # for policy output
-    if select_policy_from_plane:
-        kernel = 3
-        policy_out = mx.sym.Convolution(data=body, num_filter=channels, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
-                                        no_bias=True, name="policy_conv0")
-        policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
-        policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')  # !!!
-        policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(3, 3), pad=(1, 1),
-                                        no_bias=True, name="policy_conv1")
-        policy_out = mx.sym.flatten(data=policy_out, name='policy_out')
-        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
-    else:
-        kernel = 3
-        policy_out = mx.sym.Convolution(data=body, num_filter=channels_policy_head, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
-                                        no_bias=True, name="policy_conv0")
-        policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
-        policy_out = mx.sym.Activation(data=policy_out, act_type=act_type, name='policy_act0')  # !!!
-        policy_out = mx.sym.Flatten(data=policy_out, name='policy_flatten0')
-        policy_out = mx.sym.FullyConnected(data=policy_out, num_hidden=n_labels, name='policy_out')
-        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
+    policy_out = policy_head(data=body, channels=channels, act_type=act_type, channels_policy_head=channels_policy_head,
+                             select_policy_from_plane=select_policy_from_plane, n_labels=n_labels,
+                             grad_scale_policy=grad_scale_policy, use_se=False, no_bias=True)
 
     # for value output
-    value_out = mx.sym.Convolution(data=body, num_filter=channels_value_head,
-                                   kernel=(value_kernelsize, value_kernelsize),
-                                   pad=(value_kernelsize//2, value_kernelsize//2),
-                                   no_bias=True, name="value_conv0")
-    value_out = mx.sym.BatchNorm(data=value_out, name='value_bn0')
-    value_out = get_act(data=value_out, act_type=act_type, name='value_act0')
-    value_out = mx.sym.Flatten(data=value_out, name='value_flatten0')
-    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=value_fc_size, name='value_fc0')
-    value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
-    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
-    value_out = get_act(data=value_out, act_type='tanh', name='value_out')
-    value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
+    value_out = value_head(data=body, channels_value_head=channels_value_head, value_kernelsize=1, act_type=act_type,
+                           value_fc_size=value_fc_size, grad_scale_value=grad_scale_value, use_se=False,
+                           use_mix_conv=False)
 
     # group value_out and policy_out together
     sym = mx.symbol.Group([value_out, policy_out])

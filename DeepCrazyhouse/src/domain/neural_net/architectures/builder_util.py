@@ -4,10 +4,11 @@ Created on 25.09.18
 @project: crazy_ara_refactor
 @author: queensgambit
 
-Please describe what the content of this file is about
+Utility methods for building the neural network in gluon
 """
 
 from mxnet.gluon.nn import Activation, AvgPool2D, MaxPool2D, PReLU, SELU, Swish, LeakyReLU
+import mxnet as mx
 
 
 def get_act(act_type, **kwargs):

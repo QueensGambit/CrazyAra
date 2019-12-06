@@ -22,32 +22,8 @@ Influenced by the following papers:
     https://arxiv.org/abs/1905.02244
 """
 import mxnet as mx
-from DeepCrazyhouse.src.domain.neural_net.architectures.rise_mobile_symbol import get_act, channel_squeeze_excitation
-
-
-def mix_conv(data, name, channels, kernels):
-    """
-    Mix depth-wise convolution layers
-    :param data: Input data
-    :param name: Name of the block
-    :param channels: Number of convolutional channels
-    :param kernels: List of kernel sizes to use
-    :return: symbol
-    """
-    num_splits = len(kernels)
-    conv_layers = []
-
-    if num_splits == 1:
-        kernel = kernels[0]
-        return mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel),
-                                              pad=(kernel//2, kernel//2), no_bias=True,
-                                              name=name + '_conv3_k%d' % kernel)
-
-    for xi, kernel in zip(mx.sym.split(data, axis=1, num_outputs=num_splits, name=name + '_split'), kernels):
-        conv_layers.append(mx.sym.Convolution(data=xi, num_filter=channels//num_splits, kernel=(kernel, kernel),
-                                              pad=(kernel//2, kernel//2), no_bias=True,
-                                              name=name + '_conv3_k%d' % kernel))
-    return mx.sym.Concat(*conv_layers, name=name + '_concat')
+from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, channel_squeeze_excitation, \
+    mix_conv, get_stem, value_head, policy_head
 
 
 def preact_residual_dmixconv_block(data, channels, channels_operating, name, kernels=None, act_type='relu', use_se=True):
@@ -67,111 +43,15 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     conv2 = mix_conv(data=act1, channels=channels_operating, kernels=kernels, name=name + 'conv2')
     bn3 = mx.sym.BatchNorm(data=conv2, name=name + '_bn3')
     act2 = get_act(data=bn3, act_type=act_type, name=name + '_act2')
-    conv3 = mx.sym.Convolution(data=act2, num_filter=channels, kernel=(1, 1),
+    out = mx.sym.Convolution(data=act2, num_filter=channels, kernel=(1, 1),
                                pad=(0, 0), no_bias=True, name=name + '_conv3')
-    out = mx.sym.BatchNorm(data=conv3, name=name + '_bn4')
+    # out = mx.sym.BatchNorm(data=conv3, name=name + '_bn4')
     if use_se:
-        out = channel_squeeze_excitation(out, channels_operating, name=name + '_se', ratio=4, act_type=act_type,
+        out = channel_squeeze_excitation(out, channels, name=name + '_se', ratio=4, act_type=act_type,
                                          use_hard_sigmoid=True)
     out_sum = mx.sym.broadcast_add(data, out, name=name + '_add')
 
     return out_sum
-
-
-def get_stem(data, channels, act_type):
-    """
-    Creates the convolution stem before the residual head
-    :param data: Input data
-    :param channels: Number of channels for the stem
-    :param act_type: Activation function
-    :return: symbol
-    """
-    body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(3, 3), pad=(1, 1),
-                              no_bias=True, name="stem_conv0")
-    body = mx.sym.BatchNorm(data=body, name='stem_bn0')
-    body = get_act(data=body, act_type=act_type, name='stem_act0')
-
-    return body
-
-
-def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu', value_fc_size=256,
-               grad_scale_value=0.01, use_se=False, use_mix_conv=False):
-    """
-    Value head of the network which outputs the value evaluation. A floating point number in the range [-1,+1].
-    :param data: Input data
-    :param channels_value_head Number of channels for the value head
-    :param value_kernelsize Kernel size to use for the convolutional layer
-    :param act_type: Activation function to use
-    :param value_fc_size Number of units of the fully connected layer
-    :param grad_scale_value: Optional re-weighting of gradient
-    :param use_se: Indicates if a squeeze excitation layer shall be used
-    :param use_mix_conv: True, if an additional mix convolutional layer shall be used
-    """
-    # for value output
-    value_out = mx.sym.Convolution(data=data, num_filter=channels_value_head,
-                                   kernel=(value_kernelsize, value_kernelsize),
-                                   pad=(value_kernelsize//2, value_kernelsize//2),
-                                   no_bias=True, name="value_conv0")
-    value_out = mx.sym.BatchNorm(data=value_out, name='value_bn0')
-    value_out = get_act(data=value_out, act_type=act_type, name='value_act0')
-    if use_mix_conv:
-        mix_conv(value_out, channels=channels_value_head, kernels=[3, 5, 7, 9], name='value_mix_conv0')
-        value_out = mx.sym.BatchNorm(data=value_out, name='value_mix_bn1')
-        value_out = get_act(data=value_out, act_type=act_type, name='value_mix_act1')
-
-    value_flatten = mx.sym.Flatten(data=value_out, name='value_flatten1')
-    if use_se:
-        avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name='value_pool0')
-        pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
-        value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
-    value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
-    value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
-    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
-    value_out = get_act(data=value_out, act_type='tanh', name='value_out')
-    value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
-    return value_out
-
-
-def policy_head(data, channels, act_type, channels_policy_head, select_policy_from_plane, n_labels,
-                grad_scale_policy=1.0, use_se=False):
-    """
-    Policy head of the network which outputs the policy distribution for a given position
-    :param data: Input data
-    :param channels_policy_head:
-    :param act_type: Activation function to use
-    :param select_policy_from_plane: True for policy head move representation
-    :param n_labels: Number of possible move targets
-    :param grad_scale_policy: Optional re-weighting of gradient
-    :param use_se: Indicates if a squeeze excitation layer shall be used
-    """
-    # for policy output
-    if select_policy_from_plane:
-        kernel = 3
-        policy_out = mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel),
-                                        pad=(kernel//2, kernel//2), no_bias=True, name="policy_conv0")
-        policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
-        policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')
-        if use_se:
-            policy_out = channel_squeeze_excitation(policy_out, channels, name='policy_se', ratio=4, act_type=act_type,
-                                                    use_hard_sigmoid=True)
-        policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(3, 3), pad=(1, 1),
-                                        no_bias=True, name="policy_conv1")
-        policy_out = mx.sym.flatten(data=policy_out, name='policy_out')
-        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
-    else:
-        kernel = 3
-        policy_out = mx.sym.Convolution(data=data, num_filter=channels_policy_head, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
-                                        no_bias=True, name="policy_conv0")
-        policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
-        policy_out = mx.sym.Activation(data=policy_out, act_type=act_type, name='policy_act0')
-        if use_se:
-            policy_out = channel_squeeze_excitation(policy_out, channels, name='policy_se', ratio=4, act_type=act_type,
-                                                    use_hard_sigmoid=True)
-        policy_out = mx.sym.Flatten(data=policy_out, name='policy_flatten0')
-        policy_out = mx.sym.FullyConnected(data=policy_out, num_hidden=n_labels, name='policy_out')
-        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
-
-    return policy_out
 
 
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
@@ -212,8 +92,8 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
         [3, 5],  # 8
         [3, 5],  # 9
         [3, 5],  # 10
-        [3, 5, 7, 9],  # 11
-        [3, 5, 7, 9],  # 12
+        [3, 5],  # 11
+        [3, 5],  # 12
     ]
     for idx in range(res_blocks):
 
