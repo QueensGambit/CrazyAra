@@ -521,7 +521,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
         for part_id, variant_name in enumerate(self.variant_metrics):
             # load one chunk of the dataset from memory
-            _, x_val, yv_val, yp_val, plys_to_end, _ = load_pgn_dataset(dataset_type="val",
+            _, x_val, yv_val, yp_val, _, _ = load_pgn_dataset(dataset_type="val",
                                                                          part_id=part_id,
                                                                          normalize=self._normalize,
                                                                          verbose=False,
