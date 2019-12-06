@@ -20,16 +20,6 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
 from DeepCrazyhouse.src.training.crossentropy import *
 
 
-def acc_sign(y_true, y_pred):
-    """
-    Custom metric which is used to predict the winner of a game
-    :param y_true: Ground truth value (np-array with values between -1, 0)
-    :param y_pred: Predicted labels as numpy array
-    :return:
-    """
-    return (np.sign(y_pred).flatten() == y_true).sum() / len(y_true)
-
-
 def fill_up_batch(x, batch_size):
     """
     Fills up an array by repeating the given array to achieve the given batch_size
@@ -174,6 +164,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         sparse_policy_label=True,
         q_value_ratio=0,
         cwd=None,
+        variant_metrics=None,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -236,6 +227,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.patience_cnt = self.batch_proc_tmp = self.k_steps_end = None
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
+        self.variant_metrics = variant_metrics
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -517,3 +509,41 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.k_steps += 1
             self.patience_cnt += 1
             self.recompute_eval()
+            self.custom_metric_eval()
+
+    def custom_metric_eval(self):
+        """
+        Evaluates the model based on the validation set of different variants
+        """
+
+        if self.variant_metrics is None:
+            return
+
+        for part_id, variant_name in enumerate(self.variant_metrics):
+            # load one chunk of the dataset from memory
+            _, x_val, yv_val, yp_val, plys_to_end, _ = load_pgn_dataset(dataset_type="val",
+                                                                         part_id=part_id,
+                                                                         normalize=self._normalize,
+                                                                         verbose=False,
+                                                                         q_value_ratio=self._q_value_ratio)
+
+            if self.select_policy_from_plane:
+                val_iter = mx.io.NDArrayIter({'data': x_val}, {'value_label': yv_val,
+                                                               'policy_label': np.array(FLAT_PLANE_IDX)[
+                                                                   yp_val.argmax(axis=1)]}, self._batch_size)
+            else:
+                val_iter = mx.io.NDArrayIter({'data': x_val},
+                                             {'value_label': yv_val, 'policy_label': yp_val.argmax(axis=1)},
+                                             self._batch_size)
+
+            results = self._model.score(val_iter, self._metrics)
+            prefix = "val_"
+
+            for entry in results:
+                name = variant_name + "_" + entry[0]
+                value = entry[1]
+                print(" - %s%s: %.4f" % (prefix, name, value), end="")
+                # add the metrics to the tensorboard event file
+                if self._log_metrics_to_tensorboard:
+                    self.sum_writer.add_scalar(name, [prefix.replace("_", ""), value], self.k_steps)
+        print()
