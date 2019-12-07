@@ -27,7 +27,7 @@ def acc_sign(y_true, y_pred):
     :param y_pred: Predicted labels as numpy array
     :return:
     """
-    return (np.sign(y_pred).flatten() == y_true).sum() / (len(y_true) - (y_true == 0).sum())
+    return (np.sign(y_pred).flatten() == np.sign(y_true)).sum() / (len(y_true) - (y_true == 0).sum())
 
 
 def acc_distribution(y_true, y_pred):
