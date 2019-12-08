@@ -8,7 +8,6 @@ Utility methods for building the neural network in gluon
 """
 
 from mxnet.gluon.nn import Activation, AvgPool2D, MaxPool2D, PReLU, SELU, Swish, LeakyReLU
-import mxnet as mx
 
 
 def get_act(act_type, **kwargs):
