@@ -52,7 +52,8 @@ def cross_entropy(y_true, y_pred):
     return -(np.sum(y_true * np.log(y_pred+1e-12), axis=1)).mean()
 
 
-def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(), sparse_policy_label=False):
+def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(), sparse_policy_label=False,
+                     apply_select_policy_from_plane=True):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
     The metric results are returned as a dictionary object.
@@ -66,6 +67,7 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(),
     :param ctx: MXNET data context
     :param sparse_policy_label: Should be set to true if the policy uses one-hot encoded targets
      (e.g. supervised learning)
+    :param apply_select_policy_from_plane: If true, given policy label is converted to policy map index
     :return:
     """
     reset_metrics(metrics)
@@ -75,6 +77,8 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(),
         policy_label = policy_label.as_in_context(ctx)
         [value_out, policy_out] = net(data)
         value_out[0][0].wait_to_read()
+        if apply_select_policy_from_plane:
+            policy_out = policy_out[:, FLAT_PLANE_IDX]
         # update the metrics
         metrics["value_loss"].update(preds=value_out, labels=value_label)
         metrics["policy_loss"].update(preds=nd.SoftmaxActivation(policy_out),
