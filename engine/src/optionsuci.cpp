@@ -55,6 +55,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Temperature"]             << Option(80, 0, 99999);
     o["Temperature_Moves"]             << Option(50, 0, 99999);
     o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
+    o["Centi_Root_Temperature"]        << Option(100, 1, 99999);
     o["Virtual_Loss"]                  << Option(3, 0, 99999);
     o["Nodes"]                         << Option(800, 0, 99999);
     o["Use_Raw_Network"]               << Option(false);

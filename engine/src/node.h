@@ -199,6 +199,14 @@ public:
      */
     void apply_dirichlet_noise_to_prior_policy();
 
+    /**
+     * @brief apply_temperature_to_prior_policy Applies a given temperature value on the root nodes policy distribution.
+     * For a temperature < 1, the distribution is "sharpened" and
+     * for a temperature > 1, the distribution is "flattened"
+     * @param temperature Temperature value (should be non-zero positive value)
+     */
+    void apply_temperature_to_prior_policy(float temperature);
+
     float get_action_value() const;
     SearchSettings* get_search_settings() const;
 

@@ -433,6 +433,17 @@ void Node::apply_dirichlet_noise_to_prior_policy()
     }
 }
 
+void Node::apply_temperature_to_prior_policy(float temperature)
+{
+    DynamicVector<float> rawPolicy = retrieve_raw_policy(this);
+    apply_temperature(rawPolicy, temperature);
+    auto it = rawPolicy.begin();
+    for (Node* node : childNodes) {
+        node->probValue = *it;
+        ++it;
+    }
+}
+
 void backup_value(Node* currentNode, float value)
 {
     do {
