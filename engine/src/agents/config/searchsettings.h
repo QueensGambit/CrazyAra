@@ -38,6 +38,8 @@ struct SearchSettings
     unsigned int batchSize;
     float dirichletEpsilon;
     float dirichletAlpha;
+    // policy temperature which can be applied on the root nodes' policy before the search
+    float rootPolicyTemperature;
     float qValueWeight;
     float virtualLoss;
     bool verbose;
