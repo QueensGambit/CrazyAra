@@ -25,9 +25,11 @@ Recent cuDNN version also improved the speed on GPU to factor of 3.
 import mxnet as mx
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, channel_squeeze_excitation,\
     get_stem, policy_head, value_head
+from DeepCrazyhouse.src.domain.variants.constants import NB_CHANNELS_FULL, NB_CHANNELS_VARIANTS
 
 
-def bottleneck_residual_block(data, channels, channels_operating, name, kernel=3, act_type='relu', use_se=False):
+def bottleneck_residual_block(data, channels, channels_operating, name, kernel=3, act_type='relu', use_se=False,
+                              data_variant=None):
     """
     Returns a residual block without any max pooling operation
     :param data: Input data
@@ -35,15 +37,24 @@ def bottleneck_residual_block(data, channels, channels_operating, name, kernel=3
     :param channels_operating: Number of filters used for 3x3, 5x5, 7x7,.. convolution
     :param name: Name for the residual block
     :param act_type: Activation function to use
+    :param use_se: If true, a squeeze excitation will be used
+    :param data_variant: Data input which holds the current active variant information
     :return:
     """
 
+    if data_variant is not None:
+        first_input = mx.sym.Concat(*[data, data_variant], name=name + '_concat')
+        add_channels = NB_CHANNELS_VARIANTS
+    else:
+        first_input = data
+        add_channels = 0
+
     if use_se:
-        se = channel_squeeze_excitation(data, channels, name=name + '_se', ratio=2)
+        se = channel_squeeze_excitation(first_input, channels+add_channels, name=name + '_se', ratio=2)
         conv1 = mx.sym.Convolution(data=se, num_filter=channels_operating, kernel=(1, 1), pad=(0, 0),
                                    no_bias=True, name=name + '_conv1')
     else:
-        conv1 = mx.sym.Convolution(data=data, num_filter=channels_operating, kernel=(1, 1), pad=(0, 0),
+        conv1 = mx.sym.Convolution(data=first_input, num_filter=channels_operating, kernel=(1, 1), pad=(0, 0),
                                    no_bias=True, name=name + '_conv1')
     bn1 = mx.sym.BatchNorm(data=conv1, name=name + '_bn1')
     act1 = get_act(data=bn1, act_type=act_type, name=name + '_act1')
@@ -65,9 +76,9 @@ def residual_block(data, channels, name, kernel=3, act_type='relu', use_se=False
     Returns a residual block without any max pooling operation
     :param data: Input data
     :param channels: Number of filters for all CNN-layers
-    :param channels_operating: Number of filters used for 3x3, 5x5, 7x7,.. convolution
     :param name: Name for the residual block
     :param act_type: Activation function to use
+    :param use_se: If true, a squeeze excitation will be used
     :return:
     """
 
@@ -118,10 +129,28 @@ def preact_residual_block(data, channels, name, kernel=3, act_type='relu'):
     return sum
 
 
+def extract_variant_info(data, channels, name):
+    """
+    Extracts the variant channel information from the input data.
+    Assumed to be the last 9 channels (where 9 is NB_CHANNEL_VARIANTS)
+    ;oaram data: Input data
+    :param channels: Number of channels of the input data
+    :param name: Name of the block
+    :return Symbol for the variant channel information
+    """
+
+    variant_layers = []
+
+    for idx, xi in enumerate(mx.sym.split(data, axis=1, num_outputs=channels, name=name + '_split')):
+        if idx >= NB_CHANNELS_FULL - NB_CHANNELS_VARIANTS:
+            variant_layers.append(xi)
+    return mx.sym.Concat(*variant_layers, name=name + '_concat')
+
+
 def rise_mobile_symbol(channels=256, channels_operating_init=128, channel_expansion=64, channels_value_head=8,
-                   channels_policy_head=81, value_fc_size=256, bc_res_blocks=[], res_blocks=[3,3,5,5,7], act_type='relu',
+                   channels_policy_head=81, value_fc_size=256, bc_res_blocks=[], res_blocks=[3]*13, act_type='relu',
                    n_labels=4992, grad_scale_value=0.01, grad_scale_policy=0.99, select_policy_from_plane=True,
-                   use_se=True, dropout_rate=0.2):
+                   use_se=True, dropout_rate=0, use_extra_variant_input=False):
     """
     Creates the rise mobile model symbol based on the given parameters.
 
@@ -137,11 +166,18 @@ def rise_mobile_symbol(channels=256, channels_operating_init=128, channel_expans
     :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
                             (They used 1.0 for default and 0.99 in the supervised setting)
     :param dropout_rate: Applies optionally droput during learning with a given factor on the last feature space before
+    :param use_extra_variant_input: If true, the last 9 channel which represent the active variant are passed to each
+    residual block separately and concatenated at the end of the final feature representation
     branching into value and policy head
     :return: mxnet symbol of the model
     """
     # get the input data
     data = mx.sym.Variable(name='data')
+
+    if use_extra_variant_input:
+        data_variant = extract_variant_info(data, channels=NB_CHANNELS_FULL, name="variants")
+    else:
+        data_variant = None
 
     # first initial convolution layer followed by batchnormalization
     body = get_stem(data=data, channels=channels, act_type=act_type)
@@ -154,7 +190,7 @@ def rise_mobile_symbol(channels=256, channels_operating_init=128, channel_expans
         if idx < len(bc_res_blocks) - 5:
             use_squeeze_excitation = False
         body = bottleneck_residual_block(body, channels, channels_operating, name='bc_res_block%d' % idx, kernel=kernel,
-                                         use_se=use_squeeze_excitation, act_type=act_type)
+                                         use_se=use_squeeze_excitation, act_type=act_type, data_variant=data_variant)
         channels_operating += channel_expansion
 
     for idx, kernel in enumerate(res_blocks):
@@ -168,6 +204,9 @@ def rise_mobile_symbol(channels=256, channels_operating_init=128, channel_expans
 
     if dropout_rate != 0:
         body = mx.sym.Dropout(body, p=dropout_rate)
+
+    if use_extra_variant_input:
+        body = mx.sym.Concat(*[body, data_variant], name='feature_concat')
 
     # for policy output
     policy_out = policy_head(data=body, channels=channels, act_type=act_type, channels_policy_head=channels_policy_head,
