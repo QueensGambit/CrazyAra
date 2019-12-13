@@ -167,7 +167,6 @@ void SearchThread::backup_value_outputs()
 {
     backup_values(newNodes);
     backup_values(transpositionNodes);
-    backup_values(collisionNodes);
     backup_values(terminalNodes);
 }
 
