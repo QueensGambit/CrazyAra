@@ -195,10 +195,13 @@ void Node::increment_visits()
 
 void Node::increment_no_visit_idx()
 {
+    mtx.lock();
     ++numberExpandedNodes;
+    assert(numberExpandedNodes <= numberChildNodes);
     if (numberExpandedNodes == numberChildNodes) {
         isFullyExpanded = true;
     }
+    mtx.unlock();
 }
 
 bool Node::is_fully_expanded() const {
@@ -268,7 +271,10 @@ float Node::get_q_value() const
 void Node::update_q_value()
 {
     assert(int(visits + virtualLossCounter) != 0);
-    qValue = (actionValue - virtualLossCounter * searchSettings->virtualLoss) / (visits + virtualLossCounter);
+    const float vtVisits = virtualLossCounter * searchSettings->virtualLoss;
+    qValue = (actionValue - vtVisits) / (visits + vtVisits);
+    assert(qValue <= 1);
+    assert(qValue >= -1);
 }
 
 float Node::get_u_parent_factor() const
@@ -392,7 +398,7 @@ void Node::update_u_parent_factor()
 
 float Node::compute_current_u_value() const
 {
-    return parentNode->get_u_parent_factor() * (probValue / (visits + virtualLossCounter + parentNode->get_u_divisor_summand()));
+    return parentNode->get_u_parent_factor() * (probValue / (visits + virtualLossCounter*searchSettings->virtualLoss + parentNode->get_u_divisor_summand()));
 }
 
 float Node::compute_q_plus_u() const
@@ -511,11 +517,11 @@ void enhance_moves(const SearchSettings* searchSettings, const Board* pos, const
     bool captureUpdate = false;
 
     if (searchSettings->enhanceChecks) {
-        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, maxPolicyValue*searchSettings->checkFactor),
+        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, min(maxPolicyValue*searchSettings->checkFactor, 1.0f)),
                                         searchSettings->threshCheck, pos, legalMoves, isCheck, policyProbSmall);
     }
     if (searchSettings->enhanceCaptures) {
-        captureUpdate = enhance_move_type( min(searchSettings->threshCapture, maxPolicyValue*searchSettings->captureFactor),
+        captureUpdate = enhance_move_type( min(searchSettings->threshCapture, min(maxPolicyValue*searchSettings->captureFactor, 1.0f)),
                                            searchSettings->threshCheck, pos, legalMoves, isCapture, policyProbSmall);
     }
 
@@ -542,7 +548,7 @@ Node* select_child_node(Node* node)
         node->update_u_parent_factor();
 
         if (!node->is_calibrated() ||
-                node->candidate_child_node()->compute_q_plus_u() < node->alternative_child_node()->compute_q_plus_u()) {
+            node->candidate_child_node()->compute_q_plus_u() < node->alternative_child_node()->compute_q_plus_u()) {
             node->calibrate_child_node_order();
         }
     }
