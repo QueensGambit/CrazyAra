@@ -26,6 +26,7 @@
 #include "searchthread.h"
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
+#include "util/blazeutil.h"
 #include "uci.h"
 
 SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
@@ -258,6 +259,8 @@ void fill_nn_results(size_t batchIdx, bool is_policy_map, const SearchSettings* 
                        legalMoves,
                        get_current_move_lookup(node->side_to_move()),
                        policyProbSmall);
+    apply_temperature(policyProbSmall, searchSettings->nodePolicyTemperature);
+
     if (!is_policy_map) {
         apply_softmax(policyProbSmall);
     }

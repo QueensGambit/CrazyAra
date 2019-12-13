@@ -328,10 +328,6 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
             info_string("apply dirichlet noise");
             rootNode->apply_dirichlet_noise_to_prior_policy();
         }
-        if (searchSettings->rootPolicyTemperature != 1.0f) {
-            info_string("apply temperature");
-            rootNode->apply_temperature_to_prior_policy(searchSettings->rootPolicyTemperature);
-        }
         if (rootNode->get_parent_node() == nullptr) {
             rootNode->sort_child_nodes_by_probabilities();
         }
