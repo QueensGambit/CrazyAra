@@ -197,7 +197,7 @@ void MCTSAgent::stop_search()
 
 bool MCTSAgent::early_stopping()
 {
-    if (rootNode->candidate_child_node()->get_prob_value() > 0.9f && rootNode->candidate_child_node()->get_q_value() > rootNode->alternative_child_node()->get_q_value()) {
+    if (rootNode->max_policy_prob() > 0.9f && rootNode->max_q_child() == 0) {
         info_string("Early stopping");
         return true;
     }
@@ -205,7 +205,7 @@ bool MCTSAgent::early_stopping()
 }
 
 bool MCTSAgent::continue_search() {
-    if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->candidate_child_node()->get_q_value()+0.1f < lastValueEval) {
+    if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->updated_value_eval()+0.1f < lastValueEval) {
         info_string("Increase search time");
         return true;
     }
@@ -218,12 +218,11 @@ void MCTSAgent::create_new_root_node(Board *pos)
     newPos->set_state_info(new StateInfo(*(pos->get_state_info())));
 
     info_string("create new tree");
-    rootNode = new Node(newPos, nullptr, MOVE_NONE, searchSettings);
-    rootNode->expand();
+    rootNode = new Node(newPos, nullptr, 0, searchSettings);
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, *valueOutput, *probOutputs);
-    fill_nn_results(0, netSingle->is_policy_map(), searchSettings, valueOutput, probOutputs, rootNode);
+    fill_nn_results(0, netSingle->is_policy_map(), valueOutput, probOutputs, rootNode, searchSettings->nodePolicyTemperature);
     gameNodes.push_back(rootNode);
 }
 
@@ -236,10 +235,10 @@ void MCTSAgent::delete_old_tree()
                 delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
             }
         }
-    }
-    if (opponentsNextRoot != nullptr) {
-        for (Node* childNode: opponentsNextRoot->get_child_nodes()) {
+        if (opponentsNextRoot != nullptr) {
+            for (Node* childNode: opponentsNextRoot->get_child_nodes()) {
                 delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
+            }
         }
     }
 }
@@ -287,20 +286,6 @@ void MCTSAgent::clear_game_history()
     lastValueEval = -1.0f;
 }
 
-void MCTSAgent::selectMoveFromRawPolicy(EvalInfo &evalInfo, float temp)
-{
-    DynamicVector<float> rawPolicy = retrieve_raw_policy(rootNode);
-    //  make sure the corresponding node has at least 2 visits
-    DynamicVector<float> visits = retrieve_visits(rootNode);
-    for (size_t idx = 0; idx < visits.size(); ++idx) {
-        if (visits[idx] < 2) {
-            rawPolicy[idx] = 0;
-        }
-    }
-    apply_temperature(rawPolicy, temp);
-    evalInfo.bestMove = evalInfo.legalMoves[random_choice(rawPolicy)];
-}
-
 bool MCTSAgent::is_policy_map()
 {
     return netSingle->is_policy_map();
@@ -317,7 +302,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     if (rootNode->get_number_child_nodes() == 1 && int(rootNode->get_visits()) != 0) {
         info_string("Only single move available -> early stopping");
     }
-    else if (rootNode->get_checkmate_node() != nullptr) {
+    else if (rootNode->get_checkmate_idx() != -1) {
         info_string("Checkmate in one -> early stopping");
     }
     else if (rootNode->get_number_child_nodes() == 0) {
@@ -328,27 +313,22 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
             info_string("apply dirichlet noise");
             rootNode->apply_dirichlet_noise_to_prior_policy();
         }
-        if (rootNode->get_parent_node() == nullptr) {
-            rootNode->sort_child_nodes_by_probabilities();
-        }
-        else {
-            rootNode->sort_child_nodes_by_q_plus_u();
-            rootNode->mark_as_uncalibrated();
+
+        if (rootNode->get_parent_node() != nullptr) {
             rootNode->make_to_root();
         }
         info_string("run mcts search");
         run_mcts_search();
     }
-
-    evalInfo.childNumberVisits = retrieve_visits(rootNode);
+    evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
-    get_mcts_policy(rootNode, evalInfo.childNumberVisits, evalInfo.policyProbSmall);
+    rootNode->get_mcts_policy(evalInfo.policyProbSmall);
 
-    lastValueEval = updated_value(rootNode, evalInfo.policyProbSmall);
+    lastValueEval = rootNode->updated_value_eval();
     evalInfo.bestMoveQ = lastValueEval;
     evalInfo.centipawns = value_to_centipawn(lastValueEval);
-    evalInfo.legalMoves = retrieve_legal_moves(rootNode->get_child_nodes());
-    get_principal_variation(rootNode, searchSettings, evalInfo.pv);
+    evalInfo.legalMoves = rootNode->get_legal_moves();
+    rootNode->get_principal_variation(evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
     evalInfo.isChess960 = pos->is_chess960();
     evalInfo.nodes = size_t(rootNode->get_visits());
@@ -364,7 +344,7 @@ void MCTSAgent::run_mcts_search()
         threads[i] = new thread(go, searchThreads[i]);
     }
     if (searchSettings->allowEarlyStopping || searchLimits->nodes == 0) {
-        // otherwise will the threads stop by themselves
+        // otherwise the threads will stop by themselves
         stop_search_based_on_limits();
     }
     for (size_t i = 0; i < searchSettings->threads; ++i) {
