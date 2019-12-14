@@ -101,6 +101,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 	// this is debug vector which can contain uci commands which will be automaticly processed when the executable is launched
     vector<string> commands = {
 //        "isready",
+//        "benchmark 3000"
 //        "ucinewgame",
 //        "position startpos",
 //        "position startpos moves e2e3",
@@ -426,6 +427,7 @@ void CrazyAra::init_search_settings()
     searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
     searchSettings->qThreshBase = Options["Q_Thresh_Base"];
     searchSettings->randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
+    searchSettings->allowEarlyStopping = Options["Allow_Early_Stopping"];
 }
 
 void CrazyAra::init_play_settings()

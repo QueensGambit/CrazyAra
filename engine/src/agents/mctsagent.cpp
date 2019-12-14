@@ -336,6 +336,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
             rootNode->mark_as_uncalibrated();
             rootNode->make_to_root();
         }
+        info_string("run mcts search");
         run_mcts_search();
     }
 
@@ -362,7 +363,7 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(go, searchThreads[i]);
     }
-    if (searchLimits->nodes == 0) {
+    if (searchSettings->allowEarlyStopping || searchLimits->nodes == 0) {
         // otherwise will the threads stop by themselves
         stop_search_based_on_limits();
     }
