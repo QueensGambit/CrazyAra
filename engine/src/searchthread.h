@@ -154,7 +154,7 @@ Node* get_new_child_to_evaluate(Node* rootNode, size_t& childIdx, NodeDescriptio
 
 void backup_values(vector<Node*>& nodes);
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, NDArray* valueOutputs, NDArray* probOutputs, Node *node);
+void fill_nn_results(size_t batchIdx, bool is_policy_map, NDArray* valueOutputs, NDArray* probOutputs, Node *node, float nodeTemperature);
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo);
 

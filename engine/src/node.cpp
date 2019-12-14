@@ -33,7 +33,7 @@ Node::Node(Board *pos, Node *parentNode, size_t childIdxForParent, SearchSetting
     pos(pos),
     parentNode(parentNode),
     visits(1),
-    numberExpandedNodes(1),
+    noVisitIdx(1),
     isTerminal(false),
     childIdxForParent(childIdxForParent),
     hasNNResults(false),
@@ -41,7 +41,6 @@ Node::Node(Board *pos, Node *parentNode, size_t childIdxForParent, SearchSetting
     checkmateIdx(-1),
     searchSettings(searchSettings)
 {
-
     fill_child_node_moves();
 
     // specify thisTerminale number of direct child nodes from this node
@@ -87,7 +86,7 @@ Node::Node(const Node &b)
     childNodes.resize(numberChildNodes);
     //    parentNode = // is not copied
     //    childIdxForParent = // is not copied
-    numberExpandedNodes = 1; // reset counter
+    noVisitIdx = 1; // reset counter
     hasNNResults = b.hasNNResults;
     checkmateIdx = -1; //b.checkmateIdx;
     searchSettings = b.searchSettings;
@@ -171,8 +170,8 @@ void Node::increment_visits()
 void Node::increment_no_visit_idx()
 {
     mtx.lock();
-    if (numberExpandedNodes < numberChildNodes) {
-        ++numberExpandedNodes;
+    if (noVisitIdx < numberChildNodes) {
+        ++noVisitIdx;
         isFullyExpanded = true;
     }
     mtx.unlock();
@@ -277,9 +276,9 @@ void Node::set_parent_node(Node* value)
     parentNode = value;
 }
 
-size_t Node::get_number_expanded_nodes() const
+size_t Node::get_no_visit_idx() const
 {
-    return numberExpandedNodes;
+    return noVisitIdx;
 }
 
 DynamicVector<float>& Node::get_policy_prob_small()
@@ -304,11 +303,11 @@ void Node::add_new_child_node(Node *newNode, size_t childIdx)
     mtx.unlock();
 }
 
-void Node::add_transposition_child_nnode(Node* newNode, Board *newPos, size_t childIdx)
+void Node::add_transposition_child_node(Node* newNode, Board *newPos, size_t childIdx)
 {
     newNode->mtx.lock();
     newNode->pos = newPos;
-    newNode->parentNode = parentNode;
+    newNode->parentNode = this;
     newNode->childIdxForParent = childIdx;
     newNode->mtx.unlock();
     mtx.lock();
@@ -444,6 +443,10 @@ void Node::apply_softmax_to_policy()
 
 void Node::enhance_moves()
 {
+    if (!searchSettings->enhanceChecks && !searchSettings->enhanceCaptures) {
+        return;
+    }
+
     float maxPolicyValue = max(policyProbSmall);
     bool checkUpdate = false;
     bool captureUpdate = false;
@@ -486,8 +489,7 @@ bool isCapture(const Board* pos, Move move)
 
 DynamicVector<float> Node::get_current_u_values()
 {
-    //    return get_current_cput() * policyProbSmall * (sqrt(visits) / (childNumberVisits + get_current_u_divisor()));
-    return get_current_cput() * blaze::subvector(policyProbSmall, 0, numberExpandedNodes) * (sqrt(visits) / (blaze::subvector(childNumberVisits, 0, numberExpandedNodes) + get_current_u_divisor()));
+    return get_current_cput() * blaze::subvector(policyProbSmall, 0, noVisitIdx) * (sqrt(visits) / (blaze::subvector(childNumberVisits, 0, noVisitIdx) + get_current_u_divisor()));
 }
 
 Node *Node::get_child_node(size_t childIdx)
@@ -538,8 +540,7 @@ size_t Node::select_child_node()
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    //    return argmax(qValues + get_current_u_values());
-    return argmax(blaze::subvector(qValues, 0, numberExpandedNodes) + get_current_u_values());
+    return argmax(blaze::subvector(qValues, 0, noVisitIdx) + get_current_u_values());
 }
 
 ostream& operator<<(ostream &os, const Node *node)

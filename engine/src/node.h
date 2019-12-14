@@ -62,7 +62,7 @@ private:
     DynamicVector<float> qValues;
 
     size_t numberChildNodes;
-    size_t numberExpandedNodes;
+    size_t noVisitIdx;
 
     vector<Node*> childNodes;
     std::vector<Move> legalMoves;
@@ -226,7 +226,7 @@ public:
      * @param value
      */
     void set_parent_node(Node* value);
-    size_t get_number_expanded_nodes() const;
+    size_t get_no_visit_idx() const;
 
     bool is_fully_expanded() const;
 
@@ -260,13 +260,13 @@ public:
     void add_new_child_node(Node* newNode, size_t childIdx);
 
     /**
-     * @brief copy_node Copies the node with the NN evaluation based on a preexisting node
+     * @brief add_transposition_child_node Copies the node with the NN evaluation based on a preexisting node
      * @param it Iterator which from the hash table
      * @param newPos Board position which belongs to the node
      * @param parentNode Parent node of the new node
      * @param childIdx Index on how to visit the child node from its parent
      */
-    void add_transposition_child_nnode(Node* newNode, Board* newPos, size_t childIdx);
+    void add_transposition_child_node(Node* newNode, Board* newPos, size_t childIdx);
 
     /**
      * @brief max_prob Returns the maximum policy value

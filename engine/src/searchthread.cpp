@@ -81,9 +81,8 @@ void SearchThread::add_new_node_to_tree(Node* parentNode, size_t childIdx)
     mapWithMutex->mtx.unlock();
     if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable->end() &&
             is_transposition_verified(it, newPos->get_state_info())) {
-
         Node *newNode = new Node(*it->second);
-        parentNode->add_transposition_child_nnode(newNode, newPos, childIdx);
+        parentNode->add_transposition_child_node(newNode, newPos, childIdx);
 
         parentNode->increment_no_visit_idx();
         transpositionNodes.push_back(newNode);
@@ -158,7 +157,7 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node);
+            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, searchSettings->nodePolicyTemperature);
         }
         ++batchIdx;
         mapWithMutex->mtx.lock();
@@ -251,9 +250,10 @@ void prepare_node_for_nn(Node* newNode, vector<Node*>& newNodes, float* inputPla
     newNodes.push_back(newNode);
 }
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, NDArray* valueOutputs, NDArray* probOutputs, Node *node)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, NDArray* valueOutputs, NDArray* probOutputs, Node *node, float temperature)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), get_current_move_lookup(node->side_to_move()));
+    node->apply_temperature_to_prior_policy(temperature);
     if (!isPolicyMap) {
         node->apply_softmax_to_policy();
     }

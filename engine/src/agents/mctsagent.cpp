@@ -161,10 +161,10 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
         return ownNextRoot;
     }
-    //    if (same_hash_key(opponentsNextRoot, pos)) { // !!!
-    //        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
-    //        return opponentsNextRoot;
-    //    }
+    if (same_hash_key(opponentsNextRoot, pos)) { // !!!
+        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
+        return opponentsNextRoot;
+    }
 
     // the node wasn't found, clear the old tree except the gameNodes (rootNode, opponentNextRoot)
     delete_old_tree();
@@ -222,7 +222,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, *valueOutput, *probOutputs);
-    fill_nn_results(0, netSingle->is_policy_map(), valueOutput, probOutputs, rootNode);
+    fill_nn_results(0, netSingle->is_policy_map(), valueOutput, probOutputs, rootNode, searchSettings->nodePolicyTemperature);
     gameNodes.push_back(rootNode);
 }
 
@@ -235,12 +235,11 @@ void MCTSAgent::delete_old_tree()
                 delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
             }
         }
-//        if (opponentsNextRoot != nullptr) { //!!!
-//            //            if (opponentsNextRoot->is_fully_expanded()) {
-//            for (Node* childNode: opponentsNextRoot->get_child_nodes()) {
-//                delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
-//            }
-//        }
+        if (opponentsNextRoot != nullptr) {
+            for (Node* childNode: opponentsNextRoot->get_child_nodes()) {
+                delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
+            }
+        }
     }
 }
 
@@ -313,10 +312,6 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         if (searchSettings->dirichletEpsilon > 0.009f) {
             info_string("apply dirichlet noise");
             rootNode->apply_dirichlet_noise_to_prior_policy();
-        }
-        if (searchSettings->rootPolicyTemperature != 1.0f) {
-            info_string("apply temperature");
-            rootNode->apply_temperature_to_prior_policy(searchSettings->rootPolicyTemperature);
         }
         if (rootNode->get_parent_node() != nullptr) {
             rootNode->make_to_root();
