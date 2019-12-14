@@ -130,7 +130,7 @@ def get_numpy_arrays(pgn_dataset):
         try:
             entries[idx] = np.array(pgn_dataset[entry])
         except KeyError:
-            logging.debug('"%s" key was not found in data set. Setting entry to "None" instead.' % entry)
+            pass
     return start_indices, x, y_value, y_policy, entries[0], entries[1]
 
 
