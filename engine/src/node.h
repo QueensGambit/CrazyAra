@@ -53,36 +53,37 @@ private:
     Node* parentNode;
 
     // singular values
-    Move move;
     float value;
-    float probValue;
-    float qValue;
-    float actionValue;
     float visits;
-    int virtualLossCounter;
+
+    DynamicVector<float> policyProbSmall;
+    DynamicVector<float> childNumberVisits;
+    DynamicVector<float> actionValues;
+    DynamicVector<float> qValues;
 
     size_t numberChildNodes;
     size_t numberExpandedNodes;
 
     vector<Node*> childNodes;
-
+    std::vector<Move> legalMoves;
     bool isTerminal;
-    bool isExpanded;
+    size_t childIdxForParent;
     bool hasNNResults;
-    bool isCalibrated;           // determines if the nodes are ordered
-    bool areChildNodesSorted;
     bool isFullyExpanded;        // is true if every child node has at least 1 visit
 
     float uParentFactor;        // stores all parts of the u-value as there a observable by the parent node
     float uDivisorSummand;       // summand which is added to the divisor of the u-divisor
 
-    // if checkmateNode is != nullptr it will always be preferred over all other nodes
-    Node* checkmateNode;
+    int checkmateIdx;
 
     SearchSettings* searchSettings;
 
     inline void check_for_terminal();
 
+    /**
+     * @brief fill_child_node_moves Generates the legal moves and save them in the list
+     */
+    void fill_child_node_moves();
 public:
     /**
      * @brief Node Primary constructor which is used when expanding a node during search
@@ -90,17 +91,17 @@ public:
      * @param move Move which led to current board state
      * @param searchSettings Pointer to the searchSettings
      */
-    Node(Node* parentNode, Move move, SearchSettings* searchSettings);
+    Node(Board *pos,
+         Node *parentNode,
+         size_t childIdxForParent,
+         SearchSettings* searchSettings);
 
     /**
-     * @brief Node Constructor used for creating a root node when it wasn't found in the search tree.
-     * The position is only assigned by reference.
-     * @param pos Current board position
-     * @param parentNode Pointer to parent node
-     * @param move Move which led to current board state
-     * @param searchSettings Pointer to the searchSettings
+     * @brief Node Copy constructor which copies the value evaluation, board position, prior policy and checkmateIdx.
+     * The qValues, actionValues and visits aren't copied over.
+     * @param b Node from which the stats will be copied
      */
-    Node(Board *pos, Node *parentNode, Move move, SearchSettings* searchSettings);
+    Node(const Node& b);
 
     /**
      * @brief ~Node Destructor which frees memory and the board position
@@ -108,45 +109,69 @@ public:
     ~Node();
 
     /**
-     * @brief operator= Assignment which copies the value evaluation and prior policy of the child nodes.
-     * The qValues, actionValues and visits of the child nodes aren't copied over.
-     * This operator is used during a transposition event.
-     * @param b Node from which the stats will be copied
+     * @brief get_current_u_values Calucates and returns the current u-values for this node
+     * @return DynamicVector<float>
      */
-    void operator=(const Node& b);
+    DynamicVector<float> get_current_u_values();
 
-    void expand();
-    Move get_move() const;
+    /**
+     * @brief get_child_node Returns the child node at the given index.
+     * A nullptr is returned if the child node wasn't expanded yet and no check is done if the childIdx is smaller than
+     * @param childIdx Index for the next child node to select
+     * @return child node
+     */
+    Node* get_child_node(size_t childIdx);
+
+    size_t select_child_node();
+
+    /**
+     * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
+     * The value is flipped at every ply.
+     * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
+     */
+    void backup_value(size_t childIdx, float value);
+
+    /**
+     * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
+     * @param childIdx Index to the child node to update
+     * @param value Specifies the value evaluation to backpropagate
+     */
+    void revert_virtual_loss_and_update(size_t childIdx, float value);
+
+    /**
+     * @brief backup_collision Iteratively removes the virtual loss of the collision event that occured
+     * @param childIdx Index to the child node to update
+     */
+    void backup_collision(size_t childIdx);
+
+    /**
+     * @brief revert_virtual_loss Reverts the virtual loss for a target node
+     * @param childIdx Index to the child node to update
+     */
+    void revert_virtual_loss(size_t childIdx);
+
+    Move get_move(size_t childIdx) const;
     vector<Node*> get_child_nodes() const;
     bool is_terminal() const;
     bool has_nn_results() const;
     Color side_to_move() const;
     Board* get_pos() const;
-    void set_prob_value(float value);
     float get_value() const;
 
-    void set_nn_results(float nn_value, const DynamicVector<float>& policyProbSmall);
-    void apply_virtual_loss();
-    void revert_virtual_loss();
+    void apply_virtual_loss_to_child(size_t childIdx);
+
     void revert_virtual_loss_and_update(float value);
     Node* get_parent_node() const;
     void increment_visits();
     void increment_no_visit_idx();
-    bool is_expanded() const;
-    bool are_child_nodes_sorted() const;
-    bool is_calibrated() const;
-    Node* candidate_child_node() const;
-    Node* alternative_child_node() const;
     Key hash_key() const;
 
     size_t get_number_child_nodes() const;
-    Node* get_checkmate_node() const;
 
     /**
      * @brief sort_nodes_by_probabilities Sorts all child nodes in ascending order based on their probability value
      */
-    void sort_child_nodes_by_probabilities();
-    void sort_child_nodes_by_q_plus_u();
+    void sort_moves_by_probabilities();
 
     /**
      * @brief calibrate_child_node_order Applies a partial sort for the previously updated nodes depending on nodeIdxUpdate
@@ -159,18 +184,6 @@ public:
     void make_to_root();
 
     float get_visits() const;
-    float get_prob_value() const;
-    float get_q_value() const;
-
-    void update_q_value();
-
-    /**
-     * @brief init_board Initializes the board position given the previous position and move to play
-     * @param parentPos Previous board position
-     * @param move Move to apply
-     * @param pos New position which will be set
-     */
-    void init_board();
 
     /**
      * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
@@ -186,11 +199,8 @@ public:
     float get_u_parent_factor() const;
     float get_u_divisor_summand() const;
 
-    void create_child_nodes();
     void lock();
     void unlock();
-
-    void mark_as_uncalibrated();
 
     /**
      * @brief apply_dirichlet_noise_to_prior_policy Applies dirichlet noise of strength searchSettings->dirichletEpsilon with
@@ -219,31 +229,91 @@ public:
     size_t get_number_expanded_nodes() const;
 
     bool is_fully_expanded() const;
+
+    /**
+     * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
+     * @return float
+     */
+    inline float get_current_cput();
+
+    /**
+     * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
+     * @return float
+     */
+    inline float get_current_u_divisor();
+
+
+    DynamicVector<float>& get_policy_prob_small();
+
+    void set_probabilities_for_moves(const float *data, unordered_map<Move, size_t>& moveLookup);
+
+    void apply_softmax_to_policy();
+
+    /**
+     * @brief enhance_moves Calls enhance_checks & enchance captures if the searchSetting suggests it and applies a renormilization afterwards
+     */
+    void enhance_moves();
+
+    void set_value(float value);
+    size_t get_child_idx_for_parent() const;
+
+    void add_new_child_node(Node* newNode, size_t childIdx);
+
+    /**
+     * @brief copy_node Copies the node with the NN evaluation based on a preexisting node
+     * @param it Iterator which from the hash table
+     * @param newPos Board position which belongs to the node
+     * @param parentNode Parent node of the new node
+     * @param childIdx Index on how to visit the child node from its parent
+     */
+    void add_transposition_child_nnode(Node* newNode, Board* newPos, size_t childIdx);
+
+    /**
+     * @brief max_prob Returns the maximum policy value
+     * @return float
+     */
+    float max_policy_prob();
+
+    /**
+     * @brief max_q_child Returns the child index with the highest Q-value
+     * @return size_t
+     */
+    size_t max_q_child();
+
+    /**
+     * @brief update_value_eval Returns the updated state evaluation based on the Q-value of the most visited child node
+     * @return float
+     */
+    float updated_value_eval();
+    std::vector<Move> get_legal_moves() const;
+    int get_checkmate_idx() const;
+
+    /**
+     * @brief get_mcts_policy Returns the final policy after the mcts search which is used for move selection, in most cases argmax(mctsPolicy).
+     * Depending on the searchSettings, Q-values will be taken into account for creating this.
+     * @param node Node for which the mcts policy should be calculated
+     * @param childNumberVisits Number of visits for each child node after search
+     * @param mctsPolicy Output of the final mcts policy after search
+     */
+    void get_mcts_policy(DynamicVector<float>& mctsPolicy) const;
+
+    /**
+     * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
+     * The moves a are pushed into the pv vector.
+     * @param pv Vector in which moves will be pushed.
+     */
+    void get_principal_variation(vector<Move>& pv) const;
+
+    /**
+     * @brief operator << Overload of stdout operator. Prints move, number visits, probability Value and Q-value
+     * @param os ostream handle
+     * @param node Node object to print
+     * @return ostream
+     */
+    friend std::ostream& operator<<(std::ostream& os, const Node* node);
+    DynamicVector<float> get_child_number_visits() const;
+    void enable_has_nn_results();
 };
-
-/**
- * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
- * The value is flipped at every ply.
- * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
- */
-void backup_value(Node* currentNode, float value);
-
-void backup_collision(Node* currentNode);
-
-/**
- * @brief retrieve_legal_moves Retrieves each move from the child nodes
- * @param childNodes List of child nodes
- * @return Legal move list
- */
-vector<Move> retrieve_legal_moves(const vector<Node*>& childNodes);
-
-/**
- * @brief create_child_nodes Generates a new child node for every legal move
- * @param parentNode Parent node to which all child nodes will be connected with
- * @param pos Board position
- * @param childNodes Empty vector which will be filled for every legal move
- */
-inline void create_child_nodes(Node* parentNode, const Board* pos, vector<Node*> &childNodes, SearchSettings* searchSettings);
 
 // https://stackoverflow.com/questions/6339970/c-using-function-as-parameter
 typedef bool (* vFunctionMoveType)(const Board* pos, Move move);
@@ -260,24 +330,7 @@ inline bool isCapture(const Board* pos, Move move);
 inline bool enhance_move_type(float increment, float thresh, const Board* pos, const vector<Move>& legalMoves,
                               vFunctionMoveType func, DynamicVector<float>& policyProbSmall);
 
-/**
-  * @brief enhance_moves Calls enhance_checks & enchance captures if the searchSetting suggests it and applies a renormilization afterwards
-  * @param threshCheck Threshold probability for checking moves
-  * @param checkFactor Factor based on the maximum probability with which checks will be increased
-  * @param threshCapture Threshold probability for capture moves
-  * @param captureFactor Factor based on the maximum probability with which captures will be increased
-  */
-void enhance_moves(const SearchSettings* searchSettings, const Board* pos, const vector<Move>& legalMoves, DynamicVector<float>& policyProbSmall);
-
 Node* select_child_node(Node* node);
-
-/**
- * @brief operator << Overload of stdout operator. Prints move, number visits, probability Value and Q-value
- * @param os ostream handle
- * @param node Node object to print
- * @return ostream
- */
-extern std::ostream& operator<<(std::ostream& os, const Node* node);
 
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
@@ -292,24 +345,8 @@ void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>* hash
  */
 void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable);
 
-float get_visits(Node* node);
-float get_q_value(Node* node);
-float get_prob_value(Node* node);
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
-
-DynamicVector<float> retrieve_visits(const Node* node);
-DynamicVector<float> retrieve_q_values(const Node* node);
-DynamicVector<float> retrieve_raw_policy(const Node* node);
-
-/**
- * @brief get_mcts_policy Returns the final policy after the mcts search which is used for move selection, in most cases argmax(mctsPolicy).
- * Depending on the searchSettings, Q-values will be taken into account for creating this.
- * @param node Node for which the mcts policy should be calculated
- * @param childNumberVisits Number of visits for each child node after search
- * @param mctsPolicy Output of the final mcts policy after search
- */
-void get_mcts_policy(const Node* node, const DynamicVector<float>& childNumberVisits, DynamicVector<float>& mctsPolicy);
 
 /**
  * @brief get_current_q_thresh Calculates the current q-thresh factor which is used to disable the effect of the q-value for low visited nodes
@@ -317,14 +354,6 @@ void get_mcts_policy(const Node* node, const DynamicVector<float>& childNumberVi
  * @return float
  */
 float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits);
-
-/**
- * @brief updated_value Returns the new value evalue evaluation of the node based on the Q-value of the argmax mctsPolicy.
- * @param node Node to be evaluated
- * @param mctsPolicy MCTS policy after the search
- * @return value eval based on the best move Q-value
- */
-float updated_value(const Node* node, DynamicVector<float>& mctsPolicy);
 
 /**
  * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
@@ -342,26 +371,6 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
  * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
  */
 void print_node_statistics(const Node* node);
-
-/**
- * @brief is_ordering_correct Validates if the ordering of the child nodes is still valid
- * @param childNodes List of nodes, assumed to be ordered based on q+u
- * @return boolean
- */
-bool is_ordering_correct(const vector<Node*>& childNodes);
-
-bool prob_value_comparision(const Node* n1, const Node* n2);
-
-bool q_plus_u_comparision(const Node* n1, const Node* n2);
-
-/**
- * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
- * The moves a are pushed into the pv vector.
- * @param pv Vector in which moves will be pushed.
- */
-void get_principal_variation(const Node* rootNode, const SearchSettings* searchSettings, vector<Move>& pv);
-
-int estimate_visits_to_switch(const float secondScore, const float cpuct, Node* n);
 
 /**
  * @brief get_terminal_node_result Returns the game result of the terminal.

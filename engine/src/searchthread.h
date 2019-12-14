@@ -126,6 +126,8 @@ public:
     void set_root_node(Node *value);
     bool get_is_running() const;
     void set_is_running(bool value);
+
+    void add_new_node_to_tree(Node* parentNode, size_t childIdx);
 };
 
 void go(SearchThread *t);
@@ -136,8 +138,6 @@ struct NodeDescription
     bool isCollision;
     // flag signaling a terminal state
     bool isTerminal;
-    // flag signaling a transposition state
-    bool isTranposition;
     // depth which was reached on this rollout
     size_t depth;
 };
@@ -150,19 +150,12 @@ struct NodeDescription
  * @param description Output struct which holds information what type of node it is
  * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
  */
-Node* get_new_child_to_evaluate(Node* rootNode, bool useTranspositionTable, unordered_map<Key, Node*>* hashTable, NodeDescription& description);
+Node* get_new_child_to_evaluate(Node* rootNode, size_t& childIdx, NodeDescription& description);
 
 void backup_values(vector<Node*>& nodes);
 
-/**
- * @brief create_new_node Creates a new node which will be added to the tree
- * @param newPos Board position which belongs to the node
- * @param parentNode Parent node of the new node
- * @param childIdx Index on how to visit the child node from its parent
- * @param numberNewNodes Index of the new node in the current batch
- */
-inline void prepare_node_for_nn(Node* newNode, vector<Node*>& newNodes, float* inputPlanes);
+void fill_nn_results(size_t batchIdx, bool is_policy_map, NDArray* valueOutputs, NDArray* probOutputs, Node *node);
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, const SearchSettings* searchSettings, NDArray* valueOutputs, NDArray* probOutputs, Node *node);
+bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo);
 
 #endif // SEARCHTHREAD_H

@@ -26,7 +26,8 @@
  * The final move is chosen according to the visit count of each direct child node and optionally taken Q-values into account.
  * One playout is defined as expanding one new node in the tree.
  * In the case of chess this means evaluating a new board position.
- * For more details and the mathematical equations please refer to our Journal Paper <add-link-here> as well as the official DeepMind-papers.
+ * For more details and the mathematical equations please refer to our Journal Paper:
+ * https://arxiv.org/abs/1908.06660 as well as the official DeepMind-papers.
  */
 
 #ifndef MCTSAGENT_H
@@ -172,14 +173,6 @@ public:
      * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them
      */
     void clear_game_history();
-
-    /**
-     * @brief selectMoveFromRawPolicy Samples a move from the raw root node policy which has been visited at least twice.
-     * The move will be set as evalInfo.bestMove
-     * @param evalInfo Evaluation information
-     * @param temp Temperature which is used for sampling
-     */
-    void selectMoveFromRawPolicy(EvalInfo& evalInfo, float temp);
 
     /**
      * @brief is_policy_map Checks if the current loaded network uses policy map representation.
