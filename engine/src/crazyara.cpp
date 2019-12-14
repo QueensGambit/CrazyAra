@@ -102,7 +102,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     vector<string> commands = {
 //        "isready",
 //        "go movetime 3000",
-//        "benchmark 10000",
+//        "benchmark 3000",
 //        "ucinewgame",
 //        "position startpos",
 //        "position startpos moves e2e3",

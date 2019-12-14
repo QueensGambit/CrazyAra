@@ -26,6 +26,7 @@
 #include "searchthread.h"
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
+#include "util/blazeutil.h"
 #include "uci.h"
 
 SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):

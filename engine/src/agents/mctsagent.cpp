@@ -313,9 +313,11 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
             info_string("apply dirichlet noise");
             rootNode->apply_dirichlet_noise_to_prior_policy();
         }
+
         if (rootNode->get_parent_node() != nullptr) {
             rootNode->make_to_root();
         }
+        info_string("run mcts search");
         run_mcts_search();
     }
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
