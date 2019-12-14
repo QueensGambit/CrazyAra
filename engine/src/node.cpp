@@ -87,6 +87,7 @@ Node::Node(const Node &b)
     //    parentNode = // is not copied
     //    childIdxForParent = // is not copied
     noVisitIdx = 1; // reset counter
+    isTerminal = b.isTerminal;
     hasNNResults = b.hasNNResults;
     checkmateIdx = -1; //b.checkmateIdx;
     searchSettings = b.searchSettings;
@@ -612,7 +613,6 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
 
 void print_node_statistics(const Node* node)
 {
-    size_t candidateIdx = 0;
     info_string("position", node->get_pos()->fen());
     cout << node << endl;
 }
