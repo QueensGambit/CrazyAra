@@ -537,6 +537,9 @@ size_t Node::select_child_node()
         return size_t(checkmateIdx);
     }
 
+    if (visits == 1) {
+        sort_moves_by_probabilities();
+    }
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes

@@ -260,7 +260,6 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, NDArray* valueOutputs, N
 #ifndef USE_RL
     node->enhance_moves();
 #endif
-    node->sort_moves_by_probabilities();
     node->set_value(valueOutputs->At(batchIdx, 0));
     node->enable_has_nn_results();
 }
