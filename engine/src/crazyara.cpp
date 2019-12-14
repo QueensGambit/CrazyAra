@@ -428,6 +428,7 @@ void CrazyAra::init_search_settings()
     searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
     searchSettings->qThreshBase = Options["Q_Thresh_Base"];
     searchSettings->randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
+    searchSettings->allowEarlyStopping = Options["Allow_Early_Stopping"];
 }
 
 void CrazyAra::init_play_settings()

@@ -161,7 +161,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
         return ownNextRoot;
     }
-    if (same_hash_key(opponentsNextRoot, pos)) { // !!!
+    if (same_hash_key(opponentsNextRoot, pos)) {
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
         return opponentsNextRoot;
     }
@@ -341,8 +341,8 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(go, searchThreads[i]);
     }
-    if (searchLimits->nodes == 0) {
-        // otherwise will the threads stop by themselves
+    if (searchSettings->allowEarlyStopping || searchLimits->nodes == 0) {
+        // otherwise the threads will stop by themselves
         stop_search_based_on_limits();
     }
     for (size_t i = 0; i < searchSettings->threads; ++i) {
