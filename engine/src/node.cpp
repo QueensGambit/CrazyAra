@@ -583,7 +583,6 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hash
         delete_subtree_and_hash_entries(childNode, hashTable);
     }
     // the board position is only filled if the node has been extended
-    //    cout << "fen: " << node->get_pos()->fen() << endl;
     auto it = hashTable->find(node->hash_key());
     if(it != hashTable->end()) {
         hashTable->erase(node->hash_key());

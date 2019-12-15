@@ -102,16 +102,19 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     vector<string> commands = {
 //        "isready",
 //        "go movetime 3000",
-//        "benchmark 3000",
+//        "ucinewgame",
+//        "benchmark 1000",
 //        "ucinewgame",
 //        "position startpos",
 //        "position startpos moves e2e3",
 //        "position startpos moves e2e3 g8f6",
+//        "ucinewgame",
 //        "isready",
 //        "go wtime 60000 btime 60000",
 //        "position startpos moves e2e3 g8f6 d2d4 g7g6",
 //        "isready",
-//        "go wtime 58839 btime 58835"
+//        "go wtime 58839 btime 58835",
+//        "ucinewgame"
     };
 
     do {
@@ -192,7 +195,7 @@ void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo, bool apply
 
     if (applyMoveToTree) {
         // inform the mcts agent of the move, so the tree can potentially be reused later
-        mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
+        mctsAgent->apply_move_to_tree(evalInfo.bestMove, true, pos);
     }
 }
 
@@ -246,7 +249,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
     }
     // inform the mcts agent of the move, so the tree can potentially be reused later
     if (lastMove != MOVE_NULL) {
-        mctsAgent->apply_move_to_tree(lastMove, false);
+        mctsAgent->apply_move_to_tree(lastMove, false, pos);
     }
     info_string("position", pos->fen());
 }

@@ -166,8 +166,9 @@ public:
      * @brief apply_move_to_tree Applies the given move to the search tree by adding the expanded node to the candidate list
      * @param m Move
      * @param ownMove Boolean indicating if it was CrazyAra's move
+     * @param pos Board position that will occur after move is applied
      */
-    void apply_move_to_tree(Move move, bool ownMove);
+    void apply_move_to_tree(Move move, bool ownMove, Board* pos);
 
     /**
      * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them

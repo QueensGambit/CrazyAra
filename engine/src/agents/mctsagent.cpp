@@ -168,8 +168,6 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 
     // the node wasn't found, clear the old tree except the gameNodes (rootNode, opponentNextRoot)
     delete_old_tree();
-    rootNode = nullptr;
-    opponentsNextRoot = nullptr;
 
     return nullptr;
 }
@@ -238,7 +236,6 @@ void MCTSAgent::delete_old_tree()
             }
         }
         if (opponentsNextRoot != nullptr) {
-            cout << "oppRoot: " << opponentsNextRoot->get_pos()->fen() << endl;
             for (Node* childNode: opponentsNextRoot->get_child_nodes()) {
                 delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
             }
@@ -256,20 +253,26 @@ void MCTSAgent::delete_game_nodes()
 }
 
 
-void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
+void MCTSAgent::apply_move_to_tree(Move move, bool ownMove, Board* pos)
 {
     if (!reusedFullTree && rootNode != nullptr) {
-        info_string("apply move to tree");
         if (ownMove) {
             opponentsNextRoot = pick_next_node(move, rootNode);
             if (opponentsNextRoot != nullptr) {
+                info_string("apply move to tree");
                 gameNodes.push_back(opponentsNextRoot);
             }
         }
         else {
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
             if (ownNextRoot != nullptr) {
-                gameNodes.push_back(ownNextRoot);
+                if (ownNextRoot->hash_key() == pos->hash_key()) {
+                    info_string("apply move to tree");
+                    gameNodes.push_back(ownNextRoot);
+                }
+                else {
+                    ownNextRoot = nullptr;
+                }
             }
         }
     }
