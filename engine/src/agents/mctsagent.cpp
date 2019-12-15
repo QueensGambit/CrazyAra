@@ -168,6 +168,8 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 
     // the node wasn't found, clear the old tree except the gameNodes (rootNode, opponentNextRoot)
     delete_old_tree();
+    rootNode = nullptr;
+    opponentsNextRoot = nullptr;
 
     return nullptr;
 }
@@ -236,6 +238,7 @@ void MCTSAgent::delete_old_tree()
             }
         }
         if (opponentsNextRoot != nullptr) {
+            cout << "oppRoot: " << opponentsNextRoot->get_pos()->fen() << endl;
             for (Node* childNode: opponentsNextRoot->get_child_nodes()) {
                 delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
             }
