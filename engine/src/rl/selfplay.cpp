@@ -112,7 +112,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         }
         adjust_node_count(searchLimits, randInt);
         mctsAgent->perform_action(position, searchLimits, evalInfo);
-        mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
+        mctsAgent->apply_move_to_tree(evalInfo.bestMove, true, position);
 
         if (!isQuickSearch && !exporter->is_file_full()) {
             if (rlSettings->lowPolicyClipThreshold > 0) {
@@ -172,9 +172,9 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
             passivePlayer = whitePlayer;
         }
         activePlayer->perform_action(position, searchLimits, evalInfo);
-        activePlayer->apply_move_to_tree(evalInfo.bestMove, true);
+        activePlayer->apply_move_to_tree(evalInfo.bestMove, true, position);
         if (position->plies_from_null() != 0) {
-            passivePlayer->apply_move_to_tree(evalInfo.bestMove, false);
+            passivePlayer->apply_move_to_tree(evalInfo.bestMove, false, position);
         }
         StateInfo* newState = new StateInfo;
         states->activeStates.push_back(newState);

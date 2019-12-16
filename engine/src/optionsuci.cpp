@@ -41,7 +41,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Threads"]                       << Option(2, 1, 512);
     o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
     o["CPuct_Base"]                    << Option(19652, 1, 99999);
-    o["Centi_Dirichlet_Epsilon"]       << Option(0, 0, 99999);
+    o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);
     o["Centi_Dirichlet_Alpha"]         << Option(20, 1, 99999);
     o["Centi_U_Init"]                  << Option(100, 0, 100);
     o["Centi_U_Min"]                   << Option(25, 0, 100);
@@ -55,10 +55,10 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Temperature"]             << Option(80, 0, 99999);
     o["Temperature_Moves"]             << Option(50, 0, 99999);
     o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
-    o["Centi_Node_Temperature"]        << Option(150, 1, 99999);
+    o["Centi_Node_Temperature"]        << Option(100, 1, 99999);
     o["Virtual_Loss"]                  << Option(3, 0, 99999);
-    o["Nodes"]                         << Option(800000, 0, 9999999);
-    o["Allow_Early_Stopping"]          << Option(true);
+    o["Nodes"]                         << Option(800, 0, 99999);
+    o["Allow_Early_Stopping"]          << Option(false);
     o["Use_Raw_Network"]               << Option(false);
     o["Enhance_Checks"]                << Option(false);
     o["Enhance_Captures"]              << Option(false);
@@ -71,7 +71,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Model_Directory_Contender"]     << Option("model_contender/");
     o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
     o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
-    o["Centi_Raw_Prob_Temperature"]    << Option(5, 0, 100);
+    o["Centi_Raw_Prob_Temperature"]    << Option(25, 0, 100);
     o["Milli_Policy_Clip_Thresh"]      << Option(0, 0, 100);
     o["MeanInitPly"]                   << Option(15, 0, 99999);
     o["MaxInitPly"]                    << Option(30, 0, 99999);
