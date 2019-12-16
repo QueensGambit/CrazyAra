@@ -265,7 +265,7 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove, Board* pos)
         }
         else {
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
-            if (ownNextRoot != nullptr) {
+            if (ownNextRoot != nullptr && !ownNextRoot->is_terminal()) {
                 if (ownNextRoot->hash_key() == pos->hash_key()) {
                     info_string("apply move to tree");
                     gameNodes.push_back(ownNextRoot);
