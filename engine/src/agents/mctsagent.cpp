@@ -318,6 +318,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         if (searchSettings->dirichletEpsilon > 0.009f) {
             info_string("apply dirichlet noise");
             rootNode->apply_dirichlet_noise_to_prior_policy();
+            rootNode->mark_nodes_as_fully_expanded();
         }
 
         if (rootNode->get_parent_node() != nullptr) {

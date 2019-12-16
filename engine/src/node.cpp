@@ -102,6 +102,12 @@ void Node::fill_child_node_moves()
     }
 }
 
+void Node::mark_nodes_as_fully_expanded()
+{
+    noVisitIdx = numberChildNodes;
+    isFullyExpanded = true;
+}
+
 Node::~Node()
 {
     delete pos;

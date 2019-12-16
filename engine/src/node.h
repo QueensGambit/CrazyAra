@@ -84,6 +84,7 @@ private:
      * @brief fill_child_node_moves Generates the legal moves and save them in the list
      */
     void fill_child_node_moves();
+
 public:
     /**
      * @brief Node Primary constructor which is used when expanding a node during search
@@ -303,6 +304,13 @@ public:
      * @param pv Vector in which moves will be pushed.
      */
     void get_principal_variation(vector<Move>& pv) const;
+
+    /**
+     * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
+     * This method should be called for instance after applying dirichlet noise,
+     * when the node ordering is not guaranteed to be correct anymore.
+     */
+    void mark_nodes_as_fully_expanded();
 
     /**
      * @brief operator << Overload of stdout operator. Prints move, number visits, probability Value and Q-value
