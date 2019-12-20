@@ -21,10 +21,10 @@
     *   [Binaries](#binaries)
     *   [Models](#models)
 *   [Variants](#variants)
+*   [Documentation](#documentation)
 *   [Compilation](#compilation)
     *   [Linux](#linux)
     *   [Windows](#windows)
-*   [Documentation](#documentation)
 *   [Rating](#rating)
 *   [Libraries](#libraries)
 *   [Players](#players)
@@ -99,6 +99,20 @@ More information about the different models can be found in the [wiki](https://g
 The current list of available chess variants include:
 *   [Crazyhouse](https://lichess.org/variant/crazyhouse)
 
+## Documentation
+For more details about the initial python version visit the wiki pages:
+* [Introduction](https://github.com/QueensGambit/CrazyAra/wiki)
+* [Installation guide for python MCTS](https://github.com/QueensGambit/CrazyAra/wiki/Installation-Guide)
+* [Supervised-training](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training)
+* [Model architecture](https://github.com/QueensGambit/CrazyAra/wiki/Model-architecture)
+* [Input representation](https://github.com/QueensGambit/CrazyAra/wiki/Input-representation)
+* [Output representation](https://github.com/QueensGambit/CrazyAra/wiki/Output-representation)
+* [Network visualization](https://github.com/QueensGambit/CrazyAra/wiki/Network-visualization)
+* [Engine settings](https://github.com/QueensGambit/CrazyAra/wiki/Engine-settings)
+* [Programmer's guide](https://github.com/QueensGambit/CrazyAra/wiki/Programmer's-guide)
+* [FAQ](https://github.com/QueensGambit/CrazyAra/wiki/FAQ)
+* [Stockfish-10: Crazyhouse-Self-Play](https://github.com/QueensGambit/CrazyAra/wiki/Stockfish-10:-Crazyhouse-Self-Play)
+
 ## Compilation
 
 Please follow these steps to build _CrazyAra_ from source:
@@ -162,20 +176,6 @@ Please follow these steps to build _CrazyAra_ from source:
 ### Windows
 Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Compile-instructions-for-Windows).
 
-## Documentation
-For more details about the initial python version visit the wiki pages:
-* [Introduction](https://github.com/QueensGambit/CrazyAra/wiki)
-* [Installation guide for python MCTS](https://github.com/QueensGambit/CrazyAra/wiki/Installation-Guide)
-* [Supervised-training](https://github.com/QueensGambit/CrazyAra/wiki/Supervised-training)
-* [Model architecture](https://github.com/QueensGambit/CrazyAra/wiki/Model-architecture)
-* [Input representation](https://github.com/QueensGambit/CrazyAra/wiki/Input-representation)
-* [Output representation](https://github.com/QueensGambit/CrazyAra/wiki/Output-representation)
-* [Network visualization](https://github.com/QueensGambit/CrazyAra/wiki/Network-visualization)
-* [Engine settings](https://github.com/QueensGambit/CrazyAra/wiki/Engine-settings)
-* [Programmer's guide](https://github.com/QueensGambit/CrazyAra/wiki/Programmer's-guide)
-* [FAQ](https://github.com/QueensGambit/CrazyAra/wiki/FAQ)
-* [Stockfish-10: Crazyhouse-Self-Play](https://github.com/QueensGambit/CrazyAra/wiki/Stockfish-10:-Crazyhouse-Self-Play)
-
 ## Rating
 
 The playing strength of _CrazyAra_ has been evaluated over the course of development.
@@ -214,7 +214,7 @@ These libraries are used in the python version:
 *   [**python-chess**](https://python-chess.readthedocs.io/en/latest/index.html): A pure Python chess library
 *   [**MXNet**](https://mxnet.incubator.apache.org/): A flexible and efficient library for deep learning
 *   [**numpy**](http://www.numpy.org/): The fundamental package for scientific computing with Python
-*   [**zarr**](https://zarr.readthedocs.io/en/stable/): An implementation of chunked, compressed, N-dimensional arrays
+*   [**Zarr**](https://zarr.readthedocs.io/en/stable/): An implementation of chunked, compressed, N-dimensional arrays
 
 The following libraries are used to run the C++ version of _CrazyAra_:
 
@@ -226,6 +226,12 @@ The following libraries are used to run the C++ version of _CrazyAra_:
     *   Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
 *   [**Catch2**](https://github.com/catchorg/Catch2): A multi-paradigm test framework for C++
 	*   Used as the testing framework as a replacement for [Python's unittest framework](https://docs.python.org/3/library/unittest.html)
+
+When _CrazyAra_ is also built with reinforcement learning functionality the following libraries are used:
+*   [**z5**](https://github.com/constantinpape/z5): Lighweight C++ and Python interface for datasets in zarr and N5 format 
+	*   Used for exporting generated self-play data in C++ in the **Zarr** data format
+*   [**xtensor**](https://github.com/xtensor-stack/xtensor): C++ tensors with broadcasting and lazy computing
+	*   Used as the internal matrix format within **z5**
 
 ## Players
 _CrazyAra's_ knowledge in the game of crazhyouse for supervised neural networks is based on human played games of the
