@@ -254,13 +254,10 @@ void prepare_node_for_nn(Node* newNode, vector<Node*>& newNodes, float* inputPla
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, NDArray* valueOutputs, NDArray* probOutputs, Node *node, float temperature)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), get_current_move_lookup(node->side_to_move()));
-    node->apply_temperature_to_prior_policy(temperature);
     if (!isPolicyMap) {
         node->apply_softmax_to_policy();
     }
-#ifndef USE_RL
-    node->enhance_moves();
-#endif
+    node->apply_temperature_to_prior_policy(temperature);
     node->set_value(valueOutputs->At(batchIdx, 0));
     node->enable_has_nn_results();
 }

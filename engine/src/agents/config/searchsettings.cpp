@@ -48,7 +48,7 @@ SearchSettings::SearchSettings():
         randomMoveFactor(0.0f),
         threshCheck(0.1f),
         checkFactor(0.5f),
-        threshCapture(0.1f),
+        threshCapture(0.02f),
         captureFactor(0.05f)
 {
 

@@ -140,7 +140,7 @@ add_definitions(-DRACE)
 # enable this for legacy Crazyhouse only support
 add_definitions(-DCRAZYHOUSE_ONLY)
 if (USE_RL)
-    add_definitions(-DUSE_RL)
+    #add_definitions(-DUSE_RL)
 endif()
 
 if (USE_TENSORRT)

@@ -324,6 +324,12 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         if (rootNode->get_parent_node() != nullptr) {
             rootNode->make_to_root();
         }
+
+        for (Node* childNode : rootNode->get_child_nodes()) {
+            if (childNode != nullptr) {
+                childNode->enhance_moves();
+            }
+        }
         info_string("run mcts search");
         run_mcts_search();
     }

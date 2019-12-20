@@ -29,6 +29,7 @@
 #include "../util/sfutil.h"
 #include "../util/communication.h"
 
+
 Node::Node(Board *pos, Node *parentNode, size_t childIdxForParent, SearchSettings* searchSettings):
     pos(pos),
     parentNode(parentNode),
@@ -193,11 +194,6 @@ float Node::get_current_cput()
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
-float Node::get_current_u_divisor()
-{
-    return searchSettings->uMin - exp(-visits / searchSettings->uBase) * (searchSettings->uMin - searchSettings->uInit);
-}
-
 float Node::get_value() const
 {
     return value;
@@ -216,20 +212,6 @@ size_t Node::get_number_child_nodes() const
 float Node::get_visits() const
 {
     return visits;
-}
-
-float Node::get_u_parent_factor() const
-{
-    return uParentFactor;
-}
-
-float Node::get_u_divisor_summand() const
-{
-#ifdef USE_RL
-    return 1.0f;
-#else
-    return uDivisorSummand;
-#endif
 }
 
 void Node::backup_value(size_t childIdx, float value)
@@ -454,17 +436,16 @@ void Node::enhance_moves()
         return;
     }
 
-    float maxPolicyValue = max(policyProbSmall);
     bool checkUpdate = false;
     bool captureUpdate = false;
 
     if (searchSettings->enhanceChecks) {
-        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, maxPolicyValue*searchSettings->checkFactor),
-                                        searchSettings->threshCheck, pos, legalMoves, isCheck, policyProbSmall);
+        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, policyProbSmall[0]*searchSettings->checkFactor),
+                searchSettings->threshCheck, pos, legalMoves, isCheck, policyProbSmall);
     }
     if (searchSettings->enhanceCaptures) {
-        captureUpdate = enhance_move_type(min(searchSettings->threshCapture, maxPolicyValue*searchSettings->captureFactor),
-                                          searchSettings->threshCheck, pos, legalMoves, isCapture, policyProbSmall);
+        captureUpdate = enhance_move_type(min(searchSettings->threshCapture, policyProbSmall[0]*searchSettings->captureFactor),
+                searchSettings->threshCheck, pos, legalMoves, isCapture, policyProbSmall);
     }
 
     if (checkUpdate || captureUpdate) {
@@ -476,7 +457,7 @@ bool enhance_move_type(float increment, float thresh, const Board* pos, const ve
 {
     bool update = false;
     for (size_t i = 0; i < legalMoves.size(); ++i) {
-        if (policyProbSmall[i] < thresh && func(pos, legalMoves[i])) {
+        if (func(pos, legalMoves[i]) && policyProbSmall[i] < thresh) {
             policyProbSmall[i] += increment;
             update = true;
         }
@@ -496,7 +477,7 @@ bool isCapture(const Board* pos, Move move)
 
 DynamicVector<float> Node::get_current_u_values()
 {
-    return get_current_cput() * blaze::subvector(policyProbSmall, 0, noVisitIdx) * (sqrt(visits) / (blaze::subvector(childNumberVisits, 0, noVisitIdx) + get_current_u_divisor()));
+    return get_current_cput() * blaze::subvector(policyProbSmall, 0, noVisitIdx) * (sqrt(visits) / (blaze::subvector(childNumberVisits, 0, noVisitIdx) + 1.f));
 }
 
 Node *Node::get_child_node(size_t childIdx)
@@ -546,6 +527,9 @@ size_t Node::select_child_node()
 
     if (visits == 1) {
         sort_moves_by_probabilities();
+#ifndef USE_RL
+//        enhance_moves();
+#endif
     }
     // find the move according to the q- and u-values for each move
     // calculate the current u values
@@ -609,11 +593,6 @@ float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisit
 double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit)
 {
     return log((numberVisits + cpuctBase + 1) / cpuctBase) + cpuctInit;
-}
-
-float get_current_u_divisor(float numberVisits, float uMin, float uInit, float uBase)
-{
-    return uMin - exp(-numberVisits / uBase) * (uMin - uInit);
 }
 
 void print_node_statistics(const Node* node)

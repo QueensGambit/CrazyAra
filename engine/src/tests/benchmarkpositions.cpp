@@ -45,7 +45,9 @@ BenchmarkPositions::BenchmarkPositions():
         TestPosition("r4rk1/2pPbppp/p3p3/8/4P2n/2N4Q/PPP2PPP/R1B1K2R/BNPPqbn b KQ - 2 16", "B@g5", "Q@g6"),
         TestPosition("r3k2r/1pp2bpp/p3b1p1/3np1N1/6R1/bP5p/PnPP1P1P/R3Q1K1[QNbpp] w - - 0 26", "e1e5", "g5f7"),
         TestPosition("r1b1kb1r/pp3npp/3p1p2/Q1n5/3PP3/2P5/pBpP1PPP/R3KB1R[Qnnp] b Kkq - 0 21", "c5e4", "N@d3"),
-        TestPosition("3q1rk1/p1p2p1B/2p4b/8/1PnP2Pb/4P2p/1PPR2PP/2R2R1K/PBQPnnpn b - - 0 41", "g8h8", "g8h7)")
+        TestPosition("3q1rk1/p1p2p1B/2p4b/8/1PnP2Pb/4P2p/1PPR2PP/2R2R1K/PBQPnnpn b - - 0 41", "g8h8", "g8h7)"),
+        // this position is lost but you should avoid mate #4
+        TestPosition("r1b4r/ppp1kp1p/2bp4/6Pn/4n2N/8/P1P1BPPP/R4RK1/QBpnqppp w - - 0 21", "e2h5", "B@f6")
     }),
     totalNPS(0),
     totalDepth(0)

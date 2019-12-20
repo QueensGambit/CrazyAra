@@ -175,30 +175,11 @@ public:
     void sort_moves_by_probabilities();
 
     /**
-     * @brief calibrate_child_node_order Applies a partial sort for the previously updated nodes depending on nodeIdxUpdate
-     */
-    void calibrate_child_node_order();
-
-    /**
      * @brief make_to_root Makes the node to the current root node by setting its parent to a nullptr
      */
     void make_to_root();
 
     float get_visits() const;
-
-    /**
-     * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
-     * @return float
-     */
-    void update_u_divisor();
-
-    void update_u_parent_factor();
-
-    float compute_current_u_value() const;
-    float compute_q_plus_u() const;
-
-    float get_u_parent_factor() const;
-    float get_u_divisor_summand() const;
 
     void lock();
     void unlock();
@@ -236,13 +217,6 @@ public:
      * @return float
      */
     inline float get_current_cput();
-
-    /**
-     * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
-     * @return float
-     */
-    inline float get_current_u_divisor();
-
 
     DynamicVector<float>& get_policy_prob_small();
 
