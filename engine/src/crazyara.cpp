@@ -275,6 +275,7 @@ void CrazyAra::benchmark(istringstream &is)
     string goCommand = "go movetime " + moveTime;
     int totalNPS = 0;
     int totalDepth = 0;
+    vector<int> nps;
 
     for (TestPosition pos : benchmark.positions) {
         go(pos.fen, goCommand, evalInfo);
@@ -295,12 +296,16 @@ void CrazyAra::benchmark(istringstream &is)
         }
         totalNPS += evalInfo.nps;
         totalDepth += evalInfo.depth;
+        nps.push_back(evalInfo.nps);
     }
+
+    sort(nps.begin(), nps.end());
 
     cout << endl << "Summary" << endl;
     cout << "----------------------" << endl;
     cout << "Passed:\t\t" << passedCounter << "/" << benchmark.positions.size() << endl;
-    cout << "NPS:\t\t" << setw(2) << totalNPS /  benchmark.positions.size() << endl;
+    cout << "NPS (avg):\t" << setw(2) << totalNPS /  benchmark.positions.size() << endl;
+    cout << "NPS (median):\t" << setw(2) << nps[nps.size()/2] << endl;
     cout << "PV-Depth:\t" << setw(2) << totalDepth /  benchmark.positions.size() << endl;
 }
 
