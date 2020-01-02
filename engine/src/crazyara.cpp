@@ -431,12 +431,12 @@ void CrazyAra::init_search_settings()
     searchSettings->threads = Options["Threads"];
     searchSettings->batchSize = Options["Batch_Size"];
     searchSettings->useTranspositionTable = Options["Use_Transposition_Table"];
-    searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;
-    searchSettings->uMin = Options["Centi_U_Min"] / 100.0f;
-    searchSettings->uBase = Options["U_Base"];
+//    searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
+//    searchSettings->uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
+//    searchSettings->uBase = Options["U_Base"];                                   currently disabled
     searchSettings->qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
-    searchSettings->enhanceChecks = Options["Enhance_Checks"];
-    searchSettings->enhanceCaptures = Options["Enhance_Captures"];
+//    searchSettings->enhanceChecks = Options["Enhance_Checks"];                   currently disabled
+//    searchSettings->enhanceCaptures = Options["Enhance_Captures"];               currently disabled
     searchSettings->cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
     searchSettings->cpuctBase = Options["CPuct_Base"];
     searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;

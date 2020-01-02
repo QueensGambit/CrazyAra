@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
-option(USE_RL                    "Build with reinforcment learning support"  OFF)
+option(USE_RL                    "Build with reinforcment learning support"  ON)
 option(USE_TENSORRT              "Build with reinforcment learning support"  ON)
 
 # -pg performance profiling flags

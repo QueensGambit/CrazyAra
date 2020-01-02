@@ -527,9 +527,6 @@ size_t Node::select_child_node()
 
     if (visits == 1) {
         sort_moves_by_probabilities();
-#ifndef USE_RL
-//        enhance_moves();
-#endif
     }
     // find the move according to the q- and u-values for each move
     // calculate the current u values

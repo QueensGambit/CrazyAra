@@ -37,34 +37,34 @@ void OptionsUCI::init(OptionsMap &o)
     o["Search_Type"]                   << Option("mcts", {"mcts"});
     o["Context"]                       << Option("gpu", {"cpu", "gpu"});
     o["Device_ID"]                     << Option(0, 0, 99999);
-    o["Batch_Size"]                    << Option(8, 1, 8192);
+    o["Batch_Size"]                    << Option(32, 1, 8192);
     o["Threads"]                       << Option(2, 1, 512);
     o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
     o["CPuct_Base"]                    << Option(19652, 1, 99999);
-    o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);
+    o["Centi_Dirichlet_Epsilon"]       << Option(0, 0, 99999);
     o["Centi_Dirichlet_Alpha"]         << Option(20, 1, 99999);
-    o["Centi_U_Init"]                  << Option(100, 0, 100);
-    o["Centi_U_Min"]                   << Option(100, 0, 100);
-    o["U_Base"]                        << Option(1965, 0, 99999);
+//    o["Centi_U_Init"]                  << Option(100, 0, 100);         currently disabled
+//    o["Centi_U_Min"]                   << Option(100, 0, 100);         currently disabled
+//    o["U_Base"]                        << Option(1965, 0, 99999);      currently disabled
     o["Centi_U_Init_Divisor"]          << Option(100, 1, 99999);
     o["Centi_Q_Value_Weight"]          << Option(0, 0, 99999);
     o["Centi_Q_Thresh_Init"]           << Option(50, 0, 100);
     o["Centi_Q_Thresh_Max"]            << Option(90, 0, 100);
     o["Q_Thresh_Base"]                 << Option(1965, 0, 99999);
     o["Max_Search_Depth"]              << Option(99, 1, 99999);
-    o["Centi_Temperature"]             << Option(60, 0, 99999);
-    o["Temperature_Moves"]             << Option(50, 0, 99999);
+    o["Centi_Temperature"]             << Option(80, 0, 99999);
+    o["Temperature_Moves"]             << Option(0, 0, 99999);
     o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
-    o["Centi_Node_Temperature"]        << Option(130, 1, 99999);
+    o["Centi_Node_Temperature"]        << Option(200, 1, 99999);
     o["Virtual_Loss"]                  << Option(3, 0, 99999);
-    o["Nodes"]                         << Option(0, 0, 99999999);
-    o["Allow_Early_Stopping"]          << Option(false);
+    o["Nodes"]                         << Option(1500000, 0, 99999999);
+    o["Allow_Early_Stopping"]          << Option(true);
     o["Use_Raw_Network"]               << Option(false);
-    o["Enhance_Checks"]                << Option(false);
-    o["Enhance_Captures"]              << Option(false);
+//    o["Enhance_Checks"]                << Option(true);                currently disabled
+//    o["Enhance_Captures"]              << Option(false);               currently disabled
     o["Use_Transposition_Table"]       << Option(true);
 #ifdef TENSORRT
-    o["Use_TensorRT"]                  << Option(false);
+    o["Use_TensorRT"]                  << Option(true);
 #endif
     o["Model_Directory"]               << Option("model/");
 #ifdef USE_RL

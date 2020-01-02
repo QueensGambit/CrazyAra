@@ -45,7 +45,7 @@ using namespace std;
 
 // meta data
 const string engineName = "CrazyAra";
-const string engineVersion = "0.6.1";
+const string engineVersion = "0.7.0";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
 
 // Define the board size
