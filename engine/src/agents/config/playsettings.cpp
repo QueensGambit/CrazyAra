@@ -26,6 +26,7 @@
  */
 
 #include "playsettings.h"
+#include <cmath>
 
 double get_current_temperature(const PlaySettings &play, size_t moveNumber)
 {
