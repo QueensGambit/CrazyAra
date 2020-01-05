@@ -427,7 +427,7 @@ void Node::set_probabilities_for_moves(const float *data, unordered_map<Move, si
 
 void Node::apply_softmax_to_policy()
 {
-    softmax(policyProbSmall);
+    policyProbSmall = softmax(policyProbSmall);
 }
 
 void Node::enhance_moves()
