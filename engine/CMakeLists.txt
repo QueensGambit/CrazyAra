@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8)
 project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
-option(USE_RL                    "Build with reinforcment learning support"  ON)
-option(USE_TENSORRT              "Build with reinforcment learning support"  ON)
+option(USE_RL                    "Build with reinforcement learning support"  OFF)
+option(USE_TENSORRT              "Build with TensorRT support"  ON)
 
 # -pg performance profiling flags
 if (USE_PROFILING)
@@ -92,6 +92,13 @@ ELSE()
 MESSAGE(STATUS "MXNET_PATH not set")
 ENDIF()
 
+if (USE_TENSORRT)
+    # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
+    message(STATUS "Enabled TensorRT support")
+    link_directories("$ENV{TENSORRT_PATH}lib")
+    add_definitions(-DTENSORRT)
+endif()
+
 include_directories("$ENV{MXNET_PATH}cpp-package/include")
 include_directories("$ENV{MXNET_PATH}include/")
 include_directories("$ENV{MXNET_PATH}3rdparty/tvm/nnvm/include")
@@ -103,8 +110,6 @@ link_directories("$ENV{MXNET_PATH}build/lib")
 link_directories("$ENV{MXNET_PATH}build/Release")
 link_directories("$ENV{MXNET_PATH}build")
 
-link_directories("/home/queensgambit/Downloads/driver/cuda_10.1/TensorRT-5.1.5.0.Ubuntu-18.04.2.x86_64-gnu.cuda-10.1.cudnn7.5/TensorRT-5.1.5.0/lib")
-
 add_executable(${PROJECT_NAME} ${source_files})
 
 if(UNIX)
@@ -114,6 +119,8 @@ else()
 endif()
 
 if (USE_RL)
+    message(STATUS "Enabled Reinforcement Learning functionality")
+    add_definitions(-DUSE_RL)
     if(DEFINED ENV{Z5_PATH})
         MESSAGE(STATUS "Z5_PATH set to: $ENV{Z5_PATH}")
     else()
@@ -139,14 +146,6 @@ add_definitions(-DRACE)
 
 # enable this for legacy Crazyhouse only support
 add_definitions(-DCRAZYHOUSE_ONLY)
-if (USE_RL)
-    #add_definitions(-DUSE_RL)
-endif()
-
-if (USE_TENSORRT)
-    # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
-    add_definitions(-DTENSORRT)
-endif()
 
 # add_definitions(-DBUILD_TESTS)
 
@@ -155,4 +154,9 @@ if(THREADS_HAVE_PTHREAD_ARG)
 endif()
 if(CMAKE_THREAD_LIBS_INIT)
     target_link_libraries(${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
+endif()
+
+# add target directory as library run path for unix systems
+if(UNIX)
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
 endif()
