@@ -1,7 +1,7 @@
 /*
   CrazyAra, a deep learning chess variant engine
-  Copyright (C) 2018  Johannes Czech, Moritz Willig, Alena Beyer
-  Copyright (C) 2019  Johannes Czech
+  Copyright (C) 2018       Johannes Czech, Moritz Willig, Alena Beyer
+  Copyright (C) 2019-2020  Johannes Czech
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
