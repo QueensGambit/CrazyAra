@@ -68,17 +68,12 @@ _CrazyAra_ is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://
 
 We provide binary releases for the following plattforms:
 
-Operating System | Backend                                                                                                                                    | Compatible with
----              | ---                                                                                                                                        | ---
+Operating System | Backend                                                                                                                                                               | Compatible with
+---              | ---                                                                                                                                                                   | --- 
 Linux            | [**CUDA 10.1, cuDNN v7.5.1.10, TensorRT-5.1.5.0, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Linux_CUDA_TensorRT.zip) | NVIDIA GPUs and CPU
-Linux            | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Linux_MKL.zip)                             | Intel CPUs
-Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_CUDA.zip)   | NVIDIA GPUs and CPU
-Windows          | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_MKL.zip)                               | Intel CPUs
-
-_For Intel MKL the network inference is optimized when defining the following environment variable:_
-```bash
-MXNET_SUBGRAPH_BACKEND=MKLDNN
-```
+Linux            | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Linux_MKL.zip)                                               | Intel CPUs
+Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_CUDA.zip)                              | NVIDIA GPUs and CPU
+Windows          | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_MKL.zip)                                                 | Intel CPUs
 
 ### Models
 The following models are available for download:
