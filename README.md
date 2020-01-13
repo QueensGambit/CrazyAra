@@ -70,10 +70,10 @@ We provide binary releases for the following plattforms:
 
 Operating System | Backend                                                                                                                                    | Compatible with
 ---              | ---                                                                                                                                        | ---
-Linux            | [**CUDA 10.0, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAra_0.6.0_Linux_CUDA.zip) | NVIDIA GPUs and CPU
-Linux            | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAra_0.6.0_Linux_MKL.zip)                             | Intel CPUs
-Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAra_0.6.0_Win_CUDA.zip)   | NVIDIA GPUs and CPU
-Windows          | [**Intel MKL**](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAra_0.6.0_Win_MKL.zip)                               | Intel CPUs
+Linux            | [**CUDA 10.1, cuDNN v7.5.1.10, TensorRT-5.1.5.0, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Linux_CUDA_TensorRT.zip) | NVIDIA GPUs and CPU
+Linux            | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Linux_MKL.zip)                             | Intel CPUs
+Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_CUDA.zip)   | NVIDIA GPUs and CPU
+Windows          | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_MKL.zip)                               | Intel CPUs
 
 _For Intel MKL the network inference is optimized when defining the following environment variable:_
 ```bash
