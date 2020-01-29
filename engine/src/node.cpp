@@ -31,6 +31,9 @@
 
 
 Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent, SearchSettings* searchSettings):
+    key(pos->get_state_info()->key),
+    pliesFromNull(pos->get_state_info()->pliesFromNull),
+    sideToMove(pos->side_to_move()),
     parentNode(parentNode),
     visits(1),
     noVisitIdx(1),
@@ -41,10 +44,6 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
     checkmateIdx(-1),
     searchSettings(searchSettings)
 {
-    // identifier
-    key = pos->get_state_info()->key;
-    pliesFromNull = pos->get_state_info()->pliesFromNull;
-    sideToMove = pos->side_to_move();
     fill_child_node_moves(pos);
 
     // specify thisTerminale number of direct child nodes from this node
