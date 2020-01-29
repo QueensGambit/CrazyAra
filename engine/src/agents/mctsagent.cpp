@@ -124,6 +124,11 @@ void MCTSAgent::update_dirichlet_epsilon(float value)
     searchSettings->dirichletEpsilon = value;
 }
 
+Board *MCTSAgent::get_root_pos() const
+{
+    return rootPos;
+}
+
 size_t MCTSAgent::init_root_node(Board *pos)
 {
     size_t nodesPreSearch;
@@ -174,7 +179,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
 
 void MCTSAgent::stop_search_based_on_limits()
 {
-    int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->get_pos()->side_to_move(), rootNode->get_pos()->plies_from_null()/2);
+    int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->side_to_move(), rootNode->plies_from_null()/2);
     info_string("movetime", curMovetime);
     this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
     if (early_stopping()) {
@@ -218,7 +223,8 @@ void MCTSAgent::create_new_root_node(Board *pos)
     newPos->set_state_info(new StateInfo(*(pos->get_state_info())));
 
     info_string("create new tree");
-    rootNode = new Node(newPos, nullptr, 0, searchSettings);
+    // TODO: Make sure that "inCheck=False" does not cause issues
+    rootNode = new Node(newPos, false, nullptr, 0, searchSettings);
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, *valueOutput, *probOutputs);
@@ -305,6 +311,7 @@ string MCTSAgent::get_name() const
 void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
 {
     size_t nodesPreSearch = init_root_node(pos);
+    rootPos = pos;
     if (rootNode->get_number_child_nodes() == 1 && int(rootNode->get_visits()) != 0) {
         info_string("Only single move available -> early stopping");
     }
@@ -325,11 +332,6 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
             rootNode->make_to_root();
         }
 
-        for (Node* childNode : rootNode->get_child_nodes()) {
-            if (childNode != nullptr) {
-                childNode->enhance_moves();
-            }
-        }
         info_string("run mcts search");
         run_mcts_search();
     }
@@ -353,6 +355,7 @@ void MCTSAgent::run_mcts_search()
     thread** threads = new thread*[searchSettings->threads];
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         searchThreads[i]->set_root_node(rootNode);
+        searchThreads[i]->set_root_pos(rootPos);
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(go, searchThreads[i]);
     }

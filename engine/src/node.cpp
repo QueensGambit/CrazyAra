@@ -30,8 +30,7 @@
 #include "../util/communication.h"
 
 
-Node::Node(Board *pos, Node *parentNode, size_t childIdxForParent, SearchSettings* searchSettings):
-    pos(pos),
+Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent, SearchSettings* searchSettings):
     parentNode(parentNode),
     visits(1),
     noVisitIdx(1),
@@ -42,12 +41,16 @@ Node::Node(Board *pos, Node *parentNode, size_t childIdxForParent, SearchSetting
     checkmateIdx(-1),
     searchSettings(searchSettings)
 {
-    fill_child_node_moves();
+    // identifier
+    key = pos->get_state_info()->key;
+    pliesFromNull = pos->get_state_info()->pliesFromNull;
+    sideToMove = pos->side_to_move();
+    fill_child_node_moves(pos);
 
     // specify thisTerminale number of direct child nodes from this node
     numberChildNodes = legalMoves.size();
 
-    check_for_terminal();
+    check_for_terminal(pos, inCheck);
 
     // # visit count of all its child nodes
     childNumberVisits = DynamicVector<float>(numberChildNodes);
@@ -70,7 +73,9 @@ Node::Node(Board *pos, Node *parentNode, size_t childIdxForParent, SearchSetting
 Node::Node(const Node &b)
 {
     value = b.value;
-    //    pos = b.pos;
+    key = b.key;
+    pliesFromNull = b.plies_from_null();
+    sideToMove = b.side_to_move();
     numberChildNodes = b.numberChildNodes;
     policyProbSmall.resize(numberChildNodes);
     policyProbSmall = b.policyProbSmall;
@@ -95,7 +100,7 @@ Node::Node(const Node &b)
     isFullyExpanded = false;
 }
 
-void Node::fill_child_node_moves()
+void Node::fill_child_node_moves(Board* pos)
 {
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
@@ -111,7 +116,6 @@ void Node::mark_nodes_as_fully_expanded()
 
 Node::~Node()
 {
-    delete pos;
 }
 
 void Node::sort_moves_by_probabilities()
@@ -140,16 +144,6 @@ bool Node::is_terminal() const
 bool Node::has_nn_results() const
 {
     return hasNNResults;
-}
-
-Color Node::side_to_move() const
-{
-    return pos->side_to_move();
-}
-
-Board* Node::get_pos() const
-{
-    return pos;
 }
 
 void Node::apply_virtual_loss_to_child(size_t childIdx)
@@ -201,7 +195,7 @@ float Node::get_value() const
 
 Key Node::hash_key() const
 {
-    return pos->hash_key();
+    return key;
 }
 
 size_t Node::get_number_child_nodes() const
@@ -292,10 +286,9 @@ void Node::add_new_child_node(Node *newNode, size_t childIdx)
     mtx.unlock();
 }
 
-void Node::add_transposition_child_node(Node* newNode, Board *newPos, size_t childIdx)
+void Node::add_transposition_child_node(Node* newNode, size_t childIdx)
 {
     newNode->mtx.lock();
-    newNode->pos = newPos;
     newNode->parentNode = this;
     newNode->childIdxForParent = childIdx;
     newNode->mtx.unlock();
@@ -339,7 +332,17 @@ void Node::enable_has_nn_results()
     hasNNResults = true;
 }
 
-void Node::check_for_terminal()
+int Node::plies_from_null() const
+{
+    return pliesFromNull;
+}
+
+Color Node::side_to_move() const
+{
+    return sideToMove;
+}
+
+void Node::check_for_terminal(Board* pos, bool inCheck)
 {
     if (numberChildNodes == 0) {
         isTerminal = true;
@@ -351,7 +354,7 @@ void Node::check_for_terminal()
         }
 #endif
         // test if we have a check-mate
-        if (parentNode->pos->gives_check(parentNode->legalMoves[childIdxForParent])) {
+        if (inCheck) {
             value = LOSS;
             isTerminal = true;
             parentNode->checkmateIdx = int(childIdxForParent);
@@ -430,7 +433,7 @@ void Node::apply_softmax_to_policy()
     policyProbSmall = softmax(policyProbSmall);
 }
 
-void Node::enhance_moves()
+void Node::enhance_moves(Board* pos)
 {
     if (!searchSettings->enhanceChecks && !searchSettings->enhanceCaptures) {
         return;
@@ -441,11 +444,11 @@ void Node::enhance_moves()
 
     if (searchSettings->enhanceChecks) {
         checkUpdate = enhance_move_type(min(searchSettings->threshCheck, policyProbSmall[0]*searchSettings->checkFactor),
-                searchSettings->threshCheck, pos, legalMoves, isCheck, policyProbSmall);
+                searchSettings->threshCheck, pos, legalMoves, is_check, policyProbSmall);
     }
     if (searchSettings->enhanceCaptures) {
         captureUpdate = enhance_move_type(min(searchSettings->threshCapture, policyProbSmall[0]*searchSettings->captureFactor),
-                searchSettings->threshCheck, pos, legalMoves, isCapture, policyProbSmall);
+                searchSettings->threshCheck, pos, legalMoves, is_capture, policyProbSmall);
     }
 
     if (checkUpdate || captureUpdate) {
@@ -465,12 +468,12 @@ bool enhance_move_type(float increment, float thresh, const Board* pos, const ve
     return update;
 }
 
-bool isCheck(const Board* pos, Move move)
+bool is_check(const Board* pos, Move move)
 {
     return pos->gives_check(move);
 }
 
-bool isCapture(const Board* pos, Move move)
+bool is_capture(const Board* pos, Move move)
 {
     return pos->capture(move);
 }
@@ -594,18 +597,5 @@ double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit)
 
 void print_node_statistics(const Node* node)
 {
-    info_string("position", node->get_pos()->fen());
     cout << node << endl;
-}
-
-Result get_terminal_node_result(const Node *terminalNode)
-{
-    assert(terminalNode->is_terminal());
-    if (int(terminalNode->get_value()) == 0) {
-        return DRAWN;
-    }
-    else if ( terminalNode->side_to_move() == BLACK) {
-        return WHITE_WIN;
-    }
-    return BLACK_WIN;
 }

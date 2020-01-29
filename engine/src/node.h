@@ -49,7 +49,11 @@ class Node
 {
 private:
     mutex mtx;
-    Board* pos;
+    // identifiers
+    Key key;
+    int pliesFromNull;
+    Color sideToMove;
+
     Node* parentNode;
 
     // singular values
@@ -78,12 +82,13 @@ private:
 
     SearchSettings* searchSettings;
 
-    inline void check_for_terminal();
+    void check_for_terminal(Board* pos, bool inCheck);
 
     /**
      * @brief fill_child_node_moves Generates the legal moves and save them in the list
+     * @param pos Current node position
      */
-    void fill_child_node_moves();
+    void fill_child_node_moves(Board* pos);
 
 public:
     /**
@@ -93,6 +98,7 @@ public:
      * @param searchSettings Pointer to the searchSettings
      */
     Node(Board *pos,
+         bool inCheck,
          Node *parentNode,
          size_t childIdxForParent,
          SearchSettings* searchSettings);
@@ -155,8 +161,6 @@ public:
     vector<Node*> get_child_nodes() const;
     bool is_terminal() const;
     bool has_nn_results() const;
-    Color side_to_move() const;
-    Board* get_pos() const;
     float get_value() const;
 
     void apply_virtual_loss_to_child(size_t childIdx);
@@ -226,8 +230,9 @@ public:
 
     /**
      * @brief enhance_moves Calls enhance_checks & enchance captures if the searchSetting suggests it and applies a renormilization afterwards
+     * @param pos Current board position
      */
-    void enhance_moves();
+    void enhance_moves(Board* pos);
 
     void set_value(float value);
     size_t get_child_idx_for_parent() const;
@@ -237,11 +242,10 @@ public:
     /**
      * @brief add_transposition_child_node Copies the node with the NN evaluation based on a preexisting node
      * @param it Iterator which from the hash table
-     * @param newPos Board position which belongs to the node
      * @param parentNode Parent node of the new node
      * @param childIdx Index on how to visit the child node from its parent
      */
-    void add_transposition_child_node(Node* newNode, Board* newPos, size_t childIdx);
+    void add_transposition_child_node(Node* newNode, size_t childIdx);
 
     /**
      * @brief max_prob Returns the maximum policy value
@@ -295,12 +299,14 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Node* node);
     DynamicVector<float> get_child_number_visits() const;
     void enable_has_nn_results();
+    int plies_from_null() const;
+    Color side_to_move() const;
 };
 
 // https://stackoverflow.com/questions/6339970/c-using-function-as-parameter
 typedef bool (* vFunctionMoveType)(const Board* pos, Move move);
-inline bool isCheck(const Board* pos, Move move);
-inline bool isCapture(const Board* pos, Move move);
+inline bool is_check(const Board* pos, Move move);
+inline bool is_capture(const Board* pos, Move move);
 
 /**
  * @brief enhance_checks Enhances all possible checking moves below threshCheck by incrementCheck and returns true if a modification
@@ -353,13 +359,5 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
  * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
  */
 void print_node_statistics(const Node* node);
-
-/**
- * @brief get_terminal_node_result Returns the game result of the terminal.
- * This function assumes the node to be a terminal node.
- * @param terminalNode Terminal node
- * @return Game result, either DRAWN, WHITE_WIN, BLACK_WIN
- */
-Result get_terminal_node_result(const Node* terminalNode);
 
 #endif // NODE_H

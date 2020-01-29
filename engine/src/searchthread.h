@@ -47,6 +47,8 @@ class SearchThread
 {
 private:
     Node* rootNode;
+    Board* rootPos;
+    StateListPtr states;
     NeuralNetAPI* netBatch;
 
     // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
@@ -127,7 +129,15 @@ public:
     bool get_is_running() const;
     void set_is_running(bool value);
 
-    void add_new_node_to_tree(Node* parentNode, size_t childIdx);
+    /**
+     * @brief add_new_node_to_tree Adds a new node to the search by either creating a new node or duplicating an exisiting node in case of transposition usage
+     * @param newPos Board position of the new node
+     * @param parentNode Parent node for the now
+     * @param childIdx Respective index for the new node
+     * @param inCheck Defines if the current position sets a player in check
+     */
+    void add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck);
+    void set_root_pos(Board *value);
 };
 
 void go(SearchThread *t);
@@ -144,13 +154,16 @@ struct NodeDescription
 
 /**
  * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
+ * @param pos Temporary position which is initialized as the root position and will result in the final new node position when the function returns
  * @param rootNode Root node where all simulations start
  * @param useTranspositionTable Flag if the transposition table shall be used
  * @param hashTable Pointer to the hashTable
  * @param description Output struct which holds information what type of node it is
+ * @param inCheck Returns true if a player is in check for the new extracted position. This information is needed for a later terminal check.
+ * @param states States list which is used for 3-fold-repetition detection
  * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
  */
-Node* get_new_child_to_evaluate(Node* rootNode, size_t& childIdx, NodeDescription& description);
+Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states);
 
 void backup_values(vector<Node*>& nodes);
 

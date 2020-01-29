@@ -45,5 +45,5 @@ bool same_hash_key(Node* node, Board *pos)
 {
     return node != nullptr &&
             node->hash_key() == pos->hash_key() &&
-            node->get_pos()->get_state_info()->pliesFromNull == pos->get_state_info()->pliesFromNull;
+            node->plies_from_null() == pos->get_state_info()->pliesFromNull;
 }

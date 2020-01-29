@@ -44,7 +44,7 @@ Board::Board(const Board &b)
 
 Board::~Board()
 {
-    delete st;
+     delete st;
 }
 
 Bitboard Board::promoted_pieces() const
@@ -59,7 +59,7 @@ int Board::get_pocket_count(Color c, PieceType pt) const
 
 Key Board::hash_key() const
 {
-    return st->key; // + size_t(st->pliesFromNull);
+    return st->key;
 }
 
 void Board::set_state_info(StateInfo *st)

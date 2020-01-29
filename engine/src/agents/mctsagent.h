@@ -63,6 +63,7 @@ private:
     TimeManager* timeManager;
 
     Node* rootNode;
+    Board* rootPos;
     // The oldes root node stores a reference to the node with with the current root nodes is based on.
     // This is used in the case of tree reusage. The old subtree cannot be cleared immediatly because of
     // stateInfos for 3-fold repetition, but can be cleared as soon as the tree cannot be reused anymore.
@@ -208,6 +209,7 @@ public:
      * @param value New value to set
      */
     void update_dirichlet_epsilon(float value);
+    Board *get_root_pos() const;
 };
 
 #endif // MCTSAGENT_H

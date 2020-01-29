@@ -127,7 +127,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         gameResult = get_result(*position);
         gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                             false,
-                                            *mctsAgent->get_root_node()->get_pos(),
+                                            *mctsAgent->get_root_pos(),
                                             evalInfo.legalMoves,
                                             is_win(gameResult)));
         reset_search_params(isQuickSearch);
@@ -182,7 +182,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
         gameResult = get_result(*position);
         gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                             false,
-                                            *activePlayer->get_root_node()->get_pos(),
+                                            *activePlayer->get_root_pos(),
                                             evalInfo.legalMoves,
                                             is_win(gameResult)));
     }
