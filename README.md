@@ -75,18 +75,36 @@ Linux            | [**Intel MKL 20190502**](https://github.com/QueensGambit/Craz
 Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_CUDA.zip)                              | NVIDIA GPUs and CPU
 Windows          | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_MKL.zip)                                                 | Intel CPUs
 
+The current _CrazyAra_ release and all its previous versions can also be found at [releases](https://github.com/QueensGambit/CrazyAra/releases).
+
 ### Models
+
+The extracted model should be placed in the same directory as the engine executable.
+The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
+Each model is compatible with all executables.
+
 The following models are available for download:
+
+#### Release 0.7.0
+
+For release 0.7.0, a pre-initialized model on human games was updated by applying reinforcement learning.
+
+The 45th model update was obtained after generating ~ 1.05 million self-play games. It was also used for the [100 evaluation games](https://github.com/QueensGambit/CrazyAra/wiki/v0.7.0) with _Multi-Variant-Stockfish_:
+*   [model-os-45-risev2.zip](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/model-os-45-risev2.zip)
+
+The reinforcement learning loop was then continued until a total of ~ 2.37 self-play games, resulting in the 96th model update:
+*   [model-os-96-risev2.zip](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/model-os-96-risev2.zip)
+
+#### Release 0.6.0
+
+For release 0.6.0 and all previous releases, models were solely based on supervised learning on the lichess.org data set as described in our [paper](https://arxiv.org/abs/1908.06660).
+
 *   [4-value-8-policy](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/4-value-8-policy.zip)
 *   [8-value-16-policy](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/8-value-16-policy.zip)
 *   [8-value-policy-map](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/4-value-8-policy.zip)
 *   [8-value-policy-map-mobile / RISEv2-mobile](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip)
 *   [8-value-policy-map-preAct-relu+bn](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip)
 *   [RISEv1 (CrazyAraFish weights)](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAraFish_RISEv1.zip)
-
-The extracted model should be placed in the same directory as the engine executable.
-The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
-Each model is compatible with all executables.
 
 More information about the different models can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Model-description).
 
