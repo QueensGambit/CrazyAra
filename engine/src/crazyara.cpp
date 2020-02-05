@@ -43,6 +43,7 @@
 #include "optionsuci.h"
 #include "tests/benchmarkpositions.h"
 #include "util/communication.h"
+#include "nn/mxnetapi.h"
 
 using namespace std;
 
@@ -403,7 +404,7 @@ string CrazyAra::engine_info()
 
 NeuralNetAPI *CrazyAra::create_new_net_single(const string& modelDirectory)
 {
-    return new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
+    return new MXNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
 }
 
 NeuralNetAPI **CrazyAra::create_new_net_batches(const string& modelDirectory)
@@ -415,7 +416,7 @@ NeuralNetAPI **CrazyAra::create_new_net_batches(const string& modelDirectory)
 #endif
     NeuralNetAPI** netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
     for (size_t i = 0; i < size_t(searchSettings->threads); ++i) {
-        netBatches[i] = new NeuralNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
+        netBatches[i] = new MXNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
     }
     return netBatches;
 }
