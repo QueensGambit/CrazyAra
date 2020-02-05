@@ -94,7 +94,7 @@ For release 0.7.0, a pre-initialized model on human games was updated by applyin
 The 45th model update was obtained after generating ~ 1.05 million self-play games. It was also used for the [100 evaluation games](https://github.com/QueensGambit/CrazyAra/wiki/v0.7.0) with _Multi-Variant-Stockfish_:
 *   [model-os-45-risev2.zip](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/model-os-45-risev2.zip)
 
-The reinforcement learning loop was then continued until a total of ~ 2.37 self-play games, resulting in the 96th model update:
+The reinforcement learning loop was then continued until a total of ~ 2.37 million self-play games, resulting in the 96th model update:
 *   [model-os-96-risev2.zip](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/model-os-96-risev2.zip)
 
 #### Release 0.6.0
