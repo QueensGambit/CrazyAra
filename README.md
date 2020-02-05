@@ -11,6 +11,7 @@
 &nbsp; 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/39c3329d0cea4186b5e4d32cfb6a4d5d)](https://www.codacy.com/manual/QueensGambit/CrazyAra?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=QueensGambit/CrazyAra&amp;utm_campaign=Badge_Grade)
 [![License: GPL v3](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/1908.06660)
+[![Generic badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
 
 </div>
 
@@ -30,7 +31,7 @@
 *   [Players](#players)
 *   [Related](#related)
 *   [Licence](#licence)
-*   [Publication](#publication)
+*   [Publications](#publications)
 
 <img align="right" src="etc/media/TU_logo.png" width="128">
 
@@ -55,6 +56,7 @@ _CrazyAra_ is an UCI chess engine and requires a GUI (e.g. [Cute Chess](https://
 *   [:fire: C++ engine](engine/src)
 *   [:snake: Python engine](https://github.com/QueensGambit/CrazyAra/tree/master/DeepCrazyhouse/src/domain/agent)
 *   :notebook_with_decorative_cover: [CrazyAra paper](https://arxiv.org/abs/1908.06660)
+*   :orange_book: [Master thesis](https://ml-research.github.io/papers/czech2019deep.pdf)
 *   [:earth_africa: Project website](https://crazyara.org/)
 *   [♞ CrazyAra@lichess.org](https://lichess.org/@/CrazyAra)
 *   [♞ CrazyAraFish@lichess.org](https://lichess.org/@/CrazyAraFish)
@@ -334,13 +336,29 @@ The source-code including all project files is licensed under the GPLv3-License 
 
 For details about the GPL v3 license, refer to the file [LICENSE](https://github.com/QueensGambit/CrazyAra/blob/master/LICENSE).
 
-## Publication
+## Publications
 *   J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [preprint](https://arxiv.org/abs/1908.06660)
 ```latex
-@article{czech2019learning,
-  title={Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data},
-  author={Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and F{\"u}rnkranz, Johannes},
-  journal={arXiv preprint arXiv:1908.06660},
-  year={2019}
-}
+@article{czech2019crazyara,
+	 title = { Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data },
+	 author = { Johannes Czech and Moritz Willig and Alena Beyer and Kristian Kersting and Johannes F{\"u}rnkranz },
+         year = { 2019 },
+	 crossref = { https://github.com/QueensGambit/CrazyAra },
+	 pages = { 33 },
+	 howpublished = { arXiv preprint arXiv:1908.06660 }
+	 }
+```
+
+* J. Czech: **Deep Reinforcement Learning for Crazyhouse**, [pdf](https://ml-research.github.io/papers/czech2019deep.pdf)
+```latex
+@mastersthesis{czech2019deep,
+	       title = { Deep Reinforcement Learning for Crazyhouse },
+	       author = { Johannes Czech },
+               year = { 2019 },
+               type = { M.Sc. },
+	       crossref = { https://github.com/QueensGambit/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 54 },
+	       month = { dec }
+	       }
 ```
