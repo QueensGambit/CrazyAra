@@ -21,7 +21,7 @@
 # Created on 08.11.2019
 # @author: queensgambit
 
-FROM nvcr.io/nvidia/mxnet:19.10-py3
+FROM nvcr.io/nvidia/mxnet:20.01-py3
 
 MAINTAINER QueensGambit
 
