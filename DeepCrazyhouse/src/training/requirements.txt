@@ -8,3 +8,4 @@ tqdm
 mxboard
 tensorflow
 tensorboard
+onnx==1.3.0
