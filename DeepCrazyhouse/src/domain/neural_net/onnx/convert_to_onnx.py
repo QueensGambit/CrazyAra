@@ -105,6 +105,10 @@ def main():
                                               args.onnx_file)
     logging.info("Exported model to: %s" % onnx_model_path)
 
+    # delete temporary export files
+    os.remove("model-0000.params")
+    os.remove("model-symbol.json")
+
     if args.validate:
         from onnx import checker
         import onnx
