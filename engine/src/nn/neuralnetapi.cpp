@@ -28,7 +28,6 @@
 #include <exception>
 #include <string>
 #include "../domain/crazyhouse/constants.h"
-#include "../util/communication.h"
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {

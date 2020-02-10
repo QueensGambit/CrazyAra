@@ -34,6 +34,7 @@
 #include <vector>
 // TODO: Remove MXNet dependency for interface class
 #include "mxnet-cpp/MxNetCpp.h"
+#include "../util/communication.h"
 
 using namespace mxnet::cpp;
 using namespace std;

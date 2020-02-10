@@ -23,11 +23,12 @@
  * @author: queensgambit
  *
  * Interface for running inference with the ONNX-TensorRT GPU backend.
- * This class is built based on the MNIST TensorRT example:
+ * References:
  * https://github.com/NVIDIA/TensorRT/tree/master/samples/opensource/sampleOnnxMNIST
- *
- * and the TensorRT inference documentation:
  * https://docs.nvidia.com/deeplearning/sdk/tensorrt-developer-guide/index.html#perform_inference_c
+ * https://devblogs.nvidia.com/speed-up-inference-tensorrt/
+ * https://github.com/NVIDIA/TensorRT/issues/322 (multi-gpu-support)
+ * https://github.com/NVIDIA/TensorRT/blob/master/samples/opensource/sampleMovieLens/sampleMovieLens.cpp
  */
 
 #ifndef TENSORRTAPI_H
@@ -45,25 +46,58 @@
 #include "NvInfer.h"
 #include <cuda_runtime_api.h>
 
+
+using namespace nvinfer1;
+using namespace std;
+using namespace cudawrapper;
+
+enum Precision {
+    float32,
+    float16,
+    int8
+};
+
+template <typename T>
+    using SampleUniquePtr = std::unique_ptr<T, samplesCommon::InferDeleter>;
+
 /**
  * @brief The TensorrtAPI class implements the usage of the ONNX-TensorRT back-end for GPUs.
  */
 class TensorrtAPI : public NeuralNetAPI
 {
 private:
-    // neural network parameters
-    samplesCommon::OnnxParams params;
+    // logger instance
+    static Logger gLogger;
+
+    // input and output layer names
+    std::vector<std::string> inputTensorNames;
+    std::vector<std::string> outputTensorNames;
 
     // input and output dimension of the network
+    Precision precision;
     nvinfer1::Dims inputDims;
     nvinfer1::Dims outputDims;
 
     // tensorRT runtime engine
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
+    SampleUniquePtr<nvinfer1::IExecutionContext> context;
 
     void load_model();
     void load_parameters();
     void bind_executor();
+
+    /**
+     * @brief createCudaEngineFromONNX Creates a new cuda engine from a onnx model architecture
+     * @return ICudaEngine*
+     */
+    ICudaEngine* create_cuda_engine_from_onnx();
+
+    /**
+     * @brief get_cuda_engine Gets a the cuda engine by either loading a pre-existing tensorRT-engine from file or
+     * otherwise creating and exporting a new tensorRT engine
+     * @return ICudaEngine*
+     */
+    ICudaEngine* get_cuda_engine();
 
 public:
     /**
@@ -72,12 +106,22 @@ public:
      * @param batchSize Constant batch size which is used for inference
      * @param modelDirectory Directory where the network architecture is stored (.json file) and
      * where parameters a.k.a weights of the neural are stored (.params file) are stored
+     * @param precision Inference precision type. Available options: float32, float16, int8 (float32 is default).
      */
-    TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory);
+    TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, Precision precision = float32);
 
     NDArray predict(float* inputPlanes, float& value);
     void predict(float* inputPlanes, NDArray& valueOutput, NDArray& probOutputs);
 };
+
+/**
+ * @brief set_config_settings Sets the configuration object which will be later used to build the engine
+ * @param config Configuration object
+ * @param precision Inference precision (e.g. float32, float16, int8)
+ * @param maxWorkspace Maximum allowable GPU work space for TensorRT tactic selection (e.g. 16_MiB, 1_GiB)
+ */
+void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig> &config, SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
+                         Precision precision, size_t maxWorkspace=1_GiB);
 
 #endif
 

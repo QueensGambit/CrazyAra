@@ -31,38 +31,111 @@
 #include <iostream>
 #include <sstream>
 
-TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory):
+TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, Precision precision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true)
 {
+    // in ONNX, the model architecture and parameters are in the same file
+    modelFilePath = "model.onnx";
+    load_model();
+    bind_executor();
+}
 
-    // CONVERSION OF ONNX MODEL TO TENSORRT
-    // parse the ONNX model file along with logger object for reporting info
-    auto parser = nvonnxparser::createParser(*network, gLogger.getTRTLogger());
-    if (!parser->parseFromFile(model_file, static_cast<int>(gLogger.getReportableSeverity())))
-    {
-          string msg("failed to parse onnx file");
-          gLogger->log(nvinfer1::ILogger::Severity::kERROR, msg.c_str());
-          exit(EXIT_FAILURE);
-    }
+void TensorrtAPI::load_model()
+{
+    // load an engine from file or build an engine from the ONNX network
+    engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
+}
 
-    // show additional information about the network
-    parser->reportParsingInfo();
+void TensorrtAPI::bind_executor()
+{
+    // create an exectution context for applying inference
+    context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
+}
 
+ICudaEngine* TensorrtAPI::createCudaEngineFromONNX() {
 
-    // BUILDING THE ENGINE
     // create an engine builder
     IBuilder* builder = createInferBuilder(gLogger);
+    builder->setMaxBatchSize(int(batchSize));
 
-    // build an engine from the TensorRT network
-    nvinfer1::ICudaEngine* engine = builder->buildCudaEngine(*network);
+    // create an ONNX network object
+    const auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+    auto network = SampleUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
+    inputDims = network->getInput(0)->getDimensions();
+    outputDims = network->getOutput(0)->getDimensions();
+    info_string("inputDims:", inputDims);
+    info_string("outputDims:", outputDims);
 
-    // RUN INFERENCE
-    // create space for the action values
-    IExecutionContext *context = engine->createExecutionContext();
+    SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
+    set_config_settings(config, network, precision);
 
-    // extract the input and output buffer indices of the GPU memory
-    int inputIndex = engine->getBindingIndex(INPUT_BLOB_NAME);
-    int outputIndex = engine->getBindingIndex(OUTPUT_BLOB_NAME);
+   // conversion of onnx model to tensorrt
+   // parse the ONNX model file along with logger object for reporting info
+   auto parser = nvonnxparser::createParser(*network, gLogger.getTRTLogger());
+   if (!parser->parseFromFile(modelFilePath.c_str(), static_cast<int>(gLogger.getReportableSeverity())))
+   {
+         gLogger.log(nvinfer1::ILogger::Severity::kERROR, "failed to parse onnx file");
+         exit(EXIT_FAILURE);
+         return nullptr;
+   }
+
+   // show additional information about the network
+   // parser->reportParsingInfo();
+
+   // build an engine from the TensorRT network with a given configuration struct
+   return builder->buildEngineWithConfig(*network, *config);
+}
+
+ICudaEngine* TensorrtAPI::get_cuda_engine() {
+
+    // getBasename(modelFilePath)
+    string modelBaseName = "model";
+    string enginePath{modelBaseName + "_batch" + to_string(batchSize) + ".engine"};
+    ICudaEngine* engine{nullptr};
+
+
+//    TODO: Read engine from file
+//    string buffer = readBuffer(enginePath);
+//    if (buffer.size()) {
+//        // try to deserialize engine
+//        unique_ptr<IRuntime, Destroy> runtime{createInferRuntime(gLogger)};
+//        engine = runtime->deserializeCudaEngine(buffer.data(), buffer.size(), nullptr);
+//    }
+
+    if (!engine) {
+        // Fallback to creating engine from scratch
+        engine = createCudaEngineFromONNX();
+
+        if (engine) {
+            // serialized engines are not portable across platforms or TensorRT versions
+            // engines are specific to the exact GPU model they were built on
+            IHostMemory *serializedModel = engine->serialize();
+            //unique_ptr<IHostMemory, Destroy> enginePlan{engine->serialize()};
+            // export engine for future uses
+            //    TODO: Write engine to file
+            // writeBuffer(enginePlan->data(), enginePlan->size(), enginePath);
+            serializedModel->destroy();
+        }
+    }
+    return engine;
+}
+
+void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config, SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
+                                      Precision precision, size_t maxWorkspace)
+{
+    config->setMaxWorkspaceSize(maxWorkspace);
+    switch (precision) {
+    case float32:
+        // default: do nothing
+        break;
+    case float16:
+        config->setFlag(BuilderFlag::kFP16);
+        break;
+    case int8:
+        config->setFlag(BuilderFlag::kINT8);
+        samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
+        break;
+    }
 }
 
 #endif
