@@ -143,8 +143,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         token.clear(); // Avoid a stale if getline() returns empty or blank line
         is >> skipws >> token;
 
-		if (token == "quit") {
-			break;
+        if (token == "stop") {
+            mctsAgent->stop_search();
 		}
 		else if (token == "uci") {
 			cout << engine_info()
@@ -295,9 +295,10 @@ void CrazyAra::benchmark(istringstream &is)
         else {
             cout << uciMove << " != " << pos.alternativeMove << endl;
         }
-        totalNPS += evalInfo.nps;
+        const int cur_nps = evalInfo.calculate_nps();
+        totalNPS += cur_nps;
         totalDepth += evalInfo.depth;
-        nps.push_back(evalInfo.nps);
+        nps.push_back(cur_nps);
     }
 
     sort(nps.begin(), nps.end());

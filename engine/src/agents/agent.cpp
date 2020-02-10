@@ -56,12 +56,10 @@ Agent::Agent(PlaySettings* playSettings, bool verbose):
 
 void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo)
 {
-    chrono::steady_clock::time_point start = chrono::steady_clock::now();
+    evalInfo.start = chrono::steady_clock::now();
     this->searchLimits = searchLimits;
     this->evaluate_board_state(pos, evalInfo);
-    chrono::steady_clock::time_point end = chrono::steady_clock::now();
-    evalInfo.elapsedTimeMS = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-    evalInfo.nps = int(((evalInfo.nodes-evalInfo.nodesPreSearch) / (evalInfo.elapsedTimeMS / 1000.0f)) + 0.5f);
+    evalInfo.end = chrono::steady_clock::now();
     set_best_move(evalInfo, pos->total_move_cout());
     info_score(evalInfo);
     info_string(pos->fen());

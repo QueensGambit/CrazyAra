@@ -30,6 +30,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <chrono>
 
 #include "types.h"
 #include <blaze/Math.h>
@@ -40,6 +41,8 @@ using blaze::DynamicVector;
 
 struct EvalInfo
 {
+    chrono::steady_clock::time_point start;
+    chrono::steady_clock::time_point end;
     float bestMoveQ;
     std::vector<Move> legalMoves;
     DynamicVector<float> policyProbSmall;
@@ -48,11 +51,13 @@ struct EvalInfo
     size_t depth;
     size_t nodes;
     size_t nodesPreSearch;
-    float elapsedTimeMS;
-    float nps;
     bool isChess960;
     std::vector<Move> pv;
     Move bestMove;
+
+    size_t calculate_elapsed_time_ms() const;
+    int calculate_nps(size_t elapsedTimeMS) const;
+    int calculate_nps() const;
 };
 
 extern std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo);

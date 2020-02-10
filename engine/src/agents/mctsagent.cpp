@@ -53,7 +53,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     opponentsNextRoot(nullptr),
     states(states),
     lastValueEval(-1.0f),
-    reusedFullTree(false)
+    reusedFullTree(false),
+    isRunning(false)
 {
     mapWithMutex = new MapWithMutex();
     mapWithMutex->hashTable = new unordered_map<Key, Node*>;
@@ -177,23 +178,25 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     return nullptr;
 }
 
-void MCTSAgent::stop_search_based_on_limits()
+void MCTSAgent::stop_search_based_on_limits(EvalInfo& evalInfo)
 {
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->side_to_move(), rootNode->plies_from_null()/2);
     info_string("movetime", curMovetime);
-    this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
+
+    const size_t halfTime = size_t(curMovetime / 2);
+    sleep_and_log_for(evalInfo, halfTime);
     if (early_stopping()) {
-        stop_search();
+        stop_search_threads();
     } else {
-        this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
+        sleep_and_log_for(evalInfo, halfTime);
         if (continue_search()) {
-            this_thread::sleep_for(chrono::milliseconds(curMovetime/2));
+            sleep_and_log_for(evalInfo, halfTime);
         }
-        stop_search();
+        stop_search_threads();
     }
 }
 
-void MCTSAgent::stop_search()
+void MCTSAgent::stop_search_threads()
 {
     for (auto searchThread : searchThreads) {
         searchThread->stop();
@@ -258,6 +261,17 @@ void MCTSAgent::delete_game_nodes()
     gameNodes.clear();
 }
 
+void MCTSAgent::sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t updateIntervalMS)
+{
+    for (size_t var = 0; var < timeMS / updateIntervalMS && isRunning; ++var) {
+        this_thread::sleep_for(chrono::milliseconds(updateIntervalMS));
+        evalInfo.end = chrono::steady_clock::now();
+        update_eval_info(evalInfo, rootNode);
+        info_string(evalInfo);
+    }
+    this_thread::sleep_for(chrono::milliseconds(timeMS % 1000));
+}
+
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove, Board* pos)
 {
@@ -310,7 +324,8 @@ string MCTSAgent::get_name() const
 
 void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
 {
-    size_t nodesPreSearch = init_root_node(pos);
+    evalInfo.nodesPreSearch = init_root_node(pos);
+    evalInfo.isChess960 = pos->is_chess960();
     rootPos = pos;
     if (rootNode->get_number_child_nodes() == 1 && int(rootNode->get_visits()) != 0) {
         info_string("Only single move available -> early stopping");
@@ -333,24 +348,13 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         }
 
         info_string("run mcts search");
-        run_mcts_search();
+        run_mcts_search(evalInfo);
     }
-    evalInfo.childNumberVisits = rootNode->get_child_number_visits();
-    evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
-    rootNode->get_mcts_policy(evalInfo.policyProbSmall);
-
-    lastValueEval = rootNode->updated_value_eval();
-    evalInfo.bestMoveQ = lastValueEval;
-    evalInfo.centipawns = value_to_centipawn(lastValueEval);
-    evalInfo.legalMoves = rootNode->get_legal_moves();
-    rootNode->get_principal_variation(evalInfo.pv);
-    evalInfo.depth = evalInfo.pv.size();
-    evalInfo.isChess960 = pos->is_chess960();
-    evalInfo.nodes = size_t(rootNode->get_visits());
-    evalInfo.nodesPreSearch = nodesPreSearch;
+    update_eval_info(evalInfo, rootNode);
+    lastValueEval = evalInfo.bestMoveQ;
 }
 
-void MCTSAgent::run_mcts_search()
+void MCTSAgent::run_mcts_search(EvalInfo& evalInfo)
 {
     thread** threads = new thread*[searchSettings->threads];
     for (size_t i = 0; i < searchSettings->threads; ++i) {
@@ -359,14 +363,22 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(go, searchThreads[i]);
     }
+    isRunning = true;
     if (searchSettings->allowEarlyStopping || searchLimits->nodes == 0) {
         // otherwise the threads will stop by themselves
-        stop_search_based_on_limits();
+        stop_search_based_on_limits(evalInfo);
     }
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
     delete[] threads;
+    isRunning = false;
+}
+
+void MCTSAgent::stop_search()
+{
+    isRunning = false;
+    info_string("stop_search()");
 }
 
 void MCTSAgent::print_root_node()
@@ -376,4 +388,17 @@ void MCTSAgent::print_root_node()
         return;
     }
     print_node_statistics(rootNode);
+}
+
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode)
+{
+    evalInfo.childNumberVisits = rootNode->get_child_number_visits();
+    evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
+    rootNode->get_mcts_policy(evalInfo.policyProbSmall);
+    evalInfo.bestMoveQ = rootNode->updated_value_eval();
+    evalInfo.centipawns = value_to_centipawn(evalInfo.bestMoveQ);
+    evalInfo.legalMoves = rootNode->get_legal_moves();
+    rootNode->get_principal_variation(evalInfo.pv);
+    evalInfo.depth = evalInfo.pv.size();
+    evalInfo.nodes = size_t(rootNode->get_visits());
 }

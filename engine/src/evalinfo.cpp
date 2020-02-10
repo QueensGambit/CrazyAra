@@ -28,14 +28,31 @@
 
 std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
 {
+    const size_t elapsedTimeMS = evalInfo.calculate_elapsed_time_ms();
+
     os << "cp " << evalInfo.centipawns
        << " depth " << evalInfo.depth
        << " nodes " << evalInfo.nodes
-       << " time " << evalInfo.elapsedTimeMS
-       << " nps " << evalInfo.nps
+       << " time " << elapsedTimeMS
+       << " nps " << evalInfo.calculate_nps(elapsedTimeMS)
        << " pv";
     for (Move move: evalInfo.pv) {
         os << " " << UCI::move(move, evalInfo.isChess960);
     }
     return os;
+}
+
+size_t EvalInfo::calculate_elapsed_time_ms() const
+{
+    return chrono::duration_cast<chrono::milliseconds>(end - start).count();
+}
+
+int EvalInfo::calculate_nps(size_t elapsedTimeMS) const
+{
+    return int(((nodes-nodesPreSearch) / (elapsedTimeMS / 1000.0f)) + 0.5f);
+}
+
+int EvalInfo::calculate_nps() const
+{
+    return calculate_nps(calculate_elapsed_time_ms());
 }

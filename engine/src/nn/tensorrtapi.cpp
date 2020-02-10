@@ -32,7 +32,8 @@
 #include <sstream>
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, Precision precision):
-    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true)
+    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
+    precision(float32)
 {
     // in ONNX, the model architecture and parameters are in the same file
     modelFilePath = "model.onnx";
@@ -52,7 +53,7 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
 }
 
-ICudaEngine* TensorrtAPI::createCudaEngineFromONNX() {
+ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx() {
 
     // create an engine builder
     IBuilder* builder = createInferBuilder(gLogger);
@@ -104,7 +105,7 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 
     if (!engine) {
         // Fallback to creating engine from scratch
-        engine = createCudaEngineFromONNX();
+        engine = create_cuda_engine_from_onnx();
 
         if (engine) {
             // serialized engines are not portable across platforms or TensorRT versions

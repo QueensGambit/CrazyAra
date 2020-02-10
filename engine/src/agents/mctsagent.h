@@ -84,6 +84,9 @@ private:
     // boolean which indicates if the same node was requested twice for analysis
     bool reusedFullTree;
 
+    // boolean which can be triggered by "stop" from std-in to stop the current search
+    bool isRunning;
+
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
      * The old tree or former subtrees will be freed from memory.
@@ -104,13 +107,14 @@ private:
     /**
      * @brief stop_search_based_on_limits Checks for the search limit condition and possible early break-ups
      * and stops all running search threads accordingly
+     * @param evalInfo Evaluation struct which updated during search
      */
-    inline void stop_search_based_on_limits();
+    inline void stop_search_based_on_limits(EvalInfo& evalInfo);
 
     /**
-     * @brief stop_search Stops all search threads
+     * @brief stop_search_threads Stops all search threads
      */
-    inline void stop_search();
+    inline void stop_search_threads();
 
     /**
      * @brief check_early_stopping Checks if the search can be ended prematurely based on the current tree statistics (visits & Q-values)
@@ -140,6 +144,13 @@ private:
      */
     void delete_game_nodes();
 
+    /**
+     * @brief sleep_and_log_for Sleeps for a given amout of ms while every update interval ms the eval info will be updated an printed to stdout
+     * @param evalInfo Evaluation information
+     * @param timeMS Given amout of milli-seconds to sleep
+     */
+    void sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t updateIntervalMS=1000);
+
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
               NeuralNetAPI** netBatches,
@@ -153,8 +164,14 @@ public:
 
     /**
      * @brief run_mcts_search Starts the MCTS serach using all available search threads
+     * @param evalInfo Evaluation struct which is updated during search
      */
-    void run_mcts_search();
+    void run_mcts_search(EvalInfo& evalInfo);
+
+    /**
+     * @brief stop_search Stops the search which is called after "stop" from the stdin
+     */
+    void stop_search();
 
     /**
      * @brief print_root_node Prints out the root node statistics (visits, q-value, u-value)
@@ -211,5 +228,12 @@ public:
     void update_dirichlet_epsilon(float value);
     Board *get_root_pos() const;
 };
+
+/**
+ * @brief update_eval_info Updates the evaluation information based on the current search tree state
+ * @param evalInfo Evaluation infomration struct
+ * @param rootNode Root node of the search tree
+ */
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode);
 
 #endif // MCTSAGENT_H
