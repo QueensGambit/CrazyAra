@@ -96,6 +96,8 @@ if (USE_TENSORRT)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
     message(STATUS "Enabled TensorRT support")
     link_directories("$ENV{TENSORRT_PATH}lib")
+    include_directories("$ENV{TENSORRT_PATH}include")
+    include_directories("$ENV{TENSORRT_PATH}samples/common/")
     add_definitions(-DTENSORRT)
 endif()
 
