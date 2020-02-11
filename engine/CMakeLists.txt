@@ -58,6 +58,7 @@ file(GLOB source_files
     "src/manager/*.h"
     "src/rl/*.cpp"
     "src/rl/*.h"
+    "$ENV{TENSORRT_PATH}samples/common/logger.cpp"
     )
 
 set(CPP_EXAMPLE_LIBS
@@ -92,19 +93,6 @@ ELSE()
 MESSAGE(STATUS "MXNET_PATH not set")
 ENDIF()
 
-if (USE_TENSORRT)
-    # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
-    message(STATUS "Enabled TensorRT support")
-    message(STATUS "TensorRT path: $ENV{TENSORRT_PATH}")
-    message(STATUS "CUDA path: $ENV{CUDA_PATH}")
-    find_package(CUDA REQUIRED)
-    include_directories($ENV{CUDA_PATH}include)
-    link_directories("$ENV{TENSORRT_PATH}lib")
-    include_directories("$ENV{TENSORRT_PATH}include")
-    include_directories("$ENV{TENSORRT_PATH}samples/common/")
-    add_definitions(-DTENSORRT)
-endif()
-
 include_directories("$ENV{MXNET_PATH}cpp-package/include")
 include_directories("$ENV{MXNET_PATH}include/")
 include_directories("$ENV{MXNET_PATH}3rdparty/tvm/nnvm/include")
@@ -138,6 +126,22 @@ if (USE_RL)
     include_directories("3rdparty/json-3.7.0")
     include_directories($ENV{XTL_PATH}include)
     include_directories($ENV{XTENSOR_PATH}include)
+endif()
+
+if (USE_TENSORRT)
+    # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
+    message(STATUS "Enabled TensorRT support")
+    message(STATUS "TensorRT path: $ENV{TENSORRT_PATH}")
+    message(STATUS "CUDA path: $ENV{CUDA_PATH}")
+    find_package(CUDA REQUIRED)
+    include_directories($ENV{CUDA_PATH}include)
+    link_directories($ENV{CUDA_PATH}lib64)
+    link_directories($ENV{CUDA_PATH}targets/x86_64-linux/lib)
+    link_directories("$ENV{TENSORRT_PATH}lib")
+    include_directories("$ENV{TENSORRT_PATH}include")
+    include_directories("$ENV{TENSORRT_PATH}samples/common/")
+    add_definitions(-DTENSORRT)
+    target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
 endif()
 
 find_package(Threads REQUIRED)

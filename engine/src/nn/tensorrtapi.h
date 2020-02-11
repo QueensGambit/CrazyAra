@@ -41,6 +41,7 @@
 #include "buffers.h"
 #include "common.h"
 #include "logger.h"
+
 #include "parserOnnxConfig.h"
 
 #include "NvInfer.h"
@@ -49,7 +50,6 @@
 
 using namespace nvinfer1;
 using namespace std;
-using namespace cudawrapper;
 
 enum Precision {
     float32,
@@ -66,9 +66,6 @@ template <typename T>
 class TensorrtAPI : public NeuralNetAPI
 {
 private:
-    // logger instance
-    static Logger gLogger;
-
     // input and output layer names
     std::vector<std::string> inputTensorNames;
     std::vector<std::string> outputTensorNames;
@@ -110,8 +107,6 @@ public:
      */
     TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, Precision precision = float32);
 
-    NDArray predict(float* inputPlanes, float& value);
-    void predict(float* inputPlanes, NDArray& valueOutput, NDArray& probOutputs);
 };
 
 /**

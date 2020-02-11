@@ -30,6 +30,8 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include "logger.h"
+
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, Precision precision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
@@ -47,6 +49,11 @@ void TensorrtAPI::load_model()
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
 }
 
+void TensorrtAPI::load_parameters()
+{
+    // do nothing
+}
+
 void TensorrtAPI::bind_executor()
 {
     // create an exectution context for applying inference
@@ -56,7 +63,7 @@ void TensorrtAPI::bind_executor()
 ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx() {
 
     // create an engine builder
-    IBuilder* builder = createInferBuilder(gLogger);
+    IBuilder* builder = createInferBuilder(gLogger.getTRTLogger());
     builder->setMaxBatchSize(int(batchSize));
 
     // create an ONNX network object
