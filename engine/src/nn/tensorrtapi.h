@@ -108,6 +108,7 @@ public:
      */
     TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, Precision precision = float32);
 
+    void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
 };
 
 /**

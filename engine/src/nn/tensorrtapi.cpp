@@ -62,6 +62,11 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
 }
 
+void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs)
+{
+    // TODO
+}
+
 ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
 {
     // create an engine builder

@@ -27,7 +27,7 @@ MAINTAINER QueensGambit
 
 # General dependencies to run CrazyAra
 # -------------------------------------
-# Installing blaze
+# Install blaze
 RUN cd /root \
     && wget https://bitbucket.org/blaze-lib/blaze/downloads/blaze-3.6.tar.gz \
     && tar -xvzf blaze-3.6.tar.gz \
@@ -35,11 +35,19 @@ RUN cd /root \
     && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ \
     && make install
 
+# Clone MXNet repository
 RUN cd /root \
     && git clone https://github.com/apache/incubator-mxnet --recursive \
     && cd incubator-mxnet/cpp-package/include/mxnet-cpp/ \
     && wget https://raw.githubusercontent.com/dmlc/MXNet.cpp/master/include/mxnet-cpp/op.h
 ENV MXNET_PATH /root/incubator-mxnet/
+
+# Clone TensorRT repository for TensorRT backend
+RUN cd /root \
+    && git clone https://github.com/NVIDIA/TensorRT --recursive \
+ENV TENSORRT_PATH /root/TensorRT/
+ENV CUDA_PATH /usr/local/cuda/
+
 
 # Additional dependencies for reinforcement learning
 # ---------------------------------------------------
