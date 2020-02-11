@@ -28,10 +28,14 @@
 #ifndef SEARCHTHREAD_H
 #define SEARCHTHREAD_H
 
+#include "mxnet-cpp/MxNetCpp.h"
 #include "node.h"
 #include "constants.h"
-#include "neuralnetapi.h"
+#include "mxnetapi.h"
 #include "config/searchlimits.h"
+
+using namespace mxnet::cpp;
+
 
 // wrapper for unordered_map with a mutex for thread safe access
 struct MapWithMutex {
@@ -49,7 +53,7 @@ private:
     Node* rootNode;
     Board* rootPos;
     StateListPtr states;
-    NeuralNetAPI* netBatch;
+    MXNetAPI* netBatch;
 
     // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
     float* inputPlanes;
@@ -93,7 +97,7 @@ public:
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(MXNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
     ~SearchThread();
 
     /**

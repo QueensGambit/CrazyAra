@@ -29,27 +29,31 @@
 #ifndef RAWNETAGENT_H
 #define RAWNETAGENT_H
 
+#include "mxnet-cpp/MxNetCpp.h"
 #include "position.h"
 #include "../evalinfo.h"
 #include "../node.h"
 #include <thread>
 #include "../board.h"
-#include "../nn/neuralnetapi.h"
+#include "../nn/mxnetapi.h"
 #include "config/searchsettings.h"
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
 #include "agent.h"
 
+using namespace mxnet::cpp;
+
+
 class RawNetAgent: public Agent
 {
 private:
-    NeuralNetAPI *net;
+    MXNetAPI *net;
     float inputPlanes[NB_VALUES_TOTAL];
     NDArray valueOutput = NDArray(Shape(1, 1), Context::cpu());
     NDArray probOutputs = NDArray(Shape(1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH), Context::cpu());
 
 public:
-    RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings_, bool verbose);
+    RawNetAgent(MXNetAPI* net, PlaySettings* playSettings_, bool verbose);
 
     void evaluate_board_state(Board *pos, EvalInfo& evalInfo);
 

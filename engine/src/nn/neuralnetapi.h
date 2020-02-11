@@ -33,10 +33,10 @@
 #include <mutex>
 #include <vector>
 // TODO: Remove MXNet dependency for interface class
-#include "mxnet-cpp/MxNetCpp.h"
+//#include "mxnet-cpp/MxNetCpp.h"
 #include "../util/communication.h"
 
-using namespace mxnet::cpp;
+//using namespace mxnet::cpp;
 using namespace std;
 
 /**
@@ -80,12 +80,6 @@ protected:
      */
     virtual void bind_executor() = 0;
 
-    /**
-     * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
-     * and sets the selectPolicyFromPlane boolean accordingly
-     */
-    void check_if_policy_map();
-
 public:
     /**
      * @brief NeuralNetAPI
@@ -96,22 +90,6 @@ public:
      * where parameters a.k.a weights of the neural are stored (.params file) are stored
      */
     NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt);
-
-    /**
-     * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
-     * @param inputPlanes Pointer to the input planes of a single board position
-     * @param value Value prediction for the board by the neural network
-     * @return Policy NDArray
-     */
-    virtual NDArray predict(float* inputPlanes, float& value) = 0;
-
-    /**
-     * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
-     * @param inputPlanes Pointer to the input planes of a single board position
-     * @param value Value prediction for the board by the neural network
-     * @param probOutputs Policy NDArray of the raw network output (including illegal moves). It's assumend that the memory has already been allocated.
-     */
-    virtual void predict(float* inputPlanes, NDArray& valueOutput, NDArray& probOutputs) = 0;
 
     /**
      * @brief is_policy_map Returns true if the policy outputs is defined in policy map representation else false

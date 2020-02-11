@@ -30,7 +30,11 @@
 #ifndef MXNETAPI_H
 #define MXNETAPI_H
 
+#include "mxnet-cpp/MxNetCpp.h"
 #include "neuralnetapi.h"
+
+using namespace mxnet::cpp;
+
 
 /**
  * @brief The MXNetAPI class implements access to the MXNET-C++ back-end for running inference on CPU and GPU.
@@ -82,8 +86,22 @@ public:
     MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT);
     ~MXNetAPI();
 
+    /**
+     * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
+     * @param inputPlanes Pointer to the input planes of a single board position
+     * @param value Value prediction for the board by the neural network
+     * @return Policy NDArray
+     */
     NDArray predict(float* inputPlanes, float& value);
+
+    /**
+     * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
+     * @param inputPlanes Pointer to the input planes of a single board position
+     * @param value Value prediction for the board by the neural network
+     * @param probOutputs Policy NDArray of the raw network output (including illegal moves). It's assumend that the memory has already been allocated.
+     */
     void predict(float* inputPlanes, NDArray& valueOutput, NDArray& probOutputs);
+
 };
 
 #endif // MXNETAPI_H

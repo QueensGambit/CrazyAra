@@ -39,7 +39,7 @@
 
 using namespace mxnet::cpp;
 
-MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
+MCTSAgent::MCTSAgent(MXNetAPI *netSingle, MXNetAPI** netBatches,
                      SearchSettings* searchSettings, PlaySettings* playSettings_,
                      StatesManager *states
                      ):

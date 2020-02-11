@@ -24,8 +24,10 @@
  */
 
 #include "neuralnetapi.h"
+#include <memory>
 #include <dirent.h>
 #include <exception>
+#include <cstring>
 #include <string>
 #include "../domain/crazyhouse/constants.h"
 
@@ -92,16 +94,4 @@ bool NeuralNetAPI::file_exists(const string& name)
 {
     struct stat buffer;
     return (stat(name.c_str(), &buffer) == 0);
-}
-
-void NeuralNetAPI::check_if_policy_map()
-{
-    float* inputPlanes = new float[batchSize*NB_VALUES_TOTAL];
-    fill(inputPlanes, inputPlanes+batchSize*NB_VALUES_TOTAL, 0.0f);
-
-    float value;
-    NDArray probOutputs = predict(inputPlanes, value);
-    isPolicyMap = probOutputs.GetShape()[1] != NB_LABELS;
-    info_string("isPolicyMap:", isPolicyMap);
-    delete[] inputPlanes;
 }

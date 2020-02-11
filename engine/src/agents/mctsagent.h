@@ -39,7 +39,7 @@
 #include "../evalinfo.h"
 #include "../node.h"
 #include "../board.h"
-#include "../nn/neuralnetapi.h"
+#include "../nn/mxnetapi.h"
 #include "config/searchsettings.h"
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
@@ -50,8 +50,8 @@
 class MCTSAgent : public Agent
 {
 private:
-    NeuralNetAPI* netSingle;
-    NeuralNetAPI** netBatches;
+    MXNetAPI* netSingle;
+    MXNetAPI** netBatches;
 
     SearchSettings* searchSettings;
     std::vector<SearchThread*> searchThreads;
@@ -152,12 +152,11 @@ private:
     void sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t updateIntervalMS=1000);
 
 public:
-    MCTSAgent(NeuralNetAPI* netSingle,
-              NeuralNetAPI** netBatches,
+    MCTSAgent(MXNetAPI* netSingle,
+              MXNetAPI** netBatches,
               SearchSettings* searchSettings,
               PlaySettings* playSettings_,
               StatesManager* states);
-
     ~MCTSAgent();
 
     void evaluate_board_state(Board *pos, EvalInfo& evalInfo);

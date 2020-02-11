@@ -380,7 +380,7 @@ bool CrazyAra::is_ready()
         init_rl_settings();
 #endif
         netSingle = create_new_net_single(Options["Model_Directory"]);
-        NeuralNetAPI** netBatches = create_new_net_batches(Options["Model_Directory"]);
+        MXNetAPI** netBatches = create_new_net_batches(Options["Model_Directory"]);
         mctsAgent = create_new_mcts_agent(netSingle, netBatches, states);
         rawAgent = new RawNetAgent(netSingle, playSettings, false);
         Constants::init(mctsAgent->is_policy_map());
@@ -403,26 +403,26 @@ string CrazyAra::engine_info()
     return ss.str();
 }
 
-NeuralNetAPI *CrazyAra::create_new_net_single(const string& modelDirectory)
+MXNetAPI *CrazyAra::create_new_net_single(const string& modelDirectory)
 {
     return new MXNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
 }
 
-NeuralNetAPI **CrazyAra::create_new_net_batches(const string& modelDirectory)
+MXNetAPI **CrazyAra::create_new_net_batches(const string& modelDirectory)
 {
 #ifdef TENSORRT
     const bool useTensorRT = bool(Options["Use_TensorRT"]);
 #else
     const bool useTensorRT = false;
 #endif
-    NeuralNetAPI** netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
+    MXNetAPI** netBatches = new MXNetAPI*[size_t(searchSettings->threads)];
     for (size_t i = 0; i < size_t(searchSettings->threads); ++i) {
         netBatches[i] = new MXNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
     }
     return netBatches;
 }
 
-MCTSAgent *CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, NeuralNetAPI** netBatches, StatesManager* states)
+MCTSAgent *CrazyAra::create_new_mcts_agent(MXNetAPI* netSingle, MXNetAPI** netBatches, StatesManager* states)
 {
     return new MCTSAgent(netSingle, netBatches, searchSettings, playSettings, states);
 }

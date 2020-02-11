@@ -29,7 +29,7 @@
 #include "util/blazeutil.h"
 #include "uci.h"
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+SearchThread::SearchThread(MXNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
     netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
 {
     // allocate memory for all predictions and results
