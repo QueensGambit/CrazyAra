@@ -73,7 +73,8 @@ private:
     // input and output dimension of the network
     Precision precision;
     nvinfer1::Dims inputDims;
-    nvinfer1::Dims outputDims;
+    nvinfer1::Dims valueOutputDims;
+    nvinfer1::Dims policyOutputDims;
 
     // tensorRT runtime engine
     std::shared_ptr<nvinfer1::ICudaEngine> engine;

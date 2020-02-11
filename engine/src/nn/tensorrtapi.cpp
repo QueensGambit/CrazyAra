@@ -30,7 +30,6 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include "logger.h"
 
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, Precision precision):
@@ -47,6 +46,9 @@ void TensorrtAPI::load_model()
 {
     // load an engine from file or build an engine from the ONNX network
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
+    inputTensorNames.push_back("data");
+    outputTensorNames.push_back("value_tanh0_output");
+    outputTensorNames.push_back("flatten0_output");
 }
 
 void TensorrtAPI::load_parameters()
@@ -60,8 +62,8 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
 }
 
-ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx() {
-
+ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
+{
     // create an engine builder
     IBuilder* builder = createInferBuilder(gLogger.getTRTLogger());
     builder->setMaxBatchSize(int(batchSize));
@@ -69,10 +71,6 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx() {
     // create an ONNX network object
     const auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
     auto network = SampleUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
-    inputDims = network->getInput(0)->getDimensions();
-    outputDims = network->getOutput(0)->getDimensions();
-    info_string("inputDims:", inputDims);
-    info_string("outputDims:", outputDims);
 
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
     set_config_settings(config, network, precision);
@@ -88,7 +86,14 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx() {
    }
 
    // show additional information about the network
-   // parser->reportParsingInfo();
+   //parser->reportParsingInfo();
+
+   inputDims = network->getInput(0)->getDimensions();
+   valueOutputDims = network->getOutput(0)->getDimensions();
+   policyOutputDims = network->getOutput(1)->getDimensions();
+   info_string("inputDims:", inputDims);
+   info_string("valueOutputDims:", valueOutputDims);
+   info_string("policyOutputDims:", policyOutputDims);
 
    // build an engine from the TensorRT network with a given configuration struct
    return builder->buildEngineWithConfig(*network, *config);
