@@ -47,6 +47,8 @@ class NeuralNetAPI
 protected:
     std::vector<std::string> outputLabels;
     unsigned int batchSize;
+    // vector length for the policy output as returned by the neural network respecting the batch size
+    unsigned int policyOutputLength;
     bool isPolicyMap;
     bool enableTensorrt;
     // defines the name for the model based on the loaded .params file
@@ -108,6 +110,16 @@ public:
      * @return string
      */
     string get_device_name() const;
+
+    /**
+     * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
+     * @param inputPlanes Pointer to the input planes of a single board position
+     * @param value Value prediction for the board by the neural network
+     * @param probOutputs Policy array of the raw network output (including illegal moves). It's assumend that the memory has already been allocated.
+     */
+    virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs) = 0;
+
+    unsigned int get_policy_output_length() const;
 };
 
 #endif // NEURALNETAPI_H

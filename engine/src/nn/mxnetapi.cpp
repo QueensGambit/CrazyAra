@@ -81,18 +81,6 @@ void MXNetAPI::ConvertParamMapToTargetContext(const std::map<std::string, NDArra
   }
 }
 
-void MXNetAPI::check_if_policy_map()
-{
-    float* inputPlanes = new float[batchSize*NB_VALUES_TOTAL];
-    fill(inputPlanes, inputPlanes+batchSize*NB_VALUES_TOTAL, 0.0f);
-
-    float value;
-    NDArray probOutputs = predict(inputPlanes, value);
-    isPolicyMap = probOutputs.GetShape()[1] != NB_LABELS;
-    info_string("isPolicyMap:", isPolicyMap);
-    delete[] inputPlanes;
-}
-
 void MXNetAPI::load_parameters() {
     if (!file_exists(paramterFilePath)) {
         info_string("Parameter file does not exist:", paramterFilePath);
@@ -145,6 +133,21 @@ void MXNetAPI::bind_executor()
     info_string("Bind successfull!");
 }
 
+void MXNetAPI::check_if_policy_map()
+{
+    float* inputPlanes = new float[batchSize*NB_VALUES_TOTAL];
+    fill(inputPlanes, inputPlanes+batchSize*NB_VALUES_TOTAL, 0.0f);
+
+    float value;
+    NDArray probOutputs = predict(inputPlanes, value);
+    isPolicyMap = probOutputs.GetShape()[1] != NB_LABELS;
+    info_string("isPolicyMap:", isPolicyMap);
+    if (isPolicyMap) {
+        policyOutputLength = NB_LABELS_POLICY_MAP * batchSize;
+    }
+    delete[] inputPlanes;
+}
+
 NDArray MXNetAPI::predict(float* inputPlanes, float& value)
 {
     executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, NB_VALUES_TOTAL * batchSize);
@@ -167,17 +170,13 @@ NDArray MXNetAPI::predict(float* inputPlanes, float& value)
     return probOutputs;
 }
 
-void MXNetAPI::predict(float *inputPlanes, NDArray& valueOutput, NDArray& probOutputs)
+void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutputs)
 {
     executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, NB_VALUES_TOTAL * batchSize);
 
     // Run the forward pass.
     executor->Forward(false);
 
-    valueOutput = executor->outputs[0].Copy(Context::cpu());
-    probOutputs = executor->outputs[1].Copy(Context::cpu());
-
-    // Assign the value output to the return parameter
-    valueOutput.WaitToRead();
-    probOutputs.WaitToRead();
+    executor->outputs[0].SyncCopyToCPU(valueOutput, batchSize);
+    executor->outputs[1].SyncCopyToCPU(probOutputs, policyOutputLength);
 }

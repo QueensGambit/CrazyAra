@@ -39,8 +39,8 @@
 
 #include "argsParser.h"
 #include "buffers.h"
-#include "common.h"
-#include "logger.h"
+//#include "common.h"
+//#include "logger.h"
 
 #include "parserOnnxConfig.h"
 
@@ -48,7 +48,7 @@
 #include <cuda_runtime_api.h>
 
 
-using namespace nvinfer1;
+//using namespace nvinfer1;
 using namespace std;
 
 enum Precision {

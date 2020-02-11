@@ -29,26 +29,21 @@
 #include "util/blazeutil.h"
 #include "uci.h"
 
-SearchThread::SearchThread(MXNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
     netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
 {
     // allocate memory for all predictions and results
     inputPlanes = new float[searchSettings->batchSize * NB_VALUES_TOTAL];
-    valueOutputs = new NDArray(Shape(searchSettings->batchSize, 1), Context::cpu());
-
-    if (netBatch->is_policy_map()) {
-        probOutputs = new NDArray(Shape(searchSettings->batchSize, NB_LABELS_POLICY_MAP), Context::cpu());
-    } else {
-        probOutputs = new NDArray(Shape(searchSettings->batchSize, NB_LABELS), Context::cpu());
-    }
+    valueOutputs = new float[searchSettings->batchSize];
+    probOutputs = new float[netBatch->get_policy_output_length()];
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
 }
 
 SearchThread::~SearchThread()
 {
     delete [] inputPlanes;
-    delete valueOutputs;
-    delete probOutputs;
+    delete [] valueOutputs;
+    delete [] probOutputs;
 }
 
 void SearchThread::set_root_node(Node *value)
@@ -73,10 +68,6 @@ void SearchThread::set_is_running(bool value)
 
 void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck)
 {
-//    StateInfo* newState = new StateInfo;
-//    Board* newPos = new Board(*parentNode->get_pos());
-//    newPos->do_move(parentNode->get_move(childIdx), *newState);
-
     mapWithMutex->mtx.lock();
     unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable->find(newPos->hash_key());
     mapWithMutex->mtx.unlock();
@@ -235,7 +226,7 @@ void SearchThread::thread_iteration()
 {
     create_mini_batch();
     if (newNodes.size() != 0) {
-        netBatch->predict(inputPlanes, *valueOutputs, *probOutputs);
+        netBatch->predict(inputPlanes, valueOutputs, probOutputs);
         set_nn_results_to_child_nodes();
     }
     backup_value_outputs();
@@ -258,14 +249,14 @@ void backup_values(vector<Node*>& nodes)
     nodes.clear();
 }
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, NDArray* valueOutputs, NDArray* probOutputs, Node *node, float temperature)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, float temperature)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), get_current_move_lookup(node->side_to_move()));
     if (!isPolicyMap) {
         node->apply_softmax_to_policy();
     }
     node->apply_temperature_to_prior_policy(temperature);
-    node->set_value(valueOutputs->At(batchIdx, 0));
+    node->set_value(valueOutputs[batchIdx]);
     node->enable_has_nn_results();
 }
 

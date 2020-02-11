@@ -39,7 +39,7 @@
 #include "../evalinfo.h"
 #include "../node.h"
 #include "../board.h"
-#include "../nn/mxnetapi.h"
+#include "../nn/neuralnetapi.h"
 #include "config/searchsettings.h"
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
@@ -50,15 +50,15 @@
 class MCTSAgent : public Agent
 {
 private:
-    MXNetAPI* netSingle;
-    MXNetAPI** netBatches;
+    NeuralNetAPI* netSingle;
+    NeuralNetAPI** netBatches;
 
     SearchSettings* searchSettings;
     std::vector<SearchThread*> searchThreads;
 
     float inputPlanes[NB_VALUES_TOTAL];
-    NDArray* valueOutput;
-    NDArray* probOutputs;
+    float valueOutput;
+    float* probOutputs;
 
     TimeManager* timeManager;
 
@@ -152,8 +152,8 @@ private:
     void sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t updateIntervalMS=1000);
 
 public:
-    MCTSAgent(MXNetAPI* netSingle,
-              MXNetAPI** netBatches,
+    MCTSAgent(NeuralNetAPI* netSingle,
+              NeuralNetAPI** netBatches,
               SearchSettings* searchSettings,
               PlaySettings* playSettings_,
               StatesManager* states);

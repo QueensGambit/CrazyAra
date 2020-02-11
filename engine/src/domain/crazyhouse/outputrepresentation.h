@@ -29,16 +29,13 @@
 #define OUTPUTREPRESENTATION_H
 
 #include "types.h"
-#include "mxnet-cpp/MxNetCpp.h"
 #include <blaze/Math.h>
 #include "constants.h"
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
 
-using namespace mxnet::cpp;
 using namespace std;
-
 
 /**
  * @brief get_policy_data_batch Returns the pointer of the batch for the policy predictions
@@ -47,7 +44,7 @@ using namespace std;
  * @param isPolicyMap Sets if the policy is encoded in policy map representation
  * @return Starting pointer for predictions of the current batch
  */
-const float*  get_policy_data_batch(const size_t batchIdx, const NDArray* policyProb, bool isPolicyMap);
+const float*  get_policy_data_batch(const size_t batchIdx, const float* policyProb, bool isPolicyMap);
 
 /**
  * @brief get_current_move_lookup Returns the look-up table to use depending on the side to move
@@ -60,7 +57,7 @@ unordered_map<Move, size_t>& get_current_move_lookup(Color sideToMove);
  * @brief get_probs_of_move_list Returns an array in which entry relates to the probability for the given move list.
                                  Its assumed that the moves in the move list are legal and shouldn't be mirrored.
  * @param batchIdx Index to use in policyProb when extracting the probabilities for all legal moves
- * @param policyProb Policy vector from the neural net prediction
+ * @param policyProb Policy array from the neural net prediction
  * @param legalMoves List of legal moves for a specific board position
  * @param lastLegalMove Pointer to the last legal move
  * @param sideToMove Determine if it's white's or black's turn to move
@@ -68,7 +65,7 @@ unordered_map<Move, size_t>& get_current_move_lookup(Color sideToMove);
  * @param select_policy_from_plance Sets if the policy is encoded in policy map representation
  * @return policyProbSmall - A hybrid blaze vector which stores the probabilities for the given move list
  */
-void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove,
+void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Move> &legalMoves, Color sideToMove,
                             bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance);
 
 void get_probs_of_moves(const float *data, const vector<Move>& legalMoves,

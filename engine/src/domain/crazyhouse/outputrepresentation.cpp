@@ -29,11 +29,8 @@
 using namespace std;
 
 // TODO: Change this later to blaze::HybridVector<float, MAX_NB_LEGAL_MOVES>
-void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool selectPolicyFromPlane)
+void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Move> &legalMoves, Color sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool selectPolicyFromPlane)
 {
-//    // allocate sufficient memory -> is assumed that it has already been done
-//    policyProbSmall.resize(legalMoves.size());
-    const float *data = policyProb->GetData();
     size_t vectorIdx;
     for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
         if (sideToMove == WHITE) {
@@ -49,9 +46,9 @@ void get_probs_of_move_list(const size_t batchIdx, const NDArray* policyProb, co
         // accessing the data on the raw floating point vector is faster
         // than calling policyProb.At(batchIdx, vectorIdx)
         if (selectPolicyFromPlane) {
-            policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS_POLICY_MAP+vectorIdx];
+            policyProbSmall[mvIdx] = policyProb[batchIdx*NB_LABELS_POLICY_MAP+vectorIdx];
         } else {
-            policyProbSmall[mvIdx] = data[batchIdx*NB_LABELS+vectorIdx];
+            policyProbSmall[mvIdx] = policyProb[batchIdx*NB_LABELS+vectorIdx];
         }
     }
 
@@ -90,12 +87,12 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
 }
 
-const float* get_policy_data_batch(const size_t batchIdx, const NDArray *probOutputs, bool isPolicyMap)
+const float* get_policy_data_batch(const size_t batchIdx, const float* probOutputs, bool isPolicyMap)
 {
     if (isPolicyMap) {
-        return probOutputs->GetData() + batchIdx*NB_LABELS_POLICY_MAP;
+        return probOutputs + batchIdx*NB_LABELS_POLICY_MAP;
     }
-    return probOutputs->GetData() + batchIdx*NB_LABELS;
+    return probOutputs + batchIdx*NB_LABELS;
 }
 
 unordered_map<Move, size_t>& get_current_move_lookup(Color sideToMove)

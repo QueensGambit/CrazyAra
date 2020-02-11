@@ -30,16 +30,14 @@
 #include "outputrepresentation.h"
 #include "constants.h"
 #include "../util/blazeutil.h"
-#include "mxnet-cpp/MxNetCpp.h"
 #include "uci.h"
 #include "../manager/statesmanager.h"
 #include "../manager/treemanager.h"
 #include "../node.h"
 #include "../util/communication.h"
 
-using namespace mxnet::cpp;
 
-MCTSAgent::MCTSAgent(MXNetAPI *netSingle, MXNetAPI** netBatches,
+MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
                      SearchSettings* searchSettings, PlaySettings* playSettings_,
                      StatesManager *states
                      ):
@@ -63,14 +61,7 @@ MCTSAgent::MCTSAgent(MXNetAPI *netSingle, MXNetAPI** netBatches,
     for (auto i = 0; i < searchSettings->threads; ++i) {
         searchThreads.push_back(new SearchThread(netBatches[i], searchSettings, mapWithMutex));
     }
-
-    valueOutput = new NDArray(Shape(1, 1), Context::cpu());
-
-    if (netSingle->is_policy_map()) {
-        probOutputs = new NDArray(Shape(1, NB_LABELS_POLICY_MAP), Context::cpu());
-    } else {
-        probOutputs = new NDArray(Shape(1, NB_LABELS), Context::cpu());
-    }
+    probOutputs = new float[netSingle->get_policy_output_length()];
     timeManager = new TimeManager(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
     fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);  // will be filled in evalute_board_state()
@@ -83,8 +74,7 @@ MCTSAgent::~MCTSAgent()
     }
     delete netBatches;
     delete mapWithMutex;
-    delete valueOutput;
-    delete probOutputs;
+    delete [] probOutputs;
     for (auto searchThread : searchThreads) {
         delete searchThread;
     }
@@ -230,8 +220,8 @@ void MCTSAgent::create_new_root_node(Board *pos)
     rootNode = new Node(newPos, false, nullptr, 0, searchSettings);
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
-    netSingle->predict(inputPlanes, *valueOutput, *probOutputs);
-    fill_nn_results(0, netSingle->is_policy_map(), valueOutput, probOutputs, rootNode, searchSettings->nodePolicyTemperature);
+    netSingle->predict(inputPlanes, &valueOutput, probOutputs);
+    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs, rootNode, searchSettings->nodePolicyTemperature);
     gameNodes.push_back(rootNode);
 }
 

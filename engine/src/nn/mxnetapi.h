@@ -82,10 +82,6 @@ private:
         std::map<std::string, NDArray> *paramMapInTargetContext,
         Context targetContext);
 
-public:
-    MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT);
-    ~MXNetAPI();
-
     /**
      * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
      * @param inputPlanes Pointer to the input planes of a single board position
@@ -94,13 +90,11 @@ public:
      */
     NDArray predict(float* inputPlanes, float& value);
 
-    /**
-     * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
-     * @param inputPlanes Pointer to the input planes of a single board position
-     * @param value Value prediction for the board by the neural network
-     * @param probOutputs Policy NDArray of the raw network output (including illegal moves). It's assumend that the memory has already been allocated.
-     */
-    void predict(float* inputPlanes, NDArray& valueOutput, NDArray& probOutputs);
+public:
+    MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT);
+    ~MXNetAPI();
+
+    void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
 
 };
 

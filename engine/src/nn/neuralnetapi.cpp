@@ -52,6 +52,7 @@ vector<string> get_directory_files(const string& dir) {
 
 NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
     batchSize(batchSize),
+    policyOutputLength(NB_LABELS * batchSize),
     enableTensorrt(enableTensorrt)
 {
     deviceName = ctx + string("_") + to_string(deviceID);
@@ -88,6 +89,11 @@ string NeuralNetAPI::get_model_name() const
 string NeuralNetAPI::get_device_name() const
 {
     return deviceName;
+}
+
+unsigned int NeuralNetAPI::get_policy_output_length() const
+{
+    return policyOutputLength;
 }
 
 bool NeuralNetAPI::file_exists(const string& name)

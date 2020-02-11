@@ -28,13 +28,10 @@
 #ifndef SEARCHTHREAD_H
 #define SEARCHTHREAD_H
 
-#include "mxnet-cpp/MxNetCpp.h"
 #include "node.h"
 #include "constants.h"
-#include "mxnetapi.h"
+#include "neuralnetapi.h"
 #include "config/searchlimits.h"
-
-using namespace mxnet::cpp;
 
 
 // wrapper for unordered_map with a mutex for thread safe access
@@ -53,7 +50,7 @@ private:
     Node* rootNode;
     Board* rootPos;
     StateListPtr states;
-    MXNetAPI* netBatch;
+    NeuralNetAPI* netBatch;
 
     // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
     float* inputPlanes;
@@ -66,8 +63,8 @@ private:
 
     // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
     // sufficient memory according to the batch-size will be allocated in the constructor
-    NDArray* valueOutputs;
-    NDArray* probOutputs;
+    float* valueOutputs;
+    float* probOutputs;
 
     bool isRunning;
 
@@ -97,7 +94,7 @@ public:
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(MXNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
     ~SearchThread();
 
     /**
@@ -171,7 +168,7 @@ Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, No
 
 void backup_values(vector<Node*>& nodes);
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, NDArray* valueOutputs, NDArray* probOutputs, Node *node, float nodeTemperature);
+void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, float nodeTemperature);
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo);
 

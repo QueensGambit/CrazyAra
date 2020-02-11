@@ -32,7 +32,7 @@
 
 #include "agents/rawnetagent.h"
 #include "agents/mctsagent.h"
-#include "nn/mxnetapi.h"
+#include "nn/neuralnetapi.h"
 #include "agents/config/searchsettings.h"
 #include "agents/config/searchlimits.h"
 #include "agents/config/playsettings.h"
@@ -68,7 +68,7 @@ private:
                     string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
     RawNetAgent* rawAgent;
     MCTSAgent* mctsAgent;
-    MXNetAPI* netSingle;
+    NeuralNetAPI* netSingle;
     SearchSettings* searchSettings;
     PlaySettings* playSettings;
     bool networkLoaded = false;
@@ -92,21 +92,21 @@ private:
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
      * @return Pointer to the new MCTSAgent object
      */
-    MCTSAgent* create_new_mcts_agent(MXNetAPI* netSingle, MXNetAPI** netBatches, StatesManager* states);
+    MCTSAgent* create_new_mcts_agent(NeuralNetAPI* netSingle, NeuralNetAPI** netBatches, StatesManager* states);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory
      * @param modelDirectory Model directory where the .params and .json files are stored
      * @return Pointer to the newly created object
      */
-    MXNetAPI* create_new_net_single(const string& modelDirectory);
+    NeuralNetAPI* create_new_net_single(const string& modelDirectory);
 
     /**
      * @brief create_new_net_batches Factory to create and load a new model for batch-size access
      * @param modelDirectory Model directory where the .params and .json files are stored
      * @return Pointer to the newly createded objects. For every thread a sepreate net
      */
-    MXNetAPI** create_new_net_batches(const string& modelDirectory);
+    NeuralNetAPI** create_new_net_batches(const string& modelDirectory);
 
 public:
     CrazyAra();
