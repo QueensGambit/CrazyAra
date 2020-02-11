@@ -32,6 +32,14 @@ MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
     NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, tensorRT),
     inputShape(Shape(miniBatchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH))
 {
+    if (ctx == "cpu" || ctx == "CPU") {
+        globalCtx = Context::cpu();
+    } else if (ctx == "gpu" || ctx == "GPU") {
+        globalCtx = Context::gpu(deviceID);
+    } else {
+        throw "unsupported context " + ctx + " given";
+    }
+
     load_model();
     load_parameters();
     bind_executor();
