@@ -46,6 +46,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     netBatches(netBatches),
     searchSettings(searchSettings),
     rootNode(nullptr),
+    rootPos(nullptr),
     oldestRootNode(nullptr),
     ownNextRoot(nullptr),
     opponentsNextRoot(nullptr),
@@ -257,7 +258,7 @@ void MCTSAgent::sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t upda
         this_thread::sleep_for(chrono::milliseconds(updateIntervalMS));
         evalInfo.end = chrono::steady_clock::now();
         update_eval_info(evalInfo, rootNode);
-        info_string(evalInfo);
+        info_score(evalInfo);
     }
     this_thread::sleep_for(chrono::milliseconds(timeMS % 1000));
 }

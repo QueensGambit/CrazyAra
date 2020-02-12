@@ -52,6 +52,8 @@ private:
 public:
     RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings_, bool verbose);
     ~RawNetAgent();
+    RawNetAgent(const RawNetAgent&) = delete;
+    RawNetAgent& operator=(RawNetAgent const&) = delete;
 
     void evaluate_board_state(Board *pos, EvalInfo& evalInfo);
 

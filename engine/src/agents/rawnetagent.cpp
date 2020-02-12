@@ -35,7 +35,7 @@
 using blaze::HybridVector;
 
 RawNetAgent::RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings_, bool verbose_):
-    Agent(playSettings_, verbose_), net(net)
+    Agent(playSettings_, verbose_), net(net), valueOutput(0)
 {
     fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);  // will be filled in evalute_board_state()
     probOutputs = new float[net->get_policy_output_length()];

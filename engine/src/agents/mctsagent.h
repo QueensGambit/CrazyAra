@@ -158,6 +158,8 @@ public:
               PlaySettings* playSettings_,
               StatesManager* states);
     ~MCTSAgent();
+    MCTSAgent(const MCTSAgent&) = delete;
+    MCTSAgent& operator=(MCTSAgent const&) = delete;
 
     void evaluate_board_state(Board *pos, EvalInfo& evalInfo);
 
