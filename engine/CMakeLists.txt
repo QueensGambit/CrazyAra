@@ -62,9 +62,6 @@ file(GLOB source_files
     "$ENV{TENSORRT_PATH}samples/common/logger.cpp"
     )
 
-link_directories("$ENV{TENSORRT_PATH}lib")
-link_directories("$ENV{CUDA_PATH}targets/x86_64-linux/lib")
-
 set(CPP_PACKAGE_INCLUDE_DIR $ENV{MXNET_PATH}cpp-package/include)
 file(GLOB_RECURSE CPP_PACKAGE_HEADERS
     "${CPP_PACKAGE_INCLUDE_DIR}/*.h"
@@ -145,7 +142,6 @@ if (USE_TENSORRT)
     find_package(CUDA REQUIRED)
     include_directories("$ENV{CUDA_PATH}include")
     link_directories("$ENV{CUDA_PATH}lib64")
-    link_directories("$ENV{CUDA_PATH}targets/x86_64-linux/lib")
     link_directories("$ENV{TENSORRT_PATH}lib")
     include_directories("$ENV{TENSORRT_PATH}include")
     include_directories("$ENV{TENSORRT_PATH}samples/common/")
