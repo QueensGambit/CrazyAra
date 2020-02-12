@@ -85,6 +85,8 @@ private:
     void load_parameters();
     void bind_executor();
 
+    void check_if_policy_map();
+
     /**
      * @brief createCudaEngineFromONNX Creates a new cuda engine from a onnx model architecture
      * @return ICudaEngine*

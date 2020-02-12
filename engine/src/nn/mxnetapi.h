@@ -55,10 +55,6 @@ private:
     void load_parameters();
     void bind_executor();
 
-    /**
-     * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
-     * and sets the selectPolicyFromPlane boolean accordingly
-     */
     void check_if_policy_map();
 
     /**

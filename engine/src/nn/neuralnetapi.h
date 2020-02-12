@@ -82,6 +82,12 @@ protected:
      */
     virtual void bind_executor() = 0;
 
+    /**
+     * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
+     * and sets the selectPolicyFromPlane boolean accordingly
+     */
+    virtual void check_if_policy_map() = 0;
+
 public:
     /**
      * @brief NeuralNetAPI

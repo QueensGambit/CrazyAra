@@ -40,6 +40,7 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     modelFilePath = "model-os-96.onnx";
     load_model();
     bind_executor();
+    check_if_policy_map();
 }
 
 void TensorrtAPI::load_model()
@@ -47,8 +48,8 @@ void TensorrtAPI::load_model()
     // load an engine from file or build an engine from the ONNX network
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
     inputTensorNames.push_back("data");
-    outputTensorNames.push_back("value_tanh0_output");
-    outputTensorNames.push_back("flatten0_output");
+    outputTensorNames.push_back("value_tanh0");
+    outputTensorNames.push_back("flatten0");
 }
 
 void TensorrtAPI::load_parameters()
@@ -62,6 +63,14 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     // create buffers object with respect to the engine and batch size
     buffers = std::shared_ptr<samplesCommon::BufferManager>(new samplesCommon::BufferManager(engine, int(batchSize)));
+}
+
+void TensorrtAPI::check_if_policy_map()
+{
+    if (policyOutputDims.d[1] != NB_LABELS) {
+        isPolicyMap = true;
+        policyOutputLength = NB_LABELS_POLICY_MAP * batchSize;
+    }
 }
 
 void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs)
