@@ -79,6 +79,7 @@ private:
     // tensorRT runtime engine
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
     SampleUniquePtr<nvinfer1::IExecutionContext> context;
+    SampleUniquePtr<samplesCommon::BufferManager> buffers;
 
     void load_model();
     void load_parameters();

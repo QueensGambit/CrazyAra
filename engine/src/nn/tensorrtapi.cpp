@@ -30,7 +30,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-
+#include "constants.h"
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, Precision precision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
@@ -60,11 +60,28 @@ void TensorrtAPI::bind_executor()
 {
     // create an exectution context for applying inference
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
+    // create buffers object with respect to the engine and batch size
+    buffers = SampleUniquePtr<samplesCommon::BufferManager>(new samplesCommon::BufferManager(engine, int(batchSize)));
 }
 
 void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs)
 {
-    // TODO
+    // assign the input to the host buffer
+    float* hostDataBuffer = static_cast<float*>(buffers->getHostBuffer(inputTensorNames[0]));
+    copy(inputPlanes, inputPlanes + NB_VALUES_TOTAL * batchSize, hostDataBuffer);
+
+    // copy host input buffers to device input buffers
+    buffers->copyInputToDevice();
+
+    // run inference
+    context->executeV2(buffers->getDeviceBindings().data());
+
+    // copy from device output buffers to host output buffers
+    buffers->copyOutputToHost();
+
+    // assign outputs
+    valueOutput = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[0]));
+    probOutputs = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[1]));
 }
 
 ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
