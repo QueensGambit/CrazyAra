@@ -80,8 +80,10 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
     buffers->copyOutputToHost();
 
     // assign outputs
-    valueOutput = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[0]));
-    probOutputs = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[1]));
+    float* valueBuffer = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[0]));
+    float* policyBuffer = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[1]));
+    copy(valueBuffer, valueBuffer + batchSize, valueOutput);
+    copy(policyBuffer, policyBuffer + policyOutputLength, probOutputs);
 }
 
 ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
