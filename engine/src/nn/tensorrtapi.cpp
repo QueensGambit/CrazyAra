@@ -37,7 +37,7 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     precision(float32)
 {
     // in ONNX, the model architecture and parameters are in the same file
-    modelFilePath = "model.onnx";
+    modelFilePath = "model-os-96.onnx";
     load_model();
     bind_executor();
 }
@@ -61,7 +61,7 @@ void TensorrtAPI::bind_executor()
     // create an exectution context for applying inference
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     // create buffers object with respect to the engine and batch size
-    buffers = SampleUniquePtr<samplesCommon::BufferManager>(new samplesCommon::BufferManager(engine, int(batchSize)));
+    buffers = std::shared_ptr<samplesCommon::BufferManager>(new samplesCommon::BufferManager(engine, int(batchSize)));
 }
 
 void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs)

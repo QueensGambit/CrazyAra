@@ -38,7 +38,6 @@
 #include "domain/crazyhouse/constants.h"
 #include "constants.h"
 #include "board.h"
-#include "mxnet-cpp/MxNetCpp.h"
 #include "domain/variants.h"
 #include "optionsuci.h"
 #include "tests/benchmarkpositions.h"
@@ -405,7 +404,10 @@ string CrazyAra::engine_info()
 
 NeuralNetAPI* CrazyAra::create_new_net_single(const string& modelDirectory)
 {
+#ifdef MXNET
     return new MXNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
+#endif
+    return nullptr;
 }
 
 NeuralNetAPI** CrazyAra::create_new_net_batches(const string& modelDirectory)
@@ -417,7 +419,9 @@ NeuralNetAPI** CrazyAra::create_new_net_batches(const string& modelDirectory)
 #endif
     NeuralNetAPI** netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
     for (size_t i = 0; i < size_t(searchSettings->threads); ++i) {
+#ifdef MXNET
         netBatches[i] = new MXNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
+#endif
     }
     return netBatches;
 }

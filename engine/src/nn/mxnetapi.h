@@ -30,6 +30,7 @@
 #ifndef MXNETAPI_H
 #define MXNETAPI_H
 
+#ifdef MXNET
 #include "mxnet-cpp/MxNetCpp.h"
 #include "neuralnetapi.h"
 
@@ -98,4 +99,5 @@ public:
 
 };
 
+#endif
 #endif // MXNETAPI_H

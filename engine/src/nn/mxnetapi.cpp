@@ -25,6 +25,7 @@
 
 #include "mxnetapi.h"
 
+#ifdef MXNET
 #include "../util/communication.h"
 #include "../domain/crazyhouse/constants.h"
 
@@ -188,3 +189,5 @@ void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutput
     executor->outputs[0].SyncCopyToCPU(valueOutput, batchSize);
     executor->outputs[1].SyncCopyToCPU(probOutputs, policyOutputLength);
 }
+
+#endif

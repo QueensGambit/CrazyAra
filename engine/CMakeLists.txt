@@ -5,6 +5,7 @@ project(CrazyAra CXX)
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
 option(USE_TENSORRT              "Build with TensorRT support"  ON)
+option(USE_MXNET                 "Build with TensorRT support"  OFF)
 
 # -pg performance profiling flags
 if (USE_PROFILING)
@@ -61,11 +62,8 @@ file(GLOB source_files
     "$ENV{TENSORRT_PATH}samples/common/logger.cpp"
     )
 
-set(CPP_EXAMPLE_LIBS
-    ${BEGIN_WHOLE_ARCHIVE} mxnet_static ${END_WHOLE_ARCHIVE}
-    ${BEGIN_WHOLE_ARCHIVE} dmlc ${END_WHOLE_ARCHIVE}
-    ${mxnet_LINKER_LIBS}
-    )
+link_directories("$ENV{TENSORRT_PATH}lib")
+link_directories("$ENV{CUDA_PATH}targets/x86_64-linux/lib")
 
 set(CPP_PACKAGE_INCLUDE_DIR $ENV{MXNET_PATH}cpp-package/include)
 file(GLOB_RECURSE CPP_PACKAGE_HEADERS
@@ -87,34 +85,44 @@ include_directories("src/agents")
 include_directories("src/agents/config")
 include_directories("src/nn")
 
-IF(DEFINED ENV{MXNET_PATH})
-MESSAGE(STATUS "MXNET_PATH set to: $ENV{MXNET_PATH}")
-ELSE()
-MESSAGE(STATUS "MXNET_PATH not set")
-ENDIF()
+if (USE_MXNET)
+    IF(DEFINED ENV{MXNET_PATH})
+    MESSAGE(STATUS "MXNET_PATH set to: $ENV{MXNET_PATH}")
+    ELSE()
+    MESSAGE(STATUS "MXNET_PATH not set")
+    ENDIF()
 
-include_directories("$ENV{MXNET_PATH}cpp-package/include")
-include_directories("$ENV{MXNET_PATH}include/")
-include_directories("$ENV{MXNET_PATH}3rdparty/tvm/nnvm/include")
-include_directories("$ENV{MXNET_PATH}3rdparty/dmlc-core/include")
+    include_directories("$ENV{MXNET_PATH}cpp-package/include")
+    include_directories("$ENV{MXNET_PATH}include/")
+    include_directories("$ENV{MXNET_PATH}3rdparty/tvm/nnvm/include")
+    include_directories("$ENV{MXNET_PATH}3rdparty/dmlc-core/include")
 
-link_directories("$ENV{MXNET_PATH}lib")
-link_directories("$ENV{MXNET_PATH}Release/lib")
-link_directories("$ENV{MXNET_PATH}build/lib")
-link_directories("$ENV{MXNET_PATH}build/Release")
-link_directories("$ENV{MXNET_PATH}build")
+    link_directories("$ENV{MXNET_PATH}lib")
+    link_directories("$ENV{MXNET_PATH}Release/lib")
+    link_directories("$ENV{MXNET_PATH}build/lib")
+    link_directories("$ENV{MXNET_PATH}build/Release")
+    link_directories("$ENV{MXNET_PATH}build")
+
+    set(CPP_EXAMPLE_LIBS
+        ${BEGIN_WHOLE_ARCHIVE} mxnet_static ${END_WHOLE_ARCHIVE}
+        ${BEGIN_WHOLE_ARCHIVE} dmlc ${END_WHOLE_ARCHIVE}
+        ${mxnet_LINKER_LIBS}
+        )
+
+    if(UNIX)
+        target_link_libraries(${PROJECT_NAME} mxnet)
+    else()
+        target_link_libraries(${PROJECT_NAME} libmxnet)
+    endif()
+
+    add_definitions(-DUSE_RL)
+endif()
 
 add_executable(${PROJECT_NAME} ${source_files})
 
-if(UNIX)
-    target_link_libraries(${PROJECT_NAME} mxnet)
-else()
-    target_link_libraries(${PROJECT_NAME} libmxnet)
-endif()
 
 if (USE_RL)
     message(STATUS "Enabled Reinforcement Learning functionality")
-    add_definitions(-DUSE_RL)
     if(DEFINED ENV{Z5_PATH})
         MESSAGE(STATUS "Z5_PATH set to: $ENV{Z5_PATH}")
     else()
@@ -126,6 +134,7 @@ if (USE_RL)
     include_directories("3rdparty/json-3.7.0")
     include_directories($ENV{XTL_PATH}include)
     include_directories($ENV{XTENSOR_PATH}include)
+    add_definitions(-DUSE_RL)
 endif()
 
 if (USE_TENSORRT)
@@ -134,14 +143,14 @@ if (USE_TENSORRT)
     message(STATUS "TensorRT path: $ENV{TENSORRT_PATH}")
     message(STATUS "CUDA path: $ENV{CUDA_PATH}")
     find_package(CUDA REQUIRED)
-    include_directories($ENV{CUDA_PATH}include)
-    link_directories($ENV{CUDA_PATH}lib64)
-    link_directories($ENV{CUDA_PATH}targets/x86_64-linux/lib)
+    include_directories("$ENV{CUDA_PATH}include")
+    link_directories("$ENV{CUDA_PATH}lib64")
+    link_directories("$ENV{CUDA_PATH}targets/x86_64-linux/lib")
     link_directories("$ENV{TENSORRT_PATH}lib")
     include_directories("$ENV{TENSORRT_PATH}include")
     include_directories("$ENV{TENSORRT_PATH}samples/common/")
+    target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
     add_definitions(-DTENSORRT)
-    target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
 endif()
 
 find_package(Threads REQUIRED)
