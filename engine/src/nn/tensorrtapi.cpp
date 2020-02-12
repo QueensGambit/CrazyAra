@@ -118,9 +118,6 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
          return nullptr;
    }
 
-   // show additional information about the network
-   //parser->reportParsingInfo();
-
    inputDims = network->getInput(0)->getDimensions();
    valueOutputDims = network->getOutput(0)->getDimensions();
    policyOutputDims = network->getOutput(1)->getDimensions();
