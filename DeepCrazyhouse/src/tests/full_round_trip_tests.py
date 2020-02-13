@@ -18,6 +18,8 @@ from DeepCrazyhouse.src.domain.variants.input_representation import planes_to_bo
 from DeepCrazyhouse.src.domain.variants.output_representation import policy_to_move
 from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesConverter
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
+from DeepCrazyhouse.configs.main_config import main_config
+
 
 # import the Colorer to have a nicer logging printout
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
@@ -46,7 +48,7 @@ def board_single_game(params_inp):
     for i, move in enumerate(cur_game.main_line()):
 
         x_test_single_img = np.expand_dims(x_test[i], axis=0)
-        mat_board = planes_to_board(x_test_single_img[0])
+        mat_board = planes_to_board(x_test_single_img[0], mode=main_config["mode"])
 
         cur_ok = board == mat_board
         all_ok = all_ok and cur_ok
@@ -108,7 +110,7 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
         super(FullRoundTripTests, self).__init__(*args, **kwargs)
         logging.info("loading test dataset...")
         self._s_idcs_test, self._x_test, self._yv_test, self._yp_test, _, self._pgn_datasets_test = load_pgn_dataset(
-            dataset_type="test", part_id=part_id, print_statistics=True, normalize=False, print_parameters=True
+            dataset_type="test", part_id=part_id, verbose=True, normalize=False,
         )
         logging.info("loading test pgn file...")
         self._pgn_filename = self._pgn_datasets_test["parameters/pgn_name"][0].decode("UTF8")
@@ -116,14 +118,15 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
         # self._min_elo_both = self._pgn_datasets_test["parameters/min_elo_both"][0]
         # Rating cap at 90% cumulative rating for all varaints
         self._min_elo_both = {
-            "Crazyhouse": 2000,
-            "Chess960": 1950,
-            "King of the Hill": 1925,
-            "Three-check": 1900,
-            "Antichess": 1925,
-            "Atomic": 1900,
-            "Horde": 1900,
-            "Racing Kings": 1900
+            "Chess": 2200,
+            # "Crazyhouse": 2000,
+            # "Chess960": 1950,
+            # "King of the Hill": 1925,
+            # "Three-check": 1900,
+            # "Antichess": 1925,
+            # "Atomic": 1900,
+            # "Horde": 1900,
+            # "Racing Kings": 1900
         }
         self._start_indices = self._pgn_datasets_test["start_indices"]
 
@@ -201,7 +204,7 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
 
 if __name__ == "__main__":
     # test out all supported variants
-    nb_variants = 8
+    nb_variants = 1
     for part_id in range(nb_variants):
         t = FullRoundTripTests(part_id=part_id)
         t.test_board_states()

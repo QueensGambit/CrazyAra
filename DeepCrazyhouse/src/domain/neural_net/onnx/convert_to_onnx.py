@@ -91,7 +91,7 @@ def main():
     Exemplary call:
     python convert_to_onnx.py --sym-file ./model-os-96-risev2/model/model-0.44052-1.08962-0.777-0.768-symbol.json\
      --params-file ./model-os-96-risev2/model/model-0.44052-1.08962-0.777-0.768-0096.params --input-shape 1 34 8 8\
-      --onnx-file model-os-96.onnx --validate --output-names value_tanh0_output flatten0_output
+      --onnx-file model-os-96-bsize-1.onnx --validate --output-names value_tanh0_output flatten0_output
     :return:
     """
 
