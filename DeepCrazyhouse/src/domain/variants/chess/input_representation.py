@@ -1,14 +1,14 @@
 """
 @file: input_representation.py
-Created on 20.06.18
-@project: jc39qevo-deep-learning-project
+Created on 13.02.20
+@project: CrazyAra
 @author: queensgambit
 
-Input representation for the Crazyhouse board state which is passed to the neural network
+Input representation for the chess board state which is passed to the neural network
 """
 
 import DeepCrazyhouse.src.domain.variants.input_representation as variants
-from DeepCrazyhouse.src.domain.variants.constants import MODE_CRAZYHOUSE
+from DeepCrazyhouse.src.domain.variants.constants import MODE_CHESS
 
 
 def board_to_planes(board, board_occ=0, normalize=True):
@@ -16,7 +16,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
     Gets the plane representation of a given board state.
     (No history of past board positions is used.)
 
-    ## Crazyhouse:
+    ## Chess:
 
     Feature | Planes
 
@@ -28,18 +28,10 @@ def board_to_planes(board, board_occ=0, normalize=True):
 
     Repetitions | 2 (two planes (full zeros/ones) indicating how often the board positions has occurred)
 
-    P1 prisoner count | 5 (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN) (excluding the KING)
-
-    P2 prisoner count | 5 (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN) (excluding the KING)
-
-    P1 Promoted Pawns Mask | 1 (binary map indicating the pieces which have been promoted)
-
-    P2 Promoted Pawns Mask | 1 (binary map indicating the pieces which have been promoted)
-
     En-passant square | 1 (Binary map indicating the square where en-passant capture is possible)
 
     ---
-    27 planes
+    15 planes
 
     * * *
 
@@ -53,14 +45,22 @@ def board_to_planes(board, board_occ=0, normalize=True):
 
     No-progress count | 1 (Setting the no progress counter as integer values, (described by uci halfmoves format)
 
-    # --------------
+    ---
     7 planes
 
     The history list of the past 7 board states have been removed
     The total number of planes is calculated as follows:
 
-    27 + 7
-    Total: 34 planes
+    * * *
+
+    is960 = | 1 (boolean, 1 when active)
+
+    ---
+    1 plane
+
+    # --------------
+    15 + 7 + 1
+    Total: 23 planes
 
     :param board: Board handle (Python-chess object)
     :param board_occ: Sets how often the board state has occurred before (by default 0)
@@ -69,7 +69,7 @@ def board_to_planes(board, board_occ=0, normalize=True):
     """
 
     # return the plane representation of the given board
-    return variants.board_to_planes(board, board_occ, normalize, mode=MODE_CRAZYHOUSE)
+    return variants.board_to_planes(board, board_occ, normalize, mode=MODE_CHESS)
 
 
 def planes_to_board(planes, normalized_input=False):
@@ -83,4 +83,4 @@ def planes_to_board(planes, normalized_input=False):
     """
 
     # used as wrapper function
-    return variants.planes_to_board(planes, normalized_input, mode=MODE_CRAZYHOUSE)
+    return variants.planes_to_board(planes, normalized_input, mode=MODE_CHESS)

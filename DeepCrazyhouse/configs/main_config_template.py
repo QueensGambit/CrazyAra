@@ -37,7 +37,10 @@ main_config = {
     # the weight directory contains the of the network in mxnet .params format
     "model_weights_dir": "/home/demo_user/models/Crazyhouse/params/",
 
-    # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-    # set to policy version 1 for old behaviour of NNs which only support crazyhouse (available versions: [1, 2])
-    "policy_version": 1,
+    # Active mode for different input & output representations.
+    # Each mode is only compatible with a certain network input-/output representation:
+    # Available modes:  0: MODE_CRAZYHOUSE    (crazyhouse only mode, no 960)
+    #                   1: MODE_LICHESS       (all available lichess variants)
+    #                   2: MODE_CHESS         (chess only mode, with 960)
+    "mode": 0,
 }

@@ -33,6 +33,17 @@ from chess.variant import HordeBoard
 from chess.variant import RacingKingsBoard
 from DeepCrazyhouse.configs.main_config import main_config
 
+# Available modes for different input representation
+MODE_CRAZYHOUSE = 0
+MODE_LICHESS = 1
+MODE_CHESS = 2
+MODES = [MODE_CRAZYHOUSE, MODE_LICHESS, MODE_CHESS]
+# Active mode
+MODE = main_config["mode"]
+
+if MODE not in MODES:
+    raise ValueError('unsupported "mode" specification in main_config.py')
+
 # The same ordering is used in the python-chess (only that python-chess also includes a "null" piece)
 PIECES = ["P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"]
 
@@ -41,7 +52,10 @@ P_MAP = {"P": 0, "N": 1, "B": 2, "R": 3, "Q": 4, "K": 5, "p": 6, "n": 7, "b": 8,
 
 # This used for the plane representation
 # each index indicates where each section start
-CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "prisoners": 14, "promo": 24, "ep_square": 26}
+if MODE == MODE_CRAZYHOUSE or MODE == MODE_LICHESS:
+    CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "prisoners": 14, "promo": 24, "ep_square": 26}
+else:  # MODE = MODE_CHESS
+    CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "ep_square": 14}
 
 # constant value inputs
 CHANNEL_MAPPING_CONST = {"color": 0, "total_mv_cnt": 1, "castling": 2, "no_progress_cnt": 6, "remaining_checks": 7}
@@ -55,51 +69,47 @@ VARIANT_MAPPING_BOARDS = {"chess": Board, "crazyhouse": CrazyhouseBoard,  "kingo
                           "3check": ThreeCheckBoard, "giveaway": GiveawayBoard, "atomic": AtomicBoard,
                           "horde": HordeBoard, "racingkings": RacingKingsBoard}
 
-# define two constants indicating the number of channels for the input plane presentation
-NB_CHANNELS_POS = 27
-NB_CHANNELS_CONST = 11
-# for crazyhouse only mode no remaining check counter is used
-NB_CHANNELS_CONST_CZ = 7
-NB_CHANNELS_VARIANTS = 9
-
 # Define the board size
 BOARD_WIDTH = 8
 BOARD_HEIGHT = 8
 
-# the number of channels used for the policy map representation
-NB_POLICY_MAP_CHANNELS = None
-NB_CHANNELS_FULL = None
-# in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-if main_config['policy_version'] == 1:
+# Define constants indicating the number of channels for the input plane presentation
+# and the number of channels used for the policy map representation
+if MODE == MODE_CRAZYHOUSE:
+    NB_CHANNELS_POS = 27
+    NB_CHANNELS_CONST = 7
+    NB_CHANNELS_VARIANTS = 0
     NB_POLICY_MAP_CHANNELS = 81
-    NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST_CZ
-elif main_config['policy_version'] == 2:
+elif MODE == MODE_LICHESS:
+    NB_CHANNELS_POS = 27
+    NB_CHANNELS_CONST = 11
+    NB_CHANNELS_VARIANTS = 9
+    # King promotion moves were added to support antichess
     NB_POLICY_MAP_CHANNELS = 84
-    NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS
-else:
-    raise Exception('unsupported "policy_version" specification in main_config.py')
+else:  # MODE = MODE_CHESS
+    NB_CHANNELS_POS = 15
+    NB_CHANNELS_CONST = 7
+    NB_CHANNELS_VARIANTS = 1  # is960
+    # No dropping moves, king promotion moves
+    NB_POLICY_MAP_CHANNELS = 76
+
 # number of labels of the corresponding flattened policy map. Most of these entries are unreachable (always 0)
 NB_LABELS_POLICY_MAP = NB_POLICY_MAP_CHANNELS * BOARD_HEIGHT * BOARD_WIDTH
+NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS
 
 # define the number of different pieces one can have in his pocket (the king is excluded)
 POCKETS_SIZE_PIECE_TYPE = 5
 
 #  (this used for normalization the input planes and setting an appropriate integer representation (e.g. int16)
 # use a constant matrix for normalization to allow broad cast operations
-MAX_NB_PRISONERS = None
-MAX_NB_MOVES = None
-MAX_NB_NO_PROGRESS = None
-# in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-if main_config['policy_version'] == 1:
+if MODE == MODE_CRAZYHOUSE:
     MAX_NB_PRISONERS = 32  # define the maximum number of pieces of each type in a pocket
     MAX_NB_MOVES = 500  # 500 was set as the max number of total moves
     MAX_NB_NO_PROGRESS = 40  # originally this was set to 40, but actually it is meant to be 50 move rule
-elif main_config['policy_version'] == 2:
+else:  # MODE = MODE_LICHESS or MODE = MODE_CHESS:
     MAX_NB_PRISONERS = 16  # at maximum you can have only 16 pawns (your own and the ones of the opponent)
     MAX_NB_MOVES = 500  # 500 was set as the max number of total moves
     MAX_NB_NO_PROGRESS = 50  # after 50 moves of no progress the 50 moves rule for draw applies
-else:
-    raise Exception('unsupported "policy_version" specification in main_config.py')
 
 # according to: https://lichess.org/blog/VrQDNSoAACsA8sqc/crazyhouse-an-overview
 # (only used for visualisation)
@@ -116,7 +126,7 @@ PIECES_VALUE = {
 # (Note that this vector does only work for the white player.
 # For the black player you have ot mirror the move afterwards by using mirror_move())
 
-LABELS_V1 = [
+LABELS_CZ = [
     "a1b1",
     "a1c1",
     "a1d1",
@@ -2392,9 +2402,9 @@ LABELS_V1 = [
 ]
 
 # legal moves total:
-NB_LABELS_V1 = 2272
+NB_LABELS_CZ = 2272
 
-LABELS_V2 = [
+LABELS_LICHESS = [
     "a1b1",
     "a1c1",
     "a1d1",
@@ -4714,19 +4724,21 @@ LABELS_V2 = [
 ]
 
 # legal moves total:
-NB_LABELS_V2 = 2316
+NB_LABELS_LICHESS = 2316
+# remove dropping moves for chess variant
+NB_LABELS_CHESS = NB_LABELS_CZ - (4 * BOARD_HEIGHT * BOARD_WIDTH + BOARD_HEIGHT * BOARD_WIDTH - 2 * BOARD_WIDTH)
 
-LABELS = None
-NB_LABELS = None
-# in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-if main_config['policy_version'] == 1:
-    LABELS = LABELS_V1
-    NB_LABELS = NB_LABELS_V1
-elif main_config['policy_version'] == 2:
-    LABELS = LABELS_V2
-    NB_LABELS = NB_LABELS_V2
-else:
-    raise Exception('unsupported "policy_version" specification in main_config.py')
+if MODE == MODE_CRAZYHOUSE:
+    LABELS = LABELS_CZ
+    NB_LABELS = NB_LABELS_CZ
+elif MODE == MODE_LICHESS:
+    # Includes king promotion moves were added to support antichess
+    LABELS = LABELS_LICHESS
+    NB_LABELS = NB_LABELS_LICHESS
+else:  # MODE = MODE_CHESS
+    # same as for crazyhouse but without dropping moves
+    LABELS = LABELS_CZ[:NB_LABELS_CHESS]
+    NB_LABELS = NB_LABELS_CHESS
 
 
 def mirror_move(move: chess.Move):
@@ -4764,3 +4776,7 @@ MV_LOOKUP_MIRRORED = {}
 # iterate over all moves and assign the integer move index to the string
 for i, label in enumerate(LABELS_MIRRORED):
     MV_LOOKUP_MIRRORED[label] = i
+
+if __name__ == "__main__":
+    print(LABELS[-20:])
+    print(NB_LABELS_CHESS)

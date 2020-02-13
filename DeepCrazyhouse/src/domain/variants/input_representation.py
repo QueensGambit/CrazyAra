@@ -10,6 +10,10 @@ which is passed to the neural network
 
 from chess.variant import CrazyhouseBoard
 from DeepCrazyhouse.src.domain.variants.constants import (
+    MODES,
+    MODE_CRAZYHOUSE,
+    MODE_LICHESS,
+    MODE_CHESS,
     BOARD_HEIGHT,
     BOARD_WIDTH,
     CHANNEL_MAPPING_CONST,
@@ -19,7 +23,6 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     MAX_NB_NO_PROGRESS,
     MAX_NB_PRISONERS,
     NB_CHANNELS_CONST,
-    NB_CHANNELS_CONST_CZ,
     NB_CHANNELS_POS,
     NB_CHANNELS_VARIANTS,
     PIECES,
@@ -161,82 +164,20 @@ def _fill_variants_plane(board, planes_variants):
             break
 
 
-def board_to_planes(board, board_occ=0, normalize=True, crazyhouse_only=False):
+def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE):
     """
     Gets the plane representation of a given board state.
     (No history of past board positions is used.)
 
-    ## Chess Variants:
-
-    Feature | Planes
-
-    --- | ---
-
-    P1 piece | 6 (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING)
-
-    P2 piece | 6 (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING)
-
-    Repetitions | 2 (two planes (full zeros/ones) indicating how often the board positions has occurred)
-
-    P1 prisoner count | 5 (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN) (excluding the KING)
-
-    P2 prisoner count | 5 (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN) (excluding the KING)
-
-    P1 Promoted Pawns Mask | 1 (binary map indicating the pieces which have been promoted)
-
-    P2 Promoted Pawns Mask | 1 (binary map indicating the pieces which have been promoted)
-
-    En-passant square | 1 (Binary map indicating the square where en-passant capture is possible)
-
-    ---
-    27 planes
-
-    * * *
-
-    Colour | 1 (all zeros for black and all ones for white)
-
-    Total move count | 1 (integer value setting the move count (uci notation))
-
-    P1 castling | 2 (One if castling is possible, else zero)
-
-    P2 castling | 2 (One if castling is possible, else zero)
-
-    No-progress count | 1 (Setting the no progress counter as integer values, (described by uci halfmoves format)
-
-    P1 remaining-checks | 2 (only needed for the 3check variant, after 3 checks by one player the game ends)
-
-    P2 remaining-checks | 2 (only needed for the 3check variant, after 3 checks by one player the game ends)
-
-    11 planes
-
-    * * *
-
-    is960 = | 1 (boolean, 1 when active)
-
-    Variants indicator each variant gets a whole channel assigned. All variants are one-hot encoded
-
-    1 - "chess" | 1
-    2 - "crazyhouse" | 1
-    3 - "kingofthehill" | 1
-    4 - "3check" | 1
-    5 - "giveaway" | 1
-    6 - "atomic" | 1
-    7 - "horde" | 1
-    8 - "racingkings" | 1
-
-    9 planes
-
-    # --------------
-
-    The history list of the past 7 board states have been removed
-    The total number of planes is calculated as follows:
-
-    27 + 11 + 9
-    Total: 47 planes
-
     :param board: Board handle (Python-chess object)
     :param board_occ: Sets how often the board state has occurred before (by default 0)
     :param normalize: True if the inputs shall be normalized to the range [0.-1.]
+    :param mode: 0 - MODE_CRAZYHOUSE: Crazyhouse only specification.
+                 (Visit variants.crazyhouse.input_representation for detailed documentation)
+                 1 - MODE_LICHESS: Specification for all supported variants on lichess.org
+                 (Visit variants.lichess.input_representation for detailed documentation)
+                 2 - MODE_CHESS: Specification for chess only with chess960 support
+                 (Visit variants.chess.input_representation for detailed documentation)
     :param crazyhouse_only: Boolean indicates if the older crazyhouse only specification shall be used
                             Visit variants.crazyhouse.input_representation for documentation
     :return: planes - the plane representation of the current board state
@@ -246,15 +187,16 @@ def board_to_planes(board, board_occ=0, normalize=True, crazyhouse_only=False):
 
     # (I) Define the Input Representation for one position
     planes_pos = np.zeros((NB_CHANNELS_POS, BOARD_HEIGHT, BOARD_WIDTH))
-    if crazyhouse_only is True:
+    planes_const = np.zeros((NB_CHANNELS_CONST, BOARD_HEIGHT, BOARD_WIDTH))
+
+    if mode == MODE_CRAZYHOUSE:
         # crazyhouse only doesn't contain remaining checks
-        planes_const = np.zeros((NB_CHANNELS_CONST_CZ, BOARD_HEIGHT, BOARD_WIDTH))
-    else:
-        planes_const = np.zeros((NB_CHANNELS_CONST, BOARD_HEIGHT, BOARD_WIDTH))
-    if crazyhouse_only is False:
-        planes_variants = np.zeros((NB_CHANNELS_VARIANTS, BOARD_HEIGHT, BOARD_WIDTH))
-    else:
         planes_variants = False
+    elif mode == MODE_LICHESS:
+        planes_variants = np.zeros((NB_CHANNELS_VARIANTS, BOARD_HEIGHT, BOARD_WIDTH))
+    else:  # mode = MODE_CHESS
+        # chess doesn't contain pocket pieces and remaining checks
+        planes_variants = np.zeros((NB_CHANNELS_VARIANTS, BOARD_HEIGHT, BOARD_WIDTH))
 
     # save whose turn it is
     board_turn = chess.WHITE
@@ -266,13 +208,16 @@ def board_to_planes(board, board_occ=0, normalize=True, crazyhouse_only=False):
 
     _fill_position_planes(planes_pos, board, board_occ)
     _fill_constant_planes(planes_const, board, board_turn)
-    if crazyhouse_only is False:
+    if mode == MODE_LICHESS:
         _fill_variants_plane(board, planes_variants)
+    elif mode == MODE_CHESS:
+        if board.chess960 is True:
+            planes_variants[:, :, :] = 1
 
     # (VI) Merge the Matrix-Stack
-    if crazyhouse_only is True:
+    if mode == MODE_CRAZYHOUSE:
         planes = np.concatenate((planes_pos, planes_const), axis=0)
-    else:
+    else:  # mode = MODE_LICHESS | mode == MODE_CHESS
         planes = np.concatenate((planes_pos, planes_const, planes_variants), axis=0)
 
     # revert the board if the players turn was black
@@ -288,23 +233,30 @@ def board_to_planes(board, board_occ=0, normalize=True, crazyhouse_only=False):
     return planes
 
 
-def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
+def planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
     """
     Converts a board in plane representation to the python chess board representation
     see get_planes_of_board() for input encoding description
 
     :param planes: Input plane representation
     :param normalized_input: True if the input has been normalized to range[0., 1.]
-    :param crazyhouse_only: Boolean indicates if the older crazyhouse only specification shall be used
-                            Visit variants.crazyhouse.input_representation for documentation
+    :param mode: 0 - MODE_CRAZYHOUSE: Crazyhouse only specification.
+                 (Visit variants.crazyhouse.input_representation for detailed documentation)
+                 1 - MODE_LICHESS: Specification for all supported variants on lichess.org
+                 (Visit variants.lichess.input_representation for detailed documentation)
+                 2 - MODE_CHESS: Specification for chess only with chess960 support
+                 (Visit variants.chess.input_representation for detailed documentation)
     :return: python chess board object
     """
+    if mode not in MODES:
+        raise ValueError(f"Given {mode} is not {MODES}.")
+
     # extract the maps for the board position
     planes_pos = planes[:NB_CHANNELS_POS]
     # extract the last maps which for the constant values
     planes_const = planes[NB_CHANNELS_POS:NB_CHANNELS_POS+NB_CHANNELS_CONST]
 
-    if crazyhouse_only is False:
+    if mode == MODE_LICHESS:
         # extract the variants definition section
         planes_variants = planes[-NB_CHANNELS_VARIANTS:]
 
@@ -320,8 +272,13 @@ def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
 
         if board is None:
             raise Exception("No chess variant was recognized in your given input planes")
-    else:
+    elif mode == MODE_CRAZYHOUSE:
         board = CrazyhouseBoard()
+    else:  # mode = MODE_CHESS:
+        # extract the variants definition section
+        plane_960 = planes[-1:]
+        is960 = plane_960[CHANNEL_MAPPING_VARIANTS["is960"], 0, 0] == 1
+        board = chess.Board(chess960=is960)
 
     # clear the full board (the pieces will be set later)
     board.clear()
@@ -353,7 +310,7 @@ def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
     # ch = channel_mapping['repetitions']
 
     # Fill in the Prisoners / Pocket Pieces
-    if crazyhouse_only is True or board.uci_variant == "crazyhouse":
+    if mode == MODE_CRAZYHOUSE or board.uci_variant == "crazyhouse":
         # iterate over all pieces except the king
         for p_type in chess.PIECE_TYPES[:-1]:
             # p_type -1 because p_type starts with 1
@@ -446,7 +403,7 @@ def planes_to_board(planes, normalized_input=False, crazyhouse_only=False):
     board.halfmove_clock = no_progress_cnt
 
     # set the number of remaining checks (only needed for 3check) and might be mirrored later
-    if crazyhouse_only is False:
+    if mode == MODE_LICHESS:
         channel = CHANNEL_MAPPING_CONST["remaining_checks"]
         if planes_const[channel, 0, 0] == 1:
             board.remaining_checks[chess.WHITE] -= 1
