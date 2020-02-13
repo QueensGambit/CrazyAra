@@ -16,11 +16,13 @@ main_config = {
     # The training directory includes games from the months:        2016-01 - 2018-07 (excluding 2018-04 and 2018-08)
     # The validation directory includes games from the month:       2018-04
     # The test directory includes games from the month:             2018-08
+    # The mate_in_one directory includes games from the month:      2018-04
 
     # Chess - KingBaseLite2019
     # The training directory includes games from the months:        2000-01 - 2018-12 (excluding 2012-09 and 2017-05)
     # The validation directory includes games from the month:       2012-09
     # The test directory includes games from the month:             2017-05
+    # The mate_in_one directory includes games from the month:      lichess_db_standard_rated_2015-08.pgn
 
     # The pgn directories contain all files which are converted to plane representation
     "pgn_train_dir": "/home/demo_user/datasets/lichess/Crazyhouse/pgn/train/",

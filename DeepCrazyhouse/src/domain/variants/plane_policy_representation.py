@@ -14,7 +14,7 @@ table for retrieving the move probability from the policy feature maps, so this 
 import numpy as np
 import chess
 from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, LABELS, P_MAP,\
-    NB_POLICY_MAP_CHANNELS
+    NB_POLICY_MAP_CHANNELS, NB_LABELS_CHESS, MODE, MODE_CRAZYHOUSE, MODE_LICHESS
 from DeepCrazyhouse.src.domain.util import get_row_col
 from DeepCrazyhouse.configs.main_config import main_config
 
@@ -236,7 +236,7 @@ def get_move_planes(move):
 # which describes the corresponding index for each move in the policy LABELS (constants.py) list
 
 # V1 doesn't include king promotions
-FLAT_PLANE_IDX_V1 = [
+FLAT_PLANE_IDX_CRAZYHOUSE = [
     896,
     960,
     1024,
@@ -2512,7 +2512,7 @@ FLAT_PLANE_IDX_V1 = [
 ]
 
 # V2 does include king promotions
-FLAT_PLANE_IDX_V2 = [
+FLAT_PLANE_IDX_LICHESS = [
    896,
    960,
    1024,
@@ -4834,12 +4834,13 @@ FLAT_PLANE_IDX_V2 = [
 
 FLAT_PLANE_IDX = None
 # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-if main_config['policy_version'] == 1:
-    FLAT_PLANE_IDX = FLAT_PLANE_IDX_V1
-elif main_config['policy_version'] == 2:
-    FLAT_PLANE_IDX = FLAT_PLANE_IDX_V2
-else:
-    raise Exception('unsupported "policy_version" specification in main_config.py')
+if MODE == MODE_CRAZYHOUSE:
+    FLAT_PLANE_IDX = FLAT_PLANE_IDX_CRAZYHOUSE
+elif MODE == MODE_LICHESS:
+    FLAT_PLANE_IDX = FLAT_PLANE_IDX_LICHESS
+else:  # MODE = MODE_CHESS
+    # for chess the same as for crazyhouse is used without dropping moves
+    FLAT_PLANE_IDX = FLAT_PLANE_IDX_CRAZYHOUSE[:NB_LABELS_CHESS]
 FLAT_PLANE_IDX = np.array(FLAT_PLANE_IDX)
 
 

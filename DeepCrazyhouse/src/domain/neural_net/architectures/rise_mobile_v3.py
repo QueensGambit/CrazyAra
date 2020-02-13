@@ -56,7 +56,7 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
 
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
                           channels_value_head=32, channels_policy_head=81, value_fc_size=128, dropout_rate=0.15,
-                          select_policy_from_plane=True, use_se=True, res_blocks=13, n_labels=4992):
+                          select_policy_from_plane=True, use_se=True, kernels=None, n_labels=4992):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -78,24 +78,12 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
 
     data = get_stem(data=data, channels=channels, act_type=act_type)
 
+    if kernels is None:
+        kernels = [3] * 13
+
     cur_channels = channels_operating_init
 
-    kernels = [
-        [3],  # 0
-        [3],  # 1
-        [3, 5],  # 2
-        [3, 5],  # 3
-        [3, 5, 7, 9],  # 4
-        [3, 5],  # 5
-        [3, 5],  # 6
-        [3, 5],  # 7
-        [3, 5],  # 8
-        [3, 5],  # 9
-        [3, 5],  # 10
-        [3, 5],  # 11
-        [3, 5],  # 12
-    ]
-    for idx in range(res_blocks):
+    for idx, cur_kernels in enumerate(kernels):
 
         cur_kernels = kernels[idx]
         if idx == 4 or idx >= 9:
