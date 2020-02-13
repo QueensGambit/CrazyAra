@@ -31,7 +31,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
 from DeepCrazyhouse.src.domain.util import MATRIX_NORMALIZER, get_board_position_index, get_row_col, np
 
 
-def _fill_position_planes(planes_pos, board, board_occ=0):
+def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
 
     # Fill in the piece positions
 
@@ -73,14 +73,15 @@ def _fill_position_planes(planes_pos, board, board_occ=0):
 
     # (III) Fill in the promoted pieces
     # iterate over all promoted pieces according to the mask and set the according bit
-    channel = CHANNEL_MAPPING_POS["promo"]
-    for pos in chess.SquareSet(board.promoted):
-        row, col = get_row_col(pos)
+    if mode == MODE_CRAZYHOUSE or mode == MODE_LICHESS:
+        channel = CHANNEL_MAPPING_POS["promo"]
+        for pos in chess.SquareSet(board.promoted):
+            row, col = get_row_col(pos)
 
-        if board.piece_at(pos).color == chess.WHITE:
-            planes_pos[channel, row, col] = 1
-        else:
-            planes_pos[channel + 1, row, col] = 1
+            if board.piece_at(pos).color == chess.WHITE:
+                planes_pos[channel, row, col] = 1
+            else:
+                planes_pos[channel + 1, row, col] = 1
 
     # (III.2) En Passant Square
     # mark the square where an en-passant capture is possible
@@ -206,7 +207,7 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE):
         board_turn = chess.BLACK
         board = board.mirror()
 
-    _fill_position_planes(planes_pos, board, board_occ)
+    _fill_position_planes(planes_pos, board, board_occ, mode)
     _fill_constant_planes(planes_const, board, board_turn)
     if mode == MODE_LICHESS:
         _fill_variants_plane(board, planes_variants)
@@ -292,9 +293,11 @@ def planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
                 if planes_pos[idx, row, col] == 1:
                     # check if the piece was promoted
                     promoted = False
-                    channel = CHANNEL_MAPPING_POS["promo"]
-                    if planes_pos[channel, row, col] == 1 or planes_pos[channel + 1, row, col] == 1:
-                        promoted = True
+                    if mode == MODE_CRAZYHOUSE or mode == MODE_LICHESS:
+                        # promoted pieces are not defined in the chess plane representation
+                        channel = CHANNEL_MAPPING_POS["promo"]
+                        if planes_pos[channel, row, col] == 1 or planes_pos[channel + 1, row, col] == 1:
+                            promoted = True
 
                     board.set_piece_at(
                         square=get_board_position_index(row, col),

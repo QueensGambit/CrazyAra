@@ -172,9 +172,10 @@ class PGN2PlanesConverter:
         logging.debug("subprocess finished")
         return all_pgn_sel, nb_games_sel, batch_white_won, batch_black_won, batch_draw
 
-    def _filter_pgn_thread(self, queue, pgn):  # Refactoring is probably a good idea
+    def _filter_pgn_thread(self, queue, pgn):
         """
-        Selects the pgn which fulfill the given conditions
+        Splits the pgn file into each game and later calls _select_games() to select the games which
+        fulfill the given conditions
         :param queue: Stores the result/return variables
         :param pgn: PGN file
         :return: Queue filled with the following items:
@@ -190,10 +191,10 @@ class PGN2PlanesConverter:
         nb_games = content.count("[Result")
         # replace the FEN "?" with the default starting position in case of chess960 games
         logging.debug("nb_games: %d", nb_games)
-        all_games = content.split("[Event")  # split the content for each single game
+        all_games = content.split("[Event ")  # split the content for each single game
 
         for idx, _ in enumerate(all_games):
-            all_games[idx] = "[Event" + all_games[idx]
+            all_games[idx] = "[Event " + all_games[idx]
 
         pgns = []
         del all_games[0]
@@ -224,6 +225,22 @@ class PGN2PlanesConverter:
                     if mv_hist_finish:
                         pgns.append(io.StringIO(game))
 
+        self._select_games(queue, pgns)
+
+    def _select_games(self, queue, pgns):
+        """
+        Selects the pgn which fulfill the given conditions
+        :param queue: Stores the result/return variables
+        :param pgn: PGN file
+        :return: Queue filled with the following items:
+        - all_pgn_sel: List of the selected pgn files
+        - nb_games_sel: Number of games which have been selected
+        - batch_white_won: list of number of games which have been won by the white player in this batch
+        - batch_black_won: list of number of games which have been won by the black player in this batch
+        - batch_draw: list of number of games which have been drawn in this batch
+        - _cur_min_elo_both: Current elo threshold for the selected variant
+        """
+
         logging.info("select games based on given conditions...")
         # only select games according to the conditions
         all_pgn_sel = []
@@ -237,33 +254,58 @@ class PGN2PlanesConverter:
             # we need to create a deep copy, otherwise the end of the file is reached for later
             game_pgn_copy = deepcopy(game_pgn)
             for _, headers in chess.pgn.scan_headers(game_pgn_copy):
-                _cur_min_elo_both = self._min_elo_both[headers["Variant"]]
+                if not self.use_all_games:
+                    try:
+                        _cur_min_elo_both = self._min_elo_both[headers["Variant"]]
+                    except KeyError:
+                        _cur_min_elo_both = self._min_elo_both["Chess"]
                 for term_cond in self._termination_conditions:
-                    if self.use_all_games or (
-                        term_cond in headers["Termination"]
-                        and (headers["WhiteElo"] != "?" and
-                             headers["BlackElo"] != "?" and
-                             int(headers["WhiteElo"]) >= _cur_min_elo_both
-                             and int(headers["BlackElo"]) >= _cur_min_elo_both
-                        )
-                    ):
-                        if headers["Result"] == "1-0":
-                            nb_white_won += 1
-                        elif headers["Result"] == "0-1":
-                            nb_black_won += 1
-                        elif headers["Result"] == "1/2-1/2":
-                            nb_draws += 1
-                        else:
-                            raise Exception("Illegal Game Result: ", headers["Result"])
+                    try:
+                        cur_term_cond = headers["Termination"]
+                    except KeyError:
+                        cur_term_cond = "Normal"
+                    try:
+                        white_elo = headers["WhiteElo"]
+                    except KeyError:
+                        try:
+                            white_elo = headers["BlackElo"]
+                        except KeyError:
+                            white_elo = "?"
+                    try:
+                        black_elo = headers["WhiteElo"]
+                    except KeyError:
+                        try:
+                            black_elo = headers["BlackElo"]
+                        except KeyError:
+                            black_elo = "?"
 
-                        all_pgn_sel.append(game_pgn)
+                    if headers["Result"] != "*":
+                        if self.use_all_games or (
+                            term_cond in cur_term_cond
+                            and (white_elo != "?" and
+                                 black_elo != "?" and
+                                 int(white_elo) >= _cur_min_elo_both
+                                 and int(black_elo) >= _cur_min_elo_both
+                            )
+                        ):
+                            if headers["Result"] == "1-0":
+                                nb_white_won += 1
+                            elif headers["Result"] == "0-1":
+                                nb_black_won += 1
+                            elif headers["Result"] == "1/2-1/2":
+                                nb_draws += 1
+                            else:
+                                raise Exception("Illegal Game Result: ", headers["Result"])
 
-                        if len(all_pgn_sel) % self._batch_size == 0:
-                            # save the stats of 1 batch part
-                            batch_white_won.append(nb_white_won)
-                            batch_black_won.append(nb_black_won)
-                            batch_draw.append(nb_draws)
-                            nb_white_won = nb_black_won = nb_draws = 0
+                            all_pgn_sel.append(game_pgn)
+
+                            if len(all_pgn_sel) % self._batch_size == 0:
+                                # save the stats of 1 batch part
+                                batch_white_won.append(nb_white_won)
+                                batch_black_won.append(nb_black_won)
+                                batch_draw.append(nb_draws)
+                                nb_white_won = nb_black_won = nb_draws = 0
+
         # add the remaining stats to the last batch
         if nb_white_won > 0 or nb_black_won > 0 or nb_draws > 0:
             # save the stats of 1 batch part

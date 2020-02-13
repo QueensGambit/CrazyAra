@@ -12,6 +12,7 @@ import logging
 import chess.pgn
 from DeepCrazyhouse.src.domain.variants.output_representation import move_to_policy
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
+from DeepCrazyhouse.configs.main_config import main_config
 
 NB_ITEMS_METADATA = 18  # constant which defines how many meta data items will be stored in a matrix
 # 2019-09-28: Increased NB_ITEMS_METADATA from 17 to 18 for chess 960
@@ -124,7 +125,7 @@ def get_planes_from_game(game, mate_in_one=False):
             # receive the board and the evaluation of the current position in plane representation
             # We don't want to store float values because the integer datatype is cheaper,
             #  that's why normalize is set to false
-            x_cur = board_to_planes(board, board_occ, normalize=False)
+            x_cur = board_to_planes(board, board_occ, normalize=False, mode=main_config["mode"])
             # add the evaluation of 1 position to the list
             x.append(x_cur)
             y_value.append(y_init)
@@ -146,6 +147,8 @@ def get_planes_from_game(game, mate_in_one=False):
     else:
         print("game.headers:")
         print(game.headers)
+        print("len(all_moves)", len(all_moves))
+        print("game", game)
         raise Exception("The given pgn file's mainline is empty!")
 
     return x, y_value, y_policy, plys_to_end
