@@ -16,7 +16,6 @@ import chess
 from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, LABELS, P_MAP,\
     NB_POLICY_MAP_CHANNELS, NB_LABELS_CHESS, MODE, MODE_CRAZYHOUSE, MODE_LICHESS
 from DeepCrazyhouse.src.domain.util import get_row_col
-from DeepCrazyhouse.configs.main_config import main_config
 
 
 def get_movement_vector(move: chess.Move):

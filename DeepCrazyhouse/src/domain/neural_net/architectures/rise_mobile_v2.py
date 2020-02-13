@@ -147,10 +147,10 @@ def extract_variant_info(data, channels, name):
     return mx.sym.Concat(*variant_layers, name=name + '_concat')
 
 
-def rise_mobile_symbol(channels=256, channels_operating_init=128, channel_expansion=64, channels_value_head=8,
-                   channels_policy_head=81, value_fc_size=256, bc_res_blocks=[], res_blocks=[3]*13, act_type='relu',
-                   n_labels=4992, grad_scale_value=0.01, grad_scale_policy=0.99, select_policy_from_plane=True,
-                   use_se=True, dropout_rate=0, use_extra_variant_input=False):
+def rise_mobile_v2_symbol(channels=256, channels_operating_init=128, channel_expansion=64, channels_value_head=8,
+                          channels_policy_head=81, value_fc_size=256, bc_res_blocks=[], res_blocks=[3]*13, act_type='relu',
+                          n_labels=4992, grad_scale_value=0.01, grad_scale_policy=0.99, select_policy_from_plane=True,
+                          use_se=True, dropout_rate=0, use_extra_variant_input=False):
     """
     Creates the rise mobile model symbol based on the given parameters.
 
