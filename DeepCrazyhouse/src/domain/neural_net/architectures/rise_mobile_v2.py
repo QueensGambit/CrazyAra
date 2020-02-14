@@ -238,9 +238,8 @@ def preact_resnet_symbol(channels=256, channels_value_head=8,
     :param act_type: Activation function which will be used for all intermediate layers
     :param n_labels: Number of labels the for the policy
     :param grad_scale_value: Constant scalar which the gradient for the value outputs are being scaled width.
-                            (They used 1.0 for default and 0.01 in the supervised setting)
+                            (0.01 is recommended for supervised learning with little data)
     :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
-                            (They used 1.0 for default and 0.99 in the supervised setting)
     :return: mxnet symbol of the model
     """
     # get the input data

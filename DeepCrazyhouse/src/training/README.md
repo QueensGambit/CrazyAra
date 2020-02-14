@@ -44,3 +44,31 @@ Every time progress was made on the validation data a checkpoint weight file wil
 The training settings are defined in the first block of `train_cnn.ipynb`.
 If you experience a cuda memory error at the start of training, increase the `div_factor` variable to e.g. `2` or more.
 This will reduce the batch-size and learning rate accordingly.
+
+### Start training from a Docker container
+
+The training can also be started from the [crazyara docker container](https://github.com/QueensGambit/CrazyAra/blob/master/engine/src/rl/Dockerfile)
+or the [official NVIDIA MXNet Docker container](https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/overview.html#overview)
+and installing the packages in [requirements.txt](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/training/requirements.txt). 
+
+```bash
+docker run --gpus '"device=0"' -it \
+ --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
+ --name crazyara_training crazyara_docker:latest
+```
+
+Next, you can access the jupyter notebook in your browser:
+
+`<IP-Address of server>:8888`
+
+and the Tensorboard on:
+
+`<IP-Address of server>:6006`
+
+
+For older docker versions use:
+```bash
+nvidia-docker run -it \
+ --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
+ --name crazyara_training crazyara_docker:latest
+```

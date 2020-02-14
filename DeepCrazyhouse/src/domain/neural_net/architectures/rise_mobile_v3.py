@@ -55,7 +55,8 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
 
 
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
-                          channels_value_head=32, channels_policy_head=81, value_fc_size=128, dropout_rate=0.15,
+                          channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
+                          grad_scale_value=0.01, grad_scale_policy=0.99,
                           select_policy_from_plane=True, use_se=True, kernels=None, n_labels=4992):
     """
     RISEv3 architecture
@@ -67,6 +68,9 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     :param value_fc_size: Number of units in the fully connected layer of the value head
     :param channels_policy_head: Number of channels for the policy head
     :param dropout_rate: Droput factor to use. If 0, no dropout will be applied. Value must be in [0,1]
+    :param grad_scale_value: Constant scalar which the gradient for the value outputs are being scaled width.
+                            (0.01 is recommended for supervised learning with little data)
+    :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
     :param select_policy_from_plane: True, if policy head type shall be used
     :param use_se: Indicates if a squeeze excitation layer shall be used
     :param res_blocks: Number of residual blocks
@@ -86,12 +90,15 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     for idx, cur_kernels in enumerate(kernels):
 
         cur_kernels = kernels[idx]
-        if idx == 4 or idx >= 9:
-            use_se = True
+        if use_se:
+            if idx == 4 or idx >= 9:
+                cur_use_se = True
+            else:
+                cur_use_se = False
         else:
-            use_se = False
+            cur_use_se = False
         data = preact_residual_dmixconv_block(data=data, channels=channels, channels_operating=cur_channels,
-                                              kernels=cur_kernels, name='dconv_%d' % idx, use_se=use_se)
+                                              kernels=cur_kernels, name='dconv_%d' % idx, use_se=cur_use_se)
         cur_channels += channel_expansion
     # return data
     data = mx.sym.BatchNorm(data=data, name='stem_bn1')
@@ -100,10 +107,11 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     if dropout_rate != 0:
         data = mx.sym.Dropout(data, p=dropout_rate)
 
-    value_out = value_head(data=data, act_type=act_type, use_se=use_se, channels_value_head=channels_value_head,
-                           value_fc_size=value_fc_size, use_mix_conv=True)
+    value_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
+                           value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value)
     policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
-                             select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels)
+                             select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels,
+                             grad_scale_policy=grad_scale_policy)
     # group value_out and policy_out together
     sym = mx.symbol.Group([value_out, policy_out])
 
