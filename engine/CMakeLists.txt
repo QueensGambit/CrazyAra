@@ -4,8 +4,8 @@ project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
-option(USE_TENSORRT              "Build with TensorRT support"  ON)
-option(USE_MXNET                 "Build with TensorRT support"  OFF)
+option(USE_TENSORRT              "Build with TensorRT support"  OFF)
+option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  ON)
 
 # -pg performance profiling flags
 if (USE_PROFILING)
@@ -106,13 +106,7 @@ if (USE_MXNET)
         ${mxnet_LINKER_LIBS}
         )
 
-    if(UNIX)
-        target_link_libraries(${PROJECT_NAME} mxnet)
-    else()
-        target_link_libraries(${PROJECT_NAME} libmxnet)
-    endif()
-
-    add_definitions(-DUSE_RL)
+    add_definitions(-DMXNET)
 endif()
 
 add_executable(${PROJECT_NAME} ${source_files})
@@ -159,8 +153,10 @@ add_definitions(-DATOMIC)
 add_definitions(-DHORDE)
 add_definitions(-DRACE)
 
-# enable this for legacy Crazyhouse only support
-add_definitions(-DCRAZYHOUSE_ONLY)
+# enable a single mode for different model input / outputs
+#add_definitions(-DMODE_CRAZYHOUSE)
+#add_definitions(-DMODE_LICHESS)
+add_definitions(-DMODE_CHESS)
 
 # add_definitions(-DBUILD_TESTS)
 
@@ -174,4 +170,12 @@ endif()
 # add target directory as library run path for unix systems
 if(UNIX)
     set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,./")
+endif()
+
+if (USE_MXNET)
+    if(UNIX)
+        target_link_libraries(${PROJECT_NAME} mxnet)
+    else()
+        target_link_libraries(${PROJECT_NAME} libmxnet)
+    endif()
 endif()

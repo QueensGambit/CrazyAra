@@ -33,7 +33,13 @@ using namespace std;
 
 void OptionsUCI::init(OptionsMap &o)
 {
+#ifdef MODE_CRAZYHOUSE
+    o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse"});
+#elif defined MODE_LICHESS
     o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), availableVariants);
+#else  // MODE = MODE_CHESS
+    o["UCI_Variant"]                   << Option("chess", {"chess"});
+#endif
     o["Search_Type"]                   << Option("mcts", {"mcts"});
     o["Context"]                       << Option("gpu", {"cpu", "gpu"});
     o["Device_ID"]                     << Option(0, 0, 99999);

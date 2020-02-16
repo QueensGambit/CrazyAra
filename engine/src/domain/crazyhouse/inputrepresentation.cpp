@@ -84,6 +84,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     }
     current_channel+= 2;
 
+#ifndef MODE_CHESS
     // (III) Fill in the Prisoners / Pocket Pieces
     // iterate over all pieces except the king
     for (Color color : {me, you}) {
@@ -104,6 +105,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     current_channel++;
     set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(you), current_channel, inputPlanes, me);
     current_channel++;
+#endif
 
     // (V) En Passant Square
     // mark the square where an en-passant capture is possible
@@ -174,7 +176,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
               normalize ? pos->rule50_count() / MAX_NB_NO_PROGRESS: pos->rule50_count());
 
-#ifndef CRAZYHOUSE_ONLY
+#ifdef MODE_LICHESS
     current_channel++;
     // set the remaining checks (only needed for "3check")
     if (pos->is_three_check()) {

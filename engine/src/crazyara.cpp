@@ -44,7 +44,7 @@
 #include "util/communication.h"
 #ifdef MXNET
 #include "nn/mxnetapi.h"
-#elif TENSORRT
+#elif defined TENSORRT
 #include "nn/tensorrtapi.h"
 #endif
 
@@ -410,7 +410,7 @@ NeuralNetAPI* CrazyAra::create_new_net_single(const string& modelDirectory)
 {
 #ifdef MXNET
     return new MXNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
-#elif TENSORRT
+#elif defined TENSORRT
     return new TensorrtAPI(int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory);
 #endif
     return nullptr;
@@ -427,7 +427,7 @@ NeuralNetAPI** CrazyAra::create_new_net_batches(const string& modelDirectory)
     for (size_t i = 0; i < size_t(searchSettings->threads); ++i) {
 #ifdef MXNET
         netBatches[i] = new MXNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
-#elif TENSORRT
+#elif defined TENSORRT
         netBatches[i] = new TensorrtAPI(int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory);
 #endif
     }
