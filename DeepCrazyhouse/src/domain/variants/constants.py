@@ -5,6 +5,15 @@ Created on 26.09.19
 @author: queensgambit
 
 Definition of all constants for the variants:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Available MODES (active MODE is defined in main_config.py):
+
++ MODE_CRAZYHOUSE:
+-- Input and output constants which only support the variant crazyhouse
+
++ MODE_LICHESS
+-- Input and output constants which supports all chess variants on lichess.org
+
 # 0 - self.chess960 = True (can be combined with other variants)
 # 1 - "chess"
 # 2 - "crazyhouse"
@@ -14,6 +23,10 @@ Definition of all constants for the variants:
 # 6 - "atomic"
 # 7 - "horde"
 # 8 - "racingkings"
+
+MODE_CHESS:
+-- Input and output constants which only support classical chess and chess960
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ! DO NOT CHANGE THE LABEL LIST OTHERWISE YOU WILL BREAK THE MOVE MAPPING OF THE NETWORK !
 
@@ -4726,7 +4739,7 @@ LABELS_LICHESS = [
 # legal moves total:
 NB_LABELS_LICHESS = 2316
 # remove dropping moves for chess variant
-NB_LABELS_CHESS = NB_LABELS_CZ - (4 * BOARD_HEIGHT * BOARD_WIDTH + BOARD_HEIGHT * BOARD_WIDTH - 2 * BOARD_WIDTH)
+NB_LABELS_CHESS = 1968  # NB_LABELS_CZ - (4 * BOARD_HEIGHT * BOARD_WIDTH + BOARD_HEIGHT * BOARD_WIDTH - 2 * BOARD_WIDTH)
 
 if MODE == MODE_CRAZYHOUSE:
     LABELS = LABELS_CZ
@@ -4780,3 +4793,7 @@ for i, label in enumerate(LABELS_MIRRORED):
 if __name__ == "__main__":
     print(LABELS[-20:])
     print(NB_LABELS_CHESS)
+    print('const std::string LABELS[] = {')
+    for l in LABELS:
+        print('    "' + str(l) + '",')
+    print('};')

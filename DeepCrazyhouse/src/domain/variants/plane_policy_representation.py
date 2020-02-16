@@ -4844,6 +4844,12 @@ FLAT_PLANE_IDX = np.array(FLAT_PLANE_IDX)
 
 
 if __name__ == "__main__":
+
+    print('const unsigned long FLAT_PLANE_IDX[] = {')
+    for l in FLAT_PLANE_IDX:
+        print('    ' + str(l) + ',')
+    print('};')
+
     LABEL_PLANE_IDX = []
     print("FLAT_PLANE_IDX = [")
     for mv_uci in LABELS:

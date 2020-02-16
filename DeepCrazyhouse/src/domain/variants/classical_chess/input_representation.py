@@ -5,6 +5,7 @@ Created on 13.02.20
 @author: queensgambit
 
 Input representation for the chess board state which is passed to the neural network
+(folder is name "classical_chess" to avoid name clash with python chess library)
 """
 
 import DeepCrazyhouse.src.domain.variants.input_representation as variants
