@@ -72,3 +72,9 @@ nvidia-docker run -it \
  --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
  --name crazyara_training crazyara_docker:latest
 ```
+
+Then you can start a notebook-server within the NVIDIA-docker container:
+```
+    jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root --no-browser .
+```
+and access the notebook by replacing `127.0.0.1` with the respective IP-address in the URL of the server.
