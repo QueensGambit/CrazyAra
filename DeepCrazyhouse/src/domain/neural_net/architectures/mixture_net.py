@@ -15,10 +15,10 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol impo
 from DeepCrazyhouse.src.domain.neural_net.architectures.mxnet_alpha_zero import residual_block
 
 
-def mixture_net_symbol(channels=256, num_res_blocks=7, channels_operating_init=128, channel_expansion=64, act_type='relu',
-                          channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
+def mixture_net_symbol(channels=256, num_res_blocks=7, act_type='relu',
+                          channels_value_head=8, channels_policy_head=81, value_fc_size=256,
                           grad_scale_value=0.01, grad_scale_policy=0.99,
-                          select_policy_from_plane=True, use_se=True, kernels=None, n_labels=4992):
+                          select_policy_from_plane=True, n_labels=4992):
     """
     Mixture net
     :param channels: Main number of channels
@@ -56,9 +56,9 @@ def mixture_net_symbol(channels=256, num_res_blocks=7, channels_operating_init=1
                 bodies[z] = residual_block(bodies[z], channels, name='b%d_block%d' % (z,i),
                                       bn_mom=0.9, workspace=1024)
 
-    w_a = mx.sym.Variable('w_a')
-    w_b = mx.sym.Variable('w_b')
-    w_c = mx.sym.Variable('w_c')
+    w_a = mx.sym.Variable('w_a', init=mx.init.Constant(1/3))
+    w_b = mx.sym.Variable('w_b', init=mx.init.Constant(1/3))
+    w_c = mx.sym.Variable('w_c', init=mx.init.Constant(1/3))
 
     data_value = w_a * bodies[0] + w_b * bodies[1] + w_c * bodies[2]
     data_policy = w_a * bodies[0] + w_b * bodies[1] + w_c * bodies[2]
