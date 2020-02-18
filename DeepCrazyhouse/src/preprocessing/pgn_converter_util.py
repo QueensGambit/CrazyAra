@@ -10,6 +10,7 @@ Converts a given board state defined by a python-chess object to the plane repre
 import numpy as np
 import logging
 import chess.pgn
+from DeepCrazyhouse.src.domain.variants.constants import NB_LAST_MOVES
 from DeepCrazyhouse.src.domain.variants.output_representation import move_to_policy
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 from DeepCrazyhouse.configs.main_config import main_config
@@ -122,15 +123,16 @@ def get_planes_from_game(game, mate_in_one=False):
 
         # check if you need to export a mate_in_one_scenario
         if not mate_in_one or plys == len(all_moves) - 1:
+            # build the last move vector by putting the most recent move on top followed by the remaining past moves
+            last_moves = [None] * NB_LAST_MOVES
+            if plys != 0:
+                last_moves[0:min(plys, NB_LAST_MOVES)] = all_moves[max(plys-NB_LAST_MOVES, 0):plys][::-1]
+
             # receive the board and the evaluation of the current position in plane representation
             # We don't want to store float values because the integer datatype is cheaper,
             #  that's why normalize is set to false
-            if plys == 0:
-                last_moves = [None]
-            else:
-                last_moves = [all_moves[plys-1]]
-
             x_cur = board_to_planes(board, board_occ, normalize=False, mode=main_config["mode"], last_moves=last_moves)
+
             # add the evaluation of 1 position to the list
             x.append(x_cur)
             y_value.append(y_init)

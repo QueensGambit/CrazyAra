@@ -25,6 +25,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     NB_CHANNELS_CONST,
     NB_CHANNELS_POS,
     NB_CHANNELS_VARIANTS,
+    NB_LAST_MOVES,
     PIECES,
     chess,
     VARIANT_MAPPING_BOARDS)
@@ -215,13 +216,15 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
         if board.chess960 is True:
             planes_variants[:, :, :] = 1
 
-    planes_moves = np.zeros((len(last_moves)*2, BOARD_HEIGHT, BOARD_WIDTH))
-    for i, move in enumerate(last_moves):
-        if move:
-            from_row, from_col = get_row_col(move.from_square)
-            to_row, to_col = get_row_col(move.to_square)
-            planes_moves[i*2, from_row, from_col] = 1
-            planes_moves[i*2+1, to_row, to_col] = 1
+    # create the move planes
+    planes_moves = np.zeros((NB_LAST_MOVES*2, BOARD_HEIGHT, BOARD_WIDTH))
+    if last_moves:
+        for i, move in enumerate(last_moves):
+            if move is not None:
+                from_row, from_col = get_row_col(move.from_square, mirror=board_turn == chess.BLACK)
+                to_row, to_col = get_row_col(move.to_square, mirror=board_turn == chess.BLACK)
+                planes_moves[i*2, from_row, from_col] = 1
+                planes_moves[i*2+1, to_row, to_col] = 1
 
     # (VI) Merge the Matrix-Stack
     if mode == MODE_CRAZYHOUSE:
