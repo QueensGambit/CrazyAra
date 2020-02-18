@@ -125,7 +125,12 @@ def get_planes_from_game(game, mate_in_one=False):
             # receive the board and the evaluation of the current position in plane representation
             # We don't want to store float values because the integer datatype is cheaper,
             #  that's why normalize is set to false
-            x_cur = board_to_planes(board, board_occ, normalize=False, mode=main_config["mode"])
+            if plys == 0:
+                last_moves = [None]
+            else:
+                last_moves = [all_moves[plys-1]]
+
+            x_cur = board_to_planes(board, board_occ, normalize=False, mode=main_config["mode"], last_moves=last_moves)
             # add the evaluation of 1 position to the list
             x.append(x_cur)
             y_value.append(y_init)

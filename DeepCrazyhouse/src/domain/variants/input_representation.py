@@ -165,7 +165,7 @@ def _fill_variants_plane(board, planes_variants):
             break
 
 
-def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE):
+def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, last_moves=None):
     """
     Gets the plane representation of a given board state.
     (No history of past board positions is used.)
@@ -215,11 +215,19 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE):
         if board.chess960 is True:
             planes_variants[:, :, :] = 1
 
+    planes_moves = np.zeros((len(last_moves)*2, BOARD_HEIGHT, BOARD_WIDTH))
+    for i, move in enumerate(last_moves):
+        if move:
+            from_row, from_col = get_row_col(move.from_square)
+            to_row, to_col = get_row_col(move.to_square)
+            planes_moves[i*2, from_row, from_col] = 1
+            planes_moves[i*2+1, to_row, to_col] = 1
+
     # (VI) Merge the Matrix-Stack
     if mode == MODE_CRAZYHOUSE:
         planes = np.concatenate((planes_pos, planes_const), axis=0)
     else:  # mode = MODE_LICHESS | mode == MODE_CHESS
-        planes = np.concatenate((planes_pos, planes_const, planes_variants), axis=0)
+        planes = np.concatenate((planes_pos, planes_const, planes_variants, planes_moves), axis=0)
 
     # revert the board if the players turn was black
     # ! DO NOT DELETE OR UNCOMMENT THIS BLOCK BECAUSE THE PARAMETER board IS CHANGED IN PLACE !
