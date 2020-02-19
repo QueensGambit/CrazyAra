@@ -86,6 +86,10 @@ RUN cd /root \
 RUN cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
     && pip install -r requirements.txt
 
+# Install graphviz for plotting NN architectures
+RUN apt-get update \
+    && apt-get install graphviz
+
 # Build CrazyAra executable
 RUN export MXNET_PATH=/root/incubator-mxnet/ \
     && cd /root/CrazyAra/engine \
