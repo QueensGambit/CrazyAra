@@ -14,6 +14,7 @@ from time import time
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
+from setproctitle import setproctitle
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
@@ -165,6 +166,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         q_value_ratio=0,
         cwd=None,
         variant_metrics=None,
+        # prefix for the process name in order to identify the process on a server more easily
+        proctitle_prefix="jczech"
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -228,6 +231,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
         self.variant_metrics = variant_metrics
+        self.proctitle_prefix = proctitle_prefix
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -370,6 +374,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         logging.info("Step %dK/%dK - %dms/step", self.k_steps, self.k_steps_end, ms_step)
         logging.info("-------------------------")
         logging.debug("Iteration %d/%d", self.cur_it, self._total_it)
+        setproctitle("%s: Step %dK of %dK, Iteration %d of %d" % (self.proctitle_prefix, self.k_steps, self.k_steps_end,
+                                                                  self.cur_it, self._total_it))
         if self.optimizer_name == "nag":
             logging.debug("lr: %.7f - momentum: %.7f", self.optimizer.lr, self.optimizer.momentum)
         else:

@@ -74,7 +74,7 @@ nvidia-docker run -it \
 ```
 
 Then you can start a notebook-server within the NVIDIA-docker container:
+```bash
+jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root --no-browser .
 ```
-    jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root --no-browser .
-```
-and access the notebook by replacing `127.0.0.1` with the respective IP-address in the URL of the server.
+and access the notebook by replacing `127.0.0.1` with the respective IP-address of the server in the URL.
