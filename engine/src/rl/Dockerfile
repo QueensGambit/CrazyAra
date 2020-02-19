@@ -87,8 +87,9 @@ RUN cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
     && pip install -r requirements.txt
 
 # Install graphviz for plotting NN architectures
-RUN apt-get update \
-    && apt-get install graphviz
+RUN apt-get update && apt-get install -y --no-install-recommends graphviz=0.8.4 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Build CrazyAra executable
 RUN export MXNET_PATH=/root/incubator-mxnet/ \
