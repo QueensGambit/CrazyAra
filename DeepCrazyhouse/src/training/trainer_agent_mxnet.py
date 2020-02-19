@@ -166,7 +166,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         q_value_ratio=0,
         cwd=None,
         variant_metrics=None,
-        # prefix for the process name in order to identify the process on a server more easily
+        # prefix for the process name in order to identify the process on a server
         proctitle_prefix="jczech"
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
@@ -267,6 +267,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.k_steps = self._k_steps_initial  # counter for thousands steps
         # calculate how many log states will be processed
         self.k_steps_end = self._total_it / self._batch_steps
+        self._update_proctitle()
+
         if cur_it is None:
             self.cur_it = self._k_steps_initial * 1000
         else:
@@ -346,6 +348,14 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                     # self.sum_writer.add_graph(self._symbol)
                     self.graph_exported = True
 
+    def _update_proctitle(self):
+        """
+        Updates the process title.
+        The process title is used to easier identify a running python process.
+        :return:
+        """
+        setproctitle("%s: Step %dK of %dK" % (self.proctitle_prefix, self.k_steps, self.k_steps_end))
+
     def _return_metrics_and_stop_training(self):
         return (self.k_steps, self.val_metric_values["value_loss"],
                 self.val_metric_values["policy_loss"],
@@ -374,8 +384,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         logging.info("Step %dK/%dK - %dms/step", self.k_steps, self.k_steps_end, ms_step)
         logging.info("-------------------------")
         logging.debug("Iteration %d/%d", self.cur_it, self._total_it)
-        setproctitle("%s: Step %dK of %dK, Iteration %d of %d" % (self.proctitle_prefix, self.k_steps, self.k_steps_end,
-                                                                  self.cur_it, self._total_it))
+        self._update_proctitle()
         if self.optimizer_name == "nag":
             logging.debug("lr: %.7f - momentum: %.7f", self.optimizer.lr, self.optimizer.momentum)
         else:
