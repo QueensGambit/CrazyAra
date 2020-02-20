@@ -152,11 +152,11 @@ def mix_conv(data, name, channels, kernels):
     if num_splits == 1:
         kernel = kernels[0]
         return mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel),
-                                              pad=(kernel//2, kernel//2), no_bias=True,
-                                              name=name + '_conv3_k%d' % kernel)
+                                  pad=(kernel//2, kernel//2), no_bias=True,
+                                  num_group=channels, name=name + '_conv3_k%d' % kernel)
 
     for xi, kernel in zip(mx.sym.split(data, axis=1, num_outputs=num_splits, name=name + '_split'), kernels):
         conv_layers.append(mx.sym.Convolution(data=xi, num_filter=channels//num_splits, kernel=(kernel, kernel),
-                                              pad=(kernel//2, kernel//2), no_bias=True,
+                                              pad=(kernel//2, kernel//2), no_bias=True, num_group=channels//num_splits,
                                               name=name + '_conv3_k%d' % kernel))
     return mx.sym.Concat(*conv_layers, name=name + '_concat')
