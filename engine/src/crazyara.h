@@ -73,6 +73,7 @@ private:
     PlaySettings* playSettings;
     bool networkLoaded = false;
     StatesManager* states;
+    Variant variant;
 
 #ifdef USE_RL
     MCTSAgent* mctsAgentContender;

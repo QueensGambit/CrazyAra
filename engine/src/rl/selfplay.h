@@ -134,18 +134,22 @@ public:
     /**
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
+     * @param states States manager handle
+     * @param variant Variant to generate games for
      */
-    void go(size_t numberOfGames, StatesManager* states);
+    void go(size_t numberOfGames, StatesManager* states, Variant variant);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
      * the mctsContender which uses the new updated wieghts
      * @param mctsContender MCTSAgent using different NN weights
      * @param numberOfGames Number of games to compare
+     * @param states States manager handle
+     * @param variant Variant to generate games for
      * @return Score in respect to the contender, as floating point number.
      *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
      */
-    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states);
+    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states, Variant variant);
 };
 #endif
 

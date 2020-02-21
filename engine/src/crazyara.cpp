@@ -66,6 +66,11 @@ CrazyAra::CrazyAra()
 #endif
     netSingle = nullptr;       // will be initialized in is_ready()
     states = new StatesManager();
+#ifdef MODE_CRAZYHOUSE
+    variant = CRAZYHOUSE_VARIANT;
+#else
+    variant = CHESS_VARIANT;
+#endif
 }
 
 CrazyAra::~CrazyAra()
@@ -93,7 +98,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     auto uiThread = make_shared<Thread>(0);
 
     StateInfo* newState = new StateInfo;
-    Variant variant = UCI::variant_from_name(Options["UCI_Variant"]);
+    variant = UCI::variant_from_name(Options["UCI_Variant"]);
     pos.set(StartFENs[variant], false, variant, newState, uiThread.get());
     states->activeStates.push_back(newState);
 
@@ -219,7 +224,7 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     Board pos;
     string token, cmd;
     auto uiThread = make_shared<Thread>(0);
-    Variant variant = UCI::variant_from_name(Options["UCI_Variant"]);
+    variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
     StateInfo* newState = new StateInfo;
     pos.set(StartFENs[variant], false, variant, newState, uiThread.get());
@@ -234,7 +239,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
 
     Move m;
     string token, fen;
-    Variant variant = UCI::variant_from_name(Options["UCI_Variant"]);
+    variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
     is >> token;
     if (token == "startpos")
@@ -322,7 +327,7 @@ void CrazyAra::selfplay(istringstream &is)
     SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, rlSettings);
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, states);
+    selfPlay.go(numberOfGames, states, variant);
     cout << "readyok" << endl;
 }
 
@@ -336,7 +341,8 @@ void CrazyAra::arena(istringstream &is)
     MCTSAgent* mctsAgentContender = create_new_mcts_agent(netSingle, netBatches, states);
     size_t numberOfGames;
     is >> numberOfGames;
-    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender, numberOfGames, states);
+    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender, numberOfGames, states, variant);
+
     cout << "Arena summary" << endl;
     cout << "Score of Contender vs Producer: " << tournamentResult << endl;
     if (tournamentResult.score() > 0.5f) {

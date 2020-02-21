@@ -30,15 +30,21 @@
 #include "thread.h"
 #include <iostream>
 #include <fstream>
+#include "uci.h"
 #include "../domain/variants.h"
 #include "../util/blazeutil.h"
 #include "../util/randomgen.h"
+
 
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), rlSettings(rlSettings),
     gameIdx(0), gamesPerMin(0), samplesPerMin(0)
 {
+#ifdef MODE_CRAYZHOUSE
     gamePGN.variant = "crazyhouse";
+#elif defined MODE_CHESS
+    gamePGN.variant = "standard";
+#endif
     gamePGN.event = "CrazyAra-SelfPlay";
     gamePGN.site = "Darmstadt, GER";
     gamePGN.date = "?";  // TODO: Change this later
@@ -125,11 +131,13 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         states->activeStates.push_back(newState);
         position->do_move(evalInfo.bestMove, *(newState));
         gameResult = get_result(*position);
+	position->undo_move(evalInfo.bestMove);  // undo and later redo move to get PGN move with result
         gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
-                                            false,
-                                            *mctsAgent->get_root_pos(),
+                                            position->is_chess960(),
+					    *position,
                                             evalInfo.legalMoves,
                                             is_win(gameResult)));
+        position->do_move(evalInfo.bestMove, *(newState));
         reset_search_params(isQuickSearch);
     }
     while(gameResult == NO_RESULT);
@@ -249,7 +257,7 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
-void SelfPlay::go(size_t numberOfGames, StatesManager* states)
+void SelfPlay::go(size_t numberOfGames, StatesManager* states, Variant variant)
 {
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
@@ -257,18 +265,18 @@ void SelfPlay::go(size_t numberOfGames, StatesManager* states)
 
     if (numberOfGames == 0) {
         while(!exporter->is_file_full()) {
-            generate_game(CRAZYHOUSE_VARIANT, states, true);
+            generate_game(variant, states, true);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(CRAZYHOUSE_VARIANT, states, true);
+            generate_game(variant, states, true);
         }
     }
     export_number_generated_games();
 }
 
-TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states)
+TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states, Variant variant)
 {
     TournamentResult tournamentResult;
     tournamentResult.playerA = mctsContender->get_name();
@@ -276,7 +284,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     Result gameResult;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
-            gameResult = generate_arena_game(mctsContender, mctsAgent, CRAZYHOUSE_VARIANT, states, true);
+            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, states, true);
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
@@ -285,7 +293,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
             }
         }
         else {
-            gameResult = generate_arena_game(mctsAgent, mctsContender, CRAZYHOUSE_VARIANT, states, true);
+            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, states, true);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }
