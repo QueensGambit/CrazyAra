@@ -107,7 +107,6 @@ def get_planes_from_game(game, mate_in_one=False):
     # The moves get pushed at the end of the for-loop and is only used in the next loop.
     # Therefore we can iterate over 'all' moves
     plys = 0
-    past_states = None
     for move in all_moves:
         board_occ = 0  # by default the positions hasn't occurred before
         fen = board.fen()
@@ -132,15 +131,7 @@ def get_planes_from_game(game, mate_in_one=False):
             # receive the board and the evaluation of the current position in plane representation
             # We don't want to store float values because the integer datatype is cheaper,
             #  that's why normalize is set to false
-            x_cur = board_to_planes(board, board_occ, normalize=False, mode=main_config["mode"], past_states=past_states) #last_moves=last_moves)
-            if past_states is None:
-                past_states = x_cur[:14, :, :]
-            else:
-                past_states = np.concatenate((x_cur[:14, :, :], past_states))
-                if past_states.shape[0] > NB_LAST_MOVES * 14:
-                    past_states = past_states[:NB_LAST_MOVES * 14]
-            # always flip states for next use
-            past_states = np.flip(past_states, 1)
+            x_cur = board_to_planes(board, board_occ, normalize=False, mode=main_config["mode"], last_moves=last_moves)
 
             # add the evaluation of 1 position to the list
             x.append(x_cur)

@@ -109,8 +109,9 @@ else:  # MODE = MODE_CHESS
 # number of labels of the corresponding flattened policy map. Most of these entries are unreachable (always 0)
 NB_LABELS_POLICY_MAP = NB_POLICY_MAP_CHANNELS * BOARD_HEIGHT * BOARD_WIDTH
 NB_LAST_MOVES = 8
-NB_LAST_STATES = 8
-NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS + NB_LAST_STATES * 14
+NB_PLANES_PER_HISTORY = 2  # number of planes you spent for a history item
+NB_HISTORY_PLANES = NB_LAST_MOVES * NB_PLANES_PER_HISTORY
+NB_CHANNELS_FULL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS + NB_HISTORY_PLANES
 
 # define the number of different pieces one can have in his pocket (the king is excluded)
 POCKETS_SIZE_PIECE_TYPE = 5

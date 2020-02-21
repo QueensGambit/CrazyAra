@@ -25,7 +25,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     NB_CHANNELS_CONST,
     NB_CHANNELS_POS,
     NB_CHANNELS_VARIANTS,
-    NB_LAST_STATES,
+    NB_HISTORY_PLANES,
     PIECES,
     chess,
     VARIANT_MAPPING_BOARDS)
@@ -166,7 +166,7 @@ def _fill_variants_plane(board, planes_variants):
             break
 
 
-def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, past_states=None):
+def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, last_moves=None):
     """
     Gets the plane representation of a given board state.
     (No history of past board positions is used.)
@@ -180,8 +180,7 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, pa
                  (Visit variants.lichess.input_representation for detailed documentation)
                  2 - MODE_CHESS: Specification for chess only with chess960 support
                  (Visit variants.chess.input_representation for detailed documentation)
-    :param crazyhouse_only: Boolean indicates if the older crazyhouse only specification shall be used
-                            Visit variants.crazyhouse.input_representation for documentation
+    :param last_moves: List of last moves
     :return: planes - the plane representation of the current board state
     """
 
@@ -217,31 +216,20 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, pa
             planes_variants[:, :, :] = 1
 
     # create the move planes
-    # planes_moves = np.zeros((NB_LAST_MOVES*2, BOARD_HEIGHT, BOARD_WIDTH))
-    # if last_moves:
-    #     for i, move in enumerate(last_moves):
-    #         if move is not None:
-    #             from_row, from_col = get_row_col(move.from_square, mirror=board_turn == chess.BLACK)
-    #             to_row, to_col = get_row_col(move.to_square, mirror=board_turn == chess.BLACK)
-    #             planes_moves[i*2, from_row, from_col] = 1
-    #             planes_moves[i*2+1, to_row, to_col] = 1
-    if past_states is None:
-        past_states = np.zeros((NB_LAST_STATES * 14, BOARD_HEIGHT, BOARD_WIDTH))
-    else:
-        # if board_turn == chess.BLACK:
-        # always flip past states
-        cur_past_states = int(past_states.shape[0] / 14)
-
-        if cur_past_states != NB_LAST_STATES:
-            # fill remaining spaces with 0
-            past_states = np.concatenate((past_states,
-                                          np.zeros(((NB_LAST_STATES - cur_past_states) * 14, BOARD_HEIGHT, BOARD_WIDTH))))
+    planes_moves = np.zeros((NB_HISTORY_PLANES, BOARD_HEIGHT, BOARD_WIDTH))
+    if last_moves:
+         for i, move in enumerate(last_moves):
+             if move:
+                 from_row, from_col = get_row_col(move.from_square, mirror=board_turn == chess.BLACK)
+                 to_row, to_col = get_row_col(move.to_square, mirror=board_turn == chess.BLACK)
+                 planes_moves[i*2, from_row, from_col] = 1
+                 planes_moves[i*2+1, to_row, to_col] = 1
 
     # (VI) Merge the Matrix-Stack
     if mode == MODE_CRAZYHOUSE:
         planes = np.concatenate((planes_pos, planes_const), axis=0)
     else:  # mode = MODE_LICHESS | mode == MODE_CHESS
-        planes = np.concatenate((planes_pos, planes_const, planes_variants, past_states), axis=0)
+        planes = np.concatenate((planes_pos, planes_const, planes_variants, planes_moves), axis=0)
 
     # revert the board if the players turn was black
     # ! DO NOT DELETE OR UNCOMMENT THIS BLOCK BECAUSE THE PARAMETER board IS CHANGED IN PLACE !
