@@ -42,13 +42,12 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     act1 = get_act(data=bn2, act_type=act_type, name=name + '_act1')
     conv2 = mix_conv(data=act1, channels=channels_operating, kernels=kernels, name=name + 'conv2')
     bn3 = mx.sym.BatchNorm(data=conv2, name=name + '_bn3')
-    act2 = get_act(data=bn3, act_type=act_type, name=name + '_act2')
-    out = mx.sym.Convolution(data=act2, num_filter=channels, kernel=(1, 1),
-                               pad=(0, 0), no_bias=True, name=name + '_conv3')
-    # out = mx.sym.BatchNorm(data=conv3, name=name + '_bn4')
+    out = get_act(data=bn3, act_type=act_type, name=name + '_act2')
     if use_se:
-        out = channel_squeeze_excitation(out, channels, name=name + '_se', ratio=4, act_type=act_type,
-                                         use_hard_sigmoid=True)
+       out = channel_squeeze_excitation(out, channels_operating, name=name + '_se', ratio=4, act_type=act_type,
+                                        use_hard_sigmoid=True)
+    out = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
+                               pad=(0, 0), no_bias=True, name=name + '_conv3')
     out_sum = mx.sym.broadcast_add(data, out, name=name + '_add')
 
     return out_sum
@@ -57,7 +56,7 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                           grad_scale_value=0.01, grad_scale_policy=0.99,
-                          select_policy_from_plane=True, use_se=True, kernels=None, n_labels=4992):
+                          select_policy_from_plane=True, use_se=None, kernels=None, n_labels=4992):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -89,18 +88,11 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
 
     for idx, cur_kernels in enumerate(kernels):
 
-        cur_kernels = kernels[idx]
-        if use_se:
-            if idx == 4 or idx >= 9:
-                cur_use_se = True
-            else:
-                cur_use_se = False
-        else:
-            cur_use_se = False
+        cur_use_se = use_se[idx]
         data = preact_residual_dmixconv_block(data=data, channels=channels, channels_operating=cur_channels,
                                               kernels=cur_kernels, name='dconv_%d' % idx, use_se=cur_use_se)
         cur_channels += channel_expansion
-    # return data
+
     data = mx.sym.BatchNorm(data=data, name='stem_bn1')
     data = get_act(data=data, act_type=act_type, name='stem_act1')
 
@@ -116,3 +108,4 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     sym = mx.symbol.Group([value_out, policy_out])
 
     return sym
+
