@@ -37,7 +37,12 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     precision(float32)
 {
     // in ONNX, the model architecture and parameters are in the same file
-    modelFilePath = "model-os-96.onnx";
+    // TODO: Customize this
+    if (batchSize == 16)
+        modelFilePath = "model-risev3-bsize-16.onnx";
+    else
+        modelFilePath = "model-risev3-bsize-1.onnx";
+
     load_model();
     bind_executor();
     check_if_policy_map();
@@ -48,8 +53,13 @@ void TensorrtAPI::load_model()
     // load an engine from file or build an engine from the ONNX network
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
     inputTensorNames.push_back("data");
+#ifdef MODE_CRAZYHOUSE
     outputTensorNames.push_back("value_tanh0");
     outputTensorNames.push_back("flatten0");
+#else
+    outputTensorNames.push_back("value_out");
+    outputTensorNames.push_back("policy_out");
+#endif
 }
 
 void TensorrtAPI::load_parameters()
@@ -91,6 +101,23 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
     // assign outputs
     float* valueBuffer = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[0]));
     float* policyBuffer = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[1]));
+
+    // apply softmax
+    for (unsigned int b = 0; b < batchSize; ++b) {
+        float sum = 0.0f;
+        unsigned int startIdx = b * policyOutputLength;
+        unsigned int endIdx = startIdx + policyOutputLength;
+
+        for (unsigned int i = startIdx; i < endIdx; i++)
+        {
+            policyBuffer[i] = exp(policyBuffer[i]);
+            sum += policyBuffer[i];
+        }
+        for (unsigned int i = startIdx; i < endIdx; i++)
+        {
+            policyBuffer[i] /= sum;
+        }
+    }
     copy(valueBuffer, valueBuffer + batchSize, valueOutput);
     copy(policyBuffer, policyBuffer + policyOutputLength, probOutputs);
 }

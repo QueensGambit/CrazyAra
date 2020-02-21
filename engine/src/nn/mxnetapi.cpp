@@ -29,6 +29,7 @@
 #include "../util/communication.h"
 #include "../domain/crazyhouse/constants.h"
 
+
 MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT) :
     NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, tensorRT),
     inputShape(Shape(miniBatchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH))

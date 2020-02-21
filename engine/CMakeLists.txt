@@ -82,6 +82,7 @@ include_directories("src/agents")
 include_directories("src/agents/config")
 include_directories("src/nn")
 
+
 if (USE_MXNET)
     IF(DEFINED ENV{MXNET_PATH})
     MESSAGE(STATUS "MXNET_PATH set to: $ENV{MXNET_PATH}")
@@ -109,9 +110,6 @@ if (USE_MXNET)
     add_definitions(-DMXNET)
 endif()
 
-add_executable(${PROJECT_NAME} ${source_files})
-
-
 if (USE_RL)
     message(STATUS "Enabled Reinforcement Learning functionality")
     if(DEFINED ENV{Z5_PATH})
@@ -132,15 +130,20 @@ if (USE_TENSORRT)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
     message(STATUS "Enabled TensorRT support")
     message(STATUS "TensorRT path: $ENV{TENSORRT_PATH}")
-    message(STATUS "CUDA path: $ENV{CUDA_PATH}")
     find_package(CUDA REQUIRED)
-    include_directories("$ENV{CUDA_PATH}include")
-    link_directories("$ENV{CUDA_PATH}lib64")
+    message(STATUS "CUDA path: $ENV{CUDA_PATH}")
+    include_directories("$ENV{CUDA_PATH}/include")
+    link_directories("$ENV{CUDA_PATH}/lib64")
     link_directories("$ENV{TENSORRT_PATH}lib")
     include_directories("$ENV{TENSORRT_PATH}include")
     include_directories("$ENV{TENSORRT_PATH}samples/common/")
-    target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
     add_definitions(-DTENSORRT)
+endif()
+
+add_executable(${PROJECT_NAME} ${source_files})
+
+if (USE_TENSORRT)
+    target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
 endif()
 
 find_package(Threads REQUIRED)
