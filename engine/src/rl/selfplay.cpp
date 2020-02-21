@@ -45,7 +45,7 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
 #elif defined MODE_CHESS
     gamePGN.variant = "standard";
 #endif
-    gamePGN.event = "CrazyAra-SelfPlay";
+    gamePGN.event = "SelfPlay";
     gamePGN.site = "Darmstadt, GER";
     gamePGN.date = "?";  // TODO: Change this later
     gamePGN.round = "?";

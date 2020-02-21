@@ -75,7 +75,7 @@ RUN cd /root \
 
 # Install z5-library (C++ interface for zarr data format)
 RUN cd /root \
-    && git clone https://github.com/QueensGambit/z5.git
+    && git clone https://github.com/constantinpape/z5.git
 ENV Z5_PATH /root/z5/
 
 # Clone the CrazyAra repository

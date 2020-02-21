@@ -44,8 +44,15 @@
 using namespace std;
 
 // meta data
+#ifdef MODE_CRAZYHOUSE
 const string engineName = "CrazyAra";
-const string engineVersion = "0.7.0";
+#elif defined MODE_LICHESS
+const string engineName = "LichessAra";
+#else  // MODE_CHESS
+const string engineName = "ClassicAra";
+#endif
+
+const string engineVersion = "0.8.0";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
 
 // Define the board size
