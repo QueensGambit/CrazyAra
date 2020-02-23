@@ -36,6 +36,8 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
     precision(float32)
 {
+    // select the requested device
+    cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
     // TODO: Customize this
     if (batchSize == 16)
