@@ -39,9 +39,9 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     // in ONNX, the model architecture and parameters are in the same file
     // TODO: Customize this
     if (batchSize == 16)
-        modelFilePath = "model-risev3-bsize-16.onnx";
+        modelFilePath = "model-bsize-16.onnx";
     else
-        modelFilePath = "model-risev3-bsize-1.onnx";
+        modelFilePath = "model-bsize-1.onnx";
 
     load_model();
     bind_executor();
@@ -100,24 +100,8 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
 
     // assign outputs
     float* valueBuffer = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[0]));
-    float* policyBuffer = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[1]));
+    float* policyBuffer = static_cast<float*>(buffers->getHostBuffer("policy_softmax"));
 
-    // apply softmax
-    for (unsigned int b = 0; b < batchSize; ++b) {
-        float sum = 0.0f;
-        unsigned int startIdx = b * policyOutputLength;
-        unsigned int endIdx = startIdx + policyOutputLength;
-
-        for (unsigned int i = startIdx; i < endIdx; i++)
-        {
-            policyBuffer[i] = exp(policyBuffer[i]);
-            sum += policyBuffer[i];
-        }
-        for (unsigned int i = startIdx; i < endIdx; i++)
-        {
-            policyBuffer[i] /= sum;
-        }
-    }
     copy(valueBuffer, valueBuffer + batchSize, valueOutput);
     copy(policyBuffer, policyBuffer + policyOutputLength, probOutputs);
 }
@@ -148,6 +132,15 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
    inputDims = network->getInput(0)->getDimensions();
    valueOutputDims = network->getOutput(0)->getDimensions();
    policyOutputDims = network->getOutput(1)->getDimensions();
+   // add a softmax layer to the onnx model
+   ISoftMaxLayer* softmaxOutput = network->addSoftMax(*network->getOutput(1));
+   // set the softmax axis to 1
+   softmaxOutput->setAxes(1 << 1);
+   // set the softmax output as the new output
+   network->unmarkOutput(*network->getOutput(1));
+   network->markOutput(*softmaxOutput->getOutput(0));
+   softmaxOutput->getOutput(0)->setName("policy_softmax");
+
    info_string("inputDims:", inputDims);
    info_string("valueOutputDims:", valueOutputDims);
    info_string("policyOutputDims:", policyOutputDims);
