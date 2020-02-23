@@ -27,6 +27,7 @@
 //#include "board.h"
 #include "constants.h"
 #include <iostream>
+#include <deque>
 using namespace std;
 
 void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color) {
@@ -49,13 +50,17 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
 }
 
 
-void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes) {
+#ifdef MODE_CHESS
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, const deque<Move>& lastMoves, float *inputPlanes)
+#else
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes)
+#endif
+{
 
     // intialize the input_planes with 0
     std::fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);
 
     // Fill in the piece positions
-
     // Iterate over both color starting with WHITE
     size_t current_channel = 0;
     Color me = pos->side_to_move();
@@ -175,9 +180,11 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     //  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
     std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
               normalize ? pos->rule50_count() / MAX_NB_NO_PROGRESS: pos->rule50_count());
+#ifndef MODE_CRAZYHOUSE
+    current_channel++;
+#endif
 
 #ifdef MODE_LICHESS
-    current_channel++;
     // set the remaining checks (only needed for "3check")
     if (pos->is_three_check()) {
         for (Color color : {me, you}) {
@@ -209,5 +216,18 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
 #endif
 
+#ifdef MODE_CHESS
+    // (VI) Fill the bits of the last move planes
+    for (const Move move : lastMoves) {
+        if (me == WHITE) {
+            inputPlanes[current_channel++ * NB_SQUARES + from_sq(move)] = 1.0f;
+            inputPlanes[current_channel++ * NB_SQUARES + to_sq(move)] = 1.0f;
+        }
+        else {
+            inputPlanes[current_channel++ * NB_SQUARES + 64-from_sq(move)] = 1.0f;
+            inputPlanes[current_channel++ * NB_SQUARES + 64-to_sq(move)] = 1.0f;
+        }
+    }
+#endif
 }
 
