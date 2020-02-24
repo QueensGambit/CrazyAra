@@ -50,11 +50,7 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
 }
 
 
-#ifdef MODE_CHESS
-void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, const deque<Move>& lastMoves, float *inputPlanes)
-#else
 void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes)
-#endif
 {
 
     // intialize the input_planes with 0
@@ -218,7 +214,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
 
 #ifdef MODE_CHESS
     // (VI) Fill the bits of the last move planes
-    for (const Move move : lastMoves) {
+    for (const Move move : pos->get_last_moves()) {
         if (me == WHITE) {
             inputPlanes[current_channel++ * NB_SQUARES + from_sq(move)] = 1.0f;
             inputPlanes[current_channel++ * NB_SQUARES + to_sq(move)] = 1.0f;
