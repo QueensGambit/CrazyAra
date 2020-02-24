@@ -50,7 +50,7 @@ def parse_args(cmd_args: list):
     if not os.path.isdir(args.model_dir):
         raise Exception("The given directory %s does not exist." % args.model_dir)
         
-    args.sym_dir = glob(args.model_dir + "/*.sym")[0]
+    args.sym_file = glob(args.model_dir + "/*.json")[0]
     args.params_file = glob(args.model_dir + "/*.params")[0]
 
     for file_path in [args.sym_file, args.params_file]:
@@ -93,9 +93,8 @@ def main():
     Main function which is executed on start-up
 
     Exemplary call:
-    python convert_to_onnx.py --sym-file ./model-os-96-risev2/model/model-0.44052-1.08962-0.777-0.768-symbol.json\
-     --params-file ./model-os-96-risev2/model/model-0.44052-1.08962-0.777-0.768-0096.params --input-shape 1 34 8 8\
-      --onnx-file model-os-96-bsize-1.onnx --validate --output-names value_tanh0_output flatten0_output
+    python convert_to_onnx.py --model-dir ./model --input-shape 1 34 8 8\
+      --onnx-file model-os-96-bsize-1.onnx --validate --output-names value_tanh0_output flatten0_output    
     :return:
     """
 
