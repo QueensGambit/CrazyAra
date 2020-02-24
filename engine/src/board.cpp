@@ -33,7 +33,6 @@ using namespace std;
 
 Board::Board()
 {
-    board;
 }
 
 Board::Board(const Board &b)
@@ -158,6 +157,51 @@ bool Board::is_terminal() const
     }
     return true;
 }
+
+#ifdef MODE_CHESS
+void Board::add_move_to_list(Move m)
+{
+    lastMoves.push_front(m);
+    if (lastMoves.size() > NB_LAST_MOVES) {
+        lastMoves.pop_back();
+    }
+}
+
+void Board::do_move(Move m, StateInfo &newSt)
+{
+    add_move_to_list(m);
+    Position::do_move(m, newSt);
+}
+
+void Board::do_move(Move m, StateInfo &newSt, bool givesCheck)
+{
+    add_move_to_list(m);
+    Position::do_move(m, newSt, givesCheck);
+}
+
+void Board::undo_move(Move m)
+{
+    lastMoves.pop_front();
+    Position::undo_move(m);
+}
+
+deque<Move> Board::get_last_moves() const
+{
+    return lastMoves;
+}
+
+Board& Board::set(const string &fenStr, bool isChess960, Variant v, StateInfo *si, Thread *th)
+{
+    lastMoves.clear();
+    Position::set(fenStr, isChess960, v, si, th);
+}
+
+Board& Board::set(const string &code, Color c, Variant v, StateInfo *si)
+{
+    lastMoves.clear();
+    Position::set(code, c, v, si);
+}
+#endif
 
 std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin, bool bookMove)
 {

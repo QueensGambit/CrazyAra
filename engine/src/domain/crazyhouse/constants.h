@@ -66,16 +66,23 @@ const int NB_SQUARES = BOARD_WIDTH * BOARD_HEIGHT;
 const int NB_CHANNELS_POS = 27;
 const int NB_CHANNELS_CONST = 7;
 const int NB_CHANNELS_VARIANTS = 0;
+const int NB_LAST_MOVES = 0;
+const int NB_CHANNELS_PER_HISTORY = 0;
 #elif defined MODE_LICHESS
 const int NB_CHANNELS_POS = 27;
 const int NB_CHANNELS_CONST = 11;
 const int NB_CHANNELS_VARIANTS = 9;
+const int NB_LAST_MOVES = 0;
+const int NB_CHANNELS_PER_HISTORY = 0;
 #else  // MODE = MODE_CHESS
 const int NB_CHANNELS_POS = 15;
 const int NB_CHANNELS_CONST = 7;
 const int NB_CHANNELS_VARIANTS = 1;  // is960
+const int NB_LAST_MOVES = 8;
+const int NB_CHANNELS_PER_HISTORY = 2;  // number of planes you spent for a history item
 #endif
-const int NB_CHANNELS_TOTAL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS;
+const int NB_CHANNELS_HISTORY = NB_LAST_MOVES * NB_CHANNELS_PER_HISTORY;
+const int NB_CHANNELS_TOTAL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS + NB_CHANNELS_HISTORY;
 const int NB_VALUES_TOTAL = NB_CHANNELS_TOTAL * BOARD_HEIGHT * BOARD_WIDTH;
 
 // number of players of the game

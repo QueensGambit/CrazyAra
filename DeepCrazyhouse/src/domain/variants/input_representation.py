@@ -25,7 +25,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     NB_CHANNELS_CONST,
     NB_CHANNELS_POS,
     NB_CHANNELS_VARIANTS,
-    NB_HISTORY_PLANES,
+    NB_CHANNELS_HISTORY,
     PIECES,
     chess,
     VARIANT_MAPPING_BOARDS)
@@ -216,7 +216,7 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
             planes_variants[:, :, :] = 1
 
     # create the move planes
-    planes_moves = np.zeros((NB_HISTORY_PLANES, BOARD_HEIGHT, BOARD_WIDTH))
+    planes_moves = np.zeros((NB_CHANNELS_HISTORY, BOARD_HEIGHT, BOARD_WIDTH))
     if last_moves:
          for i, move in enumerate(last_moves):
              if move:

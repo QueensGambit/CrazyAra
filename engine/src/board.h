@@ -30,9 +30,21 @@
 
 #include <position.h>
 #include "domain/crazyhouse/constants.h"
+#include <deque>
 
 class Board : public Position
 {
+private:
+#ifdef MODE_CHESS
+    // up to NB_LAST_MOVES are stored in a list, most recent moves first
+    deque<Move> lastMoves;
+    /**
+     * @brief add_move_to_list Adds a given move to the move list and removes the
+     * last element if the list exceeds NB_LAST_MOVES items
+     * @param m Given Move
+     */
+    inline void add_move_to_list(Move m);
+#endif
 public:
     Board();
     Board(const Board& b);
@@ -80,6 +92,16 @@ public:
      * @return True for terminal, else false
      */
     bool is_terminal() const;
+
+#ifdef MODE_CHESS
+    // overloaded function which include a last move list update
+    void do_move(Move m, StateInfo& newSt);
+    void do_move(Move m, StateInfo& newSt, bool givesCheck);
+    void undo_move(Move m);
+    Board& set(const std::string& fenStr, bool isChess960, Variant v, StateInfo* si, Thread* th);
+    Board& set(const std::string& code, Color c, Variant v, StateInfo* si);
+    deque<Move> get_last_moves() const;
+#endif
 };
 
 /**

@@ -25,7 +25,7 @@ Recent cuDNN version also improved the speed on GPU to factor of 3.
 import mxnet as mx
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, channel_squeeze_excitation,\
     get_stem, policy_head, value_head
-from DeepCrazyhouse.src.domain.variants.constants import NB_CHANNELS_FULL, NB_CHANNELS_VARIANTS
+from DeepCrazyhouse.src.domain.variants.constants import NB_CHANNELS_TOTAL, NB_CHANNELS_VARIANTS
 
 
 def bottleneck_residual_block(data, channels, channels_operating, name, kernel=3, act_type='relu', use_se=False,
@@ -142,7 +142,7 @@ def extract_variant_info(data, channels, name):
     variant_layers = []
 
     for idx, xi in enumerate(mx.sym.split(data, axis=1, num_outputs=channels, name=name + '_split')):
-        if idx >= NB_CHANNELS_FULL - NB_CHANNELS_VARIANTS:
+        if idx >= NB_CHANNELS_TOTAL - NB_CHANNELS_VARIANTS:
             variant_layers.append(xi)
     return mx.sym.Concat(*variant_layers, name=name + '_concat')
 
@@ -175,7 +175,7 @@ def rise_mobile_v2_symbol(channels=256, channels_operating_init=128, channel_exp
     data = mx.sym.Variable(name='data')
 
     if use_extra_variant_input:
-        data_variant = extract_variant_info(data, channels=NB_CHANNELS_FULL, name="variants")
+        data_variant = extract_variant_info(data, channels=NB_CHANNELS_TOTAL, name="variants")
     else:
         data_variant = None
 

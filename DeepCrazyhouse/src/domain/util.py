@@ -20,7 +20,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     MAX_NB_MOVES,
     MAX_NB_NO_PROGRESS,
     MAX_NB_PRISONERS,
-    NB_CHANNELS_FULL,
+    NB_CHANNELS_TOTAL,
     NB_CHANNELS_POS,
     POCKETS_SIZE_PIECE_TYPE,
     chess,
@@ -171,7 +171,7 @@ def normalize_input_planes(x):
 
 # use a constant matrix for normalization to allow broad cast operations
 # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH)))
+MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)))
 
 
 def customize_input_planes(x):

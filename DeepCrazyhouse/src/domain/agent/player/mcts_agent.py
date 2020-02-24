@@ -29,7 +29,7 @@ from DeepCrazyhouse.src.domain.agent.neural_net_api import NeuralNetAPI
 from DeepCrazyhouse.src.domain.abstract_cls.abs_agent import AbsAgent
 from DeepCrazyhouse.src.domain.agent.player.util.net_pred_service import NetPredService
 from DeepCrazyhouse.src.domain.agent.player.util.node import Node
-from DeepCrazyhouse.src.domain.variants.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_FULL, NB_LABELS
+from DeepCrazyhouse.src.domain.variants.constants import BOARD_HEIGHT, BOARD_WIDTH, NB_CHANNELS_TOTAL, NB_LABELS
 from DeepCrazyhouse.src.domain.variants.game_state import GameState
 from DeepCrazyhouse.src.domain.variants.output_representation import get_probs_of_move_list, value_to_centipawn
 from DeepCrazyhouse.src.domain.util import get_check_move_mask
@@ -199,7 +199,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         # time counter - n° of nodes stored to measure the nps - priority policy for the root node
         self.t_start_eval = self.total_nodes_pre_search = self.root_node_prior_policy = None
         # allocate shared memory for communicating with the network prediction service
-        self.batch_state_planes = np.zeros((self.threads, NB_CHANNELS_FULL, BOARD_HEIGHT, BOARD_WIDTH), DTYPE)
+        self.batch_state_planes = np.zeros((self.threads, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH), DTYPE)
         self.batch_value_results = np.zeros(self.threads, DTYPE)
         self.batch_policy_results = np.zeros((self.threads, NB_LABELS), DTYPE)
         # initialize the NetworkPredictionService and give the pointers to the shared memory
