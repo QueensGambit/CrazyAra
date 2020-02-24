@@ -69,4 +69,10 @@ train_config = {
     # Boolean if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
     "sparse_policy_label": False,
     # use_mxnet_style = True  # Decide between mxnet and gluon style for training
+    # layer name of the value output layer (e.g. "value_tanh0" for legacy crazyhouse networks and "value_out" for newer
+    # networks)
+    "value_output": "value_out",
+    # layer name of the policy output layer without softmax applied (e.g. "flatten0" for legacy crazyhouse networks
+    # "policy_out" for newer networks)
+    "policy_output": "policy_out",
 }

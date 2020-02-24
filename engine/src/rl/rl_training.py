@@ -143,7 +143,8 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
      val_policy_acc_final), _ = train_agent.train(cur_it)
 
     symbol = remove_no_sparse_cross_entropy(symbol, train_config["val_loss_factor"],
-                                            "value_tanh0_output", "flatten0_output")
+                                            train_config["value_output"]+"_output",
+                                            train_config["policy_output"]+"_output")
     prefix = cwd + "model_contender/model-%.5f-%.5f-%.3f-%.3f" % (val_value_loss_final, val_policy_loss_final,
                                                                   val_value_acc_sign_final, val_policy_acc_final)
 
