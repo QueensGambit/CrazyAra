@@ -16,6 +16,7 @@ import os
 import sys
 import argparse
 import mxnet as mx
+from glob import glob
 import numpy as np
 from mxnet.contrib import onnx as onnx_mxnet
 import logging
@@ -29,11 +30,8 @@ def parse_args(cmd_args: list):
     """
     parser = argparse.ArgumentParser(description='MXNet to ONN converter')
 
-    parser.add_argument("--sym-file", type=str, default="model-symbol.json",
-                        help="symbol file of the network which describes the architecture (default: model-symbol.json")
-    parser.add_argument('--params-file', type=str, default="model.params",
-                        help='weight file of the network which holds the neural network parameters'
-                             ' (default: model.params)')
+    parser.add_argument("--model-dir", type=str, default="./model",
+                        help="model directory which contains the .param and .sym file")
     parser.add_argument("--onnx-file", type=str, default="model.onnx",
                         help="Output file after converting the model (default: model.onnx)")
     parser.add_argument("--input-shape", type=int, nargs="*", default=None,
@@ -48,6 +46,12 @@ def parse_args(cmd_args: list):
                         help="If true, the ONNX model is validated after conversion (default: False)")
 
     args = parser.parse_args(cmd_args)
+
+    if not os.path.isdir(args.model_dir):
+        raise Exception("The given directory %s does not exist." % args.model_dir)
+        
+    args.sym_dir = glob(args.model_dir + "/*.sym")[0]
+    args.params_file = glob(args.model_dir + "/*.params")[0]
 
     for file_path in [args.sym_file, args.params_file]:
         if not os.path.isfile(file_path):
