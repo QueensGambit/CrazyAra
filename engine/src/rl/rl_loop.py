@@ -21,6 +21,7 @@ from subprocess import PIPE, Popen
 from multiprocessing import Process, Queue
 
 sys.path.append("../../../")
+from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.configs.train_config import train_config
 from engine.src.rl.rl_training import update_network
 
@@ -110,6 +111,17 @@ def move_all_files(from_dir, to_dir):
 
     for file_name in file_names:
         os.rename(from_dir + file_name, to_dir + file_name)
+
+
+def check_valid_paths(args):
+    """
+    Checks if the configuration directory paths ang argument paths are valid
+    """
+    if os.path.isdir(main_config["planes_train_dir"]) is False:
+        raise Exception('The given directory in main_config["planes_train_dir"]:%s is invalid.'
+                        % main_config["planes_train_dir"])
+    if not os.path.exists(args.crazyara_binary_dir):
+        raise Exception("Your given args.crazyara_binary_dir: %s does not exist. Make sure to define a valid directory")
 
 
 class RLLoop:
@@ -505,9 +517,7 @@ def parse_args(cmd_args: list):
                         help="How many arena games will be done to judge the quality of the new network")
 
     args = parser.parse_args(cmd_args)
-
-    if not os.path.exists(args.crazyara_binary_dir):
-        raise Exception("Your given args.crazyara_binary_dir: %s does not exist. Make sure to define a valid directory")
+    check_valid_paths(args)
 
     if args.crazyara_binary_dir[-1] != '/':
         args.crazyara_binary_dir += '/'
