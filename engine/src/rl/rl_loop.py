@@ -113,15 +113,13 @@ def move_all_files(from_dir, to_dir):
         os.rename(from_dir + file_name, to_dir + file_name)
 
 
-def check_valid_paths(args):
+def check_valid_paths():
     """
     Checks if the configuration directory paths ang argument paths are valid
     """
     if os.path.isdir(main_config["planes_train_dir"]) is False:
         raise Exception('The given directory in main_config["planes_train_dir"]:%s is invalid.'
                         % main_config["planes_train_dir"])
-    if not os.path.exists(args.crazyara_binary_dir):
-        raise Exception("Your given args.crazyara_binary_dir: %s does not exist. Make sure to define a valid directory")
 
 
 class RLLoop:
@@ -164,6 +162,7 @@ class RLLoop:
         os.chdir(self.crazyara_binary_dir)
 
         self._create_directories()
+        check_valid_paths()
         self.model_name = ""  # will be set in initialize()
         self.nn_update_index = args.nn_update_idx
         self.max_lr = train_config["max_lr"]
@@ -519,7 +518,9 @@ def parse_args(cmd_args: list):
                         help="How many arena games will be done to judge the quality of the new network")
 
     args = parser.parse_args(cmd_args)
-    check_valid_paths(args)
+
+    if not os.path.exists(args.crazyara_binary_dir):
+        raise Exception("Your given args.crazyara_binary_dir: %s does not exist. Make sure to define a valid directory")
 
     if args.crazyara_binary_dir[-1] != '/':
         args.crazyara_binary_dir += '/'
