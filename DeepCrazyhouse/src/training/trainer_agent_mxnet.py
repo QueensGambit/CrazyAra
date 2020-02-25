@@ -71,8 +71,8 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-def add_non_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name="value_out",
-                                 policy_output_name="policy_out"):
+def add_non_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name="value_out_output",
+                                 policy_output_name="policy_out_output"):
     """
     Adds a cross entropy loss output which support non-sparse label as targets, but distributions with value in [0,1]
     :param symbol: MXNet symbol with both a value and policy head
@@ -90,8 +90,8 @@ def add_non_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name
     return mx.symbol.Group([value_out, policy_out])
 
 
-def remove_no_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name="value_out",
-                                 policy_output_name="policy_out"):
+def remove_no_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_name="value_out_output",
+                                 policy_output_name="policy_out_output"):
     """
     Removes the last custom cross entropy loss layer to enable loading the model in the C++ API.
     :param symbol: MXNet symbol with both a value and policy head

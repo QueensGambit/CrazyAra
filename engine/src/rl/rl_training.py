@@ -60,8 +60,8 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
 
     symbol = mx.sym.load(symbol_filename)
     symbol = add_non_sparse_cross_entropy(symbol, train_config["val_loss_factor"],
-                                          "value_tanh0_output", "flatten0_output")
-    # "value_out_output", "policy_out_output")
+                                          train_config["value_output"]+"_output",
+                                          train_config["policy_output"]+"_output")
 
     # calculate how many iterations per epoch exist
     nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]
