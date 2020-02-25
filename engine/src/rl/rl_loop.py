@@ -219,6 +219,7 @@ class RLLoop:
         set_uci_param(self.proc, "Device_ID", self.args.device_id)
         set_uci_param(self.proc, "Batch_Size", 8)
         set_uci_param(self.proc, "Centi_Dirichlet_Epsilon", 25)
+        set_uci_param(self.proc, "Centi_Dirichlet_Alpha", 30)
         set_uci_param(self.proc, "Nodes", 800)
         set_uci_param(self.proc, "Allow_Early_Stopping", False)
         set_uci_param(self.proc, "Centi_Node_Temperature", 0)
