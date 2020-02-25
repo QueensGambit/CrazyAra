@@ -220,8 +220,8 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
             inputPlanes[current_channel++ * NB_SQUARES + to_sq(move)] = 1.0f;
         }
         else {
-            inputPlanes[current_channel++ * NB_SQUARES + 64-from_sq(move)] = 1.0f;
-            inputPlanes[current_channel++ * NB_SQUARES + 64-to_sq(move)] = 1.0f;
+            inputPlanes[current_channel++ * NB_SQUARES + 64-int(from_sq(move))] = 1.0f;
+            inputPlanes[current_channel++ * NB_SQUARES + 64-int(to_sq(move))] = 1.0f;
         }
     }
 #endif
