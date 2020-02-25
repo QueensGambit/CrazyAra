@@ -37,14 +37,14 @@
 
 #ifdef USE_RL
 /**
- * @brief update_states_after_move Plays a given move and updates the relevant set of variables
- * @param move Move to be played (usually EvalInfo.bestMove)
+ * @brief update_states_after_move Plays the best move of evalInfo and updates the relevant set of variables
+ * @param evalInfo Struct which contains the best move and all legal moves
  * @param position Current game board position
  * @param states States list
  * @param gamePGN PGN of the current game
  * @param gameResult Current game result (usually NO_RESULT after move was played)
  */
-void play_move_and_update(Move move, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult);
+void play_move_and_update(const EvalInfo& evalInfo, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult);
 
 
 class SelfPlay

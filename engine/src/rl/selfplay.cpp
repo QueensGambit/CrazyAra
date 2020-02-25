@@ -36,18 +36,18 @@
 #include "../util/randomgen.h"
 
 
-void play_move_and_update(Move move, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult) {
+void play_move_and_update(const EvalInfo& evalInfo, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult) {
     StateInfo* newState = new StateInfo;
     states->activeStates.push_back(newState);
     position->do_move(evalInfo.bestMove, *(newState));
     gameResult = get_result(*position);
-    position->undo_move(move);  // undo and later redo move to get PGN move with result
+    position->undo_move(evalInfo.bestMove);  // undo and later redo move to get PGN move with result
     gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                         position->is_chess960(),
                                         *position,
                                         evalInfo.legalMoves,
                                         is_win(gameResult)));
-    position->do_move(move, *(newState));
+    position->do_move(evalInfo.bestMove, *(newState));
 }
 
 
@@ -142,7 +142,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
             exporter->save_sample(position, evalInfo);
             ++generatedSamples;
         }
-        play_move_and_update(evalInfo.bestMove, position, states, gamePGN, gameResult);
+        play_move_and_update(evalInfo, position, states, gamePGN, gameResult);
         reset_search_params(isQuickSearch);
     }
     while(gameResult == NO_RESULT);
@@ -189,7 +189,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
         if (position->plies_from_null() != 0) {
             passivePlayer->apply_move_to_tree(evalInfo.bestMove, false, position);
         }
-        play_move_and_update(evalInfo.bestMove, position, states, gamePGN, gameResult);
+        play_move_and_update(evalInfo, position, states, gamePGN, gameResult);
     }
     while(gameResult == NO_RESULT);
     set_game_result_to_pgn(gameResult);
