@@ -217,6 +217,12 @@ class RLLoop:
                                                                                    'utf-8'))
         set_uci_param(self.proc, "Context", self.args.context)
         set_uci_param(self.proc, "Device_ID", self.args.device_id)
+        set_uci_param(self.proc, "Batch_Size", 8)
+        set_uci_param(self.proc, "Centi_Dirichlet_Epsilon", 25)
+        set_uci_param(self.proc, "Nodes", 800)
+        set_uci_param(self.proc, "Allow_Early_Stopping", False)
+        set_uci_param(self.proc, "Centi_Node_Temperature", 0)
+
         if is_arena is True:
             set_uci_param(self.proc, "Centi_Temperature", 60)
         else:
@@ -473,16 +479,11 @@ def set_uci_param(proc, name, value):
     Sets the value for a given UCI-parameter in the binary.
     :param proc: Process to set the parameter for
     :param name: Name of the UCI-parameter
-    :param value: Value for the UCI-parameter
+    :param value: Value for the UCI-parameter (this value is always converted to a string)
     :return:
     """
-    if isinstance(value, int):
-        proc.stdin.write(b"setoption name %b value %d\n" % (bytes(name, encoding="ascii"), value))
-    elif isinstance(value, str):
-        proc.stdin.write(b"setoption name %b value %b\n" % (bytes(name, encoding="ascii"),
-                                                            bytes(value, encoding="ascii")))
-    else:
-        raise NotImplementedError(f"To set uci-parameters of type {type(value)} has not been implemented yet.")
+    proc.stdin.write(b"setoption name %b value %b\n" % (bytes(name, encoding="ascii"),
+                                                        bytes(str(value), encoding="ascii")))
     proc.stdin.flush()
 
 
