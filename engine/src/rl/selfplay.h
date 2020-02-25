@@ -36,6 +36,17 @@
 #include "../agents/config/rlsettings.h"
 
 #ifdef USE_RL
+/**
+ * @brief update_states_after_move Plays a given move and updates the relevant set of variables
+ * @param move Move to be played (usually EvalInfo.bestMove)
+ * @param position Current game board position
+ * @param states States list
+ * @param gamePGN PGN of the current game
+ * @param gameResult Current game result (usually NO_RESULT after move was played)
+ */
+void play_move_and_update(Move move, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult);
+
+
 class SelfPlay
 {
 private:
