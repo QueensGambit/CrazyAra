@@ -101,7 +101,9 @@ Board& Board::operator=(const Board &b)
     chess960 = b.chess960;
     var = b.var;
     subvar = b.subvar;
-
+#ifdef MODE_CHESS
+    lastMoves = b.lastMoves;  // vectors and deques are deeply copied by default
+#endif
     return *this;
 }
 
