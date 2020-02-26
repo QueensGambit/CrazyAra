@@ -32,6 +32,12 @@
 
 #ifdef BUILD_TESTS
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+
+/**
+ * @brief init Initializes bitboards, bitbases and position arrays
+ */
+void init();
+
 #endif
 
 #endif // TESTS_H

@@ -116,11 +116,11 @@ public:
  * @param m Move of interest
  * @param pos Board position
  * @param legalMoves List of legal moves for the board position
- * @param file_ambiguous Returns if the move is file ambiguous (two pieces share the same file with same destination square)
- * @param rank_ambiguous Returns if the move is rank ambiguous (two pieces share the same rank with same destination square)
+ * @param isFileAmbiguous Returns if the move is file ambiguous (two pieces share the same file with same destination square)
+ * @param isRankAmbiguous Returns if the move is rank ambiguous (two pieces share the same rank with same destination square)
  * @return True, in case of ambiguity else false
  */
-bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move>& legalMoves, bool& file_ambiguous, bool& rank_ambiguous);
+bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move>& legalMoves, bool& isFileAmbiguous, bool& isRankAmbiguous);
 
 /**
  * @brief pgnMove Converts a given move into PGN move notation.

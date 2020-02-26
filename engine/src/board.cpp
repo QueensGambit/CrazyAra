@@ -291,11 +291,11 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
 }
 
 
-bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &legalMoves, bool &file_ambiguous, bool &rank_ambiguous)
+bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &legalMoves, bool &isFileAmbiguous, bool &isRankAmbiguous)
 {
     bool ambiguous = false;
-    file_ambiguous = false;
-    rank_ambiguous = false;
+    isFileAmbiguous = false;
+    isRankAmbiguous = false;
     const Square from = from_sq(m);
     const Square to = to_sq(m);
 
@@ -305,10 +305,10 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &le
         if (to == cur_to && from != cur_from && pos.piece_on(from) == pos.piece_on(cur_from)) {
             ambiguous = true;
             if (file_of(from) == file_of(cur_from)) {
-                file_ambiguous = true;
+                isFileAmbiguous = true;
             }
             if (rank_of(from) == rank_of(cur_from)) {
-                rank_ambiguous = true;
+                isRankAmbiguous = true;
             }
         }
     }

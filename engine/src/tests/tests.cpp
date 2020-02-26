@@ -27,7 +27,9 @@
 
 #ifdef BUILD_TESTS
 #include <iostream>
+#include <string>
 #include "catch.hpp"
+#include "uci.h"
 #include "../util/sfutil.h"
 #include "../domain/variants.h"
 #include "thread.h"
@@ -35,6 +37,12 @@
 #include "../domain/crazyhouse/inputrepresentation.h"
 using namespace Catch::literals;
 using namespace std;
+
+void init() {
+    Bitboards::init();
+    Position::init();
+    Bitbases::init();
+}
 
 TEST_CASE("En-passent moves") {
     vector<string> en_passent_moves;
@@ -50,9 +58,7 @@ TEST_CASE("En-passent moves") {
 }
 
 TEST_CASE("Anti-Chess StartFEN"){
-    Bitboards::init();
-    Position::init();
-    Bitbases::init();
+    init();
 
     Board pos;
     string token, cmd;
@@ -78,5 +84,31 @@ TEST_CASE("Anti-Chess StartFEN"){
     REQUIRE(int(max_num) == 1);
     REQUIRE(int(sum) == 224);
     REQUIRE(int(key) == 417296);
+}
+
+TEST_CASE("PGN_Move_Ambiguity"){
+    init();
+
+    Board pos;
+    auto uiThread = make_shared<Thread>(0);
+
+    StateInfo* newState = new StateInfo;
+    pos.set("r1bq1rk1/ppppbppp/2n2n2/4p3/4P3/1N1P1N2/PPP2PPP/R1BQKB1R w KQ - 5 6", false,
+            CRAZYHOUSE_VARIANT, newState, uiThread.get());
+    string uci_move = "f3d2";
+    Move move = UCI::to_move(pos, uci_move);
+
+    vector<Move> legalMoves;
+    // generate legal moves
+    for (const ExtMove& move : MoveList<LEGAL>(pos)) {
+        legalMoves.push_back(move);
+    }
+    bool isRankAmbigious;
+    bool isFileAmbigious;
+    bool isAmbigious = is_pgn_move_ambiguous(move, pos, legalMoves, isFileAmbigious, isRankAmbigious);
+
+    REQUIRE(isRankAmbigious == true);
+    REQUIRE(isFileAmbigious == false);
+    REQUIRE(isAmbigious == true);
 }
 #endif
