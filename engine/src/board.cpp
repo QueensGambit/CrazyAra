@@ -150,7 +150,7 @@ bool Board::is_50_move_rule_draw() const
 bool Board::is_terminal() const
 {
     // 3-fold-repetition and 50 move rul draw is handled outside move generation
-    if (can_claim_3fold_repetition() || is_50_move_rule_draw()) {
+    if (can_claim_3fold_repetition() || is_50_move_rule_draw() || draw_by_insufficient_material()) {
         return true;
     }
 
@@ -341,7 +341,7 @@ bool leads_to_terminal(const Board &pos, Move m)
 Result get_result(const Board& pos)
 {
     if (pos.is_terminal()) {
-        if (pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition()) {
+        if (pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition() || pos.draw_by_insufficient_material()) {
             return DRAWN;
         }
         if (pos.side_to_move() == BLACK) {
