@@ -368,6 +368,8 @@ void CrazyAra::init_rl_settings()
     rlSettings->quickDirichletEpsilon = Options["Centi_Quick_Dirichlet_Epsilon"] / 100.0f;
     rlSettings->nodeRandomFactor = Options["Centi_Node_Random_Factor"] / 100.0f;
     rlSettings->rawPolicyProbabilityTemperature = Options["Centi_Raw_Prob_Temperature"] / 100.0f;
+    rlSettings->resignProbability = Options["Centi_Resign_Probability"] / 100.0f;
+    rlSettings->resignThreshold = Options["Centi_Resign_Threshold"] / 100.0f;
 }
 #endif
 

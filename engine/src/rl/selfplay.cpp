@@ -96,6 +96,28 @@ bool SelfPlay::is_quick_search() {
     return float(rand()) / RAND_MAX < rlSettings->quickSearchProbability;
 }
 
+bool SelfPlay::is_resignation_allowed() {
+    if (rlSettings->resignProbability < 0.01f) {
+        return false;
+    }
+    return float(rand()) / RAND_MAX < rlSettings->resignProbability;
+}
+
+void SelfPlay::check_for_resignation(const bool allowResingation, const EvalInfo &evalInfo, const Position *position, Result &gameResult)
+{
+    if (!allowResingation) {
+        return;
+    }
+    if (evalInfo.bestMoveQ < rlSettings->resignThreshold) {
+        if (position->side_to_move() == WHITE) {
+            gameResult = WHITE_WIN;
+        }
+        else {
+            gameResult = BLACK_WIN;
+        }
+    }
+}
+
 void SelfPlay::reset_search_params(bool isQuickSearch)
 {
     searchLimits->nodes = backupNodes;
@@ -121,6 +143,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
     exporter->new_game();
 
     size_t generatedSamples = 0;
+    const bool allowResignation = is_resignation_allowed();
     do {
         searchLimits->startTime = now();
         const int randInt = rand();
@@ -144,6 +167,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         }
         play_move_and_update(evalInfo, position, states, gamePGN, gameResult);
         reset_search_params(isQuickSearch);
+        check_for_resignation(allowResignation, evalInfo, position, gameResult);
     }
     while(gameResult == NO_RESULT);
 

@@ -86,6 +86,8 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Quick_Q_Value_Weight"]    << Option(70, 0, 99999);
     o["Centi_Quick_Dirichlet_Epsilon"] << Option(0, 0, 99999);
     o["Centi_Node_Random_Factor"]      << Option(10, 0, 100);
+    o["Centi_Resign_Probability"]      << Option(90, 0, 100);
+    o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
 #endif
     o["Move_Overhead"]                 << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
