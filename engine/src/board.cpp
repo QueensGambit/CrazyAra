@@ -160,6 +160,22 @@ bool Board::is_terminal() const
     return true;
 }
 
+bool Board::draw_by_insufficient_material() const
+{
+    // fast return options (insufficient material can never by reached in crayhouse)
+    if (is_house() || this->count<ALL_PIECES>() > 4) {
+        return false;
+    }
+
+    return (this->count<ALL_PIECES>() == 2) ||                                      // 1) KK
+           (this->count<ALL_PIECES>() == 3 && this->count<BISHOP>() == 1) ||        // 2) KB vs K
+           (this->count<ALL_PIECES>() == 3 && this->count<KNIGHT>() == 1) ||        // 3) KN vs K
+           (this->count<ALL_PIECES>() == 4 &&
+            (this->count<KNIGHT>(WHITE) == 2 || this->count<KNIGHT>(BLACK) == 2));  // 4) KNN vs K
+
+    return false;
+}
+
 #ifdef MODE_CHESS
 void Board::add_move_to_list(Move m)
 {

@@ -93,6 +93,19 @@ public:
      */
     bool is_terminal() const;
 
+    /**
+     * @brief draw_by_insufficient_material Checks for draws by insufficient material according to FIDE rules:
+     * 1) KK
+     * 2) KB vs K
+     * 3) KN vs K
+     * 4) KNN vs K
+     * Other draws which are highly likely such as (KN vs KN, KB vs KN, KNN vs KB, KBN vs KB, KBN vs KR, ...)
+     * are expected to be handled by tablebases.
+     * Reference: https://www.chessprogramming.org/Material
+     * @return True, if draws by insufficient material occured
+     */
+    bool draw_by_insufficient_material() const;
+
 #ifdef MODE_CHESS
     // overloaded function which include a last move list update
     void do_move(Move m, StateInfo& newSt);
