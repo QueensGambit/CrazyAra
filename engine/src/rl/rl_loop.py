@@ -221,7 +221,7 @@ class RLLoop:
         set_uci_param(self.proc, "Centi_Dirichlet_Alpha", 30)
         set_uci_param(self.proc, "Nodes", 800)
         set_uci_param(self.proc, "Allow_Early_Stopping", False)
-        set_uci_param(self.proc, "Centi_Node_Temperature", 0)
+        set_uci_param(self.proc, "Centi_Node_Temperature", 100)
 
         if is_arena is True:
             set_uci_param(self.proc, "Centi_Temperature", 60)
