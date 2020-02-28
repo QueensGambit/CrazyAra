@@ -208,13 +208,13 @@ deque<Move> Board::get_last_moves() const
     return lastMoves;
 }
 
-Board& Board::set(const string &fenStr, bool isChess960, Variant v, StateInfo *si, Thread *th)
+void Board::set(const string &fenStr, bool isChess960, Variant v, StateInfo *si, Thread *th)
 {
     lastMoves.clear();
     Position::set(fenStr, isChess960, v, si, th);
 }
 
-Board& Board::set(const string &code, Color c, Variant v, StateInfo *si)
+void Board::set(const string &code, Color c, Variant v, StateInfo *si)
 {
     lastMoves.clear();
     Position::set(code, c, v, si);
@@ -338,10 +338,10 @@ bool leads_to_terminal(const Board &pos, Move m)
     return posCheckTerminal.is_terminal();
 }
 
-Result get_result(const Board& pos)
+Result get_result(const Board& pos, bool inCheck)
 {
     if (pos.is_terminal()) {
-        if (pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition() || pos.draw_by_insufficient_material()) {
+        if (!inCheck || pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition() || pos.draw_by_insufficient_material()) {
             return DRAWN;
         }
         if (pos.side_to_move() == BLACK) {

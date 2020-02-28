@@ -111,8 +111,8 @@ public:
     void do_move(Move m, StateInfo& newSt);
     void do_move(Move m, StateInfo& newSt, bool givesCheck);
     void undo_move(Move m);
-    Board& set(const std::string& fenStr, bool isChess960, Variant v, StateInfo* si, Thread* th);
-    Board& set(const std::string& code, Color c, Variant v, StateInfo* si);
+    void set(const std::string& fenStr, bool isChess960, Variant v, StateInfo* si, Thread* th);
+    void set(const std::string& code, Color c, Variant v, StateInfo* si);
     deque<Move> get_last_moves() const;
 #endif
 };
@@ -160,9 +160,11 @@ bool leads_to_terminal(const Board& pos, Move m);
 /**
  * @brief get_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
  * @param pos Board position
+ * @param inCheck Determines if a king in the current position is in check (needed to differ between checkmate and stalemate).
+ * It can be computed by `gives_check(<last-move-before-current-position>)`.
  * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
  */
-Result get_result(const Board& pos);
+Result get_result(const Board& pos, bool inCheck);
 
 /**
  * @brief is_win Return true if the given result is a win, else false

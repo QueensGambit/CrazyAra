@@ -39,15 +39,16 @@
 void play_move_and_update(const EvalInfo& evalInfo, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult) {
     StateInfo* newState = new StateInfo;
     states->activeStates.push_back(newState);
-    position->do_move(evalInfo.bestMove, *(newState));
-    gameResult = get_result(*position);
+    bool givesCheck = position->gives_check(evalInfo.bestMove);
+    position->do_move(evalInfo.bestMove, *(newState), givesCheck);
+    gameResult = get_result(*position, givesCheck);
     position->undo_move(evalInfo.bestMove);  // undo and later redo move to get PGN move with result
     gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                         position->is_chess960(),
                                         *position,
                                         evalInfo.legalMoves,
                                         is_win(gameResult)));
-    position->do_move(evalInfo.bestMove, *(newState));
+    position->do_move(evalInfo.bestMove, *(newState), givesCheck);
 }
 
 

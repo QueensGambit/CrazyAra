@@ -114,7 +114,7 @@ std::vector<Move> make_move(std::string uciMove);
 // "An 8x8 Board with a rank-file mapping, needs to perform an exclusive or with 56 (A8 in LERF)"
 // https://www.chessprogramming.org/Vertical_Flipping
 constexpr Square vertical_flip(Square s) {
-  return Square(s ^ SQ_A8); // Vectical flip SQ_A1 -> SQ_A8
+  return Square(s ^ 56); // Vertical flip SQ_A1 -> SQ_A8
 }
 
 #endif // SFUTIL_H
