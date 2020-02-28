@@ -111,7 +111,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // (V) En Passant Square
     // mark the square where an en-passant capture is possible
     if (pos->ep_square() != SQ_NONE) {
-        unsigned int ep_square = me == WHITE ? int(pos->ep_square()) : 64-int(pos->ep_square());
+        unsigned int ep_square = me == WHITE ? int(pos->ep_square()) : int(vertical_flip(pos->ep_square()));
         inputPlanes[current_channel * NB_SQUARES + ep_square] = 1.0f;
     }
     current_channel++;
@@ -227,8 +227,8 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
             inputPlanes[current_channel++ * NB_SQUARES + to_sq(move)] = 1.0f;
         }
         else {
-            inputPlanes[current_channel++ * NB_SQUARES + 64-int(from_sq(move))] = 1.0f;
-            inputPlanes[current_channel++ * NB_SQUARES + 64-int(to_sq(move))] = 1.0f;
+            inputPlanes[current_channel++ * NB_SQUARES + int(vertical_flip(from_sq(move)))] = 1.0f;
+            inputPlanes[current_channel++ * NB_SQUARES + int(vertical_flip(to_sq(move)))] = 1.0f;
         }
     }
 #endif
