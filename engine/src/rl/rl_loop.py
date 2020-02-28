@@ -218,16 +218,20 @@ class RLLoop:
         set_uci_param(self.proc, "Device_ID", self.args.device_id)
         set_uci_param(self.proc, "Batch_Size", 8)
         set_uci_param(self.proc, "Centi_Dirichlet_Epsilon", 25)
+#        set_uci_param(self.proc, "Centi_Dirichlet_Alpha", 20) cz
         set_uci_param(self.proc, "Centi_Dirichlet_Alpha", 30)
         set_uci_param(self.proc, "Nodes", 800)
         set_uci_param(self.proc, "Allow_Early_Stopping", False)
         set_uci_param(self.proc, "Centi_Node_Temperature", 100)
-        set_uci_param(self.proc, "Temperature_Moves", 500)
+#        set_uci_param(self.proc, "Temperature_Moves", 500) cz
+        set_uci_param(self.proc, "Temperature_Moves", 15)
 
         if is_arena is True:
-            set_uci_param(self.proc, "Centi_Temperature", 60)
+#            set_uci_param(self.proc, "Centi_Temperature", 60) cz
+            set_uci_param(self.proc, "Centi_Temperature", 40)
         else:
-            set_uci_param(self.proc, "Centi_Temperature", 80)
+#            set_uci_param(self.proc, "Centi_Temperature", 80) cz
+            set_uci_param(self.proc, "Centi_Temperature", 50)
 
     def _read_output_arena(self):
         """
