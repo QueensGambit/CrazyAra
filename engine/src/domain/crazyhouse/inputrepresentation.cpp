@@ -213,6 +213,13 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
 #endif
 
 #ifdef MODE_CHESS
+    // (V) Variants specification
+    // set the is960 boolean flag when active
+    if (pos->is_chess960()) {
+        std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+    }
+    current_channel++;
+
     // (VI) Fill the bits of the last move planes
     for (const Move move : pos->get_last_moves()) {
         if (me == WHITE) {
