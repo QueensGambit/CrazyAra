@@ -62,7 +62,7 @@ void get_planes_statistics(const Board* pos, bool normalize, double& sum, double
     }
 }
 
-void apply_moves_to_board(const vector<string> uciMoves, Board& pos, StateListPtr& states) {
+void apply_moves_to_board(const vector<string>& uciMoves, Board& pos, StateListPtr& states) {
     for (string uciMove : uciMoves) {
         Move m = UCI::to_move(pos, uciMove);
         states->emplace_back();
