@@ -101,17 +101,17 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
         mx.metric.MSE(name='value_loss', output_names=['value_output'], label_names=['value_label']),
         mx.metric.create(acc_sign, name='value_acc_sign', output_names=['value_output'],
                          label_names=['value_label']),
-        mx.metric.create(acc_distribution, name='policy_acc', output_names=['policy_output'],
-                         label_names=['policy_label']),
-        # mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
-        #                    label_names=['policy_label'])
     ]
 
     if train_config["sparse_policy_label"]:
-        # the default cross entropy only supports sparse lables
+        # the default cross entropy only supports sparse labels
+        metrics.append(mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
+                       label_names=['policy_label']))
         metrics.append(mx.metric.CrossEntropy(name='policy_loss', output_names=['policy_output'],
                                               label_names=['policy_label']))
     else:
+        metrics.append(mx.metric.create(acc_distribution, name='policy_acc', output_names=['policy_output'],
+                       label_names=['policy_label']))
         metrics.append(mx.metric.create(cross_entropy, name='policy_loss', output_names=['policy_output'],
                                         label_names=['policy_label']))
 
