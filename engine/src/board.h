@@ -93,13 +93,26 @@ public:
      */
     bool is_terminal() const;
 
+    /**
+     * @brief draw_by_insufficient_material Checks for draws by insufficient material according to FIDE rules:
+     * 1) KK
+     * 2) KB vs K
+     * 3) KN vs K
+     * 4) KNN vs K
+     * Other draws which are highly likely such as (KN vs KN, KB vs KN, KNN vs KB, KBN vs KB, KBN vs KR, ...)
+     * are expected to be handled by tablebases.
+     * Reference: https://www.chessprogramming.org/Material
+     * @return True, if draws by insufficient material occured
+     */
+    bool draw_by_insufficient_material() const;
+
 #ifdef MODE_CHESS
     // overloaded function which include a last move list update
     void do_move(Move m, StateInfo& newSt);
     void do_move(Move m, StateInfo& newSt, bool givesCheck);
     void undo_move(Move m);
-    Board& set(const std::string& fenStr, bool isChess960, Variant v, StateInfo* si, Thread* th);
-    Board& set(const std::string& code, Color c, Variant v, StateInfo* si);
+    void set(const std::string& fenStr, bool isChess960, Variant v, StateInfo* si, Thread* th);
+    void set(const std::string& code, Color c, Variant v, StateInfo* si);
     deque<Move> get_last_moves() const;
 #endif
 };
@@ -116,11 +129,11 @@ public:
  * @param m Move of interest
  * @param pos Board position
  * @param legalMoves List of legal moves for the board position
- * @param file_ambiguous Returns if the move is file ambiguous (two pieces share the same file with same destination square)
- * @param rank_ambiguous Returns if the move is rank ambiguous (two pieces share the same rank with same destination square)
+ * @param isFileAmbiguous Returns if the move is file ambiguous (two pieces share the same file with same destination square)
+ * @param isRankAmbiguous Returns if the move is rank ambiguous (two pieces share the same rank with same destination square)
  * @return True, in case of ambiguity else false
  */
-bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move>& legalMoves, bool& file_ambiguous, bool& rank_ambiguous);
+bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move>& legalMoves, bool& isFileAmbiguous, bool& isRankAmbiguous);
 
 /**
  * @brief pgnMove Converts a given move into PGN move notation.
@@ -147,9 +160,11 @@ bool leads_to_terminal(const Board& pos, Move m);
 /**
  * @brief get_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
  * @param pos Board position
+ * @param inCheck Determines if a king in the current position is in check (needed to differ between checkmate and stalemate).
+ * It can be computed by `gives_check(<last-move-before-current-position>)`.
  * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
  */
-Result get_result(const Board& pos);
+Result get_result(const Board& pos, bool inCheck);
 
 /**
  * @brief is_win Return true if the given result is a win, else false

@@ -125,6 +125,21 @@ private:
     bool is_quick_search();
 
     /**
+     * @brief is_quick_search Checks if resignation is allowed
+     * @return True if resignation is allowed else false
+     */
+    bool is_resignation_allowed();
+
+    /**
+     * @brief check_for_resignation Modifies gameResult to WHITE_WIN or BLACK_WIN if resignation is allowed and Q-value threshold had been reached
+     * @param allowResingation True if resignation is allowed
+     * @param evalInfo Evaluation struct
+     * @param position Board position. It is expected that the evalBestMove has already been applied.
+     * @param gameResult Game result which may be modified
+     */
+    void check_for_resignation(const bool allowResignation, const EvalInfo& evalInfo, const Position* position, Result& gameResult);
+
+    /**
      * @brief reset_search_params Resets all search parameters to their initial values
      * @param Signals if a quick search was done
      */

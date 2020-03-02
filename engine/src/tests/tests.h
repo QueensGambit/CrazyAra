@@ -31,7 +31,38 @@
 //#define BUILD_TESTS
 
 #ifdef BUILD_TESTS
+#include <vector>
+#include <string>
+#include "../board.h"
+
+using namespace std;
+
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+
+/**
+ * @brief init Initializes bitboards, bitbases and position arrays
+ */
+void init();
+
+/**
+ * @brief get_planes_statistics Returns numeric statistics about the corresponding input planes of the board position
+ * @param pos Board position
+ * @param normalize True, if the plane should be normalized
+ * @param sum Sum of all numerical values
+ * @param maxNum Maximum value of the planes
+ * @param key Unique identifier of the plane
+ * @param argMax Index with the highest value
+ */
+void get_planes_statistics(const Board* pos, bool normalize, double& sum, double& maxNum, double& key, size_t& argMax);
+
+/**
+ * @brief apply_moves_to_board Applies a list of moves given in uci-notation to a given board
+ * @param uciMoves List of UCI-moves (strings)
+ * @param pos Board position on which the moves will be applied
+ * @param states State position pointer
+ */
+void apply_moves_to_board(const vector<string>& uciMoves, Board& pos, StateListPtr& states);
+
 #endif
 
 #endif // TESTS_H

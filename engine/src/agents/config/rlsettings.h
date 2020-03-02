@@ -54,6 +54,10 @@ struct RLSettings
     // probability for applying a temperature on the raw policy for generating an opening position.
     // (5% - Temp: 10, 20% - Temp: 5, 75% - Temp: 2)
     float rawPolicyProbabilityTemperature;
+    // percentage of games which are allowed to be resigned (e.g. 90% and 10% of games must be played until draw or checkmate)
+    float resignProbability;
+    // the game will be resigned if the bestMove Q-value is below this threshold and resignation is allowed (e.g. -0.9)
+    float resignThreshold;
 };
 
 #endif // RLSETTINGS_H

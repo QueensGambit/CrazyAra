@@ -39,15 +39,16 @@
 void play_move_and_update(const EvalInfo& evalInfo, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult) {
     StateInfo* newState = new StateInfo;
     states->activeStates.push_back(newState);
-    position->do_move(evalInfo.bestMove, *(newState));
-    gameResult = get_result(*position);
+    bool givesCheck = position->gives_check(evalInfo.bestMove);
+    position->do_move(evalInfo.bestMove, *(newState), givesCheck);
+    gameResult = get_result(*position, givesCheck);
     position->undo_move(evalInfo.bestMove);  // undo and later redo move to get PGN move with result
     gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
                                         position->is_chess960(),
                                         *position,
                                         evalInfo.legalMoves,
                                         is_win(gameResult)));
-    position->do_move(evalInfo.bestMove, *(newState));
+    position->do_move(evalInfo.bestMove, *(newState), givesCheck);
 }
 
 
@@ -96,6 +97,28 @@ bool SelfPlay::is_quick_search() {
     return float(rand()) / RAND_MAX < rlSettings->quickSearchProbability;
 }
 
+bool SelfPlay::is_resignation_allowed() {
+    if (rlSettings->resignProbability < 0.01f) {
+        return false;
+    }
+    return float(rand()) / RAND_MAX < rlSettings->resignProbability;
+}
+
+void SelfPlay::check_for_resignation(const bool allowResingation, const EvalInfo &evalInfo, const Position *position, Result &gameResult)
+{
+    if (!allowResingation) {
+        return;
+    }
+    if (evalInfo.bestMoveQ < rlSettings->resignThreshold) {
+        if (position->side_to_move() == WHITE) {
+            gameResult = WHITE_WIN;
+        }
+        else {
+            gameResult = BLACK_WIN;
+        }
+    }
+}
+
 void SelfPlay::reset_search_params(bool isQuickSearch)
 {
     searchLimits->nodes = backupNodes;
@@ -121,6 +144,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
     exporter->new_game();
 
     size_t generatedSamples = 0;
+    const bool allowResignation = is_resignation_allowed();
     do {
         searchLimits->startTime = now();
         const int randInt = rand();
@@ -144,6 +168,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         }
         play_move_and_update(evalInfo, position, states, gamePGN, gameResult);
         reset_search_params(isQuickSearch);
+        check_for_resignation(allowResignation, evalInfo, position, gameResult);
     }
     while(gameResult == NO_RESULT);
 

@@ -150,7 +150,7 @@ bool Board::is_50_move_rule_draw() const
 bool Board::is_terminal() const
 {
     // 3-fold-repetition and 50 move rul draw is handled outside move generation
-    if (can_claim_3fold_repetition() || is_50_move_rule_draw()) {
+    if (can_claim_3fold_repetition() || is_50_move_rule_draw() || draw_by_insufficient_material()) {
         return true;
     }
 
@@ -158,6 +158,22 @@ bool Board::is_terminal() const
         return false;
     }
     return true;
+}
+
+bool Board::draw_by_insufficient_material() const
+{
+    // fast return options (insufficient material can never by reached in crayhouse)
+    if (is_house() || this->count<ALL_PIECES>() > 4) {
+        return false;
+    }
+
+    return (this->count<ALL_PIECES>() == 2) ||                                      // 1) KK
+           (this->count<ALL_PIECES>() == 3 && this->count<BISHOP>() == 1) ||        // 2) KB vs K
+           (this->count<ALL_PIECES>() == 3 && this->count<KNIGHT>() == 1) ||        // 3) KN vs K
+           (this->count<ALL_PIECES>() == 4 &&
+            (this->count<KNIGHT>(WHITE) == 2 || this->count<KNIGHT>(BLACK) == 2));  // 4) KNN vs K
+
+    return false;
 }
 
 #ifdef MODE_CHESS
@@ -192,13 +208,13 @@ deque<Move> Board::get_last_moves() const
     return lastMoves;
 }
 
-Board& Board::set(const string &fenStr, bool isChess960, Variant v, StateInfo *si, Thread *th)
+void Board::set(const string &fenStr, bool isChess960, Variant v, StateInfo *si, Thread *th)
 {
     lastMoves.clear();
     Position::set(fenStr, isChess960, v, si, th);
 }
 
-Board& Board::set(const string &code, Color c, Variant v, StateInfo *si)
+void Board::set(const string &code, Color c, Variant v, StateInfo *si)
 {
     lastMoves.clear();
     Position::set(code, c, v, si);
@@ -291,11 +307,11 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
 }
 
 
-bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &legalMoves, bool &file_ambiguous, bool &rank_ambiguous)
+bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &legalMoves, bool &isFileAmbiguous, bool &isRankAmbiguous)
 {
     bool ambiguous = false;
-    file_ambiguous = false;
-    rank_ambiguous = false;
+    isFileAmbiguous = false;
+    isRankAmbiguous = false;
     const Square from = from_sq(m);
     const Square to = to_sq(m);
 
@@ -305,10 +321,10 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &le
         if (to == cur_to && from != cur_from && pos.piece_on(from) == pos.piece_on(cur_from)) {
             ambiguous = true;
             if (file_of(from) == file_of(cur_from)) {
-                file_ambiguous = true;
+                isFileAmbiguous = true;
             }
             if (rank_of(from) == rank_of(cur_from)) {
-                rank_ambiguous = true;
+                isRankAmbiguous = true;
             }
         }
     }
@@ -322,10 +338,10 @@ bool leads_to_terminal(const Board &pos, Move m)
     return posCheckTerminal.is_terminal();
 }
 
-Result get_result(const Board& pos)
+Result get_result(const Board& pos, bool inCheck)
 {
     if (pos.is_terminal()) {
-        if (pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition()) {
+        if (!inCheck || pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition() || pos.draw_by_insufficient_material()) {
             return DRAWN;
         }
         if (pos.side_to_move() == BLACK) {

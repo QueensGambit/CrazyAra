@@ -71,8 +71,7 @@ void TrainDataExporter::save_side_to_move(Color col)
     }
 }
 
-void TrainDataExporter::export_game_samples(Result result)
-{
+void TrainDataExporter::export_game_samples(Result result) {
     if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;

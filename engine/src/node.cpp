@@ -24,6 +24,7 @@
  */
 
 #include "node.h"
+#include "syzygy/tbprobe.h"
 #include "util/blazeutil.h" // get_dirichlet_noise()
 #include "constants.h"
 #include "../util/sfutil.h"
@@ -378,8 +379,8 @@ void Node::check_for_terminal(Board* pos, bool inCheck)
         }
     }
 #endif
-    if (pos->can_claim_3fold_repetition() || pos->is_50_move_rule_draw()) {
-        // reached 3-fold-repetition or 50 moves rule draw
+    if (pos->can_claim_3fold_repetition() || pos->is_50_move_rule_draw() || pos->draw_by_insufficient_material()) {
+        // reached 3-fold-repetition or 50 moves rule draw or insufficient material
         value = DRAW;
         isTerminal = true;
         return;
