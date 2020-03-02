@@ -59,9 +59,10 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
                                   train_config["sparse_policy_label"])
 
     symbol = mx.sym.load(symbol_filename)
-    symbol = add_non_sparse_cross_entropy(symbol, train_config["val_loss_factor"],
-                                          train_config["value_output"]+"_output",
-                                          train_config["policy_output"]+"_output")
+    if not train_config["sparse_policy_label"]:
+       symbol = add_non_sparse_cross_entropy(symbol, train_config["val_loss_factor"],
+                                             train_config["value_output"]+"_output",
+                                             train_config["policy_output"]+"_output")
 
     # calculate how many iterations per epoch exist
     nb_it_per_epoch = (len(x_val) * nb_parts) // train_config["batch_size"]
@@ -104,6 +105,7 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
     ]
 
     if train_config["sparse_policy_label"]:
+        print("train with sparse labels")
         # the default cross entropy only supports sparse labels
         metrics.append(mx.metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
                        label_names=['policy_label']))
@@ -142,9 +144,10 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
     (k_steps_final, val_value_loss_final, val_policy_loss_final, val_value_acc_sign_final,
      val_policy_acc_final), _ = train_agent.train(cur_it)
 
-    symbol = remove_no_sparse_cross_entropy(symbol, train_config["val_loss_factor"],
-                                            train_config["value_output"]+"_output",
-                                            train_config["policy_output"]+"_output")
+    if not train_config["sparse_policy_label"]:
+       symbol = remove_no_sparse_cross_entropy(symbol, train_config["val_loss_factor"],
+                                               train_config["value_output"]+"_output",
+                                               train_config["policy_output"]+"_output")
     prefix = cwd + "model_contender/model-%.5f-%.5f-%.3f-%.3f" % (val_value_loss_final, val_policy_loss_final,
                                                                   val_value_acc_sign_final, val_policy_acc_final)
 
