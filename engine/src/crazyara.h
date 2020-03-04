@@ -68,6 +68,7 @@ private:
                     string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
     RawNetAgent* rawAgent;
     MCTSAgent* mctsAgent;
+    bool useRawNetwork;
     NeuralNetAPI* netSingle;
     SearchSettings* searchSettings;
     PlaySettings* playSettings;

@@ -71,6 +71,7 @@ CrazyAra::CrazyAra()
 #else
     variant = CHESS_VARIANT;
 #endif
+    useRawNetwork = false;     // will be initialized in init_search_settings()
 }
 
 CrazyAra::~CrazyAra()
@@ -209,13 +210,15 @@ void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo, bool apply
         else if (token == "infinite")  searchLimits.infinite = true;
         else if (token == "ponder")    ponderMode = true;
     }
-    //  EvalInfo res = rawAgent->evalute_board_state(pos);
-    //  rawAgent->perform_action(pos);
-    mctsAgent->perform_action(pos, &searchLimits, evalInfo);
-
-    if (applyMoveToTree) {
-        // inform the mcts agent of the move, so the tree can potentially be reused later
-        mctsAgent->apply_move_to_tree(evalInfo.bestMove, true, pos);
+    if (useRawNetwork) {
+        rawAgent->perform_action(pos, &searchLimits, evalInfo);
+    }
+    else {
+        mctsAgent->perform_action(pos, &searchLimits, evalInfo);
+        if (applyMoveToTree) {
+            // inform the mcts agent of the move, so the tree can potentially be reused later
+            mctsAgent->apply_move_to_tree(evalInfo.bestMove, true, pos);
+        }
     }
 }
 
@@ -268,7 +271,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
         lastMove = m;
     }
     // inform the mcts agent of the move, so the tree can potentially be reused later
-    if (lastMove != MOVE_NULL) {
+    if (lastMove != MOVE_NULL && !useRawNetwork) {
         mctsAgent->apply_move_to_tree(lastMove, false, pos);
     }
     info_string("position", pos->fen());
@@ -470,6 +473,7 @@ void CrazyAra::init_search_settings()
     searchSettings->qThreshBase = Options["Q_Thresh_Base"];
     searchSettings->randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings->allowEarlyStopping = Options["Allow_Early_Stopping"];
+    useRawNetwork = Options["Use_Raw_Network"];
 }
 
 void CrazyAra::init_play_settings()
