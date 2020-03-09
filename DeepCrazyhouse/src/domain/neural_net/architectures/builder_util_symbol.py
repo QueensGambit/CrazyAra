@@ -24,7 +24,7 @@ def get_act(data, act_type, name):
 
 def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
     """
-    Squeeze excitation block.
+    Squeeze excitation block - Hu et al. - https://arxiv.org/abs/1709.01507
     :param data:
     :param channels: Number of filters
     :param name: Prefix name of the block
@@ -160,3 +160,74 @@ def mix_conv(data, name, channels, kernels):
                                               pad=(kernel//2, kernel//2), no_bias=True, num_group=channels//num_splits,
                                               name=name + '_conv3_k%d' % kernel))
     return mx.sym.Concat(*conv_layers, name=name + '_concat')
+
+
+def channel_attention_module(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
+    """
+    Channel Attention Module of (CBAM) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf
+    modified: Input to the shared fully connected layer gets concatenated rather than
+              shared network with later addition
+    :param data: Input data
+    :param channels: Number of input channels
+    :param name: Layer name
+    :param ratio: Reduction ratio
+    :param act_type: Activation type for hidden layer in MLP
+    :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
+     MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
+     """
+    avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
+    max_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_max_pool0')
+
+    # 1x1 convolution layers are treated as fully connected layers
+    concat = mx.sym.Concat([avg_pool, max_pool], name=name + '_channel_concat_0')
+    fc1 = mx.sym.Convolution(data=concat, num_filter=channels // ratio, kernel=(1, 1),
+                             pad=(0, 0), no_bias=True,
+                             num_group=channels // ratio, name=name + '_fc0')
+    act1 = get_act(data=fc1, act_type=act_type, name=name + '_act0')
+    fc2 = mx.sym.Convolution(data=act1, num_filter=channels, kernel=(1, 1),
+                             pad=(0, 0), no_bias=True,
+                             num_group=1, name=name + '_fc0')
+    if use_hard_sigmoid:
+        act_type = 'hard_sigmoid'
+    else:
+        act_type = 'sigmoid'
+    act2 = get_act(data=fc2, act_type=act_type, name=name + '_act1')
+    return mx.symbol.broadcast_mul(act2, data)
+
+
+def spatial_attention_module(data, name, use_hard_sigmoid=False):
+    """
+    Spatial Attention Modul of (CBA) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf
+    :param data: Input data
+    :param name: Layer name
+    :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
+     MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
+     """
+    avg_spatial = mx.symbol.mean(data=data, axis=1, keepdims=True, name=name + '_avg_spatial0')
+    max_spatial = mx.symbol.max(data=data, axis=1, keepdims=True, name=name + '_max_spatial0')
+    concat = mx.sym.Concat([avg_spatial, max_spatial], name=name + '_spatial_concat_0')
+    conv0 = mx.sym.Convolution(data=concat, num_filter=1, kernel=(7, 7),
+                             pad=(3, 3), no_bias=True,
+                             num_group=1, name=name + '_conv0')
+    if use_hard_sigmoid:
+        act_type = 'hard_sigmoid'
+    else:
+        act_type = 'sigmoid'
+    act0 = get_act(data=conv0, act_type=act_type, name=name + '_act0')
+    return mx.symbol.broadcast_mul(act0, data)
+
+
+def convolution_block_attention_module(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
+    """
+    Convolutional Block Attention Module (CBAM) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf
+    First applies channel attention and later spatial attention
+        :param data: Input data
+    :param channels: Number of input channels
+    :param name: Layer name
+    :param ratio: Reduction ratio
+    :param act_type: Activation type for hidden layer in MLP
+    :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
+     MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
+    """
+    data = channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid)
+    return spatial_attention_module(data, name, use_hard_sigmoid)
