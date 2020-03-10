@@ -178,21 +178,17 @@ def channel_attention_module(data, channels, name, ratio=16, act_type="relu", us
     avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
     max_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
 
-    # 1x1 convolution layers are treated as fully connected layers
     concat = mx.sym.Concat(avg_pool, max_pool, dim=1, name=name + '_concat_0')
-    fc1 = mx.sym.Convolution(data=concat, num_filter=channels // ratio, kernel=(1, 1),
-                             pad=(0, 0), no_bias=False,
-                             num_group=channels // ratio, name=name + '_fc0')
+    flatten = mx.symbol.Flatten(data=concat, name=name + '_flatten0')
+    fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=channels // ratio, name=name + '_fc0')
     act1 = get_act(data=fc1, act_type=act_type, name=name + '_act0')
-    fc2 = mx.sym.Convolution(data=act1, num_filter=channels, kernel=(1, 1),
-                             pad=(0, 0), no_bias=False,
-                             num_group=1, name=name + '_fc1')
+    fc2 = mx.symbol.FullyConnected(data=act1, num_hidden=channels, name=name + '_fc1')
     if use_hard_sigmoid:
         act_type = 'hard_sigmoid'
     else:
         act_type = 'sigmoid'
     act2 = get_act(data=fc2, act_type=act_type, name=name + '_act1')
-    return mx.symbol.broadcast_mul(act2, data)
+    return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
 
 
 def spatial_attention_module(data, name, use_hard_sigmoid=False):
