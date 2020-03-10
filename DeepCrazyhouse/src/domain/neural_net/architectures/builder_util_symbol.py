@@ -176,17 +176,17 @@ def channel_attention_module(data, channels, name, ratio=16, act_type="relu", us
      MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
      """
     avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
-    max_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_max_pool0')
+    max_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
 
     # 1x1 convolution layers are treated as fully connected layers
     concat = mx.sym.Concat(avg_pool, max_pool, dim=1, name=name + '_concat_0')
     fc1 = mx.sym.Convolution(data=concat, num_filter=channels // ratio, kernel=(1, 1),
-                             pad=(0, 0), no_bias=True,
+                             pad=(0, 0), no_bias=False,
                              num_group=channels // ratio, name=name + '_fc0')
     act1 = get_act(data=fc1, act_type=act_type, name=name + '_act0')
     fc2 = mx.sym.Convolution(data=act1, num_filter=channels, kernel=(1, 1),
-                             pad=(0, 0), no_bias=True,
-                             num_group=1, name=name + '_fc0')
+                             pad=(0, 0), no_bias=False,
+                             num_group=1, name=name + '_fc1')
     if use_hard_sigmoid:
         act_type = 'hard_sigmoid'
     else:
@@ -207,7 +207,7 @@ def spatial_attention_module(data, name, use_hard_sigmoid=False):
     max_spatial = mx.symbol.max(data=data, axis=1, keepdims=True, name=name + '_max_spatial0')
     concat = mx.sym.Concat(avg_spatial, max_spatial, dim=1, name=name + '_concat_0')
     conv0 = mx.sym.Convolution(data=concat, num_filter=1, kernel=(7, 7),
-                             pad=(3, 3), no_bias=True,
+                             pad=(3, 3), no_bias=False,
                              num_group=1, name=name + '_conv0')
     if use_hard_sigmoid:
         act_type = 'hard_sigmoid'
