@@ -50,19 +50,18 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     conv2 = mix_conv(data=act1, channels=channels_operating, kernels=kernels, name=name + 'conv2')
     bn3 = mx.sym.BatchNorm(data=conv2, name=name + '_bn3')
     out = get_act(data=bn3, act_type=act_type, name=name + '_act2')
+    out = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
+                               pad=(0, 0), no_bias=True, name=name + '_conv3')
     if use_se:
         if se_type == "se":
-           out = channel_squeeze_excitation(out, channels_operating, name=name + '_se', ratio=se_ratio, act_type=act_type,
+           out = channel_squeeze_excitation(out, channels, name=name + '_se', ratio=se_ratio, act_type=act_type,
                                             use_hard_sigmoid=True)
         elif se_type == "cbam":
-            out = convolution_block_attention_module(out, channels_operating, name=name + '_se', ratio=se_ratio,
+            out = convolution_block_attention_module(out, channels, name=name + '_se', ratio=se_ratio,
                                                      act_type=act_type,
                                                      use_hard_sigmoid=True)
         else:
             raise Exception(f'Unsupported se_type "{se_type}"')
-
-    out = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
-                               pad=(0, 0), no_bias=True, name=name + '_conv3')
     out_sum = mx.sym.broadcast_add(data, out, name=name + '_add')
 
     return out_sum
