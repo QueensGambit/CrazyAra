@@ -34,19 +34,7 @@ def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", 
      MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
     :return: mxnet symbol
     """
-    avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_pool0')
-    flatten = mx.symbol.Flatten(data=avg_pool, name=name + '_flatten0')
-    fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=channels // ratio, name=name + '_fc0')
-    act1 = get_act(data=fc1, act_type=act_type, name=name + '_act0')
-    fc2 = mx.symbol.FullyConnected(data=act1, num_hidden=channels, name=name + '_fc1')
-    if use_hard_sigmoid:
-        act_type = 'hard_sigmoid'
-    else:
-        act_type = 'sigmoid'
-    act2 = get_act(data=fc2, act_type=act_type, name=name + '_act1')
-
-    return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
-
+    return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
 
 def get_stem(data, channels, act_type):
     """
@@ -162,7 +150,7 @@ def mix_conv(data, name, channels, kernels):
     return mx.sym.Concat(*conv_layers, name=name + '_concat')
 
 
-def channel_attention_module(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
+def channel_attention_module(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False, pool_type="both"):
     """
     Channel Attention Module of (CBAM) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf
     modified: Input to the shared fully connected layer gets concatenated rather than
@@ -174,12 +162,21 @@ def channel_attention_module(data, channels, name, ratio=16, act_type="relu", us
     :param act_type: Activation type for hidden layer in MLP
     :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
      MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
+    :param pool_type: Pooling type to use. If "both" are used, then the features will be concatenated.
+    Available options are: ["both", "avg", "max"]
      """
-    avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
-    max_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
+    if pool_type == "both":
+        avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
+        max_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
+        merge = mx.sym.Concat(avg_pool, max_pool, dim=1, name=name + '_concat_0')
+    elif pool_type == "avg":
+        merge = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
+    elif pool_type == "max":
+        merge = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
+    else:
+        raise Exception(f"Invalid value for pool_type given: {pool_type}")
 
-    concat = mx.sym.Concat(avg_pool, max_pool, dim=1, name=name + '_concat_0')
-    flatten = mx.symbol.Flatten(data=concat, name=name + '_flatten0')
+    flatten = mx.symbol.Flatten(data=merge, name=name + '_flatten0')
     fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=channels // ratio, name=name + '_fc0')
     act1 = get_act(data=fc1, act_type=act_type, name=name + '_act0')
     fc2 = mx.symbol.FullyConnected(data=act1, num_hidden=channels, name=name + '_fc1')
@@ -191,18 +188,28 @@ def channel_attention_module(data, channels, name, ratio=16, act_type="relu", us
     return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
 
 
-def spatial_attention_module(data, name, use_hard_sigmoid=False):
+def spatial_attention_module(data, name, use_hard_sigmoid=False, pool_type="both"):
     """
     Spatial Attention Modul of (CBA) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf
     :param data: Input data
     :param name: Layer name
     :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
      MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
+    :param pool_type: Pooling type to use. If "both" are used, then the features will be concatenated.
+    Available options are: ["both", "avg", "max"]
      """
-    avg_spatial = mx.symbol.mean(data=data, axis=1, keepdims=True, name=name + '_avg_spatial0')
-    max_spatial = mx.symbol.max(data=data, axis=1, keepdims=True, name=name + '_max_spatial0')
-    concat = mx.sym.Concat(avg_spatial, max_spatial, dim=1, name=name + '_concat_0')
-    conv0 = mx.sym.Convolution(data=concat, num_filter=1, kernel=(7, 7),
+    if pool_type == "both":
+        avg_spatial = mx.symbol.mean(data=data, axis=1, keepdims=True, name=name + '_avg_spatial0')
+        max_spatial = mx.symbol.max(data=data, axis=1, keepdims=True, name=name + '_max_spatial0')
+        merge = mx.sym.Concat(avg_spatial, max_spatial, dim=1, name=name + '_concat_0')
+    elif pool_type == "avg":
+        merge = mx.symbol.mean(data=data, axis=1, keepdims=True, name=name + '_avg_spatial0')
+    elif pool_type == "max":
+        merge = mx.symbol.max(data=data, axis=1, keepdims=True, name=name + '_avg_spatial0')
+    else:
+        raise Exception(f"Invalid value for pool_type given: {pool_type}")
+
+    conv0 = mx.sym.Convolution(data=merge, num_filter=1, kernel=(7, 7),
                              pad=(3, 3), no_bias=False,
                              num_group=1, name=name + '_conv0')
     if use_hard_sigmoid:
@@ -227,3 +234,34 @@ def convolution_block_attention_module(data, channels, name, ratio=16, act_type=
     """
     data = channel_attention_module(data, channels, name + '_channel', ratio, act_type, use_hard_sigmoid)
     return spatial_attention_module(data, name + '_spatial', use_hard_sigmoid)
+
+
+def ca_se(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
+    """
+    Channel-Average-Squeeze-Excitation (caSE)
+    Alias function for channel_attention_module() with average pooling
+    """
+    return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
+
+
+def cm_se(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
+    """
+    Channel-Max-Squeeze-Excitation (cmSE)
+    Alias function for channel_attention_module() with max pooling
+    """
+    return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="max")
+
+
+def sa_se(data, name, use_hard_sigmoid=False):
+    """
+    Spatial-Average-Squeeze-Excitation (smSE)
+    Alias function for spatial_attention_module() with average pooling
+    """
+    return spatial_attention_module(data, name, use_hard_sigmoid, pool_type="avg")
+
+def sm_se(data, name, use_hard_sigmoid=False):
+    """
+    Spatial-Max-Squeeze-Excitation (smSE)
+    Alias function for spatial_attention_module() with max pooling
+    """
+    return spatial_attention_module(data, name, use_hard_sigmoid, pool_type="max")

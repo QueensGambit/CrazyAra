@@ -92,9 +92,13 @@ def main():
     """
     Main function which is executed on start-up
 
-    Exemplary call:
+    Exemplary call: e.g. crazyhouse model for releases <= 0.7.0
     python convert_to_onnx.py --model-dir ./model --input-shape 1 34 8 8\
-      --onnx-file model-os-96-bsize-1.onnx --validate --output-names value_tanh0_output flatten0_output    
+    --onnx-file model-os-96-bsize-1.onnx --validate --output-names value_tanh0_output flatten0_output
+
+    e.g. chess model for releases >= 0.8.0
+    python3 convert_to_onnx.py --model-dir ./model --input-shape 1 39 8 8\
+    --onnx-file model-bsize-1.onnx --validate --output-names value_out_output policy_out_output
     :return:
     """
 
