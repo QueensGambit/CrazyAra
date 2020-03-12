@@ -373,6 +373,7 @@ void CrazyAra::init_rl_settings()
     rlSettings->rawPolicyProbabilityTemperature = Options["Centi_Raw_Prob_Temperature"] / 100.0f;
     rlSettings->resignProbability = Options["Centi_Resign_Probability"] / 100.0f;
     rlSettings->resignThreshold = Options["Centi_Resign_Threshold"] / 100.0f;
+    rlSettings->reuseTreeForSelpay = Options["Reuse_Tree"];
 }
 #endif
 

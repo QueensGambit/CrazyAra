@@ -58,6 +58,8 @@ struct RLSettings
     float resignProbability;
     // the game will be resigned if the bestMove Q-value is below this threshold and resignation is allowed (e.g. -0.9)
     float resignThreshold;
+    // boolean indicating if the search tree is reused during selfplay game generation
+    bool reuseTreeForSelpay;
 };
 
 #endif // RLSETTINGS_H

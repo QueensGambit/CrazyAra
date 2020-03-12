@@ -157,7 +157,9 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
         }
         adjust_node_count(searchLimits, randInt);
         mctsAgent->perform_action(position, searchLimits, evalInfo);
-        mctsAgent->apply_move_to_tree(evalInfo.bestMove, true, position);
+        if (rlSettings->reuseTreeForSelpay) {
+            mctsAgent->apply_move_to_tree(evalInfo.bestMove, true, position);
+        }
 
         if (!isQuickSearch && !exporter->is_file_full()) {
             if (rlSettings->lowPolicyClipThreshold > 0) {
