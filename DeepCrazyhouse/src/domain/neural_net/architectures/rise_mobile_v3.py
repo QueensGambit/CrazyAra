@@ -112,10 +112,10 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
         raise Exception(f'The length of "kernels": {len(kernels)} must be the same as'
                         f' the length of "se_types": {len(se_types)}')
 
-    valid_se_types = [None, "se", "cbam"]
+    valid_se_types = [None, "se", "cbam", "ca_se", "cm_se", "sa_se", "sm_se"]
     for se_type in se_types:
         if se_type not in valid_se_types:
-            raise Exception(f"Unavailable se_type: {se_types}. Available se_types include {se_types}")
+            raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
     # get the input data
     data = mx.sym.Variable(name='data')
