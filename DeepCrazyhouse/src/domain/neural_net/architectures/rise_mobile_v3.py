@@ -26,10 +26,10 @@ Influenced by the following papers:
 """
 import mxnet as mx
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, channel_squeeze_excitation, \
-    mix_conv, get_stem, value_head, policy_head, convolution_block_attention_module
+    mix_conv, get_stem, value_head, policy_head, convolution_block_attention_module, ca_se, sa_se, cm_se, sm_se
 
 
-def preact_residual_dmixconv_block(data, channels, channels_operating, name, kernels=None, act_type='relu', use_se=True,
+def preact_residual_dmixconv_block(data, channels, channels_operating, name, kernels=None, act_type='relu',
                                    se_ratio=4, se_type="se"):
     """
     Returns a residual block without any max pooling operation
@@ -39,7 +39,7 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     :param act_type: Activation function to use
     :param se_ratio: Squeeze excitation ratio
     :param use_se: Boolean if a squeeze excitation module will be used
-    :param se_type: Squeeze excitation module type. Available "se", "cbam"
+    :param se_type: Squeeze excitation module type. Available [None, "se", "cbam", "ca_se", "cm_se", "sa_se", "sm_se"]
     :return: symbol
     """
     bn1 = mx.sym.BatchNorm(data=data, name=name + '_bn1')
@@ -52,14 +52,22 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     out = get_act(data=bn3, act_type=act_type, name=name + '_act2')
     out = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
                                pad=(0, 0), no_bias=True, name=name + '_conv3')
-    if use_se:
+    if se_type is not None:
         if se_type == "se":
-           out = channel_squeeze_excitation(out, channels, name=name + '_se', ratio=se_ratio, act_type=act_type,
+           out = channel_squeeze_excitation(out, channels, name=name+'_se', ratio=se_ratio, act_type=act_type,
                                             use_hard_sigmoid=True)
         elif se_type == "cbam":
-            out = convolution_block_attention_module(out, channels, name=name + '_se', ratio=se_ratio,
+            out = convolution_block_attention_module(out, channels, name=name+'_se', ratio=se_ratio,
                                                      act_type=act_type,
                                                      use_hard_sigmoid=True)
+        elif se_type == "ca_se":
+            out = ca_se(out, channels, name=name+'_ca_se', ratio=se_ratio, act_type=act_type, use_hard_sigmoid=True)
+        elif se_type == "cm_se":
+            out = cm_se(out, channels, name=name+'_cm_se', ratio=se_ratio, act_type=act_type, use_hard_sigmoid=True)
+        elif se_type == "sa_se":
+            out = sa_se(out, name=name+'sa_se', use_hard_sigmoid=True)
+        elif se_type == "sm_se":
+            out = sm_se(out, name=name+'sm_se', use_hard_sigmoid=True)
         else:
             raise Exception(f'Unsupported se_type "{se_type}"')
     out_sum = mx.sym.broadcast_add(data, out, name=name + '_add')
@@ -70,8 +78,8 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                           grad_scale_value=0.01, grad_scale_policy=0.99,
-                          select_policy_from_plane=True, use_se=None, kernels=None, n_labels=4992, se_ratio=4,
-                          se_type="se"):
+                          select_policy_from_plane=True, kernels=None, n_labels=4992, se_ratio=4,
+                          se_types="se"):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -88,18 +96,26 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     :param select_policy_from_plane: True, if policy head type shall be used
     :param kernels: List of kernel sizes used for the residual blocks. The length of the list corresponds to the number
     of residual blocks.
-    :param use_se: Indicates if a squeeze excitation layer shall be used
     :param n_labels: Number of policy target labels (used for select_policy_from_plane=False)
     :param se_ratio: Reduction ration used in the squeeze excitation module
-    :param se_type: Type of squeeze exciation module to use. Available types:
+    :param se_types: List of squeeze exciation modules to use for each residual layer.
+     The length of this list must be the same as len(kernels). Available types:
     - "se": Squeeze excitation block - Hu et al. - https://arxiv.org/abs/1709.01507
     - "cbam": Convolutional Block Attention Module (CBAM) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf
+    - "ca_se": Same as "se"
+    - "cm_se": Squeeze excitation with max operator
+    - "sa_se": Spatial excitation with average operator
+    - "sm_se": Spatial excitation with max operator
     :return: symbol
     """
+    if len(kernels) != len(se_types):
+        raise Exception(f'The length of "kernels": {len(kernels)} must be the same as'
+                        f' the length of "se_types": {len(se_types)}')
 
-    se_types = ["se", "cbam"]
-    if se_type not in se_types:
-        raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
+    valid_se_types = [None, "se", "cbam"]
+    for se_type in se_types:
+        if se_type not in valid_se_types:
+            raise Exception(f"Unavailable se_type: {se_types}. Available se_types include {se_types}")
 
     # get the input data
     data = mx.sym.Variable(name='data')
@@ -113,10 +129,9 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
 
     for idx, cur_kernels in enumerate(kernels):
 
-        cur_use_se = use_se[idx]
         data = preact_residual_dmixconv_block(data=data, channels=channels, channels_operating=cur_channels,
-                                              kernels=cur_kernels, name='dconv_%d' % idx, use_se=cur_use_se,
-                                              se_ratio=se_ratio, se_type=se_type)
+                                              kernels=cur_kernels, name='dconv_%d' % idx,
+                                              se_ratio=se_ratio, se_type=se_types[idx])
         cur_channels += channel_expansion
 
     data = mx.sym.BatchNorm(data=data, name='stem_bn1')
