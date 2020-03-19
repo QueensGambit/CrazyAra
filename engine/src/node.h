@@ -71,6 +71,7 @@ private:
     vector<Node*> childNodes;
     std::vector<Move> legalMoves;
     bool isTerminal;
+    bool isTablebase;
     size_t childIdxForParent;
     bool hasNNResults;
     bool isFullyExpanded;        // is true if every child node has at least 1 visit
@@ -82,7 +83,19 @@ private:
 
     SearchSettings* searchSettings;
 
+    /**
+     * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
+     * @param pos Current board position for this node
+     * @param inCheck Boolean indicating if the king is in check
+     */
     void check_for_terminal(Board* pos, bool inCheck);
+
+    /**
+     * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
+     *  updates isTerminal and the value evaluation
+     * @param pos Current board position for this node
+     */
+    void check_for_tablebase_wdl(Board* pos);
 
     /**
      * @brief fill_child_node_moves Generates the legal moves and save them in the list
@@ -301,6 +314,7 @@ public:
     void enable_has_nn_results();
     int plies_from_null() const;
     Color side_to_move() const;
+    bool is_tablebase() const;
 };
 
 // https://stackoverflow.com/questions/6339970/c-using-function-as-parameter

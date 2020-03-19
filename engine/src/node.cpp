@@ -39,6 +39,7 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
     visits(1),
     noVisitIdx(1),
     isTerminal(false),
+    isTablebase(false),
     childIdxForParent(childIdxForParent),
     hasNNResults(false),
     isFullyExpanded(false),
@@ -51,6 +52,7 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
     numberChildNodes = legalMoves.size();
 
     check_for_terminal(pos, inCheck);
+    check_for_tablebase_wdl(pos);
 
     // # visit count of all its child nodes
     childNumberVisits = DynamicVector<float>(numberChildNodes);
@@ -342,6 +344,11 @@ Color Node::side_to_move() const
     return sideToMove;
 }
 
+bool Node::is_tablebase() const
+{
+    return isTablebase;
+}
+
 void Node::check_for_terminal(Board* pos, bool inCheck)
 {
     if (numberChildNodes == 0) {
@@ -387,6 +394,27 @@ void Node::check_for_terminal(Board* pos, bool inCheck)
     }
     // normal game position
     //    isTerminal = false;  // is the default value
+}
+
+void Node::check_for_tablebase_wdl(Board *pos)
+{
+    Tablebases::ProbeState result;
+    Tablebases::WDLScore wdlScore = probe_wdl(*pos, &result);
+
+    if (result != Tablebases::FAIL) {
+        isTablebase = true;
+        switch(wdlScore) {
+        case Tablebases::WDLLoss:
+            value = LOSS;
+            break;
+        case Tablebases::WDLWin:
+            value = WIN;
+            break;
+        default:
+            value = DRAW;
+        }
+    }
+    // default: isTablebase = false;
 }
 
 void Node::make_to_root()

@@ -256,7 +256,9 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
         node->apply_softmax_to_policy();
     }
     node->apply_temperature_to_prior_policy(temperature);
-    node->set_value(valueOutputs[batchIdx]);
+    if (!node->is_tablebase()) {
+        node->set_value(valueOutputs[batchIdx]);
+    }
     node->enable_has_nn_results();
 }
 

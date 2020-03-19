@@ -92,6 +92,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Move_Overhead"]                 << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
+    o["SyzygyPath"]                    << Option("<empty>");
 }
 
 void OptionsUCI::setoption(istringstream &is)

@@ -384,6 +384,7 @@ void CrazyAra::init()
     Position::init();
     Bitbases::init();
     Search::init();
+    Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
 }
 
 bool CrazyAra::is_ready()

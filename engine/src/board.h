@@ -29,8 +29,9 @@
 #define BOARD_H
 
 #include <position.h>
-#include "domain/crazyhouse/constants.h"
 #include <deque>
+#include "syzygy/tbprobe.h"
+#include "domain/crazyhouse/constants.h"
 
 class Board : public Position
 {
@@ -172,5 +173,13 @@ Result get_result(const Board& pos, bool inCheck);
  * @return Bool
  */
 bool is_win(Result res);
+
+/**
+ * @brief probe_wdl Wrapper for probe_wdl(Position& pos, Tablebases::ProbeState* result)
+ * @param pos Board position
+ * @param result. If result == FAIL then probe was unsuccessfull
+ * @return Returns WDL-score (-2 : loss, -1 : loss, but draw under 50-move rule, 0 : draw, 1 : win, but draw under 50-move rule, 2 : win)
+ */
+Tablebases::WDLScore probe_wdl(Board& pos, Tablebases::ProbeState* result);
 
 #endif // BOARD_H
