@@ -39,11 +39,7 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     // select the requested device
     cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
-    // TODO: Customize this
-    if (batchSize == 16)
-        modelFilePath = "model-bsize-16.onnx";
-    else
-        modelFilePath = "model-bsize-1.onnx";
+    modelFilePath = modelDirectory + "model-bsize-" + std::to_string(batchSize) + ".onnx";
 
     load_model();
     bind_executor();
