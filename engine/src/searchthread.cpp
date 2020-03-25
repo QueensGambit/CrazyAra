@@ -24,6 +24,12 @@
  */
 
 #include "searchthread.h"
+#ifdef TENSORRT
+#include "NvInfer.h"
+#include <cuda_runtime_api.h>
+#include "common.h"
+#endif
+
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
 #include "util/blazeutil.h"
@@ -33,17 +39,29 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
 {
     // allocate memory for all predictions and results
+#ifdef TENSORRT
+    CHECK(cudaMallocHost((void**) &inputPlanes, searchSettings->batchSize * NB_VALUES_TOTAL * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &valueOutputs, searchSettings->batchSize * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &probOutputs, netBatch->get_policy_output_length() * sizeof(float)));
+#else
     inputPlanes = new float[searchSettings->batchSize * NB_VALUES_TOTAL];
     valueOutputs = new float[searchSettings->batchSize];
     probOutputs = new float[netBatch->get_policy_output_length()];
+#endif
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
 }
 
 SearchThread::~SearchThread()
 {
+#ifdef TENSORRT
+    CHECK(cudaFreeHost(inputPlanes));
+    CHECK(cudaFreeHost(valueOutputs));
+    CHECK(cudaFreeHost(probOutputs));
+#else
     delete [] inputPlanes;
     delete [] valueOutputs;
     delete [] probOutputs;
+#endif
 }
 
 void SearchThread::set_root_node(Node *value)
