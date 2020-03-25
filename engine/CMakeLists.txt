@@ -4,8 +4,8 @@ project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
-option(USE_TENSORRT              "Build with TensorRT support"  OFF)
-option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  ON)
+option(USE_TENSORRT              "Build with TensorRT support"  ON)
+option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 
 # -pg performance profiling flags
 if (USE_PROFILING)
@@ -59,8 +59,7 @@ file(GLOB source_files
     "src/manager/*.h"
     "src/rl/*.cpp"
     "src/rl/*.h"
-    "$ENV{TENSORRT_PATH}samples/common/logger.cpp"
-    )
+)
 
 set(CPP_PACKAGE_INCLUDE_DIR $ENV{MXNET_PATH}cpp-package/include)
 file(GLOB_RECURSE CPP_PACKAGE_HEADERS
@@ -128,6 +127,11 @@ if (USE_TENSORRT)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
     message(STATUS "Enabled TensorRT support")
     message(STATUS "TensorRT path: $ENV{TENSORRT_PATH}")
+    # add additional source file
+    set(source_files
+        ${source_files}
+        $ENV{TENSORRT_PATH}samples/common/logger.cpp
+        )
     find_package(CUDA REQUIRED)
     message(STATUS "CUDA path: $ENV{CUDA_PATH}")
     include_directories("$ENV{CUDA_PATH}/include")
