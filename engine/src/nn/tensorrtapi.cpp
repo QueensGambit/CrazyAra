@@ -42,22 +42,33 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     modelFilePath = modelDirectory + "model-bsize-" + std::to_string(batchSize) + ".onnx";
 
     load_model();
-    bind_executor();
     check_if_policy_map();
+    bind_executor();
+}
+
+TensorrtAPI::~TensorrtAPI()
+{
+    for (auto memory : deviceMemory) {
+        CHECK(cudaFree(memory));
+    }
+    CHECK(cudaStreamDestroy(stream));
 }
 
 void TensorrtAPI::load_model()
 {
     // load an engine from file or build an engine from the ONNX network
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
-    inputTensorNames.push_back("data");
+    idxInput = engine->getBindingIndex("data");
 #ifdef MODE_CRAZYHOUSE
-    outputTensorNames.push_back("value_tanh0");
-    outputTensorNames.push_back("flatten0");
+    valueOutputIdx = engine->getBindingIndex("value_tanh0");
+    policyOutputIdx = engine->getBindingIndex("flatten0");
 #else
-    outputTensorNames.push_back("value_out");
-    outputTensorNames.push_back("policy_out");
+    idxValueOutput = engine->getBindingIndex("value_out");
+    idxPolicyOutput = engine->getBindingIndex("policy_softmax");
 #endif
+    info_string("idxInput:", idxInput);
+    info_string("idxValueOutput:", idxValueOutput);
+    info_string("idxPolicyOutput:", idxPolicyOutput);
 }
 
 void TensorrtAPI::load_parameters()
@@ -70,7 +81,13 @@ void TensorrtAPI::bind_executor()
     // create an exectution context for applying inference
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     // create buffers object with respect to the engine and batch size
-    buffers = std::shared_ptr<samplesCommon::BufferManager>(new samplesCommon::BufferManager(engine, int(batchSize)));
+    CHECK(cudaStreamCreate(&stream));
+    memorySizes[idxInput] = batchSize * NB_VALUES_TOTAL * sizeof(float);
+    memorySizes[idxValueOutput] = batchSize * sizeof(float);
+    memorySizes[idxPolicyOutput] = policyOutputLength * sizeof(float);
+    CHECK(cudaMalloc(&deviceMemory[idxInput], memorySizes[idxInput]));
+    CHECK(cudaMalloc(&deviceMemory[idxValueOutput], memorySizes[idxValueOutput]));
+    CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
 }
 
 void TensorrtAPI::check_if_policy_map()
@@ -83,25 +100,20 @@ void TensorrtAPI::check_if_policy_map()
 
 void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs)
 {
-    // assign the input to the host buffer
-    float* hostDataBuffer = static_cast<float*>(buffers->getHostBuffer(inputTensorNames[0]));
-    copy(inputPlanes, inputPlanes + NB_VALUES_TOTAL * batchSize, hostDataBuffer);
+    // copy input planes from host to device
+    CHECK(cudaMemcpyAsync(deviceMemory[idxInput], inputPlanes, memorySizes[idxInput],
+                          cudaMemcpyHostToDevice, stream));
 
-    // copy host input buffers to device input buffers
-    buffers->copyInputToDevice();
+    // run inference for given data
+    context->enqueueV2(deviceMemory, stream, nullptr);
 
-    // run inference
-    context->executeV2(buffers->getDeviceBindings().data());
+    // copy output from device back to host
+    CHECK(cudaMemcpyAsync(valueOutput, deviceMemory[idxValueOutput],
+          memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
+    CHECK(cudaMemcpyAsync(probOutputs, deviceMemory[idxPolicyOutput],
+          memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
 
-    // copy from device output buffers to host output buffers
-    buffers->copyOutputToHost();
-
-    // assign outputs
-    float* valueBuffer = static_cast<float*>(buffers->getHostBuffer(outputTensorNames[0]));
-    float* policyBuffer = static_cast<float*>(buffers->getHostBuffer("policy_softmax"));
-
-    copy(valueBuffer, valueBuffer + batchSize, valueOutput);
-    copy(policyBuffer, policyBuffer + policyOutputLength, probOutputs);
+    cudaStreamSynchronize(stream);
 }
 
 ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()

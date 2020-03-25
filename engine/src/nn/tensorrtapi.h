@@ -39,16 +39,11 @@
 
 #include "argsParser.h"
 #include "buffers.h"
-//#include "common.h"
-//#include "logger.h"
-
 #include "parserOnnxConfig.h"
 
 #include "NvInfer.h"
 #include <cuda_runtime_api.h>
 
-
-//using namespace nvinfer1;
 using namespace std;
 
 enum Precision {
@@ -66,9 +61,14 @@ template <typename T>
 class TensorrtAPI : public NeuralNetAPI
 {
 private:
-    // input and output layer names
-    std::vector<std::string> inputTensorNames;
-    std::vector<std::string> outputTensorNames;
+    // binding indices for the input, value and policy data
+    int idxInput;
+    int idxValueOutput;
+    int idxPolicyOutput;
+
+    // device memory, for input, value output and policy output
+    void* deviceMemory[3];
+    size_t memorySizes[3];
 
     // input and output dimension of the network
     Precision precision;
@@ -79,7 +79,7 @@ private:
     // tensorRT runtime engine
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
     SampleUniquePtr<nvinfer1::IExecutionContext> context;
-    std::shared_ptr<samplesCommon::BufferManager> buffers;
+    cudaStream_t stream;
 
     void load_model();
     void load_parameters();
@@ -110,6 +110,7 @@ public:
      * @param precision Inference precision type. Available options: float32, float16, int8 (float32 is default).
      */
     TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, Precision precision = float32);
+    ~TensorrtAPI();
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
 };
