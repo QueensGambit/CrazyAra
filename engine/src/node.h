@@ -317,6 +317,16 @@ public:
     bool is_tablebase() const;
 };
 
+/**
+ * @brief generate_dtz_values Generates the DTZ values for a given position and all legal moves.
+ * This function assumes that the given position is a TB entry.
+ * Warning: The DTZ values do not return the fastest way to win but the distance to zeroing (50 move rule counter reset)
+ * @param legalMoves Legal moves
+ * @param pos Current position
+ * @param dtzValues Returned dtz-Values in the view of the current player to use
+ */
+void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues);
+
 // https://stackoverflow.com/questions/6339970/c-using-function-as-parameter
 typedef bool (* vFunctionMoveType)(const Board* pos, Move move);
 inline bool is_check(const Board* pos, Move move);

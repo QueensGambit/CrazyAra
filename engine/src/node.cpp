@@ -48,11 +48,13 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
 {
     fill_child_node_moves(pos);
 
-    // specify thisTerminale number of direct child nodes from this node
+    // specify the number of direct child nodes of this node
     numberChildNodes = legalMoves.size();
 
     check_for_terminal(pos, inCheck);
-    check_for_tablebase_wdl(pos);
+    if (!isTerminal) {
+        check_for_tablebase_wdl(pos);
+    }
 
     // # visit count of all its child nodes
     childNumberVisits = DynamicVector<float>(numberChildNodes);
@@ -578,6 +580,23 @@ ostream& operator<<(ostream &os, const Node *node)
     return os;
 }
 
+void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues) {
+    StateListPtr states = StateListPtr(new std::deque<StateInfo>(0));
+    // fill dtz value vector
+    for (size_t idx = 0; idx < legalMoves.size(); ++idx) {
+        states->emplace_back();
+        pos.do_move(legalMoves[idx], states->back());
+        Tablebases::ProbeState result;
+        int dtzValue = -probe_dtz(pos, &result);
+        if (result != Tablebases::FAIL) {
+            dtzValues[idx] = dtzValue;
+        }
+        else {
+            info_string("DTZ tablebase look-up failed!");
+        }
+        pos.undo_move(legalMoves[idx]);
+    }
+}
 
 void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
 {

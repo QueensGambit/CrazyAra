@@ -177,9 +177,17 @@ bool is_win(Result res);
 /**
  * @brief probe_wdl Wrapper for probe_wdl(Position& pos, Tablebases::ProbeState* result)
  * @param pos Board position
- * @param result. If result == FAIL then probe was unsuccessfull
+ * @param result If result == FAIL then probe was unsuccessful
  * @return Returns WDL-score (-2 : loss, -1 : loss, but draw under 50-move rule, 0 : draw, 1 : win, but draw under 50-move rule, 2 : win)
  */
 Tablebases::WDLScore probe_wdl(Board& pos, Tablebases::ProbeState* result);
+
+/**
+ * @brief probe_dtz Wrapper for int probe_dtz(Position &pos, Tablebases::ProbeState *result)
+ * @param pos Board position
+ * @param result If result == FAIL then probe was unsuccessful
+ * @return Number of plies for a WIN (0 < n < 100) or LOSS (-100 < n < 0)
+ */
+int probe_dtz(Board& pos, Tablebases::ProbeState* result);
 
 #endif // BOARD_H

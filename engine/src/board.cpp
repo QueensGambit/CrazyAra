@@ -363,3 +363,8 @@ Tablebases::WDLScore probe_wdl(Board& pos, Tablebases::ProbeState* result)
 {
     return Tablebases::probe_wdl(pos, result);
 }
+
+int probe_dtz(Board &pos, Tablebases::ProbeState *result)
+{
+    return Tablebases::probe_dtz(pos, result);
+}
