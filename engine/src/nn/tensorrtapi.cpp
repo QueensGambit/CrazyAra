@@ -34,12 +34,14 @@
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, Precision precision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
-    precision(float32)
+    precision(float32),
+    enginePath(modelDirectory + "model-bsize" + to_string(batchSize) + ".engine")
 {
     // select the requested device
     cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
-    modelFilePath = modelDirectory + "model-bsize-" + std::to_string(batchSize) + ".onnx";
+    modelFilePath = modelDirectory + "model-bsize-" + to_string(batchSize) + ".onnx";
+    gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
 
     load_model();
     check_if_policy_map();
@@ -109,9 +111,9 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
 
     // copy output from device back to host
     CHECK(cudaMemcpyAsync(valueOutput, deviceMemory[idxValueOutput],
-          memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
+                          memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
     CHECK(cudaMemcpyAsync(probOutputs, deviceMemory[idxPolicyOutput],
-          memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
+                          memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
 
     cudaStreamSynchronize(stream);
 }
@@ -129,65 +131,61 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
     set_config_settings(config, network, precision);
 
-   // conversion of onnx model to tensorrt
-   // parse the ONNX model file along with logger object for reporting info
-   gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
-   auto parser = nvonnxparser::createParser(*network, gLogger.getTRTLogger());
-   if (!parser->parseFromFile(modelFilePath.c_str(), static_cast<int>(gLogger.getReportableSeverity())))
-   {
-         gLogger.log(nvinfer1::ILogger::Severity::kERROR, "failed to parse onnx file");
-         exit(EXIT_FAILURE);
-         return nullptr;
-   }
+    // conversion of onnx model to tensorrt
+    // parse the ONNX model file along with logger object for reporting info
+    auto parser = nvonnxparser::createParser(*network, gLogger.getTRTLogger());
+    if (!parser->parseFromFile(modelFilePath.c_str(), static_cast<int>(gLogger.getReportableSeverity())))
+    {
+        gLogger.log(nvinfer1::ILogger::Severity::kERROR, "failed to parse onnx file");
+        exit(EXIT_FAILURE);
+        return nullptr;
+    }
 
-   inputDims = network->getInput(0)->getDimensions();
-   valueOutputDims = network->getOutput(0)->getDimensions();
-   policyOutputDims = network->getOutput(1)->getDimensions();
-   // add a softmax layer to the onnx model
-   ISoftMaxLayer* softmaxOutput = network->addSoftMax(*network->getOutput(1));
-   // set the softmax axis to 1
-   softmaxOutput->setAxes(1 << 1);
-   // set the softmax output as the new output
-   network->unmarkOutput(*network->getOutput(1));
-   network->markOutput(*softmaxOutput->getOutput(0));
-   softmaxOutput->getOutput(0)->setName("policy_softmax");
+    inputDims = network->getInput(0)->getDimensions();
+    valueOutputDims = network->getOutput(0)->getDimensions();
+    policyOutputDims = network->getOutput(1)->getDimensions();
+    // add a softmax layer to the onnx model
+    ISoftMaxLayer* softmaxOutput = network->addSoftMax(*network->getOutput(1));
+    // set the softmax axis to 1
+    softmaxOutput->setAxes(1 << 1);
+    // set the softmax output as the new output
+    network->unmarkOutput(*network->getOutput(1));
+    network->markOutput(*softmaxOutput->getOutput(0));
+    softmaxOutput->getOutput(0)->setName("policy_softmax");
 
-   info_string("inputDims:", inputDims);
-   info_string("valueOutputDims:", valueOutputDims);
-   info_string("policyOutputDims:", policyOutputDims);
+    info_string("inputDims:", inputDims);
+    info_string("valueOutputDims:", valueOutputDims);
+    info_string("policyOutputDims:", policyOutputDims);
 
-   // build an engine from the TensorRT network with a given configuration struct
-   return builder->buildEngineWithConfig(*network, *config);
+    // build an engine from the TensorRT network with a given configuration struct
+    return builder->buildEngineWithConfig(*network, *config);
 }
 
 ICudaEngine* TensorrtAPI::get_cuda_engine() {
-
-    // getBasename(modelFilePath)
-    string modelBaseName = "model";
-    string enginePath{modelBaseName + "_batch" + to_string(batchSize) + ".engine"};
     ICudaEngine* engine{nullptr};
 
-
-//    TODO: Read engine from file
-//    string buffer = readBuffer(enginePath);
-//    if (buffer.size()) {
-//        // try to deserialize engine
-//        unique_ptr<IRuntime, Destroy> runtime{createInferRuntime(gLogger)};
-//        engine = runtime->deserializeCudaEngine(buffer.data(), buffer.size(), nullptr);
-//    }
+    // try to read an engine from file
+    size_t bufferSize;
+    const char* buffer = read_buffer(enginePath, bufferSize);
+    if (buffer) {
+        info_string("deserialize engine:", enginePath);
+        unique_ptr<IRuntime, samplesCommon::InferDeleter> runtime{createInferRuntime(gLogger)};
+        engine = runtime->deserializeCudaEngine(buffer, bufferSize, nullptr);
+    }
 
     if (!engine) {
-        // Fallback to creating engine from scratch
+        // fallback: Create engine from scratch
         engine = create_cuda_engine_from_onnx();
 
         if (engine) {
+            info_string("serialize engine:", enginePath);
             // serialized engines are not portable across platforms or TensorRT versions
             // engines are specific to the exact GPU model they were built on
             IHostMemory *serializedModel = engine->serialize();
-            //unique_ptr<IHostMemory, Destroy> enginePlan{engine->serialize()};
+            unique_ptr<IHostMemory, samplesCommon::InferDeleter> enginePlan{engine->serialize()};
             // export engine for future uses
-            //    TODO: Write engine to file
-            // writeBuffer(enginePlan->data(), enginePlan->size(), enginePath);
+            // write engine to file
+            write_buffer(enginePlan->data(), enginePlan->size(), enginePath);
             serializedModel->destroy();
         }
     }
@@ -195,7 +193,7 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 }
 
 void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config, SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
-                                      Precision precision, size_t maxWorkspace)
+                         Precision precision, size_t maxWorkspace)
 {
     config->setMaxWorkspaceSize(maxWorkspace);
     switch (precision) {
@@ -210,6 +208,33 @@ void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config, Samp
         samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
         break;
     }
+}
+
+void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
+    std::ofstream outfile(filePath,std::ofstream::binary);
+    outfile.write((const char*) buffer, bufferSize);
+    outfile.close();
+}
+
+const char* read_buffer(const string& filePath, size_t& bufferSize) {
+    std::ifstream infile (filePath,std::ifstream::binary);
+    if (!infile) {
+        return "";
+    }
+    // get size of file
+    infile.seekg(0,infile.end);
+    bufferSize = infile.tellg();
+    infile.seekg(0);
+
+    // allocate memory for file content
+    char* buffer = new char[bufferSize];
+
+    // read content of infile
+    infile.read(buffer,bufferSize);
+    string strBuffer(buffer);
+
+    infile.close();
+    return buffer;
 }
 
 #endif

@@ -77,6 +77,7 @@ private:
     nvinfer1::Dims policyOutputDims;
 
     // tensorRT runtime engine
+    string enginePath;
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
     SampleUniquePtr<nvinfer1::IExecutionContext> context;
     cudaStream_t stream;
@@ -123,6 +124,23 @@ public:
  */
 void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig> &config, SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
                          Precision precision, size_t maxWorkspace=1_GiB);
+
+/**
+ * @brief write_buffer Writes a given buffer to a file
+ * @param buffer Pointer to the buffer
+ * @param bufferSize Memory size of the buffer
+ * @param filePath Path where to write the buffer
+ */
+void write_buffer(void* buffer, size_t bufferSize, const string& filePath);
+
+/**
+ * @brief read_buffer Reads a binary buffer from a path.
+ * The buffer must be deallocated afterwards.
+ * @param filePath Path where to read the buffer
+ * @param bufferSize Returned buffer size
+ * @return Buffer object
+ */
+const char* read_buffer(const string& filePath, size_t& bufferSize);
 
 #endif
 
