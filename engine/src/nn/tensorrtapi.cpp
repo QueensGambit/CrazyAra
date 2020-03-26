@@ -211,29 +211,33 @@ void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config, Samp
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
-    std::ofstream outfile(filePath,std::ofstream::binary);
-    outfile.write((const char*) buffer, bufferSize);
-    outfile.close();
+    std::ofstream outputFile(filePath,std::ofstream::binary);
+    outputFile.write((const char*) buffer, bufferSize);
+    outputFile.close();
 }
 
 const char* read_buffer(const string& filePath, size_t& bufferSize) {
-    std::ifstream infile (filePath,std::ifstream::binary);
-    if (!infile) {
+    std::ifstream inputFile (filePath,std::ifstream::binary);
+    if (!inputFile) {
         return "";
     }
+
     // get size of file
-    infile.seekg(0,infile.end);
-    bufferSize = infile.tellg();
-    infile.seekg(0);
+    inputFile.seekg(0, inputFile.end);
+    bufferSize = inputFile.tellg();
+    inputFile.seekg(0);
 
     // allocate memory for file content
     char* buffer = new char[bufferSize];
 
     // read content of infile
-    infile.read(buffer,bufferSize);
-    string strBuffer(buffer);
+    inputFile.read(buffer, bufferSize);
+    if (!inputFile) {
+        info_string("error reading file buffer:", filePath);
+        return "";
+    }
 
-    infile.close();
+    inputFile.close();
     return buffer;
 }
 
