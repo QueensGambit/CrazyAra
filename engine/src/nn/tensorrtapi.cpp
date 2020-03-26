@@ -131,6 +131,7 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
 
    // conversion of onnx model to tensorrt
    // parse the ONNX model file along with logger object for reporting info
+   gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
    auto parser = nvonnxparser::createParser(*network, gLogger.getTRTLogger());
    if (!parser->parseFromFile(modelFilePath.c_str(), static_cast<int>(gLogger.getReportableSeverity())))
    {
