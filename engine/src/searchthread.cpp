@@ -277,6 +277,12 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
     if (!node->is_tablebase()) {
         node->set_value(valueOutputs[batchIdx]);
     }
+    else {
+        if (node->get_value() != 0) {
+            // use the average of the TB entry and NN eval for non-draws
+            node->set_value((valueOutputs[batchIdx] + node->get_value()) * 0.5f);
+        }
+    }
     node->enable_has_nn_results();
 }
 
