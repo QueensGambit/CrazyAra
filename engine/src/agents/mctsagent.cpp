@@ -318,7 +318,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     evalInfo.nodesPreSearch = init_root_node(pos);
     evalInfo.isChess960 = pos->is_chess960();
     rootPos = pos;
-    if (rootNode->get_number_child_nodes() == 1 && int(rootNode->get_visits()) != 0) {
+    if (rootNode->get_number_child_nodes() == 1 && int(rootNode->get_visits()) != 1) {
         info_string("Only single move available -> early stopping");
     }
     else if (rootNode->get_checkmate_idx() != -1) {
