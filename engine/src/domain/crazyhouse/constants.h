@@ -141,12 +141,9 @@ const int NB_CHANNELS_POLICY_MAP = 76;
 #endif
 const int NB_LABELS_POLICY_MAP = NB_CHANNELS_POLICY_MAP * BOARD_HEIGHT * BOARD_WIDTH;
 
-// Originally the constants for winning and losing were -1, +1.
-// By defining them to be outside of the network value evaluation range,
-// they become more weighted and can be averaged in case of TB entries.
-#define LOSS -2
+#define LOSS -1
 #define DRAW 0
-#define WIN 2
+#define WIN 1
 
 enum Result {
     DRAWN = 0,
