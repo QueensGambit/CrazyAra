@@ -36,13 +36,13 @@
 
 #ifdef TENSORRT
 #include "neuralnetapi.h"
-
 #include "argsParser.h"
 #include "buffers.h"
 #include "parserOnnxConfig.h"
 
 #include "NvInfer.h"
 #include <cuda_runtime_api.h>
+#include "util/chessbatchstream.h"
 
 using namespace std;
 
@@ -101,6 +101,25 @@ private:
      */
     ICudaEngine* get_cuda_engine();
 
+    /**
+     * @brief set_config_settings Sets the configuration object which will be later used to build the engine
+     * @param config Configuration object
+     * @param network ONNX network object
+     * @param maxWorkspace Maximum allowable GPU work space for TensorRT tactic selection (e.g. 16_MiB, 1_GiB)
+     * @param calibrator INT8 calibration object
+     * @param calibrationStream Calibration stream used for INT8 calibration
+     */
+    void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
+                             SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
+                             size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
+                             ChessBatchStream& calibrationStream);
+
+    /**
+     * @brief configure_network Adds a softmax layer and extracts the I/O-dimensions of the network
+     * @param network ONNX network object
+     */
+    void configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition>& network);
+
 public:
     /**
      * @brief TensorrtAPI
@@ -110,20 +129,11 @@ public:
      * where parameters a.k.a weights of the neural are stored (.params file) are stored
      * @param precision Inference precision type. Available options: float32, float16, int8 (float32 is default).
      */
-    TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, Precision precision = float32);
+    TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, const string& strPrecision);
     ~TensorrtAPI();
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
 };
-
-/**
- * @brief set_config_settings Sets the configuration object which will be later used to build the engine
- * @param config Configuration object
- * @param precision Inference precision (e.g. float32, float16, int8)
- * @param maxWorkspace Maximum allowable GPU work space for TensorRT tactic selection (e.g. 16_MiB, 1_GiB)
- */
-void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig> &config, SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
-                         Precision precision, size_t maxWorkspace=1_GiB);
 
 /**
  * @brief write_buffer Writes a given buffer to a file

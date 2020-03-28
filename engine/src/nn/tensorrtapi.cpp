@@ -30,17 +30,37 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include "EntropyCalibrator.h"
 #include "constants.h"
+#include "../util/communication.h"
 
-TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, Precision precision):
-    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
-    precision(float32),
-    enginePath(modelDirectory + "model-bsize" + to_string(batchSize) + ".engine")
+TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
+    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true)
 {
     // select the requested device
     cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
     modelFilePath = modelDirectory + "model-bsize-" + to_string(batchSize) + ".onnx";
+    enginePath = modelDirectory + "model-bsize" + to_string(batchSize) + "-";
+
+    if (strPrecision == "float32") {
+        precision = float32;
+        enginePath += "fp32";
+    }
+    else if (strPrecision == "float16") {
+        precision = float16;
+        enginePath += "fp16";
+    }
+    else if (strPrecision == "int8") {
+        precision = int8;
+        enginePath += "int8";
+    }
+    else {
+        info_string("Fallback to float32. Invalid precision type given:", precision);
+        precision = float32;
+        enginePath += "fp32";
+    }
+    enginePath += ".trt";
     gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
 
     load_model();
@@ -68,9 +88,6 @@ void TensorrtAPI::load_model()
     idxValueOutput = engine->getBindingIndex("value_out");
     idxPolicyOutput = engine->getBindingIndex("policy_softmax");
 #endif
-    info_string("idxInput:", idxInput);
-    info_string("idxValueOutput:", idxValueOutput);
-    info_string("idxPolicyOutput:", idxPolicyOutput);
 }
 
 void TensorrtAPI::load_parameters()
@@ -120,6 +137,7 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
 
 ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
 {
+    info_string("build TensorRT engine");
     // create an engine builder
     IBuilder* builder = createInferBuilder(gLogger.getTRTLogger());
     builder->setMaxBatchSize(int(batchSize));
@@ -129,9 +147,11 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     auto network = SampleUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
 
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
-    set_config_settings(config, network, precision);
+    unique_ptr<IInt8Calibrator> calibrator;
+    ChessBatchStream calibrationStream(batchSize, 42);
+    set_config_settings(config, network, 1_GiB, calibrator, calibrationStream);
 
-    // conversion of onnx model to tensorrt
+    // conversion of ONNX model to TensorRT
     // parse the ONNX model file along with logger object for reporting info
     auto parser = nvonnxparser::createParser(*network, gLogger.getTRTLogger());
     if (!parser->parseFromFile(modelFilePath.c_str(), static_cast<int>(gLogger.getReportableSeverity())))
@@ -140,22 +160,7 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
         exit(EXIT_FAILURE);
         return nullptr;
     }
-
-    inputDims = network->getInput(0)->getDimensions();
-    valueOutputDims = network->getOutput(0)->getDimensions();
-    policyOutputDims = network->getOutput(1)->getDimensions();
-    // add a softmax layer to the onnx model
-    ISoftMaxLayer* softmaxOutput = network->addSoftMax(*network->getOutput(1));
-    // set the softmax axis to 1
-    softmaxOutput->setAxes(1 << 1);
-    // set the softmax output as the new output
-    network->unmarkOutput(*network->getOutput(1));
-    network->markOutput(*softmaxOutput->getOutput(0));
-    softmaxOutput->getOutput(0)->setName("policy_softmax");
-
-    info_string("inputDims:", inputDims);
-    info_string("valueOutputDims:", valueOutputDims);
-    info_string("policyOutputDims:", policyOutputDims);
+    configure_network(network);
 
     // build an engine from the TensorRT network with a given configuration struct
     return builder->buildEngineWithConfig(*network, *config);
@@ -192,8 +197,10 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
     return engine;
 }
 
-void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config, SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
-                         Precision precision, size_t maxWorkspace)
+void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
+                         SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
+                         size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
+                         ChessBatchStream& calibrationStream)
 {
     config->setMaxWorkspaceSize(maxWorkspace);
     switch (precision) {
@@ -205,9 +212,31 @@ void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config, Samp
         break;
     case int8:
         config->setFlag(BuilderFlag::kINT8);
+        info_string("run INT8 quantization calibration");
+        calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(calibrationStream, 0, "model", "data"));
+        config->setInt8Calibrator(calibrator.get());
         samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
         break;
     }
+}
+
+void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition> &network)
+{
+    inputDims = network->getInput(0)->getDimensions();
+    valueOutputDims = network->getOutput(0)->getDimensions();
+    policyOutputDims = network->getOutput(1)->getDimensions();
+    // add a softmax layer to the ONNX model
+    ISoftMaxLayer* softmaxOutput = network->addSoftMax(*network->getOutput(1));
+    // set the softmax axis to 1
+    softmaxOutput->setAxes(1 << 1);
+    // set the softmax output as the new output
+    network->unmarkOutput(*network->getOutput(1));
+    network->markOutput(*softmaxOutput->getOutput(0));
+    softmaxOutput->getOutput(0)->setName("policy_softmax");
+
+    info_string("inputDims:", inputDims);
+    info_string("valueOutputDims:", valueOutputDims);
+    info_string("policyOutputDims:", policyOutputDims);
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
@@ -219,22 +248,23 @@ void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
 const char* read_buffer(const string& filePath, size_t& bufferSize) {
     std::ifstream inputFile (filePath,std::ifstream::binary);
     if (!inputFile) {
-        return "";
+        info_string("no engine file found");
+        return nullptr;
     }
 
-    // get size of file
+    // get file size
     inputFile.seekg(0, inputFile.end);
     bufferSize = inputFile.tellg();
     inputFile.seekg(0);
 
-    // allocate memory for file content
+    // allocate memory for the file content
     char* buffer = new char[bufferSize];
 
-    // read content of infile
+    // read content of the input file
     inputFile.read(buffer, bufferSize);
     if (!inputFile) {
         info_string("error reading file buffer:", filePath);
-        return "";
+        return nullptr;
     }
 
     inputFile.close();

@@ -424,7 +424,7 @@ NeuralNetAPI* CrazyAra::create_new_net_single(const string& modelDirectory)
 #ifdef MXNET
     return new MXNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
 #elif defined TENSORRT
-    return new TensorrtAPI(int(Options["Device_ID"]), 1, modelDirectory);
+    return new TensorrtAPI(int(Options["Device_ID"]), 1, modelDirectory, Options["Precision"]);
 #endif
     return nullptr;
 }
@@ -441,7 +441,7 @@ NeuralNetAPI** CrazyAra::create_new_net_batches(const string& modelDirectory)
 #ifdef MXNET
         netBatches[i] = new MXNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
 #elif defined TENSORRT
-        netBatches[i] = new TensorrtAPI(int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory);
+        netBatches[i] = new TensorrtAPI(int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, Options["Precision"]);
 #endif
     }
     return netBatches;
