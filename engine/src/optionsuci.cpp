@@ -71,7 +71,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Use_Transposition_Table"]       << Option(true);
 #ifdef TENSORRT
     o["Use_TensorRT"]                  << Option(true);
-    o["Precision"]                     << Option("int8", {"float32", "float16", "int8"});
+    o["Precision"]                     << Option("float32", {"float32", "float16", "int8"});
 #endif
     o["Model_Directory"]               << Option("model/");
 #ifdef USE_RL
