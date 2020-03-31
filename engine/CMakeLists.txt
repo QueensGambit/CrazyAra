@@ -22,6 +22,7 @@ endif()
 
 if(MSVC OR MSYS OR MINGW)
     include_directories("$ENV{BLAZE_PATH}include")
+    include_directories("$ENV{BLAZE_PATH}")	
 else()
     find_package( blaze )
     if( blaze_FOUND )
@@ -55,6 +56,8 @@ file(GLOB source_files
     "src/agents/config/*.h"
     "src/nn/*.cpp"
     "src/nn/*.h"
+    "src/nn/util/*.cpp"
+    "src/nn/util/*.h"
     "src/manager/*.cpp"
     "src/manager/*.h"
     "src/rl/*.cpp"
@@ -136,7 +139,13 @@ if (USE_TENSORRT)
     message(STATUS "CUDA path: $ENV{CUDA_PATH}")
     include_directories("$ENV{CUDA_PATH}/include")
     link_directories("$ENV{CUDA_PATH}/lib64")
+    link_directories("$ENV{CUDA_PATH}/lib/x64")
     link_directories("$ENV{TENSORRT_PATH}lib")
+if(WIN32)
+  find_library(TENSORRT_LIBRARY_MYELIN myelin64_1
+    HINTS  ${TENSORRT_PATH}
+    PATH_SUFFIXES lib lib64 lib/x64)
+endif()
     include_directories("$ENV{TENSORRT_PATH}include")
     include_directories("$ENV{TENSORRT_PATH}samples/common/")
     add_definitions(-DTENSORRT)
