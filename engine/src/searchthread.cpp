@@ -74,7 +74,7 @@ void SearchThread::set_search_limits(SearchLimits *s)
     searchLimits = s;
 }
 
-bool SearchThread::get_is_running() const
+bool SearchThread::is_running() const
 {
     return isRunning;
 }
@@ -211,6 +211,11 @@ bool SearchThread::nodes_limits_ok()
     return searchLimits->nodes == 0 || (rootNode->get_visits() < searchLimits->nodes);
 }
 
+bool SearchThread::is_root_node_unsolved()
+{
+    return rootNode->get_node_type() == UNSOLVED;
+}
+
 void SearchThread::create_mini_batch()
 {
     // select nodes to add to the mini-batch
@@ -254,9 +259,10 @@ void SearchThread::thread_iteration()
 void go(SearchThread *t)
 {
     t->set_is_running(true);
-    while(t->get_is_running() && t->nodes_limits_ok()) {
+    while(t->is_running() && t->nodes_limits_ok() && t->is_root_node_unsolved()) {
         t->thread_iteration();
     }
+    t->set_is_running(false);
 }
 
 void backup_values(vector<Node*>& nodes)

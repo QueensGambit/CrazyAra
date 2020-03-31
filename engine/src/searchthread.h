@@ -118,6 +118,12 @@ public:
     inline bool nodes_limits_ok();
 
     /**
+     * @brief is_root_node_unsolved Checks if the root node result is still unsolved (not a forced win, draw or loss)
+     * @return true for unsolved, else false
+     */
+    inline bool is_root_node_unsolved();
+
+    /**
      * @brief stop Stops the rollouts of the current thread
      */
     void stop();
@@ -127,7 +133,7 @@ public:
     Node* get_root_node() const;
     SearchLimits *get_search_limits() const;
     void set_root_node(Node *value);
-    bool get_is_running() const;
+    bool is_running() const;
     void set_is_running(bool value);
 
     /**
