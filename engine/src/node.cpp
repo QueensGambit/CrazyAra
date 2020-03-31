@@ -37,6 +37,8 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
     sideToMove(pos->side_to_move()),
     parentNode(parentNode),
     visits(1),
+    nodeType(UNSOLVED),
+    endInPly(0),
     noVisitIdx(1),
     isTerminal(false),
     isTablebase(false),
@@ -50,6 +52,7 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
 
     // specify the number of direct child nodes of this node
     numberChildNodes = legalMoves.size();
+    numberUnsolvedChildNodes = numberChildNodes;
 
     check_for_terminal(pos, inCheck);
     if (!isTerminal) {
@@ -91,7 +94,6 @@ Node::Node(const Node &b)
     qValues = -1;
     legalMoves = b.legalMoves;
     isTerminal = b.isTerminal;
-    //    initialValue = b.initialValue;
     visits = 1;
     childNodes.resize(numberChildNodes);
     //    parentNode = // is not copied
@@ -99,7 +101,9 @@ Node::Node(const Node &b)
     noVisitIdx = 1; // reset counter
     isTerminal = b.isTerminal;
     hasNNResults = b.hasNNResults;
-    checkmateIdx = -1; //b.checkmateIdx;
+    checkmateIdx = b.checkmateIdx;
+    numberUnsolvedChildNodes = b.numberChildNodes;
+    nodeType = b.nodeType;
     searchSettings = b.searchSettings;
     isFullyExpanded = false;
 }
@@ -109,6 +113,149 @@ void Node::fill_child_node_moves(Board* pos)
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
         legalMoves.push_back(move);
+    }
+}
+
+bool Node::solved_win(const Node* childNode) const
+{
+    if (childNode->nodeType == SOLVED_LOSS) {
+        return true;
+    }
+    return false;
+}
+
+bool Node::solved_draw(const Node* childNode) const
+{
+    if (numberUnsolvedChildNodes == 0 &&
+            (childNode->nodeType == SOLVED_DRAW || childNode->nodeType == SOLVED_WIN)) {
+        // make sure that this node has only DRAWN or WON child nodes and at least one DRAWN child
+        bool atLeastOneDrawnChild = false;
+        for (Node* childNode : childNodes) {
+            if (childNode->nodeType != SOLVED_DRAW || childNode->nodeType != SOLVED_WIN) {
+                return false;
+            }
+            if (childNode->nodeType == SOLVED_DRAW) {
+                atLeastOneDrawnChild = true;
+            }
+        }
+        if (atLeastOneDrawnChild) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Node::solved_loss(const Node* childNode) const
+{
+    if (numberUnsolvedChildNodes == 0 && childNode->nodeType == SOLVED_WIN) {
+        // make sure that this node has only WON child nodes
+        for (Node* childNode : childNodes) {
+            if (childNode->nodeType != SOLVED_WIN) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+void Node::define_end_ply_for_solved_terminal(const Node* childNode)
+{
+    if (nodeType == SOLVED_LOSS) {
+        // choose the longest pv line
+        for (const Node* curChildNode : childNodes) {
+            if (curChildNode->endInPly+1 > endInPly) {
+                endInPly = curChildNode->endInPly+1;
+            }
+        }
+        return;
+    }
+    if (nodeType == SOLVED_DRAW) {
+        // choose the shortest pv line for draws
+        for (const Node* curChildNode : childNodes) {
+            if (curChildNode->nodeType == SOLVED_DRAW && curChildNode->endInPly+1 < endInPly) {
+                endInPly = curChildNode->endInPly+1;
+            }
+        }
+        return;
+    }
+    // get the endPly for WINS
+    endInPly = childNode->endInPly + 1;
+}
+
+void Node::update_solved_terminal(const Node* childNode, int targetValue)
+{
+    define_end_ply_for_solved_terminal(childNode);
+    value = targetValue;
+    if (parentNode != nullptr) {
+        parentNode->lock();
+        parentNode->numberUnsolvedChildNodes--;
+        parentNode->qValues[childIdxForParent] = targetValue;
+        if (targetValue == LOSS) {
+            parentNode->checkmateIdx = childIdxForParent;
+        }
+        parentNode->unlock();
+    }
+    return;
+}
+
+void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
+{
+    mctsPolicy = 0;
+    for (size_t childIdx = 0; childIdx < numberChildNodes; ++childIdx) {
+        if (childNodes[childIdx] != nullptr && childNodes[childIdx]->nodeType == SOLVED_LOSS) {
+            mctsPolicy[childIdx] = 1.0f;
+        }
+    }
+    mctsPolicy /= sum(mctsPolicy);
+}
+
+void Node::prune_losses_in_mcts_policy(DynamicVector<float> &mctsPolicy) const
+{
+    // check if PV line leads to a loss
+    if (nodeType != SOLVED_LOSS) {
+        // set all entries which lead to a WIN of the oppenent to zero
+        for (size_t childIdx = 0; childIdx < numberChildNodes; ++childIdx) {
+            if (childNodes[childIdx] != nullptr && childNodes[childIdx]->nodeType == SOLVED_WIN) {
+                mctsPolicy[childIdx] = 0;
+            }
+        }
+    }
+}
+
+void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy) const
+{
+    DynamicVector<float> qValuePruned = qValues;
+    qValuePruned = (qValuePruned + 1) * 0.5f;
+    const DynamicVector<float> normalizedVisits = childNumberVisits / visits;
+    const float quantile = get_quantile(normalizedVisits, 0.25f);
+    for (size_t idx = 0; idx < numberChildNodes; ++idx) {
+        if (childNumberVisits[idx] < quantile) {
+            qValuePruned[idx] = 0;
+        }
+    }
+    mctsPolicy = (1.0f - searchSettings->qValueWeight) * normalizedVisits + searchSettings->qValueWeight * qValuePruned;
+}
+
+void Node::solve_for_terminal(const Node* childNode)
+{
+    if (nodeType != UNSOLVED) {
+        // already solved
+        return;
+    }
+    if (solved_win(childNode)) {
+        nodeType = SOLVED_WIN;
+        update_solved_terminal(childNode, WIN);
+        return;
+    }
+    if (solved_loss(childNode)) {
+        nodeType = SOLVED_LOSS;
+        update_solved_terminal(childNode, LOSS);
+        return;
+    }
+    if (solved_draw(childNode)) {
+        nodeType = SOLVED_DRAW;
+        update_solved_terminal(childNode, DRAW);
     }
 }
 
@@ -125,7 +272,6 @@ Node::~Node()
 void Node::sort_moves_by_probabilities()
 {
     auto p = sort_permutation(policyProbSmall, std::greater<float>());
-
     apply_permutation_in_place(policyProbSmall, p);
     apply_permutation_in_place(legalMoves, p);
 }
@@ -230,6 +376,7 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value)
     childNumberVisits[childIdx] -= searchSettings->virtualLoss - 1;
     actionValues[childIdx] += searchSettings->virtualLoss + value;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
+    solve_for_terminal(childNodes[childIdx]);
     mtx.unlock();
 }
 
@@ -313,6 +460,16 @@ size_t Node::max_q_child()
 
 float Node::updated_value_eval()
 {
+    if (nodeType != UNSOLVED) {
+        switch(nodeType) {
+        case SOLVED_WIN:
+            return WIN;
+        case SOLVED_DRAW:
+            return DRAW;
+        case SOLVED_LOSS:
+            return LOSS;
+        }
+    }
     return qValues[argmax(childNumberVisits)];
 }
 
@@ -351,6 +508,16 @@ bool Node::is_tablebase() const
     return isTablebase;
 }
 
+uint8_t Node::get_node_type() const
+{
+    return nodeType;
+}
+
+uint16_t Node::get_end_in_ply() const
+{
+    return endInPly;
+}
+
 void Node::check_for_terminal(Board* pos, bool inCheck)
 {
     if (numberChildNodes == 0) {
@@ -365,8 +532,18 @@ void Node::check_for_terminal(Board* pos, bool inCheck)
         // test if we have a check-mate
         if (inCheck) {
             value = LOSS;
-            isTerminal = true;
+            parentNode->lock();
             parentNode->checkmateIdx = int(childIdxForParent);
+            parentNode->nodeType = SOLVED_WIN;
+            parentNode->numberUnsolvedChildNodes--;
+            parentNode->endInPly = 1;
+            parentNode->unlock();
+            if (parentNode->parentNode != nullptr) {
+                parentNode->parentNode->lock();
+                parentNode->parentNode->numberUnsolvedChildNodes--;
+                parentNode->parentNode->unlock();
+            }
+            nodeType = SOLVED_LOSS;
             return;
         }
         // we reached a stalmate
@@ -463,7 +640,26 @@ void Node::apply_softmax_to_policy()
     policyProbSmall = softmax(policyProbSmall);
 }
 
-void Node::enhance_moves(Board* pos)
+void Node::mark_enhaned_moves(const Board* pos)
+{
+    if (searchSettings->enhanceChecks || searchSettings->enhanceCaptures) {
+        isCheck.resize(numberChildNodes);
+        isCheck = false;
+        isCapture.resize(numberChildNodes);
+        isCapture = false;
+
+        for (size_t idx = 0; idx < numberChildNodes; ++idx) {
+            if (pos->capture(legalMoves[idx])) {
+                isCapture[idx] = true;
+            }
+            if (pos->gives_check(legalMoves[idx])) {
+                isCheck[idx] = true;
+            }
+        }
+    }
+}
+
+void Node::enhance_moves()
 {
     if (!searchSettings->enhanceChecks && !searchSettings->enhanceCaptures) {
         return;
@@ -474,11 +670,11 @@ void Node::enhance_moves(Board* pos)
 
     if (searchSettings->enhanceChecks) {
         checkUpdate = enhance_move_type(min(searchSettings->threshCheck, policyProbSmall[0]*searchSettings->checkFactor),
-                searchSettings->threshCheck, pos, legalMoves, is_check, policyProbSmall);
+                searchSettings->threshCheck, legalMoves, isCheck, policyProbSmall);
     }
     if (searchSettings->enhanceCaptures) {
         captureUpdate = enhance_move_type(min(searchSettings->threshCapture, policyProbSmall[0]*searchSettings->captureFactor),
-                searchSettings->threshCheck, pos, legalMoves, is_capture, policyProbSmall);
+                searchSettings->threshCheck, legalMoves, isCapture, policyProbSmall);
     }
 
     if (checkUpdate || captureUpdate) {
@@ -486,11 +682,11 @@ void Node::enhance_moves(Board* pos)
     }
 }
 
-bool enhance_move_type(float increment, float thresh, const Board* pos, const vector<Move>& legalMoves, vFunctionMoveType func, DynamicVector<float>& policyProbSmall)
+bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves, const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall)
 {
     bool update = false;
     for (size_t i = 0; i < legalMoves.size(); ++i) {
-        if (func(pos, legalMoves[i]) && policyProbSmall[i] < thresh) {
+        if (moveType[i] && policyProbSmall[i] < thresh) {
             policyProbSmall[i] += increment;
             update = true;
         }
@@ -520,23 +716,19 @@ Node *Node::get_child_node(size_t childIdx)
 
 void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy) const
 {
-    const float qValueWeight = searchSettings->qValueWeight;
-
-    if (qValueWeight > 0) {
-        DynamicVector<float> qValuePruned = qValues;
-        qValuePruned = (qValuePruned + 1) * 0.5f;
-        const DynamicVector<float> normalizedVisits = childNumberVisits / visits;
-        const float quantile = get_quantile(normalizedVisits, 0.25f);
-        for (size_t idx = 0; idx < numberChildNodes; ++idx) {
-            if (childNumberVisits[idx] < quantile) {
-                qValuePruned[idx] = 0;
-            }
-        }
-        mctsPolicy = (1.0f - qValueWeight) * normalizedVisits + qValueWeight * qValuePruned;
-        mctsPolicy /= sum(mctsPolicy);
-    } else {
-        mctsPolicy = childNumberVisits / visits;
+    // fill only the winning moves in case of a known win
+    if (nodeType == SOLVED_WIN) {
+        mcts_policy_based_on_wins(mctsPolicy);
+        return;
     }
+    if (searchSettings->qValueWeight > 0) {
+        mcts_policy_based_on_q_n(mctsPolicy);
+    }
+    else {
+        mctsPolicy = childNumberVisits;
+    }
+    prune_losses_in_mcts_policy(mctsPolicy);
+    mctsPolicy /= sum(mctsPolicy);
 }
 
 void Node::get_principal_variation(vector<Move>& pv) const
@@ -544,12 +736,47 @@ void Node::get_principal_variation(vector<Move>& pv) const
     pv.clear();
     const Node* curNode = this;
     do {
-        DynamicVector<float> mctsPolicy(curNode->get_number_child_nodes());
-        curNode->get_mcts_policy(mctsPolicy);
-        size_t childIdx = argmax(mctsPolicy);
+        size_t childIdx = get_best_move_index(curNode);
         pv.push_back(curNode->get_move(childIdx));
         curNode = curNode->childNodes[childIdx];
     } while (curNode != nullptr && !curNode->is_terminal());
+}
+
+size_t get_best_move_index(const Node *curNode)
+{
+    if (curNode->get_checkmate_idx() != -1) {
+        // chose mating line
+        return curNode->get_checkmate_idx();
+    }
+    if (curNode->get_node_type() == SOLVED_LOSS) {
+        // choose node which delays the mate
+        size_t longestPVlength = 0;
+        size_t childIdx = 0;
+        for (size_t idx = 0; idx < curNode->get_number_child_nodes(); ++idx) {
+            if (curNode->get_child_nodes()[idx]->get_end_in_ply() > longestPVlength) {
+                longestPVlength = curNode->get_child_nodes()[idx]->get_end_in_ply();
+                childIdx = idx;
+            }
+        }
+        return childIdx;
+    }
+    if (curNode->get_node_type() == SOLVED_DRAW) {
+        // choose shortest pv line
+        size_t longestPVlength = curNode->get_end_in_ply();
+        size_t childIdx = 0;
+        for (size_t idx = 0; idx < curNode->get_number_child_nodes(); ++idx) {
+            if (curNode->get_child_nodes()[idx]->get_node_type() == SOLVED_DRAW &&
+                curNode->get_child_nodes()[idx]->get_end_in_ply() < longestPVlength) {
+                longestPVlength = curNode->get_child_nodes()[idx]->get_end_in_ply();
+                childIdx = idx;
+            }
+        }
+        return childIdx;
+    }
+    // default case
+    DynamicVector<float> mctsPolicy(curNode->get_number_child_nodes());
+    curNode->get_mcts_policy(mctsPolicy);
+    return argmax(mctsPolicy);
 }
 
 size_t Node::select_child_node()
@@ -557,7 +784,6 @@ size_t Node::select_child_node()
     if (checkmateIdx != -1) {
         return size_t(checkmateIdx);
     }
-
     if (visits == 1) {
         sort_moves_by_probabilities();
     }
@@ -567,16 +793,60 @@ size_t Node::select_child_node()
     return argmax(blaze::subvector(qValues, 0, noVisitIdx) + get_current_u_values());
 }
 
+const char* node_type_to_string(enum NodeType nodeType)
+{
+    switch(nodeType) {
+    case SOLVED_WIN:
+        return "WIN";
+    case SOLVED_DRAW:
+        return "DRAW";
+    case SOLVED_LOSS:
+        return "LOSS";
+    default:
+        return "UNSOLVED";
+    }
+}
+
+NodeType flip_node_type(const enum NodeType nodeType) {
+    switch(nodeType) {
+    case SOLVED_WIN:
+        return SOLVED_LOSS;
+    case SOLVED_LOSS:
+        return SOLVED_WIN;
+    default:
+        return nodeType;
+    }
+}
+
 ostream& operator<<(ostream &os, const Node *node)
 {
+    os << "  #  | Move  |   Visits    |  Policy   |  Q-values  |    Type    " << endl
+       << std::showpoint << std::noshowpos << std::fixed << std::setprecision(7)
+       << "-----+-------+-------------+-----------+------------+-------------" << endl;
+
     for (size_t childIdx = 0; childIdx < node->get_number_child_nodes(); ++childIdx) {
-        os << childIdx << ".move " << UCI::move(node->get_legal_moves()[childIdx], false)
-           << "\tn " << node->childNumberVisits[childIdx]
-              << "\tp " << node->policyProbSmall[childIdx]
-                 << "\tQ " << node->qValues[childIdx]
-                    << "\tterminal "<< node->is_terminal() << endl;
+        os << " " << setfill('0') << setw(3) << childIdx << " | "
+           << setfill(' ') << setw(5) << UCI::move(node->get_legal_moves()[childIdx], false) << " |"
+           << setw(12) << int(node->childNumberVisits[childIdx]) << " | "
+           << setw(9) << node->policyProbSmall[childIdx] << " | "
+           << setw(10) << node->qValues[childIdx] << " | ";
+        if (node->childNodes[childIdx] != nullptr && node->childNodes[childIdx]->get_node_type() != UNSOLVED) {
+            os << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(node->childNodes[childIdx]->nodeType)))
+               << " in " << setfill('0') << setw(2) << node->childNodes[childIdx]->endInPly+1;
+        }
+        else {
+            os << setfill(' ') << setw(9) << node_type_to_string(UNSOLVED);
+        }
+        os << endl;
     }
-    os << " initial value: " << node->get_value() << endl;
+    os << "-----+-------+-------------+-----------+------------+-------------" << endl
+       << "initial value:\t" << node->get_value() << endl
+       << "checkmateIdx:\t" << node->get_checkmate_idx() << endl
+       << "nodeType:\t" << node_type_to_string(NodeType(node->nodeType)) << endl
+       << "endInPly:\t" << node->endInPly << endl
+       << "isTerminal:\t" << node->is_terminal() << endl
+       << "unsolvedNodes:\t" << node->numberUnsolvedChildNodes << endl;
+
     return os;
 }
 

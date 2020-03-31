@@ -18,6 +18,7 @@
 */
 
 #include "chessbatchstream.h"
+#include "uci.h"
 
 ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     mBatchSize{batchSize},

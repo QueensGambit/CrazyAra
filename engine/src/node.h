@@ -45,13 +45,20 @@ using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 
+enum NodeType {
+    SOLVED_WIN,
+    SOLVED_DRAW,
+    SOLVED_LOSS,
+    UNSOLVED
+};
+
 class Node
 {
 private:
     mutex mtx;
     // identifiers
     Key key;
-    int pliesFromNull;
+    uint16_t pliesFromNull;
     Color sideToMove;
 
     Node* parentNode;
@@ -64,21 +71,22 @@ private:
     DynamicVector<float> childNumberVisits;
     DynamicVector<float> actionValues;
     DynamicVector<float> qValues;
+    DynamicVector<bool> isCheck;
+    DynamicVector<bool> isCapture;
 
-    size_t numberChildNodes;
-    size_t noVisitIdx;
+    uint8_t nodeType;
+    uint16_t endInPly;
+    uint16_t noVisitIdx;
+    uint16_t numberChildNodes;
+    uint16_t numberUnsolvedChildNodes;
 
     vector<Node*> childNodes;
-    std::vector<Move> legalMoves;
+    vector<Move> legalMoves;
     bool isTerminal;
     bool isTablebase;
-    size_t childIdxForParent;
+    uint16_t childIdxForParent;
     bool hasNNResults;
     bool isFullyExpanded;        // is true if every child node has at least 1 visit
-
-    float uParentFactor;        // stores all parts of the u-value as there a observable by the parent node
-    float uDivisorSummand;       // summand which is added to the divisor of the u-divisor
-
     int checkmateIdx;
 
     SearchSettings* searchSettings;
@@ -103,6 +111,76 @@ private:
      */
     void fill_child_node_moves(Board* pos);
 
+    /**
+     * @brief solve_for_terminal Tries to solve the current node to be a forced win, loss or draw.
+     * The main idea is based on the paper "Exact-Win Strategy for Overcoming AlphaZero" by Chen et al.
+     * https://www.researchgate.net/publication/331216459_Exact-Win_Strategy_for_Overcoming_AlphaZero
+     * The solver uses the current backpropagating child node as well as all available child nodes.
+     * @param childNode Child nodes which backpropagates the value
+     */
+    void solve_for_terminal(const Node* childNode);
+
+    /**
+     * @brief solved_win Checks if the current node is a solved win based on the given child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for SOLVE_WIN else false
+     */
+    bool solved_win(const Node* childNode) const;
+
+    /**
+     * @brief solved_draw Checks if the current node is a solved draw based on the given child node
+     * and all available child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for SOLVED_DRAW else false
+     */
+    bool solved_draw(const Node* childNode) const;
+
+    /**
+     * @brief solved_loss Checks if the current node is a solved loss based on the given child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for SOLVED_LOSS else false
+     */
+    bool solved_loss(const Node* childNode) const;
+
+    /**
+     * @brief define_end_ply_for_solved_terminal Calculates the number of plies in which the terminal will be reached.
+     * The solving is based on the current backpropagating child nodes as well as all available child nodes.
+     * @param childNode Child nodes which backpropagates the value
+     */
+    void define_end_ply_for_solved_terminal(const Node* childNode);
+
+    /**
+     * @brief update_solved_terminal Updates member variables for a solved terminal node
+     * @param childNode Child nodes which backpropagates the value
+     * @param targetValue Target value which will be set to be the new node value
+     */
+    void update_solved_terminal(const Node* childNode, int targetValue);
+
+    /**
+     * @brief mcts_policy_based_on_wins Sets all known winning moves in a given policy to 1 and all
+     * remaining moves to 0. Afterwards the policy is renormalized.
+     * @param mctsPolicy MCTS policy which will be set
+     */
+    void mcts_policy_based_on_wins(DynamicVector<float>& mctsPolicy) const;
+
+    /**
+     * @brief prune_losses_in_mcts_policy Sets all known losing moves in a given policy to 0 in case
+     * the node is not known to be losing.
+     * @param mctsPolicy MCTS policy which will be set
+     */
+    void prune_losses_in_mcts_policy(DynamicVector<float>& mctsPolicy) const;
+
+    /**
+     * @brief mcts_policy_based_on_q_n Creates the MCTS policy based on visits and Q-values
+     * @param mctsPolicy MCTS policy which will be set
+     */
+    void mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy) const;
+
+    /**
+     * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
+     * @param pos Current board positions
+     */
+    void mark_enhaned_moves(const Board* pos);
 public:
     /**
      * @brief Node Primary constructor which is used when expanding a node during search
@@ -242,10 +320,10 @@ public:
     void apply_softmax_to_policy();
 
     /**
-     * @brief enhance_moves Calls enhance_checks & enchance captures if the searchSetting suggests it and applies a renormilization afterwards
+     * @brief enhance_moves Calls enhance_checks & enhance captures if the searchSetting suggests it and applies a renormilization afterwards
      * @param pos Current board position
      */
-    void enhance_moves(Board* pos);
+    void enhance_moves();
 
     void set_value(float value);
     size_t get_child_idx_for_parent() const;
@@ -315,7 +393,17 @@ public:
     int plies_from_null() const;
     Color side_to_move() const;
     bool is_tablebase() const;
+    uint8_t get_node_type() const;
+    uint16_t get_end_in_ply() const;
 };
+
+/**
+ * @brief get_best_move_index Returns the best move index of all available moves based on the mcts policy
+ * or solved wins / draws / losses.
+ * @param curNode Current node
+ * @return Index for best move and child node
+ */
+size_t get_best_move_index(const Node* curNode);
 
 /**
  * @brief generate_dtz_values Generates the DTZ values for a given position and all legal moves.
@@ -339,8 +427,8 @@ inline bool is_capture(const Board* pos, Move move);
  * @param threshCheck Probability threshold for checking moves
  * @return bool
 */
-inline bool enhance_move_type(float increment, float thresh, const Board* pos, const vector<Move>& legalMoves,
-                              vFunctionMoveType func, DynamicVector<float>& policyProbSmall);
+inline bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves,
+                              const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall);
 
 Node* select_child_node(Node* node);
 
@@ -383,5 +471,19 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
  * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
  */
 void print_node_statistics(const Node* node);
+
+/**
+ * @brief node_type_to_string Returns a const char* representation for the enum nodeType
+ * @param nodeType Node type
+ * @return const char*
+ */
+const char* node_type_to_string(enum NodeType nodeType);
+
+/**
+ * @brief flip_node_type Flips the node type value (e.g. SOLVED_WIN into SOLVED_LOSS)
+ * @param nodeType Node type
+ * @return flipped node type
+ */
+NodeType flip_node_type(const enum NodeType nodeType);
 
 #endif // NODE_H

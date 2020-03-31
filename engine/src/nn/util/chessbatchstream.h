@@ -32,7 +32,6 @@
 #include "thread.h"
 #include "EntropyCalibrator.h"
 #include "BatchStream.h"
-#include "uci.h"
 #include "inputrepresentation.h"
 #include "../domain/variants.h"
 #include "../domain/crazyhouse/inputrepresentation.h"
