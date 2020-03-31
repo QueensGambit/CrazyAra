@@ -82,8 +82,8 @@ void TensorrtAPI::load_model()
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
     idxInput = engine->getBindingIndex("data");
 #ifdef MODE_CRAZYHOUSE
-    valueOutputIdx = engine->getBindingIndex("value_tanh0");
-    policyOutputIdx = engine->getBindingIndex("flatten0");
+    idxValueOutput = engine->getBindingIndex("value_tanh0");
+    idxPolicyOutput = engine->getBindingIndex("policy_softmax");
 #else
     idxValueOutput = engine->getBindingIndex("value_out");
     idxPolicyOutput = engine->getBindingIndex("policy_softmax");
@@ -148,7 +148,7 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
 
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
     unique_ptr<IInt8Calibrator> calibrator;
-    ChessBatchStream calibrationStream(batchSize, 42);
+    unique_ptr<ChessBatchStream> calibrationStream;
     set_config_settings(config, network, 1_GiB, calibrator, calibrationStream);
 
     // conversion of ONNX model to TensorRT
@@ -200,7 +200,7 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
                          SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
                          size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
-                         ChessBatchStream& calibrationStream)
+                         unique_ptr<ChessBatchStream>& calibrationStream)
 {
     config->setMaxWorkspaceSize(maxWorkspace);
     switch (precision) {
@@ -213,7 +213,8 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
     case int8:
         config->setFlag(BuilderFlag::kINT8);
         info_string("run INT8 quantization calibration");
-        calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(calibrationStream, 0, "model", "data"));
+        calibrationStream.reset(new ChessBatchStream(1, 42));
+        calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*calibrationStream.get(), 0, "model", "data"));
         config->setInt8Calibrator(calibrator.get());
         samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
         break;
