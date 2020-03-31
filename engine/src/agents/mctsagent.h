@@ -230,11 +230,4 @@ public:
     Board *get_root_pos() const;
 };
 
-/**
- * @brief update_eval_info Updates the evaluation information based on the current search tree state
- * @param evalInfo Evaluation infomration struct
- * @param rootNode Root node of the search tree
- */
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode);
-
 #endif // MCTSAGENT_H

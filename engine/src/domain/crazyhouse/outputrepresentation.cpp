@@ -70,23 +70,6 @@ void get_probs_of_moves(const float *data, const vector<Move>& legalMoves, unord
     }
 }
 
-// https://helloacm.com/how-to-implement-the-sgn-function-in-c/
-template <class T>
-inline int
-sgn(T v) {
-    return (v > T(0)) - (v < T(0));
-}
-
-int value_to_centipawn(float value)
-{
-    if (std::abs(value) >= 1) {
-        // return a constant if the given value is 1 (otherwise log will result in infinity)
-        return sgn(value) * 9999;
-    }
-    // use logarithmic scaling with basis 1.1 as a pseudo centipawn conversion
-    return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
-}
-
 const float* get_policy_data_batch(const size_t batchIdx, const float* probOutputs, bool isPolicyMap)
 {
     if (isPolicyMap) {
@@ -104,7 +87,6 @@ unordered_map<Move, size_t>& get_current_move_lookup(Color sideToMove)
     // use the mirrored look-up table instead
     return MV_LOOKUP_MIRRORED;
 }
-
 
 void apply_softmax(DynamicVector<float> &policyProbSmall)
 {

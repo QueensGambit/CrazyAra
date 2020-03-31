@@ -30,8 +30,13 @@ std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
 {
     const size_t elapsedTimeMS = evalInfo.calculate_elapsed_time_ms();
 
-    os << "cp " << evalInfo.centipawns
-       << " depth " << evalInfo.depth
+    if (evalInfo.movesToMate == 0) {
+       os << "cp " << evalInfo.centipawns;
+    }
+    else {
+       os << "mate " << evalInfo.movesToMate;
+    }
+    os << " depth " << evalInfo.depth
        << " nodes " << evalInfo.nodes
        << " time " << elapsedTimeMS
        << " nps " << evalInfo.calculate_nps(elapsedTimeMS)
@@ -55,4 +60,46 @@ int EvalInfo::calculate_nps(size_t elapsedTimeMS) const
 int EvalInfo::calculate_nps() const
 {
     return calculate_nps(calculate_elapsed_time_ms());
+}
+
+// https://helloacm.com/how-to-implement-the-sgn-function-in-c/
+template <class T>
+inline int
+sgn(T v) {
+    return (v > T(0)) - (v < T(0));
+}
+
+int value_to_centipawn(float value)
+{
+    if (std::abs(value) >= 1) {
+        // return a constant if the given value is 1 (otherwise log will result in infinity)
+        return sgn(value) * 9999;
+    }
+    // use logarithmic scaling with basis 1.1 as a pseudo centipawn conversion
+    return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
+}
+
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode)
+{
+    evalInfo.childNumberVisits = rootNode->get_child_number_visits();
+    evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
+    rootNode->get_mcts_policy(evalInfo.policyProbSmall);
+    evalInfo.legalMoves = rootNode->get_legal_moves();
+    rootNode->get_principal_variation(evalInfo.pv);
+    evalInfo.depth = evalInfo.pv.size();
+    // return mate score for known wins and losses
+    if (rootNode->get_node_type() == SOLVED_WIN) {
+        // always round up the ply counter
+        evalInfo.movesToMate = evalInfo.depth / 2 + evalInfo.depth % 2;
+    }
+    else if (rootNode->get_node_type() == SOLVED_LOSS) {
+        // always round up the ply counter
+        evalInfo.movesToMate = -evalInfo.depth / 2 + evalInfo.depth % 2;
+    }
+    else {
+        evalInfo.movesToMate = 0;
+        evalInfo.bestMoveQ = rootNode->updated_value_eval();
+        evalInfo.centipawns = value_to_centipawn(evalInfo.bestMoveQ);
+    }
+    evalInfo.nodes = size_t(rootNode->get_visits());
 }

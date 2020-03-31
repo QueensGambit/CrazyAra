@@ -254,11 +254,18 @@ void MCTSAgent::delete_game_nodes()
 
 void MCTSAgent::sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t updateIntervalMS)
 {
+    if (!isRunning) {
+        return;
+    }
     for (size_t var = 0; var < timeMS / updateIntervalMS && isRunning; ++var) {
         this_thread::sleep_for(chrono::milliseconds(updateIntervalMS));
         evalInfo.end = chrono::steady_clock::now();
         update_eval_info(evalInfo, rootNode);
         info_score(evalInfo);
+        if (!searchThreads[0]->is_running()) {
+            isRunning = false;
+            return;
+        }
     }
     this_thread::sleep_for(chrono::milliseconds(timeMS % 1000));
 }
@@ -337,7 +344,6 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         if (rootNode->get_parent_node() != nullptr) {
             rootNode->make_to_root();
         }
-
         info_string("run mcts search");
         run_mcts_search(evalInfo);
     }
@@ -379,17 +385,4 @@ void MCTSAgent::print_root_node()
         return;
     }
     print_node_statistics(rootNode);
-}
-
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode)
-{
-    evalInfo.childNumberVisits = rootNode->get_child_number_visits();
-    evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
-    rootNode->get_mcts_policy(evalInfo.policyProbSmall);
-    evalInfo.bestMoveQ = rootNode->updated_value_eval();
-    evalInfo.centipawns = value_to_centipawn(evalInfo.bestMoveQ);
-    evalInfo.legalMoves = rootNode->get_legal_moves();
-    rootNode->get_principal_variation(evalInfo.pv);
-    evalInfo.depth = evalInfo.pv.size();
-    evalInfo.nodes = size_t(rootNode->get_visits());
 }

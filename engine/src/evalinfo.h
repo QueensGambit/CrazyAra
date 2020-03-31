@@ -35,6 +35,7 @@
 #include "types.h"
 #include <blaze/Math.h>
 #include "constants.h"
+#include "node.h"
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
@@ -54,11 +55,26 @@ struct EvalInfo
     bool isChess960;
     std::vector<Move> pv;
     Move bestMove;
+    int movesToMate;
 
     size_t calculate_elapsed_time_ms() const;
     int calculate_nps(size_t elapsedTimeMS) const;
     int calculate_nps() const;
 };
+
+/**
+ * @brief value_to_centipawn Converts a value in A0-notation to roughly a centi-pawn loss
+ * @param value floating value from [-1.,1.]
+ * @return Returns centipawn conversion for value
+ */
+int value_to_centipawn(float value);
+
+/**
+ * @brief update_eval_info Updates the evaluation information based on the current search tree state
+ * @param evalInfo Evaluation infomration struct
+ * @param rootNode Root node of the search tree
+ */
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode);
 
 extern std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo);
 

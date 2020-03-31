@@ -71,13 +71,6 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
 void get_probs_of_moves(const float *data, const vector<Move>& legalMoves,
                         unordered_map<Move, size_t>& moveLookup, DynamicVector<float> &policyProbSmall);
 
-/**
- * @brief value_to_centipawn Converts a value in A0-notation to roughly a centi-pawn loss
- * @param value floating value from [-1.,1.]
- * @return Returns centipawn conversion for value
- */
-int value_to_centipawn(float value);
-
 void apply_softmax(DynamicVector<float> &policyProbSmall);
 
 #endif // OUTPUTREPRESENTATION_H
