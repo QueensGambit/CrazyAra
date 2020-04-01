@@ -102,8 +102,8 @@ Node::Node(const Node &b)
     isTerminal = b.isTerminal;
     hasNNResults = b.hasNNResults;
     checkmateIdx = b.checkmateIdx;
-    numberUnsolvedChildNodes = b.numberChildNodes;
-    nodeType = b.nodeType;
+    numberUnsolvedChildNodes = numberChildNodes;
+    nodeType = UNSOLVED;
     searchSettings = b.searchSettings;
     isFullyExpanded = false;
 }
@@ -196,7 +196,6 @@ void Node::update_solved_terminal(const Node* childNode, int targetValue)
         }
         parentNode->unlock();
     }
-    return;
 }
 
 void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
