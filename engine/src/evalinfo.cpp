@@ -40,6 +40,7 @@ std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
        << " nodes " << evalInfo.nodes
        << " time " << elapsedTimeMS
        << " nps " << evalInfo.calculate_nps(elapsedTimeMS)
+       << " tbhits " << evalInfo.tbHits
        << " pv";
     for (Move move: evalInfo.pv) {
         os << " " << UCI::move(move, evalInfo.isChess960);
@@ -79,7 +80,7 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
 }
 
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode)
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits)
 {
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
@@ -102,4 +103,5 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode)
         evalInfo.centipawns = value_to_centipawn(evalInfo.bestMoveQ);
     }
     evalInfo.nodes = size_t(rootNode->get_visits());
+    evalInfo.tbHits = tbHits;
 }

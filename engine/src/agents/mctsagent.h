@@ -151,6 +151,12 @@ private:
      */
     void sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t updateIntervalMS=1000);
 
+    /**
+     * @brief get_tb_hits Returns the number of tablebase hits for all search threads
+     * @return
+     */
+    size_t get_tb_hits();
+
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
               NeuralNetAPI** netBatches,

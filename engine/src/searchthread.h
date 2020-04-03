@@ -71,7 +71,7 @@ private:
     MapWithMutex* mapWithMutex;
     SearchSettings* searchSettings;
     SearchLimits* searchLimits;
-
+    size_t tbHits;
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
      */
@@ -144,7 +144,14 @@ public:
      * @param inCheck Defines if the current position sets a player in check
      */
     void add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck);
+
+    /**
+     * @brief reset_tb_hits Sets the number of table hits to 0
+     */
+    void reset_tb_hits();
+
     void set_root_pos(Board *value);
+    size_t get_tb_hits() const;
 };
 
 void go(SearchThread *t);
@@ -174,7 +181,7 @@ Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, No
 
 void backup_values(vector<Node*>& nodes);
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, float nodeTemperature);
+void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, float nodeTemperature, size_t& tbHits);
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo);
 

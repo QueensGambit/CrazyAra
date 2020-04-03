@@ -93,7 +93,6 @@ void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t 
             is_transposition_verified(it, newPos->get_state_info())) {
         Node *newNode = new Node(*it->second);
         parentNode->add_transposition_child_node(newNode, childIdx);
-
         parentNode->increment_no_visit_idx();
         transpositionNodes.push_back(newNode);
     }
@@ -177,12 +176,22 @@ void SearchThread::set_root_pos(Board *value)
     rootPos = value;
 }
 
+size_t SearchThread::get_tb_hits() const
+{
+    return tbHits;
+}
+
+void SearchThread::reset_tb_hits()
+{
+    tbHits = 0;
+}
+
 void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, searchSettings->nodePolicyTemperature);
+            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, searchSettings->nodePolicyTemperature, tbHits);
         }
         ++batchIdx;
         mapWithMutex->mtx.lock();
@@ -259,6 +268,7 @@ void SearchThread::thread_iteration()
 void go(SearchThread *t)
 {
     t->set_is_running(true);
+    t->reset_tb_hits();
     while(t->is_running() && t->nodes_limits_ok() && t->is_root_node_unsolved()) {
         t->thread_iteration();
     }
@@ -273,7 +283,7 @@ void backup_values(vector<Node*>& nodes)
     nodes.clear();
 }
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, float temperature)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, float temperature, size_t& tbHits)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), get_current_move_lookup(node->side_to_move()));
     if (!isPolicyMap) {
@@ -284,7 +294,8 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
         node->set_value(valueOutputs[batchIdx]);
     }
     else {
-        if (node->get_value() != 0) {
+        ++tbHits;
+        if (node->get_value() != 0 && node->get_parent_node() != nullptr && node->get_parent_node()->is_tablebase()) {
             // use the average of the TB entry and NN eval for non-draws
             node->set_value((valueOutputs[batchIdx] + node->get_value()) * 0.5f);
         }

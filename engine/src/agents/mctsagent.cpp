@@ -213,16 +213,14 @@ bool MCTSAgent::continue_search() {
 
 void MCTSAgent::create_new_root_node(Board *pos)
 {
-    Board* newPos = new Board(*pos);
-    newPos->set_state_info(new StateInfo(*(pos->get_state_info())));
-
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
-    rootNode = new Node(newPos, false, nullptr, 0, searchSettings);
+    rootNode = new Node(pos, false, nullptr, 0, searchSettings);
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, &valueOutput, probOutputs);
-    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs, rootNode, searchSettings->nodePolicyTemperature);
+    size_t tbHits = 0;
+    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs, rootNode, searchSettings->nodePolicyTemperature, tbHits);
     gameNodes.push_back(rootNode);
 }
 
@@ -260,7 +258,7 @@ void MCTSAgent::sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t upda
     for (size_t var = 0; var < timeMS / updateIntervalMS && isRunning; ++var) {
         this_thread::sleep_for(chrono::milliseconds(updateIntervalMS));
         evalInfo.end = chrono::steady_clock::now();
-        update_eval_info(evalInfo, rootNode);
+        update_eval_info(evalInfo, rootNode, get_tb_hits());
         info_score(evalInfo);
         if (!searchThreads[0]->is_running()) {
             isRunning = false;
@@ -268,6 +266,15 @@ void MCTSAgent::sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t upda
         }
     }
     this_thread::sleep_for(chrono::milliseconds(timeMS % 1000));
+}
+
+size_t MCTSAgent::get_tb_hits()
+{
+    size_t tbHits = 0;
+    for (SearchThread* searchThread : searchThreads) {
+        tbHits += searchThread->get_tb_hits();
+    }
+    return tbHits;
 }
 
 
@@ -347,7 +354,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
         info_string("run mcts search");
         run_mcts_search(evalInfo);
     }
-    update_eval_info(evalInfo, rootNode);
+    update_eval_info(evalInfo, rootNode, get_tb_hits());
     lastValueEval = evalInfo.bestMoveQ;
 }
 
