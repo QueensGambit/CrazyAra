@@ -55,9 +55,11 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
     numberUnsolvedChildNodes = numberChildNodes;
 
     check_for_terminal(pos, inCheck);
+#ifdef MODE_CHESS
     if (!isTerminal) {
         check_for_tablebase_wdl(pos);
     }
+#endif
 
     // # visit count of all its child nodes
     childNumberVisits = DynamicVector<float>(numberChildNodes);
@@ -100,6 +102,7 @@ Node::Node(const Node &b)
     //    childIdxForParent = // is not copied
     noVisitIdx = 1; // reset counter
     isTerminal = b.isTerminal;
+    isTablebase = b.isTablebase;
     hasNNResults = b.hasNNResults;
     checkmateIdx = b.checkmateIdx;
     numberUnsolvedChildNodes = numberChildNodes;
@@ -157,6 +160,23 @@ bool Node::solved_loss(const Node* childNode) const
         return true;
     }
     return false;
+}
+
+void Node::mark_as_loss()
+{
+    value = LOSS;
+    parentNode->lock();
+    parentNode->checkmateIdx = int(childIdxForParent);
+    parentNode->nodeType = SOLVED_WIN;
+    parentNode->numberUnsolvedChildNodes--;
+    parentNode->endInPly = 1;
+    parentNode->unlock();
+    if (parentNode->parentNode != nullptr) {
+        parentNode->parentNode->lock();
+        parentNode->parentNode->numberUnsolvedChildNodes--;
+        parentNode->parentNode->unlock();
+    }
+    nodeType = SOLVED_LOSS;
 }
 
 void Node::define_end_ply_for_solved_terminal(const Node* childNode)
@@ -457,7 +477,7 @@ size_t Node::max_q_child()
     return argmax(qValues);
 }
 
-float Node::updated_value_eval()
+float Node::updated_value_eval() const
 {
     if (nodeType != UNSOLVED) {
         switch(nodeType) {
@@ -468,6 +488,9 @@ float Node::updated_value_eval()
         case SOLVED_LOSS:
             return LOSS;
         }
+    }
+    if (visits == 1) {
+        return value;
     }
     return qValues[argmax(childNumberVisits)];
 }
@@ -530,19 +553,7 @@ void Node::check_for_terminal(Board* pos, bool inCheck)
 #endif
         // test if we have a check-mate
         if (inCheck) {
-            value = LOSS;
-            parentNode->lock();
-            parentNode->checkmateIdx = int(childIdxForParent);
-            parentNode->nodeType = SOLVED_WIN;
-            parentNode->numberUnsolvedChildNodes--;
-            parentNode->endInPly = 1;
-            parentNode->unlock();
-            if (parentNode->parentNode != nullptr) {
-                parentNode->parentNode->lock();
-                parentNode->parentNode->numberUnsolvedChildNodes--;
-                parentNode->parentNode->unlock();
-            }
-            nodeType = SOLVED_LOSS;
+            mark_as_loss();
             return;
         }
         // we reached a stalmate
@@ -844,6 +855,7 @@ ostream& operator<<(ostream &os, const Node *node)
        << "nodeType:\t" << node_type_to_string(NodeType(node->nodeType)) << endl
        << "endInPly:\t" << node->endInPly << endl
        << "isTerminal:\t" << node->is_terminal() << endl
+       << "isTablebase:\t" << node->is_tablebase() << endl
        << "unsolvedNodes:\t" << node->numberUnsolvedChildNodes << endl;
 
     return os;

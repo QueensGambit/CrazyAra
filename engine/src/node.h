@@ -143,6 +143,11 @@ private:
     bool solved_loss(const Node* childNode) const;
 
     /**
+     * @brief mark_as_loss Marks the current node as a loss and its parent node as a win
+     */
+    void mark_as_loss();
+
+    /**
      * @brief define_end_ply_for_solved_terminal Calculates the number of plies in which the terminal will be reached.
      * The solving is based on the current backpropagating child nodes as well as all available child nodes.
      * @param childNode Child nodes which backpropagates the value
@@ -354,7 +359,7 @@ public:
      * @brief update_value_eval Returns the updated state evaluation based on the Q-value of the most visited child node
      * @return float
      */
-    float updated_value_eval();
+    float updated_value_eval() const;
     std::vector<Move> get_legal_moves() const;
     int get_checkmate_idx() const;
 
