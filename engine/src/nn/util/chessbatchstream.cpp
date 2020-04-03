@@ -37,12 +37,22 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     pos.set(StartFENs[CHESS_VARIANT], false, CHESS_VARIANT, &states->back(), uiThread.get());
 
     // create a vector of sample moves to create the sample data
-    vector<string> uciMoves = {"e2e4", "e7e5", "g1f3", "b8c6", "f1b5", "a7a6", "b5a4", "g8f6",
-                               "e1g1", "f8e7", "f1e1", "b7b5", "a4b3", "d7d6", "c2c3", "e8g8",
-                               "h2h3", "c6a5", "b3c2", "c7c5", "d2d4", "d8c7", "b1d2", "c5d4",
-                               "c3d4", "a5c6", "d2b3", "a6a5", "c1e3", "a5a4", "b3d2", "c8d7",
-                               "a1c1", "c7b7", "d2f1", "f8e8", "f1g3", "e7d8", "c2b1", "d8a5",
-                               "e1e2", "a5b6", "e2d2", "a4a3",};
+    vector<string> uciMoves = {"e2e4", "c7c5", "g1f3", "d7d6", "d2d4", "c5d4", "f3d4", "g8f6",
+                               "b1c3", "b8c6", "c1g5", "c8d7", "d1d2", "a8c8", "d4b3", "a7a6",
+                               "f1e2", "e7e6", "e1g1", "h7h6", "g5e3", "b7b5", "a2a3", "f8e7",
+                               "f2f4", "e8g8", "e2f3", "e6e5", "f4f5", "a6a5", "a3a4", "b5a4",
+                               "c3a4", "c6b4", "c2c3", "c8b8", "c3b4", "b8b4", "b3a5", "b4a4",
+                               "a1a4", "d7a4", "f1a1", "a4b5", "d2b4", "d8d7", "a5b3", "f8b8",
+                               "a1a7", "b8b7", "a7a8", "g8h7", "b3a5", "d6d5", "e3c5", "d5e4",
+                               "a5b7", "e4f3", "b7d6", "e7d6", "c5d6", "d7c6", "a8a1", "f6e4",
+                               "d6e5", "f3f2", "g1h1", "f2f1q", "a1f1", "b5f1", "b4e1", "f1g2",
+                               "h1g2", "e4g5", "g2f1", "c6h1", "f1e2", "h1e4", "e2d1", "e4b1",
+                               "d1e2", "b1e4", "e2d1", "e4f5", "e1e3", "g5f3", "e5f4", "f5d5",
+                               "d1e2", "f3d4", "e2f2", "d4f5", "e3e5", "d5d3", "e5c3", "d3e4",
+                               "c3e5", "e4c2", "e5e2", "c2c5", "f2f1", "c5d5", "b2b4", "f5d4",
+                               "e2d3", "f7f5", "f4g3", "d5b5", "d3b5", "d4b5", "f1e2", "g7g5",
+                               "e2d3", "f5f4", "g3f2", "h7g6", "d3c4", "b5a3", "c4b3", "a3b5",
+                               "b3c4", "b5a3", "c4b3", "a3b5", "b3c4"};
     for (int idx = 0; idx < batchSize * maxBatches; ++idx) {
         states->emplace_back();
         board_to_planes(&pos, pos.number_repetitions(), true, mData.data() + NB_VALUES_TOTAL * idx);

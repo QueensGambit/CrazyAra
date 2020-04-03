@@ -56,6 +56,7 @@ struct EvalInfo
     std::vector<Move> pv;
     Move bestMove;
     int movesToMate;
+    size_t tbHits;
 
     size_t calculate_elapsed_time_ms() const;
     int calculate_nps(size_t elapsedTimeMS) const;
@@ -74,7 +75,7 @@ int value_to_centipawn(float value);
  * @param evalInfo Evaluation infomration struct
  * @param rootNode Root node of the search tree
  */
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode);
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits);
 
 extern std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo);
 

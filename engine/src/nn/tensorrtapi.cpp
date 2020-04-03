@@ -213,7 +213,7 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
     case int8:
         config->setFlag(BuilderFlag::kINT8);
         info_string("run INT8 quantization calibration");
-        calibrationStream.reset(new ChessBatchStream(1, 42));
+        calibrationStream.reset(new ChessBatchStream(1, 104));
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*calibrationStream.get(), 0, "model", "data"));
         config->setInt8Calibrator(calibrator.get());
         samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
