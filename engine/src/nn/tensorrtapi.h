@@ -152,6 +152,13 @@ void write_buffer(void* buffer, size_t bufferSize, const string& filePath);
  */
 const char* read_buffer(const string& filePath, size_t& bufferSize);
 
+/**
+ * @brief fix_precision_to_float Sets the precision of a given layer to a fixed data type
+ * @param layer Layer object
+ * @param dataType Precision data type
+ */
+void fix_layer_precision(ILayer* layer, nvinfer1::DataType dataType);
+
 #endif
 
 #endif // TENSORRTAPI_H

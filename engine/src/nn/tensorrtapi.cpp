@@ -227,13 +227,19 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
     valueOutputDims = network->getOutput(0)->getDimensions();
     policyOutputDims = network->getOutput(1)->getDimensions();
     // add a softmax layer to the ONNX model
-    ISoftMaxLayer* softmaxOutput = network->addSoftMax(*network->getOutput(1));
+    ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(1));
     // set the softmax axis to 1
-    softmaxOutput->setAxes(1 << 1);
-    // set the softmax output as the new output
+    softmaxLayer->setAxes(1 << 1);
+
+    // set precision of the first and last layers to float32
+    fix_layer_precision(network->getLayer(0), nvinfer1::DataType::kFLOAT);
+    fix_layer_precision(softmaxLayer, nvinfer1::DataType::kFLOAT);
+    fix_layer_precision(network->getLayer(idxValueOutput), nvinfer1::DataType::kFLOAT);
+
+    // set the softmax layer output as the new output
     network->unmarkOutput(*network->getOutput(1));
-    network->markOutput(*softmaxOutput->getOutput(0));
-    softmaxOutput->getOutput(0)->setName("policy_softmax");
+    network->markOutput(*softmaxLayer->getOutput(0));
+    softmaxLayer->getOutput(0)->setName("policy_softmax");
 
     info_string("inputDims:", inputDims);
     info_string("valueOutputDims:", valueOutputDims);
@@ -270,6 +276,14 @@ const char* read_buffer(const string& filePath, size_t& bufferSize) {
 
     inputFile.close();
     return buffer;
+}
+
+void fix_layer_precision(ILayer *layer, nvinfer1::DataType dataType)
+{
+    layer->setPrecision(dataType);
+    for (int idx = 0; idx < layer->getNbOutputs(); ++idx) {
+        layer->setOutputType(idx, dataType);
+    }
 }
 
 #endif
