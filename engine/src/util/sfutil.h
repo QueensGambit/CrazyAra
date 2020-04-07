@@ -32,19 +32,21 @@
 #include <cctype>
 #include "types.h"
 
+using namespace std;
+
 /**
  * @brief get_origin_square Returns the origin square for a valid uciMove
  * @param uciMove uci-Move in string notation
  * @return origin square
  */
-Square get_origin_square(std::string& uciMove);
+Square get_origin_square(string& uciMove);
 
 /**
  * @brief get_origin_square Returns the destination square for a valid uciMove
  * @param uciMove uci-Move in string notation
  * @return destination square
  */
-Square get_destination_square(std::string& uciMove);
+Square get_destination_square(string& uciMove);
 
 /**
  * @brief is_drop_move Checks if the given uciMove is a dropping move.
@@ -52,14 +54,14 @@ Square get_destination_square(std::string& uciMove);
  * It's assumed that pawn drops have a `P` as a prefix.
  * @return Bool
  */
-bool is_drop_move(std::string& uciMove);
+bool is_drop_move(string& uciMove);
 
 /**
  * @brief is_promotion_move Checks if the given uciMove is a promition move based on the string length
  * @param uciMove Valid uci string including crazyhouse dropping moves.
  * @return Bool
  */
-bool is_promotion_move(std::string& uciMove);
+bool is_promotion_move(string& uciMove);
 
 /**
  * @brief is_en_passent_candidate Return true, if the given uci-move might be an en-passent capture.
@@ -78,13 +80,13 @@ bool is_en_passent_candidate(Square origin, Square destination);
  * @param uciMove Valid uci string including crazyhouse dropping moves
  * @return Move in coordinate representation
  */
-std::vector<Move> make_move(std::string uciMove);
+vector<Move> make_move(string uciMove);
 
 /**
  * @brief fill_en_passent_moves Fills the given vector with all en-passent candidate moves.
  * @param enPassentMoves Empty std vector which will be filled.
  */
-void fill_en_passent_moves(std::vector<std::string> &enPassentMoves);
+void fill_en_passent_moves(vector<string> &enPassentMoves);
 
 /**
  * https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#FlipVertically
@@ -101,15 +103,24 @@ Bitboard flip_vertical(Bitboard x);
  * @param moveUCI String uci
  * @return Returns corresponding mirrored uci string with the rank flipped
  */
-std::string mirror_move(std::string moveUCI);
+string mirror_move(string& uciMove);
 
 /**
  * @brief make_move Creates a move in coordinate representation given an uci string.
  *                  Multiple sf moves are returned in case it's ambigious such as castling or en-passent moves.
  * @param uciMove Valid uci string including crazyhouse dropping moves
+ * @param castlingMoves Vector of all available castling moves
  * @return Move in coordinate representation
  */
-std::vector<Move> make_move(std::string uciMove);
+vector<Move> make_move(string& uciMove, vector<string>& castlingMoves);
+
+/**
+ * @brief create_castling_moves Creates a vector for all available castling moves in UCI representation
+ * @param is960 Boolean indicating if castling moves for chess960 shall be generated
+ * @return vector of castling moves in uci-string representation
+ */
+vector<string> create_castling_moves(bool is960);
+
 
 // "An 8x8 Board with a rank-file mapping, needs to perform an exclusive or with 56 (A8 in LERF)"
 // https://www.chessprogramming.org/Vertical_Flipping

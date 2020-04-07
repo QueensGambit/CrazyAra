@@ -30,7 +30,7 @@
 #include "types.h"
 #include "uci.h"
 
-const std::unordered_map<char, File> FILE_LOOKUP = {
+const unordered_map<char, File> FILE_LOOKUP = {
     {'a', FILE_A},
     {'b', FILE_B},
     {'c', FILE_C},
@@ -40,7 +40,7 @@ const std::unordered_map<char, File> FILE_LOOKUP = {
     {'g', FILE_G},
     {'h', FILE_H}};
 
-const std::unordered_map<char, Rank> RANK_LOOKUP = {
+const unordered_map<char, Rank> RANK_LOOKUP = {
     {'1', RANK_1},
     {'2', RANK_2},
     {'3', RANK_3},
@@ -50,7 +50,7 @@ const std::unordered_map<char, Rank> RANK_LOOKUP = {
     {'7', RANK_7},
     {'8', RANK_8}};
 
-const std::unordered_map<char, PieceType> PIECE_TYPE_LOOKUP = {
+const unordered_map<char, PieceType> PIECE_TYPE_LOOKUP = {
     {'p', PAWN},
     {'n', KNIGHT},
     {'b', BISHOP},
@@ -58,7 +58,7 @@ const std::unordered_map<char, PieceType> PIECE_TYPE_LOOKUP = {
     {'q', QUEEN},
     {'k', KING}};
 
-const std::unordered_map<char, Piece> PIECE_LOOKUP = {
+const unordered_map<char, Piece> PIECE_LOOKUP = {
     {'P', W_PAWN},
     {'N', W_KNIGHT},
     {'B', W_BISHOP},
@@ -72,7 +72,7 @@ const std::unordered_map<char, Piece> PIECE_LOOKUP = {
     {'q', B_QUEEN},
     {'k', B_KING}};
 
-void fill_en_passent_moves(std::vector<std::string> &enPassentMoves) {
+void fill_en_passent_moves(vector<string> &enPassentMoves) {
 
     for (int color : {WHITE, BLACK}) {
         // white en-passent moves
@@ -86,7 +86,7 @@ void fill_en_passent_moves(std::vector<std::string> &enPassentMoves) {
         }
 
         for (char from_file = 'a'; from_file <= 'h'; ++from_file) {
-            for (char to_file = char(std::max(int(from_file-1), int('a'))); to_file <= char(std::min(int(from_file+1), int('g'))); to_file+=2) {
+            for (char to_file = char(max(int(from_file-1), int('a'))); to_file <= char(min(int(from_file+1), int('g'))); to_file+=2) {
                 // correct the side-lines
                 if (from_file == to_file) {
                     if (to_file == 'a') {
@@ -96,33 +96,33 @@ void fill_en_passent_moves(std::vector<std::string> &enPassentMoves) {
                         to_file -= 1;
                     }
                 }
-                std::string mv = from_file + std::to_string(from_rank) + to_file + std::to_string(to_rank);
+                string mv = from_file + to_string(from_rank) + to_file + to_string(to_rank);
                 enPassentMoves.push_back(mv);
             }
         }
     }
 }
 
-Square get_origin_square(std::string& uciMove)
+Square get_origin_square(string& uciMove)
 {
     File from_file = FILE_LOOKUP.at(uciMove[0]);
     Rank from_rank = RANK_LOOKUP.at(uciMove[1]);
     return make_square(from_file, from_rank);
 }
 
-Square get_destination_square(std::string& uciMove)
+Square get_destination_square(string& uciMove)
 {
     File to_file = FILE_LOOKUP.at(uciMove[2]);
     Rank to_rank = RANK_LOOKUP.at(uciMove[3]);
     return make_square(to_file, to_rank);
 }
 
-bool is_drop_move(std::string& uciMove)
+bool is_drop_move(string& uciMove)
 {
     return uciMove[1] == '@';
 }
 
-bool is_promotion_move(std::string &uciMove)
+bool is_promotion_move(string &uciMove)
 {
     return uciMove.length() == 5;
 }
@@ -139,13 +139,13 @@ bool is_en_passent_candidate(Square origin, Square destination)
     return false;
 }
 
-void fill_castle_moves(std::vector<std::string> &castleMoves, bool is_960) {
+void fill_castle_moves(vector<string> &castleMoves, bool is_960) {
     castleMoves.push_back("e1g1");
     castleMoves.push_back("e1c1");
     castleMoves.push_back("e8g8");
     castleMoves.push_back("e8c8");
     if (is_960) {
-        throw std::invalid_argument( "960 castling isn't supported yet" );
+        throw invalid_argument( "960 castling isn't supported yet" );
     }
 }
 
@@ -161,15 +161,15 @@ Bitboard flip_vertical(Bitboard x)
             ( (x >> 56) );
 }
 
-std::string mirror_move(std::string moveUCI) {
+string mirror_move(string& uciMove) {
 
     // first copy the original move
-    std::string moveMirrored = std::string(moveUCI);
+    string moveMirrored = string(uciMove);
 
     // replace the rank with the mirrored rank
-    for (unsigned int idx = 0; idx < moveUCI.length(); ++idx) {
-        if (isdigit(moveUCI[idx])) {
-            int rank = moveUCI[idx] - '0';
+    for (unsigned int idx = 0; idx < uciMove.length(); ++idx) {
+        if (isdigit(uciMove[idx])) {
+            int rank = uciMove[idx] - '0';
             int rank_mirrored = 8 - rank + 1;
             moveMirrored[idx] = char(rank_mirrored + '0');
         }
@@ -177,9 +177,11 @@ std::string mirror_move(std::string moveUCI) {
     return moveMirrored;
 }
 
-std::vector<Move> make_move(std::string uciMove) {
+vector<Move> make_move(string& uciMove, vector<string>& castlingMoves) {
 
-    std::vector<Move> sfMoves;
+    vector<Move> sfMoves;
+    Square from_sq = get_origin_square(uciMove);
+    Square to_sq = get_destination_square(uciMove);
 
     if (is_drop_move(uciMove)) {
         // in sf the dropping moves have a different id for black and white
@@ -189,33 +191,14 @@ std::vector<Move> make_move(std::string uciMove) {
                 piece = char(tolower(piece));
             }
             Piece pt = Piece(PIECE_LOOKUP.at(piece));
-            Square to_sq = get_destination_square(uciMove);
             sfMoves.push_back(make_drop(to_sq, pt));
         }
     }
     else {
         // castling moves have a seperate flag in sf
-        if (uciMove == "e1g1" || uciMove == "e1c1" || uciMove == "e8g8" ||  uciMove == "e8c8") {
-            Square w_ksq = make_square(FILE_E, RANK_1);
-            Square b_ksq = make_square(FILE_E, RANK_8);
-
-            // TODO: Add Chess960 castling support
-            if (uciMove == "e1g1") {
-                sfMoves.push_back(make<CASTLING>(w_ksq, make_square(FILE_H, RANK_1)));
-            }
-            else if (uciMove == "e1c1") {
-                sfMoves.push_back(make<CASTLING>(w_ksq, make_square(FILE_A, RANK_1)));
-            }
-            else if (uciMove == "e8g8") {
-                sfMoves.push_back(make<CASTLING>(b_ksq, make_square(FILE_H, RANK_8)));
-            }
-            else if (uciMove == "e8c8") {
-                sfMoves.push_back(make<CASTLING>(b_ksq, make_square(FILE_A, RANK_8)));
-            }
+        if (find(castlingMoves.begin(), castlingMoves.end(), uciMove) != castlingMoves.end()) {
+            sfMoves.push_back(make<CASTLING>(from_sq, to_sq));
         }
-
-        Square from_sq = get_origin_square(uciMove);
-        Square to_sq = get_destination_square(uciMove);
 
         if (is_en_passent_candidate(from_sq, to_sq)) {
             sfMoves.push_back(make<ENPASSANT>(from_sq, to_sq));
@@ -229,4 +212,22 @@ std::vector<Move> make_move(std::string uciMove) {
         }
     }
     return sfMoves;
+}
+
+vector<string> create_castling_moves(bool is960)
+{
+    if (!is960) {
+        return vector<string>{"e1g1", "e1c1", "e8g8" "e8c8"};
+    }
+    vector<string> castlingMoves;
+    for (char rank = '1'; rank <= '8'; rank+=7) {
+        for (char fileKing = 'b'; fileKing <= 'g'; ++fileKing) {
+            for (char fileRook = 'a'; fileRook <= 'h'; ++fileRook) {
+                if (fileKing != fileRook) {
+                    castlingMoves.push_back(string{fileKing, rank, fileRook, rank});
+                }
+            }
+        }
+    }
+    return castlingMoves;
 }
