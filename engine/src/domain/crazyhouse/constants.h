@@ -6727,7 +6727,7 @@ const std::string LABELS[] = {
 extern std::unordered_map<Move, size_t> MV_LOOKUP;
 extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED;
 
-// classical look up tables, which are later used for policy export
+// classical flattened look up tables, which are later used for policy export
 extern std::unordered_map<Move, size_t> MV_LOOKUP_CLASSIC;
 extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED_CLASSIC;
 
@@ -6736,16 +6736,21 @@ extern std::string LABELS_MIRRORED[NB_LABELS];
 
 namespace Constants {
 inline void init(bool isPolicyMap) {
+#ifdef SUPPORT960
+    const bool is960 = true;
+#else
+    const bool is960 = false;
+#endif
 
     // fill mirrored label list and look-up table
     for (size_t mvIdx=0; mvIdx < NB_LABELS; mvIdx++) {
         LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);
-        std::vector<Move> moves = make_move(LABELS[mvIdx]);
+        std::vector<Move> moves = make_move(LABELS[mvIdx], is960);
         for (Move move : moves) {
             isPolicyMap ? MV_LOOKUP.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP.insert({move, mvIdx});
             MV_LOOKUP_CLASSIC.insert({move, mvIdx});
         }
-        std::vector<Move> moves_mirrored = make_move(LABELS_MIRRORED[mvIdx]);
+        std::vector<Move> moves_mirrored = make_move(LABELS_MIRRORED[mvIdx], is960);
         for (Move move : moves_mirrored) {
             isPolicyMap ? MV_LOOKUP_MIRRORED.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP_MIRRORED.insert({move, mvIdx});
             MV_LOOKUP_MIRRORED_CLASSIC.insert({move, mvIdx});

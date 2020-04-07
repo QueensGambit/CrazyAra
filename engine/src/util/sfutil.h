@@ -39,14 +39,14 @@ using namespace std;
  * @param uciMove uci-Move in string notation
  * @return origin square
  */
-Square get_origin_square(string& uciMove);
+Square get_origin_square(const string& uciMove);
 
 /**
  * @brief get_origin_square Returns the destination square for a valid uciMove
  * @param uciMove uci-Move in string notation
  * @return destination square
  */
-Square get_destination_square(string& uciMove);
+Square get_destination_square(const string& uciMove);
 
 /**
  * @brief is_drop_move Checks if the given uciMove is a dropping move.
@@ -54,14 +54,14 @@ Square get_destination_square(string& uciMove);
  * It's assumed that pawn drops have a `P` as a prefix.
  * @return Bool
  */
-bool is_drop_move(string& uciMove);
+bool is_drop_move(const string& uciMove);
 
 /**
  * @brief is_promotion_move Checks if the given uciMove is a promition move based on the string length
  * @param uciMove Valid uci string including crazyhouse dropping moves.
  * @return Bool
  */
-bool is_promotion_move(string& uciMove);
+bool is_promotion_move(const string& uciMove);
 
 /**
  * @brief is_en_passent_candidate Return true, if the given uci-move might be an en-passent capture.
@@ -75,18 +75,10 @@ bool is_promotion_move(string& uciMove);
 bool is_en_passent_candidate(Square origin, Square destination);
 
 /**
- * @brief make_move Creates a move in coordinate representation given an uci string.
- *                  Multiple sf moves are returned in case it's ambigious such as castling or en-passent moves.
- * @param uciMove Valid uci string including crazyhouse dropping moves
- * @return Move in coordinate representation
- */
-vector<Move> make_move(string uciMove);
-
-/**
  * @brief fill_en_passent_moves Fills the given vector with all en-passent candidate moves.
  * @param enPassentMoves Empty std vector which will be filled.
  */
-void fill_en_passent_moves(vector<string> &enPassentMoves);
+vector<string> create_en_passent_moves();
 
 /**
  * https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#FlipVertically
@@ -103,16 +95,16 @@ Bitboard flip_vertical(Bitboard x);
  * @param moveUCI String uci
  * @return Returns corresponding mirrored uci string with the rank flipped
  */
-string mirror_move(string& uciMove);
+string mirror_move(const string& uciMove);
 
 /**
  * @brief make_move Creates a move in coordinate representation given an uci string.
  *                  Multiple sf moves are returned in case it's ambigious such as castling or en-passent moves.
  * @param uciMove Valid uci string including crazyhouse dropping moves
- * @param castlingMoves Vector of all available castling moves
+ * @param is960 Indicates if the move is played in the 960 game type which triggers a different handling for castling moves
  * @return Move in coordinate representation
  */
-vector<Move> make_move(string& uciMove, vector<string>& castlingMoves);
+vector<Move> make_move(const string& uciMove, bool is960);
 
 /**
  * @brief create_castling_moves Creates a vector for all available castling moves in UCI representation
@@ -121,6 +113,21 @@ vector<Move> make_move(string& uciMove, vector<string>& castlingMoves);
  */
 vector<string> create_castling_moves(bool is960);
 
+/**
+ * @brief handle_classical_castling_moves If the given uciMove is in {"e1g1", "e1c1", "e8g8" "e8c8"}, then the corresponding castling move
+ *                                        will be added to the given move vector.
+ * @param uciMove Valid uci string including crazyhouse dropping moves
+ * @param moveVector Current move vector to which a move entry might be appended
+ */
+void handle_classical_castling_moves(const string& uciMove, vector<Move>& moveVector);
+
+/**
+ * @brief is_960_castling_candidate_move Checks if the given uci move is a potential castling move
+ * @param origin Origin move square
+ * @param destination Destination move square
+ * @return boolean
+ */
+bool is_960_castling_candidate_move(Square origin, Square destination);
 
 // "An 8x8 Board with a rank-file mapping, needs to perform an exclusive or with 56 (A8 in LERF)"
 // https://www.chessprogramming.org/Vertical_Flipping

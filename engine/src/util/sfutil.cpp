@@ -72,8 +72,9 @@ const unordered_map<char, Piece> PIECE_LOOKUP = {
     {'q', B_QUEEN},
     {'k', B_KING}};
 
-void fill_en_passent_moves(vector<string> &enPassentMoves) {
-
+vector<string> create_en_passent_moves()
+{
+    vector<string> enPassentMoves;
     for (int color : {WHITE, BLACK}) {
         // white en-passent moves
         int from_rank = 5;
@@ -101,28 +102,29 @@ void fill_en_passent_moves(vector<string> &enPassentMoves) {
             }
         }
     }
+    return enPassentMoves;
 }
 
-Square get_origin_square(string& uciMove)
+Square get_origin_square(const string& uciMove)
 {
     File from_file = FILE_LOOKUP.at(uciMove[0]);
     Rank from_rank = RANK_LOOKUP.at(uciMove[1]);
     return make_square(from_file, from_rank);
 }
 
-Square get_destination_square(string& uciMove)
+Square get_destination_square(const string& uciMove)
 {
     File to_file = FILE_LOOKUP.at(uciMove[2]);
     Rank to_rank = RANK_LOOKUP.at(uciMove[3]);
     return make_square(to_file, to_rank);
 }
 
-bool is_drop_move(string& uciMove)
+bool is_drop_move(const string& uciMove)
 {
     return uciMove[1] == '@';
 }
 
-bool is_promotion_move(string &uciMove)
+bool is_promotion_move(const string& uciMove)
 {
     return uciMove.length() == 5;
 }
@@ -139,16 +141,6 @@ bool is_en_passent_candidate(Square origin, Square destination)
     return false;
 }
 
-void fill_castle_moves(vector<string> &castleMoves, bool is_960) {
-    castleMoves.push_back("e1g1");
-    castleMoves.push_back("e1c1");
-    castleMoves.push_back("e8g8");
-    castleMoves.push_back("e8c8");
-    if (is_960) {
-        throw invalid_argument( "960 castling isn't supported yet" );
-    }
-}
-
 Bitboard flip_vertical(Bitboard x)
 {
     return  ( (x << 56)                           ) |
@@ -161,8 +153,8 @@ Bitboard flip_vertical(Bitboard x)
             ( (x >> 56) );
 }
 
-string mirror_move(string& uciMove) {
-
+string mirror_move(const string& uciMove)
+{
     // first copy the original move
     string moveMirrored = string(uciMove);
 
@@ -177,14 +169,14 @@ string mirror_move(string& uciMove) {
     return moveMirrored;
 }
 
-vector<Move> make_move(string& uciMove, vector<string>& castlingMoves) {
-
+vector<Move> make_move(const string& uciMove, bool is960)
+{
     vector<Move> sfMoves;
     Square from_sq = get_origin_square(uciMove);
     Square to_sq = get_destination_square(uciMove);
 
     if (is_drop_move(uciMove)) {
-        // in sf the dropping moves have a different id for black and white
+        // dropping moves have a different id for black and white in Stockfish's move representation
         for (int color : {WHITE, BLACK}) {
             char piece = uciMove[0];
             if (color == BLACK) {
@@ -195,9 +187,14 @@ vector<Move> make_move(string& uciMove, vector<string>& castlingMoves) {
         }
     }
     else {
-        // castling moves have a seperate flag in sf
-        if (find(castlingMoves.begin(), castlingMoves.end(), uciMove) != castlingMoves.end()) {
-            sfMoves.push_back(make<CASTLING>(from_sq, to_sq));
+        // castling moves have a seperate flag in Stockfish's move representation
+        if (is960) {
+            if (is_960_castling_candidate_move(from_sq, to_sq)) {
+                sfMoves.push_back(make<CASTLING>(from_sq, to_sq));
+            }
+        }
+        else {
+            handle_classical_castling_moves(uciMove, sfMoves);
         }
 
         if (is_en_passent_candidate(from_sq, to_sq)) {
@@ -212,6 +209,25 @@ vector<Move> make_move(string& uciMove, vector<string>& castlingMoves) {
         }
     }
     return sfMoves;
+}
+
+void handle_classical_castling_moves(const string& uciMove, vector<Move>& moveVector)
+{
+    Square w_ksq = make_square(FILE_E, RANK_1);
+    Square b_ksq = make_square(FILE_E, RANK_8);
+
+    if (uciMove == "e1g1") {
+        moveVector.push_back(make<CASTLING>(w_ksq, make_square(FILE_H, RANK_1)));
+    }
+    else if (uciMove == "e1c1") {
+        moveVector.push_back(make<CASTLING>(w_ksq, make_square(FILE_A, RANK_1)));
+    }
+    else if (uciMove == "e8g8") {
+        moveVector.push_back(make<CASTLING>(b_ksq, make_square(FILE_H, RANK_8)));
+    }
+    else if (uciMove == "e8c8") {
+        moveVector.push_back(make<CASTLING>(b_ksq, make_square(FILE_A, RANK_8)));
+    }
 }
 
 vector<string> create_castling_moves(bool is960)
@@ -230,4 +246,11 @@ vector<string> create_castling_moves(bool is960)
         }
     }
     return castlingMoves;
+}
+
+bool is_960_castling_candidate_move(Square origin, Square destination)
+{
+    return rank_of(origin) == rank_of(destination) &&
+           (rank_of(origin) == RANK_1 || rank_of(origin) == RANK_8) &&
+           file_of(origin) != FILE_A && file_of(origin) != FILE_H;
 }
