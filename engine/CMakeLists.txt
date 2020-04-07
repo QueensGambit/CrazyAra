@@ -6,6 +6,7 @@ option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
 option(USE_TENSORRT              "Build with TensorRT support"  ON)
 option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
+option(USE_960                   "Build with 960 variant support"  OFF)
 
 # -pg performance profiling flags
 if (USE_PROFILING)
@@ -149,6 +150,10 @@ endif()
     include_directories("$ENV{TENSORRT_PATH}include")
     include_directories("$ENV{TENSORRT_PATH}samples/common/")
     add_definitions(-DTENSORRT)
+endif()
+
+if (USE_960)
+    add_definitions(-DSUPPORT960)
 endif()
 
 add_executable(${PROJECT_NAME} ${source_files})
