@@ -63,6 +63,13 @@ void get_planes_statistics(const Board* pos, bool normalize, double& sum, double
  */
 void apply_moves_to_board(const vector<string>& uciMoves, Board& pos, StateListPtr& states);
 
+/**
+ * @brief are_all_entries_true Returns true if all entries of the vector uciMoves return true by calling the function foo.
+ * @param uciMoves Vector storing moves in uci move notation
+ * @return boolean
+ */
+bool are_all_entries_true(const vector<string>& uciMoves, bool (*foo)(Square, Square));
+
 #endif
 
 #endif // TESTS_H

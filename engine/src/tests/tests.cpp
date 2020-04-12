@@ -70,17 +70,24 @@ void apply_moves_to_board(const vector<string>& uciMoves, Board& pos, StateListP
     }
 }
 
-TEST_CASE("En-passent moves") {
-    vector<string> en_passent_moves;
-    fill_en_passent_moves(en_passent_moves);
-
-    for (auto uciMove: en_passent_moves) {
-        bool returnVal = is_en_passent_candidate(get_origin_square(uciMove), get_destination_square(uciMove));
-        if (!returnVal) {
+bool are_all_entries_true(const vector<string>& uciMoves, bool (*foo)(Square, Square)) {
+    for (auto uciMove : uciMoves) {
+        if (!foo(get_origin_square(uciMove), get_destination_square(uciMove))) {
             cerr << "uciMove: " << uciMove << " returned false!" << endl;
+            return false;
         }
-        REQUIRE(returnVal == true);
     }
+    return true;
+}
+
+TEST_CASE("En-passent moves") {
+    vector<string> en_passent_moves = create_en_passent_moves();
+    REQUIRE(are_all_entries_true(en_passent_moves, is_en_passent_candidate) == true);
+}
+
+TEST_CASE("Chess960 castling moves") {
+    vector<string> castlingMoves = create_castling_moves(true);
+    REQUIRE(are_all_entries_true(castlingMoves, is_960_castling_candidate_move) == true);
 }
 
 #ifdef LICHESS_MODE
@@ -167,6 +174,7 @@ TEST_CASE("Draw_by_insufficient_material"){
     REQUIRE(pos.draw_by_insufficient_material() == false);
 }
 
+#ifdef CHESS_MODE
 TEST_CASE("Chess_Input_Planes"){
     init();
     Board pos;
@@ -212,5 +220,6 @@ TEST_CASE("Chess_Input_Planes"){
     REQUIRE(sum == 816);
     REQUIRE(key == 909458);
 }
+#endif
 
 #endif
