@@ -75,6 +75,11 @@ private:
     bool networkLoaded = false;
     StatesManager* states;
     Variant variant;
+#ifdef SUPPORT960
+    bool is960 = true;
+#else
+    bool is960 = false;
+#endif
 
 #ifdef USE_RL
     MCTSAgent* mctsAgentContender;

@@ -31,6 +31,10 @@
 
 using namespace std;
 
+void on_logger(const Option& o) {
+    start_logger(o);
+}
+
 void OptionsUCI::init(OptionsMap &o)
 {
 #ifdef MODE_CRAZYHOUSE
@@ -61,17 +65,17 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Temperature"]             << Option(80, 0, 99999);
     o["Temperature_Moves"]             << Option(0, 0, 99999);
     o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
-    o["Centi_Node_Temperature"]        << Option(200, 1, 99999);
-    o["Virtual_Loss"]                  << Option(3, 0, 99999);
-    o["Nodes"]                         << Option(1500000, 0, 99999999);
-    o["Allow_Early_Stopping"]          << Option(true);
+    o["Centi_Node_Temperature"]        << Option(100, 1, 99999);
+    o["Centi_Virtual_Loss"]            << Option(100, 0, 99999);
+    o["Nodes"]                         << Option(0, 0, 99999999);
+    o["Allow_Early_Stopping"]          << Option(false);
     o["Use_Raw_Network"]               << Option(false);
-//    o["Enhance_Checks"]                << Option(true);                currently disabled
-//    o["Enhance_Captures"]              << Option(false);               currently disabled
+    o["Enhance_Checks"]                << Option(false);
+    o["Enhance_Captures"]              << Option(false);
     o["Use_Transposition_Table"]       << Option(true);
 #ifdef TENSORRT
     o["Use_TensorRT"]                  << Option(true);
-    o["Precision"]                     << Option("float32", {"float32", "float16", "int8"});
+    o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
 #endif
     o["Model_Directory"]               << Option("model/");
 #ifdef USE_RL
@@ -94,6 +98,11 @@ void OptionsUCI::init(OptionsMap &o)
     o["Move_Overhead"]                 << Option(50, 0, 5000);
     o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
     o["SyzygyPath"]                    << Option("<empty>");
+    o["Use_Solver"]                    << Option(true);
+    o["Log_File"]                      << Option("", on_logger);
+#ifdef SUPPORT960
+    o["UCI_Chess960"]                  << Option(true);
+#endif
 }
 
 void OptionsUCI::setoption(istringstream &is)

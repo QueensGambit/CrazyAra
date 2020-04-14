@@ -68,7 +68,8 @@ struct SearchSettings
     float captureFactor;
     // If true, the exact given node count doesn't need to reached, but search can be stopped earlier
     bool allowEarlyStopping;
-
+    // If true, the MCTS solver will be used which can solve forced wins, losses and draws
+    bool useSolver;
     SearchSettings();
 
 };

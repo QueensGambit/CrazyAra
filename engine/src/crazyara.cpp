@@ -72,6 +72,7 @@ CrazyAra::CrazyAra()
     variant = CHESS_VARIANT;
 #endif
     useRawNetwork = false;     // will be initialized in init_search_settings()
+    is960 = false;
 }
 
 CrazyAra::~CrazyAra()
@@ -87,7 +88,6 @@ CrazyAra::~CrazyAra()
 
 void CrazyAra::welcome()
 {
-    start_logger("CrazyAra.log");
     cout << intro << endl;
 }
 
@@ -100,7 +100,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     StateInfo* newState = new StateInfo;
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    pos.set(StartFENs[variant], false, variant, newState, uiThread.get());
+    pos.set(StartFENs[variant], is960, variant, newState, uiThread.get());
     states->activeStates.push_back(newState);
 
     for (int i = 1; i < argc; ++i)
@@ -230,7 +230,7 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
     StateInfo* newState = new StateInfo;
-    pos.set(StartFENs[variant], false, variant, newState, uiThread.get());
+    pos.set(StartFENs[variant], is960, variant, newState, uiThread.get());
 
     istringstream is("fen " + fen);
     position(&pos, is);
@@ -257,7 +257,7 @@ void CrazyAra::position(Board *pos, istringstream& is) {
         return;
 
     auto uiThread = make_shared<Thread>(0);
-    pos->set(fen, false, variant, new StateInfo, uiThread.get());
+    pos->set(fen, is960, variant, new StateInfo, uiThread.get());
     states->clear_states();
     states->swap_states();
     Move lastMove = MOVE_NULL;
@@ -462,20 +462,24 @@ void CrazyAra::init_search_settings()
 //    searchSettings->uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
 //    searchSettings->uBase = Options["U_Base"];                                   currently disabled
     searchSettings->qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
-//    searchSettings->enhanceChecks = Options["Enhance_Checks"];                   currently disabled
-//    searchSettings->enhanceCaptures = Options["Enhance_Captures"];               currently disabled
+    searchSettings->enhanceChecks = Options["Enhance_Checks"];                   //currently disabled
+    searchSettings->enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
     searchSettings->cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
     searchSettings->cpuctBase = Options["CPuct_Base"];
     searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
     searchSettings->dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
     searchSettings->nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
-    searchSettings->virtualLoss = Options["Virtual_Loss"];
+    searchSettings->virtualLoss = Options["Centi_Virtual_Loss"] / 100.0f;
     searchSettings->qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
     searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
     searchSettings->qThreshBase = Options["Q_Thresh_Base"];
     searchSettings->randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings->allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
+    searchSettings->useSolver = Options["Use_Solver"];
+#ifdef SUPPORT960
+    is960 = Options["UCI_Chess960"];
+#endif
 }
 
 void CrazyAra::init_play_settings()
