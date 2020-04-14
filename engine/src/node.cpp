@@ -53,6 +53,7 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
     // specify the number of direct child nodes of this node
     numberChildNodes = legalMoves.size();
     numberUnsolvedChildNodes = numberChildNodes;
+    mark_enhanced_moves(pos);
 
     check_for_terminal(pos, inCheck);
 #ifdef MODE_CHESS
@@ -107,6 +108,7 @@ Node::Node(const Node &b)
     checkmateIdx = b.checkmateIdx;
     numberUnsolvedChildNodes = numberChildNodes;
     nodeType = UNSOLVED;
+    endInPly = 0;
     searchSettings = b.searchSettings;
     isFullyExpanded = false;
 }
@@ -131,33 +133,42 @@ bool Node::solved_draw(const Node* childNode) const
 {
     if (numberUnsolvedChildNodes == 0 &&
             (childNode->nodeType == SOLVED_DRAW || childNode->nodeType == SOLVED_WIN)) {
-        // make sure that this node has only DRAWN or WON child nodes and at least one DRAWN child
-        bool atLeastOneDrawnChild = false;
-        for (Node* childNode : childNodes) {
-            if (childNode->nodeType != SOLVED_DRAW || childNode->nodeType != SOLVED_WIN) {
-                return false;
-            }
-            if (childNode->nodeType == SOLVED_DRAW) {
-                atLeastOneDrawnChild = true;
-            }
-        }
-        if (atLeastOneDrawnChild) {
-            return true;
-        }
+        return at_least_one_drawn_child();
     }
     return false;
+}
+
+bool Node::at_least_one_drawn_child() const
+{
+    bool atLeastOneDrawnChild = false;
+    for (Node* childNode : childNodes) {
+        if (childNode->nodeType != SOLVED_DRAW && childNode->nodeType != SOLVED_WIN) {
+            return false;
+        }
+        if (childNode->nodeType == SOLVED_DRAW) {
+            atLeastOneDrawnChild = true;
+        }
+    }
+    if (atLeastOneDrawnChild) {
+        return true;
+    }
+    return false;
+}
+
+bool Node::only_won_child_nodes() const
+{
+    for (Node* childNode : childNodes) {
+        if (childNode->nodeType != SOLVED_WIN) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool Node::solved_loss(const Node* childNode) const
 {
     if (numberUnsolvedChildNodes == 0 && childNode->nodeType == SOLVED_WIN) {
-        // make sure that this node has only WON child nodes
-        for (Node* childNode : childNodes) {
-            if (childNode->nodeType != SOLVED_WIN) {
-                return false;
-            }
-        }
-        return true;
+        return only_won_child_nodes();
     }
     return false;
 }
@@ -173,10 +184,27 @@ void Node::mark_as_loss()
     parentNode->unlock();
     if (parentNode->parentNode != nullptr) {
         parentNode->parentNode->lock();
-        parentNode->parentNode->numberUnsolvedChildNodes--;
+        if (parentNode->parentNode->numberUnsolvedChildNodes > 0) {
+            parentNode->parentNode->numberUnsolvedChildNodes--;
+        }
+        if (parentNode->parentNode->is_root_node()) {
+            parentNode->parentNode->disable_move(parentNode->childIdxForParent);
+        }
         parentNode->parentNode->unlock();
     }
     nodeType = SOLVED_LOSS;
+}
+
+void Node::mark_as_draw()
+{
+    value = DRAW;
+    nodeType = SOLVED_DRAW;
+    if (parentNode != nullptr) {
+        parentNode->lock();
+        parentNode->numberUnsolvedChildNodes--;
+        parentNode->endInPly = 1;
+        parentNode->unlock();
+    }
 }
 
 void Node::define_end_ply_for_solved_terminal(const Node* childNode)
@@ -213,6 +241,9 @@ void Node::update_solved_terminal(const Node* childNode, int targetValue)
         parentNode->qValues[childIdxForParent] = targetValue;
         if (targetValue == LOSS) {
             parentNode->checkmateIdx = childIdxForParent;
+        }
+        else if (targetValue == WIN && parentNode->is_root_node()) {
+            parentNode->disable_move(childIdxForParent);
         }
         parentNode->unlock();
     }
@@ -282,6 +313,11 @@ void Node::mark_nodes_as_fully_expanded()
 {
     noVisitIdx = numberChildNodes;
     isFullyExpanded = true;
+}
+
+bool Node::is_root_node() const
+{
+    return parentNode == nullptr;
 }
 
 Node::~Node()
@@ -395,7 +431,9 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value)
     childNumberVisits[childIdx] -= searchSettings->virtualLoss - 1;
     actionValues[childIdx] += searchSettings->virtualLoss + value;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
-    solve_for_terminal(childNodes[childIdx]);
+    if (searchSettings->useSolver) {
+        solve_for_terminal(childNodes[childIdx]);
+    }
     mtx.unlock();
 }
 
@@ -479,15 +517,14 @@ size_t Node::max_q_child()
 
 float Node::updated_value_eval() const
 {
-    if (nodeType != UNSOLVED) {
-        switch(nodeType) {
-        case SOLVED_WIN:
-            return WIN;
-        case SOLVED_DRAW:
-            return DRAW;
-        case SOLVED_LOSS:
-            return LOSS;
-        }
+    switch(nodeType) {
+    case SOLVED_WIN:
+        return WIN;
+    case SOLVED_DRAW:
+        return DRAW;
+    case SOLVED_LOSS:
+        return LOSS;
+    default: ;  // UNSOLVED
     }
     if (visits == 1) {
         return value;
@@ -557,7 +594,7 @@ void Node::check_for_terminal(Board* pos, bool inCheck)
             return;
         }
         // we reached a stalmate
-        value = DRAW;
+        mark_as_draw();
         return;
     }
 #ifdef ANTI
@@ -577,7 +614,7 @@ void Node::check_for_terminal(Board* pos, bool inCheck)
 #endif
     if (pos->can_claim_3fold_repetition() || pos->is_50_move_rule_draw() || pos->draw_by_insufficient_material()) {
         // reached 3-fold-repetition or 50 moves rule draw or insufficient material
-        value = DRAW;
+        mark_as_draw();
         isTerminal = true;
         return;
     }
@@ -650,7 +687,7 @@ void Node::apply_softmax_to_policy()
     policyProbSmall = softmax(policyProbSmall);
 }
 
-void Node::mark_enhaned_moves(const Board* pos)
+void Node::mark_enhanced_moves(const Board* pos)
 {
     if (searchSettings->enhanceChecks || searchSettings->enhanceCaptures) {
         isCheck.resize(numberChildNodes);
@@ -669,6 +706,12 @@ void Node::mark_enhaned_moves(const Board* pos)
     }
 }
 
+void Node::disable_move(size_t childIdxForParent)
+{
+    policyProbSmall[childIdxForParent] = 0;
+    actionValues[childIdxForParent] = -INT_MAX;
+}
+
 void Node::enhance_moves()
 {
     if (!searchSettings->enhanceChecks && !searchSettings->enhanceCaptures) {
@@ -679,12 +722,12 @@ void Node::enhance_moves()
     bool captureUpdate = false;
 
     if (searchSettings->enhanceChecks) {
-        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, policyProbSmall[0]*searchSettings->checkFactor),
-                searchSettings->threshCheck, legalMoves, isCheck, policyProbSmall);
+        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, max(policyProbSmall)*searchSettings->checkFactor),
+                                        searchSettings->threshCheck, legalMoves, isCheck, policyProbSmall);
     }
     if (searchSettings->enhanceCaptures) {
-        captureUpdate = enhance_move_type(min(searchSettings->threshCapture, policyProbSmall[0]*searchSettings->captureFactor),
-                searchSettings->threshCheck, legalMoves, isCapture, policyProbSmall);
+        captureUpdate = enhance_move_type(min(searchSettings->threshCapture, max(policyProbSmall)*searchSettings->captureFactor),
+                                          searchSettings->threshCheck, legalMoves, isCapture, policyProbSmall);
     }
 
     if (checkUpdate || captureUpdate) {
@@ -776,7 +819,7 @@ size_t get_best_move_index(const Node *curNode)
         size_t childIdx = 0;
         for (size_t idx = 0; idx < curNode->get_number_child_nodes(); ++idx) {
             if (curNode->get_child_nodes()[idx]->get_node_type() == SOLVED_DRAW &&
-                curNode->get_child_nodes()[idx]->get_end_in_ply() < longestPVlength) {
+                    curNode->get_child_nodes()[idx]->get_end_in_ply() < longestPVlength) {
                 longestPVlength = curNode->get_child_nodes()[idx]->get_end_in_ply();
                 childIdx = idx;
             }

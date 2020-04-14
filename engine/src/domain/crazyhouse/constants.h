@@ -52,7 +52,7 @@ const string engineName = "LichessAra";
 const string engineName = "ClassicAra";
 #endif
 
-const string engineVersion = "0.7.2";
+const string engineVersion = "0.7.3";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
 
 // Define the board size
@@ -151,6 +151,8 @@ enum Result {
     BLACK_WIN,
     NO_RESULT,
 };
+
+#define TERMINAL_NODE_CACHE 8192
 
 const std::string result[] = {"1/2-1/2", "1-0", "0-1"};
 

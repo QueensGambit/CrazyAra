@@ -59,7 +59,6 @@ private:
     vector<Node*> newNodes;
     vector<Node*> transpositionNodes;
     vector<Node*> collisionNodes;
-    vector<Node*> terminalNodes;
 
     // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
     // sufficient memory according to the batch-size will be allocated in the constructor

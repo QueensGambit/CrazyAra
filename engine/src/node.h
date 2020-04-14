@@ -45,7 +45,7 @@ using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 
-enum NodeType {
+enum NodeType : uint8_t {
     SOLVED_WIN,
     SOLVED_DRAW,
     SOLVED_LOSS,
@@ -74,7 +74,7 @@ private:
     DynamicVector<bool> isCheck;
     DynamicVector<bool> isCapture;
 
-    uint8_t nodeType;
+    NodeType nodeType;
     uint16_t endInPly;
     uint16_t noVisitIdx;
     uint16_t numberChildNodes;
@@ -136,6 +136,18 @@ private:
     bool solved_draw(const Node* childNode) const;
 
     /**
+     * @brief at_least_one_drawn_child Checks if this node has only DRAWN or WON child nodes and at least one DRAWN child
+     * @return true if one DRAWN child exits and other child nodes are either won or DRAWN else false
+     */
+    bool at_least_one_drawn_child() const;
+
+    /**
+     * @brief only_won_child_nodws Checks if this node has only WON child nodes
+     * @return true if only WON child nodes exist else false
+     */
+    bool only_won_child_nodes() const;
+
+    /**
      * @brief solved_loss Checks if the current node is a solved loss based on the given child node
      * @param childNode Child nodes which backpropagates the value
      * @return true for SOLVED_LOSS else false
@@ -146,6 +158,11 @@ private:
      * @brief mark_as_loss Marks the current node as a loss and its parent node as a win
      */
     void mark_as_loss();
+
+    /**
+     * @brief mark_as_draw Marks the current node as a draw and informs its parent node
+     */
+    void mark_as_draw();
 
     /**
      * @brief define_end_ply_for_solved_terminal Calculates the number of plies in which the terminal will be reached.
@@ -185,7 +202,15 @@ private:
      * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
      * @param pos Current board positions
      */
-    void mark_enhaned_moves(const Board* pos);
+    void mark_enhanced_moves(const Board* pos);
+
+    /**
+     * @brief disable_move Disables a given move for futher visits by setting the corresponding Q-value to -INT_MAX
+     * and the move probability to 0.
+     * @param childIdxForParent Index for the move which will be disabled
+     */
+    void disable_move(size_t childIdxForParent);
+
 public:
     /**
      * @brief Node Primary constructor which is used when expanding a node during search
@@ -385,6 +410,12 @@ public:
      * when the node ordering is not guaranteed to be correct anymore.
      */
     void mark_nodes_as_fully_expanded();
+
+    /**
+     * @brief is_root_node Checks if the current node is the root node
+     * @return true if root node else false
+     */
+    bool is_root_node() const;
 
     /**
      * @brief operator << Overload of stdout operator. Prints move, number visits, probability Value and Q-value

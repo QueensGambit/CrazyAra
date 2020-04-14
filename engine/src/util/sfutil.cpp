@@ -172,7 +172,6 @@ string mirror_move(const string& uciMove)
 vector<Move> make_move(const string& uciMove, bool is960)
 {
     vector<Move> sfMoves;
-    Square from_sq = get_origin_square(uciMove);
     Square to_sq = get_destination_square(uciMove);
 
     if (is_drop_move(uciMove)) {
@@ -187,6 +186,7 @@ vector<Move> make_move(const string& uciMove, bool is960)
         }
     }
     else {
+        Square from_sq = get_origin_square(uciMove);
         // castling moves have a seperate flag in Stockfish's move representation
         if (is960) {
             if (is_960_castling_candidate_move(from_sq, to_sq)) {

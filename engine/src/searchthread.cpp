@@ -204,7 +204,6 @@ void SearchThread::backup_value_outputs()
 {
     backup_values(newNodes);
     backup_values(transpositionNodes);
-    backup_values(terminalNodes);
 }
 
 void SearchThread::backup_collisions()
@@ -231,18 +230,20 @@ void SearchThread::create_mini_batch()
     Node *parentNode;
     NodeDescription description;
     size_t childIdx;
+    size_t numTerminalNodes = 0;
 
     while (newNodes.size() < searchSettings->batchSize &&
            collisionNodes.size() < searchSettings->batchSize &&
            transpositionNodes.size() < searchSettings->batchSize &&
-           terminalNodes.size() < searchSettings->batchSize) {
+           numTerminalNodes < TERMINAL_NODE_CACHE) {
 
         Board newPos = Board(*rootPos);
         bool inCheck;
         parentNode = get_new_child_to_evaluate(&newPos, rootNode, childIdx, description, inCheck, states);
 
         if(description.isTerminal) {
-            terminalNodes.push_back(parentNode->get_child_node(childIdx));
+            ++numTerminalNodes;
+            parentNode->backup_value(childIdx, -parentNode->get_child_node(childIdx)->get_value());
         }
         else if (description.isCollision) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
@@ -289,6 +290,7 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
     if (!isPolicyMap) {
         node->apply_softmax_to_policy();
     }
+    node->enhance_moves();
     node->apply_temperature_to_prior_policy(temperature);
     if (!node->is_tablebase()) {
         node->set_value(valueOutputs[batchIdx]);
