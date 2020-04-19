@@ -77,7 +77,7 @@ private:
     nvinfer1::Dims policyOutputDims;
 
     // tensorRT runtime engine
-    string enginePath;
+    string trtFilePath;
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
     SampleUniquePtr<nvinfer1::IExecutionContext> context;
     cudaStream_t stream;
@@ -158,6 +158,30 @@ const char* read_buffer(const string& filePath, size_t& bufferSize);
  * @param dataType Precision data type
  */
 void fix_layer_precision(ILayer* layer, nvinfer1::DataType dataType);
+
+/**
+ * @brief precision_to_str Converts a precision enum to a string
+ * @param precision Precision enum
+ * @return string
+ */
+string precision_to_str(Precision precision);
+
+/**
+ * @brief str_to_precision Converst a string to a precision enum
+ * @param strPrecision String (e.g. "float32", "fp32", "float16", "fp16", "int8")
+ * @return Precision
+ */
+Precision str_to_precision( const string& strPrecision);
+
+/**
+ * @brief generate_trt_file_path Generates the trt file path based on the given parameters
+ * @param modelDirectory Directoy where the ONNX file is located
+ * @param batchSize Batch size to use for inference
+ * @param precision Precision
+ * @param deviceID Computing device
+ * @return trt-file-path (string)
+ */
+string generate_trt_file_path(const string &modelDirectory, unsigned int batchSize, Precision precision, int deviceID);
 
 #endif
 

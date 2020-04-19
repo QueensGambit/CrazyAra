@@ -441,10 +441,11 @@ NeuralNetAPI** CrazyAra::create_new_net_batches(const string& modelDirectory)
     for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
         for (size_t i = 0; i < size_t(Options["Threads_per_GPU"]); ++i) {
     #ifdef MXNET
-            netBatches[netBatchIdx++] = new MXNetAPI(Options["Context"], deviceId, searchSettings->batchSize, modelDirectory, useTensorRT);
+            netBatches[netBatchIdx] = new MXNetAPI(Options["Context"], deviceId, searchSettings->batchSize, modelDirectory, useTensorRT);
     #elif defined TENSORRT
-            netBatches[netBatchIdx++] = new TensorrtAPI(deviceId, searchSettings->batchSize, modelDirectory, Options["Precision"]);
+            netBatches[netBatchIdx] = new TensorrtAPI(deviceId, searchSettings->batchSize, modelDirectory, Options["Precision"]);
     #endif
+            ++netBatchIdx;
         }
     }
     return netBatches;
@@ -458,8 +459,8 @@ MCTSAgent *CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, NeuralNetAPI
 void CrazyAra::init_search_settings()
 {
     searchSettings = new SearchSettings();
-    const size_t numGPUs = size_t(Options["Last_Device_ID"] - Options["First_Device_ID"] + 1);
-    searchSettings->threads = Options["Threads_per_GPU"] * numGPUs;
+    validate_device_indices(Options);
+    searchSettings->threads = Options["Threads_per_GPU"] * get_num_gpus(Options);
     searchSettings->batchSize = Options["Batch_Size"];
     searchSettings->useTranspositionTable = Options["Use_Transposition_Table"];
 //    searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
@@ -496,4 +497,20 @@ void CrazyAra::init_play_settings()
     playSettings->meanInitPly = Options["MeanInitPly"];
     playSettings->maxInitPly = Options["MaxInitPly"];
 #endif
+}
+
+size_t get_num_gpus(OptionsMap& option)
+{
+    return size_t(option["Last_Device_ID"] - option["First_Device_ID"] + 1);
+}
+
+void validate_device_indices(OptionsMap& option)
+{
+    if (option["Last_Device_ID"] < option["First_Device_ID"]) {
+        info_string("Last_Device_ID:", option["Last_Device_ID"]);
+        info_string("First_Device_ID:", option["First_Device_ID"]);
+        info_string("Last_Device_ID is smaller than First_Device_ID.");
+        info_string("Last_Device_ID will be set to ", option["First_Device_ID"]);
+        option["Last_Device_ID"] = option["First_Device_ID"];
+    }
 }

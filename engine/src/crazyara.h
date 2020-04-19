@@ -212,4 +212,16 @@ public:
     void init_play_settings();
 };
 
+/**
+ * @brief get_num_gpus Returns the number of GPU based on the UCI settings "First_Device_ID" and "Last_Device_ID"
+ * @return number of gpus
+ */
+size_t get_num_gpus(OptionsMap& option);
+
+/**
+ * @brief validate_device_indices Valdiates if the "Last_Device_ID" >= "First_Device_ID"
+ * @param option
+ */
+void validate_device_indices(OptionsMap& option);
+
 #endif // CRAZYARA_H
