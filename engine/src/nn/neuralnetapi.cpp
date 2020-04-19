@@ -51,6 +51,7 @@ vector<string> get_directory_files(const string& dir) {
 }  // namespace
 
 NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
+    deviceID(deviceID),
     batchSize(batchSize),
     policyOutputLength(NB_LABELS * batchSize),
     enableTensorrt(enableTensorrt)

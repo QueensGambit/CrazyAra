@@ -422,9 +422,9 @@ string CrazyAra::engine_info()
 NeuralNetAPI* CrazyAra::create_new_net_single(const string& modelDirectory)
 {
 #ifdef MXNET
-    return new MXNetAPI(Options["Context"], int(Options["Device_ID"]), 1, modelDirectory, false);
+    return new MXNetAPI(Options["Context"], int(Options["First_Device_ID"]), 1, modelDirectory, false);
 #elif defined TENSORRT
-    return new TensorrtAPI(int(Options["Device_ID"]), 1, modelDirectory, Options["Precision"]);
+    return new TensorrtAPI(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
 #endif
     return nullptr;
 }
@@ -437,12 +437,15 @@ NeuralNetAPI** CrazyAra::create_new_net_batches(const string& modelDirectory)
     const bool useTensorRT = false;
 #endif
     NeuralNetAPI** netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
-    for (size_t i = 0; i < size_t(searchSettings->threads); ++i) {
-#ifdef MXNET
-        netBatches[i] = new MXNetAPI(Options["Context"], int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, useTensorRT);
-#elif defined TENSORRT
-        netBatches[i] = new TensorrtAPI(int(Options["Device_ID"]), searchSettings->batchSize, modelDirectory, Options["Precision"]);
-#endif
+    size_t netBatchIdx = 0;
+    for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
+        for (size_t i = 0; i < size_t(Options["Threads_per_GPU"]); ++i) {
+    #ifdef MXNET
+            netBatches[netBatchIdx++] = new MXNetAPI(Options["Context"], deviceId, searchSettings->batchSize, modelDirectory, useTensorRT);
+    #elif defined TENSORRT
+            netBatches[netBatchIdx++] = new TensorrtAPI(deviceId, searchSettings->batchSize, modelDirectory, Options["Precision"]);
+    #endif
+        }
     }
     return netBatches;
 }
@@ -455,7 +458,8 @@ MCTSAgent *CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, NeuralNetAPI
 void CrazyAra::init_search_settings()
 {
     searchSettings = new SearchSettings();
-    searchSettings->threads = Options["Threads"];
+    const size_t numGPUs = size_t(Options["Last_Device_ID"] - Options["First_Device_ID"] + 1);
+    searchSettings->threads = Options["Threads_per_GPU"] * numGPUs;
     searchSettings->batchSize = Options["Batch_Size"];
     searchSettings->useTranspositionTable = Options["Use_Transposition_Table"];
 //    searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled

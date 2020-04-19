@@ -46,9 +46,10 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Search_Type"]                   << Option("mcts", {"mcts"});
     o["Context"]                       << Option("gpu", {"cpu", "gpu"});
-    o["Device_ID"]                     << Option(0, 0, 99999);
+    o["First_Device_ID"]               << Option(0, 0, 99999);
+    o["Last_Device_ID"]                << Option(1, 0, 99999);
     o["Batch_Size"]                    << Option(16, 1, 8192);
-    o["Threads"]                       << Option(2, 1, 512);
+    o["Threads_per_GPU"]               << Option(2, 1, 512);
     o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
     o["CPuct_Base"]                    << Option(19652, 1, 99999);
     o["Centi_Dirichlet_Epsilon"]       << Option(0, 0, 99999);

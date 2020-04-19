@@ -35,32 +35,14 @@
 #include "../util/communication.h"
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
-    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true)
+    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
+    precision(str_to_precision(strPrecision))
 {
     // select the requested device
     cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
     modelFilePath = modelDirectory + "model-bsize-" + to_string(batchSize) + ".onnx";
-    enginePath = modelDirectory + "model-bsize" + to_string(batchSize) + "-";
-
-    if (strPrecision == "float32") {
-        precision = float32;
-        enginePath += "fp32";
-    }
-    else if (strPrecision == "float16") {
-        precision = float16;
-        enginePath += "fp16";
-    }
-    else if (strPrecision == "int8") {
-        precision = int8;
-        enginePath += "int8";
-    }
-    else {
-        info_string("Fallback to float32. Invalid precision type given:", precision);
-        precision = float32;
-        enginePath += "fp32";
-    }
-    enginePath += ".trt";
+    trtFilePath = generate_trt_file_path(modelDirectory, batchSize, precision, deviceID);
     gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
 
     load_model();
@@ -119,6 +101,8 @@ void TensorrtAPI::check_if_policy_map()
 
 void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs)
 {
+    // select the requested device
+    cudaSetDevice(deviceID);
     // copy input planes from host to device
     CHECK(cudaMemcpyAsync(deviceMemory[idxInput], inputPlanes, memorySizes[idxInput],
                           cudaMemcpyHostToDevice, stream));
@@ -171,9 +155,9 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 
     // try to read an engine from file
     size_t bufferSize;
-    const char* buffer = read_buffer(enginePath, bufferSize);
+    const char* buffer = read_buffer(trtFilePath, bufferSize);
     if (buffer) {
-        info_string("deserialize engine:", enginePath);
+        info_string("deserialize engine:", trtFilePath);
         unique_ptr<IRuntime, samplesCommon::InferDeleter> runtime{createInferRuntime(gLogger)};
         engine = runtime->deserializeCudaEngine(buffer, bufferSize, nullptr);
     }
@@ -183,14 +167,14 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
         engine = create_cuda_engine_from_onnx();
 
         if (engine) {
-            info_string("serialize engine:", enginePath);
+            info_string("serialize engine:", trtFilePath);
             // serialized engines are not portable across platforms or TensorRT versions
             // engines are specific to the exact GPU model they were built on
             IHostMemory *serializedModel = engine->serialize();
             unique_ptr<IHostMemory, samplesCommon::InferDeleter> enginePlan{engine->serialize()};
             // export engine for future uses
             // write engine to file
-            write_buffer(enginePlan->data(), enginePlan->size(), enginePath);
+            write_buffer(enginePlan->data(), enginePlan->size(), trtFilePath);
             serializedModel->destroy();
         }
     }
@@ -198,9 +182,9 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 }
 
 void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-                         SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
-                         size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
-                         unique_ptr<ChessBatchStream>& calibrationStream)
+                                      SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
+                                      size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
+                                      unique_ptr<ChessBatchStream>& calibrationStream)
 {
     config->setMaxWorkspaceSize(maxWorkspace);
     switch (precision) {
@@ -284,6 +268,40 @@ void fix_layer_precision(ILayer *layer, nvinfer1::DataType dataType)
     for (int idx = 0; idx < layer->getNbOutputs(); ++idx) {
         layer->setOutputType(idx, dataType);
     }
+}
+
+string generate_trt_file_path(const string &modelDirectory, unsigned int batchSize, Precision precision, int deviceID)
+{
+    return modelDirectory + "model-bsize" + to_string(batchSize) + "-" +
+            precision_to_str(precision)+ "-dev-" + to_string(deviceID) + ".trt";
+}
+
+Precision str_to_precision(const string &strPrecision)
+{
+    if (strPrecision == "float32" || strPrecision == "fp32") {
+        return float32;
+    }
+    else if (strPrecision == "float16" || strPrecision == "fp16") {
+        return float16;
+    }
+    else if (strPrecision == "int8") {
+        return int8;
+    }
+    info_string("Fallback to float32. Invalid precision type given:", strPrecision);
+    return  float32;
+}
+
+string precision_to_str(Precision precision)
+{
+    switch (precision) {
+    case float32:
+        return "fp32";
+    case float16:
+        return "fp16";
+    case int8:
+        return  "int8";
+    }
+    return "fp32";
 }
 
 #endif

@@ -46,6 +46,7 @@ class NeuralNetAPI
 {
 protected:
     std::vector<std::string> outputLabels;
+    int deviceID;
     unsigned int batchSize;
     // vector length for the policy output as returned by the neural network respecting the batch size
     unsigned int policyOutputLength;
