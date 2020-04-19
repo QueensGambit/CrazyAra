@@ -63,7 +63,7 @@ private:
                     string("    (_.'/ /` /`                       a  b  c  d  e  f  g  h                  \n") +
                     string("      _|.' /`                                                                 \n") +
                     string("jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer          \n") +
-                    string("    .-'||  |  Source-Code: QueensGambit/CrazyAra-Engine (GPLv3-License)       \n") +
+                    string("    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              \n") +
                     string("       \\_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.   \n") +
                     string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
     RawNetAgent* rawAgent;
