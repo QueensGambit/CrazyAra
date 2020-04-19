@@ -17,6 +17,7 @@
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifdef TENSORRT
 #include "chessbatchstream.h"
 #include "uci.h"
 
@@ -111,3 +112,4 @@ nvinfer1::Dims ChessBatchStream::getDims() const
 {
     return Dims{4, {mBatchSize, mDims.d[0], mDims.d[1], mDims.d[2]}, {}};
 }
+#endif

@@ -29,6 +29,7 @@
 #ifndef CHESSBATCHSTREAM_H
 #define CHESSBATCHSTREAM_H
 
+#ifdef TENSORRT
 #include "thread.h"
 #include "EntropyCalibrator.h"
 #include "BatchStream.h"
@@ -70,5 +71,6 @@ private:
     std::vector<float> mData;
     std::vector<float> mLabels{};
 };
+#endif
 
 #endif // CHESSBATCHSTREAM_H
