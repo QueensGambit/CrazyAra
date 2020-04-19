@@ -439,7 +439,7 @@ NeuralNetAPI** CrazyAra::create_new_net_batches(const string& modelDirectory)
     NeuralNetAPI** netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
     size_t netBatchIdx = 0;
     for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
-        for (size_t i = 0; i < size_t(Options["Threads_per_GPU"]); ++i) {
+        for (size_t i = 0; i < size_t(Options["Threads_per_Device"]); ++i) {
     #ifdef MXNET
             netBatches[netBatchIdx] = new MXNetAPI(Options["Context"], deviceId, searchSettings->batchSize, modelDirectory, useTensorRT);
     #elif defined TENSORRT
@@ -460,7 +460,7 @@ void CrazyAra::init_search_settings()
 {
     searchSettings = new SearchSettings();
     validate_device_indices(Options);
-    searchSettings->threads = Options["Threads_per_GPU"] * get_num_gpus(Options);
+    searchSettings->threads = Options["Threads_per_Device"] * get_num_gpus(Options);
     searchSettings->batchSize = Options["Batch_Size"];
     searchSettings->useTranspositionTable = Options["Use_Transposition_Table"];
 //    searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
