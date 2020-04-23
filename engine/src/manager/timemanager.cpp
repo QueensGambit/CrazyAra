@@ -44,7 +44,7 @@ TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int thr
     assert(threshMove < expectedGameLength);
 }
 
-int TimeManager::get_time_for_move(SearchLimits* searchLimits, Color me, int moveNumber)
+int TimeManager::get_time_for_move(const SearchLimits* searchLimits, Color me, int moveNumber)
 {
     // leave an additional time buffer to avoid losing on time
     timeBuffer = searchLimits->moveOverhead * timeBufferFactor;

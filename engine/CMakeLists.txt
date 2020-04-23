@@ -55,6 +55,8 @@ file(GLOB source_files
     "src/agents/*.h"
     "src/agents/config/*.cpp"
     "src/agents/config/*.h"
+    "src/agents/util/*.cpp"
+    "src/agents/util/*.h"
     "src/nn/*.cpp"
     "src/nn/*.h"
     "src/nn/util/*.cpp"

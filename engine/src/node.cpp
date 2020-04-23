@@ -909,8 +909,8 @@ ostream& operator<<(ostream &os, const Node *node)
        << "endInPly:\t" << node->endInPly << endl
        << "isTerminal:\t" << node->is_terminal() << endl
        << "isTablebase:\t" << node->is_tablebase() << endl
-       << "unsolvedNodes:\t" << node->numberUnsolvedChildNodes << endl;
-
+       << "unsolvedNodes:\t" << node->numberUnsolvedChildNodes << endl
+       << "terminalVisits:\t" << node->get_terminal_visits() << endl;
     return os;
 }
 

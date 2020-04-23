@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#include <thread>
 #include "mctsagent.h"
 #include "../evalinfo.h"
 #include "movegen.h"
@@ -33,6 +34,7 @@
 #include "uci.h"
 #include "../manager/statesmanager.h"
 #include "../manager/treemanager.h"
+#include "../manager/threadmanager.h"
 #include "../node.h"
 #include "../util/communication.h"
 
@@ -53,7 +55,9 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     states(states),
     lastValueEval(-1.0f),
     reusedFullTree(false),
-    isRunning(false)
+    isRunning(false),
+    overallNPS(0.0f),
+    nbNPSentries(0)
 {
     mapWithMutex = new MapWithMutex();
     mapWithMutex->hashTable = new unordered_map<Key, Node*>;
@@ -169,48 +173,6 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     return nullptr;
 }
 
-void MCTSAgent::stop_search_based_on_limits(EvalInfo& evalInfo)
-{
-    int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->side_to_move(), rootNode->plies_from_null()/2);
-    info_string("movetime", curMovetime);
-
-    const size_t halfTime = size_t(curMovetime / 2);
-    sleep_and_log_for(evalInfo, halfTime);
-    if (early_stopping()) {
-        stop_search_threads();
-    } else {
-        sleep_and_log_for(evalInfo, halfTime);
-        if (continue_search()) {
-            sleep_and_log_for(evalInfo, halfTime);
-        }
-        stop_search_threads();
-    }
-}
-
-void MCTSAgent::stop_search_threads()
-{
-    for (auto searchThread : searchThreads) {
-        searchThread->stop();
-    }
-}
-
-bool MCTSAgent::early_stopping()
-{
-    if (rootNode->max_policy_prob() > 0.9f && rootNode->max_q_child() == 0) {
-        info_string("Early stopping");
-        return true;
-    }
-    return false;
-}
-
-bool MCTSAgent::continue_search() {
-    if (searchLimits->movetime == 0 && searchLimits->movestogo != 1 && rootNode->updated_value_eval()+0.1f < lastValueEval) {
-        info_string("Increase search time");
-        return true;
-    }
-    return false;
-}
-
 void MCTSAgent::create_new_root_node(Board *pos)
 {
     info_string("create new tree");
@@ -277,6 +239,13 @@ size_t MCTSAgent::get_tb_hits()
     return tbHits;
 }
 
+void MCTSAgent::update_nps_measurement(float curNPS)
+{
+    if (searchSettings->useNPSTimemanager) {
+        ++nbNPSentries;
+        overallNPS += 1/nbNPSentries * (curNPS - overallNPS);
+    }
+}
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove, Board* pos)
 {
@@ -315,6 +284,8 @@ void MCTSAgent::clear_game_history()
     opponentsNextRoot = nullptr;
     rootNode = nullptr;
     lastValueEval = -1.0f;
+    nbNPSentries = 0;
+    overallNPS = 0;
 }
 
 bool MCTSAgent::is_policy_map()
@@ -356,6 +327,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     }
     update_eval_info(evalInfo, rootNode, get_tb_hits());
     lastValueEval = evalInfo.bestMoveQ;
+    update_nps_measurement(evalInfo.calculate_nps());
 }
 
 void MCTSAgent::run_mcts_search(EvalInfo& evalInfo)
@@ -365,16 +337,22 @@ void MCTSAgent::run_mcts_search(EvalInfo& evalInfo)
         searchThreads[i]->set_root_node(rootNode);
         searchThreads[i]->set_root_pos(rootPos);
         searchThreads[i]->set_search_limits(searchLimits);
-        threads[i] = new thread(go, searchThreads[i]);
+        threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
+    LoggerThread loggerThread(rootNode, &evalInfo, 1000, searchThreads);
+    int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->side_to_move(), rootNode->plies_from_null()/2);
+    ThreadManager threadManager(rootNode, searchThreads, &loggerThread, curMovetime, 200, overallNPS, lastValueEval);
+    unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, &threadManager);
+    unique_ptr<thread> tLogger = make_unique<thread>(run_logger_thread, &loggerThread);
     isRunning = true;
-    if (searchSettings->allowEarlyStopping || searchLimits->nodes == 0) {
-        // otherwise the threads will stop by themselves
-        stop_search_based_on_limits(evalInfo);
-    }
+
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
+    loggerThread.kill();
+    threadManager.kill();
+    tLogger->join();
+    tManager->join();
     delete[] threads;
     isRunning = false;
 }

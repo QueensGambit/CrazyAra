@@ -485,6 +485,7 @@ void CrazyAra::init_search_settings()
 #ifdef SUPPORT960
     is960 = Options["UCI_Chess960"];
 #endif
+    searchSettings->useNPSTimemanager = Options["Use_NPS_Time_Manager"];
 }
 
 void CrazyAra::init_play_settings()

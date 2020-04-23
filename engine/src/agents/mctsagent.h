@@ -33,7 +33,6 @@
 #ifndef MCTSAGENT_H
 #define MCTSAGENT_H
 
-#include <thread>
 #include "position.h"
 #include "agent.h"
 #include "../evalinfo.h"
@@ -46,6 +45,7 @@
 #include "../searchthread.h"
 #include "../manager/statesmanager.h"
 #include "../manager/timemanager.h"
+#include "../manager/threadmanager.h"
 
 class MCTSAgent : public Agent
 {
@@ -87,6 +87,10 @@ private:
     // boolean which can be triggered by "stop" from std-in to stop the current search
     bool isRunning;
 
+    // saves the overall nps for each move during the game
+    float overallNPS;
+    size_t nbNPSentries;
+
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
      * The old tree or former subtrees will be freed from memory.
@@ -103,30 +107,6 @@ private:
      * @return Pointer to root node or nullptr
      */
     inline Node* get_root_node_from_tree(Board* pos);
-
-    /**
-     * @brief stop_search_based_on_limits Checks for the search limit condition and possible early break-ups
-     * and stops all running search threads accordingly
-     * @param evalInfo Evaluation struct which updated during search
-     */
-    inline void stop_search_based_on_limits(EvalInfo& evalInfo);
-
-    /**
-     * @brief stop_search_threads Stops all search threads
-     */
-    inline void stop_search_threads();
-
-    /**
-     * @brief check_early_stopping Checks if the search can be ended prematurely based on the current tree statistics (visits & Q-values)
-     * @return True, if early stopping is recommended
-     */
-    inline bool early_stopping();
-
-    /**
-     * @brief continue_search Checks if the search should which is based on the initial value prediciton
-     * @return True, if search extension is recommend
-     */
-    inline bool continue_search();
 
     /**
      * @brief create_new_root_node Creates a new root node for the given board position and requests the neural network for evaluation
@@ -156,6 +136,12 @@ private:
      * @return
      */
     size_t get_tb_hits();
+
+    /**
+     * @brief update_nps_measurement Updates the overall nps by a rolling average
+     * @param curNPS New NPS measurement
+     */
+    void update_nps_measurement(float curNPS);
 
 public:
     MCTSAgent(NeuralNetAPI* netSingle,

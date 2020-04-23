@@ -69,7 +69,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Node_Temperature"]        << Option(100, 1, 99999);
     o["Centi_Virtual_Loss"]            << Option(100, 0, 99999);
     o["Nodes"]                         << Option(0, 0, 99999999);
-    o["Allow_Early_Stopping"]          << Option(false);
+    o["Allow_Early_Stopping"]          << Option(true);
     o["Use_Raw_Network"]               << Option(false);
     o["Enhance_Checks"]                << Option(false);
     o["Enhance_Captures"]              << Option(false);
@@ -78,7 +78,11 @@ void OptionsUCI::init(OptionsMap &o)
     o["Use_TensorRT"]                  << Option(true);
     o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
 #endif
+#ifdef MODE_CRAZYHOUSE
+    o["Model_Directory"]               << Option("model_os_96_/");
+#else
     o["Model_Directory"]               << Option("model/");
+#endif
 #ifdef USE_RL
     o["Model_Directory_Contender"]     << Option("model_contender/");
     o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
@@ -101,6 +105,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["SyzygyPath"]                    << Option("<empty>");
     o["Use_Solver"]                    << Option(true);
     o["Log_File"]                      << Option("", on_logger);
+    o["Use_NPS_Time_Manager"]          << Option(true);
 #ifdef SUPPORT960
     o["UCI_Chess960"]                  << Option(true);
 #endif

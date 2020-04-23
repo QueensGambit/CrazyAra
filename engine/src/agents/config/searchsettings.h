@@ -70,6 +70,8 @@ struct SearchSettings
     bool allowEarlyStopping;
     // If true, the MCTS solver will be used which can solve forced wins, losses and draws
     bool useSolver;
+    // early break out based on max node visits in tree; increases time for falling eval
+    bool useNPSTimemanager;
     SearchSettings();
 
 };

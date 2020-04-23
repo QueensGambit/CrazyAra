@@ -73,13 +73,13 @@ public:
     /**
      * @brief get_time_for_move Calculates the movetime based on the searchSettigs
      * It uses a constant movetime for the first moves until the ``threshMove`` is reached.
-     * Afterwards it uses a portion of the remaining time as defined in ``moveFact`
+     * Afterwards it uses a portion of the remaining time as defined in ``moveFact``
      * @param searchLimits Limit specification for the current position
      * @param me Color of the current player
      * @param moveNumber Move number of the position (ply//2)
      * @return movetime in ms
      */
-    int get_time_for_move(SearchLimits* searchLimits, Color me, int moveNumber);
+    int get_time_for_move(const SearchLimits* searchLimits, Color me, int moveNumber);
 };
 
 
