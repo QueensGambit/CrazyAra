@@ -153,7 +153,7 @@ public:
     size_t get_tb_hits() const;
 };
 
-void go(SearchThread *t);
+void run_search_thread(SearchThread *t);
 
 struct NodeDescription
 {

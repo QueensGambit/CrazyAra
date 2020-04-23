@@ -216,7 +216,7 @@ void SearchThread::backup_collisions()
 
 bool SearchThread::nodes_limits_ok()
 {
-    return searchLimits->nodes == 0 || (rootNode->get_visits() < searchLimits->nodes);
+    return searchLimits->nodes == 0 || (rootNode->get_visits() - rootNode->get_terminal_visits() < searchLimits->nodes);
 }
 
 bool SearchThread::is_root_node_unsolved()
@@ -266,7 +266,7 @@ void SearchThread::thread_iteration()
     backup_collisions();
 }
 
-void go(SearchThread *t)
+void run_search_thread(SearchThread *t)
 {
     t->set_is_running(true);
     t->reset_tb_hits();
