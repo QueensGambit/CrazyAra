@@ -31,6 +31,7 @@ ThreadManager::ThreadManager(Node* rootNode, vector<SearchThread*>& searchThread
     searchThreads(searchThreads),
     loggerThread(loggerThread),
     movetimeMS(movetimeMS),
+    remainingMoveTimeMS(movetimeMS),
     updateIntervalMS(updateIntervalMS),
     overallNPS(overallNPS),
     lastValueEval(lastValueEval),
