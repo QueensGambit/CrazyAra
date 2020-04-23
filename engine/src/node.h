@@ -66,6 +66,7 @@ private:
     // singular values
     float value;
     float visits;
+    float terminalVisits;
 
     DynamicVector<float> policyProbSmall;
     DynamicVector<float> childNumberVisits;
@@ -431,6 +432,7 @@ public:
     bool is_tablebase() const;
     uint8_t get_node_type() const;
     uint16_t get_end_in_ply() const;
+    float get_terminal_visits() const;
 };
 
 /**
@@ -521,5 +523,19 @@ const char* node_type_to_string(enum NodeType nodeType);
  * @return flipped node type
  */
 NodeType flip_node_type(const enum NodeType nodeType);
+
+/**
+ * @brief is_terminal_value Checks if the given value corresponds to a WIN, DRAW or LOSS
+ * @param value Node value evaluation
+ * @return bool
+ */
+bool is_terminal_value(float value);
+
+/**
+ * @brief get_node_count Returns the number of nodes in the tree without counting terminal simulations
+ * @param node Given node
+ * @return Number of subnodes for thhe given node
+ */
+float get_node_count(const Node* node);
 
 #endif // NODE_H

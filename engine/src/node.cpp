@@ -37,6 +37,7 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
     sideToMove(pos->side_to_move()),
     parentNode(parentNode),
     visits(1),
+    terminalVisits(0),
     nodeType(UNSOLVED),
     endInPly(0),
     noVisitIdx(1),
@@ -98,6 +99,7 @@ Node::Node(const Node &b)
     legalMoves = b.legalMoves;
     isTerminal = b.isTerminal;
     visits = 1;
+    terminalVisits = 0;
     childNodes.resize(numberChildNodes);
     //    parentNode = // is not copied
     //    childIdxForParent = // is not copied
@@ -431,8 +433,11 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value)
     childNumberVisits[childIdx] -= searchSettings->virtualLoss - 1;
     actionValues[childIdx] += searchSettings->virtualLoss + value;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
-    if (searchSettings->useSolver) {
-        solve_for_terminal(childNodes[childIdx]);
+    if (is_terminal_value(value)) {
+        ++terminalVisits;
+        if (searchSettings->useSolver) {
+            solve_for_terminal(childNodes[childIdx]);
+        }
     }
     mtx.unlock();
 }
@@ -575,6 +580,11 @@ uint8_t Node::get_node_type() const
 uint16_t Node::get_end_in_ply() const
 {
     return endInPly;
+}
+
+float Node::get_terminal_visits() const
+{
+    return terminalVisits;
 }
 
 void Node::check_for_terminal(Board* pos, bool inCheck)
@@ -882,7 +892,7 @@ ostream& operator<<(ostream &os, const Node *node)
            << setfill(' ') << setw(5) << UCI::move(node->get_legal_moves()[childIdx], false) << " |"
            << setw(12) << int(node->childNumberVisits[childIdx]) << " | "
            << setw(9) << node->policyProbSmall[childIdx] << " | "
-           << setw(10) << node->qValues[childIdx] << " | ";
+           << setw(10) << max(node->qValues[childIdx], -1.0f) << " | ";
         if (node->childNodes[childIdx] != nullptr && node->childNodes[childIdx]->get_node_type() != UNSOLVED) {
             os << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(node->childNodes[childIdx]->nodeType)))
                << " in " << setfill('0') << setw(2) << node->childNodes[childIdx]->endInPly+1;
@@ -969,4 +979,14 @@ double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit)
 void print_node_statistics(const Node* node)
 {
     cout << node << endl;
+}
+
+bool is_terminal_value(float value)
+{
+    return (value == WIN || value == DRAW || value == LOSS);
+}
+
+float get_node_count(const Node *node)
+{
+    return node->get_visits() - node->get_terminal_visits();
 }
