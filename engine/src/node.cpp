@@ -49,7 +49,7 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent)
     fill_child_node_moves(pos);
 
     // specify the number of direct child nodes of this node
-    numberChildNodes = legalMoves.size();
+    const float numberChildNodes = legalMoves.size();
     numberUnsolvedChildNodes = numberChildNodes;
 
     check_for_terminal(pos, inCheck);
@@ -82,7 +82,7 @@ Node::Node(const Node &b)
     value = b.value;
     key = b.key;
     pliesFromNull = b.plies_from_null();
-    numberChildNodes = b.numberChildNodes;
+    const float numberChildNodes = b.legalMoves.size();
     policyProbSmall.resize(numberChildNodes);
     policyProbSmall = b.policyProbSmall;
     childNumberVisits.resize(numberChildNodes);
@@ -247,7 +247,7 @@ void Node::update_solved_terminal(const Node* childNode, int targetValue)
 void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
 {
     mctsPolicy = 0;
-    for (size_t childIdx = 0; childIdx < numberChildNodes; ++childIdx) {
+    for (size_t childIdx = 0; childIdx < get_number_child_nodes(); ++childIdx) {
         if (childNodes[childIdx] != nullptr && childNodes[childIdx]->nodeType == SOLVED_LOSS) {
             mctsPolicy[childIdx] = 1.0f;
         }
@@ -274,7 +274,7 @@ void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qVal
     qValuePruned = (qValuePruned + 1) * 0.5f;
     const DynamicVector<float> normalizedVisits = childNumberVisits / visits;
     const float quantile = get_quantile(normalizedVisits, 0.25f);
-    for (size_t idx = 0; idx < numberChildNodes; ++idx) {
+    for (size_t idx = 0; idx < get_number_child_nodes(); ++idx) {
         if (childNumberVisits[idx] < quantile) {
             qValuePruned[idx] = 0;
         }
@@ -310,7 +310,7 @@ void Node::solve_for_terminal(const Node* childNode)
 
 void Node::mark_nodes_as_fully_expanded()
 {
-    noVisitIdx = numberChildNodes;
+    noVisitIdx = get_number_child_nodes();
 }
 
 bool Node::is_root_node() const
@@ -375,7 +375,7 @@ void Node::increment_visits()
 void Node::increment_no_visit_idx()
 {
     mtx.lock();
-    if (noVisitIdx < numberChildNodes) {
+    if (noVisitIdx < get_number_child_nodes()) {
         ++noVisitIdx;
     }
     mtx.unlock();
@@ -393,7 +393,7 @@ Key Node::hash_key() const
 
 size_t Node::get_number_child_nodes() const
 {
-    return numberChildNodes;
+    return legalMoves.size();
 }
 
 float Node::get_visits() const
@@ -563,7 +563,7 @@ float Node::get_terminal_visits() const
 
 void Node::check_for_terminal(Board* pos, bool inCheck)
 {
-    if (numberChildNodes == 0) {
+    if (get_number_child_nodes() == 0) {
         isTerminal = true;
 #ifdef ANTI
         if (pos->is_anti()) {
@@ -644,7 +644,7 @@ void Node::unlock()
 
 void Node::apply_dirichlet_noise_to_prior_policy(const SearchSettings* searchSettings)
 {
-    DynamicVector<float> dirichlet_noise = get_dirichlet_noise(numberChildNodes, searchSettings->dirichletAlpha);
+    DynamicVector<float> dirichlet_noise = get_dirichlet_noise(get_number_child_nodes(), searchSettings->dirichletAlpha);
     policyProbSmall = (1 - searchSettings->dirichletEpsilon ) * policyProbSmall + searchSettings->dirichletEpsilon * dirichlet_noise;
 }
 
@@ -673,6 +673,7 @@ void Node::apply_softmax_to_policy()
 
 void Node::mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings)
 {
+    const float numberChildNodes = get_number_child_nodes();
     if (searchSettings->enhanceChecks || searchSettings->enhanceCaptures) {
         isCheck.resize(numberChildNodes);
         isCheck = false;

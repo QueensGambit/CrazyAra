@@ -76,7 +76,6 @@ private:
     NodeType nodeType;
     uint16_t endInPly;
     uint16_t noVisitIdx;
-    uint16_t numberChildNodes;
     uint16_t numberUnsolvedChildNodes;
 
     vector<Node*> childNodes;
