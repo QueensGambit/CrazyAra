@@ -31,10 +31,9 @@
 #include "../util/communication.h"
 
 
-Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent, SearchSettings* searchSettings):
+Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent):
     key(pos->get_state_info()->key),
     pliesFromNull(pos->get_state_info()->pliesFromNull),
-    sideToMove(pos->side_to_move()),
     parentNode(parentNode),
     visits(1),
     terminalVisits(0),
@@ -45,16 +44,13 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
     isTablebase(false),
     childIdxForParent(childIdxForParent),
     hasNNResults(false),
-    isFullyExpanded(false),
-    checkmateIdx(-1),
-    searchSettings(searchSettings)
+    checkmateIdx(-1)
 {
     fill_child_node_moves(pos);
 
     // specify the number of direct child nodes of this node
     numberChildNodes = legalMoves.size();
     numberUnsolvedChildNodes = numberChildNodes;
-    mark_enhanced_moves(pos);
 
     check_for_terminal(pos, inCheck);
 #ifdef MODE_CHESS
@@ -64,17 +60,17 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent,
 #endif
 
     // # visit count of all its child nodes
-    childNumberVisits = DynamicVector<float>(numberChildNodes);
+    childNumberVisits.resize(numberChildNodes);
     childNumberVisits = 0;
 
     // total action value estimated by MCTS for each child node also denoted as w
-    actionValues = DynamicVector<float>(numberChildNodes);
+    actionValues.resize(numberChildNodes);
     actionValues = 0;
 
     // q: combined action value which is calculated by the averaging over all action values
     // u: exploration metric for each child node
     // (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-    qValues = DynamicVector<float>(numberChildNodes);
+    qValues.resize(numberChildNodes);
     qValues = -1;
 
     childNodes.resize(numberChildNodes, nullptr);
@@ -86,7 +82,6 @@ Node::Node(const Node &b)
     value = b.value;
     key = b.key;
     pliesFromNull = b.plies_from_null();
-    sideToMove = b.side_to_move();
     numberChildNodes = b.numberChildNodes;
     policyProbSmall.resize(numberChildNodes);
     policyProbSmall = b.policyProbSmall;
@@ -100,7 +95,7 @@ Node::Node(const Node &b)
     isTerminal = b.isTerminal;
     visits = 1;
     terminalVisits = 0;
-    childNodes.resize(numberChildNodes);
+    childNodes.resize(numberChildNodes, nullptr);
     //    parentNode = // is not copied
     //    childIdxForParent = // is not copied
     noVisitIdx = 1; // reset counter
@@ -111,8 +106,6 @@ Node::Node(const Node &b)
     numberUnsolvedChildNodes = numberChildNodes;
     nodeType = UNSOLVED;
     endInPly = 0;
-    searchSettings = b.searchSettings;
-    isFullyExpanded = false;
 }
 
 void Node::fill_child_node_moves(Board* pos)
@@ -266,8 +259,8 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<float> &mctsPolicy) const
 {
     // check if PV line leads to a loss
     if (nodeType != SOLVED_LOSS) {
-        // set all entries which lead to a WIN of the oppenent to zero
-        for (size_t childIdx = 0; childIdx < numberChildNodes; ++childIdx) {
+        // set all entries which lead to a WIN of the opponent to zero
+        for (size_t childIdx = 0; childIdx < noVisitIdx; ++childIdx) {
             if (childNodes[childIdx] != nullptr && childNodes[childIdx]->nodeType == SOLVED_WIN) {
                 mctsPolicy[childIdx] = 0;
             }
@@ -275,7 +268,7 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<float> &mctsPolicy) const
     }
 }
 
-void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy) const
+void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qValueWeight) const
 {
     DynamicVector<float> qValuePruned = qValues;
     qValuePruned = (qValuePruned + 1) * 0.5f;
@@ -286,11 +279,15 @@ void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy) const
             qValuePruned[idx] = 0;
         }
     }
-    mctsPolicy = (1.0f - searchSettings->qValueWeight) * normalizedVisits + searchSettings->qValueWeight * qValuePruned;
+    mctsPolicy = (1.0f - qValueWeight) * normalizedVisits + qValueWeight * qValuePruned;
 }
 
 void Node::solve_for_terminal(const Node* childNode)
 {
+    if (childNode == nullptr) {
+        info_string("nullptr as child node backup!");
+        return;
+    }
     if (nodeType != UNSOLVED) {
         // already solved
         return;
@@ -314,7 +311,6 @@ void Node::solve_for_terminal(const Node* childNode)
 void Node::mark_nodes_as_fully_expanded()
 {
     noVisitIdx = numberChildNodes;
-    isFullyExpanded = true;
 }
 
 bool Node::is_root_node() const
@@ -353,16 +349,16 @@ bool Node::has_nn_results() const
     return hasNNResults;
 }
 
-void Node::apply_virtual_loss_to_child(size_t childIdx)
+void Node::apply_virtual_loss_to_child(size_t childIdx, float virtualLoss)
 {
     // update the stats of the parent node
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
     // virtual increase the number of visits
-    visits += searchSettings->virtualLoss;
-    childNumberVisits[childIdx] +=  searchSettings->virtualLoss;
+    visits += virtualLoss;
+    childNumberVisits[childIdx] +=  virtualLoss;
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
-    actionValues[childIdx] -=  searchSettings->virtualLoss;
+    actionValues[childIdx] -= virtualLoss;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
 }
 
@@ -381,18 +377,8 @@ void Node::increment_no_visit_idx()
     mtx.lock();
     if (noVisitIdx < numberChildNodes) {
         ++noVisitIdx;
-        isFullyExpanded = true;
     }
     mtx.unlock();
-}
-
-bool Node::is_fully_expanded() const {
-    return isFullyExpanded;
-}
-
-float Node::get_current_cput()
-{
-    return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
 float Node::get_value() const
@@ -415,56 +401,49 @@ float Node::get_visits() const
     return visits;
 }
 
-void Node::backup_value(size_t childIdx, float value)
+void Node::backup_value(size_t childIdx, float value, float virtualLoss)
 {
     Node* currentNode = this;
     do {
-        currentNode->revert_virtual_loss_and_update(childIdx, value);
+        currentNode->revert_virtual_loss_and_update(childIdx, value, virtualLoss);
         childIdx = currentNode->childIdxForParent;
         value = -value;
         currentNode = currentNode->parentNode;
     } while(currentNode != nullptr);
 }
 
-void Node::revert_virtual_loss_and_update(size_t childIdx, float value)
+void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss)
 {
     mtx.lock();
-    visits -= searchSettings->virtualLoss - 1;
-    childNumberVisits[childIdx] -= searchSettings->virtualLoss - 1;
-    actionValues[childIdx] += searchSettings->virtualLoss + value;
+    visits -= virtualLoss - 1;
+    childNumberVisits[childIdx] -= virtualLoss - 1;
+    actionValues[childIdx] += virtualLoss + value;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
     if (is_terminal_value(value)) {
         ++terminalVisits;
-        if (searchSettings->useSolver) {
-            solve_for_terminal(childNodes[childIdx]);
-        }
+        solve_for_terminal(childNodes[childIdx]);
     }
     mtx.unlock();
 }
 
-void Node::backup_collision(size_t childIdx)
+void Node::backup_collision(size_t childIdx, float virtualLoss)
 {
     Node* currentNode = this;
     do {
-        currentNode->revert_virtual_loss(childIdx);
+        currentNode->revert_virtual_loss(childIdx, virtualLoss);
         childIdx = currentNode->childIdxForParent;
         currentNode = currentNode->parentNode;
     } while (currentNode != nullptr);
 }
 
-void Node::revert_virtual_loss(size_t childIdx)
+void Node::revert_virtual_loss(size_t childIdx, float virtualLoss)
 {
     mtx.lock();
-    visits -= searchSettings->virtualLoss;
-    childNumberVisits[childIdx] -= searchSettings->virtualLoss;
-    actionValues[childIdx] += searchSettings->virtualLoss;
+    visits -= virtualLoss;
+    childNumberVisits[childIdx] -= virtualLoss;
+    actionValues[childIdx] += virtualLoss;
     qValues[childIdx] = actionValues[childIdx] / childNumberVisits[childIdx];
     mtx.unlock();
-}
-
-SearchSettings* Node::get_search_settings() const
-{
-    return searchSettings;
 }
 
 void Node::set_parent_node(Node* value)
@@ -560,11 +539,6 @@ void Node::enable_has_nn_results()
 int Node::plies_from_null() const
 {
     return pliesFromNull;
-}
-
-Color Node::side_to_move() const
-{
-    return sideToMove;
 }
 
 bool Node::is_tablebase() const
@@ -668,7 +642,7 @@ void Node::unlock()
     mtx.unlock();
 }
 
-void Node::apply_dirichlet_noise_to_prior_policy()
+void Node::apply_dirichlet_noise_to_prior_policy(const SearchSettings* searchSettings)
 {
     DynamicVector<float> dirichlet_noise = get_dirichlet_noise(numberChildNodes, searchSettings->dirichletAlpha);
     policyProbSmall = (1 - searchSettings->dirichletEpsilon ) * policyProbSmall + searchSettings->dirichletEpsilon * dirichlet_noise;
@@ -697,7 +671,7 @@ void Node::apply_softmax_to_policy()
     policyProbSmall = softmax(policyProbSmall);
 }
 
-void Node::mark_enhanced_moves(const Board* pos)
+void Node::mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings)
 {
     if (searchSettings->enhanceChecks || searchSettings->enhanceCaptures) {
         isCheck.resize(numberChildNodes);
@@ -722,7 +696,7 @@ void Node::disable_move(size_t childIdxForParent)
     actionValues[childIdxForParent] = -INT_MAX;
 }
 
-void Node::enhance_moves()
+void Node::enhance_moves(const SearchSettings* searchSettings)
 {
     if (!searchSettings->enhanceChecks && !searchSettings->enhanceCaptures) {
         return;
@@ -767,9 +741,9 @@ bool is_capture(const Board* pos, Move move)
     return pos->capture(move);
 }
 
-DynamicVector<float> Node::get_current_u_values()
+DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSettings)
 {
-    return get_current_cput() * blaze::subvector(policyProbSmall, 0, noVisitIdx) * (sqrt(visits) / (blaze::subvector(childNumberVisits, 0, noVisitIdx) + 1.f));
+    return get_current_cput(visits, searchSettings) * blaze::subvector(policyProbSmall, 0, noVisitIdx) * (sqrt(visits) / (blaze::subvector(childNumberVisits, 0, noVisitIdx) + 1.f));
 }
 
 Node *Node::get_child_node(size_t childIdx)
@@ -777,15 +751,15 @@ Node *Node::get_child_node(size_t childIdx)
     return childNodes[childIdx];
 }
 
-void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy) const
+void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, float qValueWeight) const
 {
     // fill only the winning moves in case of a known win
     if (nodeType == SOLVED_WIN) {
         mcts_policy_based_on_wins(mctsPolicy);
         return;
     }
-    if (searchSettings->qValueWeight > 0) {
-        mcts_policy_based_on_q_n(mctsPolicy);
+    if (qValueWeight > 0) {
+        mcts_policy_based_on_q_n(mctsPolicy, qValueWeight);
     }
     else {
         mctsPolicy = childNumberVisits;
@@ -842,7 +816,7 @@ size_t get_best_move_index(const Node *curNode)
     return argmax(mctsPolicy);
 }
 
-size_t Node::select_child_node()
+size_t Node::select_child_node(const SearchSettings* searchSettings)
 {
     if (checkmateIdx != -1) {
         return size_t(checkmateIdx);
@@ -853,7 +827,7 @@ size_t Node::select_child_node()
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    return argmax(blaze::subvector(qValues, 0, noVisitIdx) + get_current_u_values());
+    return argmax(blaze::subvector<blaze::aligned>(qValues, 0, noVisitIdx) + get_current_u_values(searchSettings));
 }
 
 const char* node_type_to_string(enum NodeType nodeType)
@@ -971,9 +945,9 @@ float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisit
     return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
 }
 
-double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit)
+float get_current_cput(float visits, const SearchSettings* searchSettings)
 {
-    return log((numberVisits + cpuctBase + 1) / cpuctBase) + cpuctInit;
+    return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
 void print_node_statistics(const Node* node)

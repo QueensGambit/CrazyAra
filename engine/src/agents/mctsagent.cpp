@@ -64,7 +64,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, NeuralNetAPI** netBatches,
     mapWithMutex->hashTable->reserve(1e6);
 
     for (auto i = 0; i < searchSettings->threads; ++i) {
-        searchThreads.push_back(new SearchThread(netBatches[i], searchSettings, mapWithMutex));
+        searchThreads.emplace_back(new SearchThread(netBatches[i], searchSettings, mapWithMutex));
     }
     probOutputs = new float[netSingle->get_policy_output_length()];
     timeManager = new TimeManager(searchSettings->randomMoveFactor);
@@ -177,13 +177,13 @@ void MCTSAgent::create_new_root_node(Board *pos)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
-    rootNode = new Node(pos, false, nullptr, 0, searchSettings);
+    rootNode = new Node(pos, false, nullptr, 0);
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, &valueOutput, probOutputs);
     size_t tbHits = 0;
-    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs, rootNode, searchSettings->nodePolicyTemperature, tbHits);
-    gameNodes.push_back(rootNode);
+    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs, rootNode, tbHits, pos->side_to_move(), searchSettings);
+    gameNodes.emplace_back(rootNode);
 }
 
 void MCTSAgent::delete_old_tree()
@@ -254,7 +254,7 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove, Board* pos)
             opponentsNextRoot = pick_next_node(move, rootNode);
             if (opponentsNextRoot != nullptr) {
                 info_string("apply move to tree");
-                gameNodes.push_back(opponentsNextRoot);
+                gameNodes.emplace_back(opponentsNextRoot);
             }
         }
         else {
@@ -262,7 +262,7 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove, Board* pos)
             if (ownNextRoot != nullptr && !ownNextRoot->is_terminal()) {
                 if (ownNextRoot->hash_key() == pos->hash_key()) {
                     info_string("apply move to tree");
-                    gameNodes.push_back(ownNextRoot);
+                    gameNodes.emplace_back(ownNextRoot);
                 }
                 else {
                     ownNextRoot = nullptr;
@@ -315,7 +315,7 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     else {
         if (searchSettings->dirichletEpsilon > 0.009f) {
             info_string("apply dirichlet noise");
-            rootNode->apply_dirichlet_noise_to_prior_policy();
+            rootNode->apply_dirichlet_noise_to_prior_policy(searchSettings);
             rootNode->mark_nodes_as_fully_expanded();
         }
 
@@ -340,7 +340,7 @@ void MCTSAgent::run_mcts_search(EvalInfo& evalInfo)
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
     LoggerThread loggerThread(rootNode, &evalInfo, 1000, searchThreads);
-    int curMovetime = timeManager->get_time_for_move(searchLimits, rootNode->side_to_move(), rootNode->plies_from_null()/2);
+    int curMovetime = timeManager->get_time_for_move(searchLimits, rootPos->side_to_move(), rootNode->plies_from_null()/2);
     ThreadManager threadManager(rootNode, searchThreads, &loggerThread, curMovetime, 200, overallNPS, lastValueEval);
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, &threadManager);
     unique_ptr<thread> tLogger = make_unique<thread>(run_logger_thread, &loggerThread);

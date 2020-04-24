@@ -57,6 +57,7 @@ private:
 
     // list of all node objects which have been selected for expansion
     vector<Node*> newNodes;
+    vector<Color> newNodeSideToMove;
     vector<Node*> transpositionNodes;
     vector<Node*> collisionNodes;
 
@@ -176,11 +177,13 @@ struct NodeDescription
  * @param states States list which is used for 3-fold-repetition detection
  * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
  */
-Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states);
+Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states, const SearchSettings* searchSettings);
 
-void backup_values(vector<Node*>& nodes);
+void backup_values(vector<Node*>& nodes, float virtualLoss);
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, float nodeTemperature, size_t& tbHits);
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, Color sideToMove, const SearchSettings* searchSettings);
+void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
+void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx);
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo);
 

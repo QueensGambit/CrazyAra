@@ -94,12 +94,12 @@ void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t 
         Node *newNode = new Node(*it->second);
         parentNode->add_transposition_child_node(newNode, childIdx);
         parentNode->increment_no_visit_idx();
-        transpositionNodes.push_back(newNode);
+        transpositionNodes.emplace_back(newNode);
     }
     else {
         parentNode->increment_no_visit_idx();
         assert(parentNode != nullptr);
-        Node *newNode = new Node(newPos, inCheck, parentNode, childIdx, searchSettings);
+        Node *newNode = new Node(newPos, inCheck, parentNode, childIdx);
         // fill a new board in the input_planes vector
         // we shift the index by NB_VALUES_TOTAL each time
         board_to_planes(newPos, newPos->number_repetitions(), true, inputPlanes+newNodes.size()*NB_VALUES_TOTAL);
@@ -109,7 +109,8 @@ void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t 
 
         // save a reference newly created list in the temporary list for node creation
         // it will later be updated with the evaluation of the NN
-        newNodes.push_back(newNode);
+        newNodes.emplace_back(newNode);
+        newNodeSideToMove.emplace_back(newPos->side_to_move());
     }
 }
 
@@ -128,7 +129,7 @@ SearchLimits *SearchThread::get_search_limits() const
     return searchLimits;
 }
 
-Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states)
+Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states,  const SearchSettings* searchSettings)
 {
     Node* currentNode = rootNode;
     description.depth = 0;
@@ -136,8 +137,8 @@ Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, No
 
     while (true) {
         currentNode->lock();
-        childIdx = currentNode->select_child_node();
-        currentNode->apply_virtual_loss_to_child(childIdx);
+        childIdx = currentNode->select_child_node(searchSettings);
+        currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
 
         Node* nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
@@ -186,12 +187,20 @@ void SearchThread::reset_tb_hits()
     tbHits = 0;
 }
 
+void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, Color sideToMove, const SearchSettings* searchSettings)
+{
+    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, is_policy_map), get_current_move_lookup(sideToMove));
+    node_post_process_policy(node, searchSettings->nodePolicyTemperature, is_policy_map, searchSettings);
+    node_assign_value(node, valueOutputs, tbHits, batchIdx);
+    node->enable_has_nn_results();
+}
+
 void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, searchSettings->nodePolicyTemperature, tbHits);
+            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove[batchIdx], searchSettings);
         }
         ++batchIdx;
         mapWithMutex->mtx.lock();
@@ -202,14 +211,15 @@ void SearchThread::set_nn_results_to_child_nodes()
 
 void SearchThread::backup_value_outputs()
 {
-    backup_values(newNodes);
-    backup_values(transpositionNodes);
+    backup_values(newNodes, searchSettings->virtualLoss);
+    newNodeSideToMove.clear();
+    backup_values(transpositionNodes, searchSettings->virtualLoss);
 }
 
 void SearchThread::backup_collisions()
 {
     for (auto node: collisionNodes) {
-        node->get_parent_node()->backup_collision(node->get_child_idx_for_parent());
+        node->get_parent_node()->backup_collision(node->get_child_idx_for_parent(), searchSettings->virtualLoss);
     }
     collisionNodes.clear();
 }
@@ -239,15 +249,15 @@ void SearchThread::create_mini_batch()
 
         Board newPos = Board(*rootPos);
         bool inCheck;
-        parentNode = get_new_child_to_evaluate(&newPos, rootNode, childIdx, description, inCheck, states);
+        parentNode = get_new_child_to_evaluate(&newPos, rootNode, childIdx, description, inCheck, states, searchSettings);
 
         if(description.isTerminal) {
             ++numTerminalNodes;
-            parentNode->backup_value(childIdx, -parentNode->get_child_node(childIdx)->get_value());
+            parentNode->backup_value(childIdx, -parentNode->get_child_node(childIdx)->get_value(), searchSettings->virtualLoss);
         }
         else if (description.isCollision) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
-            collisionNodes.push_back(parentNode->get_child_node(childIdx));
+            collisionNodes.emplace_back(parentNode->get_child_node(childIdx));
         }
         else {
             add_new_node_to_tree(&newPos, parentNode, childIdx, inCheck);
@@ -276,22 +286,16 @@ void run_search_thread(SearchThread *t)
     t->set_is_running(false);
 }
 
-void backup_values(vector<Node*>& nodes)
+void backup_values(vector<Node*>& nodes, float virtualLoss)
 {
     for (auto node: nodes) {
-        node->get_parent_node()->backup_value(node->get_child_idx_for_parent(), -node->get_value());
+        node->get_parent_node()->backup_value(node->get_child_idx_for_parent(), -node->get_value(), virtualLoss);
     }
     nodes.clear();
 }
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, float temperature, size_t& tbHits)
+void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)
 {
-    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), get_current_move_lookup(node->side_to_move()));
-    if (!isPolicyMap) {
-        node->apply_softmax_to_policy();
-    }
-    node->enhance_moves();
-    node->apply_temperature_to_prior_policy(temperature);
     if (!node->is_tablebase()) {
         node->set_value(valueOutputs[batchIdx]);
     }
@@ -302,7 +306,15 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
             node->set_value((valueOutputs[batchIdx] + node->get_value()) * 0.5f);
         }
     }
-    node->enable_has_nn_results();
+}
+
+void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings)
+{
+    if (!isPolicyMap) {
+        node->apply_softmax_to_policy();
+    }
+    node->enhance_moves(searchSettings);
+    node->apply_temperature_to_prior_policy(temperature);
 }
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo) {

@@ -33,7 +33,6 @@
 #include <unordered_map>
 
 #include <blaze/Math.h>
-
 #include "position.h"
 #include "movegen.h"
 #include "board.h"
@@ -59,7 +58,6 @@ private:
     // identifiers
     Key key;
     uint16_t pliesFromNull;
-    Color sideToMove;
 
     Node* parentNode;
 
@@ -87,10 +85,7 @@ private:
     bool isTablebase;
     uint16_t childIdxForParent;
     bool hasNNResults;
-    bool isFullyExpanded;        // is true if every child node has at least 1 visit
     int checkmateIdx;
-
-    SearchSettings* searchSettings;
 
     /**
      * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
@@ -197,13 +192,13 @@ private:
      * @brief mcts_policy_based_on_q_n Creates the MCTS policy based on visits and Q-values
      * @param mctsPolicy MCTS policy which will be set
      */
-    void mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy) const;
+    void mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qValueWeight) const;
 
     /**
      * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
      * @param pos Current board positions
      */
-    void mark_enhanced_moves(const Board* pos);
+    void mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings);
 
     /**
      * @brief disable_move Disables a given move for futher visits by setting the corresponding Q-value to -INT_MAX
@@ -222,8 +217,7 @@ public:
     Node(Board *pos,
          bool inCheck,
          Node *parentNode,
-         size_t childIdxForParent,
-         SearchSettings* searchSettings);
+         size_t childIdxForParent);
 
     /**
      * @brief Node Copy constructor which copies the value evaluation, board position, prior policy and checkmateIdx.
@@ -241,7 +235,7 @@ public:
      * @brief get_current_u_values Calucates and returns the current u-values for this node
      * @return DynamicVector<float>
      */
-    DynamicVector<float> get_current_u_values();
+    DynamicVector<float> get_current_u_values(const SearchSettings* searchSettings);
 
     /**
      * @brief get_child_node Returns the child node at the given index.
@@ -251,33 +245,33 @@ public:
      */
     Node* get_child_node(size_t childIdx);
 
-    size_t select_child_node();
+    size_t select_child_node(const SearchSettings* searchSettings);
 
     /**
      * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
      * The value is flipped at every ply.
      * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
      */
-    void backup_value(size_t childIdx, float value);
+    void backup_value(size_t childIdx, float value, float virtualLoss);
 
     /**
      * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
      * @param childIdx Index to the child node to update
      * @param value Specifies the value evaluation to backpropagate
      */
-    void revert_virtual_loss_and_update(size_t childIdx, float value);
+    void revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss);
 
     /**
-     * @brief backup_collision Iteratively removes the virtual loss of the collision event that occured
+     * @brief backup_collision Iteratively removes the virtual loss of the collision event that occurred
      * @param childIdx Index to the child node to update
      */
-    void backup_collision(size_t childIdx);
+    void backup_collision(size_t childIdx, float virtualLoss);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
      * @param childIdx Index to the child node to update
      */
-    void revert_virtual_loss(size_t childIdx);
+    void revert_virtual_loss(size_t childIdx, float virtualLoss);
 
     Move get_move(size_t childIdx) const;
     vector<Node*> get_child_nodes() const;
@@ -285,7 +279,7 @@ public:
     bool has_nn_results() const;
     float get_value() const;
 
-    void apply_virtual_loss_to_child(size_t childIdx);
+    void apply_virtual_loss_to_child(size_t childIdx, float virtualLoss);
 
     void revert_virtual_loss_and_update(float value);
     Node* get_parent_node() const;
@@ -315,7 +309,7 @@ public:
      * alpha value searchSettings->dirichletAlpha to the prior policy of the root node. This encourages exploration of nodes with initially low
      * low activations.
      */
-    void apply_dirichlet_noise_to_prior_policy();
+    void apply_dirichlet_noise_to_prior_policy(const SearchSettings* searchSettings);
 
     /**
      * @brief apply_temperature_to_prior_policy Applies a given temperature value on the root nodes policy distribution.
@@ -338,12 +332,6 @@ public:
 
     bool is_fully_expanded() const;
 
-    /**
-     * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
-     * @return float
-     */
-    inline float get_current_cput();
-
     DynamicVector<float>& get_policy_prob_small();
 
     void set_probabilities_for_moves(const float *data, unordered_map<Move, size_t>& moveLookup);
@@ -354,7 +342,7 @@ public:
      * @brief enhance_moves Calls enhance_checks & enhance captures if the searchSetting suggests it and applies a renormilization afterwards
      * @param pos Current board position
      */
-    void enhance_moves();
+    void enhance_moves(const SearchSettings* searchSettings);
 
     void set_value(float value);
     size_t get_child_idx_for_parent() const;
@@ -396,7 +384,7 @@ public:
      * @param childNumberVisits Number of visits for each child node after search
      * @param mctsPolicy Output of the final mcts policy after search
      */
-    void get_mcts_policy(DynamicVector<float>& mctsPolicy) const;
+    void get_mcts_policy(DynamicVector<float>& mctsPolicy, float qValueWeight = 0) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
@@ -428,7 +416,6 @@ public:
     DynamicVector<float> get_child_number_visits() const;
     void enable_has_nn_results();
     int plies_from_null() const;
-    Color side_to_move() const;
     bool is_tablebase() const;
     uint8_t get_node_type() const;
     uint16_t get_end_in_ply() const;
@@ -468,8 +455,6 @@ inline bool is_capture(const Board* pos, Move move);
 inline bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves,
                               const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall);
 
-Node* select_child_node(Node* node);
-
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
  * @param node Node of the subtree to delete
@@ -497,7 +482,7 @@ float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisit
  * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
  * @return float
  */
-double get_current_cput(float numberVisits, float cpuctBase, float cpuctInit);
+float get_current_cput(float visits, const SearchSettings* searchSettings);
 
 /**
  * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
