@@ -144,6 +144,9 @@ const int NB_LABELS_POLICY_MAP = NB_CHANNELS_POLICY_MAP * BOARD_HEIGHT * BOARD_W
 #define LOSS -1
 #define DRAW 0
 #define WIN 1
+#define PRESERVED_ITEMS 8
+// Pre-initialized index when no forced win was found: 2^16 - 1
+#define NO_CHECKMATE 65535
 
 enum Result {
     DRAWN = 0,

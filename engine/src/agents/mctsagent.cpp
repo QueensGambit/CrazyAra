@@ -178,6 +178,7 @@ void MCTSAgent::create_new_root_node(Board *pos)
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
     rootNode = new Node(pos, false, nullptr, 0);
+    rootNode->prepare_node_for_visits();
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, &valueOutput, probOutputs);
@@ -306,8 +307,8 @@ void MCTSAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     if (rootNode->get_number_child_nodes() == 1 && int(rootNode->get_visits()) != 1) {
         info_string("Only single move available -> early stopping");
     }
-    else if (rootNode->get_checkmate_idx() != -1) {
-        info_string("Checkmate in one -> early stopping");
+    else if (rootNode->is_playout_node() && rootNode->has_forced_win()) {
+        info_string("Forced win found -> early stopping");
     }
     else if (rootNode->get_number_child_nodes() == 0) {
         info_string("The given position has no legal moves");

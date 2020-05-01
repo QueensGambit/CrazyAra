@@ -38,173 +38,39 @@
 #include "board.h"
 
 #include "agents/config/searchsettings.h"
+#include "nodedata.h"
 #include "constants.h"
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 
-enum NodeType : uint8_t {
-    SOLVED_WIN,
-    SOLVED_DRAW,
-    SOLVED_LOSS,
-    UNSOLVED
-};
-
 class Node
 {
 private:
     mutex mtx;
-    // identifiers
-    Key key;
-    uint16_t pliesFromNull;
+
+    DynamicVector<float> policyProbSmall;
+    vector<Move> legalMoves;
+    vector<Node*> childNodes;
+    //    DynamicVector<bool> isCheck;
+    //    DynamicVector<bool> isCapture;
 
     Node* parentNode;
+    Key key;
 
     // singular values
     float value;
-    float visits;
-    float terminalVisits;
+    unique_ptr<NodeData> d;
 
-    DynamicVector<float> policyProbSmall;
-    DynamicVector<float> childNumberVisits;
-    DynamicVector<float> actionValues;
-    DynamicVector<float> qValues;
-    DynamicVector<bool> isCheck;
-    DynamicVector<bool> isCapture;
+    uint16_t childIdxForParent;
+    // identifiers
+    uint16_t pliesFromNull;
 
-    NodeType nodeType;
-    uint16_t endInPly;
-    uint16_t noVisitIdx;
-    uint16_t numberUnsolvedChildNodes;
-
-    vector<Node*> childNodes;
-    vector<Move> legalMoves;
     bool isTerminal;
     bool isTablebase;
-    uint16_t childIdxForParent;
     bool hasNNResults;
-    int checkmateIdx;
-
-    /**
-     * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
-     * @param pos Current board position for this node
-     * @param inCheck Boolean indicating if the king is in check
-     */
-    void check_for_terminal(Board* pos, bool inCheck);
-
-    /**
-     * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
-     *  updates isTerminal and the value evaluation
-     * @param pos Current board position for this node
-     */
-    void check_for_tablebase_wdl(Board* pos);
-
-    /**
-     * @brief fill_child_node_moves Generates the legal moves and save them in the list
-     * @param pos Current node position
-     */
-    void fill_child_node_moves(Board* pos);
-
-    /**
-     * @brief solve_for_terminal Tries to solve the current node to be a forced win, loss or draw.
-     * The main idea is based on the paper "Exact-Win Strategy for Overcoming AlphaZero" by Chen et al.
-     * https://www.researchgate.net/publication/331216459_Exact-Win_Strategy_for_Overcoming_AlphaZero
-     * The solver uses the current backpropagating child node as well as all available child nodes.
-     * @param childNode Child nodes which backpropagates the value
-     */
-    void solve_for_terminal(const Node* childNode);
-
-    /**
-     * @brief solved_win Checks if the current node is a solved win based on the given child node
-     * @param childNode Child nodes which backpropagates the value
-     * @return true for SOLVE_WIN else false
-     */
-    bool solved_win(const Node* childNode) const;
-
-    /**
-     * @brief solved_draw Checks if the current node is a solved draw based on the given child node
-     * and all available child node
-     * @param childNode Child nodes which backpropagates the value
-     * @return true for SOLVED_DRAW else false
-     */
-    bool solved_draw(const Node* childNode) const;
-
-    /**
-     * @brief at_least_one_drawn_child Checks if this node has only DRAWN or WON child nodes and at least one DRAWN child
-     * @return true if one DRAWN child exits and other child nodes are either won or DRAWN else false
-     */
-    bool at_least_one_drawn_child() const;
-
-    /**
-     * @brief only_won_child_nodws Checks if this node has only WON child nodes
-     * @return true if only WON child nodes exist else false
-     */
-    bool only_won_child_nodes() const;
-
-    /**
-     * @brief solved_loss Checks if the current node is a solved loss based on the given child node
-     * @param childNode Child nodes which backpropagates the value
-     * @return true for SOLVED_LOSS else false
-     */
-    bool solved_loss(const Node* childNode) const;
-
-    /**
-     * @brief mark_as_loss Marks the current node as a loss and its parent node as a win
-     */
-    void mark_as_loss();
-
-    /**
-     * @brief mark_as_draw Marks the current node as a draw and informs its parent node
-     */
-    void mark_as_draw();
-
-    /**
-     * @brief define_end_ply_for_solved_terminal Calculates the number of plies in which the terminal will be reached.
-     * The solving is based on the current backpropagating child nodes as well as all available child nodes.
-     * @param childNode Child nodes which backpropagates the value
-     */
-    void define_end_ply_for_solved_terminal(const Node* childNode);
-
-    /**
-     * @brief update_solved_terminal Updates member variables for a solved terminal node
-     * @param childNode Child nodes which backpropagates the value
-     * @param targetValue Target value which will be set to be the new node value
-     */
-    void update_solved_terminal(const Node* childNode, int targetValue);
-
-    /**
-     * @brief mcts_policy_based_on_wins Sets all known winning moves in a given policy to 1 and all
-     * remaining moves to 0. Afterwards the policy is renormalized.
-     * @param mctsPolicy MCTS policy which will be set
-     */
-    void mcts_policy_based_on_wins(DynamicVector<float>& mctsPolicy) const;
-
-    /**
-     * @brief prune_losses_in_mcts_policy Sets all known losing moves in a given policy to 0 in case
-     * the node is not known to be losing.
-     * @param mctsPolicy MCTS policy which will be set
-     */
-    void prune_losses_in_mcts_policy(DynamicVector<float>& mctsPolicy) const;
-
-    /**
-     * @brief mcts_policy_based_on_q_n Creates the MCTS policy based on visits and Q-values
-     * @param mctsPolicy MCTS policy which will be set
-     */
-    void mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qValueWeight) const;
-
-    /**
-     * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
-     * @param pos Current board positions
-     */
-    void mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings);
-
-    /**
-     * @brief disable_move Disables a given move for futher visits by setting the corresponding Q-value to -INT_MAX
-     * and the move probability to 0.
-     * @param childIdxForParent Index for the move which will be disabled
-     */
-    void disable_move(size_t childIdxForParent);
+    bool sorted;
 
 public:
     /**
@@ -272,6 +138,10 @@ public:
      */
     void revert_virtual_loss(size_t childIdx, float virtualLoss);
 
+    bool is_playout_node() const;
+
+    bool has_forced_win() const;
+
     Move get_move(size_t childIdx) const;
     vector<Node*> get_child_nodes() const;
     bool is_terminal() const;
@@ -282,11 +152,13 @@ public:
 
     void revert_virtual_loss_and_update(float value);
     Node* get_parent_node() const;
-    void increment_visits();
     void increment_no_visit_idx();
     Key hash_key() const;
 
     size_t get_number_child_nodes() const;
+
+
+    void prepare_node_for_visits();
 
     /**
      * @brief sort_nodes_by_probabilities Sorts all child nodes in ascending order based on their probability value
@@ -419,6 +291,132 @@ public:
     uint8_t get_node_type() const;
     uint16_t get_end_in_ply() const;
     float get_terminal_visits() const;
+
+    void init_node_data(size_t numberNodes);
+    void init_node_data();
+
+    void mark_as_terminal();
+
+private:
+    /**
+     * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
+     * @param pos Current board position for this node
+     * @param inCheck Boolean indicating if the king is in check
+     */
+    void check_for_terminal(Board* pos, bool inCheck);
+
+    /**
+     * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
+     *  updates isTerminal and the value evaluation
+     * @param pos Current board position for this node
+     */
+    void check_for_tablebase_wdl(Board* pos);
+
+    /**
+     * @brief fill_child_node_moves Generates the legal moves and save them in the list
+     * @param pos Current node position
+     */
+    void fill_child_node_moves(Board* pos);
+
+    /**
+     * @brief solve_for_terminal Tries to solve the current node to be a forced win, loss or draw.
+     * The main idea is based on the paper "Exact-Win Strategy for Overcoming AlphaZero" by Chen et al.
+     * https://www.researchgate.net/publication/331216459_Exact-Win_Strategy_for_Overcoming_AlphaZero
+     * The solver uses the current backpropagating child node as well as all available child nodes.
+     * @param childNode Child nodes which backpropagates the value
+     */
+    void solve_for_terminal(const Node* childNode);
+
+    /**
+     * @brief solved_win Checks if the current node is a solved win based on the given child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for SOLVE_WIN else false
+     */
+    bool solved_win(const Node* childNode) const;
+
+    /**
+     * @brief solved_draw Checks if the current node is a solved draw based on the given child node
+     * and all available child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for SOLVED_DRAW else false
+     */
+    bool solved_draw(const Node* childNode) const;
+
+    /**
+     * @brief at_least_one_drawn_child Checks if this node has only DRAWN or WON child nodes and at least one DRAWN child
+     * @return true if one DRAWN child exits and other child nodes are either won or DRAWN else false
+     */
+    bool at_least_one_drawn_child() const;
+
+    /**
+     * @brief only_won_child_nodws Checks if this node has only WON child nodes
+     * @return true if only WON child nodes exist else false
+     */
+    bool only_won_child_nodes() const;
+
+    /**
+     * @brief solved_loss Checks if the current node is a solved loss based on the given child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for SOLVED_LOSS else false
+     */
+    bool solved_loss(const Node* childNode) const;
+
+    /**
+     * @brief mark_as_loss Marks the current node as a loss and its parent node as a win
+     */
+    void mark_as_loss();
+
+    /**
+     * @brief mark_as_draw Marks the current node as a draw and informs its parent node
+     */
+    void mark_as_draw();
+
+    /**
+     * @brief define_end_ply_for_solved_terminal Calculates the number of plies in which the terminal will be reached.
+     * The solving is based on the current backpropagating child nodes as well as all available child nodes.
+     * @param childNode Child nodes which backpropagates the value
+     */
+    void define_end_ply_for_solved_terminal(const Node* childNode);
+
+    /**
+     * @brief update_solved_terminal Updates member variables for a solved terminal node
+     * @param childNode Child nodes which backpropagates the value
+     * @param targetValue Target value which will be set to be the new node value
+     */
+    void update_solved_terminal(const Node* childNode, int targetValue);
+
+    /**
+     * @brief mcts_policy_based_on_wins Sets all known winning moves in a given policy to 1 and all
+     * remaining moves to 0. Afterwards the policy is renormalized.
+     * @param mctsPolicy MCTS policy which will be set
+     */
+    void mcts_policy_based_on_wins(DynamicVector<float>& mctsPolicy) const;
+
+    /**
+     * @brief prune_losses_in_mcts_policy Sets all known losing moves in a given policy to 0 in case
+     * the node is not known to be losing.
+     * @param mctsPolicy MCTS policy which will be set
+     */
+    void prune_losses_in_mcts_policy(DynamicVector<float>& mctsPolicy) const;
+
+    /**
+     * @brief mcts_policy_based_on_q_n Creates the MCTS policy based on visits and Q-values
+     * @param mctsPolicy MCTS policy which will be set
+     */
+    void mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qValueWeight) const;
+
+    /**
+     * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
+     * @param pos Current board positions
+     */
+    void mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings);
+
+    /**
+     * @brief disable_move Disables a given move for futher visits by setting the corresponding Q-value to -INT_MAX
+     * and the move probability to 0.
+     * @param childIdxForParent Index for the move which will be disabled
+     */
+    void disable_move(size_t childIdxForParent);
 };
 
 /**
