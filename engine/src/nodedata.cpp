@@ -24,8 +24,37 @@
  */
 
 #include "nodedata.h"
+#include "util/blazeutil.h"
 
-NodeData::NodeData(int numberChildNodes):
+void NodeData::add_empty_node()
+{
+    append(childNumberVisits, 0.0f);
+    append(actionValues, 0.0f);
+    append(qValues, -1.0f);
+    childNodes.emplace_back(nullptr);
+}
+
+void NodeData::reserve_initial_space()
+{
+    const int initSize = min(PRESERVED_ITEMS, int(numberUnsolvedChildNodes));  //numberChildNodes
+
+    // # visit count of all its child nodes
+    childNumberVisits.reserve(initSize);
+
+    // total action value estimated by MCTS for each child node also denoted as w
+    actionValues.reserve(initSize);
+
+    // q: combined action value which is calculated by the averaging over all action values
+    // u: exploration metric for each child node
+    // (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
+    qValues.reserve(initSize);
+
+    childNodes.reserve(initSize);
+
+    add_empty_node();
+}
+
+NodeData::NodeData(size_t numberChildNodes):
     visits(1),
     terminalVisits(0),
     checkmateIdx(NO_CHECKMATE),
@@ -37,21 +66,7 @@ NodeData::NodeData(int numberChildNodes):
     // specify the number of direct child nodes of this node
     numberUnsolvedChildNodes = numberChildNodes;
 
-    const int initSize = min(PRESERVED_ITEMS, numberChildNodes);  //numberChildNodes
-
-    // # visit count of all its child nodes
-    childNumberVisits.resize(initSize);
-    childNumberVisits = 1;
-
-    // total action value estimated by MCTS for each child node also denoted as w
-    actionValues.resize(initSize);
-    actionValues = 0;
-
-    // q: combined action value which is calculated by the averaging over all action values
-    // u: exploration metric for each child node
-    // (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-    qValues.resize(initSize);
-    qValues = -1;
+    reserve_initial_space();
 }
 
 auto NodeData::get_q_values()

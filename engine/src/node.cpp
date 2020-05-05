@@ -31,6 +31,11 @@
 #include "../util/communication.h"
 
 
+bool Node::is_sorted() const
+{
+    return sorted;
+}
+
 Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent):
     parentNode(parentNode),
     key(pos->get_state_info()->key),
@@ -55,30 +60,27 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent)
     }
 #endif
     policyProbSmall.resize(numberChildNodes);
-    const int initSize = min(PRESERVED_ITEMS, numberChildNodes);
-    childNodes.resize(initSize, nullptr);
 }
 
 Node::Node(const Node &b)
 {
-    set_value(b.get_value());
+//    set_value(b.get_value());
+    set_value(b.updated_value_eval());
     key = b.key;
     pliesFromNull = b.plies_from_null();
     const int numberChildNodes = b.legalMoves.size();
     policyProbSmall.resize(numberChildNodes);
     policyProbSmall = b.policyProbSmall;
-    const int initSize = min(PRESERVED_ITEMS, numberChildNodes);
     legalMoves = b.legalMoves;
     isTerminal = b.isTerminal;
-    childNodes.resize(initSize, nullptr);
     //    parentNode = // is not copied
     //    childIdxForParent = // is not copied
-//    noVisitIdx = 1; // reset counter
     isTerminal = b.isTerminal;
     isTablebase = b.isTablebase;
     hasNNResults = b.hasNNResults;
     sorted = b.sorted;
     d = make_unique<NodeData>(numberChildNodes);
+    // TODO: Allow copying checkmateIndex
 }
 
 void Node::fill_child_node_moves(Board* pos)
@@ -109,7 +111,10 @@ bool Node::solved_draw(const Node* childNode) const
 bool Node::at_least_one_drawn_child() const
 {
     bool atLeastOneDrawnChild = false;
-    for (Node* childNode : childNodes) {
+    for (Node* childNode : d->childNodes) {
+//        if (childNode == nullptr) {
+//            return false;
+//        }
         if (childNode->d->nodeType != SOLVED_DRAW && childNode->d->nodeType != SOLVED_WIN) {
             return false;
         }
@@ -125,7 +130,7 @@ bool Node::at_least_one_drawn_child() const
 
 bool Node::only_won_child_nodes() const
 {
-    for (Node* childNode : childNodes) {
+    for (Node* childNode : d->childNodes) {
         if (childNode->d->nodeType != SOLVED_WIN) {
             return false;
         }
@@ -144,22 +149,6 @@ bool Node::solved_loss(const Node* childNode) const
 void Node::mark_as_loss()
 {
     set_value(LOSS);
-    parentNode->lock();
-    parentNode->d->checkmateIdx = int(childIdxForParent);
-    parentNode->d->nodeType = SOLVED_WIN;
-    parentNode->d->numberUnsolvedChildNodes--;
-    parentNode->d->endInPly = 1;
-    parentNode->unlock();
-    if (parentNode->parentNode != nullptr) {
-        parentNode->parentNode->lock();
-        if (parentNode->parentNode->d->numberUnsolvedChildNodes > 0) {
-            parentNode->parentNode->d->numberUnsolvedChildNodes--;
-        }
-        if (parentNode->parentNode->is_root_node()) {
-            parentNode->parentNode->disable_move(parentNode->childIdxForParent);
-        }
-        parentNode->parentNode->unlock();
-    }
     d->nodeType = SOLVED_LOSS;
 }
 
@@ -167,19 +156,13 @@ void Node::mark_as_draw()
 {
     set_value(DRAW);
     d->nodeType = SOLVED_DRAW;
-    if (parentNode != nullptr) {
-        parentNode->lock();
-        parentNode->d->numberUnsolvedChildNodes--;
-        parentNode->d->endInPly = 1;
-        parentNode->unlock();
-    }
 }
 
 void Node::define_end_ply_for_solved_terminal(const Node* childNode)
 {
     if (d->nodeType == SOLVED_LOSS) {
         // choose the longest pv line
-        for (const Node* curChildNode : childNodes) {
+        for (const Node* curChildNode : d->childNodes) {
             if (curChildNode->d->endInPly+1 > d->endInPly) {
                 d->endInPly = curChildNode->d->endInPly+1;
             }
@@ -188,7 +171,7 @@ void Node::define_end_ply_for_solved_terminal(const Node* childNode)
     }
     if (d->nodeType == SOLVED_DRAW) {
         // choose the shortest pv line for draws
-        for (const Node* curChildNode : childNodes) {
+        for (const Node* curChildNode : d->childNodes) {
             if (curChildNode->d->nodeType == SOLVED_DRAW && curChildNode->d->endInPly+1 < d->endInPly) {
                 d->endInPly = curChildNode->d->endInPly+1;
             }
@@ -220,10 +203,12 @@ void Node::update_solved_terminal(const Node* childNode, int targetValue)
 void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
 {
     mctsPolicy = 0;
-    for (size_t childIdx = 0; childIdx < get_number_child_nodes(); ++childIdx) {
-        if (childNodes[childIdx] != nullptr && childNodes[childIdx]->d->nodeType == SOLVED_LOSS) {
+    size_t childIdx = 0;
+    for (auto childNode: get_child_nodes()) {
+        if (childNode != nullptr && childNode->d != nullptr && childNode->d->nodeType == SOLVED_LOSS) {
             mctsPolicy[childIdx] = 1.0f;
         }
+        ++childIdx;
     }
     mctsPolicy /= sum(mctsPolicy);
 }
@@ -234,7 +219,7 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<float> &mctsPolicy) const
     if (d->nodeType != SOLVED_LOSS) {
         // set all entries which lead to a WIN of the opponent to zero
         for (size_t childIdx = 0; childIdx < d->noVisitIdx; ++childIdx) {
-            const Node* childNode = childNodes[childIdx];
+            const Node* childNode = d->childNodes[childIdx];
             if (childNode != nullptr && childNode->is_playout_node() && childNode->d->nodeType == SOLVED_WIN) {
                 mctsPolicy[childIdx] = 0;
             }
@@ -261,6 +246,9 @@ void Node::solve_for_terminal(const Node* childNode)
     if (childNode == nullptr) {
         info_string("nullptr as child node backup!");
         return;
+    }
+    if (d == nullptr) {
+        init_node_data();
     }
     if (d->nodeType != UNSOLVED) {
         // already solved
@@ -311,7 +299,7 @@ Move Node::get_move(size_t childIdx) const
 
 vector<Node*> Node::get_child_nodes() const
 {
-    return childNodes;
+    return d->childNodes;
 }
 
 bool Node::is_terminal() const
@@ -342,34 +330,26 @@ Node *Node::get_parent_node() const
     return parentNode;
 }
 
+void Node::reserve_full_memory()
+{
+    const size_t numberChildNodes = get_number_child_nodes();
+    d->childNumberVisits.reserve(numberChildNodes);
+    d->actionValues.reserve(numberChildNodes);
+    d->qValues.reserve(numberChildNodes);
+    d->childNodes.reserve(numberChildNodes);
+}
+
 void Node::increment_no_visit_idx()
 {
-    mtx.lock();
+    lock();
     if (d->noVisitIdx < get_number_child_nodes()) {
         ++d->noVisitIdx;
+        if (d->noVisitIdx == PRESERVED_ITEMS) {
+            reserve_full_memory();
+        }
+        d->add_empty_node();
     }
-    if (d->noVisitIdx == PRESERVED_ITEMS) { // && !is_fully_expanded()) {
-        const size_t numberChildNodes = get_number_child_nodes();
-        const int offset = numberChildNodes - d->noVisitIdx;
-
-        // # visit count of all its child nodes
-        d->childNumberVisits.resize(numberChildNodes, true);
-        blaze::subvector(d->childNumberVisits, d->noVisitIdx, offset) = 0;
-
-        // total action value estimated by MCTS for each child node also denoted as w
-        d->actionValues.resize(numberChildNodes, true);
-        blaze::subvector(d->actionValues, d->noVisitIdx, offset) = 0;
-
-        // q: combined action value which is calculated by the averaging over all action values
-        // u: exploration metric for each child node
-        // (the q and u values are stacked into 1 list in order to speed-up the argmax() operation
-        d->qValues.resize(numberChildNodes, true);
-        blaze::subvector(d->qValues, d->noVisitIdx, offset) = -1;
-//        d->qValues = -1;
-
-        childNodes.resize(numberChildNodes, nullptr);
-    }
-    mtx.unlock();
+    unlock();
 }
 
 float Node::get_value() const
@@ -411,16 +391,16 @@ void Node::backup_value(size_t childIdx, float value, float virtualLoss)
 
 void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss)
 {
-    mtx.lock();
+    lock();
     d->visits -= virtualLoss - 1;
     d->childNumberVisits[childIdx] -= virtualLoss - 1;
     d->actionValues[childIdx] += virtualLoss + value;
     d->qValues[childIdx] = d->actionValues[childIdx] / d->childNumberVisits[childIdx];
     if (is_terminal_value(value)) {
         ++d->terminalVisits;
-        solve_for_terminal(childNodes[childIdx]);
+        solve_for_terminal(d->childNodes[childIdx]);
     }
-    mtx.unlock();
+    unlock();
 }
 
 void Node::backup_collision(size_t childIdx, float virtualLoss)
@@ -435,12 +415,12 @@ void Node::backup_collision(size_t childIdx, float virtualLoss)
 
 void Node::revert_virtual_loss(size_t childIdx, float virtualLoss)
 {
-    mtx.lock();
+    lock();
     d->visits -= virtualLoss;
     d->childNumberVisits[childIdx] -= virtualLoss;
     d->actionValues[childIdx] += virtualLoss;
     d->qValues[childIdx] = d->actionValues[childIdx] / d->childNumberVisits[childIdx];
-    mtx.unlock();
+    unlock();
 }
 
 bool Node::is_playout_node() const
@@ -485,20 +465,20 @@ size_t Node::get_child_idx_for_parent() const
 
 void Node::add_new_child_node(Node *newNode, size_t childIdx)
 {
-    mtx.lock();
-    childNodes[childIdx] = newNode;
-    mtx.unlock();
+//    lock();
+    d->childNodes[childIdx] = newNode;
+//    unlock();
 }
 
 void Node::add_transposition_child_node(Node* newNode, size_t childIdx)
 {
-    newNode->mtx.lock();
+//    newNode->lock();
     newNode->parentNode = this;
     newNode->childIdxForParent = childIdx;
-    newNode->mtx.unlock();
-    mtx.lock();
-    childNodes[childIdx] = newNode;
-    mtx.unlock();
+//    newNode->unlock();
+//    lock();
+    d->childNodes[childIdx] = newNode;
+//    unlock();
 }
 
 float Node::max_policy_prob()
@@ -513,6 +493,12 @@ size_t Node::max_q_child()
 
 float Node::updated_value_eval() const
 {
+    if (!is_sorted()) {
+        return get_value();
+    }
+    if (d == nullptr || get_visits() == 1) {
+        return get_value();
+    }
     switch(d->nodeType) {
     case SOLVED_WIN:
         return WIN;
@@ -521,9 +507,6 @@ float Node::updated_value_eval() const
     case SOLVED_LOSS:
         return LOSS;
     default: ;  // UNSOLVED
-    }
-    if (get_visits() == 1) {
-        return get_value();
     }
     return d->qValues[argmax(d->childNumberVisits)];
 }
@@ -580,7 +563,7 @@ void Node::init_node_data(size_t numberNodes)
 
 void Node::init_node_data()
 {
-    d = make_unique<NodeData>(get_number_child_nodes());
+    init_node_data(get_number_child_nodes());
 }
 
 void Node::mark_as_terminal()
@@ -772,12 +755,12 @@ bool is_capture(const Board* pos, Move move)
 
 DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSettings)
 {
-    return get_current_cput(get_visits(), searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(get_visits()) / (blaze::subvector(d->childNumberVisits, 0, d->noVisitIdx) + 1.f));
+    return get_current_cput(get_visits(), searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(get_visits()) / (d->childNumberVisits + 1.f));
 }
 
 Node *Node::get_child_node(size_t childIdx)
 {
-    return childNodes[childIdx];
+    return d->childNodes[childIdx];
 }
 
 void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, float qValueWeight) const
@@ -804,7 +787,7 @@ void Node::get_principal_variation(vector<Move>& pv) const
     do {
         size_t childIdx = get_best_move_index(curNode);
         pv.push_back(curNode->get_move(childIdx));
-        curNode = curNode->childNodes[childIdx];
+        curNode = curNode->d->childNodes[childIdx];
     } while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal());  // && curNode != nullptr
 }
 
@@ -850,7 +833,7 @@ size_t Node::select_child_node(const SearchSettings* searchSettings)
     if (!sorted) { //visits == 1) {
         prepare_node_for_visits();
     }
-    if (get_number_child_nodes() == 1) {
+    if (d->noVisitIdx == 1) {
         return 0;
     }
     if (has_forced_win()) {
@@ -859,7 +842,7 @@ size_t Node::select_child_node(const SearchSettings* searchSettings)
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    return argmax(blaze::subvector(d->qValues, 0, d->noVisitIdx) + get_current_u_values(searchSettings));
+    return argmax(d->qValues + get_current_u_values(searchSettings));
 }
 
 const char* node_type_to_string(enum NodeType nodeType)
@@ -899,9 +882,9 @@ ostream& operator<<(ostream &os, const Node *node)
            << setw(12) << int(node->d->childNumberVisits[childIdx]) << " | "
            << setw(9) << node->policyProbSmall[childIdx] << " | "
            << setw(10) << max(node->d->qValues[childIdx], -1.0f) << " | ";
-        if (node->childNodes[childIdx] != nullptr && node->childNodes[childIdx]->get_node_type() != UNSOLVED) {
-            os << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(node->childNodes[childIdx]->d->nodeType)))
-               << " in " << setfill('0') << setw(2) << node->childNodes[childIdx]->d->endInPly+1;
+        if (node->d->childNodes[childIdx] != nullptr && node->d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
+            os << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(node->d->childNodes[childIdx]->d->nodeType)))
+               << " in " << setfill('0') << setw(2) << node->d->childNodes[childIdx]->d->endInPly+1;
         }
         else {
             os << setfill(' ') << setw(9) << node_type_to_string(UNSOLVED);
@@ -956,8 +939,10 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hash
         return;
     }
     // if the current node hasn't been expanded or is a terminal node then childNodes is empty and the recursion ends
-    for (Node* childNode: node->get_child_nodes()) {
-        delete_subtree_and_hash_entries(childNode, hashTable);
+    if (node->is_sorted()) {
+        for (Node* childNode: node->get_child_nodes()) {
+            delete_subtree_and_hash_entries(childNode, hashTable);
+        }
     }
     // the board position is only filled if the node has been extended
     auto it = hashTable->find(node->hash_key());

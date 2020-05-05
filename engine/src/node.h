@@ -52,7 +52,6 @@ private:
 
     DynamicVector<float> policyProbSmall;
     vector<Move> legalMoves;
-    vector<Node*> childNodes;
     //    DynamicVector<bool> isCheck;
     //    DynamicVector<bool> isCapture;
 
@@ -297,7 +296,14 @@ public:
 
     void mark_as_terminal();
 
+    bool is_sorted() const;
+
 private:
+    /**
+     * @brief reserve_full_memory Reserves memory for all available child nodes
+     */
+    void reserve_full_memory();
+
     /**
      * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
      * @param pos Current board position for this node

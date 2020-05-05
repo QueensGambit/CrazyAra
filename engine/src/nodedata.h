@@ -22,7 +22,7 @@
  * Created on 25.04.2020
  * @author: queensgambit
  *
- * Please describe what the content of this file is about
+ * Node data is a data container which is unavailable for all nodes <= 1 to reduce memory consumption.
  */
 
 #ifndef NODEDATA_H
@@ -52,11 +52,17 @@ enum NodeType : uint8_t {
     UNSOLVED
 };
 
+class Node;
+
+/**
+ * @brief The NodeData struct stores the member variables for all expanded child nodes which have at least been visited two times
+ */
 struct NodeData
 {
     DynamicVector<float> childNumberVisits;
     DynamicVector<float> actionValues;
     DynamicVector<float> qValues;
+    vector<Node*> childNodes;
 
     float visits;
     float terminalVisits;
@@ -67,9 +73,20 @@ struct NodeData
     uint16_t numberUnsolvedChildNodes;
 
     NodeType nodeType;
-    NodeData(int numberChildNodes);
+    NodeData(size_t numberChildNodes);
 
     auto get_q_values();
+
+public:
+    /**
+     * @brief add_empty_node Adds a new empty node to its child nodes
+     */
+    void add_empty_node();
+
+    /**
+     * @brief reserve_initial_space Reserves memory for PRESERVED_ITEMS number of child nodes
+     */
+    void reserve_initial_space();
 };
 
 
