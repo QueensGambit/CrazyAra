@@ -49,6 +49,11 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     probOutputs = new float[netBatch->get_policy_output_length()];
 #endif
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
+
+    newNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
+    newNodeSideToMove = make_unique<FixedVector<Color>>(searchSettings->batchSize);
+    transpositionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize*2);
+    collisionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
 }
 
 SearchThread::~SearchThread()
@@ -94,7 +99,7 @@ void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t 
         Node *newNode = new Node(*it->second);
         parentNode->add_transposition_child_node(newNode, childIdx);
         parentNode->increment_no_visit_idx();
-        transpositionNodes.emplace_back(newNode);
+        transpositionNodes->add_element(newNode);
     }
     else {
         parentNode->increment_no_visit_idx();
@@ -102,15 +107,15 @@ void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t 
         Node *newNode = new Node(newPos, inCheck, parentNode, childIdx);
         // fill a new board in the input_planes vector
         // we shift the index by NB_VALUES_TOTAL each time
-        board_to_planes(newPos, newPos->number_repetitions(), true, inputPlanes+newNodes.size()*NB_VALUES_TOTAL);
+        board_to_planes(newPos, newPos->number_repetitions(), true, inputPlanes+newNodes->size()*NB_VALUES_TOTAL);
 
         // connect the Node to the parent
         parentNode->add_new_child_node(newNode, childIdx);
 
         // save a reference newly created list in the temporary list for node creation
         // it will later be updated with the evaluation of the NN
-        newNodes.emplace_back(newNode);
-        newNodeSideToMove.emplace_back(newPos->side_to_move());
+        newNodes->add_element(newNode);
+        newNodeSideToMove->add_element(newPos->side_to_move());
     }
 }
 
@@ -198,9 +203,9 @@ void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutp
 void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
-    for (auto node: newNodes) {
+    for (auto node: *newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove[batchIdx], searchSettings);
+            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
         }
         ++batchIdx;
         mapWithMutex->mtx.lock();
@@ -211,17 +216,17 @@ void SearchThread::set_nn_results_to_child_nodes()
 
 void SearchThread::backup_value_outputs()
 {
-    backup_values(newNodes, searchSettings->virtualLoss);
-    newNodeSideToMove.clear();
-    backup_values(transpositionNodes, searchSettings->virtualLoss);
+    backup_values(newNodes.get(), searchSettings->virtualLoss);
+    newNodeSideToMove->reset_idx();
+    backup_values(transpositionNodes.get(), searchSettings->virtualLoss);
 }
 
 void SearchThread::backup_collisions()
 {
-    for (auto node: collisionNodes) {
+    for (auto node: *collisionNodes) {
         node->get_parent_node()->backup_collision(node->get_child_idx_for_parent(), searchSettings->virtualLoss);
     }
-    collisionNodes.clear();
+    collisionNodes->reset_idx();
 }
 
 bool SearchThread::nodes_limits_ok()
@@ -242,9 +247,9 @@ void SearchThread::create_mini_batch()
     size_t childIdx;
     size_t numTerminalNodes = 0;
 
-    while (newNodes.size() < searchSettings->batchSize &&
-           collisionNodes.size() < searchSettings->batchSize &&
-           transpositionNodes.size() < searchSettings->batchSize &&
+    while (!newNodes->is_full() &&
+           !collisionNodes->is_full() &&
+           !transpositionNodes->is_full() &&
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
         Board newPos = Board(*rootPos);
@@ -257,7 +262,7 @@ void SearchThread::create_mini_batch()
         }
         else if (description.isCollision) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
-            collisionNodes.emplace_back(parentNode->get_child_node(childIdx));
+            collisionNodes->add_element(parentNode->get_child_node(childIdx));
         }
         else {
             add_new_node_to_tree(&newPos, parentNode, childIdx, inCheck);
@@ -268,7 +273,7 @@ void SearchThread::create_mini_batch()
 void SearchThread::thread_iteration()
 {
     create_mini_batch();
-    if (newNodes.size() != 0) {
+    if (newNodes->size() != 0) {
         netBatch->predict(inputPlanes, valueOutputs, probOutputs);
         set_nn_results_to_child_nodes();
     }
@@ -286,12 +291,12 @@ void run_search_thread(SearchThread *t)
     t->set_is_running(false);
 }
 
-void backup_values(vector<Node*>& nodes, float virtualLoss)
+void backup_values(FixedVector<Node*>* nodes, float virtualLoss)
 {
-    for (auto node: nodes) {
+    for (auto node: *nodes) {
         node->get_parent_node()->backup_value(node->get_child_idx_for_parent(), -node->get_value(), virtualLoss);
     }
-    nodes.clear();
+    nodes->reset_idx();
 }
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)

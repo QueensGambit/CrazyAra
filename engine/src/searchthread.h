@@ -32,6 +32,7 @@
 #include "constants.h"
 #include "neuralnetapi.h"
 #include "config/searchlimits.h"
+#include "util/fixedvector.h"
 
 
 // wrapper for unordered_map with a mutex for thread safe access
@@ -42,7 +43,6 @@ struct MapWithMutex {
         delete hashTable;
     }
 };
-
 
 class SearchThread
 {
@@ -56,10 +56,10 @@ private:
     float* inputPlanes;
 
     // list of all node objects which have been selected for expansion
-    vector<Node*> newNodes;
-    vector<Color> newNodeSideToMove;
-    vector<Node*> transpositionNodes;
-    vector<Node*> collisionNodes;
+    unique_ptr<FixedVector<Node*>> newNodes;
+    unique_ptr<FixedVector<Color>> newNodeSideToMove;
+    unique_ptr<FixedVector<Node*>> transpositionNodes;
+    unique_ptr<FixedVector<Node*>> collisionNodes;
 
     // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
     // sufficient memory according to the batch-size will be allocated in the constructor
@@ -179,7 +179,7 @@ struct NodeDescription
  */
 Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states, const SearchSettings* searchSettings);
 
-void backup_values(vector<Node*>& nodes, float virtualLoss);
+void backup_values(FixedVector<Node*>* nodes, float virtualLoss);
 
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, Color sideToMove, const SearchSettings* searchSettings);
 void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
