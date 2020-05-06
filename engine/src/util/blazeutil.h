@@ -37,6 +37,18 @@ using blaze::StaticVector;
 using blaze::DynamicVector;
 
 /**
+ * @brief append Appends a single element to the vector. If necessary new memory will be allocated.
+ * @param vec Given vector
+ * @param value New value which will be appended
+ */
+template <typename T>
+void append(DynamicVector<T>& vec, T value)
+{
+    vec.extend(1);
+    vec[vec.size()-1] = value;
+}
+
+/**
  * @brief pick_move_idx Picks an index according to the probability distribution
  * @param distribution Probability distribution which should sum to 1
  * @return Random picked element index
