@@ -160,15 +160,19 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     if (same_hash_key(ownNextRoot, pos)) {
         delete_sibling_subtrees(ownNextRoot, mapWithMutex->hashTable);
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
+        delete rootNode;
+        delete opponentsNextRoot;
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, pos)) {
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex->hashTable);
+        delete rootNode;
         return opponentsNextRoot;
     }
 
-    // the node wasn't found, clear the old tree except the gameNodes (rootNode, opponentNextRoot)
+    // the node wasn't found, clear the old tree
     delete_old_tree();
+    delete rootNode;
 
     return nullptr;
 }
@@ -177,14 +181,13 @@ void MCTSAgent::create_new_root_node(Board *pos)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
-    rootNode = new Node(pos, false, nullptr, 0);
-    rootNode->prepare_node_for_visits();
+    rootNode = new Node(pos, false, nullptr, 0, searchSettings);
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, &valueOutput, probOutputs);
     size_t tbHits = 0;
     fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs, rootNode, tbHits, pos->side_to_move(), searchSettings);
-    gameNodes.emplace_back(rootNode);
+    rootNode->prepare_node_for_visits();
 }
 
 void MCTSAgent::delete_old_tree()
@@ -192,25 +195,9 @@ void MCTSAgent::delete_old_tree()
     // clear all remaining node of the former root node
     if (rootNode != nullptr) {
         for (Node* childNode: rootNode->get_child_nodes()) {
-            if (childNode != opponentsNextRoot) {
-                delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
-            }
-        }
-        if (opponentsNextRoot != nullptr) {
-            for (Node* childNode: opponentsNextRoot->get_child_nodes()) {
-                delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
-            }
+            delete_subtree_and_hash_entries(childNode, mapWithMutex->hashTable);
         }
     }
-}
-
-void MCTSAgent::delete_game_nodes()
-{
-    for (Node* node: gameNodes) {
-        mapWithMutex->hashTable->erase(node->hash_key());
-        delete node;
-    }
-    gameNodes.clear();
 }
 
 void MCTSAgent::sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t updateIntervalMS)
@@ -250,25 +237,13 @@ void MCTSAgent::update_nps_measurement(float curNPS)
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove, Board* pos)
 {
+    info_string("apply move to tree");
     if (!reusedFullTree && rootNode != nullptr) {
         if (ownMove) {
             opponentsNextRoot = pick_next_node(move, rootNode);
-            if (opponentsNextRoot != nullptr) {
-                info_string("apply move to tree");
-                gameNodes.emplace_back(opponentsNextRoot);
-            }
         }
         else {
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
-            if (ownNextRoot != nullptr && !ownNextRoot->is_terminal()) {
-                if (ownNextRoot->hash_key() == pos->hash_key()) {
-                    info_string("apply move to tree");
-                    gameNodes.emplace_back(ownNextRoot);
-                }
-                else {
-                    ownNextRoot = nullptr;
-                }
-            }
         }
     }
 }
@@ -276,7 +251,6 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove, Board* pos)
 void MCTSAgent::clear_game_history()
 {
     delete_old_tree();
-    delete_game_nodes();
 
     assert(mapWithMutex->hashTable->size() == 0);
     mapWithMutex->hashTable->clear();

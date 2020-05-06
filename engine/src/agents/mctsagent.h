@@ -74,9 +74,6 @@ private:
     // stores the pointer to the root node which will become the new root for opponents turn
     Node* opponentsNextRoot;
 
-    // this vector contains all nodes which have been played during a game
-    vector<Node*> gameNodes;
-
     MapWithMutex* mapWithMutex;
     StatesManager* states;
     float lastValueEval;
@@ -118,11 +115,6 @@ private:
      * @brief delete_old_tree Clear the old tree except the gameNodes (rootNode, opponentNextRoot)
      */
     void delete_old_tree();
-
-    /**
-     * @brief delete_game_nodes Delete all gameNodes and their hashTable item
-     */
-    void delete_game_nodes();
 
     /**
      * @brief sleep_and_log_for Sleeps for a given amout of ms while every update interval ms the eval info will be updated an printed to stdout
