@@ -92,9 +92,9 @@ void SearchThread::set_is_running(bool value)
 void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck)
 {
     mapWithMutex->mtx.lock();
-    unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable->find(newPos->hash_key());
+    unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newPos->hash_key());
     mapWithMutex->mtx.unlock();
-    if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable->end() &&
+    if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
             is_transposition_verified(it, newPos->get_state_info())) {
         Node *newNode = new Node(*it->second);
         parentNode->add_transposition_child_node(newNode, childIdx);
@@ -104,7 +104,7 @@ void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t 
     else {
         parentNode->increment_no_visit_idx();
         assert(parentNode != nullptr);
-        Node *newNode = new Node(newPos, inCheck, parentNode, childIdx);
+        Node *newNode = new Node(newPos, inCheck, parentNode, childIdx, searchSettings);
         // fill a new board in the input_planes vector
         // we shift the index by NB_VALUES_TOTAL each time
         board_to_planes(newPos, newPos->number_repetitions(), true, inputPlanes+newNodes->size()*NB_VALUES_TOTAL);
@@ -209,7 +209,7 @@ void SearchThread::set_nn_results_to_child_nodes()
         }
         ++batchIdx;
         mapWithMutex->mtx.lock();
-        mapWithMutex->hashTable->insert({node->hash_key(), node});
+        mapWithMutex->hashTable.insert({node->hash_key(), node});
         mapWithMutex->mtx.unlock();
     }
 }

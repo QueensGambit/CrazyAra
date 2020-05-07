@@ -51,16 +51,15 @@ class MCTSAgent : public Agent
 {
 private:
     NeuralNetAPI* netSingle;
-    NeuralNetAPI** netBatches;
 
     SearchSettings* searchSettings;
-    std::vector<SearchThread*> searchThreads;
+    vector<SearchThread*> searchThreads;
 
     float inputPlanes[NB_VALUES_TOTAL];
     float valueOutput;
-    float* probOutputs;
+    unique_ptr<float[]> probOutputs;
 
-    TimeManager* timeManager;
+    unique_ptr<TimeManager> timeManager;
 
     Node* rootNode;
     Board* rootPos;
@@ -74,7 +73,7 @@ private:
     // stores the pointer to the root node which will become the new root for opponents turn
     Node* opponentsNextRoot;
 
-    MapWithMutex* mapWithMutex;
+    MapWithMutex mapWithMutex;
     StatesManager* states;
     float lastValueEval;
 
@@ -88,75 +87,28 @@ private:
     float overallNPS;
     size_t nbNPSentries;
 
-    /**
-     * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
-     * The old tree or former subtrees will be freed from memory.
-     * @param pos Requested board position
-     * @return Number of nodes that have already been explored before the serach
-     */
-    inline size_t init_root_node(Board* pos);
-
-    /**
-     * @brief get_new_root_node Returns the pointer of the new root node for the given position in the case
-     * it was either the old root node or an element of the potential root node list.
-     * Otherwise a nullptr will be returned. The old tree is deleted except the game nodes.
-     * @param pos Requested board position
-     * @return Pointer to root node or nullptr
-     */
-    inline Node* get_root_node_from_tree(Board* pos);
-
-    /**
-     * @brief create_new_root_node Creates a new root node for the given board position and requests the neural network for evaluation
-     * @param pos Board position
-     */
-    inline void create_new_root_node(Board *pos);
-
-    /**
-     * @brief delete_old_tree Clear the old tree except the gameNodes (rootNode, opponentNextRoot)
-     */
-    void delete_old_tree();
-
-    /**
-     * @brief sleep_and_log_for Sleeps for a given amout of ms while every update interval ms the eval info will be updated an printed to stdout
-     * @param evalInfo Evaluation information
-     * @param timeMS Given amout of milli-seconds to sleep
-     */
-    void sleep_and_log_for(EvalInfo& evalInfo, size_t timeMS, size_t updateIntervalMS=1000);
-
-    /**
-     * @brief get_tb_hits Returns the number of tablebase hits for all search threads
-     * @return
-     */
-    size_t get_tb_hits();
-
-    /**
-     * @brief update_nps_measurement Updates the overall nps by a rolling average
-     * @param curNPS New NPS measurement
-     */
-    void update_nps_measurement(float curNPS);
+    unique_ptr<ThreadManager> threadManager;
+    unique_ptr<LoggerThread> loggerThread;
 
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
-              NeuralNetAPI** netBatches,
+              vector<unique_ptr<NeuralNetAPI>>& netBatches,
               SearchSettings* searchSettings,
-              PlaySettings* playSettings_,
+              PlaySettings* playSettings,
               StatesManager* states);
     ~MCTSAgent();
     MCTSAgent(const MCTSAgent&) = delete;
     MCTSAgent& operator=(MCTSAgent const&) = delete;
 
-    void evaluate_board_state(Board *pos, EvalInfo& evalInfo);
+    void evaluate_board_state() override; //Board *pos, EvalInfo& evalInfo);
 
     /**
      * @brief run_mcts_search Starts the MCTS serach using all available search threads
      * @param evalInfo Evaluation struct which is updated during search
      */
-    void run_mcts_search(EvalInfo& evalInfo);
+    void run_mcts_search();
 
-    /**
-     * @brief stop_search Stops the search which is called after "stop" from the stdin
-     */
-    void stop_search();
+    void stop() override;
 
     /**
      * @brief print_root_node Prints out the root node statistics (visits, q-value, u-value)
@@ -167,11 +119,10 @@ public:
 
     /**
      * @brief apply_move_to_tree Applies the given move to the search tree by adding the expanded node to the candidate list
-     * @param m Move
+     * @param move Move which has been played
      * @param ownMove Boolean indicating if it was CrazyAra's move
-     * @param pos Board position that will occur after move is applied
      */
-    void apply_move_to_tree(Move move, bool ownMove, Board* pos);
+    void apply_move_to_tree(Move move, bool ownMove);
 
     /**
      * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them
@@ -212,6 +163,55 @@ public:
      */
     void update_dirichlet_epsilon(float value);
     Board *get_root_pos() const;
+    bool is_running() const;
+
+private:
+    /**
+     * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
+     * The old tree or former subtrees will be freed from memory.
+     * @param pos Requested board position
+     * @return Number of nodes that have already been explored before the serach
+     */
+    inline size_t init_root_node(Board* pos);
+
+    /**
+     * @brief get_new_root_node Returns the pointer of the new root node for the given position in the case
+     * it was either the old root node or an element of the potential root node list.
+     * Otherwise a nullptr will be returned. The old tree is deleted except the game nodes.
+     * @param pos Requested board position
+     * @return Pointer to root node or nullptr
+     */
+    inline Node* get_root_node_from_tree(Board* pos);
+
+    /**
+     * @brief create_new_root_node Creates a new root node for the given board position and requests the neural network for evaluation
+     * @param pos Board position
+     */
+    inline void create_new_root_node(Board *pos);
+
+    /**
+     * @brief delete_old_tree Clear the old tree except the gameNodes (rootNode, opponentNextRoot)
+     */
+    void delete_old_tree();
+
+    /**
+     * @brief sleep_and_log_for Sleeps for a given amout of ms while every update interval ms the eval info will be updated an printed to stdout
+     * @param evalInfo Evaluation information
+     * @param timeMS Given amout of milli-seconds to sleep
+     */
+    void sleep_and_log_for(size_t timeMS, size_t updateIntervalMS=1000);
+
+    /**
+     * @brief get_tb_hits Returns the number of tablebase hits for all search threads
+     * @return
+     */
+    size_t get_tb_hits();
+
+    /**
+     * @brief update_nps_measurement Updates the overall nps by a rolling average
+     * @param curNPS New NPS measurement
+     */
+    void update_nps_measurement(float curNPS);
 };
 
 #endif // MCTSAGENT_H

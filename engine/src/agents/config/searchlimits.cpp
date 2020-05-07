@@ -36,21 +36,25 @@ std::ostream &operator<<(std::ostream &os, const SearchLimits &searchLimits)
     return os;
 }
 
-SearchLimits::SearchLimits():
-    movetime(0),
-    nodes(0),
-    movestogo(0),
-    depth(0),
-    minMovetime(0),
-    npmsec(0),
-    startTime(0),
-    moveOverhead(0),
-    infinite(false),
-    ponder(false)
+SearchLimits::SearchLimits()
 {
+    reset();
+}
+
+void SearchLimits::reset()
+{
+    movetime = 0;
+    nodes = 0;
+    movestogo = 0;
+    depth = 0;
+    minMovetime = 0;
+    npmsec = 0;
+    startTime = 0;
+    moveOverhead = 0;
+    infinite = false;
+    ponder = false;
     time[WHITE] = 0;
     time[BLACK] = 0;
     inc[WHITE] = 0;
     inc[BLACK] = 0;
-
 }

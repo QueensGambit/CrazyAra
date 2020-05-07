@@ -65,7 +65,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // (I) Set the pieces for both players
     for (Color color : {me, you}) {
         for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
-            Bitboard pieces = pos->pieces(color, piece);
+            const Bitboard pieces = pos->pieces(color, piece);
             // set the individual bits for the pieces
             // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
             set_bits_from_bitmap(pieces, current_channel, inputPlanes, me);

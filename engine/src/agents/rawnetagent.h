@@ -55,8 +55,11 @@ public:
     RawNetAgent(const RawNetAgent&) = delete;
     RawNetAgent& operator=(RawNetAgent const&) = delete;
 
-    void evaluate_board_state(Board *pos, EvalInfo& evalInfo);
+    void evaluate_board_state() override;
 
+    void stop() override;
+
+    void apply_move_to_tree(Move move, bool ownMove) override;
 };
 
 #endif // RAWNETAGENT_H

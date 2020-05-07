@@ -36,7 +36,7 @@ bool Node::is_sorted() const
     return sorted;
 }
 
-Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent):
+Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
     parentNode(parentNode),
     key(pos->get_state_info()->key),
     value(0),
@@ -55,7 +55,7 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent)
 
     check_for_terminal(pos, inCheck);
 #ifdef MODE_CHESS
-    if (!isTerminal) {
+    if (searchSettings->useTablebase && !isTerminal) {
         check_for_tablebase_wdl(pos);
     }
 #endif
@@ -64,7 +64,7 @@ Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent)
 
 Node::Node(const Node &b)
 {
-//    set_value(b.get_value());
+    // set_value(b.get_value());
     set_value(b.updated_value_eval());
     key = b.key;
     pliesFromNull = b.plies_from_null();
@@ -112,9 +112,6 @@ bool Node::at_least_one_drawn_child() const
 {
     bool atLeastOneDrawnChild = false;
     for (Node* childNode : d->childNodes) {
-//        if (childNode == nullptr) {
-//            return false;
-//        }
         if (childNode->d->nodeType != SOLVED_DRAW && childNode->d->nodeType != SOLVED_WIN) {
             return false;
         }
@@ -272,6 +269,7 @@ void Node::solve_for_terminal(const Node* childNode)
 
 void Node::mark_nodes_as_fully_expanded()
 {
+    info_string("mark as fully expanded");
     d->noVisitIdx = get_number_child_nodes();
 }
 
@@ -465,20 +463,20 @@ size_t Node::get_child_idx_for_parent() const
 
 void Node::add_new_child_node(Node *newNode, size_t childIdx)
 {
-//    lock();
+    //    lock();
     d->childNodes[childIdx] = newNode;
-//    unlock();
+    //    unlock();
 }
 
 void Node::add_transposition_child_node(Node* newNode, size_t childIdx)
 {
-//    newNode->lock();
+    //    newNode->lock();
     newNode->parentNode = this;
     newNode->childIdxForParent = childIdx;
-//    newNode->unlock();
-//    lock();
+    //    newNode->unlock();
+    //    lock();
     d->childNodes[childIdx] = newNode;
-//    unlock();
+    //    unlock();
 }
 
 float Node::max_policy_prob()
@@ -496,7 +494,7 @@ float Node::updated_value_eval() const
     if (!is_sorted()) {
         return get_value();
     }
-    if (d == nullptr || get_visits() == 1) {
+    if (d == nullptr || get_visits() < 10) {
         return get_value();
     }
     switch(d->nodeType) {
@@ -684,22 +682,22 @@ void Node::apply_softmax_to_policy()
 
 void Node::mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings)
 {
-//    const float numberChildNodes = get_number_child_nodes();
-//    if (searchSettings->enhanceChecks || searchSettings->enhanceCaptures) {
-//        isCheck.resize(numberChildNodes);
-//        isCheck = false;
-//        isCapture.resize(numberChildNodes);
-//        isCapture = false;
+    //    const float numberChildNodes = get_number_child_nodes();
+    //    if (searchSettings->enhanceChecks || searchSettings->enhanceCaptures) {
+    //        isCheck.resize(numberChildNodes);
+    //        isCheck = false;
+    //        isCapture.resize(numberChildNodes);
+    //        isCapture = false;
 
-//        for (size_t idx = 0; idx < numberChildNodes; ++idx) {
-//            if (pos->capture(legalMoves[idx])) {
-//                isCapture[idx] = true;
-//            }
-//            if (pos->gives_check(legalMoves[idx])) {
-//                isCheck[idx] = true;
-//            }
-//        }
-//    }
+    //        for (size_t idx = 0; idx < numberChildNodes; ++idx) {
+    //            if (pos->capture(legalMoves[idx])) {
+    //                isCapture[idx] = true;
+    //            }
+    //            if (pos->gives_check(legalMoves[idx])) {
+    //                isCheck[idx] = true;
+    //            }
+    //        }
+    //    }
 }
 
 void Node::disable_move(size_t childIdxForParent)
@@ -710,25 +708,25 @@ void Node::disable_move(size_t childIdxForParent)
 
 void Node::enhance_moves(const SearchSettings* searchSettings)
 {
-//    if (!searchSettings->enhanceChecks && !searchSettings->enhanceCaptures) {
-//        return;
-//    }
+    //    if (!searchSettings->enhanceChecks && !searchSettings->enhanceCaptures) {
+    //        return;
+    //    }
 
-//    bool checkUpdate = false;
-//    bool captureUpdate = false;
+    //    bool checkUpdate = false;
+    //    bool captureUpdate = false;
 
-//    if (searchSettings->enhanceChecks) {
-//        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, max(policyProbSmall)*searchSettings->checkFactor),
-//                                        searchSettings->threshCheck, legalMoves, isCheck, policyProbSmall);
-//    }
-//    if (searchSettings->enhanceCaptures) {
-//        captureUpdate = enhance_move_type(min(searchSettings->threshCapture, max(policyProbSmall)*searchSettings->captureFactor),
-//                                          searchSettings->threshCheck, legalMoves, isCapture, policyProbSmall);
-//    }
+    //    if (searchSettings->enhanceChecks) {
+    //        checkUpdate = enhance_move_type(min(searchSettings->threshCheck, max(policyProbSmall)*searchSettings->checkFactor),
+    //                                        searchSettings->threshCheck, legalMoves, isCheck, policyProbSmall);
+    //    }
+    //    if (searchSettings->enhanceCaptures) {
+    //        captureUpdate = enhance_move_type(min(searchSettings->threshCapture, max(policyProbSmall)*searchSettings->captureFactor),
+    //                                          searchSettings->threshCheck, legalMoves, isCapture, policyProbSmall);
+    //    }
 
-//    if (checkUpdate || captureUpdate) {
-//        policyProbSmall /= sum(policyProbSmall);
-//    }
+    //    if (checkUpdate || captureUpdate) {
+    //        policyProbSmall /= sum(policyProbSmall);
+    //    }
 }
 
 bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves, const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall)
@@ -833,6 +831,19 @@ size_t Node::select_child_node(const SearchSettings* searchSettings)
     if (!sorted) { //visits == 1) {
         prepare_node_for_visits();
     }
+    if (searchSettings->useRandomPlayout) {
+        if (is_root_node() && random() % 20 == 0) {
+            const size_t idx = random() % get_number_child_nodes();
+            if (is_fully_expanded()) {
+                if (d->childNodes[idx] == nullptr || d->childNodes[idx]->d == nullptr) {
+                    return idx;
+                }
+                if (d->childNodes[idx]->d->nodeType != SOLVED_WIN) {
+                    return idx;
+                }
+            }
+        }
+    }
     if (d->noVisitIdx == 1) {
         return 0;
     }
@@ -882,7 +893,7 @@ ostream& operator<<(ostream &os, const Node *node)
            << setw(12) << int(node->d->childNumberVisits[childIdx]) << " | "
            << setw(9) << node->policyProbSmall[childIdx] << " | "
            << setw(10) << max(node->d->qValues[childIdx], -1.0f) << " | ";
-        if (node->d->childNodes[childIdx] != nullptr && node->d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
+        if (node->d->childNodes[childIdx] != nullptr && node->d->childNodes[childIdx]->d != nullptr && node->d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
             os << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(node->d->childNodes[childIdx]->d->nodeType)))
                << " in " << setfill('0') << setw(2) << node->d->childNodes[childIdx]->d->endInPly+1;
         }
@@ -921,7 +932,7 @@ void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVecto
     }
 }
 
-void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
+void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable)
 {
     if (node->get_parent_node() != nullptr) {
         info_string("delete unused subtrees");
@@ -933,7 +944,7 @@ void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable)
     }
 }
 
-void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hashTable)
+void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>& hashTable)
 {
     if (node == nullptr) {
         return;
@@ -945,9 +956,9 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>* hash
         }
     }
     // the board position is only filled if the node has been extended
-    auto it = hashTable->find(node->hash_key());
-    if(it != hashTable->end()) {
-        hashTable->erase(node->hash_key());
+    auto it = hashTable.find(node->hash_key());
+    if(it != hashTable.end()) {
+        hashTable.erase(node->hash_key());
     }
     delete node;
 }

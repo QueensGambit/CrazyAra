@@ -57,33 +57,35 @@ unordered_map<Move, size_t> MV_LOOKUP_MIRRORED = {};
 unordered_map<Move, size_t> MV_LOOKUP_CLASSIC = {};
 unordered_map<Move, size_t> MV_LOOKUP_MIRRORED_CLASSIC = {};
 
-CrazyAra::CrazyAra()
-{
-    searchSettings = nullptr;  // will be initialized in init_search_settings()
-    playSettings = nullptr;    // will be initialized in init_play_settings()
+CrazyAra::CrazyAra():
+    rawAgent(nullptr),
+    mctsAgent(nullptr),
+    netSingle(nullptr),         // will be initialized in is_ready()
 #ifdef USE_RL
-    rlSettings = nullptr;      // will be initialized in init_rl_settings()
+    netSingleContender(nullptr),
+    mctsAgentContender(nullptr),
 #endif
-    netSingle = nullptr;       // will be initialized in is_ready()
-    states = new StatesManager();
+    searchSettings(SearchSettings()),
+    searchLimits(SearchLimits()),
+    playSettings(PlaySettings()),
 #ifdef MODE_CRAZYHOUSE
-    variant = CRAZYHOUSE_VARIANT;
+    variant(CRAZYHOUSE_VARIANT),
 #else
-    variant = CHESS_VARIANT;
+    variant(CHESS_VARIANT),
+    useRawNetwork(false),      // will be initialized in init_search_settings()
+    networkLoaded(false),
+    ongoingSearch(false),
 #endif
-    useRawNetwork = false;     // will be initialized in init_search_settings()
-    is960 = false;
+#ifdef SUPPORT960
+    is960(true),
+#else
+    is960(false)
+#endif
+{
 }
 
 CrazyAra::~CrazyAra()
 {
-    delete searchSettings;
-    delete playSettings;
-#ifdef USE_RL
-    delete rlSettings;
-#endif
-    delete netSingle;
-    delete states;
 }
 
 void CrazyAra::welcome()
@@ -101,7 +103,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     StateInfo* newState = new StateInfo;
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
     pos.set(StartFENs[variant], is960, variant, newState, uiThread.get());
-    states->activeStates.push_back(newState);
+    states.activeStates.push_back(newState);
 
     for (int i = 1; i < argc; ++i)
         cmd += string(argv[i]) + " ";
@@ -110,32 +112,6 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
 	// this is debug vector which can contain uci commands which will be automaticly processed when the executable is launched
     vector<string> commands = {
-//        "isready",
-//        "go",
-//        "position startpos moves e2e4 e7e5",
-//        "go",
-//        "setoption name UCI_Variant value crazyhouse",
-//        "ucinewgame",
-//        "position startpos",
-//        "position startpos moves a2a4",
-//        "position startpos moves a2a4 b7b6",
-//        "position startpos moves a2a4 b7b6 a1a3",
-//        "position startpos moves a2a4 b7b6 a1a3 e7e5"
-//        "isready",
-//        "go movetime 3000",
-//        "ucinewgame",
-//        "benchmark 1000",
-//        "ucinewgame",
-//        "position startpos",
-//        "position startpos moves e2e3",
-//        "position startpos moves e2e3 g8f6",
-//        "ucinewgame",
-//        "isready",
-//        "go wtime 60000 btime 60000",
-//        "position startpos moves e2e3 g8f6 d2d4 g7g6",
-//        "isready",
-//        "go wtime 58839 btime 58835",
-//        "ucinewgame"
     };
 
     do {
@@ -153,7 +129,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         is >> skipws >> token;
 
         if (token == "stop" || token == "quit") {
-            mctsAgent->stop_search();
+            mctsAgent->stop();
 		}
 		else if (token == "uci") {
 			cout << engine_info()
@@ -163,7 +139,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "setoption")  OptionsUCI::setoption(is);
         else if (token == "go")         go(&pos, is, evalInfo);
         else if (token == "position")   position(&pos, is);
-        else if (token == "ucinewgame") new_game();
+        else if (token == "ucinewgame") ucinewgame();
         else if (token == "isready") {
             if (is_ready()) {
                 cout << "readyok" << endl;
@@ -184,10 +160,12 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
         ++it;
     } while (token != "quit" && argc == 1); // Command line args are one-shot
+
+    mainSearchThread.join();
 }
 
-void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo, bool applyMoveToTree) {
-    SearchLimits searchLimits;
+void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo) {
+    searchLimits.reset();
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
     searchLimits.nodes = Options["Nodes"];
 
@@ -210,15 +188,17 @@ void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo, bool apply
         else if (token == "infinite")  searchLimits.infinite = true;
         else if (token == "ponder")    ponderMode = true;
     }
+
+    wait_to_finish_last_search();
+
+    ongoingSearch = true;
     if (useRawNetwork) {
-        rawAgent->perform_action(pos, &searchLimits, evalInfo);
+        rawAgent->set_search_settings(pos, &searchLimits, &evalInfo);
+        mainSearchThread = thread(run_agent_thread, rawAgent.get());
     }
     else {
-        mctsAgent->perform_action(pos, &searchLimits, evalInfo);
-        if (applyMoveToTree) {
-            // inform the mcts agent of the move, so the tree can potentially be reused later
-            mctsAgent->apply_move_to_tree(evalInfo.bestMove, true, pos);
-        }
+        mctsAgent->set_search_settings(pos, &searchLimits, &evalInfo);
+        mainSearchThread = thread(run_agent_thread, mctsAgent.get());
     }
 }
 
@@ -235,10 +215,20 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     istringstream is("fen " + fen);
     position(&pos, is);
     istringstream isGoCommand(goCommand);
-    go(&pos, isGoCommand, evalInfo, false);
+    go(&pos, isGoCommand, evalInfo);
 }
 
-void CrazyAra::position(Board *pos, istringstream& is) {
+void CrazyAra::wait_to_finish_last_search()
+{
+    if (ongoingSearch) {
+        mainSearchThread.join();
+        ongoingSearch = false;
+    }
+}
+
+void CrazyAra::position(Board *pos, istringstream& is)
+{
+    wait_to_finish_last_search();
 
     Move m;
     string token, fen;
@@ -258,8 +248,8 @@ void CrazyAra::position(Board *pos, istringstream& is) {
 
     auto uiThread = make_shared<Thread>(0);
     pos->set(fen, is960, variant, new StateInfo, uiThread.get());
-    states->clear_states();
-    states->swap_states();
+    states.clear_states();
+    states.swap_states();
     Move lastMove = MOVE_NULL;
 
     // Parse move list (if any)
@@ -267,12 +257,12 @@ void CrazyAra::position(Board *pos, istringstream& is) {
     {
         StateInfo* newState = new StateInfo;
         pos->do_move(m, *newState);
-        states->activeStates.push_back(newState);
+        states.activeStates.push_back(newState);
         lastMove = m;
     }
     // inform the mcts agent of the move, so the tree can potentially be reused later
     if (lastMove != MOVE_NULL && !useRawNetwork) {
-        mctsAgent->apply_move_to_tree(lastMove, false, pos);
+        mctsAgent->apply_move_to_tree(lastMove, false);
     }
     info_string("position", pos->fen());
 }
@@ -327,10 +317,10 @@ void CrazyAra::selfplay(istringstream &is)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
-    SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, rlSettings);
+    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings);
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, states, variant);
+    selfPlay.go(numberOfGames, &states, variant);
     cout << "readyok" << endl;
 }
 
@@ -338,13 +328,13 @@ void CrazyAra::arena(istringstream &is)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
-    SelfPlay selfPlay(rawAgent, mctsAgent, &searchLimits, playSettings, rlSettings);
-    NeuralNetAPI* netSingle = create_new_net_single(Options["Model_Directory_Contender"]);
-    NeuralNetAPI** netBatches = create_new_net_batches(Options["Model_Directory_Contender"]);
-    MCTSAgent* mctsAgentContender = create_new_mcts_agent(netSingle, netBatches, states);
+    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings);
+    netSingle = create_new_net_single(Options["Model_Directory_Contender"]);
+    netBatches = create_new_net_batches(Options["Model_Directory_Contender"]);
+    mctsAgentContender = create_new_mcts_agent(netSingle.get(), netBatches, &states);
     size_t numberOfGames;
     is >> numberOfGames;
-    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender, numberOfGames, states, variant);
+    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender.get(), numberOfGames, &states, variant);
 
     cout << "Arena summary" << endl;
     cout << "Score of Contender vs Producer: " << tournamentResult << endl;
@@ -355,25 +345,22 @@ void CrazyAra::arena(istringstream &is)
         cout << "keep" << endl;
     }
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
-    delete mctsAgentContender;
-    delete netSingle;
 }
 
 void CrazyAra::init_rl_settings()
 {
-    rlSettings = new RLSettings();
-    rlSettings->numberChunks = Options["Selfplay_Number_Chunks"];
-    rlSettings->chunkSize = Options["Selfplay_Chunk_Size"];
-    rlSettings->quickSearchNodes = Options["Quick_Nodes"];
-    rlSettings->quickSearchProbability = Options["Centi_Quick_Probability"] / 100.0f;
-    rlSettings->quickSearchQValueWeight = Options["Centi_Quick_Q_Value_Weight"] / 100.0f;
-    rlSettings->lowPolicyClipThreshold = Options["Milli_Policy_Clip_Thresh"] / 1000.0f;
-    rlSettings->quickDirichletEpsilon = Options["Centi_Quick_Dirichlet_Epsilon"] / 100.0f;
-    rlSettings->nodeRandomFactor = Options["Centi_Node_Random_Factor"] / 100.0f;
-    rlSettings->rawPolicyProbabilityTemperature = Options["Centi_Raw_Prob_Temperature"] / 100.0f;
-    rlSettings->resignProbability = Options["Centi_Resign_Probability"] / 100.0f;
-    rlSettings->resignThreshold = Options["Centi_Resign_Threshold"] / 100.0f;
-    rlSettings->reuseTreeForSelpay = Options["Reuse_Tree"];
+    rlSettings.numberChunks = Options["Selfplay_Number_Chunks"];
+    rlSettings.chunkSize = Options["Selfplay_Chunk_Size"];
+    rlSettings.quickSearchNodes = Options["Quick_Nodes"];
+    rlSettings.quickSearchProbability = Options["Centi_Quick_Probability"] / 100.0f;
+    rlSettings.quickSearchQValueWeight = Options["Centi_Quick_Q_Value_Weight"] / 100.0f;
+    rlSettings.lowPolicyClipThreshold = Options["Milli_Policy_Clip_Thresh"] / 1000.0f;
+    rlSettings.quickDirichletEpsilon = Options["Centi_Quick_Dirichlet_Epsilon"] / 100.0f;
+    rlSettings.nodeRandomFactor = Options["Centi_Node_Random_Factor"] / 100.0f;
+    rlSettings.rawPolicyProbabilityTemperature = Options["Centi_Raw_Prob_Temperature"] / 100.0f;
+    rlSettings.resignProbability = Options["Centi_Resign_Probability"] / 100.0f;
+    rlSettings.resignThreshold = Options["Centi_Resign_Threshold"] / 100.0f;
+    rlSettings.reuseTreeForSelpay = Options["Reuse_Tree"];
 }
 #endif
 
@@ -396,17 +383,18 @@ bool CrazyAra::is_ready()
         init_rl_settings();
 #endif
         netSingle = create_new_net_single(Options["Model_Directory"]);
-        NeuralNetAPI** netBatches = create_new_net_batches(Options["Model_Directory"]);
-        mctsAgent = create_new_mcts_agent(netSingle, netBatches, states);
-        rawAgent = new RawNetAgent(netSingle, playSettings, false);
+        netBatches = create_new_net_batches(Options["Model_Directory"]);
+        mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &states);
+        rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
         Constants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
     }
     return networkLoaded;
 }
 
-void CrazyAra::new_game()
+void CrazyAra::ucinewgame()
 {
+    wait_to_finish_last_search();
     mctsAgent->clear_game_history();
     cout << "info string newgame" << endl;
 }
@@ -419,84 +407,88 @@ string CrazyAra::engine_info()
     return ss.str();
 }
 
-NeuralNetAPI* CrazyAra::create_new_net_single(const string& modelDirectory)
+unique_ptr<NeuralNetAPI> CrazyAra::create_new_net_single(const string& modelDirectory)
 {
 #ifdef MXNET
-    return new MXNetAPI(Options["Context"], int(Options["First_Device_ID"]), 1, modelDirectory, false);
+    return make_unique<MXNetAPI>(Options["Context"], int(Options["First_Device_ID"]), 1, modelDirectory, false);
 #elif defined TENSORRT
-    return new TensorrtAPI(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
+    return make_unique<TensorrtAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
 #endif
     return nullptr;
 }
 
-NeuralNetAPI** CrazyAra::create_new_net_batches(const string& modelDirectory)
+vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& modelDirectory)
 {
-#ifdef TENSORRT
-    const bool useTensorRT = bool(Options["Use_TensorRT"]);
-#else
-    const bool useTensorRT = false;
-#endif
-    NeuralNetAPI** netBatches = new NeuralNetAPI*[size_t(searchSettings->threads)];
-    size_t netBatchIdx = 0;
-    for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
-        for (size_t i = 0; i < size_t(Options["Threads_per_Device"]); ++i) {
-    #ifdef MXNET
-            netBatches[netBatchIdx] = new MXNetAPI(Options["Context"], deviceId, searchSettings->batchSize, modelDirectory, useTensorRT);
-    #elif defined TENSORRT
-            netBatches[netBatchIdx] = new TensorrtAPI(deviceId, searchSettings->batchSize, modelDirectory, Options["Precision"]);
+    vector<unique_ptr<NeuralNetAPI>> netBatches;
+#ifdef MXNET
+    #ifdef TENSORRT
+        const bool useTensorRT = bool(Options["Use_TensorRT"]);
+    #else
+        const bool useTensorRT = false;
     #endif
-            ++netBatchIdx;
+#endif
+    for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
+        for (size_t i = 0; i < size_t(Options["Threads"]); ++i) {
+    #ifdef MXNET
+            netBatches.push_back(make_unique<MXNetAPI>(Options["Context"], deviceId, searchSettings.batchSize, modelDirectory, useTensorRT));
+    #elif defined TENSORRT
+            netBatches.push_back(make_unique<TensorrtAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"]));
+    #endif
         }
     }
     return netBatches;
 }
 
-MCTSAgent *CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, NeuralNetAPI** netBatches, StatesManager* states)
+unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, StatesManager* states)
 {
-    return new MCTSAgent(netSingle, netBatches, searchSettings, playSettings, states);
+    return make_unique<MCTSAgent>(netSingle, netBatches, &searchSettings, &playSettings, states);
 }
 
 void CrazyAra::init_search_settings()
 {
-    searchSettings = new SearchSettings();
     validate_device_indices(Options);
-    searchSettings->threads = Options["Threads_per_Device"] * get_num_gpus(Options);
-    searchSettings->batchSize = Options["Batch_Size"];
-    searchSettings->useTranspositionTable = Options["Use_Transposition_Table"];
-//    searchSettings->uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
-//    searchSettings->uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
-//    searchSettings->uBase = Options["U_Base"];                                   currently disabled
-    searchSettings->qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
-    searchSettings->enhanceChecks = Options["Enhance_Checks"];                   //currently disabled
-    searchSettings->enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
-    searchSettings->cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
-    searchSettings->cpuctBase = Options["CPuct_Base"];
-    searchSettings->dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
-    searchSettings->dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
-    searchSettings->nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
-    searchSettings->virtualLoss = Options["Centi_Virtual_Loss"] / 100.0f;
-    searchSettings->qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
-    searchSettings->qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
-    searchSettings->qThreshBase = Options["Q_Thresh_Base"];
-    searchSettings->randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
-    searchSettings->allowEarlyStopping = Options["Allow_Early_Stopping"];
+    searchSettings.threads = Options["Threads"] * get_num_gpus(Options);
+    searchSettings.batchSize = Options["Batch_Size"];
+    searchSettings.useTranspositionTable = Options["Use_Transposition_Table"];
+//    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
+//    searchSettings.uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
+//    searchSettings.uBase = Options["U_Base"];                                   currently disabled
+    searchSettings.qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
+    searchSettings.enhanceChecks = Options["Enhance_Checks"];                   //currently disabled
+    searchSettings.enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
+    searchSettings.cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
+    searchSettings.cpuctBase = Options["CPuct_Base"];
+    searchSettings.dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
+    searchSettings.dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
+    searchSettings.nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
+    searchSettings.virtualLoss = Options["Centi_Virtual_Loss"] / 100.0f;
+    searchSettings.qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
+    searchSettings.qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
+    searchSettings.qThreshBase = Options["Q_Thresh_Base"];
+    searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
+    searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
-    searchSettings->useSolver = Options["Use_Solver"];
 #ifdef SUPPORT960
     is960 = Options["UCI_Chess960"];
 #endif
-    searchSettings->useNPSTimemanager = Options["Use_NPS_Time_Manager"];
+    searchSettings.useNPSTimemanager = Options["Use_NPS_Time_Manager"];
+    searchSettings.useRandomPlayout = Options["Random_Playout"];
+    if (string(Options["SyzygyPath"]).empty() || string(Options["SyzygyPath"]) == "<empty>") {
+        searchSettings.useTablebase = false;
+    }
+    else {
+        searchSettings.useTablebase = true;
+    }
 }
 
 void CrazyAra::init_play_settings()
 {
-    playSettings = new PlaySettings();
-    playSettings->initTemperature = Options["Centi_Temperature"] / 100.0f;
-    playSettings->temperatureMoves = Options["Temperature_Moves"];
-    playSettings->temperatureDecayFactor = Options["Centi_Temperature_Decay"] / 100.0f;
+    playSettings.initTemperature = Options["Centi_Temperature"] / 100.0f;
+    playSettings.temperatureMoves = Options["Temperature_Moves"];
+    playSettings.temperatureDecayFactor = Options["Centi_Temperature_Decay"] / 100.0f;
 #ifdef USE_RL
-    playSettings->meanInitPly = Options["MeanInitPly"];
-    playSettings->maxInitPly = Options["MaxInitPly"];
+    playSettings.meanInitPly = Options["MeanInitPly"];
+    playSettings.maxInitPly = Options["MaxInitPly"];
 #endif
 }
 

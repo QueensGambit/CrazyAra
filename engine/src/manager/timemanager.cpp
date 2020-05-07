@@ -46,6 +46,10 @@ TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int thr
 
 int TimeManager::get_time_for_move(const SearchLimits* searchLimits, Color me, int moveNumber)
 {
+    if (searchLimits->infinite || searchLimits->nodes != 0 || searchLimits->depth != 0) {
+        return 0;
+    }
+
     // leave an additional time buffer to avoid losing on time
     timeBuffer = searchLimits->moveOverhead * timeBufferFactor;
 

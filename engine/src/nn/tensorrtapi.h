@@ -82,11 +82,26 @@ private:
     SampleUniquePtr<nvinfer1::IExecutionContext> context;
     cudaStream_t stream;
 
-    void load_model();
-    void load_parameters();
-    void bind_executor();
+public:
+    /**
+     * @brief TensorrtAPI
+     * @param deviceID Device ID to use for computation.
+     * @param batchSize Constant batch size which is used for inference
+     * @param modelDirectory Directory where the network architecture is stored (.json file) and
+     * where parameters a.k.a weights of the neural are stored (.params file) are stored
+     * @param precision Inference precision type. Available options: float32, float16, int8 (float32 is default).
+     */
+    TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, const string& strPrecision);
+    ~TensorrtAPI();
 
-    void check_if_policy_map();
+    void predict(float* inputPlanes, float* valueOutput, float* probOutputs) override;
+
+private:
+    void load_model() override;
+    void load_parameters() override;
+    void bind_executor() override;
+
+    void check_if_policy_map() override;
 
     /**
      * @brief createCudaEngineFromONNX Creates a new cuda engine from a onnx model architecture
@@ -119,20 +134,6 @@ private:
      * @param network ONNX network object
      */
     void configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition>& network);
-
-public:
-    /**
-     * @brief TensorrtAPI
-     * @param deviceID Device ID to use for computation.
-     * @param batchSize Constant batch size which is used for inference
-     * @param modelDirectory Directory where the network architecture is stored (.json file) and
-     * where parameters a.k.a weights of the neural are stored (.params file) are stored
-     * @param precision Inference precision type. Available options: float32, float16, int8 (float32 is default).
-     */
-    TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, const string& strPrecision);
-    ~TensorrtAPI();
-
-    void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
 };
 
 /**

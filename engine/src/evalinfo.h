@@ -59,8 +59,8 @@ struct EvalInfo
     size_t tbHits;
 
     size_t calculate_elapsed_time_ms() const;
-    int calculate_nps(size_t elapsedTimeMS) const;
-    int calculate_nps() const;
+    size_t calculate_nps(size_t elapsedTimeMS) const;
+    size_t calculate_nps() const;
 };
 
 /**

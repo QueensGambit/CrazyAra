@@ -216,9 +216,11 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
     softmaxLayer->setAxes(1 << 1);
 
     // set precision of the first and last layers to float32
+    // 0 is the input layer, 1 the value output and 2 the policy output layer
     fix_layer_precision(network->getLayer(0), nvinfer1::DataType::kFLOAT);
     fix_layer_precision(softmaxLayer, nvinfer1::DataType::kFLOAT);
-    fix_layer_precision(network->getLayer(idxValueOutput), nvinfer1::DataType::kFLOAT);
+    fix_layer_precision(network->getLayer(1), nvinfer1::DataType::kFLOAT);
+    fix_layer_precision(network->getLayer(2), nvinfer1::DataType::kFLOAT);
 
     // set the softmax layer output as the new output
     network->unmarkOutput(*network->getOutput(1));
@@ -273,7 +275,7 @@ void fix_layer_precision(ILayer *layer, nvinfer1::DataType dataType)
 string generate_trt_file_path(const string &modelDirectory, unsigned int batchSize, Precision precision, int deviceID)
 {
     return modelDirectory + "model-bsize" + to_string(batchSize) + "-" +
-            precision_to_str(precision)+ "-dev-" + to_string(deviceID) + ".trt";
+            precision_to_str(precision)+ "-" + to_string(deviceID) + ".trt";
 }
 
 Precision str_to_precision(const string &strPrecision)

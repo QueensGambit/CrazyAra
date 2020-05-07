@@ -50,7 +50,7 @@ public:
     /**
      * @brief wait_for Waits for a given time but can be interrupted by a kill() call from an external thread
      * @param time Amount of time to wait
-     * @return True if the time elapse and false if it was triggered by kill()
+     * @return True if the time elapsed and false if it was triggered by kill()
      */
     template<class R, class P>
     bool wait_for( std::chrono::duration<R,P> const& time ) const {

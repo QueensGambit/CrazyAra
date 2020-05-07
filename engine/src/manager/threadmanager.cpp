@@ -41,9 +41,19 @@ ThreadManager::ThreadManager(Node* rootNode, vector<SearchThread*>& searchThread
 
 }
 
-void run_thread_manager(ThreadManager *t)
+void ThreadManager::await_kill_signal()
 {
-    t->stop_search_based_on_limits();
+    wait_for(chrono::milliseconds(INT_MAX));
+}
+
+void run_thread_manager(ThreadManager* t)
+{
+    if (t->get_movetime_ms() == 0) {
+        t->stop_search_based_on_kill_event();
+    }
+    else {
+        t->stop_search_based_on_limits();
+    }
 }
 
 void ThreadManager::stop_search_based_on_limits()
@@ -69,9 +79,20 @@ void ThreadManager::stop_search_based_on_limits()
     stop_search();
 }
 
+void ThreadManager::stop_search_based_on_kill_event()
+{
+    await_kill_signal();
+    stop_search();
+}
+
 void ThreadManager::stop()
 {
     isRunning = false;
+}
+
+size_t ThreadManager::get_movetime_ms() const
+{
+    return movetimeMS;
 }
 
 bool ThreadManager::early_stopping()

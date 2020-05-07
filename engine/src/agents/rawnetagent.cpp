@@ -46,24 +46,24 @@ RawNetAgent::~RawNetAgent()
     delete [] probOutputs;
 }
 
-void RawNetAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
+void RawNetAgent::evaluate_board_state()
 {
     for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
-        evalInfo.legalMoves.push_back(move);
+        evalInfo->legalMoves.push_back(move);
     }
 
     // sanity check
-    assert(evalInfo.legalMoves.size() >= 1);
+    assert(evalInfo->legalMoves.size() >= 1);
 
     // immediatly stop the search if there's only one legal move
-    if (evalInfo.legalMoves.size() == 1) {
-        evalInfo.policyProbSmall.resize(1UL);
-        evalInfo.policyProbSmall = 1;
+    if (evalInfo->legalMoves.size() == 1) {
+        evalInfo->policyProbSmall.resize(1UL);
+        evalInfo->policyProbSmall = 1;
           // a value of 0 is likely a wron evaluation but won't be written to stdout
-        evalInfo.centipawns = value_to_centipawn(0);
-        evalInfo.depth = 0;
-        evalInfo.nodes = 0;
-        evalInfo.pv = {evalInfo.legalMoves[0]};
+        evalInfo->centipawns = value_to_centipawn(0);
+        evalInfo->depth = 0;
+        evalInfo->nodes = 0;
+        evalInfo->pv = {evalInfo->legalMoves[0]};
         return;
     }
 
@@ -71,15 +71,25 @@ void RawNetAgent::evaluate_board_state(Board *pos, EvalInfo& evalInfo)
     float value;
     net->predict(begin(inputPlanes), &value, probOutputs);
 
-    evalInfo.policyProbSmall.resize(evalInfo.legalMoves.size());
-    get_probs_of_move_list(0, probOutputs, evalInfo.legalMoves, pos->side_to_move(),
-                           !net->is_policy_map(), evalInfo.policyProbSmall, net->is_policy_map());
-    size_t selIdx = argmax(evalInfo.policyProbSmall);
-    Move bestmove = evalInfo.legalMoves[selIdx];
+    evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
+    get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, pos->side_to_move(),
+                           !net->is_policy_map(), evalInfo->policyProbSmall, net->is_policy_map());
+    size_t selIdx = argmax(evalInfo->policyProbSmall);
+    Move bestmove = evalInfo->legalMoves[selIdx];
 
-    evalInfo.centipawns = value_to_centipawn(value);
-    evalInfo.depth = 1;
-    evalInfo.nodes = 1;
-    evalInfo.isChess960 = pos->is_chess960();
-    evalInfo.pv = { bestmove };
+    evalInfo->centipawns = value_to_centipawn(value);
+    evalInfo->depth = 1;
+    evalInfo->nodes = 1;
+    evalInfo->isChess960 = pos->is_chess960();
+    evalInfo->pv = { bestmove };
+}
+
+void RawNetAgent::stop()
+{
+    // pass
+}
+
+void RawNetAgent::apply_move_to_tree(Move move, bool ownMove)
+{
+    // pass
 }

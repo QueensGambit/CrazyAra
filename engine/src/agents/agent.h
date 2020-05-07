@@ -44,11 +44,13 @@ private:
      * @param evalInfo Evaluation information
      * @param moveCounter Current move counter (ply//2)
      */
-    void set_best_move(EvalInfo& evalInfo, size_t moveCounter);
+    void set_best_move(size_t moveCounter);
 
 protected:
     SearchLimits* searchLimits;
     PlaySettings* playSettings;
+    Board* pos;
+    EvalInfo* evalInfo;
     bool verbose;
 
 public:
@@ -56,18 +58,34 @@ public:
 
     /**
      * @brief perform_action Selects an action based on the evaluation result
-     * @param pos Board position to evaluate
-     * @param limits Pointer to the search limit
-     * @param evalInfo Returns the evaluation information
      */
-    void perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo);
+    void perform_action();
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents
      * @param pos Board position to evaluate
      * @param evalInfo Returns the evaluation information
      */
-    virtual void evaluate_board_state(Board *pos,  EvalInfo& evalInfo) = 0;
+    virtual void evaluate_board_state() = 0;
+
+    /**
+     * @brief set_search_settings Sets all relevant parameters for the next search
+     * @param pos Board position to evaluate
+     * @param limits Pointer to the search limit
+     * @param evalInfo Returns the evaluation information
+     */
+    void set_search_settings(Board *pos, SearchLimits* searchLimits, EvalInfo* evalInfo);
+
+    /**
+     * @brief stop Stops the current search is called after "stop" from the stdin
+     */
+    virtual void stop() = 0;
+
+    virtual void apply_move_to_tree(Move move, bool ownMove) = 0;
+
+    Move get_best_move();
 };
+
+void run_agent_thread(Agent* agent);
 
 #endif // AGENT_H

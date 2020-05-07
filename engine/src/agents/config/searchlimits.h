@@ -48,6 +48,8 @@ public:
     bool ponder;
 
     SearchLimits();
+
+    void reset();
 };
 
 extern std::ostream& operator<<(std::ostream& os, const SearchLimits& searchLimits);

@@ -67,10 +67,6 @@ private:
      */
     inline bool continue_search();
 
-    /**
-     * @brief stop_search Stops the current mcts search
-     */
-    void stop_search();
 public:
     ThreadManager(Node* rootNode, vector<SearchThread*>& searchThreads, LoggerThread* loggerThread, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval);
 
@@ -82,9 +78,27 @@ public:
     void stop_search_based_on_limits();
 
     /**
+     * @brief stop_search_based_on_kill_event Locks the thread until the kill event was triggerend and
+     *  stops all running search threads afterwards
+     */
+    void stop_search_based_on_kill_event();
+
+    /**
      * @brief stop Stops the current thread
      */
     void stop();
+
+    /**
+     * @brief stop_search Stops the current mcts search
+     */
+    void stop_search();
+
+    /**
+     * @brief await_kill_signal Locks the thread until kill signal was received
+     */
+    void await_kill_signal();
+
+    size_t get_movetime_ms() const;
 };
 
 /**

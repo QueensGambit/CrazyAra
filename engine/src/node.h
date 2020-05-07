@@ -81,7 +81,8 @@ public:
     Node(Board *pos,
          bool inCheck,
          Node *parentNode,
-         size_t childIdxForParent);
+         size_t childIdxForParent,
+         const SearchSettings* searchSettings);
 
     /**
      * @brief Node Copy constructor which copies the value evaluation, board position, prior policy and checkmateIdx.
@@ -463,13 +464,13 @@ inline bool enhance_move_type(float increment, float thresh, const vector<Move>&
  * @param node Node of the subtree to delete
  * @param hashTable Pointer to the hashTable which stores a pointer to all active nodes
  */
-void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>* hashTable);
+void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>& hashTable);
 
 /**
  * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr
  * @param hashTable Pointer to the hashTables
  */
-void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>* hashTable);
+void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable);
 
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);

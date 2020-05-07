@@ -38,9 +38,8 @@
 // wrapper for unordered_map with a mutex for thread safe access
 struct MapWithMutex {
     mutex mtx;
-    unordered_map<Key, Node*>* hashTable;
+    unordered_map<Key, Node*> hashTable;
     ~MapWithMutex() {
-        delete hashTable;
     }
 };
 
@@ -72,20 +71,6 @@ private:
     SearchSettings* searchSettings;
     SearchLimits* searchLimits;
     size_t tbHits;
-    /**
-     * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
-     */
-    void set_nn_results_to_child_nodes();
-
-    /**
-     * @brief backup_value_outputs Backpropagates all newly received value evaluations from the neural network accross the visited search paths
-     */
-    void backup_value_outputs();
-
-    /**
-     * @brief backup_collisions Reverts the applied virtual loss for all rollouts which ended in a collision event
-     */
-    void backup_collisions();
 
 public:
     /**
@@ -152,6 +137,22 @@ public:
 
     void set_root_pos(Board *value);
     size_t get_tb_hits() const;
+
+private:
+    /**
+     * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
+     */
+    void set_nn_results_to_child_nodes();
+
+    /**
+     * @brief backup_value_outputs Backpropagates all newly received value evaluations from the neural network accross the visited search paths
+     */
+    void backup_value_outputs();
+
+    /**
+     * @brief backup_collisions Reverts the applied virtual loss for all rollouts which ended in a collision event
+     */
+    void backup_collisions();
 };
 
 void run_search_thread(SearchThread *t);

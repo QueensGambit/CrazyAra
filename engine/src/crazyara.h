@@ -46,6 +46,7 @@
 class CrazyAra
 {
 private:
+    StatesManager states;
     const string intro =  string("\n") +
                     string("                                  _                                           \n") +
                     string("                   _..           /   ._   _.  _        /\\   ._   _.           \n") +
@@ -66,54 +67,27 @@ private:
                     string("    .-'||  |  Source-Code: QueensGambit/CrazyAra (GPLv3-License)              \n") +
                     string("       \\_`/   Inspiration: A0-paper by Silver, Hubert, Schrittwieser et al.   \n") +
                     string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
-    RawNetAgent* rawAgent;
-    MCTSAgent* mctsAgent;
-    bool useRawNetwork;
-    NeuralNetAPI* netSingle;
-    SearchSettings* searchSettings;
-    PlaySettings* playSettings;
-    bool networkLoaded = false;
-    StatesManager* states;
-    Variant variant;
-#ifdef SUPPORT960
-    bool is960 = true;
-#else
-    bool is960 = false;
-#endif
-
+    unique_ptr<RawNetAgent> rawAgent;
+    unique_ptr<MCTSAgent> mctsAgent;
+    unique_ptr<NeuralNetAPI> netSingle;
+    vector<unique_ptr<NeuralNetAPI>> netBatches;
 #ifdef USE_RL
-    MCTSAgent* mctsAgentContender;
-    RLSettings* rlSettings;
+    unique_ptr<NeuralNetAPI> netSingleContender;
+    unique_ptr<MCTSAgent> mctsAgentContender;
+    vector<unique_ptr<NeuralNetAPI>> netBatchesContender;
+    RLSettings rlSettings;
 #endif
-    /**
-     * @brief engine_info Returns a string about the engine version and authors
-     * @return string
-     */
-    string engine_info();
+    SearchSettings searchSettings;
+    SearchLimits searchLimits;
+    PlaySettings playSettings;
+    thread mainSearchThread;
 
-    /**
-     * @brief create_new_mcts_agent Factory method to create a new MCTSAgent when loading new neural network weights
-     * @param modelDirectory Directory where the .params and .json files are stored
-     * @param states State-Manager, needed to keep track of 3-fold-repetition
-     * @param netSingle Neural net with batch-size 1. It will be loaded from file.
-     * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
-     * @return Pointer to the new MCTSAgent object
-     */
-    MCTSAgent* create_new_mcts_agent(NeuralNetAPI* netSingle, NeuralNetAPI** netBatches, StatesManager* states);
+    Variant variant;
 
-    /**
-     * @brief create_new_net_single Factory to create and load a new model from a given directory
-     * @param modelDirectory Model directory where the .params and .json files are stored
-     * @return Pointer to the newly created object
-     */
-    NeuralNetAPI* create_new_net_single(const string& modelDirectory);
-
-    /**
-     * @brief create_new_net_batches Factory to create and load a new model for batch-size access
-     * @param modelDirectory Model directory where the .params and .json files are stored
-     * @return Pointer to the newly createded objects. For every thread a sepreate net
-     */
-    NeuralNetAPI** create_new_net_batches(const string& modelDirectory);
+    bool useRawNetwork;
+    bool networkLoaded;
+    bool ongoingSearch;
+    bool is960;
 
 public:
     CrazyAra();
@@ -145,16 +119,15 @@ public:
     /**
      * @brief new_game Handles the request of starting a new game
      */
-    void new_game();
+    void ucinewgame();
 
     /**
      * @brief go Main method which starts the search after receiving the UCI "go" command
      * @param pos Current board position
      * @param is List of command line arguments for the search
      * @param evalInfo Returns the evalutation information
-     * @param applyMoveToTree Tells if the given move shall be applied to the tree for future reusage
      */
-    void go(Board* pos, istringstream& is, EvalInfo& evalInfo, bool applyMoveToTree=true);
+    void go(Board* pos, istringstream& is, EvalInfo& evalInfo);
 
     /**
      * @brief go Wrapper function for go() which accepts a FEN string
@@ -210,6 +183,39 @@ public:
      * @brief init_play_settings Initializes the play settings with the current UCI parameters
      */
     void init_play_settings();
+
+    void wait_to_finish_last_search();
+
+private:
+    /**
+     * @brief engine_info Returns a string about the engine version and authors
+     * @return string
+     */
+    string engine_info();
+
+    /**
+     * @brief create_new_mcts_agent Factory method to create a new MCTSAgent when loading new neural network weights
+     * @param modelDirectory Directory where the .params and .json files are stored
+     * @param states State-Manager, needed to keep track of 3-fold-repetition
+     * @param netSingle Neural net with batch-size 1. It will be loaded from file.
+     * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
+     * @return Pointer to the new MCTSAgent object
+     */
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, StatesManager* states);
+
+    /**
+     * @brief create_new_net_single Factory to create and load a new model from a given directory
+     * @param modelDirectory Model directory where the .params and .json files are stored
+     * @return Pointer to the newly created object
+     */
+    unique_ptr<NeuralNetAPI> create_new_net_single(const string& modelDirectory);
+
+    /**
+     * @brief create_new_net_batches Factory to create and load a new model for batch-size access
+     * @param modelDirectory Model directory where the .params and .json files are stored
+     * @return Vector of pointers to the newly createded objects. For every thread a sepreate net.
+     */
+    vector<unique_ptr<NeuralNetAPI>> create_new_net_batches(const string& modelDirectory);
 };
 
 /**

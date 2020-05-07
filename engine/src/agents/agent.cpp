@@ -35,17 +35,17 @@
 using namespace std;
 
 
-void Agent::set_best_move(EvalInfo &evalInfo, size_t moveCounter)
+void Agent::set_best_move(size_t moveCounter)
 {
     if (moveCounter < playSettings->temperatureMoves && playSettings->initTemperature > 0.01) {
         info_string("Sample move");
-        DynamicVector<double> policyProbSmall = evalInfo.childNumberVisits / sum(evalInfo.childNumberVisits);
+        DynamicVector<double> policyProbSmall = evalInfo->childNumberVisits / sum(evalInfo->childNumberVisits);
         apply_temperature(policyProbSmall, get_current_temperature(*playSettings, moveCounter));
         size_t moveIdx = random_choice(policyProbSmall);
-        evalInfo.bestMove = evalInfo.legalMoves[moveIdx];
+        evalInfo->bestMove = evalInfo->legalMoves[moveIdx];
     }
     else {
-        evalInfo.bestMove = evalInfo.pv[0];
+        evalInfo->bestMove = evalInfo->pv[0];
     }
 }
 
@@ -54,15 +54,32 @@ Agent::Agent(PlaySettings* playSettings, bool verbose):
 {
 }
 
-void Agent::perform_action(Board *pos, SearchLimits* searchLimits, EvalInfo& evalInfo)
+void Agent::set_search_settings(Board *pos, SearchLimits *searchLimits, EvalInfo* evalInfo)
 {
-    evalInfo.start = chrono::steady_clock::now();
+    this->pos = pos;
     this->searchLimits = searchLimits;
-    this->evaluate_board_state(pos, evalInfo);
-    evalInfo.end = chrono::steady_clock::now();
-    set_best_move(evalInfo, pos->total_move_cout());
-    info_score(evalInfo);
-    info_string(pos->fen());
-    info_bestmove(UCI::move(evalInfo.bestMove, pos->is_chess960()));
+    this->evalInfo = evalInfo;
 }
 
+Move Agent::get_best_move()
+{
+    return evalInfo->bestMove;
+}
+
+void Agent::perform_action()
+{
+    evalInfo->start = chrono::steady_clock::now();
+    this->evaluate_board_state();
+    evalInfo->end = chrono::steady_clock::now();
+    set_best_move(pos->total_move_cout());
+    info_score(*evalInfo);
+    info_string(pos->fen());
+    info_bestmove(UCI::move(evalInfo->bestMove, pos->is_chess960()));
+}
+
+void run_agent_thread(Agent* agent)
+{
+    agent->perform_action();
+    // inform the agent of the move, so the tree can potentially be reused later
+    agent->apply_move_to_tree(agent->get_best_move(), true);
+}

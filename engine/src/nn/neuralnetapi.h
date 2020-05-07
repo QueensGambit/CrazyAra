@@ -32,11 +32,8 @@
 #include <sys/stat.h>
 #include <mutex>
 #include <vector>
-// TODO: Remove MXNet dependency for interface class
-//#include "mxnet-cpp/MxNetCpp.h"
 #include "../util/communication.h"
 
-//using namespace mxnet::cpp;
 using namespace std;
 
 /**
@@ -60,34 +57,6 @@ protected:
     // file names for the loaded model and its parameters
     string modelFilePath;
     string paramterFilePath;
-
-    /**
-     * @brief FileExists Function to check if a file exists in a given path
-     * @param name Filepath
-     * @return True if exists else false
-     */
-    bool file_exists(const std::string& name);
-
-    /**
-     * @brief load_model Loads the model architecture definition from a json file
-     */
-    virtual void load_model() = 0;
-
-    /**
-     * @brief load_parameters Loads the parameters a.k.a weights of the model given a parameter path
-     */
-    virtual void load_parameters() = 0;
-
-    /**
-     * @brief bind_executor Binds the executor object to the neural network
-     */
-    virtual void bind_executor() = 0;
-
-    /**
-     * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
-     * and sets the selectPolicyFromPlane boolean accordingly
-     */
-    virtual void check_if_policy_map() = 0;
 
 public:
     /**
@@ -127,6 +96,35 @@ public:
     virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs) = 0;
 
     unsigned int get_policy_output_length() const;
+
+protected:
+    /**
+     * @brief FileExists Function to check if a file exists in a given path
+     * @param name Filepath
+     * @return True if exists else false
+     */
+    bool file_exists(const std::string& name);
+
+    /**
+     * @brief load_model Loads the model architecture definition from a json file
+     */
+    virtual void load_model() = 0;
+
+    /**
+     * @brief load_parameters Loads the parameters a.k.a weights of the model given a parameter path
+     */
+    virtual void load_parameters() = 0;
+
+    /**
+     * @brief bind_executor Binds the executor object to the neural network
+     */
+    virtual void bind_executor() = 0;
+
+    /**
+     * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
+     * and sets the selectPolicyFromPlane boolean accordingly
+     */
+    virtual void check_if_policy_map() = 0;
 };
 
 #endif // NEURALNETAPI_H
