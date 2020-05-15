@@ -58,3 +58,8 @@ void SearchLimits::reset()
     inc[WHITE] = 0;
     inc[BLACK] = 0;
 }
+
+bool is_game_sceneario(const SearchLimits* searchLimits)
+{
+    return searchLimits->movestogo != 0 || searchLimits->time[WHITE] != 0 || searchLimits->time[BLACK] != 0;
+}

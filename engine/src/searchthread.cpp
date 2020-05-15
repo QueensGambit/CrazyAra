@@ -35,6 +35,11 @@
 #include "util/blazeutil.h"
 #include "uci.h"
 
+size_t SearchThread::get_max_depth() const
+{
+    return depthMax;
+}
+
 SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
     netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
 {
@@ -72,6 +77,7 @@ SearchThread::~SearchThread()
 void SearchThread::set_root_node(Node *value)
 {
     rootNode = value;
+    visitsPreSearch = rootNode->get_visits();
 }
 
 void SearchThread::set_search_limits(SearchLimits *s)
@@ -93,15 +99,16 @@ void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t 
 {
     mapWithMutex->mtx.lock();
     unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newPos->hash_key());
-    mapWithMutex->mtx.unlock();
     if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
             is_transposition_verified(it, newPos->get_state_info())) {
+        mapWithMutex->mtx.unlock();
+        parentNode->increment_no_visit_idx();
         Node *newNode = new Node(*it->second);
         parentNode->add_transposition_child_node(newNode, childIdx);
-        parentNode->increment_no_visit_idx();
         transpositionNodes->add_element(newNode);
     }
     else {
+        mapWithMutex->mtx.unlock();
         parentNode->increment_no_visit_idx();
         assert(parentNode != nullptr);
         Node *newNode = new Node(newPos, inCheck, parentNode, childIdx, searchSettings);
@@ -134,15 +141,41 @@ SearchLimits *SearchThread::get_search_limits() const
     return searchLimits;
 }
 
+void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx)
+{
+    if (description.depth == 0 && size_t(currentNode->get_visits()) % RANDOM_MOVE_COUNTER == 0 && currentNode->get_visits() > RANDOM_MOVE_THRESH) {
+        if (currentNode->is_fully_expanded()) {
+            const size_t idx = random() % currentNode->get_number_child_nodes();
+            if (currentNode->get_child_node(idx) == nullptr || !currentNode->get_child_node(idx)->is_playout_node()) {
+                childIdx = idx;
+                return;
+            }
+            if (currentNode->get_child_node(idx)->get_node_type() != SOLVED_WIN) {
+                childIdx = idx;
+                return;
+            }
+        }
+        childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
+        currentNode->increment_no_visit_idx();
+    }
+}
+
 Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states,  const SearchSettings* searchSettings)
 {
-    Node* currentNode = rootNode;
+    rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
     states = StateListPtr(new std::deque<StateInfo>(0)); // Clear old list from memory and create a new one
+    Node* currentNode = rootNode;
 
     while (true) {
+        childIdx = INT_MAX;
+        if (searchSettings->useRandomPlayout) {
+            random_root_playout(description, currentNode, childIdx);
+        }
         currentNode->lock();
-        childIdx = currentNode->select_child_node(searchSettings);
+        if (childIdx == INT_MAX) {
+            childIdx = currentNode->select_child_node(searchSettings);
+        }
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
 
         Node* nextNode = currentNode->get_child_node(childIdx);
@@ -187,9 +220,11 @@ size_t SearchThread::get_tb_hits() const
     return tbHits;
 }
 
-void SearchThread::reset_tb_hits()
+void SearchThread::reset_stats()
 {
     tbHits = 0;
+    depthMax = 0;
+    depthSum = 0;
 }
 
 void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, Color sideToMove, const SearchSettings* searchSettings)
@@ -239,6 +274,11 @@ bool SearchThread::is_root_node_unsolved()
     return rootNode->get_node_type() == UNSOLVED;
 }
 
+size_t SearchThread::get_avg_depth()
+{
+    return size_t(double(depthSum) / (rootNode->get_visits() - visitsPreSearch) + 0.5);
+}
+
 void SearchThread::create_mini_batch()
 {
     // select nodes to add to the mini-batch
@@ -255,6 +295,10 @@ void SearchThread::create_mini_batch()
         Board newPos = Board(*rootPos);
         bool inCheck;
         parentNode = get_new_child_to_evaluate(&newPos, rootNode, childIdx, description, inCheck, states, searchSettings);
+        depthSum += description.depth;
+        depthMax = max(depthMax, description.depth);
+
+        get_avg_depth();
 
         if(description.isTerminal) {
             ++numTerminalNodes;
@@ -284,7 +328,7 @@ void SearchThread::thread_iteration()
 void run_search_thread(SearchThread *t)
 {
     t->set_is_running(true);
-    t->reset_tb_hits();
+    t->reset_stats();
     while(t->is_running() && t->nodes_limits_ok() && t->is_root_node_unsolved()) {
         t->thread_iteration();
     }
@@ -327,4 +371,3 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
             it->second->plies_from_null() == stateInfo->pliesFromNull &&
             stateInfo->repetition == 0;
 }
-

@@ -40,6 +40,7 @@ public:
     // exponential decay factor which reduces the intial temperature on every move (every 2nd ply, must be in [0.0,1.0]])
     // plyTemp = initTemp * tempDecay^moveCount
     double temperatureDecayFactor;
+    double quantileClipping;
 #ifdef USE_RL
     // mean value of an exponentional distribution about how many samples are directly sampled from the raw NN policy
     size_t meanInitPly;

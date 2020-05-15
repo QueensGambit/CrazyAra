@@ -37,6 +37,7 @@
 #include "../manager/threadmanager.h"
 #include "../node.h"
 #include "../util/communication.h"
+#include "util/gcthread.h"
 
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches,
@@ -55,7 +56,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     reusedFullTree(false),
     isRunning(false),
     overallNPS(0.0f),
-    nbNPSentries(0)
+    nbNPSentries(0),
+    gcThread()
 {
     mapWithMutex.hashTable.reserve(1e6);
 
@@ -130,6 +132,9 @@ size_t MCTSAgent::init_root_node(Board *pos)
         // This way the memory won't be freed for the next new move
         states->swap_states();
         nodesPreSearch = size_t(rootNode->get_visits());
+        if (rootNode->is_playout_node()) {
+            nodesPreSearch -= rootNode->get_terminal_visits();
+        }
         info_string(nodesPreSearch, "nodes of former tree will be reused");
     }
     else {
@@ -153,21 +158,28 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     }
 
     if (same_hash_key(ownNextRoot, pos)) {
-        delete_sibling_subtrees(ownNextRoot, mapWithMutex.hashTable);
-        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable);
-        delete rootNode;
-        delete opponentsNextRoot;
+        delete_sibling_subtrees(ownNextRoot, mapWithMutex.hashTable, gcThread);
+        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
+        if (rootNode->get_parent_node() != nullptr) {
+            gcThread.add_item_to_delete(rootNode->get_parent_node());
+        }
+        gcThread.add_item_to_delete(rootNode);
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, pos)) {
-        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable);
-        delete rootNode;
+        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
+        if (opponentsNextRoot->get_parent_node() != nullptr) {
+            gcThread.add_item_to_delete(opponentsNextRoot->get_parent_node());
+        }
         return opponentsNextRoot;
     }
 
     // the node wasn't found, clear the old tree
     delete_old_tree();
-    delete rootNode;
+    if (rootNode->get_parent_node() != nullptr) {
+        gcThread.add_item_to_delete(rootNode->get_parent_node());
+    }
+    gcThread.add_item_to_delete(rootNode);
 
     return nullptr;
 }
@@ -176,7 +188,10 @@ void MCTSAgent::create_new_root_node(Board *pos)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
-    rootNode = new Node(pos, false, nullptr, 0, searchSettings);
+    Node* dummyNode = new Node(pos, false, nullptr, 0, searchSettings);
+    dummyNode->init_node_data(1);
+    rootNode = new Node(pos, false, dummyNode, 0, searchSettings);
+    dummyNode->add_new_child_node(rootNode, 0);
     oldestRootNode = rootNode;
     board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
     netSingle->predict(inputPlanes, &valueOutput, probOutputs.get());
@@ -190,7 +205,7 @@ void MCTSAgent::delete_old_tree()
     // clear all remaining node of the former root node
     if (rootNode != nullptr) {
         for (Node* childNode: rootNode->get_child_nodes()) {
-            delete_subtree_and_hash_entries(childNode, mapWithMutex.hashTable);
+            delete_subtree_and_hash_entries(childNode, mapWithMutex.hashTable, gcThread);
         }
     }
 }
@@ -203,7 +218,6 @@ void MCTSAgent::sleep_and_log_for(size_t timeMS, size_t updateIntervalMS)
     for (size_t var = 0; var < timeMS / updateIntervalMS && isRunning; ++var) {
         this_thread::sleep_for(chrono::milliseconds(updateIntervalMS));
         evalInfo->end = chrono::steady_clock::now();
-        update_eval_info(*evalInfo, rootNode, get_tb_hits());
         info_score(evalInfo);
         if (!searchThreads[0]->is_running()) {
             isRunning = false;
@@ -211,15 +225,6 @@ void MCTSAgent::sleep_and_log_for(size_t timeMS, size_t updateIntervalMS)
         }
     }
     this_thread::sleep_for(chrono::milliseconds(timeMS % 1000));
-}
-
-size_t MCTSAgent::get_tb_hits()
-{
-    size_t tbHits = 0;
-    for (auto searchThread : searchThreads) {
-        tbHits += searchThread->get_tb_hits();
-    }
-    return tbHits;
 }
 
 void MCTSAgent::update_nps_measurement(float curNPS)
@@ -232,12 +237,13 @@ void MCTSAgent::update_nps_measurement(float curNPS)
 
 void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 {
-    info_string("apply move to tree");
     if (!reusedFullTree && rootNode != nullptr) {
         if (ownMove) {
+            info_string("apply move to tree");
             opponentsNextRoot = pick_next_node(move, rootNode);
         }
         else {
+            info_string("apply move to tree");
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
         }
     }
@@ -246,7 +252,6 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 void MCTSAgent::clear_game_history()
 {
     delete_old_tree();
-
     assert(mapWithMutex.hashTable->size() == 0);
     mapWithMutex.hashTable.clear();
     oldestRootNode = nullptr;
@@ -268,16 +273,27 @@ string MCTSAgent::get_name() const
     return engineName + "-" + engineVersion + "-" + netSingle->get_model_name();
 }
 
+void MCTSAgent::update_stats()
+{
+    avgDepth = get_avg_depth(searchThreads);
+    maxDepth = get_max_depth(searchThreads);
+    tbHits = get_tb_hits(searchThreads);
+}
+
 void MCTSAgent::evaluate_board_state()
 {
     evalInfo->nodesPreSearch = init_root_node(pos);
+    thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = pos->is_chess960();
     rootPos = pos;
-    if (rootNode->get_number_child_nodes() == 1 && int(rootNode->get_visits()) != 1) {
+    if (!rootNode->is_playout_node()) {
+        rootNode->init_node_data();
+    }
+    if (rootNode->get_number_child_nodes() == 1 && !rootNode->is_blank_root_node()) {
         info_string("Only single move available -> early stopping");
     }
-    else if (rootNode->is_playout_node() && rootNode->has_forced_win()) {
-        info_string("Forced win found -> early stopping");
+    else if (rootNode->is_playout_node() && rootNode->is_solved()) {
+        info_string("Node solved -> early stopping");
     }
     else if (rootNode->get_number_child_nodes() == 0) {
         info_string("The given position has no legal moves");
@@ -287,18 +303,20 @@ void MCTSAgent::evaluate_board_state()
             info_string("apply dirichlet noise");
             // TODO: Check for dirichlet compability
             rootNode->apply_dirichlet_noise_to_prior_policy(searchSettings);
-//            rootNode->mark_nodes_as_fully_expanded();
+            rootNode->fully_expand_node();
         }
 
-        if (rootNode->get_parent_node() != nullptr) {
+        if (!rootNode->is_root_node()) {
             rootNode->make_to_root();
         }
         info_string("run mcts search");
         run_mcts_search();
+        update_stats();
     }
-    update_eval_info(*evalInfo, rootNode, get_tb_hits());
+    update_eval_info(*evalInfo, rootNode, tbHits, maxDepth);
     lastValueEval = evalInfo->bestMoveQ;
     update_nps_measurement(evalInfo->calculate_nps());
+    tGCThread.join();
 }
 
 void MCTSAgent::run_mcts_search()
@@ -312,7 +330,9 @@ void MCTSAgent::run_mcts_search()
     }
     loggerThread = make_unique<LoggerThread>(rootNode, evalInfo, 1000, searchThreads);
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootPos->side_to_move(), rootNode->plies_from_null()/2);
-    threadManager = make_unique<ThreadManager>(rootNode, searchThreads, loggerThread.get(), curMovetime, 200, overallNPS, lastValueEval);
+    threadManager = make_unique<ThreadManager>(rootNode, searchThreads, loggerThread.get(), curMovetime, 250, overallNPS, lastValueEval,
+                                               is_game_sceneario(searchLimits),
+                                               can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());
     unique_ptr<thread> tLogger = make_unique<thread>(run_logger_thread, loggerThread.get());
     isRunning = true;

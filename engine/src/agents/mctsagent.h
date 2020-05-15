@@ -46,6 +46,8 @@
 #include "../manager/statesmanager.h"
 #include "../manager/timemanager.h"
 #include "../manager/threadmanager.h"
+#include "util/gcthread.h"
+
 
 class MCTSAgent : public Agent
 {
@@ -85,10 +87,14 @@ private:
 
     // saves the overall nps for each move during the game
     float overallNPS;
+    size_t avgDepth;
+    size_t maxDepth;
+    size_t tbHits;
     size_t nbNPSentries;
 
     unique_ptr<ThreadManager> threadManager;
     unique_ptr<LoggerThread> loggerThread;
+    GCThread<Node> gcThread;
 
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
@@ -100,7 +106,7 @@ public:
     MCTSAgent(const MCTSAgent&) = delete;
     MCTSAgent& operator=(MCTSAgent const&) = delete;
 
-    void evaluate_board_state() override; //Board *pos, EvalInfo& evalInfo);
+    void evaluate_board_state() override;
 
     /**
      * @brief run_mcts_search Starts the MCTS serach using all available search threads
@@ -117,12 +123,7 @@ public:
      */
     void print_root_node();
 
-    /**
-     * @brief apply_move_to_tree Applies the given move to the search tree by adding the expanded node to the candidate list
-     * @param move Move which has been played
-     * @param ownMove Boolean indicating if it was CrazyAra's move
-     */
-    void apply_move_to_tree(Move move, bool ownMove);
+    void apply_move_to_tree(Move move, bool ownMove) override;
 
     /**
      * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them
@@ -165,6 +166,11 @@ public:
     Board *get_root_pos() const;
     bool is_running() const;
 
+    /**
+     * @brief update_stats Updates the avg depth, max depth and tablebase hits statistics
+     */
+    void update_stats();
+
 private:
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
@@ -200,12 +206,6 @@ private:
      * @param timeMS Given amout of milli-seconds to sleep
      */
     void sleep_and_log_for(size_t timeMS, size_t updateIntervalMS=1000);
-
-    /**
-     * @brief get_tb_hits Returns the number of tablebase hits for all search threads
-     * @return
-     */
-    size_t get_tb_hits();
 
     /**
      * @brief update_nps_measurement Updates the overall nps by a rolling average

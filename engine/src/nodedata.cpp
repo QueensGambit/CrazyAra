@@ -30,7 +30,7 @@ void NodeData::add_empty_node()
 {
     append(childNumberVisits, 0.0f);
     append(actionValues, 0.0f);
-    append(qValues, -1.0f);
+    append(qValues, Q_INIT);
     childNodes.emplace_back(nullptr);
 }
 
@@ -55,7 +55,6 @@ void NodeData::reserve_initial_space()
 }
 
 NodeData::NodeData(size_t numberChildNodes):
-    visits(1),
     terminalVisits(0),
     checkmateIdx(NO_CHECKMATE),
     endInPly(0),

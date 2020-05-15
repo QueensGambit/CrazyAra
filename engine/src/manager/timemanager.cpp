@@ -84,6 +84,11 @@ int TimeManager::get_time_for_move(const SearchLimits* searchLimits, Color me, i
     return apply_random_factor(curMovetime);
 }
 
+int TimeManager::get_thresh_move() const
+{
+    return threshMove;
+}
+
 int TimeManager::apply_random_factor(int curMovetime)
 {
     if (randomMoveFactor > 0) {

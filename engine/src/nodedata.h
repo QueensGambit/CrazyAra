@@ -64,7 +64,6 @@ struct NodeData
     DynamicVector<float> qValues;
     vector<Node*> childNodes;
 
-    float visits;
     float terminalVisits;
 
     uint16_t checkmateIdx;

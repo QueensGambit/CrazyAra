@@ -40,6 +40,8 @@
 #include "agents/config/searchsettings.h"
 #include "nodedata.h"
 #include "constants.h"
+#include "agents/util/gcthread.h"
+
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
@@ -140,9 +142,25 @@ public:
 
     bool is_playout_node() const;
 
+    /**
+     * @brief is_blank_root_node Returns true if the node is a blank root node with no visits
+     * @return True if initialized but no visits else false
+     */
+    bool is_blank_root_node() const;
+    bool is_solved() const;
     bool has_forced_win() const;
 
     Move get_move(size_t childIdx) const;
+    Node* get_child_node(size_t childIdx) const;
+
+    Move get_best_move() const;
+
+    /**
+     * @brief get_ponder_moves Returns a list for possible ponder moves
+     * @return vector of moves
+     */
+    vector<Move> get_ponder_moves() const;
+
     vector<Node*> get_child_nodes() const;
     bool is_terminal() const;
     bool has_nn_results() const;
@@ -152,7 +170,11 @@ public:
 
     void revert_virtual_loss_and_update(float value);
     Node* get_parent_node() const;
+    void increment_visits(float numberVisits);
+    void subtract_visits(size_t numberVisits);
     void increment_no_visit_idx();
+    void fully_expand_node();
+
     Key hash_key() const;
 
     size_t get_number_child_nodes() const;
@@ -241,6 +263,12 @@ public:
     size_t max_q_child();
 
     /**
+     * @brief max_visits_child Returns the child index with the most visits
+     * @return size_t
+     */
+    size_t max_visits_child();
+
+    /**
      * @brief update_value_eval Returns the updated state evaluation based on the Q-value of the most visited child node
      * @return float
      */
@@ -255,7 +283,7 @@ public:
      * @param childNumberVisits Number of visits for each child node after search
      * @param mctsPolicy Output of the final mcts policy after search
      */
-    void get_mcts_policy(DynamicVector<float>& mctsPolicy, float qValueWeight = 0) const;
+    void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight = 1) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
@@ -299,6 +327,12 @@ public:
 
     bool is_sorted() const;
 
+    /**
+     * @brief get_q_value Returns the Q-value for the given child index
+     * @param idx Child Index
+     * @return
+     */
+    float get_q_value(size_t idx);
 private:
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
@@ -430,9 +464,10 @@ private:
  * @brief get_best_move_index Returns the best move index of all available moves based on the mcts policy
  * or solved wins / draws / losses.
  * @param curNode Current node
+ * @param fast If true, then the argmax(childNumberVisits) is returned for unsolved nodes
  * @return Index for best move and child node
  */
-size_t get_best_move_index(const Node* curNode);
+size_t get_best_move_index(const Node* curNode, bool fast);
 
 /**
  * @brief generate_dtz_values Generates the DTZ values for a given position and all legal moves.
@@ -451,9 +486,10 @@ inline bool is_capture(const Board* pos, Move move);
 
 /**
  * @brief enhance_checks Enhances all possible checking moves below threshCheck by incrementCheck and returns true if a modification
- * was applied. This signals that a renormizalition should be applied afterwards.
+ * was applied. This signals that a renormalization should be applied afterwards.
  * @param increment_check Constant factor which is added to the checks below threshCheck
  * @param threshCheck Probability threshold for checking moves
+ * @param gcThread Reference to the garbage collector object
  * @return bool
 */
 inline bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves,
@@ -463,14 +499,15 @@ inline bool enhance_move_type(float increment, float thresh, const vector<Move>&
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
  * @param node Node of the subtree to delete
  * @param hashTable Pointer to the hashTable which stores a pointer to all active nodes
+ * @param gcThread Reference to the garbadge collector object
  */
-void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>& hashTable);
+void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
 
 /**
  * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr
  * @param hashTable Pointer to the hashTables
  */
-void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable);
+void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
 
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);

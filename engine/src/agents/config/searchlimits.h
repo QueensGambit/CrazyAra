@@ -52,6 +52,13 @@ public:
     void reset();
 };
 
+/**
+ * @brief is_game_sceneario Checks if the searchLimits comply to a game scenario
+ * @param searchLimits object handle
+ * @return True if in game situation else false
+ */
+bool is_game_sceneario(const SearchLimits* searchLimits);
+
 extern std::ostream& operator<<(std::ostream& os, const SearchLimits& searchLimits);
 
 #endif // SEARCHLIMITS_H

@@ -54,6 +54,8 @@ private:
     float lastValueEval;
 
     int checkedContinueSearch = 0;
+    bool inGame;
+    bool canProlong;
     bool isRunning;
     /**
      * @brief check_early_stopping Checks if the search can be ended prematurely based on the current tree statistics (visits & Q-values)
@@ -68,7 +70,7 @@ private:
     inline bool continue_search();
 
 public:
-    ThreadManager(Node* rootNode, vector<SearchThread*>& searchThreads, LoggerThread* loggerThread, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval);
+    ThreadManager(Node* rootNode, vector<SearchThread*>& searchThreads, LoggerThread* loggerThread, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval, bool inGame, bool canProlong);
 
     /**
     * @brief stop_search_based_on_limits Checks for the search limit condition and possible early break-ups
@@ -99,6 +101,7 @@ public:
     void await_kill_signal();
 
     size_t get_movetime_ms() const;
+    bool isInGame() const;
 };
 
 /**
@@ -112,5 +115,13 @@ void run_thread_manager(ThreadManager* t);
  * @param searchThreads Vector of mcts search threads
  */
 void stop_search_threads(vector<SearchThread*>& searchThreads);
+
+/**
+ * @brief can_prolong_search Returns true if it is allowed to prolong the current search
+ * @param curMoveNumber Current move number (plies / 2)
+ * @param expectedGameLength Expected game length
+ * @return True, if search can be extended else false
+ */
+bool can_prolong_search(size_t curMoveNumber, size_t expectedGameLength);
 
 #endif // THREADMANAGER_H

@@ -42,7 +42,7 @@ void LoggerThread::wait_and_log()
     while(isRunning) {
         if (wait_for(chrono::milliseconds(updateIntervalMS))){
             evalInfo->end = chrono::steady_clock::now();
-            update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads));
+            update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads));
             info_score(*evalInfo);
         }
     }
@@ -51,6 +51,25 @@ void LoggerThread::wait_and_log()
 void run_logger_thread(LoggerThread *t)
 {
     t->wait_and_log();
+}
+
+size_t get_avg_depth(const vector<SearchThread*>& searchThreads)
+{
+    size_t avgDetph = 0;
+    for (SearchThread* searchThread : searchThreads) {
+        avgDetph += searchThread->get_avg_depth();
+    }
+    avgDetph = size_t(double(avgDetph) / searchThreads.size() + 0.5);
+    return avgDetph;
+}
+
+size_t get_max_depth(const vector<SearchThread*>& searchThreads)
+{
+    size_t maxDepth = 0;
+    for (SearchThread* searchThread : searchThreads) {
+        maxDepth = max(maxDepth, searchThread->get_max_depth());
+    }
+    return maxDepth;
 }
 
 size_t get_tb_hits(const vector<SearchThread*>& searchThreads)

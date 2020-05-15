@@ -72,10 +72,10 @@ CrazyAra::CrazyAra():
     variant(CRAZYHOUSE_VARIANT),
 #else
     variant(CHESS_VARIANT),
+#endif
     useRawNetwork(false),      // will be initialized in init_search_settings()
     networkLoaded(false),
     ongoingSearch(false),
-#endif
 #ifdef SUPPORT960
     is960(true),
 #else
@@ -110,7 +110,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     size_t it = 0;
 
-	// this is debug vector which can contain uci commands which will be automaticly processed when the executable is launched
+	// this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
     };
 
@@ -216,6 +216,7 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     position(&pos, is);
     istringstream isGoCommand(goCommand);
     go(&pos, isGoCommand, evalInfo);
+    wait_to_finish_last_search();
 }
 
 void CrazyAra::wait_to_finish_last_search()
@@ -486,6 +487,7 @@ void CrazyAra::init_play_settings()
     playSettings.initTemperature = Options["Centi_Temperature"] / 100.0f;
     playSettings.temperatureMoves = Options["Temperature_Moves"];
     playSettings.temperatureDecayFactor = Options["Centi_Temperature_Decay"] / 100.0f;
+    playSettings.quantileClipping = Options["Centi_Quantile_Clipping"] / 100.0f;
 #ifdef USE_RL
     playSettings.meanInitPly = Options["MeanInitPly"];
     playSettings.maxInitPly = Options["MaxInitPly"];

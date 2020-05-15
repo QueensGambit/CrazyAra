@@ -37,6 +37,7 @@ std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
        os << "mate " << evalInfo.movesToMate;
     }
     os << " depth " << evalInfo.depth
+       << " seldepth " << evalInfo.selDepth
        << " nodes " << evalInfo.nodes
        << " time " << elapsedTimeMS
        << " nps " << evalInfo.calculate_nps(elapsedTimeMS)
@@ -80,26 +81,28 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
 }
 
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits)
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth)
 {
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
-    rootNode->get_mcts_policy(evalInfo.policyProbSmall);
+    size_t bestMoveIdx;
+    rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx);
     evalInfo.legalMoves = rootNode->get_legal_moves();
     rootNode->get_principal_variation(evalInfo.pv);
     evalInfo.depth = evalInfo.pv.size();
+    evalInfo.selDepth = selDepth;
     // return mate score for known wins and losses
     if (rootNode->get_node_type() == SOLVED_WIN) {
         // always round up the ply counter
-        evalInfo.movesToMate = evalInfo.depth / 2 + evalInfo.depth % 2;
+        evalInfo.movesToMate = evalInfo.pv.size() / 2 + evalInfo.pv.size() % 2;
     }
     else if (rootNode->get_node_type() == SOLVED_LOSS) {
         // always round up the ply counter
-        evalInfo.movesToMate = -evalInfo.depth / 2 + evalInfo.depth % 2;
+        evalInfo.movesToMate = -evalInfo.pv.size() / 2 + evalInfo.pv.size() % 2;
     }
     else {
         evalInfo.movesToMate = 0;
-        evalInfo.bestMoveQ = rootNode->updated_value_eval();
+        evalInfo.bestMoveQ = rootNode->get_q_value(bestMoveIdx);
         evalInfo.centipawns = value_to_centipawn(evalInfo.bestMoveQ);
     }
     evalInfo.nodes = size_t(get_node_count(rootNode));

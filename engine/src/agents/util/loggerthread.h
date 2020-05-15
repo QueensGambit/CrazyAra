@@ -70,4 +70,7 @@ void run_logger_thread(LoggerThread *t);
  */
 size_t get_tb_hits(const vector<SearchThread*>& searchThreads);
 
+size_t get_avg_depth(const vector<SearchThread*>& searchThreads);
+size_t get_max_depth(const vector<SearchThread*>& searchThreads);
+
 #endif // LOGGERTHREAD_H

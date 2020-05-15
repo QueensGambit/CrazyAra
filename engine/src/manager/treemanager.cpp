@@ -30,12 +30,10 @@
 Node* pick_next_node(Move move, const Node* parentNode)
 {
     if (parentNode != nullptr) {
-        size_t childIdx = 0;
-        for (Move m : parentNode->get_legal_moves()) {
-            if (m == move) {
-                return parentNode->get_child_nodes()[childIdx];
+        for (size_t idx = 0; idx < parentNode->get_no_visit_idx(); ++idx) {
+            if (parentNode->get_legal_moves()[idx] == move) {
+                return parentNode->get_child_nodes()[idx];
             }
-            ++childIdx;
         }
     }
     return nullptr;

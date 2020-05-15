@@ -71,6 +71,9 @@ private:
     SearchSettings* searchSettings;
     SearchLimits* searchLimits;
     size_t tbHits;
+    size_t depthSum;
+    size_t depthMax;
+    size_t visitsPreSearch;
 
 public:
     /**
@@ -133,10 +136,14 @@ public:
     /**
      * @brief reset_tb_hits Sets the number of table hits to 0
      */
-    void reset_tb_hits();
+    void reset_stats();
 
     void set_root_pos(Board *value);
     size_t get_tb_hits() const;
+
+    size_t get_avg_depth();
+
+    size_t get_max_depth() const;
 
 private:
     /**
@@ -187,5 +194,13 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx);
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo);
+
+/**
+ * @brief random_root_playout Uses random move exploreation from the ROOT
+ * @param description Serach description struct
+ * @param currentNode Current node during trajectory
+ * @param childIdx Return child index (maybe unchanged)
+ */
+inline void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx);
 
 #endif // SEARCHTHREAD_H

@@ -133,6 +133,35 @@ vector<size_t> argsort(const DynamicVector<T>& v)
     return idx;
 }
 
+
+/**
+ * @brief first_and_second_max Finds the first and second max entry with their corresponding index
+ * @param v Vector
+ * @param endIdx End index of the vector
+ * @param firstMax Return value for max element
+ * @param secondMax Return value for 2nd max element
+ * @param firstArg Index for max element
+ * @param secondArg Index for 2nd max element
+ */
+template <typename T>
+void first_and_second_max(const DynamicVector<T>& v, size_t endIdx, T& firstMax, T& secondMax, size_t& firstArg, size_t& secondArg)
+{
+    firstMax = v[0];
+    secondMax = v[1];
+    firstArg = 0;
+    secondArg = 0;
+    for (size_t idx = 1; idx < endIdx; ++idx) {
+        if (v[idx] > firstMax) {
+            firstMax = v[idx];
+            firstArg = idx;
+        }
+        else if (v[idx] > secondMax) {
+            secondMax = v[idx];
+            secondArg = idx;
+        }
+    }
+}
+
 /**
  * @brief get_quantile Returns the value+FLT_EPSILON for the given quantil.
  * @param vec Given vector which is assumed to have only positive values and to sum up to 1.

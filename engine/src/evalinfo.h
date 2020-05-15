@@ -50,6 +50,7 @@ struct EvalInfo
     DynamicVector<float> childNumberVisits;
     int centipawns;
     size_t depth;
+    size_t selDepth;
     size_t nodes;
     size_t nodesPreSearch;
     bool isChess960;
@@ -74,8 +75,9 @@ int value_to_centipawn(float value);
  * @brief update_eval_info Updates the evaluation information based on the current search tree state
  * @param evalInfo Evaluation infomration struct
  * @param rootNode Root node of the search tree
+ * @param selDepth Selective depth, in this case the maximum reached depth
  */
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits);
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth);
 
 extern std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo);
 

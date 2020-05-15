@@ -24,9 +24,10 @@
  */
 
 #include "threadmanager.h"
+#include "../util/blazeutil.h"
 #include <chrono>
 
-ThreadManager::ThreadManager(Node* rootNode, vector<SearchThread*>& searchThreads, LoggerThread* loggerThread, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval):
+ThreadManager::ThreadManager(Node* rootNode, vector<SearchThread*>& searchThreads, LoggerThread* loggerThread, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval, bool inGame, bool canProlong):
     rootNode(rootNode),
     searchThreads(searchThreads),
     loggerThread(loggerThread),
@@ -36,9 +37,10 @@ ThreadManager::ThreadManager(Node* rootNode, vector<SearchThread*>& searchThread
     overallNPS(overallNPS),
     lastValueEval(lastValueEval),
     checkedContinueSearch(0),
+    inGame(inGame),
+    canProlong(canProlong),
     isRunning(true)
 {
-
 }
 
 void ThreadManager::await_kill_signal()
@@ -95,25 +97,36 @@ size_t ThreadManager::get_movetime_ms() const
     return movetimeMS;
 }
 
+bool ThreadManager::isInGame() const
+{
+    return inGame;
+}
+
 bool ThreadManager::early_stopping()
 {
+    if (!inGame) {
+        return false;
+    }
+
     if (overallNPS == 0) {
         return false;
     }
 
-    if (rootNode->get_visits() > overallNPS * (movetimeMS / 1000.0f) * 1.75) {
+    if (rootNode->get_visits()-rootNode->get_terminal_visits() > overallNPS * (movetimeMS / 1000.0f) * 2 &&
+        rootNode->max_q_child() == rootNode->max_visits_child()) {
         info_string("Early stopping (max nodes), saved time:", remainingMoveTimeMS);
         return true;
     }
 
-    const size_t max_visits = max(rootNode->get_child_number_visits());
-    size_t second_max_visits = 0;
-    for (float visit : rootNode->get_child_number_visits()) {
-        if (visit > second_max_visits && visit != max_visits) {
-            second_max_visits = visit;
-        }
-    }
-    if (second_max_visits + remainingMoveTimeMS * (overallNPS / 1000) < max_visits * 1.75) {
+    float firstMax;
+    float secondMax;
+    size_t firstArg;
+    size_t secondArg;
+    first_and_second_max(rootNode->get_child_number_visits(), rootNode->get_no_visit_idx(), firstMax, secondMax, firstArg, secondArg);
+    firstMax -= rootNode->get_child_node(firstArg)->get_terminal_visits();
+    secondMax -= rootNode->get_child_node(secondArg)->get_terminal_visits();
+    if (secondMax + remainingMoveTimeMS * (overallNPS / 1000) < firstMax * 2 &&
+        rootNode->get_q_value(firstArg) > rootNode->get_q_value(secondArg)) {
         info_string("Early stopping, saved time:", remainingMoveTimeMS);
         return true;
     }
@@ -122,7 +135,7 @@ bool ThreadManager::early_stopping()
 
 
 bool ThreadManager::continue_search() {
-    if (overallNPS == 0 || checkedContinueSearch > 1) {
+    if (!inGame || !canProlong || overallNPS == 0 || checkedContinueSearch > 1) {
         return false;
     }
     const float newEval = rootNode->updated_value_eval();
@@ -146,4 +159,9 @@ void stop_search_threads(vector<SearchThread*>& searchThreads)
     for (auto searchThread : searchThreads) {
         searchThread->stop();
     }
+}
+
+bool can_prolong_search(size_t curMoveNumber, size_t expectedGameLength)
+{
+    return curMoveNumber < expectedGameLength;
 }

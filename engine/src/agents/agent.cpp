@@ -41,6 +41,9 @@ void Agent::set_best_move(size_t moveCounter)
         info_string("Sample move");
         DynamicVector<double> policyProbSmall = evalInfo->childNumberVisits / sum(evalInfo->childNumberVisits);
         apply_temperature(policyProbSmall, get_current_temperature(*playSettings, moveCounter));
+        if (playSettings->quantileClipping != 0) {
+            apply_quantile_clipping(playSettings->quantileClipping, policyProbSmall);
+        }
         size_t moveIdx = random_choice(policyProbSmall);
         evalInfo->bestMove = evalInfo->legalMoves[moveIdx];
     }
@@ -82,4 +85,15 @@ void run_agent_thread(Agent* agent)
     agent->perform_action();
     // inform the agent of the move, so the tree can potentially be reused later
     agent->apply_move_to_tree(agent->get_best_move(), true);
+}
+
+void apply_quantile_clipping(float quantile, DynamicVector<double>& policyProbSmall)
+{
+    double thresh = get_quantile(policyProbSmall, quantile);
+    for (size_t idx = 0; idx < policyProbSmall.size(); ++idx) {
+        if (policyProbSmall[idx] < thresh) {
+            policyProbSmall[idx] = 0;
+        }
+    }
+    policyProbSmall /= sum(policyProbSmall);
 }

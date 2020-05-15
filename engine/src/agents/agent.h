@@ -81,11 +81,23 @@ public:
      */
     virtual void stop() = 0;
 
+    /**
+     * @brief apply_move_to_tree Applies the given move to the search tree by adding the expanded node to the candidate list
+     * @param move Move which has been played
+     * @param ownMove Boolean indicating if it was CrazyAra's move
+     */
     virtual void apply_move_to_tree(Move move, bool ownMove) = 0;
 
     Move get_best_move();
 };
 
 void run_agent_thread(Agent* agent);
+
+/**
+ * @brief apply_quantile_clipping Sets all value in the given quantile to 0
+ * @param quantile Quantile specification (assumed to be in [0,1])
+ * @param policyProbSmall Policy to be modified
+ */
+void apply_quantile_clipping(float quantile, DynamicVector<double>& policyProbSmall);
 
 #endif // AGENT_H
