@@ -966,8 +966,12 @@ ostream& operator<<(ostream &os, const Node *node)
        << "-----+-------+-------------+-----------+------------+-------------" << endl;
 
     for (size_t childIdx = 0; childIdx < node->get_number_child_nodes(); ++childIdx) {
-        const uint n = childIdx < node->d->noVisitIdx ? uint(node->d->childNumberVisits[childIdx]) : 0;
-        float q = childIdx < node->d->noVisitIdx ? max(node->d->qValues[childIdx], -1.0f) : Q_INIT;
+        int n = 0;
+		float q = Q_INIT;
+		if (childIdx < node->d->noVisitIdx) {
+			n = int(node->d->childNumberVisits[childIdx]);
+			q = max(node->d->qValues[childIdx], -1.0f);
+		}
 
         os << " " << setfill('0') << setw(3) << childIdx << " | "
            << setfill(' ') << setw(5) << UCI::move(node->get_legal_moves()[childIdx], false) << " |"
@@ -989,7 +993,6 @@ ostream& operator<<(ostream &os, const Node *node)
        << "isTerminal:\t" << node->is_terminal() << endl
        << "isTablebase:\t" << node->is_tablebase() << endl
        << "unsolvedNodes:\t" << node->d->numberUnsolvedChildNodes << endl
-       << "Visits:\t\t" << sum(node->get_child_number_visits()) << endl
        << "Visits:\t\t" << int(node->get_visits()) << endl
        << "terminalVisits:\t" << int(node->get_terminal_visits()) << endl;
     return os;

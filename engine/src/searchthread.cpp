@@ -30,10 +30,12 @@
 #include "common.h"
 #endif
 
+#include <stdlib.h>
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
 #include "util/blazeutil.h"
 #include "uci.h"
+
 
 size_t SearchThread::get_max_depth() const
 {
@@ -145,7 +147,7 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
 {
     if (description.depth == 0 && size_t(currentNode->get_visits()) % RANDOM_MOVE_COUNTER == 0 && currentNode->get_visits() > RANDOM_MOVE_THRESH) {
         if (currentNode->is_fully_expanded()) {
-            const size_t idx = random() % currentNode->get_number_child_nodes();
+            const size_t idx = rand() % currentNode->get_number_child_nodes();
             if (currentNode->get_child_node(idx) == nullptr || !currentNode->get_child_node(idx)->is_playout_node()) {
                 childIdx = idx;
                 return;
