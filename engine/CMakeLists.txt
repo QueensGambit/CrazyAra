@@ -18,12 +18,11 @@ endif()
 
 if(DEFINED ENV{BLAZE_PATH})
     MESSAGE(STATUS "BLAZE_PATH set to: $ENV{BLAZE_PATH}")
+    include_directories("$ENV{BLAZE_PATH}include")
+    include_directories("$ENV{BLAZE_PATH}")
 else()
     MESSAGE(STATUS "BLAZE_PATH not set")
 endif()
-
-include_directories("$ENV{BLAZE_PATH}include")
-include_directories("$ENV{BLAZE_PATH}")
 
 find_package( blaze )
 if( blaze_FOUND )
