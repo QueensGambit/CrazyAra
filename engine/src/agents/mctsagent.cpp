@@ -57,6 +57,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     isRunning(false),
     overallNPS(0.0f),
     nbNPSentries(0),
+    threadManager(nullptr),
     gcThread()
 {
     mapWithMutex.hashTable.reserve(1e6);
@@ -345,7 +346,9 @@ void MCTSAgent::run_mcts_search()
 void MCTSAgent::stop()
 {
     isRunning = false;
-    threadManager->stop_search();
+    if (threadManager != nullptr) {
+        threadManager->stop_search();
+    }
 }
 
 void MCTSAgent::print_root_node()

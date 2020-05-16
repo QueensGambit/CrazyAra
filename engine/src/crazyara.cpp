@@ -161,7 +161,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         ++it;
     } while (token != "quit" && argc == 1); // Command line args are one-shot
 
-    mainSearchThread.join();
+    wait_to_finish_last_search();
 }
 
 void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo) {
