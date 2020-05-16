@@ -67,6 +67,39 @@ private:
     float backupDirichletEpsilon;
     float backupQValueWeight;
 
+public:
+    /**
+     * @brief SelfPlay
+     * @param rawAgent Raw network agent which uses the raw network policy for e.g. game initiliation
+     * @param mctsAgent MCTSAgent which is used during selfplay for game generation
+     * @param searchLimits Search limit configuration struct
+     * @param playSettings Playing setting configuration struct
+     * @param RLSettings Additional settings for reinforcement learning usage
+     */
+    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings);
+    ~SelfPlay();
+
+    /**
+     * @brief go Starts the self play game generation for a given number of games
+     * @param numberOfGames Number of games to generate
+     * @param states States manager handle
+     * @param variant Variant to generate games for
+     */
+    void go(size_t numberOfGames, StatesManager* states, Variant variant);
+
+    /**
+     * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
+     * the mctsContender which uses the new updated wieghts
+     * @param mctsContender MCTSAgent using different NN weights
+     * @param numberOfGames Number of games to compare
+     * @param states States manager handle
+     * @param variant Variant to generate games for
+     * @return Score in respect to the contender, as floating point number.
+     *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
+     */
+    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states, Variant variant);
+
+private:
     /**
      * @brief generate_game Generates a new game in self play mode
      * @param variant Current chess variant
@@ -144,38 +177,6 @@ private:
      * @param Signals if a quick search was done
      */
     void reset_search_params(bool isQuickSearch);
-
-public:
-    /**
-     * @brief SelfPlay
-     * @param rawAgent Raw network agent which uses the raw network policy for e.g. game initiliation
-     * @param mctsAgent MCTSAgent which is used during selfplay for game generation
-     * @param searchLimits Search limit configuration struct
-     * @param playSettings Playing setting configuration struct
-     * @param RLSettings Additional settings for reinforcement learning usage
-     */
-    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings);
-    ~SelfPlay();
-
-    /**
-     * @brief go Starts the self play game generation for a given number of games
-     * @param numberOfGames Number of games to generate
-     * @param states States manager handle
-     * @param variant Variant to generate games for
-     */
-    void go(size_t numberOfGames, StatesManager* states, Variant variant);
-
-    /**
-     * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
-     * the mctsContender which uses the new updated wieghts
-     * @param mctsContender MCTSAgent using different NN weights
-     * @param numberOfGames Number of games to compare
-     * @param states States manager handle
-     * @param variant Variant to generate games for
-     * @return Score in respect to the contender, as floating point number.
-     *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
-     */
-    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states, Variant variant);
 };
 #endif
 
@@ -196,7 +197,7 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Boa
  * @param states State manager which takes over the newly created state object
  * @return New board object
  */
-Board* init_board(Variant variant, StatesManager* states);
+Board* init_board(Variant variant, StatesManager* states, bool is960, GamePGN& gamePGN);
 
 /**
  * @brief init_games_from_raw_policy Inits a new starting position by sampling from the raw policy with temperature 1.

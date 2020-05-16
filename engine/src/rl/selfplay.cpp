@@ -34,7 +34,7 @@
 #include "../domain/variants.h"
 #include "../util/blazeutil.h"
 #include "../util/randomgen.h"
-
+#include "../util/chess960position.h"
 
 void play_move_and_update(const EvalInfo& evalInfo, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult) {
     StateInfo* newState = new StateInfo;
@@ -56,10 +56,16 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), rlSettings(rlSettings),
     gameIdx(0), gamesPerMin(0), samplesPerMin(0)
 {
+    bool is960 = true;
 #ifdef MODE_CRAZYHOUSE
     gamePGN.variant = "crazyhouse";
 #elif defined MODE_CHESS
-    gamePGN.variant = "standard";
+    if (is960) {
+        gamePGN.variant = "chess960";
+    }
+    else {
+        gamePGN.variant = "standard";
+    }
 #endif
     gamePGN.event = "SelfPlay";
     gamePGN.site = "Darmstadt, GER";
@@ -156,9 +162,10 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
             mctsAgent->update_dirichlet_epsilon(rlSettings->quickDirichletEpsilon);
         }
         adjust_node_count(searchLimits, randInt);
-        mctsAgent->perform_action(position, searchLimits, evalInfo);
+        mctsAgent->set_search_settings(position, searchLimits, &evalInfo);
+        mctsAgent->perform_action();
         if (rlSettings->reuseTreeForSelpay) {
-            mctsAgent->apply_move_to_tree(evalInfo.bestMove, true, position);
+            mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         }
 
         if (!isQuickSearch && !exporter->is_file_full()) {
@@ -193,7 +200,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
-    Board* position = init_board(variant, states);
+    Board* position = init_board(variant, states, true, gamePGN);
     EvalInfo evalInfo;
 
     MCTSAgent* activePlayer;
@@ -211,10 +218,11 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
             activePlayer = blackPlayer;
             passivePlayer = whitePlayer;
         }
-        activePlayer->perform_action(position, searchLimits, evalInfo);
-        activePlayer->apply_move_to_tree(evalInfo.bestMove, true, position);
+        activePlayer->set_search_settings(position, searchLimits, &evalInfo);
+        activePlayer->perform_action();
+        activePlayer->apply_move_to_tree(evalInfo.bestMove, true);
         if (position->plies_from_null() != 0) {
-            passivePlayer->apply_move_to_tree(evalInfo.bestMove, false, position);
+            passivePlayer->apply_move_to_tree(evalInfo.bestMove, false);
         }
         play_move_and_update(evalInfo, position, states, gamePGN, gameResult);
     }
@@ -332,13 +340,23 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     return tournamentResult;
 }
 
-Board* init_board(Variant variant, StatesManager* states)
+Board* init_board(Variant variant, StatesManager* states, bool is960, GamePGN& gamePGN)
 {
     Board* position = new Board();
     auto uiThread = make_shared<Thread>(0);
 
     StateInfo* newState = new StateInfo;
-    position->set(StartFENs[variant], false, variant, newState, uiThread.get());
+    if (is960) {
+        string firstRank = startPos();
+        string lastRank = string(firstRank);
+        std::transform(firstRank.begin(), firstRank.end(), firstRank.begin(), ::tolower);
+        const string fen = firstRank + "/pppppppp/8/8/8/8/PPPPPPPP/" + lastRank +  " w KQkq - 0 1";
+        gamePGN.fen = fen;
+        position->set(fen, true, variant, newState, uiThread.get());
+    }
+    else {
+        position->set(StartFENs[variant], false, variant, newState, uiThread.get());
+    }
     states->activeStates.push_back(newState);
     return position;
 }
@@ -346,11 +364,12 @@ Board* init_board(Variant variant, StatesManager* states)
 Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, StatesManager *states,
                                          float rawPolicyProbTemp)
 {
-    Board* position = init_board(variant, states);
+    Board* position = init_board(variant, states, true, gamePGN);
 
     for (size_t ply = 0; ply < plys; ++ply) {
         EvalInfo eval;
-        rawAgent.evaluate_board_state(position, eval);
+        rawAgent.set_search_settings(position, nullptr, &eval);
+        rawAgent.evaluate_board_state();
         apply_raw_policy_temp(eval, rawPolicyProbTemp);
         const size_t moveIdx = random_choice(eval.policyProbSmall);
         eval.bestMove = eval.legalMoves[moveIdx];

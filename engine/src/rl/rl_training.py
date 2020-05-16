@@ -69,8 +69,8 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
     # one iteration is defined by passing 1 batch and doing backprop
     total_it = int(nb_it_per_epoch * train_config["nb_epochs"])
 
-    lr_schedule = CosineAnnealingSchedule(train_config["min_lr"], max_lr, total_it * .7)
-    lr_schedule = LinearWarmUp(lr_schedule, start_lr=train_config["min_lr"], length=total_it * .25)
+    lr_schedule = CosineAnnealingSchedule(train_config["min_lr"], max_lr, max(total_it * .7, 1))
+    lr_schedule = LinearWarmUp(lr_schedule, start_lr=train_config["min_lr"], length=max(total_it * .25, 1))
     momentum_schedule = MomentumSchedule(lr_schedule, train_config["min_lr"], max_lr,
                                          train_config["min_momentum"], train_config["max_momentum"])
 

@@ -215,7 +215,8 @@ class RLLoop:
         self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
                                                                                    'utf-8'))
         set_uci_param(self.proc, "Context", self.args.context)
-        set_uci_param(self.proc, "Device_ID", self.args.device_id)
+        set_uci_param(self.proc, "First_Device_ID", self.args.device_id)
+        set_uci_param(self.proc, "Last_Device_ID", self.args.device_id)
         set_uci_param(self.proc, "Batch_Size", 8)
         set_uci_param(self.proc, "Centi_Dirichlet_Epsilon", 25)
 #        set_uci_param(self.proc, "Centi_Dirichlet_Alpha", 20) cz
@@ -224,8 +225,19 @@ class RLLoop:
         set_uci_param(self.proc, "Allow_Early_Stopping", "false")
         set_uci_param(self.proc, "Centi_Node_Temperature", 100)
 #        set_uci_param(self.proc, "Temperature_Moves", 500) cz
-        set_uci_param(self.proc, "Temperature_Moves", 50)
-        set_uci_param(self.proc, "Centi_Quick_Probability", 75)
+        set_uci_param(self.proc, "Temperature_Moves", 15)
+        set_uci_param(self.proc, "Centi_Quick_Probability", 0)
+        set_uci_param(self.proc, "Milli_Policy_Clip_Thresh", 10)
+        set_uci_param(self.proc, "SyzygyPath", "/home/queensgambit/Downloads/tablebases/syzygy")
+
+        set_uci_param(self.proc, "Centi_Resign_Probability", 90)
+        set_uci_param(self.proc, "MeanInitPly", 0)
+        set_uci_param(self.proc, "MaxInitPly", 0)
+        # set_uci_param(self.proc, "MeanInitPly", 15)
+        # set_uci_param(self.proc, "MaxInitPly", 30)
+        set_uci_param(self.proc, "Reuse_Tree", "false")
+        set_uci_param(self.proc, "Precision", self.args.precision)
+        # set_uci_param(self.proc, "Selfplay_Number_Chunks", 1)
 
         if is_arena is True:
 #            set_uci_param(self.proc, "Centi_Temperature", 60) cz
@@ -501,14 +513,14 @@ def parse_args(cmd_args: list):
     """
     parser = argparse.ArgumentParser(description='Reinforcement learning loop')
 
-    parser.add_argument("--crazyara-binary-dir", type=str, default="/data/RL/",
+    parser.add_argument("--crazyara-binary-dir", type=str, default="/media/queensgambit/Volume/Deep_Learning/data/RL/chess960/20200425/", # /data/RL/",
                         help="directory where the CrazyAra executable is located and where the selfplay data will be "
                              "stored")
     parser.add_argument('--context', type=str, default="gpu",
                         help='Computational device context to use. Possible values ["cpu", "gpu"]. (default: gpu)')
-    parser.add_argument("--device_id", type=int, default=0,
+    parser.add_argument("--device-id", type=int, default=0,
                         help="GPU index to use for selfplay generation and/or network training. (default: 0)")
-    parser.add_argument("--trainer", default=False, action="store_true",
+    parser.add_argument("--trainer", default=True, action="store_true",
                         help="The given GPU index is used for training the neural network."
                              " The gpu trainer will stop generating games and update the network as soon as enough"
                              " training samples have been acquired.  (default: False)")
@@ -518,10 +530,12 @@ def parse_args(cmd_args: list):
     parser.add_argument('--nn-update-idx', type=int, default=0,
                         help="Index of how many NN updates have been done so far."
                              " This will be used to label the NN weights (default: 0)")
-    parser.add_argument("--nn-update-files", type=int, default=10,
+    parser.add_argument("--nn-update-files", type=int, default=15, #10,
                         help="How many new generated training files are needed to apply an update to the NN")
     parser.add_argument("--arena-games", type=int, default=100,
                         help="How many arena games will be done to judge the quality of the new network")
+    parser.add_argument("--precision", type=str, default="float16", #10,
+                        help="-")
 
     args = parser.parse_args(cmd_args)
 
@@ -601,3 +615,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
