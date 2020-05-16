@@ -90,7 +90,7 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
                                 "c2b3", "N@c5", "b3b4", "R@a4"};
 #endif
 
-    vector<string> curUciMoves;
+    vector<string> curUciMoves = uciMoves;
     size_t offset = 0;
 
     for (size_t idx = 0; idx < size_t(batchSize * maxBatches); ++idx) {
