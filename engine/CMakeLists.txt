@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
+set (CMAKE_CXX_STANDARD 14)
 project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
@@ -21,17 +22,13 @@ else()
     MESSAGE(STATUS "BLAZE_PATH not set")
 endif()
 
-if(MSVC OR MSYS OR MINGW)
-    include_directories("$ENV{BLAZE_PATH}include")
-    include_directories("$ENV{BLAZE_PATH}")	
-else()
-    find_package( blaze )
-    if( blaze_FOUND )
-        add_library( blaze_target INTERFACE )
-        target_link_libraries( blaze_target INTERFACE blaze::blaze )
-    else()
-        include_directories("$ENV{BLAZE_PATH}include")
-    endif()
+include_directories("$ENV{BLAZE_PATH}include")
+include_directories("$ENV{BLAZE_PATH}")
+
+find_package( blaze )
+if( blaze_FOUND )
+     add_library( blaze_target INTERFACE )
+     target_link_libraries( blaze_target INTERFACE blaze::blaze )
 endif()
 
 file(GLOB source_files
@@ -180,9 +177,9 @@ add_definitions(-DHORDE)
 add_definitions(-DRACE)
 
 # enable a single mode for different model input / outputs
-#add_definitions(-DMODE_CRAZYHOUSE)
+add_definitions(-DMODE_CRAZYHOUSE)
 #add_definitions(-DMODE_LICHESS)
-add_definitions(-DMODE_CHESS)
+#add_definitions(-DMODE_CHESS)
 
 # add_definitions(-DBUILD_TESTS)
 
