@@ -56,6 +56,10 @@ size_t EvalInfo::calculate_elapsed_time_ms() const
 
 size_t EvalInfo::calculate_nps(size_t elapsedTimeMS) const
 {
+    // avoid division by 0
+    if (elapsedTimeMS == 0) {
+        elapsedTimeMS = 1;
+    }
     return int(((nodes-nodesPreSearch) / (elapsedTimeMS / 1000.0f)) + 0.5f);
 }
 
