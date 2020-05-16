@@ -339,16 +339,20 @@ The source-code including all project files is licensed under the GPLv3-License 
 For details about the GPL v3 license, refer to the file [LICENSE](https://github.com/QueensGambit/CrazyAra/blob/master/LICENSE).
 
 ## Publications
-*   J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [preprint](https://arxiv.org/abs/1908.06660)
+*   J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [link](https://www.frontiersin.org/article/10.3389/frai.2020.00024)
 ```latex
-@article{czech2019crazyara,
-	 title = { Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data },
-	 author = { Johannes Czech and Moritz Willig and Alena Beyer and Kristian Kersting and Johannes F{\"u}rnkranz },
-         year = { 2019 },
-	 crossref = { https://github.com/QueensGambit/CrazyAra },
-	 pages = { 33 },
-	 howpublished = { arXiv preprint arXiv:1908.06660 }
-	 }
+@ARTICLE{10.3389/frai.2020.00024,
+	 AUTHOR={Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and Fürnkranz, Johannes},   
+	 TITLE={Learning to Play the Chess Variant Crazyhouse Above World Champion Level With Deep Neural Networks and Human Data},      
+	 JOURNAL={Frontiers in Artificial Intelligence},      
+	 VOLUME={3},      
+	 PAGES={24},     
+	 YEAR={2020},      
+	 URL={https://www.frontiersin.org/article/10.3389/frai.2020.00024},       
+	 DOI={10.3389/frai.2020.00024},      
+	 ISSN={2624-8212},   
+	 ABSTRACT={Deep neural networks have been successfully applied in learning the board games Go, chess, and shogi without prior knowledge by making use of reinforcement learning. Although starting from zero knowledge has been shown to yield impressive results, it is associated with high computationally costs especially for complex games. With this paper, we present CrazyAra which is a neural network based engine solely trained in supervised manner for the chess variant crazyhouse. Crazyhouse is a game with a higher branching factor than chess and there is only limited data of lower quality available compared to AlphaGo. Therefore, we focus on improving efficiency in multiple aspects while relying on low computational resources. These improvements include modifications in the neural network design and training configuration, the introduction of a data normalization step and a more sample efficient Monte-Carlo tree search which has a lower chance to blunder. After training on 569537 human games for 1.5 days we achieve a move prediction accuracy of 60.4%. During development, versions of CrazyAra played professional human players. Most notably, CrazyAra achieved a four to one win over 2017 crazyhouse world champion Justin Tan (aka LM Jann Lee) who is more than 400 Elo higher rated compared to the average player in our training set. Furthermore, we test the playing strength of CrazyAra on CPU against all participants of the second Crazyhouse Computer Championships 2017, winning against twelve of the thirteen participants. Finally, for CrazyAraFish we continue training our model on generated engine games. In 10 long-time control matches playing Stockfish 10, CrazyAraFish wins three games and draws one out of 10 matches.}
+}
 ```
 
 * J. Czech: **Deep Reinforcement Learning for Crazyhouse**, [pdf](https://ml-research.github.io/papers/czech2019deep.pdf)
