@@ -63,6 +63,7 @@ public:
     int getBatchSize() const override;
 
     nvinfer1::Dims getDims() const override;
+
 private:
     int mBatchSize{0};
     int mBatchCount{0};
@@ -71,6 +72,8 @@ private:
     std::vector<float> mData;
     std::vector<float> mLabels{};
 };
+
+void reset_to_startpos(Board& pos, Thread* uiThread, StateListPtr& states);
 #endif
 
 #endif // CHESSBATCHSTREAM_H

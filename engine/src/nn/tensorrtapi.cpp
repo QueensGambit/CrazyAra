@@ -197,7 +197,11 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
     case int8:
         config->setFlag(BuilderFlag::kINT8);
         info_string("run INT8 quantization calibration");
+#ifdef MODE_CHESS
         calibrationStream.reset(new ChessBatchStream(1, 104));
+#elif defined MODE_CRAZYHOUSE
+        calibrationStream.reset(new ChessBatchStream(1, 232));
+#endif
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*calibrationStream.get(), 0, "model", "data"));
         config->setInt8Calibrator(calibrator.get());
         samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
@@ -217,10 +221,10 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
 
     // set precision of the first and last layers to float32
     // 0 is the input layer, 1 the value output and 2 the policy output layer
-    fix_layer_precision(network->getLayer(0), nvinfer1::DataType::kFLOAT);
-    fix_layer_precision(softmaxLayer, nvinfer1::DataType::kFLOAT);
-    fix_layer_precision(network->getLayer(1), nvinfer1::DataType::kFLOAT);
-    fix_layer_precision(network->getLayer(2), nvinfer1::DataType::kFLOAT);
+//    fix_layer_precision(network->getLayer(0), nvinfer1::DataType::kFLOAT);
+//    fix_layer_precision(softmaxLayer, nvinfer1::DataType::kFLOAT);
+//    fix_layer_precision(network->getLayer(1), nvinfer1::DataType::kFLOAT);
+//    fix_layer_precision(network->getLayer(2), nvinfer1::DataType::kFLOAT);
 
     // set the softmax layer output as the new output
     network->unmarkOutput(*network->getOutput(1));

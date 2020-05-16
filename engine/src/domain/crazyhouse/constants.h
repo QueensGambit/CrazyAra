@@ -52,7 +52,7 @@ const string engineName = "LichessAra";
 const string engineName = "ClassicAra";
 #endif
 
-const string engineVersion = "0.7.3";
+const string engineVersion = "0.8.0";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
 
 // Define the board size

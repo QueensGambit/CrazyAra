@@ -21,6 +21,7 @@
 #include "chessbatchstream.h"
 #include "uci.h"
 
+
 ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     mBatchSize{batchSize},
     mMaxBatches{maxBatches},
@@ -35,8 +36,9 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     // allocate memory
     mData.resize(NB_VALUES_TOTAL * batchSize * maxBatches);
     StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
-    pos.set(StartFENs[CHESS_VARIANT], false, CHESS_VARIANT, &states->back(), uiThread.get());
+    reset_to_startpos(pos, uiThread.get(), states);
 
+#ifdef MODE_CHESS
     // create a vector of sample moves to create the sample data
     vector<string> uciMoves = {"e2e4", "c7c5", "g1f3", "d7d6", "d2d4", "c5d4", "f3d4", "g8f6",
                                "b1c3", "b8c6", "c1g5", "c8d7", "d1d2", "a8c8", "d4b3", "a7a6",
@@ -54,15 +56,57 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
                                "e2d3", "f7f5", "f4g3", "d5b5", "d3b5", "d4b5", "f1e2", "g7g5",
                                "e2d3", "f5f4", "g3f2", "h7g6", "d3c4", "b5a3", "c4b3", "a3b5",
                                "b3c4", "b5a3", "c4b3", "a3b5", "b3c4"};
-    for (int idx = 0; idx < batchSize * maxBatches; ++idx) {
+#elif defined MODE_CRAZYHOUSE
+    vector<string> uciMoves = {"e2e4", "g8f6", "b1c3", "e7e5", "g1f3", "b8c6", "f1c4", "f8e7",
+                               "d2d4", "e5d4", "f3d4", "d7d5", "d4c6", "b7c6", "e4d5", "N@h4",
+                               "h1g1", "e8g8", "P@h6", "g7h6", "c1h6", "P@g3", "h2g3", "P@h2",
+                               "g1h1", "h4g2", "e1f1", "c8h3", "h1h2", "g2e3", "f1g1", "e3d1",
+                               "a1d1", "f6g4", "h2h3", "g4h6", "h3h6", "B@g7", "h6h2", "P@h4",
+                               "B@f5", "h4g3", "f5h7", "g8h8", "f2g3", "P@f2", "g1f2", "e7h4",
+                               "h2h4", "g7c3", "B@d4", "c3d4", "d1d4", "B@e3", "f2e3", "d8g5",
+                               "B@f4", "N@g2", "e3f2", "g2h4", "h7e4", "R@h2", "P@g2", "h4g2",
+                               "e4g2", "h2g2", "f2g2", "P@h3", "g2f1", "Q@g2", "f1e1", "a8e8",
+                               "P@e7", "e8e7", "P@e6", "B@f2", "e1d1", "f2d4", "P@g7", "d4g7",
+                               "P@f2", "g5h5", "P@g4", "h5g4", "N@e2", "R@f1", "B@e1", "g2f2",
+                               "N@f3", "f2f3", "N@g2", "h3g2", "R@h2", "P@h3", "P@f2", "f1e1",
+                               "d1e1", "g2g1q", "N@f1", "N@g2", "h2g2", "g1f1", "e1f1", "f3g2",
+                               "f1e1", "N@f3", "e1d1", "R@e1"};
+
+    vector<string> uciMoves2 = {"d2d4", "g8f6", "c1f4", "e7e6", "g1f3", "b7b6", "e2e3", "c8b7",
+                                "f1d3", "f8b4", "b1d2", "b4d2", "f3d2", "N@h4", "e1g1", "h4g2",
+                                "f4g5", "b8c6", "B@f3", "P@h3", "f3h5", "d8e7", "d1f3", "h7h6",
+                                "g5f6", "g7f6", "f3h3", "c6d4", "c2c3", "B@f5", "d3f5", "d4f5",
+                                "B@f3", "B@d5", "h3g2", "d5f3", "h5f3", "b7f3", "g2f3", "B@c6",
+                                "B@e4", "c6e4", "d2e4", "B@c6", "B@d3", "P@c4", "d3c4", "B@b7",
+                                "B@d3", "b6b5", "c4b5", "c6e4", "d3e4", "b7e4", "f3e4", "N@h3",
+                                "g1h1", "B@d5", "N@d2", "d5e4", "d2e4", "Q@g4", "B@g2", "g4g2",
+                                "h1g2", "h3g5", "b5d7", "e8f8", "B@g4", "h6h5", "B@a3", "c7c5",
+                                "P@b7", "a8d8", "P@c7", "h5g4", "c7d8r", "e7d8", "a3c5", "f8g7",
+                                "e4g5", "B@f3", "g5f3", "g4f3", "g2f3", "B@h5", "f3e4", "N@e5",
+                                "f1g1", "P@g6", "N@d4", "e5d7", "P@h6", "g7h6", "B@f8", "d7f8",
+                                "Q@c1", "B@e2", "c5f8", "d8f8", "P@g5", "f6g5", "d4e2", "h5e2",
+                                "R@h3", "B@h5", "N@g4", "e2g4", "h3h5", "g4h5", "N@g4", "h5g4",
+                                "B@g7", "f8g7", "e4d3", "B@e2", "d3d2", "N@e4", "d2c2", "B@d3",
+                                "c2b3", "N@c5", "b3b4", "R@a4"};
+#endif
+
+    vector<string> curUciMoves;
+    size_t offset = 0;
+
+    for (size_t idx = 0; idx < size_t(batchSize * maxBatches); ++idx) {
         states->emplace_back();
         board_to_planes(&pos, pos.number_repetitions(), true, mData.data() + NB_VALUES_TOTAL * idx);
-        if (idx == batchSize * maxBatches - 1) {
+        if (idx == curUciMoves.size()) {
+            reset_to_startpos(pos, uiThread.get(), states);
+            offset = curUciMoves.size();
+            curUciMoves = uciMoves2;
+        }
+        if (idx == size_t(batchSize * maxBatches - 1)) {
             // create a temporary StateInfo for the last position
-            pos.do_move(UCI::to_move(pos, uciMoves[idx]), *(new StateInfo));
+            pos.do_move(UCI::to_move(pos, curUciMoves[idx-offset]), *(new StateInfo));
         }
         else {
-            pos.do_move(UCI::to_move(pos, uciMoves[idx]), states->back());
+            pos.do_move(UCI::to_move(pos, curUciMoves[idx-offset]), states->back());
         }
     }
 }
@@ -111,5 +155,15 @@ int ChessBatchStream::getBatchSize() const
 nvinfer1::Dims ChessBatchStream::getDims() const
 {
     return Dims{4, {mBatchSize, mDims.d[0], mDims.d[1], mDims.d[2]}, {}};
+}
+
+void reset_to_startpos(Board& pos, Thread* uiThread, StateListPtr& states)
+{
+    states = StateListPtr(new std::deque<StateInfo>(1));
+#ifdef MODE_CHESS
+    pos.set(StartFENs[CHESS_VARIANT], false, CHESS_VARIANT, &states->back(), uiThread.get());
+#elif defined MODE_CRAZYHOUSE
+    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, &states->back(), uiThread);
+#endif
 }
 #endif
