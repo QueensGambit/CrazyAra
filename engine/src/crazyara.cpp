@@ -128,7 +128,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         token.clear(); // Avoid a stale if getline() returns empty or blank line
         is >> skipws >> token;
 
-        if (token == "stop" || token == "quit") {
+        if ((token == "stop" || token == "quit") && mctsAgent != nullptr) {
             mctsAgent->stop();
 		}
 		else if (token == "uci") {
