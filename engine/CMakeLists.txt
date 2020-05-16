@@ -9,6 +9,22 @@ option(USE_TENSORRT              "Build with TensorRT support"  ON)
 option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
 
+add_definitions(-DIS_64BIT)
+add_definitions(-DCRAZYHOUSE)
+add_definitions(-DKOTH)
+add_definitions(-DTHREECHECK)
+add_definitions(-DANTI)
+add_definitions(-DATOMIC)
+add_definitions(-DHORDE)
+add_definitions(-DRACE)
+
+# enable a single mode for different model input / outputs
+add_definitions(-DMODE_CRAZYHOUSE)
+#add_definitions(-DMODE_LICHESS)
+#add_definitions(-DMODE_CHESS)
+
+# add_definitions(-DBUILD_TESTS)
+
 # -pg performance profiling flags
 if (USE_PROFILING)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
@@ -166,21 +182,6 @@ if (USE_RL)
 endif()
 
 find_package(Threads REQUIRED)
-add_definitions(-DIS_64BIT)
-add_definitions(-DCRAZYHOUSE)
-add_definitions(-DKOTH)
-add_definitions(-DTHREECHECK)
-add_definitions(-DANTI)
-add_definitions(-DATOMIC)
-add_definitions(-DHORDE)
-add_definitions(-DRACE)
-
-# enable a single mode for different model input / outputs
-add_definitions(-DMODE_CRAZYHOUSE)
-#add_definitions(-DMODE_LICHESS)
-#add_definitions(-DMODE_CHESS)
-
-# add_definitions(-DBUILD_TESTS)
 
 if(THREADS_HAVE_PTHREAD_ARG)
     target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
