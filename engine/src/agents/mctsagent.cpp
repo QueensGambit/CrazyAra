@@ -157,7 +157,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
         return rootNode;
     }
 
-    if (same_hash_key(ownNextRoot, pos)) {
+    if (same_hash_key(ownNextRoot, pos) && ownNextRoot->is_playout_node()) {
         delete_sibling_subtrees(ownNextRoot, mapWithMutex.hashTable, gcThread);
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         if (rootNode->get_parent_node() != nullptr) {
@@ -166,7 +166,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
         gcThread.add_item_to_delete(rootNode);
         return ownNextRoot;
     }
-    if (same_hash_key(opponentsNextRoot, pos)) {
+    if (same_hash_key(opponentsNextRoot, pos) && opponentsNextRoot->is_playout_node()) {
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         if (opponentsNextRoot->get_parent_node() != nullptr) {
             gcThread.add_item_to_delete(opponentsNextRoot->get_parent_node());
@@ -286,14 +286,8 @@ void MCTSAgent::evaluate_board_state()
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = pos->is_chess960();
     rootPos = pos;
-    if (!rootNode->is_playout_node()) {
-        rootNode->init_node_data();
-    }
     if (rootNode->get_number_child_nodes() == 1 && !rootNode->is_blank_root_node()) {
         info_string("Only single move available -> early stopping");
-    }
-    else if (rootNode->is_playout_node() && rootNode->is_solved()) {
-        info_string("Node solved -> early stopping");
     }
     else if (rootNode->get_number_child_nodes() == 0) {
         info_string("The given position has no legal moves");
