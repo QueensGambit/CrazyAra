@@ -56,6 +56,9 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
                                "e2d3", "f7f5", "f4g3", "d5b5", "d3b5", "d4b5", "f1e2", "g7g5",
                                "e2d3", "f5f4", "g3f2", "h7g6", "d3c4", "b5a3", "c4b3", "a3b5",
                                "b3c4", "b5a3", "c4b3", "a3b5", "b3c4"};
+							   
+    vector<string> uciMoves2 = {};
+	
 #elif defined MODE_CRAZYHOUSE
     vector<string> uciMoves = {"e2e4", "g8f6", "b1c3", "e7e5", "g1f3", "b8c6", "f1c4", "f8e7",
                                "d2d4", "e5d4", "f3d4", "d7d5", "d4c6", "b7c6", "e4d5", "N@h4",
@@ -161,7 +164,7 @@ void reset_to_startpos(Board& pos, Thread* uiThread, StateListPtr& states)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
 #ifdef MODE_CHESS
-    pos.set(StartFENs[CHESS_VARIANT], false, CHESS_VARIANT, &states->back(), uiThread.get());
+    pos.set(StartFENs[CHESS_VARIANT], false, CHESS_VARIANT, &states->back(), uiThread);
 #elif defined MODE_CRAZYHOUSE
     pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, &states->back(), uiThread);
 #endif
