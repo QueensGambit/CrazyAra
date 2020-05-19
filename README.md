@@ -74,10 +74,11 @@ We provide binary releases for the following plattforms:
 
 Operating System | Backend                                                                                                                                                               | Compatible with
 ---              | ---                                                                                                                                                                   | --- 
-Linux            | [**CUDA 10.1, cuDNN v7.5.1.10, TensorRT-5.1.5.0, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Linux_CUDA_TensorRT.zip) | NVIDIA GPUs and CPU
-Linux            | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Linux_MKL.zip)                                               | Intel CPUs
-Windows          | [**CUDA 10.1, cuDNN v7.5.1.10, openBlas**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_CUDA.zip)                              | NVIDIA GPUs and CPU
-Windows          | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/CrazyAra_0.7.0_Win_MKL.zip)                                                 | Intel CPUs
+Linux            | [**CUDA 10.2, cuDNN 7.6.5, TensorRT-7.0.0.11**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Linux_TensorRT.zip) | NVIDIA GPUs
+Linux            | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Linux_MKL.zip)                                               | Intel CPUs
+Windows          | [**CUDA 10.2, cuDNN 7.6.5, TensorRT-7.0.0.11**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Win_TensorRT.zip)                              | NVIDIA GPUs
+Windows          | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Win_MKL.zip)                                                 | Intel CPUs
+Mac              | [**Apple Accelerate**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Mac_CPU.zip) | Mac-Books
 
 The current _CrazyAra_ release and all its previous versions can also be found at [releases](https://github.com/QueensGambit/CrazyAra/releases).
 
@@ -85,7 +86,7 @@ The current _CrazyAra_ release and all its previous versions can also be found a
 
 The extracted model should be placed in the same directory as the engine executable.
 The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
-Each model is compatible with all executables.
+Model-0S-96 is included in [**release 0.8.0**](https://github.com/QueensGambit/CrazyAra/releases/tag/0.8.0).
 
 The following models are available for download:
 
