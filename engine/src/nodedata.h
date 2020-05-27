@@ -59,12 +59,12 @@ class Node;
  */
 struct NodeData
 {
-    DynamicVector<float> childNumberVisits;
+    DynamicVector<uint32_t> childNumberVisits;
     DynamicVector<float> actionValues;
     DynamicVector<float> qValues;
     vector<Node*> childNodes;
 
-    float terminalVisits;
+    uint32_t terminalVisits;
 
     uint16_t checkmateIdx;
     uint16_t endInPly;

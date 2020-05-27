@@ -28,7 +28,7 @@
 
 void NodeData::add_empty_node()
 {
-    append(childNumberVisits, 0.0f);
+    append(childNumberVisits, 0U);
     append(actionValues, 0.0f);
     append(qValues, Q_INIT);
     childNodes.emplace_back(nullptr);

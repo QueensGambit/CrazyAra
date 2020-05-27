@@ -109,6 +109,6 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
         evalInfo.bestMoveQ = rootNode->get_q_value(bestMoveIdx);
         evalInfo.centipawns = value_to_centipawn(evalInfo.bestMoveQ);
     }
-    evalInfo.nodes = size_t(get_node_count(rootNode));
+    evalInfo.nodes = get_node_count(rootNode);
     evalInfo.tbHits = tbHits;
 }

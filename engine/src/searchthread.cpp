@@ -97,35 +97,23 @@ void SearchThread::set_is_running(bool value)
     isRunning = value;
 }
 
-void SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck)
+NodeBackup SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck)
 {
     mapWithMutex->mtx.lock();
     unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newPos->hash_key());
     if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
             is_transposition_verified(it, newPos->get_state_info())) {
         mapWithMutex->mtx.unlock();
-        parentNode->increment_no_visit_idx();
         Node *newNode = new Node(*it->second);
         parentNode->add_transposition_child_node(newNode, childIdx);
-        transpositionNodes->add_element(newNode);
+        return NODE_TRANSPOSITION;
     }
-    else {
-        mapWithMutex->mtx.unlock();
-        parentNode->increment_no_visit_idx();
-        assert(parentNode != nullptr);
-        Node *newNode = new Node(newPos, inCheck, parentNode, childIdx, searchSettings);
-        // fill a new board in the input_planes vector
-        // we shift the index by NB_VALUES_TOTAL each time
-        board_to_planes(newPos, newPos->number_repetitions(), true, inputPlanes+newNodes->size()*NB_VALUES_TOTAL);
-
-        // connect the Node to the parent
-        parentNode->add_new_child_node(newNode, childIdx);
-
-        // save a reference newly created list in the temporary list for node creation
-        // it will later be updated with the evaluation of the NN
-        newNodes->add_element(newNode);
-        newNodeSideToMove->add_element(newPos->side_to_move());
-    }
+    mapWithMutex->mtx.unlock();
+    assert(parentNode != nullptr);
+    Node *newNode = new Node(newPos, inCheck, parentNode, childIdx, searchSettings);
+    // connect the Node to the parent
+    parentNode->add_new_child_node(newNode, childIdx);
+    return NODE_NEW_NODE;
 }
 
 void SearchThread::stop()
@@ -157,12 +145,16 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
                 return;
             }
         }
-        childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
-        currentNode->increment_no_visit_idx();
+        else {
+            childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
+            currentNode->lock();
+            currentNode->increment_no_visit_idx();
+            currentNode->unlock();
+        }
     }
 }
 
-Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states,  const SearchSettings* searchSettings)
+Node* SearchThread::get_new_child_to_evaluate(Board* pos, size_t& childIdx, NodeDescription& description) //, bool& inCheck)
 {
     rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
@@ -183,24 +175,22 @@ Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, No
         Node* nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
         if (nextNode == nullptr) {
-            description.isCollision = false;
-            description.isTerminal = false;
-            currentNode->unlock();
-            inCheck = pos->gives_check(currentNode->get_move(childIdx));
+            const bool inCheck = pos->gives_check(currentNode->get_move(childIdx));
             // this new StateInfo will be freed from memory when 'pos' is freed
             pos->do_move(currentNode->get_move(childIdx), *(new StateInfo));
+            description.type = add_new_node_to_tree(pos, currentNode, childIdx, inCheck);
+            currentNode->increment_no_visit_idx();
+            currentNode->unlock();
             return currentNode;
         }
         if (nextNode->is_terminal()) {
-            description.isCollision = false;
-            description.isTerminal = true;
+            description.type = NODE_TERMINAL;
             currentNode->unlock();
             pos->do_move(currentNode->get_move(childIdx), *(new StateInfo));
             return currentNode;
         }
         if (!nextNode->has_nn_results()) {
-            description.isCollision = true;
-            description.isTerminal = false;
+            description.type = NODE_COLLISION;
             currentNode->unlock();
             pos->do_move(currentNode->get_move(childIdx), *(new StateInfo));
             return currentNode;
@@ -295,23 +285,30 @@ void SearchThread::create_mini_batch()
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
         Board newPos = Board(*rootPos);
-        bool inCheck;
-        parentNode = get_new_child_to_evaluate(&newPos, rootNode, childIdx, description, inCheck, states, searchSettings);
+        parentNode = get_new_child_to_evaluate(&newPos, childIdx, description);
+        Node* newNode = parentNode->get_child_node(childIdx);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
-        get_avg_depth();
-
-        if(description.isTerminal) {
+        if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-            parentNode->backup_value(childIdx, -parentNode->get_child_node(childIdx)->get_value(), searchSettings->virtualLoss);
+            parentNode->backup_value(childIdx, -newNode->get_value(), searchSettings->virtualLoss);
         }
-        else if (description.isCollision) {
+        else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
-            collisionNodes->add_element(parentNode->get_child_node(childIdx));
+            collisionNodes->add_element(newNode);
         }
-        else {
-            add_new_node_to_tree(&newPos, parentNode, childIdx, inCheck);
+        else if (description.type == NODE_TRANSPOSITION) {
+            transpositionNodes->add_element(newNode);
+        }
+        else {  // NODE_NEW_NODE
+            // fill a new board in the input_planes vector
+            // we shift the index by NB_VALUES_TOTAL each time
+            board_to_planes(&newPos, newPos.number_repetitions(), true, inputPlanes+newNodes->size()*NB_VALUES_TOTAL);
+            // save a reference newly created list in the temporary list for node creation
+            // it will later be updated with the evaluation of the NN
+            newNodes->add_element(newNode);
+            newNodeSideToMove->add_element(newPos.side_to_move());
         }
     }
 }

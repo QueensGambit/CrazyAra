@@ -43,6 +43,20 @@ struct MapWithMutex {
     }
 };
 
+enum NodeBackup : uint8_t {
+    NODE_COLLISION,
+    NODE_TERMINAL,
+    NODE_TRANSPOSITION,
+    NODE_NEW_NODE
+};
+
+struct NodeDescription
+{
+    NodeBackup type;
+    // depth which was reached on this rollout
+    size_t depth;
+};
+
 class SearchThread
 {
 private:
@@ -130,8 +144,9 @@ public:
      * @param parentNode Parent node for the now
      * @param childIdx Respective index for the new node
      * @param inCheck Defines if the current position sets a player in check
+     * @return Returns NODE_TRANSPOSITION if a tranpsosition node was added and NODE_NEW_NODE otherwise
      */
-    void add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck);
+    NodeBackup add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck);
 
     /**
      * @brief reset_tb_hits Sets the number of table hits to 0
@@ -160,32 +175,21 @@ private:
      * @brief backup_collisions Reverts the applied virtual loss for all rollouts which ended in a collision event
      */
     void backup_collisions();
+
+    /**
+     * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
+     * @param pos Temporary position which is initialized as the root position and will result in the final new node position when the function returns
+     * @param rootNode Root node where all simulations start
+     * @param useTranspositionTable Flag if the transposition table shall be used
+     * @param hashTable Pointer to the hashTable
+     * @param description Output struct which holds information what type of node it is
+     * @param states States list which is used for 3-fold-repetition detection
+     * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
+     */
+    Node* get_new_child_to_evaluate(Board* pos, size_t& childIdx, NodeDescription& description);
 };
 
 void run_search_thread(SearchThread *t);
-
-struct NodeDescription
-{
-    // flag signaling a collision event, same node was selected multiple time
-    bool isCollision;
-    // flag signaling a terminal state
-    bool isTerminal;
-    // depth which was reached on this rollout
-    size_t depth;
-};
-
-/**
- * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
- * @param pos Temporary position which is initialized as the root position and will result in the final new node position when the function returns
- * @param rootNode Root node where all simulations start
- * @param useTranspositionTable Flag if the transposition table shall be used
- * @param hashTable Pointer to the hashTable
- * @param description Output struct which holds information what type of node it is
- * @param inCheck Returns true if a player is in check for the new extracted position. This information is needed for a later terminal check.
- * @param states States list which is used for 3-fold-repetition detection
- * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
- */
-Node* get_new_child_to_evaluate(Board* pos, Node* rootNode, size_t& childIdx, NodeDescription& description, bool& inCheck, StateListPtr& states, const SearchSettings* searchSettings);
 
 void backup_values(FixedVector<Node*>* nodes, float virtualLoss);
 

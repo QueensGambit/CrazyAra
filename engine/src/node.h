@@ -170,7 +170,7 @@ public:
 
     void revert_virtual_loss_and_update(float value);
     Node* get_parent_node() const;
-    void increment_visits(float numberVisits);
+    void increment_visits(size_t numberVisits);
     void subtract_visits(size_t numberVisits);
     void increment_no_visit_idx();
     void fully_expand_node();
@@ -192,7 +192,7 @@ public:
      */
     void make_to_root();
 
-    float get_visits() const;
+    uint32_t get_visits() const;
 
     void lock();
     void unlock();
@@ -312,13 +312,13 @@ public:
      * @return ostream
      */
     friend std::ostream& operator<<(std::ostream& os, const Node* node);
-    DynamicVector<float> get_child_number_visits() const;
+    DynamicVector<uint32_t> get_child_number_visits() const;
     void enable_has_nn_results();
     int plies_from_null() const;
     bool is_tablebase() const;
     uint8_t get_node_type() const;
     uint16_t get_end_in_ply() const;
-    float get_terminal_visits() const;
+    uint32_t get_terminal_visits() const;
 
     void init_node_data(size_t numberNodes);
     void init_node_data();
@@ -562,6 +562,6 @@ bool is_terminal_value(float value);
  * @param node Given node
  * @return Number of subnodes for thhe given node
  */
-float get_node_count(const Node* node);
+size_t get_node_count(const Node* node);
 
 #endif // NODE_H

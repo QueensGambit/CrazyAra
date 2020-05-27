@@ -135,7 +135,7 @@ bool Node::at_least_one_drawn_child() const
 bool Node::only_won_child_nodes() const
 {
     for (Node* childNode : d->childNodes) {
-        if (!childNode->is_playout_node() || childNode->d->nodeType != SOLVED_WIN) {
+        if (childNode->d->nodeType != SOLVED_WIN) {
             return false;
         }
     }
@@ -247,16 +247,6 @@ void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qVal
 
 void Node::solve_for_terminal(const Node* childNode)
 {
-    if (childNode == nullptr || !childNode->is_playout_node()) {
-        info_string("nullptr as child node backup!");
-        return;
-    }
-    if (d == nullptr) {
-        init_node_data();
-    }
-    if (parentNode->d == nullptr) {
-        parentNode->init_node_data();
-    }
     if (d->nodeType != UNSOLVED) {
         // already solved
         return;
@@ -360,7 +350,7 @@ void Node::apply_virtual_loss_to_child(size_t childIdx, float virtualLoss)
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
     // virtual increase the number of visits
-    d->childNumberVisits[childIdx] += virtualLoss;
+    d->childNumberVisits[childIdx] += size_t(virtualLoss);
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
     d->actionValues[childIdx] -= virtualLoss;
     d->qValues[childIdx] = d->actionValues[childIdx] / d->childNumberVisits[childIdx];
@@ -371,7 +361,7 @@ Node *Node::get_parent_node() const
     return parentNode;
 }
 
-void Node::increment_visits(float numberVisits)
+void Node::increment_visits(size_t numberVisits)
 {
     parentNode->lock();
     parentNode->d->childNumberVisits[childIdxForParent] += numberVisits;
@@ -401,7 +391,6 @@ void Node::reserve_full_memory()
 
 void Node::increment_no_visit_idx()
 {
-    lock();
     if (d->noVisitIdx < get_number_child_nodes()) {
         ++d->noVisitIdx;
         if (d->noVisitIdx == PRESERVED_ITEMS) {
@@ -409,7 +398,6 @@ void Node::increment_no_visit_idx()
         }
         d->add_empty_node();
     }
-    unlock();
 }
 
 void Node::fully_expand_node()
@@ -446,7 +434,7 @@ void Node::prepare_node_for_visits()
     init_node_data();
 }
 
-float Node::get_visits() const
+uint32_t Node::get_visits() const
 {
     return parentNode->d->childNumberVisits[childIdxForParent];
 }
@@ -469,8 +457,13 @@ void Node::backup_value(size_t childIdx, float value, float virtualLoss)
 void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss)
 {
     lock();
-    d->childNumberVisits[childIdx] -= virtualLoss - 1;
-    d->actionValues[childIdx] += virtualLoss + value;
+    if (virtualLoss != 1) {
+        d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
+        d->actionValues[childIdx] += virtualLoss + value;
+    }
+    else {
+        d->actionValues[childIdx] += 1 + value;
+    }
     d->qValues[childIdx] = d->actionValues[childIdx] / d->childNumberVisits[childIdx];
     if (is_terminal_value(value)) {
         ++d->terminalVisits;
@@ -607,7 +600,7 @@ int Node::get_checkmate_idx() const
     return d->checkmateIdx;
 }
 
-DynamicVector<float> Node::get_child_number_visits() const
+DynamicVector<uint32_t> Node::get_child_number_visits() const
 {
     return d->childNumberVisits;
 }
@@ -637,7 +630,7 @@ uint16_t Node::get_end_in_ply() const
     return d->endInPly;
 }
 
-float Node::get_terminal_visits() const
+uint32_t Node::get_terminal_visits() const
 {
     return d->terminalVisits;
 }
@@ -842,7 +835,7 @@ bool is_capture(const Board* pos, Move move)
 
 DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSettings)
 {
-    return get_current_cput(get_visits(), searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(get_visits()) / (d->childNumberVisits + 1.f));
+    return get_current_cput(get_visits(), searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(get_visits()) / (d->childNumberVisits + 1.0));
 }
 
 Node *Node::get_child_node(size_t childIdx)
@@ -966,10 +959,10 @@ ostream& operator<<(ostream &os, const Node *node)
        << "-----+-------+-------------+-----------+------------+-------------" << endl;
 
     for (size_t childIdx = 0; childIdx < node->get_number_child_nodes(); ++childIdx) {
-        int n = 0;
+        size_t n = 0;
 		float q = Q_INIT;
 		if (childIdx < node->d->noVisitIdx) {
-			n = int(node->d->childNumberVisits[childIdx]);
+            n = node->d->childNumberVisits[childIdx];
 			q = max(node->d->qValues[childIdx], -1.0f);
 		}
 
@@ -993,8 +986,8 @@ ostream& operator<<(ostream &os, const Node *node)
        << "isTerminal:\t" << node->is_terminal() << endl
        << "isTablebase:\t" << node->is_tablebase() << endl
        << "unsolvedNodes:\t" << node->d->numberUnsolvedChildNodes << endl
-       << "Visits:\t\t" << int(node->get_visits()) << endl
-       << "terminalVisits:\t" << int(node->get_terminal_visits()) << endl;
+       << "Visits:\t\t" << node->get_visits() << endl
+       << "terminalVisits:\t" << node->get_terminal_visits() << endl;
     return os;
 }
 
@@ -1072,7 +1065,7 @@ bool is_terminal_value(float value)
     return (value == WIN || value == DRAW || value == LOSS);
 }
 
-float get_node_count(const Node *node)
+size_t get_node_count(const Node *node)
 {
     return node->get_visits() - node->get_terminal_visits();
 }
