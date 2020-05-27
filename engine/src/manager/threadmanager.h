@@ -22,7 +22,7 @@
  * Created on 23.04.2020
  * @author: queensgambit
  *
- * Manages all search threads
+ * Manages all search threads and logs intermediate search results
  */
 
 #ifndef THREADMANAGER_H
@@ -30,23 +30,23 @@
 
 #include <vector>
 #include <thread>
-#include "../searchthread.h"
-#include "../agents/util/loggerthread.h"
-#include "../util/killablethread.h"
 #include <condition_variable>
+#include "../searchthread.h"
+#include "../evalinfo.h"
+#include "../util/killablethread.h"
 
 using namespace std;
 
 /**
- * @brief The ThreadManager class contains a reference to all search threads and loggerThreads can trigger early stopping
- * or a stop when the given search time has been reached.
+ * @brief The ThreadManager class contains a reference to all search threads and can trigger early stopping
+ * or a stop when the given search time has been reached. It also logs intermdediate search results.
  */
 class ThreadManager : public KillableThread
 {
 private:
     Node* rootNode;
+    EvalInfo* evalInfo;
     vector<SearchThread*> searchThreads;
-    LoggerThread* loggerThread;
     size_t movetimeMS;
     size_t remainingMoveTimeMS;
     size_t updateIntervalMS;
@@ -70,7 +70,7 @@ private:
     inline bool continue_search();
 
 public:
-    ThreadManager(Node* rootNode, vector<SearchThread*>& searchThreads, LoggerThread* loggerThread, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval, bool inGame, bool canProlong);
+    ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval, bool inGame, bool canProlong);
 
     /**
     * @brief stop_search_based_on_limits Checks for the search limit condition and possible early break-ups
@@ -78,12 +78,6 @@ public:
     * @param evalInfo Evaluation struct which updated during search
     */
     void stop_search_based_on_limits();
-
-    /**
-     * @brief stop_search_based_on_kill_event Locks the thread until the kill event was triggerend and
-     *  stops all running search threads afterwards
-     */
-    void stop_search_based_on_kill_event();
 
     /**
      * @brief stop Stops the current thread
@@ -123,5 +117,27 @@ void stop_search_threads(vector<SearchThread*>& searchThreads);
  * @return True, if search can be extended else false
  */
 bool can_prolong_search(size_t curMoveNumber, size_t expectedGameLength);
+
+/**
+ * @brief get_tb_hits Returns the number of current table base hits during search
+ * @param searchThreads MCTS search threads
+ * @return number of table base hits
+ */
+size_t get_tb_hits(const vector<SearchThread*>& searchThreads);
+
+/**
+ * @brief get_avg_depth Returns the average number of search depth in the tree
+ * @param searchThreads MCTS search threads
+ * @return average depth for all simulations
+ */
+size_t get_avg_depth(const vector<SearchThread*>& searchThreads);
+
+/**
+ * @brief get_max_depth Returns the maximum reached search depth for all threads
+ * @param searchThreads MCTS search threads
+ * @return maximum reached depth
+ */
+size_t get_max_depth(const vector<SearchThread*>& searchThreads);
+
 
 #endif // THREADMANAGER_H

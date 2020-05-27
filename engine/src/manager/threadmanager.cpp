@@ -27,10 +27,10 @@
 #include "../util/blazeutil.h"
 #include <chrono>
 
-ThreadManager::ThreadManager(Node* rootNode, vector<SearchThread*>& searchThreads, LoggerThread* loggerThread, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval, bool inGame, bool canProlong):
+ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval, bool inGame, bool canProlong):
     rootNode(rootNode),
+    evalInfo(evalInfo),
     searchThreads(searchThreads),
-    loggerThread(loggerThread),
     movetimeMS(movetimeMS),
     remainingMoveTimeMS(movetimeMS),
     updateIntervalMS(updateIntervalMS),
@@ -45,17 +45,27 @@ ThreadManager::ThreadManager(Node* rootNode, vector<SearchThread*>& searchThread
 
 void ThreadManager::await_kill_signal()
 {
-    wait_for(chrono::milliseconds(INT_MAX));
+    while(isRunning) {
+        if (wait_for(chrono::milliseconds(updateIntervalMS*4))){
+            evalInfo->end = chrono::steady_clock::now();
+            update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads));
+            info_score(*evalInfo);
+        }
+        else {
+            return;
+        }
+    }
 }
 
 void run_thread_manager(ThreadManager* t)
 {
     if (t->get_movetime_ms() == 0) {
-        t->stop_search_based_on_kill_event();
+        t->await_kill_signal();
     }
     else {
         t->stop_search_based_on_limits();
     }
+    t->stop_search();
 }
 
 void ThreadManager::stop_search_based_on_limits()
@@ -68,6 +78,12 @@ void ThreadManager::stop_search_based_on_limits()
                 if (checkedContinueSearch == 0 && early_stopping() && !continue_search()) {
                     stop_search();
                 }
+                // log every fourth iteration
+                if (var % 4 == 3) {
+                    evalInfo->end = chrono::steady_clock::now();
+                    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads));
+                    info_score(*evalInfo);
+                }
             }
             else {
                 return;
@@ -78,13 +94,6 @@ void ThreadManager::stop_search_based_on_limits()
     if (!wait_for(chrono::milliseconds(movetimeMS % updateIntervalMS))){
         return;
     }
-    stop_search();
-}
-
-void ThreadManager::stop_search_based_on_kill_event()
-{
-    await_kill_signal();
-    stop_search();
 }
 
 void ThreadManager::stop()
@@ -118,8 +127,8 @@ bool ThreadManager::early_stopping()
         return true;
     }
 
-    float firstMax;
-    float secondMax;
+    uint32_t firstMax;
+    uint32_t secondMax;
     size_t firstArg;
     size_t secondArg;
     first_and_second_max(rootNode->get_child_number_visits(), rootNode->get_no_visit_idx(), firstMax, secondMax, firstArg, secondArg);
@@ -151,7 +160,6 @@ bool ThreadManager::continue_search() {
 void ThreadManager::stop_search()
 {
     stop_search_threads(searchThreads);
-    loggerThread->kill();
 }
 
 void stop_search_threads(vector<SearchThread*>& searchThreads)
@@ -164,4 +172,32 @@ void stop_search_threads(vector<SearchThread*>& searchThreads)
 bool can_prolong_search(size_t curMoveNumber, size_t expectedGameLength)
 {
     return curMoveNumber < expectedGameLength;
+}
+
+size_t get_avg_depth(const vector<SearchThread*>& searchThreads)
+{
+    size_t avgDetph = 0;
+    for (SearchThread* searchThread : searchThreads) {
+        avgDetph += searchThread->get_avg_depth();
+    }
+    avgDetph = size_t(double(avgDetph) / searchThreads.size() + 0.5);
+    return avgDetph;
+}
+
+size_t get_max_depth(const vector<SearchThread*>& searchThreads)
+{
+    size_t maxDepth = 0;
+    for (SearchThread* searchThread : searchThreads) {
+        maxDepth = max(maxDepth, searchThread->get_max_depth());
+    }
+    return maxDepth;
+}
+
+size_t get_tb_hits(const vector<SearchThread*>& searchThreads)
+{
+    size_t tbHits = 0;
+    for (SearchThread* searchThread : searchThreads) {
+        tbHits += searchThread->get_tb_hits();
+    }
+    return tbHits;
 }

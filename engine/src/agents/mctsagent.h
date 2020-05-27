@@ -93,7 +93,6 @@ private:
     size_t nbNPSentries;
 
     unique_ptr<ThreadManager> threadManager;
-    unique_ptr<LoggerThread> loggerThread;
     GCThread<Node> gcThread;
 
 public:

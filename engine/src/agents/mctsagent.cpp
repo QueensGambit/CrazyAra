@@ -323,21 +323,17 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
-    loggerThread = make_unique<LoggerThread>(rootNode, evalInfo, 1000, searchThreads);
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootPos->side_to_move(), rootNode->plies_from_null()/2);
-    threadManager = make_unique<ThreadManager>(rootNode, searchThreads, loggerThread.get(), curMovetime, 250, overallNPS, lastValueEval,
+    threadManager = make_unique<ThreadManager>(rootNode, evalInfo, searchThreads, curMovetime, 250, overallNPS, lastValueEval,
                                                is_game_sceneario(searchLimits),
                                                can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());
-    unique_ptr<thread> tLogger = make_unique<thread>(run_logger_thread, loggerThread.get());
     isRunning = true;
 
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
-    loggerThread->kill();
     threadManager->kill();
-    tLogger->join();
     tManager->join();
     delete[] threads;
     isRunning = false;
