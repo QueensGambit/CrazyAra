@@ -31,7 +31,6 @@
 #include "../agents/mctsagent.h"
 #include "../agents/rawnetagent.h"
 #include "gamepgn.h"
-#include "../manager/statesmanager.h"
 #include "tournamentresult.h"
 #include "../agents/config/rlsettings.h"
 

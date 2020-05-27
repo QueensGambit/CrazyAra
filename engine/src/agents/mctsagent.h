@@ -43,7 +43,6 @@
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
 #include "../searchthread.h"
-#include "../manager/statesmanager.h"
 #include "../manager/timemanager.h"
 #include "../manager/threadmanager.h"
 #include "util/gcthread.h"

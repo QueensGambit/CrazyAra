@@ -30,7 +30,6 @@
 
 #include "../board.h"
 #include "../node.h"
-#include "statesmanager.h"
 
 /**
  * @brief pick_next_node Return the next node when doing the given move for the parent node

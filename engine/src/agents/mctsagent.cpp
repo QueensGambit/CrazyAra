@@ -32,7 +32,6 @@
 #include "constants.h"
 #include "../util/blazeutil.h"
 #include "uci.h"
-#include "../manager/statesmanager.h"
 #include "../manager/treemanager.h"
 #include "../manager/threadmanager.h"
 #include "../node.h"

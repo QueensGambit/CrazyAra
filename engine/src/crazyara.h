@@ -37,7 +37,6 @@
 #include "agents/config/searchlimits.h"
 #include "agents/config/playsettings.h"
 #include "node.h"
-#include "manager/statesmanager.h"
 #ifdef USE_RL
 #include "rl/selfplay.h"
 #include "agents/config/rlsettings.h"
