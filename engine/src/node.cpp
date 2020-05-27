@@ -29,6 +29,7 @@
 #include "constants.h"
 #include "../util/sfutil.h"
 #include "../util/communication.h"
+#include "evalinfo.h"
 
 
 bool Node::is_sorted() const
@@ -954,9 +955,9 @@ NodeType flip_node_type(const enum NodeType nodeType) {
 
 ostream& operator<<(ostream &os, const Node *node)
 {
-    os << "  #  | Move  |   Visits    |  Policy   |  Q-values  |    Type    " << endl
+    os << "  #  | Move  |   Visits    |  Policy   |  Q-values  | Centipawn |    Type    " << endl
        << std::showpoint << std::noshowpos << std::fixed << std::setprecision(7)
-       << "-----+-------+-------------+-----------+------------+-------------" << endl;
+       << "-----+-------+-------------+-----------+------------+-----------+------------" << endl;
 
     for (size_t childIdx = 0; childIdx < node->get_number_child_nodes(); ++childIdx) {
         size_t n = 0;
@@ -970,7 +971,8 @@ ostream& operator<<(ostream &os, const Node *node)
            << setfill(' ') << setw(5) << UCI::move(node->get_legal_moves()[childIdx], false) << " |"
            << setw(12) << n << " | "
            << setw(9) << node->policyProbSmall[childIdx] << " | "
-           << setw(10) << q << " | ";
+           << setw(10) << q << " | "
+           << setw(9) << value_to_centipawn(q) << " | ";
         if (childIdx < node->get_no_visit_idx() && node->d->childNodes[childIdx] != nullptr && node->d->childNodes[childIdx]->d != nullptr && node->d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
             os << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(node->d->childNodes[childIdx]->d->nodeType)))
                << " in " << setfill('0') << setw(2) << node->d->childNodes[childIdx]->d->endInPly+1;
@@ -980,7 +982,7 @@ ostream& operator<<(ostream &os, const Node *node)
         }
         os << endl;
     }
-    os << "-----+-------+-------------+-----------+------------+-------------" << endl
+    os << "-----+-------+-------------+-----------+------------+-----------+------------" << endl
        << "initial value:\t" << node->get_value() << endl
        << "nodeType:\t" << node_type_to_string(NodeType(node->d->nodeType)) << endl
        << "isTerminal:\t" << node->is_terminal() << endl
