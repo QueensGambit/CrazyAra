@@ -100,10 +100,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     EvalInfo evalInfo;
     auto uiThread = make_shared<Thread>(0);
 
-    StateInfo* newState = new StateInfo;
+    states = StateListPtr(new std::deque<StateInfo>(1));
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    pos.set(StartFENs[variant], is960, variant, newState, uiThread.get());
-    states.activeStates.push_back(newState);
+    pos.set(StartFENs[variant], is960, variant, &states->back(), uiThread.get());
 
     for (int i = 1; i < argc; ++i)
         cmd += string(argv[i]) + " ";
@@ -211,8 +210,8 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     auto uiThread = make_shared<Thread>(0);
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
-    StateInfo* newState = new StateInfo;
-    pos.set(StartFENs[variant], is960, variant, newState, uiThread.get());
+    states = StateListPtr(new std::deque<StateInfo>(1));
+    pos.set(StartFENs[variant], is960, variant, &states->back(), uiThread.get());
 
     istringstream is("fen " + fen);
     position(&pos, is);
@@ -251,16 +250,13 @@ void CrazyAra::position(Board *pos, istringstream& is)
 
     auto uiThread = make_shared<Thread>(0);
     pos->set(fen, is960, variant, new StateInfo, uiThread.get());
-    states.clear_states();
-    states.swap_states();
     Move lastMove = MOVE_NULL;
 
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(*pos, token)) != MOVE_NONE)
     {
-        StateInfo* newState = new StateInfo;
-        pos->do_move(m, *newState);
-        states.activeStates.push_back(newState);
+        states->emplace_back();
+        pos->do_move(m, states->back());
         lastMove = m;
     }
     // inform the mcts agent of the move, so the tree can potentially be reused later
@@ -323,7 +319,7 @@ void CrazyAra::selfplay(istringstream &is)
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings);
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, &states, variant);
+    selfPlay.go(numberOfGames, variant);
     cout << "readyok" << endl;
 }
 
@@ -334,10 +330,10 @@ void CrazyAra::arena(istringstream &is)
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings);
     netSingle = create_new_net_single(Options["Model_Directory_Contender"]);
     netBatches = create_new_net_batches(Options["Model_Directory_Contender"]);
-    mctsAgentContender = create_new_mcts_agent(netSingle.get(), netBatches, &states);
+    mctsAgentContender = create_new_mcts_agent(netSingle.get(), netBatches);
     size_t numberOfGames;
     is >> numberOfGames;
-    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender.get(), numberOfGames, &states, variant);
+    TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender.get(), numberOfGames, variant);
 
     cout << "Arena summary" << endl;
     cout << "Score of Contender vs Producer: " << tournamentResult << endl;
@@ -387,7 +383,7 @@ bool CrazyAra::is_ready()
 #endif
         netSingle = create_new_net_single(Options["Model_Directory"]);
         netBatches = create_new_net_batches(Options["Model_Directory"]);
-        mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &states);
+        mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
         Constants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
@@ -442,9 +438,9 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
     return netBatches;
 }
 
-unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, StatesManager* states)
+unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches)
 {
-    return make_unique<MCTSAgent>(netSingle, netBatches, &searchSettings, &playSettings, states);
+    return make_unique<MCTSAgent>(netSingle, netBatches, &searchSettings, &playSettings);
 }
 
 void CrazyAra::init_search_settings()

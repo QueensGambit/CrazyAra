@@ -156,7 +156,7 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
  * @param m Move which is assumed to be legal
  * @return True, if the next state would be a terminal, else false
  */
-bool leads_to_terminal(const Board& pos, Move m);
+bool leads_to_terminal(const Board& pos, Move m, StateListPtr& states);
 
 /**
  * @brief get_result Returns the current game result. In case a normal position is given NO_RESULT is returned.

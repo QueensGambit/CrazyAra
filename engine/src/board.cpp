@@ -43,7 +43,6 @@ Board::Board(const Board &b)
 
 Board::~Board()
 {
-     delete st;
 }
 
 Bitboard Board::promoted_pieces() const
@@ -331,10 +330,11 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &le
     return ambiguous;
 }
 
-bool leads_to_terminal(const Board &pos, Move m)
+bool leads_to_terminal(const Board &pos, Move m, StateListPtr& states)
 {
     Board posCheckTerminal = Board(pos);
-    posCheckTerminal.do_move(m, *(new StateInfo));
+    states->emplace_back();
+    posCheckTerminal.do_move(m, states->back());
     return posCheckTerminal.is_terminal();
 }
 

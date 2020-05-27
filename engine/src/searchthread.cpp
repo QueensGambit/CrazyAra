@@ -177,7 +177,8 @@ Node* SearchThread::get_new_child_to_evaluate(Board* pos, size_t& childIdx, Node
         if (nextNode == nullptr) {
             const bool inCheck = pos->gives_check(currentNode->get_move(childIdx));
             // this new StateInfo will be freed from memory when 'pos' is freed
-            pos->do_move(currentNode->get_move(childIdx), *(new StateInfo));
+            states->emplace_back();
+            pos->do_move(currentNode->get_move(childIdx), states->back());
             description.type = add_new_node_to_tree(pos, currentNode, childIdx, inCheck);
             currentNode->increment_no_visit_idx();
             currentNode->unlock();
@@ -186,13 +187,11 @@ Node* SearchThread::get_new_child_to_evaluate(Board* pos, size_t& childIdx, Node
         if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
-            pos->do_move(currentNode->get_move(childIdx), *(new StateInfo));
             return currentNode;
         }
         if (!nextNode->has_nn_results()) {
             description.type = NODE_COLLISION;
             currentNode->unlock();
-            pos->do_move(currentNode->get_move(childIdx), *(new StateInfo));
             return currentNode;
         }
         currentNode->unlock();

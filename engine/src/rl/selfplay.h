@@ -44,7 +44,7 @@
  * @param gamePGN PGN of the current game
  * @param gameResult Current game result (usually NO_RESULT after move was played)
  */
-void play_move_and_update(const EvalInfo& evalInfo, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult);
+void play_move_and_update(const EvalInfo& evalInfo, Board* position, StateListPtr& states, GamePGN& gamePGN, Result& gameResult);
 
 
 class SelfPlay
@@ -66,6 +66,7 @@ private:
     size_t backupNodes;
     float backupDirichletEpsilon;
     float backupQValueWeight;
+    StateListPtr states;
 
 public:
     /**
@@ -82,30 +83,27 @@ public:
     /**
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
-     * @param states States manager handle
      * @param variant Variant to generate games for
      */
-    void go(size_t numberOfGames, StatesManager* states, Variant variant);
+    void go(size_t numberOfGames, Variant variant);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
      * the mctsContender which uses the new updated wieghts
      * @param mctsContender MCTSAgent using different NN weights
      * @param numberOfGames Number of games to compare
-     * @param states States manager handle
      * @param variant Variant to generate games for
      * @return Score in respect to the contender, as floating point number.
      *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
      */
-    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states, Variant variant);
+    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, Variant variant);
 
 private:
     /**
      * @brief generate_game Generates a new game in self play mode
      * @param variant Current chess variant
-     * @param states States manager for maintaining the states objects. Used for 3-fold repetition check.
      */
-    void generate_game(Variant variant, StatesManager* states, bool verbose);
+    void generate_game(Variant variant, bool verbose);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
@@ -114,7 +112,7 @@ private:
      * @param variant Current chess variant
      * @param verbose If true the games will printed to stdout
      */
-    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, StatesManager* states, bool verbose);
+    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, bool verbose);
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
@@ -189,7 +187,7 @@ private:
  * @param states StatesManager
  * @param position Board position which will be deleted
  */
-void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Board* position);
+void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, Board* position);
 
 /**
  * @brief init_board Initialies a new board with the starting position of the variant
@@ -197,7 +195,7 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Boa
  * @param states State manager which takes over the newly created state object
  * @return New board object
  */
-Board* init_board(Variant variant, StatesManager* states, bool is960, GamePGN& gamePGN);
+Board* init_board(Variant variant, bool is960, GamePGN& gamePGN, StateListPtr& states);
 
 /**
  * @brief init_games_from_raw_policy Inits a new starting position by sampling from the raw policy with temperature 1.
@@ -207,7 +205,7 @@ Board* init_board(Variant variant, StatesManager* states, bool is960, GamePGN& g
  * @param gamePGN Game pgn struct where the moves will be stored
  * @param rawPolicyProbTemp Probability for which a temperature scaling > 1.0f is applied
  */
-Board* init_starting_pos_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, StatesManager* states,
+Board* init_starting_pos_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, StateListPtr& states,
                                          float rawPolicyProbTemp);
 
 /**

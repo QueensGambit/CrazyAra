@@ -36,11 +36,11 @@
 #include "../util/randomgen.h"
 #include "../util/chess960position.h"
 
-void play_move_and_update(const EvalInfo& evalInfo, Board* position, StatesManager* states, GamePGN& gamePGN, Result& gameResult) {
-    StateInfo* newState = new StateInfo;
-    states->activeStates.push_back(newState);
+void play_move_and_update(const EvalInfo& evalInfo, Board* position, StateListPtr& states, GamePGN& gamePGN, Result& gameResult)
+{
+    states->emplace_back();
     bool givesCheck = position->gives_check(evalInfo.bestMove);
-    position->do_move(evalInfo.bestMove, *(newState), givesCheck);
+    position->do_move(evalInfo.bestMove, states->back(), givesCheck);
     gameResult = get_result(*position, givesCheck);
     position->undo_move(evalInfo.bestMove);  // undo and later redo move to get PGN move with result
     gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
@@ -48,7 +48,8 @@ void play_move_and_update(const EvalInfo& evalInfo, Board* position, StatesManag
                                         *position,
                                         evalInfo.legalMoves,
                                         is_win(gameResult)));
-    position->do_move(evalInfo.bestMove, *(newState), givesCheck);
+    states->emplace_back();
+    position->do_move(evalInfo.bestMove, states->back(), givesCheck);
 }
 
 
@@ -134,8 +135,9 @@ void SelfPlay::reset_search_params(bool isQuickSearch)
     }
 }
 
-void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbose)
+void SelfPlay::generate_game(Variant variant, bool verbose)
 {
+    states = StateListPtr(new std::deque<StateInfo>(0));
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
 
     size_t ply = size_t(random_exponential<float>(1.0f/playSettings->meanInitPly) + 0.5f);
@@ -145,7 +147,6 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
     Board* position = init_starting_pos_from_raw_policy(*rawAgent, ply, gamePGN, variant, states,
                                                         rlSettings->rawPolicyProbabilityTemperature);
     EvalInfo evalInfo;
-    states->swap_states();
     Result gameResult;
     exporter->new_game();
 
@@ -186,7 +187,7 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
 
     set_game_result_to_pgn(gameResult);
     write_game_to_pgn(filenamePGNSelfplay, verbose);
-    clean_up(gamePGN, mctsAgent, states, position);
+    clean_up(gamePGN, mctsAgent, position);
 
     // measure time statistics
     if (verbose) {
@@ -196,17 +197,17 @@ void SelfPlay::generate_game(Variant variant, StatesManager* states, bool verbos
     ++gameIdx;
 }
 
-Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, StatesManager* states, bool verbose)
+Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, bool verbose)
 {
+    states = StateListPtr(new std::deque<StateInfo>(0));
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
-    Board* position = init_board(variant, states, true, gamePGN);
+    Board* position = init_board(variant, true, gamePGN, states);
     EvalInfo evalInfo;
 
     MCTSAgent* activePlayer;
     MCTSAgent* passivePlayer;
     // preserve the current active states
-    states->swap_states();
     Result gameResult;
     do {
         searchLimits->startTime = now();
@@ -229,17 +230,15 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     while(gameResult == NO_RESULT);
     set_game_result_to_pgn(gameResult);
     write_game_to_pgn(filenamePGNArena, verbose);
-    clean_up(gamePGN, whitePlayer, states, position);
+    clean_up(gamePGN, whitePlayer, position);
     blackPlayer->clear_game_history();
     return gameResult;
 }
 
-void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, StatesManager* states, Board* position) {
+void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, Board* position)
+{
     gamePGN.new_game();
     mctsAgent->clear_game_history();
-    states->swap_states();
-    states->clear_states();
-    position->set_state_info(new StateInfo);
     delete position;
 }
 
@@ -289,7 +288,7 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
-void SelfPlay::go(size_t numberOfGames, StatesManager* states, Variant variant)
+void SelfPlay::go(size_t numberOfGames, Variant variant)
 {
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
@@ -297,18 +296,18 @@ void SelfPlay::go(size_t numberOfGames, StatesManager* states, Variant variant)
 
     if (numberOfGames == 0) {
         while(!exporter->is_file_full()) {
-            generate_game(variant, states, true);
+            generate_game(variant, true);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(variant, states, true);
+            generate_game(variant, true);
         }
     }
     export_number_generated_games();
 }
 
-TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, StatesManager* states, Variant variant)
+TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, Variant variant)
 {
     TournamentResult tournamentResult;
     tournamentResult.playerA = mctsContender->get_name();
@@ -316,7 +315,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     Result gameResult;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
-            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, states, true);
+            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true);
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
@@ -325,7 +324,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
             }
         }
         else {
-            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, states, true);
+            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }
@@ -340,31 +339,30 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     return tournamentResult;
 }
 
-Board* init_board(Variant variant, StatesManager* states, bool is960, GamePGN& gamePGN)
+Board* init_board(Variant variant, bool is960, GamePGN& gamePGN, StateListPtr& states)
 {
     Board* position = new Board();
     auto uiThread = make_shared<Thread>(0);
 
-    StateInfo* newState = new StateInfo;
+    states->emplace_back();
     if (is960) {
         string firstRank = startPos();
         string lastRank = string(firstRank);
         std::transform(firstRank.begin(), firstRank.end(), firstRank.begin(), ::tolower);
         const string fen = firstRank + "/pppppppp/8/8/8/8/PPPPPPPP/" + lastRank +  " w KQkq - 0 1";
         gamePGN.fen = fen;
-        position->set(fen, true, variant, newState, uiThread.get());
+        position->set(fen, true, variant, &states->back(), uiThread.get());
     }
     else {
-        position->set(StartFENs[variant], false, variant, newState, uiThread.get());
+        position->set(StartFENs[variant], false, variant, &states->back(), uiThread.get());
     }
-    states->activeStates.push_back(newState);
     return position;
 }
 
-Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, StatesManager *states,
+Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, StateListPtr& states,
                                          float rawPolicyProbTemp)
 {
-    Board* position = init_board(variant, states, true, gamePGN);
+    Board* position = init_board(variant, true, gamePGN, states);
 
     for (size_t ply = 0; ply < plys; ++ply) {
         EvalInfo eval;
@@ -374,7 +372,7 @@ Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, Gam
         const size_t moveIdx = random_choice(eval.policyProbSmall);
         eval.bestMove = eval.legalMoves[moveIdx];
 
-        if (leads_to_terminal(*position, eval.bestMove)) {
+        if (leads_to_terminal(*position, eval.bestMove, states)) {
             break;
         }
         else {
@@ -384,9 +382,8 @@ Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, Gam
                                                  eval.legalMoves,
                                                  false,
                                                  true));
-            StateInfo* newState = new StateInfo;
-            states->activeStates.push_back(newState);
-            position->do_move(eval.bestMove, *(newState));
+            states->emplace_back();
+            position->do_move(eval.bestMove, states->back());
         }
     }
     return position;

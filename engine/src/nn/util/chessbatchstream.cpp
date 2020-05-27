@@ -104,13 +104,7 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
             offset = curUciMoves.size();
             curUciMoves = uciMoves2;
         }
-        if (idx == size_t(batchSize * maxBatches - 1)) {
-            // create a temporary StateInfo for the last position
-            pos.do_move(UCI::to_move(pos, curUciMoves[idx-offset]), *(new StateInfo));
-        }
-        else {
-            pos.do_move(UCI::to_move(pos, curUciMoves[idx-offset]), states->back());
-        }
+        pos.do_move(UCI::to_move(pos, curUciMoves[idx-offset]), states->back());
     }
 }
 

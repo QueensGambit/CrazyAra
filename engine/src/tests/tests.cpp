@@ -100,8 +100,8 @@ TEST_CASE("Anti-Chess StartFEN"){
 
     float *inputPlanes = new float[NB_VALUES_TOTAL];
 
-    StateInfo* newState = new StateInfo;
-    pos.set(StartFENs[ANTI_VARIANT], false, ANTI_VARIANT, newState, uiThread.get());
+    StateInfo newState;
+    pos.set(StartFENs[ANTI_VARIANT], false, ANTI_VARIANT, &newState, uiThread.get());
     board_to_planes(&pos, pos.number_repetitions(), false, inputPlanes);
     size_t sum = 0;
     float max_num = 0;
@@ -125,10 +125,10 @@ TEST_CASE("PGN_Move_Ambiguity"){
     init();
     Board pos;
     auto uiThread = make_shared<Thread>(0);
-    StateInfo* newState = new StateInfo;
+    StateInfo newState;
 
     pos.set("r1bq1rk1/ppppbppp/2n2n2/4p3/4P3/1N1P1N2/PPP2PPP/R1BQKB1R w KQ - 5 6", false,
-            CRAZYHOUSE_VARIANT, newState, uiThread.get());
+            CRAZYHOUSE_VARIANT, &newState, uiThread.get());
     string uci_move = "f3d2";
     Move move = UCI::to_move(pos, uci_move);
 
@@ -150,27 +150,27 @@ TEST_CASE("Draw_by_insufficient_material"){
     init();
     Board pos;
     auto uiThread = make_shared<Thread>(0);
-    StateInfo* newState = new StateInfo;
+    StateInfo newState;
 
     // positive cases
     // 1) K v K
-    pos.set("8/8/2k5/8/8/4K3/8/8 w - - 0 1", false, CHESS_VARIANT, newState, uiThread.get());
+    pos.set("8/8/2k5/8/8/4K3/8/8 w - - 0 1", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == true);
     // 2) KB vs K
-    pos.set("8/8/2k5/8/5B2/4K3/8/8 w - - 0 1", false, CHESS_VARIANT, newState, uiThread.get());
+    pos.set("8/8/2k5/8/5B2/4K3/8/8 w - - 0 1", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == true);
     // 3) KN vs K
-    pos.set("8/8/2k5/8/5N2/4K3/8/8 w - - 0 1", false, CHESS_VARIANT, newState, uiThread.get());
+    pos.set("8/8/2k5/8/5N2/4K3/8/8 w - - 0 1", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == true);
     // 4) KNN vs K
-    pos.set("8/8/2k5/8/8/3NKN2/8/8 w - - 0 1", false, CHESS_VARIANT, newState, uiThread.get());
+    pos.set("8/8/2k5/8/8/3NKN2/8/8 w - - 0 1", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == true);
 
     // negative cases
-    pos.set("kn6/8/NK6/8/8/8/8/8 w - - 0 2", false, CHESS_VARIANT, newState, uiThread.get());
+    pos.set("kn6/8/NK6/8/8/8/8/8 w - - 0 2", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == false);
     pos.set("rnbqkb1r/pp2pppp/3p1n2/8/3NP3/8/PPP2PPP/RNBQKB1R w KQkq - 1 5",
-            false, CHESS_VARIANT, newState, uiThread.get());
+            false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == false);
 }
 

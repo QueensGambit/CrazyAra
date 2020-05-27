@@ -76,7 +76,6 @@ private:
     Node* opponentsNextRoot;
 
     MapWithMutex mapWithMutex;
-    StatesManager* states;
     float lastValueEval;
 
     // boolean which indicates if the same node was requested twice for analysis
@@ -99,8 +98,7 @@ public:
     MCTSAgent(NeuralNetAPI* netSingle,
               vector<unique_ptr<NeuralNetAPI>>& netBatches,
               SearchSettings* searchSettings,
-              PlaySettings* playSettings,
-              StatesManager* states);
+              PlaySettings* playSettings);
     ~MCTSAgent();
     MCTSAgent(const MCTSAgent&) = delete;
     MCTSAgent& operator=(MCTSAgent const&) = delete;

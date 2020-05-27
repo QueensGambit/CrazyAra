@@ -41,8 +41,7 @@
 
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches,
-                     SearchSettings* searchSettings, PlaySettings* playSettings,
-                     StatesManager *states):
+                     SearchSettings* searchSettings, PlaySettings* playSettings):
     Agent(playSettings, true),
     netSingle(netSingle),
     searchSettings(searchSettings),
@@ -51,7 +50,6 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     oldestRootNode(nullptr),
     ownNextRoot(nullptr),
     opponentsNextRoot(nullptr),
-    states(states),
     lastValueEval(-1.0f),
     reusedFullTree(false),
     isRunning(false),
@@ -131,7 +129,6 @@ size_t MCTSAgent::init_root_node(Board *pos)
     if (rootNode != nullptr) {
         // swap the states because now the old states are used
         // This way the memory won't be freed for the next new move
-        states->swap_states();
         nodesPreSearch = size_t(rootNode->get_visits());
         if (rootNode->is_playout_node()) {
             nodesPreSearch -= rootNode->get_terminal_visits();

@@ -46,7 +46,7 @@
 class CrazyAra
 {
 private:
-    StatesManager states;
+    StateListPtr states;
     const string intro =  string("\n") +
                     string("                                  _                                           \n") +
                     string("                   _..           /   ._   _.  _        /\\   ._   _.           \n") +
@@ -201,7 +201,7 @@ private:
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, StatesManager* states);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory
