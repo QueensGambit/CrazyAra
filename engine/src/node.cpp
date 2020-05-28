@@ -252,6 +252,9 @@ void Node::solve_for_terminal(const Node* childNode)
         // already solved
         return;
     }
+    if (!childNode->is_playout_node()) {
+        return;
+    }
     if (solved_win(childNode)) {
         d->nodeType = SOLVED_WIN;
         update_solved_terminal(childNode, WIN);
