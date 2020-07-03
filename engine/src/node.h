@@ -305,13 +305,6 @@ public:
      */
     bool is_root_node() const;
 
-    /**
-     * @brief operator << Overload of stdout operator. Prints move, number visits, probability Value and Q-value
-     * @param os ostream handle
-     * @param node Node object to print
-     * @return ostream
-     */
-    friend std::ostream& operator<<(std::ostream& os, const Node* node);
     DynamicVector<uint32_t> get_child_number_visits() const;
     void enable_has_nn_results();
     int plies_from_null() const;
@@ -330,9 +323,35 @@ public:
     /**
      * @brief get_q_value Returns the Q-value for the given child index
      * @param idx Child Index
-     * @return
+     * @return Q-value
      */
     float get_q_value(size_t idx);
+
+    /**
+     * @brief set_q_value Sets a Q-value for a given child index
+     * @param idx Child index
+     * @param value value to set
+     */
+    void set_q_value(size_t idx, float value);
+
+    /**
+     * @brief get_best_q_idx Return the child index with the highest Q-value
+     * @return maximum Q-value
+     */
+    size_t get_best_q_idx() const;
+
+    /**
+     * @brief get_q_idx_over_thresh Returns all child node which coresponding Q-values are greater than qThresh
+     * @param qThresh Threshold
+     * @return vector of child indices
+     */
+    vector<size_t> get_q_idx_over_thresh(float qThresh);
+
+    /**
+     * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
+     */
+    void print_node_statistics(const Board* pos);
+
 private:
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
@@ -530,11 +549,6 @@ float get_current_cput(float visits, const SearchSettings* searchSettings);
  * @return float
  */
 float get_current_u_divisor(float numberVisits, float uMin, float uInit, float uBase);
-
-/**
- * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
- */
-void print_node_statistics(const Node* node);
 
 /**
  * @brief node_type_to_string Returns a const char* representation for the enum nodeType

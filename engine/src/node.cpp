@@ -24,6 +24,7 @@
  */
 
 #include "node.h"
+#include <limits.h>
 #include "syzygy/tbprobe.h"
 #include "util/blazeutil.h" // get_dirichlet_noise()
 #include "constants.h"
@@ -382,6 +383,26 @@ void Node::subtract_visits(size_t numberVisits)
 float Node::get_q_value(size_t idx)
 {
     return d->qValues[idx];
+}
+
+void Node::set_q_value(size_t idx, float value)
+{
+    d->qValues[idx] = value;
+}
+
+size_t Node::get_best_q_idx() const
+{
+    return argmax(d->qValues);
+}
+
+vector<size_t> Node::get_q_idx_over_thresh(float qThresh)
+{
+    vector<size_t> indices;
+    for (size_t idx = 0; idx < size(d->qValues); ++idx) {
+        if (d->qValues[idx] > qThresh) {
+            indices.emplace_back(idx);        }
+    }
+    return indices;
 }
 
 void Node::reserve_full_memory()
@@ -865,6 +886,18 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
             mctsPolicy[secondArg] = firstMax;
             bestMoveIdx = secondArg;
         }
+// TODO: check if this is useful
+//        else {
+//            size_t qIdx = get_best_q_idx();
+//            if (bestMoveIdx != qIdx) {
+//                const float qDiff = 1.0f - (d->childNumberVisits[qIdx] / d->childNumberVisits[bestMoveIdx]);
+//                if (d->qValues[qIdx]-qDiff > d->qValues[bestMoveIdx]) {
+//                    mctsPolicy[bestMoveIdx] = d->childNumberVisits[qIdx];
+//                    mctsPolicy[secondArg] = firstMax;
+//                    bestMoveIdx = qIdx;
+//                }
+//            }
+//        }
     }
     else {
         mctsPolicy = d->childNumberVisits;
@@ -875,11 +908,7 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
 
 void Node::get_principal_variation(vector<Move>& pv) const
 {
-    pv.clear();
     const Node* curNode = this;
-    size_t childIdx = get_best_move_index(curNode, false);
-    pv.push_back(curNode->get_move(childIdx));
-    curNode = curNode->d->childNodes[childIdx];
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
         size_t childIdx = get_best_move_index(curNode, true);
         pv.push_back(curNode->get_move(childIdx));
@@ -956,46 +985,6 @@ NodeType flip_node_type(const enum NodeType nodeType) {
     }
 }
 
-ostream& operator<<(ostream &os, const Node *node)
-{
-    os << "  #  | Move  |   Visits    |  Policy   |  Q-values  | Centipawn |    Type    " << endl
-       << std::showpoint << std::noshowpos << std::fixed << std::setprecision(7)
-       << "-----+-------+-------------+-----------+------------+-----------+------------" << endl;
-
-    for (size_t childIdx = 0; childIdx < node->get_number_child_nodes(); ++childIdx) {
-        size_t n = 0;
-		float q = Q_INIT;
-		if (childIdx < node->d->noVisitIdx) {
-            n = node->d->childNumberVisits[childIdx];
-			q = max(node->d->qValues[childIdx], -1.0f);
-		}
-
-        os << " " << setfill('0') << setw(3) << childIdx << " | "
-           << setfill(' ') << setw(5) << UCI::move(node->get_legal_moves()[childIdx], false) << " |"
-           << setw(12) << n << " | "
-           << setw(9) << node->policyProbSmall[childIdx] << " | "
-           << setw(10) << q << " | "
-           << setw(9) << value_to_centipawn(q) << " | ";
-        if (childIdx < node->get_no_visit_idx() && node->d->childNodes[childIdx] != nullptr && node->d->childNodes[childIdx]->d != nullptr && node->d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
-            os << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(node->d->childNodes[childIdx]->d->nodeType)))
-               << " in " << setfill('0') << setw(2) << node->d->childNodes[childIdx]->d->endInPly+1;
-        }
-        else {
-            os << setfill(' ') << setw(9) << node_type_to_string(UNSOLVED);
-        }
-        os << endl;
-    }
-    os << "-----+-------+-------------+-----------+------------+-----------+------------" << endl
-       << "initial value:\t" << node->get_value() << endl
-       << "nodeType:\t" << node_type_to_string(NodeType(node->d->nodeType)) << endl
-       << "isTerminal:\t" << node->is_terminal() << endl
-       << "isTablebase:\t" << node->is_tablebase() << endl
-       << "unsolvedNodes:\t" << node->d->numberUnsolvedChildNodes << endl
-       << "Visits:\t\t" << node->get_visits() << endl
-       << "terminalVisits:\t" << node->get_terminal_visits() << endl;
-    return os;
-}
-
 void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues) {
     StateListPtr states = StateListPtr(new std::deque<StateInfo>(0));
     // fill dtz value vector
@@ -1060,9 +1049,50 @@ float get_current_cput(float visits, const SearchSettings* searchSettings)
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
-void print_node_statistics(const Node* node)
+void Node::print_node_statistics(const Board* pos)
 {
-    cout << node << endl;
+    const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
+    const string filler = "-----+-------+--------------+-----------+------------+-------+------------";
+    cout << header << endl
+       << std::showpoint << std::fixed << std::setprecision(7) // << std::noshowpcout
+       << filler << endl;
+    for (size_t childIdx = 0; childIdx < get_number_child_nodes(); ++childIdx) {
+        size_t n = 0;
+        float q = Q_INIT;
+        if (childIdx < d->noVisitIdx) {
+            n = d->childNumberVisits[childIdx];
+            q = max(d->qValues[childIdx], -1.0f);
+        }
+
+        const Move move = get_legal_moves()[childIdx];
+        cout << " " << setfill('0') << setw(3) << childIdx << " | " << setfill(' ');
+        if (pos == nullptr) {
+            cout << setw(5) << UCI::move(move, false) << " | ";
+        }
+        else {
+            cout << setw(5) << pgn_move(move, pos->is_chess960(), *pos, get_legal_moves()) << " | ";
+        }
+        cout << setw(12) << n << " | "
+             << setw(9) << policyProbSmall[childIdx] << " | "
+             << setw(10) << q << " | "
+             << setw(5) << value_to_centipawn(q) << " | ";
+        if (childIdx < get_no_visit_idx() && d->childNodes[childIdx] != nullptr && d->childNodes[childIdx]->d != nullptr && d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
+            cout << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(d->childNodes[childIdx]->d->nodeType)))
+               << " in " << setfill('0') << setw(2) << d->childNodes[childIdx]->d->endInPly+1;
+        }
+        else {
+            cout << setfill(' ') << setw(9) << node_type_to_string(UNSOLVED);
+        }
+        cout << endl;
+    }
+    cout << filler << endl
+       << "initial value:\t" << get_value() << endl
+       << "nodeType:\t" << node_type_to_string(NodeType(d->nodeType)) << endl
+       << "isTerminal:\t" << is_terminal() << endl
+       << "isTablebase:\t" << is_tablebase() << endl
+       << "unsolvedNodes:\t" << d->numberUnsolvedChildNodes << endl
+       << "Visits:\t\t" << get_visits() << endl
+       << "terminalVisits:\t" << get_terminal_visits() << endl;
 }
 
 bool is_terminal_value(float value)
