@@ -7,12 +7,13 @@
 
 <div id="badges" align="center">
 
+[![Travis Build Status](https://travis-ci.org/queensgambit/CrazyAra.svg?branch=master)](https://travis-ci.org/queensgambit/CrazyAra)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 &nbsp; 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/39c3329d0cea4186b5e4d32cfb6a4d5d)](https://www.codacy.com/manual/QueensGambit/CrazyAra?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=QueensGambit/CrazyAra&amp;utm_campaign=Badge_Grade)
 [![ArXiv Badge](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/1908.06660)
-[![Thesis badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
-[![Journal badge](https://img.shields.io/badge/Journal-Frontiers-green.svg)](https://www.frontiersin.org/articles/10.3389/frai.2020.00024/full)
+[![Thesis Badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
+[![Journal Badge](https://img.shields.io/badge/Journal-Frontiers-green.svg)](https://www.frontiersin.org/articles/10.3389/frai.2020.00024/full)
 
 
 </div>
