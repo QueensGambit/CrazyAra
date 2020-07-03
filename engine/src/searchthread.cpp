@@ -154,7 +154,7 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
     }
 }
 
-Node* SearchThread::get_new_child_to_evaluate(Board* pos, size_t& childIdx, NodeDescription& description) //, bool& inCheck)
+Node* SearchThread::get_new_child_to_evaluate(Board* pos, size_t& childIdx, NodeDescription& description)
 {
     rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;

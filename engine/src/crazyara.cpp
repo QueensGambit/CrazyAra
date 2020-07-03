@@ -169,6 +169,7 @@ void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo) {
     searchLimits.reset();
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
     searchLimits.nodes = Options["Nodes"];
+    evalInfo.multiPV = searchSettings.multiPV;
 
     string token;
     bool ponderMode = false;
@@ -249,7 +250,8 @@ void CrazyAra::position(Board *pos, istringstream& is)
         return;
 
     auto uiThread = make_shared<Thread>(0);
-    pos->set(fen, is960, variant, new StateInfo, uiThread.get());
+    states->emplace_back();
+    pos->set(fen, is960, variant, &states->back(), uiThread.get());
     Move lastMove = MOVE_NULL;
 
     // Parse move list (if any)
@@ -446,6 +448,7 @@ unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, v
 void CrazyAra::init_search_settings()
 {
     validate_device_indices(Options);
+    searchSettings.multiPV = Options["MultiPV"];
     searchSettings.threads = Options["Threads"] * get_num_gpus(Options);
     searchSettings.batchSize = Options["Batch_Size"];
     searchSettings.useTranspositionTable = Options["Use_Transposition_Table"];

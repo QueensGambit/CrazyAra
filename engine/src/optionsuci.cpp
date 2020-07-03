@@ -44,6 +44,7 @@ void OptionsUCI::init(OptionsMap &o)
 #else  // MODE = MODE_CHESS
     o["UCI_Variant"]                   << Option("chess", {"chess"});
 #endif
+    o["MultiPV"]                       << Option(1, 1, 99999);
     o["Search_Type"]                   << Option("mcts", {"mcts"});
     o["Context"]                       << Option("gpu", {"cpu", "gpu"});
     o["First_Device_ID"]               << Option(0, 0, 99999);

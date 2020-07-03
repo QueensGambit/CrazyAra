@@ -305,7 +305,7 @@ void MCTSAgent::evaluate_board_state()
         update_stats();
     }
     update_eval_info(*evalInfo, rootNode, tbHits, maxDepth);
-    lastValueEval = evalInfo->bestMoveQ;
+    lastValueEval = evalInfo->bestMoveQ[0];
     update_nps_measurement(evalInfo->calculate_nps());
     tGCThread.join();
 }
@@ -349,5 +349,5 @@ void MCTSAgent::print_root_node()
         info_string("You must do a search before you can print the root node statistics");
         return;
     }
-    print_node_statistics(rootNode);
+    rootNode->print_node_statistics(rootPos);
 }

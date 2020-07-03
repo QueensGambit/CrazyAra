@@ -48,7 +48,7 @@ void Agent::set_best_move(size_t moveCounter)
         evalInfo->bestMove = evalInfo->legalMoves[moveIdx];
     }
     else {
-        evalInfo->bestMove = evalInfo->pv[0];
+        evalInfo->bestMove = evalInfo->pv[0][0];
     }
 }
 

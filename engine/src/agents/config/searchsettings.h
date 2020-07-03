@@ -34,6 +34,7 @@ using namespace UCI;
 
 struct SearchSettings
 {
+    unsigned int multiPV;
     size_t threads;
     unsigned int batchSize;
     float dirichletEpsilon;

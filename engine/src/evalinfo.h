@@ -42,21 +42,22 @@ using blaze::DynamicVector;
 
 struct EvalInfo
 {
+    size_t multiPV;
     chrono::steady_clock::time_point start;
     chrono::steady_clock::time_point end;
-    float bestMoveQ;
+    std::vector<float> bestMoveQ;
     std::vector<Move> legalMoves;
     DynamicVector<float> policyProbSmall;
     DynamicVector<float> childNumberVisits;
-    int centipawns;
+    std::vector<int> centipawns;
     size_t depth;
     size_t selDepth;
     size_t nodes;
     size_t nodesPreSearch;
     bool isChess960;
-    std::vector<Move> pv;
+    std::vector<std::vector<Move>> pv;
     Move bestMove;
-    int movesToMate;
+    std::vector<int> movesToMate;
     size_t tbHits;
 
     size_t calculate_elapsed_time_ms() const;
@@ -79,6 +80,38 @@ int value_to_centipawn(float value);
  */
 void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth);
 
+/**
+ * @brief set_eval_for_single_pv Sets the eval struct pv line and score for a single pv
+ * @param evalInfo struct
+ * @param rootNode root node of the tree
+ * @param idx index of the pv line
+ * @param indices sorted indices of each child node
+ * @return
+ */
+bool set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices);
+
+/**
+ * @brief operator << Returns all MultiPV as a string sperated by endl
+ * @param os stream handle
+ * @param evalInfo struct
+ * @return stream handle
+ */
 extern std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo);
+
+/**
+ * @brief print_single_pv Is used to return a single PV line
+ * @param os stream handle
+ * @param evalInfo struct
+ * @param idx index of the MultiPV lines
+ * @param elapsedTimeMS elapsed time during mcts search
+ */
+void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, size_t elapsedTimeMS);
+
+/**
+ * @brief sort_eval_lists Sorts the eval policy, eval legal moves and indices vector based on the descending order of eval policy
+ * @param evalInfo struct
+ * @param indices vector of indices for each child node, given as a range incremental increasing list from 0 to numberChildNodes-1
+ */
+void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices);
 
 #endif // EVALINFO_H
