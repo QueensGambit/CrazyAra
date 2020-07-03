@@ -45,6 +45,7 @@ Board::~Board()
 {
 }
 
+#ifdef CRAZYHOUSE
 Bitboard Board::promoted_pieces() const
 {
     return promotedPieces;
@@ -54,6 +55,7 @@ int Board::get_pocket_count(Color c, PieceType pt) const
 {
     return pieceCountInHand[c][pt];
 }
+#endif
 
 Key Board::hash_key() const
 {
@@ -161,10 +163,12 @@ bool Board::is_terminal() const
 
 bool Board::draw_by_insufficient_material() const
 {
+#ifdef CRAZYHOUSE
     // fast return options (insufficient material can never by reached in crayhouse)
     if (is_house() || this->count<ALL_PIECES>() > 4) {
         return false;
     }
+#endif
 
     return (this->count<ALL_PIECES>() == 2) ||                                      // 1) KK
            (this->count<ALL_PIECES>() == 3 && this->count<BISHOP>() == 1) ||        // 2) KB vs K

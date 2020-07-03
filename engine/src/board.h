@@ -51,8 +51,10 @@ public:
     Board(const Board& b);
     ~Board();
 
+#ifdef CRAZYHOUSE
     Bitboard promoted_pieces() const;
     int get_pocket_count(Color c, PieceType pt) const;
+#endif
     Key hash_key() const;
     void set_state_info(StateInfo* st);
     StateInfo* get_state_info() const;

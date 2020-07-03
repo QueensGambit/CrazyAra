@@ -175,6 +175,7 @@ vector<Move> make_move(const string& uciMove, bool is960)
     Square to_sq = get_destination_square(uciMove);
 
     if (is_drop_move(uciMove)) {
+#ifdef CRAZYHOUSE
         // dropping moves have a different id for black and white in Stockfish's move representation
         for (int color : {WHITE, BLACK}) {
             char piece = uciMove[0];
@@ -184,6 +185,7 @@ vector<Move> make_move(const string& uciMove, bool is960)
             Piece pt = Piece(PIECE_LOOKUP.at(piece));
             sfMoves.push_back(make_drop(to_sq, pt));
         }
+#endif
     }
     else {
         Square from_sq = get_origin_square(uciMove);
