@@ -38,6 +38,7 @@ using namespace std;
 struct GamePGN
 {
     string variant = "?";
+    string fen = "?";
     string event = "?";
     string site = "?";
     string date = "?";

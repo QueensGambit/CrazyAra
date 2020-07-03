@@ -32,6 +32,7 @@ ostream &operator<<(ostream& os, const GamePGN& gamePGN)
     const size_t plyCount = gamePGN.gameMoves.size();
     os << "[Variant \"" << gamePGN.variant << "\"]" << endl
        << "[Event \"" << gamePGN.event << "\"]" << endl
+       << "[FEN \"" << gamePGN.fen << "\"]" << endl
        << "[Site \"" << gamePGN.site << "\"]" << endl
        << "[Round \"" << gamePGN.round << "\"]" << endl
        << "[White \"" << gamePGN.white << "\"]" << endl
