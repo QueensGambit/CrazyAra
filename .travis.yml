@@ -1,0 +1,29 @@
+language: cpp
+dist: xenial
+
+matrix:
+  include:
+    - os: osx
+      compiler: gcc
+      env:
+        - COMPILER=g++
+        - COMP=gcc
+
+    - os: osx
+      compiler: clang
+      env:
+        - COMPILER=clang++ V='Apple LLVM 9.4.1' # Apple LLVM version 9.1.0 (clang-902.0.39.2)
+        - COMP=clang
+
+before_script:
+  - cd engine/src
+
+script:
+  # Build tests
+  - mkdir build
+  - cd build
+  - cmake -DBUILD_TESTS=1 ..
+  - make clean && make -j2
+
+  # Run tests
+  - ./CrazyAra
