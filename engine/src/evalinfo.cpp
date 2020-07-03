@@ -25,16 +25,19 @@
 
 #include "evalinfo.h"
 #include "uci.h"
+#include "../util/blazeutil.h"
 
-std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
+void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, size_t elapsedTimeMS)
 {
-    const size_t elapsedTimeMS = evalInfo.calculate_elapsed_time_ms();
-
-    if (evalInfo.movesToMate == 0) {
-       os << "cp " << evalInfo.centipawns;
+    if (idx != 0) {
+        os << "info score ";
+    }
+    os << "multipv " << idx+1;
+    if (evalInfo.movesToMate[idx] == 0) {
+       os << " cp " << evalInfo.centipawns[idx];
     }
     else {
-       os << "mate " << evalInfo.movesToMate;
+       os << " mate " << evalInfo.movesToMate[idx];
     }
     os << " depth " << evalInfo.depth
        << " seldepth " << evalInfo.selDepth
@@ -43,8 +46,18 @@ std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
        << " nps " << evalInfo.calculate_nps(elapsedTimeMS)
        << " tbhits " << evalInfo.tbHits
        << " pv";
-    for (Move move: evalInfo.pv) {
+    for (Move move: evalInfo.pv[idx]) {
         os << " " << UCI::move(move, evalInfo.isChess960);
+    }
+    os << endl;
+}
+
+std::ostream& operator<<(std::ostream& os, const EvalInfo& evalInfo)
+{
+    const size_t elapsedTimeMS = evalInfo.calculate_elapsed_time_ms();
+
+    for (size_t idx = 0; idx < evalInfo.centipawns.size(); ++idx) {
+        print_single_pv(os, evalInfo, idx, elapsedTimeMS);
     }
     return os;
 }
@@ -85,30 +98,85 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
 }
 
+bool set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices)
+{
+    vector<Move> pv;
+    size_t childIdx;
+    if (idx == 0) {
+        childIdx = get_best_move_index(rootNode, false);
+    }
+    else {
+        childIdx = indices[idx];
+    }
+    pv.push_back(rootNode->get_move(childIdx));
+    const Node* nextNode = rootNode->get_child_node(childIdx);
+    if (nextNode == nullptr || !nextNode->is_playout_node()) {
+        evalInfo.movesToMate.resize(idx);
+        evalInfo.bestMoveQ.resize(idx);
+        evalInfo.centipawns.resize(idx);
+        return false;
+    }
+    nextNode->get_principal_variation(pv);
+    evalInfo.pv.emplace_back(pv);
+
+    // scores
+    // return mate score for known wins and losses
+    if (nextNode->get_node_type() == SOLVED_LOSS) {
+        // always round up the ply counter
+        evalInfo.movesToMate[idx] = pv.size() / 2 + evalInfo.pv.size() % 2;
+    }
+    else if (nextNode->get_node_type() == SOLVED_WIN) {
+        // always round up the ply counter
+        evalInfo.movesToMate[idx] = -pv.size() / 2 + evalInfo.pv.size() % 2;
+    }
+    else {
+        evalInfo.movesToMate[idx] = 0;
+        evalInfo.bestMoveQ[idx] = rootNode->get_q_value(childIdx);
+        evalInfo.centipawns[idx] = value_to_centipawn(evalInfo.bestMoveQ[idx]);
+    }
+    return true;
+}
+
+void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
+{
+    auto p = sort_permutation(evalInfo.policyProbSmall, std::greater<float>());
+    for (size_t idx = 0; idx < evalInfo.legalMoves.size(); ++idx) {
+        indices.emplace_back(idx);
+    }
+    apply_permutation_in_place(evalInfo.policyProbSmall, p);
+    apply_permutation_in_place(evalInfo.legalMoves, p);
+    apply_permutation_in_place(indices, p);
+}
+
 void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth)
 {
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
     size_t bestMoveIdx;
     rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx);
+    evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
     evalInfo.legalMoves = rootNode->get_legal_moves();
-    rootNode->get_principal_variation(evalInfo.pv);
-    evalInfo.depth = evalInfo.pv.size();
+
+    vector<size_t> indices;
+    size_t maxIdx = min(evalInfo.multiPV, evalInfo.legalMoves.size());
+
+    if (maxIdx > 1) {
+        sort_eval_lists(evalInfo, indices);
+    }
+
+    evalInfo.pv.clear();
+    evalInfo.movesToMate.resize(maxIdx);
+    evalInfo.bestMoveQ.resize(maxIdx);
+    evalInfo.centipawns.resize(maxIdx);
+
+    for (size_t idx = 0; idx < maxIdx; ++idx) {
+        if (!set_eval_for_single_pv(evalInfo, rootNode, idx, indices)) {
+            break;
+        }
+    }
+
+    evalInfo.depth = evalInfo.pv[0].size();
     evalInfo.selDepth = selDepth;
-    // return mate score for known wins and losses
-    if (rootNode->get_node_type() == SOLVED_WIN) {
-        // always round up the ply counter
-        evalInfo.movesToMate = evalInfo.pv.size() / 2 + evalInfo.pv.size() % 2;
-    }
-    else if (rootNode->get_node_type() == SOLVED_LOSS) {
-        // always round up the ply counter
-        evalInfo.movesToMate = -evalInfo.pv.size() / 2 + evalInfo.pv.size() % 2;
-    }
-    else {
-        evalInfo.movesToMate = 0;
-        evalInfo.bestMoveQ = rootNode->get_q_value(bestMoveIdx);
-        evalInfo.centipawns = value_to_centipawn(evalInfo.bestMoveQ);
-    }
     evalInfo.nodes = get_node_count(rootNode);
     evalInfo.tbHits = tbHits;
 }
