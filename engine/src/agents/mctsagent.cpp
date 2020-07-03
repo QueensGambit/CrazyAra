@@ -249,7 +249,7 @@ void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
 void MCTSAgent::clear_game_history()
 {
     delete_old_tree();
-    assert(mapWithMutex.hashTable->size() == 0);
+    assert(mapWithMutex.hashTable.size() == 0);
     mapWithMutex.hashTable.clear();
     oldestRootNode = nullptr;
     ownNextRoot = nullptr;

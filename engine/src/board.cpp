@@ -89,7 +89,7 @@ Board& Board::operator=(const Board &b)
 #endif
     std::copy(b.index, b.index+SQUARE_NB, this->index);
     std::copy(b.castlingRightsMask, b.castlingRightsMask+SQUARE_NB, this->castlingRightsMask);
-#if defined(ANTI) || defined(EXTINCTION) || defined(TWOKINGS)
+#if defined(GIVEAWAY) || defined(EXTINCTION) || defined(TWOKINGS)
     std::copy(b.castlingKingSquare, b.castlingKingSquare+COLOR_NB, this->castlingKingSquare);
 #endif
     std::copy(b.castlingRookSquare, b.castlingRookSquare+CASTLING_RIGHT_NB, castlingRookSquare);

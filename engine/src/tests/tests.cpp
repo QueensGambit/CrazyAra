@@ -30,6 +30,7 @@
 #include <string>
 #include "catch.hpp"
 #include "uci.h"
+#include "../optionsuci.h"
 #include "../util/sfutil.h"
 #include "../domain/variants.h"
 #include "thread.h"
@@ -37,8 +38,10 @@
 #include "../domain/crazyhouse/inputrepresentation.h"
 using namespace Catch::literals;
 using namespace std;
+using namespace OptionsUCI;
 
 void init() {
+    OptionsUCI::init(Options);
     Bitboards::init();
     Position::init();
     Bitbases::init();
