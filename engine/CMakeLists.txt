@@ -8,6 +8,7 @@ option(USE_RL                    "Build with reinforcement learning support"  OF
 option(USE_TENSORRT              "Build with TensorRT support"  ON)
 option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
+option(BUILD_TESTS               "Build and run tests"  OFF)
 
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
@@ -23,7 +24,9 @@ add_definitions(-DMODE_CRAZYHOUSE)
 #add_definitions(-DMODE_LICHESS)
 #add_definitions(-DMODE_CHESS)
 
-# add_definitions(-DBUILD_TESTS)
+if (BUILD_TESTS)
+    add_definitions(-DBUILD_TESTS)
+endif()
 
 # -pg performance profiling flags
 if (USE_PROFILING)
