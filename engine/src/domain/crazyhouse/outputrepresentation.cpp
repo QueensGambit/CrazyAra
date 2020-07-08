@@ -57,7 +57,7 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
     }
 }
 
-void get_probs_of_moves(const float *data, const vector<Move>& legalMoves, unordered_map<Move, size_t>& moveLookup, DynamicVector<float> &policyProbSmall)
+void get_probs_of_moves(const float *data, const vector<Move>& legalMoves, unordered_map<Move, size_t, std::hash<int>>& moveLookup, DynamicVector<float> &policyProbSmall)
 {
 //    // allocate sufficient memory -> is assumed that it has already been done
 //    policyProbSmall.resize(legalMoves.size());
@@ -78,7 +78,7 @@ const float* get_policy_data_batch(const size_t batchIdx, const float* probOutpu
     return probOutputs + batchIdx*NB_LABELS;
 }
 
-unordered_map<Move, size_t>& get_current_move_lookup(Color sideToMove)
+unordered_map<Move, size_t, std::hash<int>>& get_current_move_lookup(Color sideToMove)
 {
     if (sideToMove == WHITE) {
         // use the look-up table for the first player

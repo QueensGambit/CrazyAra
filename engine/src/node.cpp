@@ -769,7 +769,7 @@ void Node::apply_temperature_to_prior_policy(float temperature)
     apply_temperature(policyProbSmall, temperature);
 }
 
-void Node::set_probabilities_for_moves(const float *data, unordered_map<Move, size_t>& moveLookup)
+void Node::set_probabilities_for_moves(const float *data, unordered_map<Move, size_t, std::hash<int>>& moveLookup)
 {
     // allocate sufficient memory -> is assumed that it has already been done
     assert(legalMoves.size() == policyProbSmall.size());

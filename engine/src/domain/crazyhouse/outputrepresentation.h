@@ -51,7 +51,7 @@ const float*  get_policy_data_batch(const size_t batchIdx, const float* policyPr
  * @param sideToMove Current side to move
  * @return Returns either MOVE_LOOK_UP or MOVE_LOOK_UP_MIRRORED
  */
-unordered_map<Move, size_t>& get_current_move_lookup(Color sideToMove);
+unordered_map<Move, size_t, std::hash<int>>& get_current_move_lookup(Color sideToMove);
 
 /**
  * @brief get_probs_of_move_list Returns an array in which entry relates to the probability for the given move list.
@@ -69,7 +69,7 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
                             bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance);
 
 void get_probs_of_moves(const float *data, const vector<Move>& legalMoves,
-                        unordered_map<Move, size_t>& moveLookup, DynamicVector<float> &policyProbSmall);
+                        unordered_map<Move, size_t, std::hash<int>>& moveLookup, DynamicVector<float> &policyProbSmall);
 
 void apply_softmax(DynamicVector<float> &policyProbSmall);
 

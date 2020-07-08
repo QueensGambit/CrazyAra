@@ -6733,12 +6733,12 @@ const std::string LABELS[] = {
 
 // will be filled in init()
 // stores a mapping from Stockfish's move representation to the NN index in the policy
-extern std::unordered_map<Move, size_t> MV_LOOKUP;
-extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED;
+extern std::unordered_map<Move, size_t, std::hash<int>> MV_LOOKUP;
+extern std::unordered_map<Move, size_t, std::hash<int>> MV_LOOKUP_MIRRORED;
 
 // classical flattened look up tables, which are later used for policy export
-extern std::unordered_map<Move, size_t> MV_LOOKUP_CLASSIC;
-extern std::unordered_map<Move, size_t> MV_LOOKUP_MIRRORED_CLASSIC;
+extern std::unordered_map<Move, size_t, std::hash<int>> MV_LOOKUP_CLASSIC;
+extern std::unordered_map<Move, size_t, std::hash<int>> MV_LOOKUP_MIRRORED_CLASSIC;
 
 //https://stackoverflow.com/questions/23390034/c-change-global-variable-value-in-different-files
 extern std::string LABELS_MIRRORED[NB_LABELS];
