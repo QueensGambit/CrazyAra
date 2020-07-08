@@ -31,6 +31,7 @@
 #endif
 
 #include <stdlib.h>
+#include <climits>
 #include "inputrepresentation.h"
 #include "outputrepresentation.h"
 #include "util/blazeutil.h"

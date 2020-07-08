@@ -3,26 +3,48 @@ dist: xenial
 
 matrix:
   include:
-    - os: osx
+    - os: linux
       compiler: gcc
       env:
-        - COMPILER=g++
+        - COMPILER=g++-8
         - COMP=gcc
 
-    - os: osx
+    - os: linux
       compiler: clang
       env:
-        - COMPILER=clang++ V='Apple LLVM 9.4.1' # Apple LLVM version 9.1.0 (clang-902.0.39.2)
+        - COMPILER=clang++-6.0
         - COMP=clang
+        - LDFLAGS=-fuse-ld=lld
+
+#    - os: osx
+#      compiler: gcc
+#      env:
+#        - COMPILER=g++
+#        - COMP=gcc
+#
+#    - os: osx
+#      compiler: clang
+#      env:
+#        - COMPILER=clang++ V='Apple LLVM 9.4.1' # Apple LLVM version 9.1.0 (clang-902.0.39.2)
+#        - COMP=clang
 
 before_script:
-  - cd engine/src
+  - pwd
+  # install blaze dependencies
+  - sudo apt-get install libblas-dev liblapack-dev
+  # install blaze
+  - wget https://bitbucket.org/blaze-lib/blaze/downloads/blaze-3.6.tar.gz
+  - tar -xvzf blaze-3.6.tar.gz
+  - cd blaze-3.6
+  - cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
+  - sudo make install
+  - cd ../engine
 
 script:
   # Build tests
   - mkdir build
   - cd build
-  - cmake -DBUILD_TESTS=1 ..
+  - cmake -DBUILD_TESTS=1 -DUSE_TENSORRT=0 -DUSE_MXNET=0 ..
   - make clean && make -j2
 
   # Run tests
