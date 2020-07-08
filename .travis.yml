@@ -16,19 +16,8 @@ matrix:
         - COMP=clang
         - LDFLAGS=-fuse-ld=lld
 
-#    - os: osx
-#      compiler: gcc
-#      env:
-#        - COMPILER=g++
-#        - COMP=gcc
-#
-#    - os: osx
-#      compiler: clang
-#      env:
-#        - COMPILER=clang++ V='Apple LLVM 9.4.1' # Apple LLVM version 9.1.0 (clang-902.0.39.2)
-#        - COMP=clang
-
-before_script:
+install:
+  - cd
   - pwd
   # install blaze dependencies
   - sudo apt-get install libblas-dev liblapack-dev
@@ -38,12 +27,14 @@ before_script:
   - cd blaze-3.6
   - cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
   - sudo make install
-  - cd ../engine
+
+before_script:
+  - cd $HOME/build/QueensGambit/CrazyAra/engine/
+  - mkdir build
+  - cd build
 
 script:
   # Build tests
-  - mkdir build
-  - cd build
   - cmake -DBUILD_TESTS=1 -DUSE_TENSORRT=0 -DUSE_MXNET=0 ..
   - make clean && make -j2
 
