@@ -37,7 +37,7 @@ endif()
 
 if(DEFINED ENV{BLAZE_PATH})
     MESSAGE(STATUS "BLAZE_PATH set to: $ENV{BLAZE_PATH}")
-    include_directories("$ENV{BLAZE_PATH}include")
+    include_directories("$ENV{BLAZE_PATH}/include")
     include_directories("$ENV{BLAZE_PATH}")
 else()
     MESSAGE(STATUS "BLAZE_PATH not set")
@@ -82,7 +82,7 @@ file(GLOB source_files
     "src/rl/*.h"
 )
 
-set(CPP_PACKAGE_INCLUDE_DIR $ENV{MXNET_PATH}cpp-package/include)
+set(CPP_PACKAGE_INCLUDE_DIR $ENV{MXNET_PATH}/cpp-package/include)
 file(GLOB_RECURSE CPP_PACKAGE_HEADERS
     "${CPP_PACKAGE_INCLUDE_DIR}/*.h"
     "${CPP_PACKAGE_INCLUDE_DIR}/*.hpp"
@@ -110,16 +110,16 @@ if (USE_MXNET)
     MESSAGE(STATUS "MXNET_PATH not set")
     ENDIF()
 
-    include_directories("$ENV{MXNET_PATH}cpp-package/include")
-    include_directories("$ENV{MXNET_PATH}include/")
-    include_directories("$ENV{MXNET_PATH}3rdparty/tvm/nnvm/include")
-    include_directories("$ENV{MXNET_PATH}3rdparty/dmlc-core/include")
+    include_directories("$ENV{MXNET_PATH}/cpp-package/include")
+    include_directories("$ENV{MXNET_PATH}/include/")
+    include_directories("$ENV{MXNET_PATH}/3rdparty/tvm/nnvm/include")
+    include_directories("$ENV{MXNET_PATH}/3rdparty/dmlc-core/include")
 
-    link_directories("$ENV{MXNET_PATH}lib")
-    link_directories("$ENV{MXNET_PATH}Release/lib")
-    link_directories("$ENV{MXNET_PATH}build/lib")
-    link_directories("$ENV{MXNET_PATH}build/Release")
-    link_directories("$ENV{MXNET_PATH}build")
+    link_directories("$ENV{MXNET_PATH}/lib")
+    link_directories("$ENV{MXNET_PATH}/Release/lib")
+    link_directories("$ENV{MXNET_PATH}/build/lib")
+    link_directories("$ENV{MXNET_PATH}/build/Release")
+    link_directories("$ENV{MXNET_PATH}/build")
 
     set(CPP_EXAMPLE_LIBS
         ${BEGIN_WHOLE_ARCHIVE} mxnet_static ${END_WHOLE_ARCHIVE}
@@ -137,10 +137,10 @@ if (USE_RL)
     else()
         MESSAGE(STATUS "Z5_PATH not set")
     endif()
-    include_directories($ENV{Z5_PATH}include)
+    include_directories($ENV{Z5_PATH}/include)
     include_directories("3rdparty/json-3.7.0")
-    include_directories($ENV{XTL_PATH}include)
-    include_directories($ENV{XTENSOR_PATH}include)
+    include_directories($ENV{XTL_PATH}/include)
+    include_directories($ENV{XTENSOR_PATH}/include)
     add_definitions(-DUSE_RL)
 endif()
 
@@ -151,21 +151,21 @@ if (USE_TENSORRT)
     # add additional source file
     set(source_files
         ${source_files}
-        $ENV{TENSORRT_PATH}samples/common/logger.cpp
+        $ENV{TENSORRT_PATH}/samples/common/logger.cpp
         )
     find_package(CUDA REQUIRED)
     message(STATUS "CUDA path: $ENV{CUDA_PATH}")
     include_directories("$ENV{CUDA_PATH}/include")
     link_directories("$ENV{CUDA_PATH}/lib64")
     link_directories("$ENV{CUDA_PATH}/lib/x64")
-    link_directories("$ENV{TENSORRT_PATH}lib")
+    link_directories("$ENV{TENSORRT_PATH}/lib")
 if(WIN32)
   find_library(TENSORRT_LIBRARY_MYELIN myelin64_1
     HINTS  ${TENSORRT_PATH}
     PATH_SUFFIXES lib lib64 lib/x64)
 endif()
-    include_directories("$ENV{TENSORRT_PATH}include")
-    include_directories("$ENV{TENSORRT_PATH}samples/common/")
+    include_directories("$ENV{TENSORRT_PATH}/include")
+    include_directories("$ENV{TENSORRT_PATH}/samples/common/")
     add_definitions(-DTENSORRT)
 endif()
 
