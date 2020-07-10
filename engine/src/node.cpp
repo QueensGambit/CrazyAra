@@ -352,13 +352,12 @@ bool Node::has_nn_results() const
 void Node::apply_virtual_loss_to_child(size_t childIdx, float virtualLoss)
 {
     // update the stats of the parent node
+    // make it look like if one has lost X games from this node forward where X is the virtual loss value
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
+    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - virtualLoss) / (d->childNumberVisits[childIdx] + virtualLoss);
     // virtual increase the number of visits
     d->childNumberVisits[childIdx] += size_t(virtualLoss);
-    // make it look like if one has lost X games from this node forward where X is the virtual loss value
-    d->actionValues[childIdx] -= virtualLoss;
-    d->qValues[childIdx] = d->actionValues[childIdx] / d->childNumberVisits[childIdx];
 }
 
 Node *Node::get_parent_node() const
@@ -409,7 +408,6 @@ void Node::reserve_full_memory()
 {
     const size_t numberChildNodes = get_number_child_nodes();
     d->childNumberVisits.reserve(numberChildNodes);
-    d->actionValues.reserve(numberChildNodes);
     d->qValues.reserve(numberChildNodes);
     d->childNodes.reserve(numberChildNodes);
 }
@@ -482,14 +480,19 @@ void Node::backup_value(size_t childIdx, float value, float virtualLoss)
 void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss)
 {
     lock();
-    if (virtualLoss != 1) {
-        d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
-        d->actionValues[childIdx] += virtualLoss + value;
+    if (d->childNumberVisits[childIdx] == virtualLoss) {
+        // set new Q-value based on return
+        // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
+        d->qValues[childIdx] = value;
     }
     else {
-        d->actionValues[childIdx] += 1 + value;
+    // revert virtual loss and update the Q-value
+    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
     }
-    d->qValues[childIdx] = d->actionValues[childIdx] / d->childNumberVisits[childIdx];
+
+    if (virtualLoss != 1) {
+        d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
+    }
     if (is_terminal_value(value)) {
         ++d->terminalVisits;
         solve_for_terminal(d->childNodes[childIdx]);
@@ -512,9 +515,8 @@ void Node::backup_collision(size_t childIdx, float virtualLoss)
 void Node::revert_virtual_loss(size_t childIdx, float virtualLoss)
 {
     lock();
+    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
     d->childNumberVisits[childIdx] -= virtualLoss;
-    d->actionValues[childIdx] += virtualLoss;
-    d->qValues[childIdx] = d->actionValues[childIdx] / d->childNumberVisits[childIdx];
     unlock();
 }
 
@@ -810,7 +812,7 @@ void Node::mark_enhanced_moves(const Board* pos, const SearchSettings* searchSet
 void Node::disable_move(size_t childIdxForParent)
 {
     policyProbSmall[childIdxForParent] = 0;
-    d->actionValues[childIdxForParent] = -INT_MAX;
+    d->qValues[childIdxForParent] = -INT_MAX;
 }
 
 void Node::enhance_moves(const SearchSettings* searchSettings)

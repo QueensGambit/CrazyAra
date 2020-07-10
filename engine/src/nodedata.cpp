@@ -29,7 +29,6 @@
 void NodeData::add_empty_node()
 {
     append(childNumberVisits, 0U);
-    append(actionValues, 0.0f);
     append(qValues, Q_INIT);
     childNodes.emplace_back(nullptr);
 }
@@ -40,9 +39,6 @@ void NodeData::reserve_initial_space()
 
     // # visit count of all its child nodes
     childNumberVisits.reserve(initSize);
-
-    // total action value estimated by MCTS for each child node also denoted as w
-    actionValues.reserve(initSize);
 
     // q: combined action value which is calculated by the averaging over all action values
     // u: exploration metric for each child node

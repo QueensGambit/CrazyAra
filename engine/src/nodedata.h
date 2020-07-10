@@ -60,7 +60,6 @@ class Node;
 struct NodeData
 {
     DynamicVector<uint32_t> childNumberVisits;
-    DynamicVector<float> actionValues;
     DynamicVector<float> qValues;
     vector<Node*> childNodes;
 
