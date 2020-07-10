@@ -168,7 +168,40 @@ public:
 
     void apply_virtual_loss_to_child(size_t childIdx, float virtualLoss);
 
+    /**
+     * @brief revert_virtual_loss_and_update Reverts the virtual loss and updates the Q-value and visits
+     * @param value New value to update Q
+     *
+     * Example:
+     * Q-value update on 2nd iteration
+     * 0. Starting point: Initialized with e.g. 0.5 after first backup, vl = virtual loss
+     *   Q_0 = 0.5, n_0 = 1; vl = 1
+     * 1. Apply virtual loss
+     *   Q_1 = (Q_0 * n_0 - vl) / (n_0 + vl)
+     *       = (0.5 * 1 - 1) / (1 + 1)
+     *       = - 0.25
+     * 2. Increase visits by virtual loss
+     *   n_1 = n_0 + vl
+     *       = 1 + 1
+     *       = 2
+     * 3. Revert virtual loss
+     *   Q_2 = (Q_1 * n_1 + vl) / (n_1 - vl)
+     *       = (-0.25 * 2 + 1) / (2 - 1)
+     *       = 0.5
+     * 4. Update Q-value by new value (e.g. val = 0.7)
+     *   Q_3 = (Q_2 * (n_1 - vl) + val) / (n_1)
+     *       = (0.5 * (2 - 1) + 0.7) / 2
+     *       = 0.6
+     *
+     * Note step 3. & 4. ca be expressed as a single update based on Q_1:
+     * 3. & 4.: Revert value and update
+     *   Q_3 = (Q_1 * n_1 + vl + val) / n_1
+     *       = (-0.25 * 2 + 1 + 0.7) / 2
+     *       = 0.6
+     *
+     */
     void revert_virtual_loss_and_update(float value);
+
     Node* get_parent_node() const;
     void increment_visits(size_t numberVisits);
     void subtract_visits(size_t numberVisits);
