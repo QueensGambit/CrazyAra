@@ -57,14 +57,14 @@ Agent::Agent(PlaySettings* playSettings, bool verbose):
 {
 }
 
-void Agent::set_search_settings(Board *pos, SearchLimits *searchLimits, EvalInfo* evalInfo)
+void Agent::set_search_settings(State *pos, SearchLimits *searchLimits, EvalInfo* evalInfo)
 {
-    this->pos = pos;
+    this->state = pos;
     this->searchLimits = searchLimits;
     this->evalInfo = evalInfo;
 }
 
-Move Agent::get_best_move()
+Action Agent::get_best_action()
 {
     return evalInfo->bestMove;
 }
@@ -74,17 +74,17 @@ void Agent::perform_action()
     evalInfo->start = chrono::steady_clock::now();
     this->evaluate_board_state();
     evalInfo->end = chrono::steady_clock::now();
-    set_best_move(pos->total_move_cout());
+    set_best_move(state->steps_from_null());
     info_score(*evalInfo);
-    info_string(pos->fen());
-    info_bestmove(UCI::move(evalInfo->bestMove, pos->is_chess960()));
+    info_string(state->fen());
+    info_bestmove(UCI::move(Move(evalInfo->bestMove), state->is_chess960()));
 }
 
 void run_agent_thread(Agent* agent)
 {
     agent->perform_action();
     // inform the agent of the move, so the tree can potentially be reused later
-    agent->apply_move_to_tree(agent->get_best_move(), true);
+    agent->apply_move_to_tree(agent->get_best_action(), true);
 }
 
 void apply_quantile_clipping(float quantile, DynamicVector<double>& policyProbSmall)

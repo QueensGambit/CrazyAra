@@ -38,24 +38,23 @@ bool Node::is_sorted() const
     return sorted;
 }
 
-Node::Node(Board *pos, bool inCheck, Node *parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
+Node::Node(State* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
     parentNode(parentNode),
-    key(pos->get_state_info()->key),
+    legalActions(state->legal_actions()),
+    key(state->hash_key()),
     value(0),
     d(nullptr),
     childIdxForParent(childIdxForParent),
-    pliesFromNull(pos->get_state_info()->pliesFromNull),
+    pliesFromNull(state->steps_from_null()),
     isTerminal(false),
     isTablebase(false),
     hasNNResults(false),
     sorted(false)
 {
-    fill_child_node_moves(pos);
-
     // specify the number of direct child nodes of this node
-    const int numberChildNodes = legalMoves.size();
+    const int numberChildNodes = legalActions.size();
 
-    check_for_terminal(pos, inCheck);
+    check_for_terminal(state, inCheck);
 #ifdef MODE_CHESS
     if (searchSettings->useTablebase && !isTerminal) {
         check_for_tablebase_wdl(pos);
@@ -69,10 +68,10 @@ Node::Node(const Node &b)
     set_value(b.get_value());
     key = b.key;
     pliesFromNull = b.plies_from_null();
-    const int numberChildNodes = b.legalMoves.size();
+    const int numberChildNodes = b.legalActions.size();
     policyProbSmall.resize(numberChildNodes);
     policyProbSmall = b.policyProbSmall;
-    legalMoves = b.legalMoves;
+    legalActions = b.legalActions;
     isTerminal = b.isTerminal;
     //    parentNode = // is not copied
     //    childIdxForParent = // is not copied
@@ -89,14 +88,6 @@ Node::Node(const Node &b)
         d = make_unique<NodeData>(numberChildNodes);
     }
     // TODO: Allow copying checkmateIndex
-}
-
-void Node::fill_child_node_moves(Board* pos)
-{
-    // generate the legal moves and save them in the list
-    for (const ExtMove& move : MoveList<LEGAL>(*pos)) {
-        legalMoves.push_back(move);
-    }
 }
 
 bool Node::solved_win(const Node* childNode) const
@@ -200,7 +191,7 @@ void Node::update_solved_terminal(const Node* childNode, int targetValue)
             parentNode->d->checkmateIdx = childIdxForParent;
         }
         else if (targetValue == WIN && !is_root_node() && parentNode->is_root_node()) {
-            parentNode->disable_move(childIdxForParent);
+            parentNode->disable_action(childIdxForParent);
         }
         parentNode->unlock();
     }
@@ -291,13 +282,13 @@ void Node::sort_moves_by_probabilities()
 {
     auto p = sort_permutation(policyProbSmall, std::greater<float>());
     apply_permutation_in_place(policyProbSmall, p);
-    apply_permutation_in_place(legalMoves, p);
+    apply_permutation_in_place(legalActions, p);
     sorted = true;
 }
 
-Move Node::get_move(size_t childIdx) const
+Action Node::get_action(size_t childIdx) const
 {
-    return legalMoves[childIdx];
+    return legalActions[childIdx];
 }
 
 Node *Node::get_child_node(size_t childIdx) const
@@ -305,14 +296,14 @@ Node *Node::get_child_node(size_t childIdx) const
     return d->childNodes[childIdx];
 }
 
-Move Node::get_best_move() const
+Action Node::get_best_action() const
 {
-    return get_move(get_best_move_index(this, false));
+    return get_action(get_best_action_index(this, false));
 }
 
-vector<Move> Node::get_ponder_moves() const
+vector<Action> Node::get_ponder_moves() const
 {
-    vector<Move> ponderMoves;
+    vector<Action> ponderMoves;
     const size_t visitThresh = 0.01 * get_visits();
 
     for (const Node* childNode : get_child_nodes()) {
@@ -323,10 +314,10 @@ vector<Move> Node::get_ponder_moves() const
             if (!childNode->is_terminal()) {
 
                 if (ponderMoves.size() == 0) {
-                    ponderMoves.emplace_back(childNode->get_best_move());
+                    ponderMoves.emplace_back(childNode->get_best_action());
                 }
-                else if (find(ponderMoves.begin(), ponderMoves.end(), childNode->get_best_move()) == ponderMoves.end()) {
-                    ponderMoves.emplace_back(childNode->get_best_move());
+                else if (find(ponderMoves.begin(), ponderMoves.end(), childNode->get_best_action()) == ponderMoves.end()) {
+                    ponderMoves.emplace_back(childNode->get_best_action());
                 }
             }
         }
@@ -448,7 +439,7 @@ Key Node::hash_key() const
 
 size_t Node::get_number_child_nodes() const
 {
-    return legalMoves.size();
+    return legalActions.size();
 }
 
 void Node::prepare_node_for_visits()
@@ -617,9 +608,9 @@ float Node::updated_value_eval() const
     return d->qValues[argmax(d->childNumberVisits)];
 }
 
-std::vector<Move> Node::get_legal_moves() const
+std::vector<Action> Node::get_legal_action() const
 {
-    return legalMoves;
+    return legalActions;
 }
 
 int Node::get_checkmate_idx() const
@@ -637,7 +628,7 @@ void Node::enable_has_nn_results()
     hasNNResults = true;
 }
 
-int Node::plies_from_null() const
+uint16_t Node::plies_from_null() const
 {
     return pliesFromNull;
 }
@@ -678,49 +669,22 @@ void Node::mark_as_terminal()
     init_node_data();
 }
 
-void Node::check_for_terminal(Board* pos, bool inCheck)
+void Node::check_for_terminal(State* pos, bool inCheck)
 {
-    if (get_number_child_nodes() == 0) {
+    TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), inCheck);
+
+    if (terminalType != TERMINAL_NONE) {
         mark_as_terminal();
-#ifdef ANTI
-        if (pos->is_anti()) {
-            // a stalmate is a win in antichess
+        switch(terminalType) {
+        case TERMINAL_WIN:
             set_value(WIN);
-            return;
-        }
-#endif
-        // test if we have a check-mate
-        if (inCheck) {
-            mark_as_loss();
-            return;
-        }
-        // we reached a stalmate
-        mark_as_draw();
-        return;
-    }
-#ifdef ANTI
-    if (pos->is_anti()) {
-        if (pos->is_anti_win()) {
-            mark_as_terminal();
-            set_value(WIN);
-            return;
-        }
-        if (pos->is_anti_loss()) {
-            mark_as_terminal();
+            break;
+        case TERMINAL_DRAW:
+            set_value(DRAW);
+        case TERMINAL_LOSS:
             set_value(LOSS);
-            parentNode->d->checkmateIdx = childIdxForParent;
-            return;
         }
     }
-#endif
-    if (pos->can_claim_3fold_repetition() || pos->is_50_move_rule_draw() || pos->draw_by_insufficient_material()) {
-        // reached 3-fold-repetition or 50 moves rule draw or insufficient material
-        mark_as_terminal();
-        mark_as_draw();
-        return;
-    }
-    // normal game position
-    //    isTerminal = false;  // is the default value
 }
 
 void Node::check_for_tablebase_wdl(Board *pos)
@@ -771,16 +735,16 @@ void Node::apply_temperature_to_prior_policy(float temperature)
     apply_temperature(policyProbSmall, temperature);
 }
 
-void Node::set_probabilities_for_moves(const float *data, unordered_map<Move, size_t, std::hash<int>>& moveLookup)
+void Node::set_probabilities_for_moves(const float *data, unordered_map<Action, size_t, std::hash<int>>& moveLookup)
 {
     // allocate sufficient memory -> is assumed that it has already been done
-    assert(legalMoves.size() == policyProbSmall.size());
-    for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
+    assert(legalActions.size() == policyProbSmall.size());
+    for (size_t mvIdx = 0; mvIdx < legalActions.size(); ++mvIdx) {
         // retrieve vector index from look-up table
         // set the right prob value
         // accessing the data on the raw floating point vector is faster
         // than calling policyProb.At(batchIdx, vectorIdx)
-        policyProbSmall[mvIdx] = data[moveLookup[legalMoves[mvIdx]]];
+        policyProbSmall[mvIdx] = data[moveLookup[legalActions[mvIdx]]];
     }
 }
 
@@ -809,7 +773,7 @@ void Node::mark_enhanced_moves(const Board* pos, const SearchSettings* searchSet
     //    }
 }
 
-void Node::disable_move(size_t childIdxForParent)
+void Node::disable_action(size_t childIdxForParent)
 {
     policyProbSmall[childIdxForParent] = 0;
     d->qValues[childIdxForParent] = -INT_MAX;
@@ -908,17 +872,17 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
     mctsPolicy /= sum(mctsPolicy);
 }
 
-void Node::get_principal_variation(vector<Move>& pv) const
+void Node::get_principal_variation(vector<Action>& pv) const
 {
     const Node* curNode = this;
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
-        size_t childIdx = get_best_move_index(curNode, true);
-        pv.push_back(curNode->get_move(childIdx));
+        size_t childIdx = get_best_action_index(curNode, true);
+        pv.push_back(curNode->get_action(childIdx));
         curNode = curNode->d->childNodes[childIdx];
     }
 }
 
-size_t get_best_move_index(const Node *curNode, bool fast)
+size_t get_best_action_index(const Node *curNode, bool fast)
 {
     if (curNode->get_checkmate_idx() != NO_CHECKMATE) {
         // chose mating line
@@ -1051,7 +1015,7 @@ float get_current_cput(float visits, const SearchSettings* searchSettings)
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
-void Node::print_node_statistics(const Board* pos)
+void Node::print_node_statistics(const State* state)
 {
     const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
     const string filler = "-----+-------+--------------+-----------+------------+-------+------------";
@@ -1066,13 +1030,13 @@ void Node::print_node_statistics(const Board* pos)
             q = max(d->qValues[childIdx], -1.0f);
         }
 
-        const Move move = get_legal_moves()[childIdx];
+        const Action move = get_legal_action()[childIdx];
         cout << " " << setfill('0') << setw(3) << childIdx << " | " << setfill(' ');
-        if (pos == nullptr) {
-            cout << setw(5) << UCI::move(move, false) << " | ";
+        if (state == nullptr) {
+            cout << setw(5) << UCI::move(Move(move), false) << " | ";
         }
         else {
-            cout << setw(5) << pgn_move(move, pos->is_chess960(), *pos, get_legal_moves()) << " | ";
+            cout << setw(5) << state->action_to_san(move, get_legal_action()) << " | ";
         }
         cout << setw(12) << n << " | "
              << setw(9) << policyProbSmall[childIdx] << " | "

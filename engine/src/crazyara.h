@@ -45,7 +45,6 @@
 class CrazyAra
 {
 private:
-    StateListPtr states;
     const string intro =  string("\n") +
                     string("                                  _                                           \n") +
                     string("                   _..           /   ._   _.  _        /\\   ._   _.           \n") +
@@ -126,7 +125,7 @@ public:
      * @param is List of command line arguments for the search
      * @param evalInfo Returns the evalutation information
      */
-    void go(Board* pos, istringstream& is, EvalInfo& evalInfo);
+    void go(State* state, istringstream& is, EvalInfo& evalInfo);
 
     /**
      * @brief go Wrapper function for go() which accepts a FEN string
@@ -142,7 +141,7 @@ public:
      * @param pos Position object which will be set
      * @param is List of command line arguments which describe the position
      */
-    void position(Board* pos, istringstream& is);
+    void position(State* pos, istringstream& is);
 
     /**
      * @brief benchmark Runs a list of benchmark position for a given time

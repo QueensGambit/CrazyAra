@@ -5,8 +5,8 @@ project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
-option(USE_TENSORRT              "Build with TensorRT support"  ON)
-option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
+option(USE_TENSORRT              "Build with TensorRT support"  OFF)
+option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  ON)
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
 
@@ -144,7 +144,7 @@ if (USE_RL)
     add_definitions(-DUSE_RL)
 endif()
 
-if (USE_TENSORRT)
+if (FALSE) #USE_TENSORRT)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
     message(STATUS "Enabled TensorRT support")
     message(STATUS "TensorRT path: $ENV{TENSORRT_PATH}")
@@ -175,7 +175,7 @@ endif()
 
 add_executable(${PROJECT_NAME} ${source_files})
 
-if (USE_TENSORRT)
+if (FALSE) #USE_TENSORRT)
     target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
 endif()
 

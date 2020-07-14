@@ -28,7 +28,8 @@
 #ifndef TREEMANAGER_H
 #define TREEMANAGER_H
 
-#include "../board.h"
+//#include "../board.h"
+#include "../state.h"
 #include "../node.h"
 
 /**
@@ -36,7 +37,7 @@
  * @param move Move
  * @param ownMove Boolean indicating if it was CrazyAra's move
  */
-Node* pick_next_node(Move move, const Node* parentNode);
+Node* pick_next_node(Action move, const Node* parentNode);
 
 /**
  * @brief same_hash_key Checks if the given node isn't a nullptr and
@@ -45,6 +46,6 @@ Node* pick_next_node(Move move, const Node* parentNode);
  * @param pos Position pointer
  * @return bool
  */
-bool same_hash_key(Node* node, Board *pos);
+bool same_hash_key(Node* node, State* state);
 
 #endif // TREEMANAGER_H

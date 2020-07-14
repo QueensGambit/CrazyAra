@@ -135,10 +135,10 @@ TEST_CASE("PGN_Move_Ambiguity"){
     string uci_move = "f3d2";
     Move move = UCI::to_move(pos, uci_move);
 
-    vector<Move> legalMoves;
+    vector<Action> legalMoves;
     // generate legal moves
     for (const ExtMove& move : MoveList<LEGAL>(pos)) {
-        legalMoves.push_back(move);
+        legalMoves.push_back(Action(move));
     }
     bool isRankAmbigious;
     bool isFileAmbigious;

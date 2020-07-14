@@ -46,8 +46,8 @@ void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, siz
        << " nps " << evalInfo.calculate_nps(elapsedTimeMS)
        << " tbhits " << evalInfo.tbHits
        << " pv";
-    for (Move move: evalInfo.pv[idx]) {
-        os << " " << UCI::move(move, evalInfo.isChess960);
+    for (Action move: evalInfo.pv[idx]) {
+        os << " " << UCI::move(Move(move), evalInfo.isChess960);
     }
     os << endl;
 }
@@ -100,15 +100,15 @@ int value_to_centipawn(float value)
 
 bool set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices)
 {
-    vector<Move> pv;
+    vector<Action> pv;
     size_t childIdx;
     if (idx == 0) {
-        childIdx = get_best_move_index(rootNode, false);
+        childIdx = get_best_action_index(rootNode, false);
     }
     else {
         childIdx = indices[idx];
     }
-    pv.push_back(rootNode->get_move(childIdx));
+    pv.push_back(rootNode->get_action(childIdx));
     const Node* nextNode = rootNode->get_child_node(childIdx);
     if (nextNode == nullptr || !nextNode->is_playout_node()) {
         evalInfo.movesToMate.resize(idx);
@@ -155,7 +155,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     size_t bestMoveIdx;
     rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx);
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
-    evalInfo.legalMoves = rootNode->get_legal_moves();
+    evalInfo.legalMoves = rootNode->get_legal_action();
 
     vector<size_t> indices;
     size_t maxIdx = min(evalInfo.multiPV, evalInfo.legalMoves.size());

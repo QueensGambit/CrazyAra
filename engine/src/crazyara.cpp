@@ -37,7 +37,8 @@
 #include "evalinfo.h"
 #include "domain/crazyhouse/constants.h"
 #include "constants.h"
-#include "board.h"
+#include "state.h"
+#include "boardstate.h"
 #include "domain/variants.h"
 #include "optionsuci.h"
 #include "tests/benchmarkpositions.h"
@@ -52,10 +53,10 @@ using namespace std;
 
 // allocate memory
 string LABELS_MIRRORED[NB_LABELS];
-unordered_map<Move, size_t, std::hash<int>> MV_LOOKUP = {};
-unordered_map<Move, size_t, std::hash<int>> MV_LOOKUP_MIRRORED = {};
-unordered_map<Move, size_t, std::hash<int>> MV_LOOKUP_CLASSIC = {};
-unordered_map<Move, size_t, std::hash<int>> MV_LOOKUP_MIRRORED_CLASSIC = {};
+unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP = {};
+unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED = {};
+unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_CLASSIC = {};
+unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED_CLASSIC = {};
 
 CrazyAra::CrazyAra():
     rawAgent(nullptr),
@@ -95,14 +96,13 @@ void CrazyAra::welcome()
 
 void CrazyAra::uci_loop(int argc, char *argv[])
 {
-    Board pos;
+    unique_ptr<State> state = make_unique<BoardState>();
     string token, cmd;
     EvalInfo evalInfo;
     auto uiThread = make_shared<Thread>(0);
 
-    states = StateListPtr(new std::deque<StateInfo>(1));
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    pos.set(StartFENs[variant], is960, variant, &states->back(), uiThread.get());
+    state->set(StartFENs[variant], is960, variant);
 
     for (int i = 1; i < argc; ++i)
         cmd += string(argv[i]) + " ";
@@ -138,8 +138,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 				<< "uciok" << endl;
 		}
         else if (token == "setoption")  OptionsUCI::setoption(is);
-        else if (token == "go")         go(&pos, is, evalInfo);
-        else if (token == "position")   position(&pos, is);
+        else if (token == "go")         go(state.get(), is, evalInfo);
+        else if (token == "position")   position(state.get(), is);
         else if (token == "ucinewgame") ucinewgame();
         else if (token == "isready") {
             if (is_ready()) {
@@ -150,8 +150,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         // Additional custom non-UCI commands, mainly for debugging
         else if (token == "benchmark")  benchmark(is);
         else if (token == "root")       mctsAgent->print_root_node();
-        else if (token == "flip")       pos.flip();
-        else if (token == "d")          cout << pos << endl;
+        else if (token == "flip")       state->flip();
+        else if (token == "d")          cout << *(state.get()) << endl;
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
@@ -165,7 +165,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     wait_to_finish_last_search();
 }
 
-void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo) {
+void CrazyAra::go(State* state, istringstream &is,  EvalInfo& evalInfo) {
     searchLimits.reset();
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
     searchLimits.nodes = Options["Nodes"];
@@ -195,29 +195,28 @@ void CrazyAra::go(Board *pos, istringstream &is,  EvalInfo& evalInfo) {
 
     ongoingSearch = true;
     if (useRawNetwork) {
-        rawAgent->set_search_settings(pos, &searchLimits, &evalInfo);
+        rawAgent->set_search_settings(state, &searchLimits, &evalInfo);
         mainSearchThread = thread(run_agent_thread, rawAgent.get());
     }
     else {
-        mctsAgent->set_search_settings(pos, &searchLimits, &evalInfo);
+        mctsAgent->set_search_settings(state, &searchLimits, &evalInfo);
         mainSearchThread = thread(run_agent_thread, mctsAgent.get());
     }
 }
 
 void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
 {
-    Board pos;
+    unique_ptr<State> state = make_unique<BoardState>();
+
     string token, cmd;
-    auto uiThread = make_shared<Thread>(0);
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
-    states = StateListPtr(new std::deque<StateInfo>(1));
-    pos.set(StartFENs[variant], is960, variant, &states->back(), uiThread.get());
+    state->set(StartFENs[variant], is960, variant);
 
     istringstream is("fen " + fen);
-    position(&pos, is);
+    position(state.get(), is);
     istringstream isGoCommand(goCommand);
-    go(&pos, isGoCommand, evalInfo);
+    go(state.get(), isGoCommand, evalInfo);
     wait_to_finish_last_search();
 }
 
@@ -229,11 +228,11 @@ void CrazyAra::wait_to_finish_last_search()
     }
 }
 
-void CrazyAra::position(Board *pos, istringstream& is)
+void CrazyAra::position(State* state, istringstream& is)
 {
     wait_to_finish_last_search();
 
-    Move m;
+    Action action;
     string token, fen;
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
@@ -250,22 +249,20 @@ void CrazyAra::position(Board *pos, istringstream& is)
         return;
 
     auto uiThread = make_shared<Thread>(0);
-    states->emplace_back();
-    pos->set(fen, is960, variant, &states->back(), uiThread.get());
-    Move lastMove = MOVE_NULL;
+    state->set(fen, is960, variant);
+    Action lastMove = ACTION_NONE;
 
     // Parse move list (if any)
-    while (is >> token && (m = UCI::to_move(*pos, token)) != MOVE_NONE)
+    while (is >> token && (action = state->uci_to_action(token)) != ACTION_NONE)
     {
-        states->emplace_back();
-        pos->do_move(m, states->back());
-        lastMove = m;
+        state->do_action(action);
+        lastMove = action;
     }
     // inform the mcts agent of the move, so the tree can potentially be reused later
     if (lastMove != MOVE_NULL && !useRawNetwork) {
         mctsAgent->apply_move_to_tree(lastMove, false);
     }
-    info_string("position", pos->fen());
+    info_string("position", state->fen());
 }
 
 void CrazyAra::benchmark(istringstream &is)
@@ -282,7 +279,8 @@ void CrazyAra::benchmark(istringstream &is)
 
     for (TestPosition pos : benchmark.positions) {
         go(pos.fen, goCommand, evalInfo);
-        string uciMove = UCI::move(evalInfo.bestMove, false);
+        // TODO: Remove cast
+        string uciMove = UCI::move(Move(evalInfo.bestMove), false);
         if (uciMove != pos.blunderMove) {
             cout << "passed      -- " << uciMove << " != " << pos.blunderMove << endl;
             passedCounter++;

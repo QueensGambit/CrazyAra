@@ -27,11 +27,11 @@
 #include "misc.h"
 #include "../node.h"
 
-Node* pick_next_node(Move move, const Node* parentNode)
+Node* pick_next_node(Action move, const Node* parentNode)
 {
     if (parentNode != nullptr) {
         for (size_t idx = 0; idx < parentNode->get_no_visit_idx(); ++idx) {
-            if (parentNode->get_legal_moves()[idx] == move) {
+            if (parentNode->get_legal_action()[idx] == move) {
                 return parentNode->get_child_nodes()[idx];
             }
         }
@@ -39,9 +39,9 @@ Node* pick_next_node(Move move, const Node* parentNode)
     return nullptr;
 }
 
-bool same_hash_key(Node* node, Board *pos)
+bool same_hash_key(Node* node, State* state)
 {
     return node != nullptr &&
-            node->hash_key() == pos->hash_key() &&
-            node->plies_from_null() == pos->get_state_info()->pliesFromNull;
+            node->hash_key() == state->hash_key() &&
+            node->plies_from_null() == state->steps_from_null();
 }

@@ -33,9 +33,8 @@
 #include <unordered_map>
 
 #include <blaze/Math.h>
-#include "position.h"
 #include "movegen.h"
-#include "board.h"
+#include "state.h"
 
 #include "agents/config/searchsettings.h"
 #include "nodedata.h"
@@ -53,7 +52,7 @@ private:
     mutex mtx;
 
     DynamicVector<float> policyProbSmall;
-    vector<Move> legalMoves;
+    vector<Action> legalActions;
     //    DynamicVector<bool> isCheck;
     //    DynamicVector<bool> isCapture;
 
@@ -80,7 +79,7 @@ public:
      * @param move Move which led to current board state
      * @param searchSettings Pointer to the searchSettings
      */
-    Node(Board *pos,
+    Node(State *state,
          bool inCheck,
          Node *parentNode,
          size_t childIdxForParent,
@@ -150,16 +149,16 @@ public:
     bool is_solved() const;
     bool has_forced_win() const;
 
-    Move get_move(size_t childIdx) const;
+    Action get_action(size_t childIdx) const;
     Node* get_child_node(size_t childIdx) const;
 
-    Move get_best_move() const;
+    Action get_best_action() const;
 
     /**
      * @brief get_ponder_moves Returns a list for possible ponder moves
      * @return vector of moves
      */
-    vector<Move> get_ponder_moves() const;
+    vector<Action> get_ponder_moves() const;
 
     vector<Node*> get_child_nodes() const;
     bool is_terminal() const;
@@ -260,7 +259,7 @@ public:
 
     DynamicVector<float>& get_policy_prob_small();
 
-    void set_probabilities_for_moves(const float *data, unordered_map<Move, size_t, std::hash<int>>& moveLookup);
+    void set_probabilities_for_moves(const float *data, unordered_map<Action, size_t, std::hash<int>>& moveLookup);
 
     void apply_softmax_to_policy();
 
@@ -306,7 +305,7 @@ public:
      * @return float
      */
     float updated_value_eval() const;
-    std::vector<Move> get_legal_moves() const;
+    std::vector<Action> get_legal_action() const;
     int get_checkmate_idx() const;
 
     /**
@@ -323,7 +322,7 @@ public:
      * The moves a are pushed into the pv vector.
      * @param pv Vector in which moves will be pushed.
      */
-    void get_principal_variation(vector<Move>& pv) const;
+    void get_principal_variation(vector<Action>& pv) const;
 
     /**
      * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
@@ -340,7 +339,7 @@ public:
 
     DynamicVector<uint32_t> get_child_number_visits() const;
     void enable_has_nn_results();
-    int plies_from_null() const;
+    uint16_t plies_from_null() const;
     bool is_tablebase() const;
     uint8_t get_node_type() const;
     uint16_t get_end_in_ply() const;
@@ -383,7 +382,7 @@ public:
     /**
      * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
      */
-    void print_node_statistics(const Board* pos);
+    void print_node_statistics(const State* pos);
 
 private:
     /**
@@ -396,7 +395,7 @@ private:
      * @param pos Current board position for this node
      * @param inCheck Boolean indicating if the king is in check
      */
-    void check_for_terminal(Board* pos, bool inCheck);
+    void check_for_terminal(State* state, bool inCheck);
 
     /**
      * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
@@ -404,12 +403,6 @@ private:
      * @param pos Current board position for this node
      */
     void check_for_tablebase_wdl(Board* pos);
-
-    /**
-     * @brief fill_child_node_moves Generates the legal moves and save them in the list
-     * @param pos Current node position
-     */
-    void fill_child_node_moves(Board* pos);
 
     /**
      * @brief solve_for_terminal Tries to solve the current node to be a forced win, loss or draw.
@@ -509,17 +502,17 @@ private:
      * and the move probability to 0.
      * @param childIdxForParent Index for the move which will be disabled
      */
-    void disable_move(size_t childIdxForParent);
+    void disable_action(size_t childIdxForParent);
 };
 
 /**
- * @brief get_best_move_index Returns the best move index of all available moves based on the mcts policy
+ * @brief get_best_action_index Returns the best move index of all available moves based on the mcts policy
  * or solved wins / draws / losses.
  * @param curNode Current node
  * @param fast If true, then the argmax(childNumberVisits) is returned for unsolved nodes
  * @return Index for best move and child node
  */
-size_t get_best_move_index(const Node* curNode, bool fast);
+size_t get_best_action_index(const Node* curNode, bool fast);
 
 /**
  * @brief generate_dtz_values Generates the DTZ values for a given position and all legal moves.
