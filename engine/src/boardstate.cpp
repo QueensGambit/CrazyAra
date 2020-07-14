@@ -155,3 +155,9 @@ unique_ptr<State> BoardState::clone() const
 {
     return make_unique<BoardState>(*this);
 }
+
+ostream &operator<<(ostream &os, const BoardState &state)
+{
+    os << state.board;
+    return os;
+}
