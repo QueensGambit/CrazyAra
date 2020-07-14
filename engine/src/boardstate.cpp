@@ -26,15 +26,16 @@
 #include "boardstate.h"
 #include "domain/crazyhouse/inputrepresentation.h"
 
-BoardState::BoardState() : State()
+BoardState::BoardState() : State(),
+    states(StateListPtr(new std::deque<StateInfo>(0)))
 {
-    states = StateListPtr(new std::deque<StateInfo>(0));
 }
 
-BoardState::BoardState(const BoardState &b)
+BoardState::BoardState(const BoardState &b) :
+    State(),
+    board(b.board),
+    states(StateListPtr(new std::deque<StateInfo>(0)))
 {
-    board = b.board;
-    states = StateListPtr(new std::deque<StateInfo>(0));
 }
 
 vector<Action> BoardState::legal_actions() const
