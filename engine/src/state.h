@@ -30,10 +30,8 @@
 
 #include <vector>
 #include <string>
-#include "types.h"
-
-
-using namespace std;
+#include <cstdint>
+#include <memory>
 
 typedef uint64_t Key;
 typedef int Action;
@@ -54,7 +52,7 @@ public:
      * @brief legal_actions Returns all legal actions as a vector list
      * @return vector of legal actions
      */
-    virtual vector<Action> legal_actions() const = 0;
+    virtual std::vector<Action> legal_actions() const = 0;
 
     /**
      * @brief set Sets a new states and modifies the current state.
@@ -63,7 +61,7 @@ public:
      * @param variant Variant which the position corresponds to.
      * @return An alias to the updated state
      */
-    virtual State& set(const string& fenStr, bool isChess960, int variant) = 0;
+    virtual State& set(const std::string& fenStr, bool isChess960, int variant) = 0;
 
     /**
      * @brief get_state_planes Returns the state plane representation of the current state which can be used for NN inference.
@@ -88,7 +86,7 @@ public:
      * @brief fen Returns the fen or string description of the current state
      * @return string
      */
-    virtual string fen() const = 0;
+    virtual std::string fen() const = 0;
 
     /**
      * @brief do_action Applies a given action to the current state
@@ -124,7 +122,7 @@ public:
      * @param uciStr uci specification for the action
      * @return Action
      */
-    virtual Action uci_to_action(string& uciStr) const = 0;
+    virtual Action uci_to_action(std::string& uciStr) const = 0;
 
     /**
      * @brief action_to_san Converts a given action to SAN (pgn move notation) usign the current position and legal moves
@@ -132,7 +130,7 @@ public:
      * @param legalActions List of legal moves for the current position
      * @return SAN string
      */
-    virtual string action_to_san(Action action, const vector<Action>& legalActions) const = 0;
+    virtual std::string action_to_san(Action action, const std::vector<Action>& legalActions) const = 0;
 
     /**
      * @brief is_terminal Returns the terminal type for the current state. If the state is a non terminal state,
@@ -154,7 +152,7 @@ public:
      * @brief clone Clones the current state as a deep copy
      * @return deep copy
      */
-    virtual unique_ptr<State> clone() const = 0;
+    virtual std::unique_ptr<State> clone() const = 0;
 };
 
 
