@@ -224,7 +224,7 @@ void Board::set(const string &code, Color c, Variant v, StateInfo *si)
 }
 #endif
 
-std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin, bool bookMove)
+std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Action>& legalMoves, bool leadsToWin, bool bookMove)
 {
     std::string move;
 
@@ -310,7 +310,7 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
 }
 
 
-bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &legalMoves, bool &isFileAmbiguous, bool &isRankAmbiguous)
+bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Action> &legalMoves, bool &isFileAmbiguous, bool &isRankAmbiguous)
 {
     bool ambiguous = false;
     isFileAmbiguous = false;
@@ -318,9 +318,9 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move> &le
     const Square from = from_sq(m);
     const Square to = to_sq(m);
 
-    for (Move move: legalMoves) {
-        const Square cur_from = from_sq(move);
-        const Square cur_to = to_sq(move);
+    for (Action move: legalMoves) {
+        const Square cur_from = from_sq(Move(move));
+        const Square cur_to = to_sq(Move(move));
         if (to == cur_to && from != cur_from && pos.piece_on(from) == pos.piece_on(cur_from)) {
             ambiguous = true;
             if (file_of(from) == file_of(cur_from)) {

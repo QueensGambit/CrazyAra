@@ -31,6 +31,7 @@
 #include "types.h"
 #include <blaze/Math.h>
 #include "constants.h"
+#include "../../state.h"
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
@@ -51,7 +52,7 @@ const float*  get_policy_data_batch(const size_t batchIdx, const float* policyPr
  * @param sideToMove Current side to move
  * @return Returns either MOVE_LOOK_UP or MOVE_LOOK_UP_MIRRORED
  */
-unordered_map<Move, size_t, std::hash<int>>& get_current_move_lookup(Color sideToMove);
+unordered_map<Action, size_t, std::hash<int>>& get_current_move_lookup(Color sideToMove);
 
 /**
  * @brief get_probs_of_move_list Returns an array in which entry relates to the probability for the given move list.
@@ -65,7 +66,7 @@ unordered_map<Move, size_t, std::hash<int>>& get_current_move_lookup(Color sideT
  * @param select_policy_from_plance Sets if the policy is encoded in policy map representation
  * @return policyProbSmall - A hybrid blaze vector which stores the probabilities for the given move list
  */
-void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Move> &legalMoves, Color sideToMove,
+void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, Color sideToMove,
                             bool normalize, DynamicVector<float> &policyProbSmall, bool select_policy_from_plance);
 
 void get_probs_of_moves(const float *data, const vector<Move>& legalMoves,

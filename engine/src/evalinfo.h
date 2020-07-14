@@ -46,7 +46,7 @@ struct EvalInfo
     chrono::steady_clock::time_point start;
     chrono::steady_clock::time_point end;
     std::vector<float> bestMoveQ;
-    std::vector<Move> legalMoves;
+    std::vector<Action> legalMoves;
     DynamicVector<float> policyProbSmall;
     DynamicVector<float> childNumberVisits;
     std::vector<int> centipawns;
@@ -55,8 +55,8 @@ struct EvalInfo
     size_t nodes;
     size_t nodesPreSearch;
     bool isChess960;
-    std::vector<std::vector<Move>> pv;
-    Move bestMove;
+    std::vector<std::vector<Action>> pv;
+    Action bestMove;
     std::vector<int> movesToMate;
     size_t tbHits;
 

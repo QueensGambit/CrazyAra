@@ -98,12 +98,12 @@ void SearchThread::set_is_running(bool value)
     isRunning = value;
 }
 
-NodeBackup SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck)
+NodeBackup SearchThread::add_new_node_to_tree(State* newState, Node* parentNode, size_t childIdx, bool inCheck)
 {
     mapWithMutex->mtx.lock();
-    unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newPos->hash_key());
+    unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
     if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
-            is_transposition_verified(it, newPos->get_state_info())) {
+            is_transposition_verified(it, newState)) {
         mapWithMutex->mtx.unlock();
         Node *newNode = new Node(*it->second);
         parentNode->add_transposition_child_node(newNode, childIdx);
@@ -111,7 +111,7 @@ NodeBackup SearchThread::add_new_node_to_tree(Board* newPos, Node* parentNode, s
     }
     mapWithMutex->mtx.unlock();
     assert(parentNode != nullptr);
-    Node *newNode = new Node(newPos, inCheck, parentNode, childIdx, searchSettings);
+    Node *newNode = new Node(newState, inCheck, parentNode, childIdx, searchSettings);
     // connect the Node to the parent
     parentNode->add_new_child_node(newNode, childIdx);
     return NODE_NEW_NODE;
@@ -155,11 +155,10 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
     }
 }
 
-Node* SearchThread::get_new_child_to_evaluate(Board* pos, size_t& childIdx, NodeDescription& description)
+Node* SearchThread::get_new_child_to_evaluate(State* pos, size_t& childIdx, NodeDescription& description)
 {
     rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
-    states = StateListPtr(new std::deque<StateInfo>(0)); // Clear old list from memory and create a new one
     Node* currentNode = rootNode;
 
     while (true) {
@@ -176,10 +175,8 @@ Node* SearchThread::get_new_child_to_evaluate(Board* pos, size_t& childIdx, Node
         Node* nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
         if (nextNode == nullptr) {
-            const bool inCheck = pos->gives_check(currentNode->get_move(childIdx));
-            // this new StateInfo will be freed from memory when 'pos' is freed
-            states->emplace_back();
-            pos->do_move(currentNode->get_move(childIdx), states->back());
+            const bool inCheck = pos->gives_check(currentNode->get_action(childIdx));
+            pos->do_action(currentNode->get_action(childIdx));
             description.type = add_new_node_to_tree(pos, currentNode, childIdx, inCheck);
             currentNode->increment_no_visit_idx();
             currentNode->unlock();
@@ -196,15 +193,14 @@ Node* SearchThread::get_new_child_to_evaluate(Board* pos, size_t& childIdx, Node
             return currentNode;
         }
         currentNode->unlock();
-        states->emplace_back();
-        pos->do_move(currentNode->get_move(childIdx), states->back());
+        pos->do_action(currentNode->get_action(childIdx));
         currentNode = nextNode;
     }
 }
 
-void SearchThread::set_root_pos(Board *value)
+void SearchThread::set_root_state(State* value)
 {
-    rootPos = value;
+    rootState = value;
 }
 
 size_t SearchThread::get_tb_hits() const
@@ -284,8 +280,9 @@ void SearchThread::create_mini_batch()
            !transpositionNodes->is_full() &&
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
-        Board newPos = Board(*rootPos);
-        parentNode = get_new_child_to_evaluate(&newPos, childIdx, description);
+        unique_ptr<State> newState = rootState->clone();
+
+        parentNode = get_new_child_to_evaluate(newState.get(), childIdx, description);
         Node* newNode = parentNode->get_child_node(childIdx);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
@@ -304,11 +301,11 @@ void SearchThread::create_mini_batch()
         else {  // NODE_NEW_NODE
             // fill a new board in the input_planes vector
             // we shift the index by NB_VALUES_TOTAL each time
-            board_to_planes(&newPos, newPos.number_repetitions(), true, inputPlanes+newNodes->size()*NB_VALUES_TOTAL);
+            newState->get_state_planes(true, inputPlanes+newNodes->size()*NB_VALUES_TOTAL);
             // save a reference newly created list in the temporary list for node creation
             // it will later be updated with the evaluation of the NN
             newNodes->add_element(newNode);
-            newNodeSideToMove->add_element(newPos.side_to_move());
+            newNodeSideToMove->add_element(Color(newState->side_to_move()));
         }
     }
 }
@@ -365,8 +362,8 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
     node->apply_temperature_to_prior_policy(temperature);
 }
 
-bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo) {
+bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const State* state) {
     return  it->second->has_nn_results() &&
-            it->second->plies_from_null() == stateInfo->pliesFromNull &&
-            stateInfo->repetition == 0;
+            it->second->plies_from_null() == state->steps_from_null() &&
+            state->number_repetitions() == 0;
 }

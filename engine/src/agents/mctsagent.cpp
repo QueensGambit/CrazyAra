@@ -45,7 +45,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     netSingle(netSingle),
     searchSettings(searchSettings),
     rootNode(nullptr),
-    rootPos(nullptr),
+    rootState(nullptr),
     oldestRootNode(nullptr),
     ownNextRoot(nullptr),
     opponentsNextRoot(nullptr),
@@ -110,9 +110,9 @@ void MCTSAgent::update_dirichlet_epsilon(float value)
     searchSettings->dirichletEpsilon = value;
 }
 
-Board *MCTSAgent::get_root_pos() const
+State *MCTSAgent::get_root_state() const
 {
-    return rootPos;
+    return rootState;
 }
 
 bool MCTSAgent::is_running() const
@@ -120,10 +120,10 @@ bool MCTSAgent::is_running() const
     return isRunning;
 }
 
-size_t MCTSAgent::init_root_node(Board *pos)
+size_t MCTSAgent::init_root_node(State *state)
 {
     size_t nodesPreSearch;
-    rootNode = get_root_node_from_tree(pos);
+    rootNode = get_root_node_from_tree(state);
 
     if (rootNode != nullptr) {
         // swap the states because now the old states are used
@@ -135,26 +135,26 @@ size_t MCTSAgent::init_root_node(Board *pos)
         info_string(nodesPreSearch, "nodes of former tree will be reused");
     }
     else {
-        create_new_root_node(pos);
+        create_new_root_node(state);
         nodesPreSearch = 0;
     }
     return nodesPreSearch;
 }
 
-Node *MCTSAgent::get_root_node_from_tree(Board *pos)
+Node *MCTSAgent::get_root_node_from_tree(State *state)
 {
     reusedFullTree = false;
 
     if (rootNode == nullptr) {
         return nullptr;
     }
-    if (same_hash_key(rootNode, pos)) {
+    if (same_hash_key(rootNode, state)) {
         info_string("reuse the full tree");
         reusedFullTree = true;
         return rootNode;
     }
 
-    if (same_hash_key(ownNextRoot, pos) && ownNextRoot->is_playout_node()) {
+    if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node()) {
         delete_sibling_subtrees(ownNextRoot, mapWithMutex.hashTable, gcThread);
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         if (rootNode->get_parent_node() != nullptr) {
@@ -163,7 +163,7 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
         gcThread.add_item_to_delete(rootNode);
         return ownNextRoot;
     }
-    if (same_hash_key(opponentsNextRoot, pos) && opponentsNextRoot->is_playout_node()) {
+    if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node()) {
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         if (opponentsNextRoot->get_parent_node() != nullptr) {
             gcThread.add_item_to_delete(opponentsNextRoot->get_parent_node());
@@ -181,19 +181,19 @@ Node *MCTSAgent::get_root_node_from_tree(Board *pos)
     return nullptr;
 }
 
-void MCTSAgent::create_new_root_node(Board *pos)
+void MCTSAgent::create_new_root_node(State* state)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
-    Node* dummyNode = new Node(pos, false, nullptr, 0, searchSettings);
+    Node* dummyNode = new Node(state, false, nullptr, 0, searchSettings);
     dummyNode->init_node_data(1);
-    rootNode = new Node(pos, false, dummyNode, 0, searchSettings);
+    rootNode = new Node(state, false, dummyNode, 0, searchSettings);
     dummyNode->add_new_child_node(rootNode, 0);
     oldestRootNode = rootNode;
-    board_to_planes(pos, pos->number_repetitions(), true, begin(inputPlanes));
+    state->get_state_planes(true, begin(inputPlanes));
     netSingle->predict(inputPlanes, &valueOutput, probOutputs.get());
     size_t tbHits = 0;
-    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs.get(), rootNode, tbHits, pos->side_to_move(), searchSettings);
+    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs.get(), rootNode, tbHits, Color(state->side_to_move()), searchSettings);
     rootNode->prepare_node_for_visits();
 }
 
@@ -232,7 +232,7 @@ void MCTSAgent::update_nps_measurement(float curNPS)
     }
 }
 
-void MCTSAgent::apply_move_to_tree(Move move, bool ownMove)
+void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)
 {
     if (!reusedFullTree && rootNode != nullptr && rootNode->is_playout_node()) {
         if (ownMove) {
@@ -279,10 +279,10 @@ void MCTSAgent::update_stats()
 
 void MCTSAgent::evaluate_board_state()
 {
-    evalInfo->nodesPreSearch = init_root_node(pos);
+    evalInfo->nodesPreSearch = init_root_node(state);
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
-    evalInfo->isChess960 = pos->is_chess960();
-    rootPos = pos;
+    evalInfo->isChess960 = state->is_chess960();
+    rootState = state;
     if (rootNode->get_number_child_nodes() == 1 && !rootNode->is_blank_root_node()) {
         info_string("Only single move available -> early stopping");
     }
@@ -315,11 +315,11 @@ void MCTSAgent::run_mcts_search()
     thread** threads = new thread*[searchSettings->threads];
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         searchThreads[i]->set_root_node(rootNode);
-        searchThreads[i]->set_root_pos(rootPos);
+        searchThreads[i]->set_root_state(rootState);
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
-    int curMovetime = timeManager->get_time_for_move(searchLimits, rootPos->side_to_move(), rootNode->plies_from_null()/2);
+    int curMovetime = timeManager->get_time_for_move(searchLimits, Color(rootState->side_to_move()), rootNode->plies_from_null()/2);
     threadManager = make_unique<ThreadManager>(rootNode, evalInfo, searchThreads, curMovetime, 250, overallNPS, lastValueEval,
                                                is_game_sceneario(searchLimits),
                                                can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
@@ -349,5 +349,5 @@ void MCTSAgent::print_root_node()
         info_string("You must do a search before you can print the root node statistics");
         return;
     }
-    rootNode->print_node_statistics(rootPos);
+    rootNode->print_node_statistics(rootState);
 }

@@ -59,7 +59,7 @@ public:
 
     void stop() override;
 
-    void apply_move_to_tree(Move move, bool ownMove) override;
+    void apply_move_to_tree(Action move, bool ownMove) override;
 };
 
 #endif // RAWNETAGENT_H

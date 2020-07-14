@@ -136,7 +136,7 @@ public:
  * @param isRankAmbiguous Returns if the move is rank ambiguous (two pieces share the same rank with same destination square)
  * @return True, in case of ambiguity else false
  */
-bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move>& legalMoves, bool& isFileAmbiguous, bool& isRankAmbiguous);
+bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Action>& legalMoves, bool& isFileAmbiguous, bool& isRankAmbiguous);
 
 /**
  * @brief pgnMove Converts a given move into PGN move notation.
@@ -150,7 +150,7 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Move>& le
  * @param bookMove Appends " {book}" in case the move was a book move
  * @return String representation of move in PGN format
  */
-std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Move>& legalMoves, bool leadsToWin=false, bool bookMove=false);
+std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Action>& legalMoves, bool leadsToWin=false, bool bookMove=false);
 
 /**
  * @brief leads_to_terminal Checks if the next states is a terminal state if you would apply the given move

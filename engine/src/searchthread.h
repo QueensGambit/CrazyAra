@@ -61,8 +61,8 @@ class SearchThread
 {
 private:
     Node* rootNode;
-    Board* rootPos;
-    StateListPtr states;
+    State* rootState;
+
     NeuralNetAPI* netBatch;
 
     // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
@@ -146,14 +146,14 @@ public:
      * @param inCheck Defines if the current position sets a player in check
      * @return Returns NODE_TRANSPOSITION if a tranpsosition node was added and NODE_NEW_NODE otherwise
      */
-    NodeBackup add_new_node_to_tree(Board* newPos, Node* parentNode, size_t childIdx, bool inCheck);
+    NodeBackup add_new_node_to_tree(State* newPos, Node* parentNode, size_t childIdx, bool inCheck);
 
     /**
      * @brief reset_tb_hits Sets the number of table hits to 0
      */
     void reset_stats();
 
-    void set_root_pos(Board *value);
+    void set_root_state(State* value);
     size_t get_tb_hits() const;
 
     size_t get_avg_depth();
@@ -186,7 +186,7 @@ private:
      * @param states States list which is used for 3-fold-repetition detection
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(Board* pos, size_t& childIdx, NodeDescription& description);
+    Node* get_new_child_to_evaluate(State* state, size_t& childIdx, NodeDescription& description);
 };
 
 void run_search_thread(SearchThread *t);
@@ -197,7 +197,7 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
 void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx);
 
-bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateInfo* stateInfo);
+bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const State* state);
 
 /**
  * @brief random_root_playout Uses random move exploreation from the ROOT

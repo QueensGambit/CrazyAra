@@ -29,6 +29,7 @@
 #define AGENT_H
 
 #include "../board.h"
+#include "../state.h"
 #include "../evalinfo.h"
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
@@ -49,7 +50,7 @@ private:
 protected:
     SearchLimits* searchLimits;
     PlaySettings* playSettings;
-    Board* pos;
+    State* state;
     EvalInfo* evalInfo;
     bool verbose;
 
@@ -74,7 +75,7 @@ public:
      * @param limits Pointer to the search limit
      * @param evalInfo Returns the evaluation information
      */
-    void set_search_settings(Board *pos, SearchLimits* searchLimits, EvalInfo* evalInfo);
+    void set_search_settings(State *state, SearchLimits* searchLimits, EvalInfo* evalInfo);
 
     /**
      * @brief stop Stops the current search is called after "stop" from the stdin
@@ -86,9 +87,13 @@ public:
      * @param move Move which has been played
      * @param ownMove Boolean indicating if it was CrazyAra's move
      */
-    virtual void apply_move_to_tree(Move move, bool ownMove) = 0;
+    virtual void apply_move_to_tree(Action move, bool ownMove) = 0;
 
-    Move get_best_move();
+    /**
+     * @brief get_best_action Returns the best action. It is assumed this function gets called after the search.
+     * @return Action
+     */
+    Action get_best_action();
 };
 
 void run_agent_thread(Agent* agent);
