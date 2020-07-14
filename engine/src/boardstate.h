@@ -59,8 +59,7 @@ public:
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck) const;
     bool gives_check(Action action) const;
     unique_ptr<State> clone() const;
-
-    friend std::ostream& operator<<(std::ostream& os, const BoardState& state);
+    void print(ostream& os) const;
 };
 
 #endif // BOARTSTATE_H

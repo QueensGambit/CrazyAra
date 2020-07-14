@@ -151,7 +151,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "benchmark")  benchmark(is);
         else if (token == "root")       mctsAgent->print_root_node();
         else if (token == "flip")       state->flip();
-        else if (token == "d")          cout << state << endl;
+        else if (token == "d")          cout << *(state.get()) << endl;
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);

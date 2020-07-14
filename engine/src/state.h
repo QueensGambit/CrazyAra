@@ -47,7 +47,6 @@ enum TerminalType {
 class State
 {
 public:
-
     /**
      * @brief legal_actions Returns all legal actions as a vector list
      * @return vector of legal actions
@@ -153,8 +152,23 @@ public:
      * @return deep copy
      */
     virtual std::unique_ptr<State> clone() const = 0;
+
+    /**
+     * @brief print Print method used for the operator <<
+     */
+    virtual void print(std::ostream&) const = 0;
+
+    /**
+     * @brief operator << Operator overload for <<
+     * @param os ostream object
+     * @param state state object
+     * @return ostream
+     */
+    friend std::ostream& operator<<(std::ostream& os, const State& state)
+    {
+        state.print(os);
+        return os;
+    }
 };
-
-
 
 #endif // GAMESTATE_H
