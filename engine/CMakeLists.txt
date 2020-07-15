@@ -5,10 +5,11 @@ project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
-option(USE_TENSORRT              "Build with TensorRT support"  OFF)
-option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  ON)
+option(USE_TENSORRT              "Build with TensorRT support"  ON)
+option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
+option(MODE_POMMERMAN            "Build with pommerman environment support"  OFF)
 
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
@@ -52,12 +53,15 @@ endif()
 file(GLOB source_files
     "3rdparty/Stockfish/src/syzygy/*.h"
     "3rdparty/Stockfish/src/syzygy/*.cpp"
-    "*.h"
-    "*.cpp"
-    "*.md"
     "3rdparty/Stockfish/src/*.h"
     "3rdparty/Stockfish/src/*.cpp"
     "3rdparty/catch-2.91/*.hpp"
+    "3rdparty/pomcpp/src/bboard/*.cpp"
+    "3rdparty/pomcpp/src/agents/*.cpp"
+    "3rdparty/PommerLearn/cpp/src/*.cpp"
+    "*.h"
+    "*.cpp"
+    "*.md"
     "src/*.h"
     "src/*.cpp"
     "src/tests/*.h"
@@ -90,6 +94,10 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
 
 find_package (Threads)
 include_directories("3rdparty/Stockfish/src")
+if (MODE_POMMERMAN)
+    include_directories("3rdparty/pomcpp/include")
+    include_directories("3rdparty/PommerLearn/cpp/include")
+endif()
 include_directories("3rdparty/catch-2.9.1")
 
 # incude dirent library seperately because it's missing in the stdlib
@@ -130,7 +138,7 @@ if (USE_MXNET)
     add_definitions(-DMXNET)
 endif()
 
-if (USE_RL)
+if (USE_RL OR MODE_POMMERMAN)
     message(STATUS "Enabled Reinforcement Learning functionality")
     if(DEFINED ENV{Z5_PATH})
         MESSAGE(STATUS "Z5_PATH set to: $ENV{Z5_PATH}")
@@ -144,7 +152,7 @@ if (USE_RL)
     add_definitions(-DUSE_RL)
 endif()
 
-if (FALSE) #USE_TENSORRT)
+if (USE_TENSORRT)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
     message(STATUS "Enabled TensorRT support")
     message(STATUS "TensorRT path: $ENV{TENSORRT_PATH}")
@@ -175,7 +183,7 @@ endif()
 
 add_executable(${PROJECT_NAME} ${source_files})
 
-if (FALSE) #USE_TENSORRT)
+if (USE_TENSORRT)
     target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
 endif()
 
