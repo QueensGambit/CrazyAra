@@ -39,6 +39,7 @@
 #include "constants.h"
 #include "state.h"
 #include "boardstate.h"
+#include "pommermanstate.h"
 #include "domain/variants.h"
 #include "optionsuci.h"
 #include "tests/benchmarkpositions.h"
@@ -96,7 +97,12 @@ void CrazyAra::welcome()
 
 void CrazyAra::uci_loop(int argc, char *argv[])
 {
+#ifdef MODE_POMMERMAN
+    unique_ptr<State> state = make_unique<PommermanState>();
+#else
     unique_ptr<State> state = make_unique<BoardState>();
+#endif
+
     string token, cmd;
     EvalInfo evalInfo;
     auto uiThread = make_shared<Thread>(0);

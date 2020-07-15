@@ -155,8 +155,9 @@ public:
 
     /**
      * @brief print Print method used for the operator <<
+     * @param os OS stream object
      */
-    virtual void print(std::ostream&) const = 0;
+    virtual void print(std::ostream& os) const = 0;
 
     /**
      * @brief operator << Operator overload for <<
