@@ -56,9 +56,6 @@ file(GLOB source_files
     "3rdparty/Stockfish/src/*.h"
     "3rdparty/Stockfish/src/*.cpp"
     "3rdparty/catch-2.91/*.hpp"
-    "3rdparty/pomcpp/src/bboard/*.cpp"
-    "3rdparty/pomcpp/src/agents/*.cpp"
-    "3rdparty/PommerLearn/cpp/src/*.cpp"
     "*.h"
     "*.cpp"
     "*.md"
@@ -95,6 +92,10 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
 find_package (Threads)
 include_directories("3rdparty/Stockfish/src")
 if (MODE_POMMERMAN)
+    file(GLOB pomcpp_files
+        "3rdparty/pomcpp/src/bboard/*.cpp"
+        "3rdparty/pomcpp/src/agents/*.cpp"
+        "3rdparty/PommerLearn/cpp/src/*.cpp")
     include_directories("3rdparty/pomcpp/include")
     include_directories("3rdparty/PommerLearn/cpp/include")
 endif()
