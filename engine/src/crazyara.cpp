@@ -38,8 +38,11 @@
 #include "domain/crazyhouse/constants.h"
 #include "constants.h"
 #include "state.h"
-#include "boardstate.h"
+#ifdef MODE_POMMERMAN
 #include "pommermanstate.h"
+#else
+#include "boardstate.h"
+#endif
 #include "domain/variants.h"
 #include "optionsuci.h"
 #include "tests/benchmarkpositions.h"
