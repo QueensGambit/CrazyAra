@@ -18,30 +18,19 @@
 */
 
 /*
- * @file: treemanager.cpp
- * Created on 24.07.2019
+ * @file: stateobj.h
+ * Created on 17.07.2020
  * @author: queensgambit
+ *
+ * Please describe what the content of this file is about
  */
 
-#include "treemanager.h"
-#include "misc.h"
-#include "../node.h"
+#ifndef STATEOBJ_H
+#define STATEOBJ_H
 
-Node* pick_next_node(Action move, const Node* parentNode)
-{
-    if (parentNode != nullptr) {
-        for (size_t idx = 0; idx < parentNode->get_no_visit_idx(); ++idx) {
-            if (parentNode->get_legal_action()[idx] == move) {
-                return parentNode->get_child_nodes()[idx];
-            }
-        }
-    }
-    return nullptr;
-}
+#include "state.h"
+#include "boardstate.h"
 
-bool same_hash_key(Node* node, StateObj* state)
-{
-    return node != nullptr &&
-            node->hash_key() == state->hash_key() &&
-            node->plies_from_null() == state->steps_from_null();
-}
+using StateObj = State<BoardState>;
+
+#endif // STATEOBJ_H

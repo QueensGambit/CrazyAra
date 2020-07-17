@@ -34,7 +34,7 @@
 
 #include <blaze/Math.h>
 #include "movegen.h"
-#include "state.h"
+#include "stateobj.h"
 
 #include "agents/config/searchsettings.h"
 #include "nodedata.h"
@@ -79,7 +79,7 @@ public:
      * @param move Move which led to current board state
      * @param searchSettings Pointer to the searchSettings
      */
-    Node(State *state,
+    Node(StateObj *state,
          bool inCheck,
          Node *parentNode,
          size_t childIdxForParent,
@@ -382,7 +382,7 @@ public:
     /**
      * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
      */
-    void print_node_statistics(const State* pos);
+    void print_node_statistics(const StateObj* pos);
 
 private:
     /**
@@ -395,7 +395,7 @@ private:
      * @param pos Current board position for this node
      * @param inCheck Boolean indicating if the king is in check
      */
-    void check_for_terminal(State* state, bool inCheck);
+    void check_for_terminal(StateObj* state, bool inCheck);
 
     /**
      * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and

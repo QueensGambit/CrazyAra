@@ -110,7 +110,7 @@ void MCTSAgent::update_dirichlet_epsilon(float value)
     searchSettings->dirichletEpsilon = value;
 }
 
-State *MCTSAgent::get_root_state() const
+StateObj *MCTSAgent::get_root_state() const
 {
     return rootState;
 }
@@ -120,7 +120,7 @@ bool MCTSAgent::is_running() const
     return isRunning;
 }
 
-size_t MCTSAgent::init_root_node(State *state)
+size_t MCTSAgent::init_root_node(StateObj *state)
 {
     size_t nodesPreSearch;
     rootNode = get_root_node_from_tree(state);
@@ -141,7 +141,7 @@ size_t MCTSAgent::init_root_node(State *state)
     return nodesPreSearch;
 }
 
-Node *MCTSAgent::get_root_node_from_tree(State *state)
+Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
 {
     reusedFullTree = false;
 
@@ -181,7 +181,7 @@ Node *MCTSAgent::get_root_node_from_tree(State *state)
     return nullptr;
 }
 
-void MCTSAgent::create_new_root_node(State* state)
+void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues

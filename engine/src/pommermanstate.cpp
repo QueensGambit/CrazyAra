@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#ifdef POMMERMAN_MODE
 #include "pommermanstate.h"
 #include "data_representation.h"
 #include "agents.hpp"
@@ -143,3 +144,4 @@ void PommermanState::print(std::ostream& os) const
 {
     os << InitialStateToString(env.GetState());
 }
+#endif

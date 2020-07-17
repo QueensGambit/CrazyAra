@@ -25,6 +25,7 @@
  * PommermanState implements the State interface for the Pommerman C++ environment.
  */
 
+#ifdef POMMERMAN_MODE
 #ifndef POMMERMANSTATE_H
 #define POMMERMANSTATE_H
 
@@ -65,3 +66,4 @@ public:
 };
 
 #endif // POMMERMANSTATE_H
+#endif

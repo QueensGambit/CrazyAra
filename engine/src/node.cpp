@@ -38,7 +38,7 @@ bool Node::is_sorted() const
     return sorted;
 }
 
-Node::Node(State* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
+Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
     parentNode(parentNode),
     legalActions(state->legal_actions()),
     key(state->hash_key()),
@@ -669,7 +669,7 @@ void Node::mark_as_terminal()
     init_node_data();
 }
 
-void Node::check_for_terminal(State* pos, bool inCheck)
+void Node::check_for_terminal(StateObj* pos, bool inCheck)
 {
     TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), inCheck);
 
@@ -1015,7 +1015,7 @@ float get_current_cput(float visits, const SearchSettings* searchSettings)
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
-void Node::print_node_statistics(const State* state)
+void Node::print_node_statistics(const StateObj* state)
 {
     const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
     const string filler = "-----+-------+--------------+-----------+------------+-------+------------";

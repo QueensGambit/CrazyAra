@@ -37,7 +37,7 @@
 #include "agent.h"
 #include "../evalinfo.h"
 #include "../node.h"
-#include "../state.h"
+#include "../stateobj.h"
 #include "../nn/neuralnetapi.h"
 #include "config/searchsettings.h"
 #include "config/searchlimits.h"
@@ -63,7 +63,7 @@ private:
     unique_ptr<TimeManager> timeManager;
 
     Node* rootNode;
-    State* rootState;
+    StateObj* rootState;
     // The oldes root node stores a reference to the node with with the current root nodes is based on.
     // This is used in the case of tree reusage. The old subtree cannot be cleared immediatly because of
     // stateInfos for 3-fold repetition, but can be cleared as soon as the tree cannot be reused anymore.
@@ -159,7 +159,7 @@ public:
      * @param value New value to set
      */
     void update_dirichlet_epsilon(float value);
-    State *get_root_state() const;
+    StateObj *get_root_state() const;
     bool is_running() const;
 
     /**
@@ -174,7 +174,7 @@ private:
      * @param pos Requested board position
      * @return Number of nodes that have already been explored before the serach
      */
-    inline size_t init_root_node(State* state);
+    inline size_t init_root_node(StateObj* state);
 
     /**
      * @brief get_new_root_node Returns the pointer of the new root node for the given position in the case
@@ -183,13 +183,13 @@ private:
      * @param pos Requested board position
      * @return Pointer to root node or nullptr
      */
-    inline Node* get_root_node_from_tree(State* state);
+    inline Node* get_root_node_from_tree(StateObj* state);
 
     /**
      * @brief create_new_root_node Creates a new root node for the given board position and requests the neural network for evaluation
      * @param pos Board position
      */
-    inline void create_new_root_node(State* state);
+    inline void create_new_root_node(StateObj* state);
 
     /**
      * @brief delete_old_tree Clear the old tree except the gameNodes (rootNode, opponentNextRoot)

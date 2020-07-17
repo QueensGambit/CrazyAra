@@ -29,7 +29,7 @@
 #define AGENT_H
 
 #include "../board.h"
-#include "../state.h"
+#include "../stateobj.h"
 #include "../evalinfo.h"
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
@@ -50,7 +50,7 @@ private:
 protected:
     SearchLimits* searchLimits;
     PlaySettings* playSettings;
-    State* state;
+    StateObj* state;
     EvalInfo* evalInfo;
     bool verbose;
 
@@ -75,7 +75,7 @@ public:
      * @param limits Pointer to the search limit
      * @param evalInfo Returns the evaluation information
      */
-    void set_search_settings(State *state, SearchLimits* searchLimits, EvalInfo* evalInfo);
+    void set_search_settings(StateObj *state, SearchLimits* searchLimits, EvalInfo* evalInfo);
 
     /**
      * @brief stop Stops the current search is called after "stop" from the stdin

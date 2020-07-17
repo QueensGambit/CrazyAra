@@ -98,7 +98,7 @@ void SearchThread::set_is_running(bool value)
     isRunning = value;
 }
 
-NodeBackup SearchThread::add_new_node_to_tree(State* newState, Node* parentNode, size_t childIdx, bool inCheck)
+NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, size_t childIdx, bool inCheck)
 {
     mapWithMutex->mtx.lock();
     unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
@@ -155,7 +155,7 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
     }
 }
 
-Node* SearchThread::get_new_child_to_evaluate(State* pos, size_t& childIdx, NodeDescription& description)
+Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, NodeDescription& description)
 {
     rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
@@ -198,7 +198,7 @@ Node* SearchThread::get_new_child_to_evaluate(State* pos, size_t& childIdx, Node
     }
 }
 
-void SearchThread::set_root_state(State* value)
+void SearchThread::set_root_state(StateObj* value)
 {
     rootState = value;
 }
@@ -280,7 +280,7 @@ void SearchThread::create_mini_batch()
            !transpositionNodes->is_full() &&
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
-        unique_ptr<State> newState = rootState->clone();
+        unique_ptr<StateObj> newState = rootState->clone();
 
         parentNode = get_new_child_to_evaluate(newState.get(), childIdx, description);
         Node* newNode = parentNode->get_child_node(childIdx);
@@ -362,7 +362,7 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
     node->apply_temperature_to_prior_policy(temperature);
 }
 
-bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const State* state) {
+bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateObj* state) {
     return  it->second->has_nn_results() &&
             it->second->plies_from_null() == state->steps_from_null() &&
             state->number_repetitions() == 0;
