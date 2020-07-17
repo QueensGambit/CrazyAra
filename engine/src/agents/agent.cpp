@@ -57,7 +57,7 @@ Agent::Agent(PlaySettings* playSettings, bool verbose):
 {
 }
 
-void Agent::set_search_settings(State *pos, SearchLimits *searchLimits, EvalInfo* evalInfo)
+void Agent::set_search_settings(StateObj *pos, SearchLimits *searchLimits, EvalInfo* evalInfo)
 {
     this->state = pos;
     this->searchLimits = searchLimits;

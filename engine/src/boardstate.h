@@ -32,7 +32,7 @@
 #include "state.h"
 #include "board.h"
 
-class BoardState : public State
+class BoardState : public State<BoardState>
 {
 private:
     Board board;
@@ -44,7 +44,7 @@ public:
 
     // State interface
     vector<Action> legal_actions() const;
-    State &set(const string &fenStr, bool isChess960, int variant);
+    void set(const string &fenStr, bool isChess960, int variant);
     void get_state_planes(bool normalize, float *inputPlanes) const;
     unsigned int steps_from_null() const;
     bool is_chess960() const;
@@ -58,8 +58,8 @@ public:
     string action_to_san(Action action, const vector<Action>& legalActions) const;
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck) const;
     bool gives_check(Action action) const;
-    unique_ptr<State> clone() const;
     void print(ostream& os) const;
+    unique_ptr<BoardState> clone() const override;
 };
 
 #endif // BOARTSTATE_H

@@ -101,9 +101,9 @@ void CrazyAra::welcome()
 void CrazyAra::uci_loop(int argc, char *argv[])
 {
 #ifdef MODE_POMMERMAN
-    unique_ptr<State> state = make_unique<PommermanState>();
+    unique_ptr<StateObj> state = make_unique<PommermanState>();
 #else
-    unique_ptr<State> state = make_unique<BoardState>();
+    unique_ptr<StateObj> state = make_unique<BoardState>();
 #endif
 
     string token, cmd;
@@ -174,7 +174,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     wait_to_finish_last_search();
 }
 
-void CrazyAra::go(State* state, istringstream &is,  EvalInfo& evalInfo) {
+void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
     searchLimits.reset();
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
     searchLimits.nodes = Options["Nodes"];
@@ -215,7 +215,7 @@ void CrazyAra::go(State* state, istringstream &is,  EvalInfo& evalInfo) {
 
 void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
 {
-    unique_ptr<State> state = make_unique<BoardState>();
+    unique_ptr<StateObj> state = make_unique<BoardState>();
 
     string token, cmd;
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
@@ -237,7 +237,7 @@ void CrazyAra::wait_to_finish_last_search()
     }
 }
 
-void CrazyAra::position(State* state, istringstream& is)
+void CrazyAra::position(StateObj* state, istringstream& is)
 {
     wait_to_finish_last_search();
 

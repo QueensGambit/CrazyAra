@@ -48,12 +48,11 @@ vector<Action> BoardState::legal_actions() const
     return legalMoves;
 }
 
-State &BoardState::set(const string &fenStr, bool isChess960, int variant)
+void BoardState::set(const string &fenStr, bool isChess960, int variant)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
     board.set(fenStr, isChess960, Variant(variant), &states->back(), nullptr);
-    return *this;
 }
 
 void BoardState::get_state_planes(bool normalize, float *inputPlanes) const
@@ -152,12 +151,12 @@ bool BoardState::gives_check(Action action) const
     return board.gives_check(Move(action));
 }
 
-unique_ptr<State> BoardState::clone() const
-{
-    return make_unique<BoardState>(*this);
-}
-
 void BoardState::print(ostream &os) const
 {
     os << board;
+}
+
+unique_ptr<BoardState> BoardState::clone() const
+{
+    return make_unique<BoardState>(*this);
 }
