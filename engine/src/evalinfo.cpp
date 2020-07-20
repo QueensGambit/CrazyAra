@@ -47,7 +47,7 @@ void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, siz
        << " tbhits " << evalInfo.tbHits
        << " pv";
     for (Action move: evalInfo.pv[idx]) {
-        os << " " << UCI::move(Move(move), evalInfo.isChess960);
+        os << " " << action_to_uci(move, evalInfo.isChess960);
     }
     os << endl;
 }

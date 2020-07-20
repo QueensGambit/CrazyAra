@@ -288,8 +288,7 @@ void CrazyAra::benchmark(istringstream &is)
 
     for (TestPosition pos : benchmark.positions) {
         go(pos.fen, goCommand, evalInfo);
-        // TODO: Remove cast
-        string uciMove = UCI::move(Move(evalInfo.bestMove), false);
+        string uciMove = action_to_uci(evalInfo.bestMove, false);
         if (uciMove != pos.blunderMove) {
             cout << "passed      -- " << uciMove << " != " << pos.blunderMove << endl;
             passedCounter++;

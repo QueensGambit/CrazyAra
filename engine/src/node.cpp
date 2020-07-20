@@ -1033,7 +1033,7 @@ void Node::print_node_statistics(const StateObj* state)
         const Action move = get_legal_action()[childIdx];
         cout << " " << setfill('0') << setw(3) << childIdx << " | " << setfill(' ');
         if (state == nullptr) {
-            cout << setw(5) << UCI::move(Move(move), false) << " | ";
+            cout << setw(5) << action_to_uci(move, false) << " | ";
         }
         else {
             cout << setw(5) << state->action_to_san(move, get_legal_action()) << " | ";

@@ -18,22 +18,13 @@
 */
 
 /*
- * @file: stateobj.h
+ * @file: stateobj.cpp
  * Created on 17.07.2020
  * @author: queensgambit
- *
- * This file defines the wrapper function and classes which are used during MCTS.
- * Edit this file and its corresponding source file to activate a custom environment.
  */
 
-#ifndef STATEOBJ_H
-#define STATEOBJ_H
+#include "stateobj.h"
 
-#include "state.h"
-#include "boardstate.h"
-
-using StateObj = State<BoardState>;
-
-std::string action_to_uci(Action action, bool is960);
-
-#endif // STATEOBJ_H
+std::string action_to_uci(Action action, bool is960) {
+    UCI::move(Move(action), is960);
+}

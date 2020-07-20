@@ -77,7 +77,7 @@ void Agent::perform_action()
     set_best_move(state->steps_from_null());
     info_score(*evalInfo);
     info_string(state->fen());
-    info_bestmove(UCI::move(Move(evalInfo->bestMove), state->is_chess960()));
+    info_bestmove(action_to_uci(evalInfo->bestMove, state->is_chess960()));
 }
 
 void run_agent_thread(Agent* agent)
