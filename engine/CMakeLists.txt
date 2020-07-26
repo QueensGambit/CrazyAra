@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
@@ -9,7 +9,12 @@ option(USE_TENSORRT              "Build with TensorRT support"  ON)
 option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
+# enable a single mode for different model input / outputs
+option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
+option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
+option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 option(MODE_POMMERMAN            "Build with pommerman environment support"  OFF)
+
 
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
@@ -19,11 +24,6 @@ add_definitions(-DANTI)
 add_definitions(-DATOMIC)
 add_definitions(-DHORDE)
 add_definitions(-DRACE)
-
-# enable a single mode for different model input / outputs
-add_definitions(-DMODE_CRAZYHOUSE)
-#add_definitions(-DMODE_LICHESS)
-#add_definitions(-DMODE_CHESS)
 
 if (BUILD_TESTS)
     add_definitions(-DBUILD_TESTS)
@@ -188,7 +188,7 @@ if (USE_TENSORRT)
     target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
 endif()
 
-if (USE_RL)
+if (USE_RL OR MODE_POMMERMAN)
     # include filesystem (needed for z5)
     target_link_libraries(${PROJECT_NAME} stdc++fs)
 endif()
