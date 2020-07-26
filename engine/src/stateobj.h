@@ -30,9 +30,18 @@
 #define STATEOBJ_H
 
 #include "state.h"
+#ifdef MODE_POMMERMAN
+#include "pommermanstate.h"
+#else
 #include "boardstate.h"
+#endif
 
-using StateObj = State<BoardState>;
+#ifdef MODE_POMMERMAN
+    using SelectedState = PommermanState;
+#else
+    using SelectedState = BoardState;
+#endif
+using StateObj = State<SelectedState>;
 
 std::string action_to_uci(Action action, bool is960);
 

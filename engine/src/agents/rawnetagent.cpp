@@ -75,11 +75,11 @@ void RawNetAgent::evaluate_board_state()
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];
 
-    evalInfo->centipawns[0] = value_to_centipawn(value);
+    evalInfo->centipawns.emplace_back(value_to_centipawn(value));
     evalInfo->depth = 1;
     evalInfo->nodes = 1;
     evalInfo->isChess960 = state->is_chess960();
-    evalInfo->pv[0] = { bestmove };
+    evalInfo->pv.push_back({ bestmove });
 }
 
 void RawNetAgent::stop()

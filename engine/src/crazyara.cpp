@@ -38,11 +38,6 @@
 #include "domain/crazyhouse/constants.h"
 #include "constants.h"
 #include "state.h"
-#ifdef MODE_POMMERMAN
-#include "pommermanstate.h"
-#else
-#include "boardstate.h"
-#endif
 #include "domain/variants.h"
 #include "optionsuci.h"
 #include "tests/benchmarkpositions.h"
@@ -100,12 +95,7 @@ void CrazyAra::welcome()
 
 void CrazyAra::uci_loop(int argc, char *argv[])
 {
-#ifdef MODE_POMMERMAN
-    unique_ptr<StateObj> state = make_unique<PommermanState>();
-#else
-    unique_ptr<StateObj> state = make_unique<BoardState>();
-#endif
-
+    unique_ptr<StateObj> state = make_unique<SelectedState>();
     string token, cmd;
     EvalInfo evalInfo;
     auto uiThread = make_shared<Thread>(0);
@@ -178,7 +168,6 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
     searchLimits.reset();
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
     searchLimits.nodes = Options["Nodes"];
-    evalInfo.multiPV = searchSettings.multiPV;
 
     string token;
     bool ponderMode = false;
@@ -215,7 +204,7 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
 
 void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
 {
-    unique_ptr<StateObj> state = make_unique<BoardState>();
+    unique_ptr<StateObj> state = make_unique<SelectedState>();
 
     string token, cmd;
     variant = UCI::variant_from_name(Options["UCI_Variant"]);

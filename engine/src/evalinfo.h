@@ -42,7 +42,6 @@ using blaze::DynamicVector;
 
 struct EvalInfo
 {
-    size_t multiPV;
     chrono::steady_clock::time_point start;
     chrono::steady_clock::time_point end;
     std::vector<float> bestMoveQ;
@@ -77,8 +76,9 @@ int value_to_centipawn(float value);
  * @param evalInfo Evaluation infomration struct
  * @param rootNode Root node of the search tree
  * @param selDepth Selective depth, in this case the maximum reached depth
+ * @param multiPV Number of pv lines (default=1)
  */
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth);
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV);
 
 /**
  * @brief set_eval_for_single_pv Sets the eval struct pv line and score for a single pv

@@ -148,7 +148,7 @@ void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
     apply_permutation_in_place(indices, p);
 }
 
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth)
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV)
 {
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
@@ -158,7 +158,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     evalInfo.legalMoves = rootNode->get_legal_action();
 
     vector<size_t> indices;
-    size_t maxIdx = min(evalInfo.multiPV, evalInfo.legalMoves.size());
+    size_t maxIdx = min(multiPV, evalInfo.legalMoves.size());
 
     if (maxIdx > 1) {
         sort_eval_lists(evalInfo, indices);
@@ -175,7 +175,13 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
         }
     }
 
-    evalInfo.depth = evalInfo.pv[0].size();
+    // rawAgent has no pv line and only single best move
+    if (evalInfo.pv.size() == 0) {
+        evalInfo.depth = 1;
+    }
+    else {
+        evalInfo.depth = evalInfo.pv[0].size();
+    }
     evalInfo.selDepth = selDepth;
     evalInfo.nodes = get_node_count(rootNode);
     evalInfo.tbHits = tbHits;
