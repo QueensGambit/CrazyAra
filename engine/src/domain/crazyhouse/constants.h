@@ -153,13 +153,6 @@ const int NB_LABELS_POLICY_MAP = NB_CHANNELS_POLICY_MAP * BOARD_HEIGHT * BOARD_W
 #define RANDOM_MOVE_THRESH 10000
 #define Q_INIT -1.0f
 
-enum Result {
-    DRAWN = 0,
-    WHITE_WIN,
-    BLACK_WIN,
-    NO_RESULT,
-};
-
 #define TERMINAL_NODE_CACHE 8192
 
 const std::string result[] = {"1/2-1/2", "1-0", "0-1"};

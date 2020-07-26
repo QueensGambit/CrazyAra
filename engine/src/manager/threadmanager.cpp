@@ -27,13 +27,14 @@
 #include "../util/blazeutil.h"
 #include <chrono>
 
-ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, float overallNPS, float lastValueEval, bool inGame, bool canProlong):
+ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, size_t multiPV, float overallNPS, float lastValueEval, bool inGame, bool canProlong):
     rootNode(rootNode),
     evalInfo(evalInfo),
     searchThreads(searchThreads),
     movetimeMS(movetimeMS),
     remainingMoveTimeMS(movetimeMS),
     updateIntervalMS(updateIntervalMS),
+    multiPV(multiPV),
     overallNPS(overallNPS),
     lastValueEval(lastValueEval),
     checkedContinueSearch(0),
@@ -48,7 +49,7 @@ void ThreadManager::await_kill_signal()
     while(isRunning) {
         if (wait_for(chrono::milliseconds(updateIntervalMS*4))){
             evalInfo->end = chrono::steady_clock::now();
-            update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads));
+            update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV);
             info_score(*evalInfo);
         }
         else {
@@ -81,7 +82,7 @@ void ThreadManager::stop_search_based_on_limits()
                 // log every fourth iteration
                 if (var % 4 == 3) {
                     evalInfo->end = chrono::steady_clock::now();
-                    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads));
+                    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV);
                     info_score(*evalInfo);
                 }
             }

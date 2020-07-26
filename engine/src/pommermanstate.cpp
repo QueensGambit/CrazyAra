@@ -93,6 +93,11 @@ void PommermanState::do_action(Action action)
     }
 }
 
+void PommermanState::undo_action(Action action) {
+    // TODO
+}
+
+
 unsigned int PommermanState::number_repetitions() const
 {
     return 0;
@@ -129,6 +134,12 @@ TerminalType PommermanState::is_terminal(size_t numberLegalMoves, bool inCheck) 
     // TODO
     return TERMINAL_NONE;
 }
+
+Result PommermanState::check_result(bool inCheck) const
+{
+    // TODO
+}
+
 
 bool PommermanState::gives_check(Action action) const
 {

@@ -50,13 +50,15 @@ public:
     bool is_chess960() const;
     string fen() const;
     void do_action(Action action);
+    void undo_action(Action action);
     unsigned int number_repetitions() const;
     int side_to_move() const;
     Key hash_key() const;
     void flip();
     Action uci_to_action(string& uciStr) const;
-    string action_to_san(Action action, const vector<Action>& legalActions) const;
+    string action_to_san(Action action, const vector<Action>& legalActions, bool leadsToWin, bool bookMove) const;
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck) const;
+    Result check_result(bool inCheck) const;
     bool gives_check(Action action) const;
     void print(ostream& os) const;
     unique_ptr<BoardState> clone() const override;

@@ -81,6 +81,11 @@ void BoardState::do_action(Action action)
     board.do_move(Move(action), states->back());
 }
 
+void BoardState::undo_action(Action action)
+{
+    board.undo_move(Move(action));
+}
+
 unsigned int BoardState::number_repetitions() const
 {
     return board.number_repetitions();
@@ -106,9 +111,9 @@ Action BoardState::uci_to_action(string& uciStr) const
     return Action(UCI::to_move(board, uciStr));
 }
 
-string BoardState::action_to_san(Action action, const vector<Action>& legalActions) const
+string BoardState::action_to_san(Action action, const vector<Action>& legalActions, bool leadsToWin, bool bookMove) const
 {
-    return pgn_move(Move(action), this->is_chess960(), board, legalActions);
+    return pgn_move(Move(action), this->is_chess960(), board, legalActions, leadsToWin, bookMove);
 }
 
 TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck) const
@@ -144,6 +149,11 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck) cons
 
     // normal game position
     return TERMINAL_NONE;
+}
+
+Result BoardState::check_result(bool inCheck) const
+{
+    return get_result(board, inCheck);
 }
 
 bool BoardState::gives_check(Action action) const

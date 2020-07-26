@@ -53,6 +53,7 @@ public:
     bool is_chess960() const;
     std::string fen() const;
     void do_action(Action action);
+    void undo_action(Action action);
     unsigned int number_repetitions() const;
     int side_to_move() const;
     Key hash_key() const;
@@ -60,6 +61,7 @@ public:
     Action uci_to_action(std::string &uciStr) const;
     std::string action_to_san(Action action, const std::vector<Action> &legalActions) const;
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck) const;
+    Result check_result(bool inCheck) const;
     bool gives_check(Action action) const;
     std::unique_ptr<State> clone() const;
     void print(std::ostream& os) const;

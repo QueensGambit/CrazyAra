@@ -45,10 +45,30 @@ enum TerminalType {
     TERMINAL_NONE
 };
 
+enum Result {
+    DRAWN = 0,
+    WHITE_WIN,
+    BLACK_WIN,
+    NO_RESULT,
+};
+
 template <class T>
 class State
 {
 public:
+
+    /**
+     * @brief leads_to_terminal Checks if a given action leads to a terminal state
+     * @param a Given action
+     * @return true if leads to terminal, else false
+     */
+    bool leads_to_terminal(Action a)
+    {
+        std::unique_ptr<State> posCheckTerminal = static_cast<T*>(this)->clone();
+        bool givesCheck = posCheckTerminal->gives_check(a);
+        posCheckTerminal->do_action(a);
+        return posCheckTerminal->check_result(givesCheck) != NO_RESULT;
+    }
 
     /**
      * @brief legal_actions Returns all legal actions as a vector list
@@ -111,6 +131,14 @@ public:
     }
 
     /**
+     * @brief undo_action Undos a given action
+     * @param action Type of action to apply. It is assumed that the action is discrete and integer format
+     */
+    void undo_action(Action action) {
+        static_cast<T*>(this)->undo_action(action);
+    }
+
+    /**
      * @brief number_repetitions Returns the number of times this state has already occured in the current episode
      * @return int
      */
@@ -154,10 +182,12 @@ public:
      * @brief action_to_san Converts a given action to SAN (pgn move notation) usign the current position and legal moves
      * @param action Given action
      * @param legalActions List of legal moves for the current position
+     * @param leadsToWin Indicator which marks action as a terminating action (usually indicated with suffix #).
+     * @param bookMove Indicator which marks action as book move
      * @return SAN string
      */
-    std::string action_to_san(Action action, const std::vector<Action>& legalActions) const {
-        return static_cast<const T*>(this)->action_to_san(action, legalActions);
+    std::string action_to_san(Action action, const std::vector<Action>& legalActions, bool leadsToWin=false, bool bookMove=false) const {
+        return static_cast<const T*>(this)->action_to_san(action, legalActions, leadsToWin, bookMove);
     }
 
     /**
@@ -169,6 +199,16 @@ public:
      */
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck) const {
         return static_cast<const T*>(this)->is_terminal(numberLegalMoves, inCheck);
+    }
+
+    /**
+     * @brief check_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
+     * @param inCheck Determines if a king in the current position is in check (needed to differ between checkmate and stalemate).
+     * It can be computed by `gives_check(<last-move-before-current-position>)`.
+     * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
+     */
+    Result check_result(bool inCheck) const {
+        return static_cast<const T*>(this)->check_result(inCheck);
     }
 
     /**
