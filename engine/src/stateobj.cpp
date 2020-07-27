@@ -26,5 +26,10 @@
 #include "stateobj.h"
 
 std::string action_to_uci(Action action, bool is960) {
+#ifdef MODE_POMMERMAN
+    // TDOO
+    return "";
+#else
     return UCI::move(Move(action), is960);
+#endif
 }

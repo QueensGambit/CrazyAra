@@ -23,7 +23,7 @@
  * @author: queensgambit
  */
 
-#ifdef POMMERMAN_MODE
+#ifdef MODE_POMMERMAN
 #include "pommermanstate.h"
 #include "data_representation.h"
 #include "agents.hpp"
@@ -37,7 +37,6 @@ PommermanState::PommermanState():
     for (size_t idx = 0; idx < numberAgents; ++idx) {
         agentActions[idx] = bboard::Move::IDLE;
     }
-
     agents::RandomAgent* r = new agents::RandomAgent;
     std::array<bboard::Agent*, 4> agents = {r,r,r,r};
     env.MakeGame(agents);
@@ -59,13 +58,14 @@ std::vector<Action> PommermanState::legal_actions() const
             Action(bboard::Move::BOMB)};
 }
 
-State &PommermanState::set(const std::string &fenStr, bool isChess960, int variant)
+void PommermanState::set(const std::string &fenStr, bool isChess960, int variant)
 {
     // TODO
 }
 
 void PommermanState::get_state_planes(bool normalize, float *inputPlanes) const
 {
+    // TODO
     StateToPlanes(&env.GetState(), 0, inputPlanes);
 }
 
@@ -124,7 +124,7 @@ Action PommermanState::uci_to_action(std::string &uciStr) const
     return Action(bboard::Move::IDLE);
 }
 
-std::string PommermanState::action_to_san(Action action, const std::vector<Action> &legalActions) const
+std::string PommermanState::action_to_san(Action action, const std::vector<Action>& legalActions, bool leadsToWin, bool bookMove) const
 {
     return "";
 }
@@ -146,13 +146,14 @@ bool PommermanState::gives_check(Action action) const
     return false;
 }
 
-std::unique_ptr<State> PommermanState::clone() const
+std::unique_ptr<PommermanState> PommermanState::clone() const
 {
     // TODO
 }
 
 void PommermanState::print(std::ostream& os) const
 {
+    // TODO
     os << InitialStateToString(env.GetState());
 }
 #endif

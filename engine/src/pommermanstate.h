@@ -25,7 +25,7 @@
  * PommermanState implements the State interface for the Pommerman C++ environment.
  */
 
-#ifdef POMMERMAN_MODE
+#ifdef MODE_POMMERMAN
 #ifndef POMMERMANSTATE_H
 #define POMMERMANSTATE_H
 
@@ -33,7 +33,7 @@
 #include "bboard.hpp"
 
 
-class PommermanState : public State
+class PommermanState : public State<PommermanState>
 {
 public:
     PommermanState();
@@ -47,7 +47,7 @@ public:
     // State interface
 public:
     std::vector<Action> legal_actions() const;
-    State &set(const std::string &fenStr, bool isChess960, int variant);
+    void set(const std::string &fenStr, bool isChess960, int variant);
     void get_state_planes(bool normalize, float *inputPlanes) const;
     unsigned int steps_from_null() const;
     bool is_chess960() const;
@@ -59,12 +59,12 @@ public:
     Key hash_key() const;
     void flip();
     Action uci_to_action(std::string &uciStr) const;
-    std::string action_to_san(Action action, const std::vector<Action> &legalActions) const;
+    std::string action_to_san(Action action, const std::vector<Action>& legalActions, bool leadsToWin, bool bookMove) const;
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck) const;
     Result check_result(bool inCheck) const;
     bool gives_check(Action action) const;
-    std::unique_ptr<State> clone() const;
     void print(std::ostream& os) const;
+    std::unique_ptr<PommermanState> clone() const;
 };
 
 #endif // POMMERMANSTATE_H
