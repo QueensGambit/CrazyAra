@@ -57,24 +57,6 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
     enableTensorrt(enableTensorrt)
 {
     deviceName = ctx + string("_") + to_string(deviceID);
-
-    const vector<string>& files = get_directory_files(modelDirectory);
-    for (const string& file : files) {
-        size_t pos_json = file.find(".json");
-        size_t pos_params = file.find(".params");
-        if (pos_json != string::npos) {
-            modelFilePath = modelDirectory + file;
-        }
-        else if (pos_params != string::npos) {
-            paramterFilePath = modelDirectory + file;
-            modelName = file.substr(0, file.length()-string(".params").length());
-        }
-    }
-    if (modelFilePath == "" || paramterFilePath == "") {
-        throw invalid_argument( "The given directory at " + modelDirectory
-                                     + " doesn't contain a .json and a .params file.");
-    }
-    info_string("json file:", modelFilePath);
 }
 
 bool NeuralNetAPI::is_policy_map() const

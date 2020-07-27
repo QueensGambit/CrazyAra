@@ -59,7 +59,7 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
 							   
     vector<string> uciMoves2 = {};
 	
-#elif defined MODE_CRAZYHOUSE
+#else
     vector<string> uciMoves = {"e2e4", "g8f6", "b1c3", "e7e5", "g1f3", "b8c6", "f1c4", "f8e7",
                                "d2d4", "e5d4", "f3d4", "d7d5", "d4c6", "b7c6", "e4d5", "N@h4",
                                "h1g1", "e8g8", "P@h6", "g7h6", "c1h6", "P@g3", "h2g3", "P@h2",

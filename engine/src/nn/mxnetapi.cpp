@@ -34,6 +34,24 @@ MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
     NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, tensorRT),
     inputShape(Shape(miniBatchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH))
 {
+    const vector<string>& files = get_directory_files(modelDirectory + "/");
+    for (const string& file : files) {
+        size_t pos_json = file.find(".json");
+        size_t pos_params = file.find(".params");
+        if (pos_json != string::npos) {
+            modelFilePath = modelDirectory + file;
+        }
+        else if (pos_params != string::npos) {
+            paramterFilePath = modelDirectory + file;
+            modelName = file.substr(0, file.length()-string(".params").length());
+        }
+    }
+    if (modelFilePath == "" || paramterFilePath == "") {
+        throw invalid_argument( "The given directory at " + modelDirectory
+                                     + " doesn't contain a .json and a .params file.");
+    }
+    info_string("json file:", modelFilePath);
+
     if (ctx == "cpu" || ctx == "CPU") {
         globalCtx = Context::cpu();
     } else if (ctx == "gpu" || ctx == "GPU") {
