@@ -36,20 +36,15 @@
 #include "../util/randomgen.h"
 #include "../util/chess960position.h"
 
-void play_move_and_update(const EvalInfo& evalInfo, Board* position, StateListPtr& states, GamePGN& gamePGN, Result& gameResult)
+
+void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& gamePGN, Result& gameResult)
 {
-    states->emplace_back();
-    bool givesCheck = position->gives_check(evalInfo.bestMove);
-    position->do_move(evalInfo.bestMove, states->back(), givesCheck);
-    gameResult = get_result(*position, givesCheck);
-    position->undo_move(evalInfo.bestMove);  // undo and later redo move to get PGN move with result
-    gamePGN.gameMoves.push_back(pgn_move(evalInfo.bestMove,
-                                        position->is_chess960(),
-                                        *position,
-                                        evalInfo.legalMoves,
-                                        is_win(gameResult)));
-    states->emplace_back();
-    position->do_move(evalInfo.bestMove, states->back(), givesCheck);
+    bool givesCheck = state->gives_check(evalInfo.bestMove);
+    state->do_action(evalInfo.bestMove);
+    gameResult = state->check_result(givesCheck);
+    state->undo_action(evalInfo.bestMove); // undo and later redo move to get PGN move with result
+    gamePGN.gameMoves.push_back(state->action_to_san(evalInfo.bestMove, evalInfo.legalMoves, is_win(gameResult)));
+    state->do_action(evalInfo.bestMove);
 }
 
 
@@ -111,13 +106,13 @@ bool SelfPlay::is_resignation_allowed() {
     return float(rand()) / RAND_MAX < rlSettings->resignProbability;
 }
 
-void SelfPlay::check_for_resignation(const bool allowResingation, const EvalInfo &evalInfo, const Position *position, Result &gameResult)
+void SelfPlay::check_for_resignation(const bool allowResingation, const EvalInfo &evalInfo, const StateObj* state, Result &gameResult)
 {
     if (!allowResingation) {
         return;
     }
-    if (evalInfo.bestMoveQ < rlSettings->resignThreshold) {
-        if (position->side_to_move() == WHITE) {
+    if (evalInfo.bestMoveQ[0] < rlSettings->resignThreshold) {
+        if (state->side_to_move() == WHITE) {
             gameResult = WHITE_WIN;
         }
         else {
@@ -137,15 +132,13 @@ void SelfPlay::reset_search_params(bool isQuickSearch)
 
 void SelfPlay::generate_game(Variant variant, bool verbose)
 {
-    states = StateListPtr(new std::deque<StateInfo>(0));
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
 
     size_t ply = size_t(random_exponential<float>(1.0f/playSettings->meanInitPly) + 0.5f);
     ply = clip_ply(ply, playSettings->maxInitPly);
 
     srand(unsigned(int(time(nullptr))));
-    Board* position = init_starting_pos_from_raw_policy(*rawAgent, ply, gamePGN, variant, states,
-                                                        rlSettings->rawPolicyProbabilityTemperature);
+    unique_ptr<StateObj> state= init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, rlSettings->rawPolicyProbabilityTemperature);
     EvalInfo evalInfo;
     Result gameResult;
     exporter->new_game();
@@ -163,7 +156,7 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
             mctsAgent->update_dirichlet_epsilon(rlSettings->quickDirichletEpsilon);
         }
         adjust_node_count(searchLimits, randInt);
-        mctsAgent->set_search_settings(position, searchLimits, &evalInfo);
+        mctsAgent->set_search_settings(state.get(), searchLimits, &evalInfo);
         mctsAgent->perform_action();
         if (rlSettings->reuseTreeForSelpay) {
             mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
@@ -173,12 +166,12 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
             if (rlSettings->lowPolicyClipThreshold > 0) {
                 sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
             }
-            exporter->save_sample(position, evalInfo);
+            exporter->save_sample(state.get(), evalInfo);
             ++generatedSamples;
         }
-        play_move_and_update(evalInfo, position, states, gamePGN, gameResult);
+        play_move_and_update(evalInfo, state.get(), gamePGN, gameResult);
         reset_search_params(isQuickSearch);
-        check_for_resignation(allowResignation, evalInfo, position, gameResult);
+        check_for_resignation(allowResignation, evalInfo, state.get(), gameResult);
     }
     while(gameResult == NO_RESULT);
 
@@ -187,7 +180,7 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
 
     set_game_result_to_pgn(gameResult);
     write_game_to_pgn(filenamePGNSelfplay, verbose);
-    clean_up(gamePGN, mctsAgent, position);
+    clean_up(gamePGN, mctsAgent);
 
     // measure time statistics
     if (verbose) {
@@ -199,10 +192,9 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, bool verbose)
 {
-    states = StateListPtr(new std::deque<StateInfo>(0));
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
-    Board* position = init_board(variant, true, gamePGN, states);
+    unique_ptr<StateObj> state = init_state(variant, true, gamePGN);
     EvalInfo evalInfo;
 
     MCTSAgent* activePlayer;
@@ -211,7 +203,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     Result gameResult;
     do {
         searchLimits->startTime = now();
-        if (position->side_to_move() == WHITE) {
+        if (state->side_to_move() == WHITE) {
             activePlayer = whitePlayer;
             passivePlayer = blackPlayer;
         }
@@ -219,27 +211,26 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
             activePlayer = blackPlayer;
             passivePlayer = whitePlayer;
         }
-        activePlayer->set_search_settings(position, searchLimits, &evalInfo);
+        activePlayer->set_search_settings(state.get(), searchLimits, &evalInfo);
         activePlayer->perform_action();
         activePlayer->apply_move_to_tree(evalInfo.bestMove, true);
-        if (position->plies_from_null() != 0) {
+        if (state->steps_from_null() != 0) {
             passivePlayer->apply_move_to_tree(evalInfo.bestMove, false);
         }
-        play_move_and_update(evalInfo, position, states, gamePGN, gameResult);
+        play_move_and_update(evalInfo, state.get(), gamePGN, gameResult);
     }
     while(gameResult == NO_RESULT);
     set_game_result_to_pgn(gameResult);
     write_game_to_pgn(filenamePGNArena, verbose);
-    clean_up(gamePGN, whitePlayer, position);
+    clean_up(gamePGN, whitePlayer);
     blackPlayer->clear_game_history();
     return gameResult;
 }
 
-void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, Board* position)
+void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent)
 {
     gamePGN.new_game();
     mctsAgent->clear_game_history();
-    delete position;
 }
 
 void SelfPlay::write_game_to_pgn(const std::string& pngFileName, bool verbose)
@@ -267,7 +258,7 @@ void SelfPlay::reset_speed_statistics()
 
 void SelfPlay::speed_statistic_report(float elapsedTimeMin, size_t generatedSamples)
 {
-    // compute running cummulative average
+    // compute running cumulative average
     gamesPerMin = (gameIdx * gamesPerMin + (1 / elapsedTimeMin)) / (gameIdx + 1);
     samplesPerMin = (gameIdx * samplesPerMin + (generatedSamples / elapsedTimeMin)) / (gameIdx + 1);
 
@@ -339,54 +330,48 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     return tournamentResult;
 }
 
-Board* init_board(Variant variant, bool is960, GamePGN& gamePGN, StateListPtr& states)
+unique_ptr<StateObj> init_state(Variant variant, bool is960, GamePGN& gamePGN)
 {
-    Board* position = new Board();
-    auto uiThread = make_shared<Thread>(0);
-
-    states->emplace_back();
+    unique_ptr<StateObj> state= make_unique<SelectedState>();
+#ifdef SUPPORT960
     if (is960) {
         string firstRank = startPos();
         string lastRank = string(firstRank);
         std::transform(firstRank.begin(), firstRank.end(), firstRank.begin(), ::tolower);
         const string fen = firstRank + "/pppppppp/8/8/8/8/PPPPPPPP/" + lastRank +  " w KQkq - 0 1";
         gamePGN.fen = fen;
-        position->set(fen, true, variant, &states->back(), uiThread.get());
+        position->set(fen, true, variant);
     }
     else {
-        position->set(StartFENs[variant], false, variant, &states->back(), uiThread.get());
+        position->set(StartFENs[variant], false, variant);
     }
-    return position;
+#else
+    state->set(StartFENs[variant], false, variant);
+#endif
+    return state;
 }
 
-Board* init_starting_pos_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, StateListPtr& states,
-                                         float rawPolicyProbTemp)
+unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, float rawPolicyProbTemp)
 {
-    Board* position = init_board(variant, true, gamePGN, states);
+    unique_ptr<StateObj> state = init_state(variant, false, gamePGN);
 
     for (size_t ply = 0; ply < plys; ++ply) {
         EvalInfo eval;
-        rawAgent.set_search_settings(position, nullptr, &eval);
+        rawAgent.set_search_settings(state.get(), nullptr, &eval);
         rawAgent.evaluate_board_state();
         apply_raw_policy_temp(eval, rawPolicyProbTemp);
         const size_t moveIdx = random_choice(eval.policyProbSmall);
         eval.bestMove = eval.legalMoves[moveIdx];
 
-        if (leads_to_terminal(*position, eval.bestMove, states)) {
+        if (state->leads_to_terminal(eval.bestMove)) {
             break;
         }
         else {
-            gamePGN.gameMoves.push_back(pgn_move(eval.legalMoves[moveIdx],
-                                                 false,
-                                                 *position,
-                                                 eval.legalMoves,
-                                                 false,
-                                                 true));
-            states->emplace_back();
-            position->do_move(eval.bestMove, states->back());
+            gamePGN.gameMoves.push_back(state->action_to_san(eval.legalMoves[moveIdx], eval.legalMoves, false, true));
+            state->do_action(eval.bestMove);
         }
     }
-    return position;
+    return state;
 }
 
 size_t clip_ply(size_t ply, size_t maxPly)

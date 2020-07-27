@@ -75,7 +75,7 @@ private:
      * @brief export_planes Exports the board in plane representation (x)
      * @param pos Board position to export
      */
-    void save_planes(const Board *pos);
+    void save_planes(const StateObj* pos);
 
     /**
      * @brief save_policy Saves the policy (e.g. mctsPolicy) to the matrix
@@ -83,7 +83,7 @@ private:
      * @param policyProbSmall Probability for each move
      * @param sideToMove Current side to move
      */
-    void save_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove);
+    void save_policy(const vector<Action>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove);
 
     /**
      * @brief save_best_move_q Saves the Q-value of the move which was selected after MCTS search(Optional training sample feature)
@@ -138,7 +138,7 @@ public:
      * @param pos Current board position
      * @param eval Filled EvalInfo struct after mcts search
      */
-    void save_sample(const Board *pos, const EvalInfo& eval);
+    void save_sample(const StateObj* pos, const EvalInfo& eval);
 
     /**
      * @brief export_game_samples Assigns the game result, (Monte-Carlo value result) to every training sample.

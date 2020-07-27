@@ -33,17 +33,19 @@
 #include "gamepgn.h"
 #include "tournamentresult.h"
 #include "../agents/config/rlsettings.h"
+#include "../stateobj.h"
+
 
 #ifdef USE_RL
 /**
  * @brief update_states_after_move Plays the best move of evalInfo and updates the relevant set of variables
  * @param evalInfo Struct which contains the best move and all legal moves
- * @param position Current game board position
+ * @param state Current game board position
  * @param states States list
  * @param gamePGN PGN of the current game
  * @param gameResult Current game result (usually NO_RESULT after move was played)
  */
-void play_move_and_update(const EvalInfo& evalInfo, Board* position, StateListPtr& states, GamePGN& gamePGN, Result& gameResult);
+void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& gamePGN, Result& gameResult);
 
 
 class SelfPlay
@@ -65,7 +67,6 @@ private:
     size_t backupNodes;
     float backupDirichletEpsilon;
     float backupQValueWeight;
-    StateListPtr states;
 
 public:
     /**
@@ -167,7 +168,7 @@ private:
      * @param position Board position. It is expected that the evalBestMove has already been applied.
      * @param gameResult Game result which may be modified
      */
-    void check_for_resignation(const bool allowResignation, const EvalInfo& evalInfo, const Position* position, Result& gameResult);
+    void check_for_resignation(const bool allowResignation, const EvalInfo& evalInfo, const StateObj* position, Result& gameResult);
 
     /**
      * @brief reset_search_params Resets all search parameters to their initial values
@@ -184,17 +185,17 @@ private:
  * @param gamePGN gamePGN struct
  * @param mctsAgent mctsAgent object
  * @param states StatesManager
- * @param position Board position which will be deleted
  */
-void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent, Board* position);
+void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent);
 
 /**
  * @brief init_board Initialies a new board with the starting position of the variant
  * @param variant Variant to be played
- * @param states State manager which takes over the newly created state object
- * @return New board object
+ * @param is960 If it is a 960 variant
+ * @param gamePGN Struct which stores the pgn information
+ * @return New state object
  */
-Board* init_board(Variant variant, bool is960, GamePGN& gamePGN, StateListPtr& states);
+unique_ptr<StateObj> init_state(Variant variant, bool is960, GamePGN& gamePGN);
 
 /**
  * @brief init_games_from_raw_policy Inits a new starting position by sampling from the raw policy with temperature 1.
@@ -204,8 +205,7 @@ Board* init_board(Variant variant, bool is960, GamePGN& gamePGN, StateListPtr& s
  * @param gamePGN Game pgn struct where the moves will be stored
  * @param rawPolicyProbTemp Probability for which a temperature scaling > 1.0f is applied
  */
-Board* init_starting_pos_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, StateListPtr& states,
-                                         float rawPolicyProbTemp);
+unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, float rawPolicyProbTemp);
 
 /**
  * @brief apply_raw_policy_temp Applies a temperature scaling to the policyProbSmall of the eval struct.

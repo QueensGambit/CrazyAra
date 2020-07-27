@@ -28,16 +28,16 @@
 #include <inttypes.h>
 #include "../util/communication.h"
 
-void TrainDataExporter::save_sample(const Board *pos, const EvalInfo& eval)
+void TrainDataExporter::save_sample(const StateObj* pos, const EvalInfo& eval)
 {
     if (startIdx+curSampleIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
     save_planes(pos);
-    save_policy(eval.legalMoves, eval.policyProbSmall, pos->side_to_move());
+    save_policy(eval.legalMoves, eval.policyProbSmall, Color(pos->side_to_move()));
     save_best_move_q(eval);
-    save_side_to_move(pos->side_to_move());
+    save_side_to_move(Color(pos->side_to_move()));
     ++curSampleIdx;
     // value will be set later in export_game_result()
     firstMove = false;
@@ -46,7 +46,7 @@ void TrainDataExporter::save_sample(const Board *pos, const EvalInfo& eval)
 void TrainDataExporter::save_best_move_q(const EvalInfo &eval)
 {
     // Q value of "best" move (a.k.a selected move after mcts search)
-    xt::xarray<float> qArray({ 1 }, eval.bestMoveQ);
+    xt::xarray<float> qArray({ 1 }, eval.bestMoveQ[0]);
 
     if (firstMove) {
         gameBestMoveQ = qArray;
@@ -131,11 +131,11 @@ void TrainDataExporter::new_game()
     curSampleIdx = 0;
 }
 
-void TrainDataExporter::save_planes(const Board *pos)
+void TrainDataExporter::save_planes(const StateObj *pos)
 {
     // x / plane representation
     float inputPlanes[NB_VALUES_TOTAL];
-    board_to_planes(pos, pos->number_repetitions(), false, inputPlanes);
+    pos->get_state_planes(false, inputPlanes);
     // write array to roi
     xt::xarray<int16_t>::shape_type planesShape = { 1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
     xt::xarray<int16_t> planes(planesShape);
@@ -152,7 +152,7 @@ void TrainDataExporter::save_planes(const Board *pos)
     }
 }
 
-void TrainDataExporter::save_policy(const vector<Move>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove)
+void TrainDataExporter::save_policy(const vector<Action>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove)
 {
     assert(legalMoves.size() == policyProbSmall.size());
 
