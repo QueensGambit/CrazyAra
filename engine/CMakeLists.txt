@@ -15,15 +15,31 @@ option(MODE_CHESS                "Build with chess + chess960 only support"  OFF
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 option(MODE_POMMERMAN            "Build with pommerman environment support"  OFF)
 
-
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
-add_definitions(-DKOTH)
-add_definitions(-DTHREECHECK)
-add_definitions(-DANTI)
-add_definitions(-DATOMIC)
-add_definitions(-DHORDE)
-add_definitions(-DRACE)
+
+if (MODE_CRAZYHOUSE)
+    add_definitions(-DMODE_CRAZYHOUSE)
+endif()
+
+if (MODE_CHESS)
+    add_definitions(-DMODE_CHESS)
+endif()
+
+if (MODE_LICHESS)
+    add_definitions(-DMODE_LICHESS)
+    add_definitions(-DCRAZYHOUSE)
+    add_definitions(-DKOTH)
+    add_definitions(-DTHREECHECK)
+    add_definitions(-DANTI)
+    add_definitions(-DATOMIC)
+    add_definitions(-DHORDE)
+    add_definitions(-DRACE)
+endif()
+
+if (MODE_POMMERMAN)
+    add_definitions(-DMODE_POMMERMAN)
+endif()
 
 if (BUILD_TESTS)
     add_definitions(-DBUILD_TESTS)
@@ -91,11 +107,23 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
 
 find_package (Threads)
 include_directories("3rdparty/Stockfish/src")
+
 if (MODE_POMMERMAN)
+    if(DEFINED ENV{CONDA_ENV_PATH})
+        MESSAGE(STATUS "CONDA_ENV_PATH set to: $ENV{CONDA_ENV_PATH}")
+    else()
+        MESSAGE(SEND_ERROR "CONDA_ENV_PATH not set")
+    endif()
+    include_directories("$ENV{CONDA_ENV_PATH}/include")
+
     file(GLOB pomcpp_files
         "3rdparty/pomcpp/src/bboard/*.cpp"
         "3rdparty/pomcpp/src/agents/*.cpp"
         "3rdparty/PommerLearn/cpp/src/*.cpp")
+    set(source_files
+        ${source_files}
+        ${pomcpp_files}
+        )
     include_directories("3rdparty/pomcpp/include")
     include_directories("3rdparty/PommerLearn/cpp/include")
 endif()
@@ -139,7 +167,7 @@ if (USE_MXNET)
     add_definitions(-DMXNET)
 endif()
 
-if (USE_RL OR MODE_POMMERMAN)
+if (USE_RL)
     message(STATUS "Enabled Reinforcement Learning functionality")
     if(DEFINED ENV{Z5_PATH})
         MESSAGE(STATUS "Z5_PATH set to: $ENV{Z5_PATH}")
@@ -192,6 +220,12 @@ if (USE_RL OR MODE_POMMERMAN)
     # include filesystem (needed for z5)
     target_link_libraries(${PROJECT_NAME} stdc++fs)
 endif()
+
+if (MODE_POMMERMAN)
+    find_library(BLOSC_LIB blosc "$ENV{CONDA_ENV_PATH}/lib")
+    target_link_libraries(${PROJECT_NAME} "${BLOSC_LIB}")
+endif()
+
 
 find_package(Threads REQUIRED)
 
