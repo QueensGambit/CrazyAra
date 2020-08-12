@@ -32,9 +32,31 @@
 #include <sys/stat.h>
 #include <mutex>
 #include <vector>
+#include <memory>
+#include <dirent.h>
+#include <cstring>
 #include "../util/communication.h"
 
 using namespace std;
+
+// http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
+namespace {
+vector<string> get_directory_files(const string& dir) {
+    vector<string> files;
+    shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
+    struct dirent *dirent_ptr;
+    if (!directory_ptr) {
+        info_string("Error opening :", strerror(errno));
+        info_string(dir);
+        return files;
+    }
+
+    while ((dirent_ptr = readdir(directory_ptr.get())) != nullptr) {
+        files.push_back(string(dirent_ptr->d_name));
+    }
+    return files;
+}
+}  // namespace
 
 /**
  * @brief The NeuralNetAPI class is an abstract class for accessing a neural network back-end and to run inference

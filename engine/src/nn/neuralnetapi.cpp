@@ -24,31 +24,8 @@
  */
 
 #include "neuralnetapi.h"
-#include <memory>
-#include <dirent.h>
-#include <exception>
-#include <cstring>
 #include <string>
 #include "../domain/crazyhouse/constants.h"
-
-// http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
-namespace {
-vector<string> get_directory_files(const string& dir) {
-    vector<string> files;
-    shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
-    struct dirent *dirent_ptr;
-    if (!directory_ptr) {
-        info_string("Error opening :", strerror(errno));
-        info_string(dir);
-        return files;
-    }
-
-    while ((dirent_ptr = readdir(directory_ptr.get())) != nullptr) {
-        files.push_back(string(dirent_ptr->d_name));
-    }
-    return files;
-}
-}  // namespace
 
 NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
     deviceID(deviceID),
