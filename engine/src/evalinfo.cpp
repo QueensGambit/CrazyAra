@@ -123,11 +123,11 @@ bool set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     // return mate score for known wins and losses
     if (nextNode->get_node_type() == SOLVED_LOSS) {
         // always round up the ply counter
-        evalInfo.movesToMate[idx] = pv.size() / 2 + evalInfo.pv.size() % 2;
+        evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
     }
     else if (nextNode->get_node_type() == SOLVED_WIN) {
         // always round up the ply counter
-        evalInfo.movesToMate[idx] = -pv.size() / 2 + evalInfo.pv.size() % 2;
+        evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
     }
     else {
         evalInfo.movesToMate[idx] = 0;
