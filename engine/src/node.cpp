@@ -155,6 +155,12 @@ void Node::mark_as_draw()
     d->nodeType = SOLVED_DRAW;
 }
 
+void Node::mark_as_win()
+{
+    set_value(WIN);
+    d->nodeType = SOLVED_WIN;
+}
+
 void Node::define_end_ply_for_solved_terminal(const Node* childNode)
 {
     if (d->nodeType == SOLVED_LOSS) {
@@ -677,12 +683,16 @@ void Node::check_for_terminal(StateObj* pos, bool inCheck)
         mark_as_terminal();
         switch(terminalType) {
         case TERMINAL_WIN:
-            set_value(WIN);
+            mark_as_win();
             break;
         case TERMINAL_DRAW:
-            set_value(DRAW);
+            mark_as_draw();
+            break;
         case TERMINAL_LOSS:
-            set_value(LOSS);
+            mark_as_loss();
+            break;
+        case TERMINAL_NONE:
+            ;  // pass
         }
     }
 }

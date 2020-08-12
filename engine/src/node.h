@@ -448,14 +448,19 @@ private:
     bool solved_loss(const Node* childNode) const;
 
     /**
-     * @brief mark_as_loss Marks the current node as a loss and its parent node as a win
+     * @brief mark_as_loss Marks the current node as a loss
      */
     void mark_as_loss();
 
     /**
-     * @brief mark_as_draw Marks the current node as a draw and informs its parent node
+     * @brief mark_as_draw Marks the current node as a draw
      */
     void mark_as_draw();
+
+    /**
+     * @brief mark_as_win Marks the current node as a winning node
+     */
+    void mark_as_win();
 
     /**
      * @brief define_end_ply_for_solved_terminal Calculates the number of plies in which the terminal will be reached.
