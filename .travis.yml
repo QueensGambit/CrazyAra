@@ -12,10 +12,11 @@ matrix:
     - os: linux
       compiler: clang
       env:
+        - CLANG_VERSION=6.0 LIBCXX=On
         - COMPILER=clang++-6.0
         - COMP=clang
         - LDFLAGS=-fuse-ld=lld
-
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
 install:
   - cd
   - pwd
