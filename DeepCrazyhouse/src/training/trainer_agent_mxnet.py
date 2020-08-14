@@ -14,7 +14,7 @@ from time import time
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
-from setproctitle import setproctitle
+from rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
@@ -167,7 +167,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         cwd=None,
         variant_metrics=None,
         # prefix for the process name in order to identify the process on a server
-        proctitle_prefix="jczech"
+        name_initials="JC"
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -227,11 +227,16 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         # few variables which are internally used
         self.val_loss_best = self.val_p_acc_best = self.k_steps_best = \
             self.old_label = self.value_out = self.t_s = None
-        self.patience_cnt = self.batch_proc_tmp = self.k_steps_end = None
+        self.patience_cnt = self.batch_proc_tmp = None
+        # calculate how many log states will be processed
+        self.k_steps_end = self._total_it / self._batch_steps
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
         self.variant_metrics = variant_metrics
-        self.proctitle_prefix = proctitle_prefix
+        self.name_initials = name_initials
+        # we use k-steps instead of epochs here
+        self.rtpt = RTPT(name_initials=name_initials, base_title='crazyara_training', number_of_epochs=self.k_steps_end,
+                         epoch_n=self._k_steps_initial)
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -265,9 +270,9 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         # track on how many batches have been processed in this epoch
         self.patience_cnt = epoch = self.batch_proc_tmp = 0
         self.k_steps = self._k_steps_initial  # counter for thousands steps
-        # calculate how many log states will be processed
-        self.k_steps_end = self._total_it / self._batch_steps
-        self._update_proctitle()
+
+        # inform rtpt that training has started
+        self.rtpt.epoch_starts()
 
         if cur_it is None:
             self.cur_it = self._k_steps_initial * 1000
@@ -348,14 +353,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                     # self.sum_writer.add_graph(self._symbol)
                     self.graph_exported = True
 
-    def _update_proctitle(self):
-        """
-        Updates the process title.
-        The process title is used to easier identify a running python process.
-        :return:
-        """
-        setproctitle("%s: Step %dK of %dK" % (self.proctitle_prefix, self.k_steps, self.k_steps_end))
-
     def _return_metrics_and_stop_training(self):
         return (self.k_steps, self.val_metric_values["value_loss"],
                 self.val_metric_values["policy_loss"],
@@ -384,7 +381,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         logging.info("Step %dK/%dK - %dms/step", self.k_steps, self.k_steps_end, ms_step)
         logging.info("-------------------------")
         logging.debug("Iteration %d/%d", self.cur_it, self._total_it)
-        self._update_proctitle()
+        self.rtpt.epoch_ends()  # update proctitle
         if self.optimizer_name == "nag":
             logging.debug("lr: %.7f - momentum: %.7f", self.optimizer.lr, self.optimizer.momentum)
         else:
