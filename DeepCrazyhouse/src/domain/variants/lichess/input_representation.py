@@ -75,15 +75,24 @@ def board_to_planes(board, board_occ=0, normalize=True):
     7 - "horde" | 1
     8 - "racingkings" | 1
 
+    ---
     9 planes
 
     # --------------
 
-    The history list of the past 7 board states have been removed
+    * * *
+
+    Last 8 moves | 16 (indicated by origin and destination square, the most recent move is described by first 2 planes)
+    -> added since version 2
+
+    ---
+    16 planes
+
     The total number of planes is calculated as follows:
 
-    27 + 11 + 9
-    Total: 47 planes
+    27 + 11 + 9 + 16
+    Total: 63 planes (version 2)
+    Total: 47 planes (version 1)
 
     :param board: Board handle (Python-chess object)
     :param board_occ: Sets how often the board state has occurred before (by default 0)

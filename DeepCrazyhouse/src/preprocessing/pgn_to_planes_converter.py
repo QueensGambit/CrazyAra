@@ -55,6 +55,7 @@ class PGN2PlanesConverter:
         dataset_type="train",
         use_all_games=False,
         first_pgn_to_analyze=None,
+        min_number_moves=5,
     ):  # Too many arguments (11/5)
         """
         Set the member variables and loads the config file
@@ -84,6 +85,7 @@ class PGN2PlanesConverter:
                               (This was option was added for the Stockfish self play dataset).
         :param first_pgn_to_analyze: Optional parameter in which you can define the first pgn file to select.
          If None it will automaticly choose the first file in the specified directory
+        :param min_number_moves: Minimum of number of moves which have to be played in a game to be selected
         :return:
         """
         if termination_conditions is None:
@@ -101,6 +103,7 @@ class PGN2PlanesConverter:
         self._clevel = clevel
         self._log_lvl = log_lvl
         self.use_all_games = use_all_games
+        self._min_number_moves = min_number_moves
 
         local_root = logging.getLogger()
         local_root.setLevel(log_lvl)
@@ -205,27 +208,37 @@ class PGN2PlanesConverter:
             games = all_games
 
         for game in games:
-            # only add game with at least one move played
-            game_start_char = game.find("1. ")
-            if game_start_char != -1:
-                if game[:game_start_char].find('Variant "Chess960"'):
-                    # 2019-09-28: fix for chess960 because in the default position lichess denotes FEN as "?"
-                    game = game.replace('[FEN "?"]', '[FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]')
-
-                # for mate in one make sure the game ended in a checkmate
-                if not self._mate_in_one:
-                    pgns.append(io.StringIO(game))
-                else:
-                    # look for '#' as soon as the move history begins
-                    mv_hist_start = game.find("1. ", 0, len(game))
-                    # only searching for '#' lead to the problem that one event was called "Crazyhouse Revolution #1"
-                    # also some games are annotated and contain # in the evaluation
-                    # \S Matches any non-whitespace character; this is equivalent to the class [^ \t\n\r\f\v].
-                    mv_hist_finish = re.search(r"\S#", game[mv_hist_start:])
-                    if mv_hist_finish:
-                        pgns.append(io.StringIO(game))
+            # only add game with at least _min_number_moves played
+            if game.find(f"{self._min_number_moves:d}. ") != -1:
+                self._add_game_to_list(game, pgns)
 
         self._select_games(queue, pgns)
+
+    def _add_game_to_list(self, game, pgns):
+        """
+        Adds a given game to the list of pgn candidates
+        :param game: Selected game
+        :param pgns: list of pgns
+        """
+        # extract the first starting char of the game
+        game_start_char = game.find("1. ")
+        if game_start_char != -1:
+            if game[:game_start_char].find('Variant "Chess960"'):
+                # 2019-09-28: fix for chess960 because in the default position lichess denotes FEN as "?"
+                game = game.replace('[FEN "?"]', '[FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]')
+
+            # for mate in one make sure the game ended in a checkmate
+            if not self._mate_in_one:
+                pgns.append(io.StringIO(game))
+            else:
+                # look for '#' as soon as the move history begins
+                mv_hist_start = game.find("1. ", 0, len(game))
+                # only searching for '#' lead to the problem that one event was called "Crazyhouse Revolution #1"
+                # also some games are annotated and contain # in the evaluation
+                # \S Matches any non-whitespace character; this is equivalent to the class [^ \t\n\r\f\v].
+                mv_hist_finish = re.search(r"\S#", game[mv_hist_start:])
+                if mv_hist_finish:
+                    pgns.append(io.StringIO(game))
 
     def _select_games(self, queue, pgns):
         """
@@ -267,17 +280,11 @@ class PGN2PlanesConverter:
                     try:
                         white_elo = headers["WhiteElo"]
                     except KeyError:
-                        try:
-                            white_elo = headers["BlackElo"]
-                        except KeyError:
-                            white_elo = "?"
+                        white_elo = "?"
                     try:
-                        black_elo = headers["WhiteElo"]
+                        black_elo = headers["BlackElo"]
                     except KeyError:
-                        try:
-                            black_elo = headers["BlackElo"]
-                        except KeyError:
-                            black_elo = "?"
+                        black_elo = "?"
 
                     if headers["Result"] != "*":
                         if self.use_all_games or (
@@ -285,8 +292,7 @@ class PGN2PlanesConverter:
                             and (white_elo != "?" and
                                  black_elo != "?" and
                                  int(white_elo) >= _cur_min_elo_both
-                                 and int(black_elo) >= _cur_min_elo_both
-                            )
+                                 and int(black_elo) >= _cur_min_elo_both)
                         ):
                             if headers["Result"] == "1-0":
                                 nb_white_won += 1
@@ -298,7 +304,6 @@ class PGN2PlanesConverter:
                                 raise Exception("Illegal Game Result: ", headers["Result"])
 
                             all_pgn_sel.append(game_pgn)
-
                             if len(all_pgn_sel) % self._batch_size == 0:
                                 # save the stats of 1 batch part
                                 batch_white_won.append(nb_white_won)

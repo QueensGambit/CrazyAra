@@ -53,6 +53,7 @@ MODE_CHESS = 2
 MODES = [MODE_CRAZYHOUSE, MODE_LICHESS, MODE_CHESS]
 # Active mode
 MODE = main_config["mode"]
+VERSION = main_config["version"]
 
 if MODE not in MODES:
     raise ValueError('unsupported "mode" specification in main_config.py')
@@ -101,8 +102,14 @@ elif MODE == MODE_LICHESS:
     NB_CHANNELS_VARIANTS = 9
     # King promotion moves were added to support antichess
     NB_POLICY_MAP_CHANNELS = 84
-    NB_LAST_MOVES = 0
-    NB_CHANNELS_PER_HISTORY_ITEM = 0
+    if VERSION == 1:
+        NB_LAST_MOVES = 0
+    else:
+        NB_LAST_MOVES = 8
+    if VERSION == 1:
+        NB_CHANNELS_PER_HISTORY_ITEM = 0
+    else:
+        NB_CHANNELS_PER_HISTORY_ITEM = 2
 else:  # MODE = MODE_CHESS
     NB_CHANNELS_POS = 15
     NB_CHANNELS_CONST = 7

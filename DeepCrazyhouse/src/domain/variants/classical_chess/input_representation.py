@@ -49,8 +49,12 @@ def board_to_planes(board, board_occ=0, normalize=True):
     ---
     7 planes
 
-    The history list of the past 7 board states have been removed
-    The total number of planes is calculated as follows:
+    * * *
+
+    Last 8 moves | 16 (indicated by origin and destination square, the most recent move is described by first 2 planes)
+
+    ---
+    16 planes
 
     * * *
 
@@ -59,9 +63,10 @@ def board_to_planes(board, board_occ=0, normalize=True):
     ---
     1 plane
 
+    The total number of planes is calculated as follows:
     # --------------
-    15 + 7 + 1
-    Total: 23 planes
+    15 + 7 + 1 + 16
+    Total: 39 planes
 
     :param board: Board handle (Python-chess object)
     :param board_occ: Sets how often the board state has occurred before (by default 0)

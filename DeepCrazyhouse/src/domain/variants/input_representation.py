@@ -180,7 +180,7 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
                  (Visit variants.lichess.input_representation for detailed documentation)
                  2 - MODE_CHESS: Specification for chess only with chess960 support
                  (Visit variants.chess.input_representation for detailed documentation)
-    :param last_moves: List of last moves
+    :param last_moves: List of last moves. It is assumed that the most recent move is the first entry !
     :return: planes - the plane representation of the current board state
     """
 
@@ -265,11 +265,12 @@ def planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
     # extract the maps for the board position
     planes_pos = planes[:NB_CHANNELS_POS]
     # extract the last maps which for the constant values
-    planes_const = planes[NB_CHANNELS_POS:NB_CHANNELS_POS+NB_CHANNELS_CONST]
+    end_board_idx = NB_CHANNELS_POS+NB_CHANNELS_CONST
+    planes_const = planes[NB_CHANNELS_POS:end_board_idx]
 
     if mode == MODE_LICHESS:
         # extract the variants definition section
-        planes_variants = planes[-NB_CHANNELS_VARIANTS:]
+        planes_variants = planes[end_board_idx:end_board_idx+NB_CHANNELS_VARIANTS]
 
         # setup new initial board
         is960 = planes_variants[CHANNEL_MAPPING_VARIANTS["is960"], 0, 0] == 1
