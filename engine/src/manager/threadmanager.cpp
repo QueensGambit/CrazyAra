@@ -50,7 +50,7 @@ void ThreadManager::await_kill_signal()
         if (wait_for(chrono::milliseconds(updateIntervalMS*4))){
             evalInfo->end = chrono::steady_clock::now();
             update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV);
-            info_score(*evalInfo);
+            info_msg(*evalInfo);
         }
         else {
             return;
@@ -83,7 +83,7 @@ void ThreadManager::stop_search_based_on_limits()
                 if (var % 4 == 3) {
                     evalInfo->end = chrono::steady_clock::now();
                     update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV);
-                    info_score(*evalInfo);
+                    info_msg(*evalInfo);
                 }
             }
             else {

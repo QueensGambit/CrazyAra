@@ -55,9 +55,12 @@ void info_string(const T &messageA, const U &messageB) {
 }
 
 template<typename T>
-void info_score(const T &message) {
+void info_msg(const T &message, bool endl=false) {
 #ifndef USE_RL
-    cout << "info score " << message << endl;
+    cout << "info " << message;
+    if (endl) {
+        cout << endl;
+    }
 #endif
 }
 

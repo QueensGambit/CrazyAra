@@ -30,21 +30,25 @@
 void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, size_t elapsedTimeMS)
 {
     if (idx != 0) {
-        os << "info score ";
+        os << "info ";
     }
-    os << "multipv " << idx+1;
+
+    os << "depth " << evalInfo.depth
+       << " seldepth " << evalInfo.selDepth
+       << " multipv " << idx+1
+       << " score";
+
     if (evalInfo.movesToMate[idx] == 0) {
        os << " cp " << evalInfo.centipawns[idx];
     }
     else {
        os << " mate " << evalInfo.movesToMate[idx];
     }
-    os << " depth " << evalInfo.depth
-       << " seldepth " << evalInfo.selDepth
-       << " nodes " << evalInfo.nodes
-       << " time " << elapsedTimeMS
+
+    os << " nodes " << evalInfo.nodes
        << " nps " << evalInfo.calculate_nps(elapsedTimeMS)
        << " tbhits " << evalInfo.tbHits
+       << " time " << elapsedTimeMS
        << " pv";
     for (Action move: evalInfo.pv[idx]) {
         os << " " << action_to_uci(move, evalInfo.isChess960);

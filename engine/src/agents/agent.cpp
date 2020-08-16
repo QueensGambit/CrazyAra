@@ -75,7 +75,7 @@ void Agent::perform_action()
     this->evaluate_board_state();
     evalInfo->end = chrono::steady_clock::now();
     set_best_move(state->steps_from_null());
-    info_score(*evalInfo);
+    info_msg(*evalInfo);
     info_string(state->fen());
     info_bestmove(action_to_uci(evalInfo->bestMove, state->is_chess960()));
 }

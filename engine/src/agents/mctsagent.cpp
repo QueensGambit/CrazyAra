@@ -215,7 +215,7 @@ void MCTSAgent::sleep_and_log_for(size_t timeMS, size_t updateIntervalMS)
     for (size_t var = 0; var < timeMS / updateIntervalMS && isRunning; ++var) {
         this_thread::sleep_for(chrono::milliseconds(updateIntervalMS));
         evalInfo->end = chrono::steady_clock::now();
-        info_score(evalInfo);
+        info_msg(evalInfo);
         if (!searchThreads[0]->is_running()) {
             isRunning = false;
             return;
