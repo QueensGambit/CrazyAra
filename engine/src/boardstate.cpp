@@ -116,7 +116,7 @@ string BoardState::action_to_san(Action action, const vector<Action>& legalActio
     return pgn_move(Move(action), this->is_chess960(), board, legalActions, leadsToWin, bookMove);
 }
 
-TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck) const
+TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const
 {
     if (numberLegalMoves == 0) {
 #ifdef ANTI
@@ -141,6 +141,14 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck) cons
             return TERMINAL_LOSS;
         }
     }
+#endif
+#ifdef ATOMIC
+        if (board.is_atomic_win()) {
+            return TERMINAL_WIN;
+        }
+        if (board.is_atomic_loss()) {
+            return TERMINAL_LOSS;
+        }
 #endif
     if (board.can_claim_3fold_repetition() || board.is_50_move_rule_draw() || board.draw_by_insufficient_material()) {
         // reached 3-fold-repetition or 50 moves rule draw or insufficient material
