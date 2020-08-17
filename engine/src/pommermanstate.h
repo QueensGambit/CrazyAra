@@ -60,7 +60,7 @@ public:
     void flip();
     Action uci_to_action(std::string &uciStr) const;
     std::string action_to_san(Action action, const std::vector<Action>& legalActions, bool leadsToWin, bool bookMove) const;
-    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck) const;
+    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const;
     Result check_result(bool inCheck) const;
     bool gives_check(Action action) const;
     void print(std::ostream& os) const;

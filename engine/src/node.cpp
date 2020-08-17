@@ -677,7 +677,7 @@ void Node::mark_as_terminal()
 
 void Node::check_for_terminal(StateObj* pos, bool inCheck)
 {
-    TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), inCheck);
+    TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), inCheck, value);
 
     if (terminalType != TERMINAL_NONE) {
         mark_as_terminal();
@@ -691,6 +691,7 @@ void Node::check_for_terminal(StateObj* pos, bool inCheck)
         case TERMINAL_LOSS:
             mark_as_loss();
             break;
+        case TERMINAL_CUSTOM:
         case TERMINAL_NONE:
             ;  // pass
         }

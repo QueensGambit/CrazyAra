@@ -129,7 +129,7 @@ std::string PommermanState::action_to_san(Action action, const std::vector<Actio
     return "";
 }
 
-TerminalType PommermanState::is_terminal(size_t numberLegalMoves, bool inCheck) const
+TerminalType PommermanState::is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const
 {
     // TODO
     return TERMINAL_NONE;

@@ -35,6 +35,7 @@ using namespace std;
 static vector<string> availableVariants = {
     "crazyhouse",
     "chess",
+    "atomic",
     "giveaway",  // antichess
 };
 

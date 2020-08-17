@@ -42,6 +42,7 @@ enum TerminalType {
     TERMINAL_LOSS,
     TERMINAL_DRAW,
     TERMINAL_WIN,
+    TERMINAL_CUSTOM,
     TERMINAL_NONE
 };
 
@@ -195,10 +196,12 @@ public:
      * then TERMINAL_NONE should be returned.
      * @param numberLegalMoves Number of legal moves in the current position
      * @param inCheck Boolean which defines if there is a check in the current position
+     * @param customTerminalValue Value which will be assigned to the node value evaluation. You need to return TERMINAL_CUSTOM in this case;
+     * otherwise the value will later be overwritten. In the default case, this parameter can be ignored.
      * @return TerminalType
      */
-    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck) const {
-        return static_cast<const T*>(this)->is_terminal(numberLegalMoves, inCheck);
+    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const {
+        return static_cast<const T*>(this)->is_terminal(numberLegalMoves, inCheck, customTerminalValue);
     }
 
     /**
