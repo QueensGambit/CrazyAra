@@ -95,7 +95,7 @@ void CrazyAra::welcome()
 
 void CrazyAra::uci_loop(int argc, char *argv[])
 {
-    unique_ptr<StateObj> state = make_unique<SelectedState>();
+    unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
     EvalInfo evalInfo;
     auto uiThread = make_shared<Thread>(0);
@@ -204,8 +204,7 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
 
 void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
 {
-    unique_ptr<StateObj> state = make_unique<SelectedState>();
-
+    unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
 

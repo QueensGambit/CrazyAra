@@ -37,11 +37,10 @@
 #endif
 
 #ifdef MODE_POMMERMAN
-    using SelectedState = PommermanState;
+    using StateObj = PommermanState;
 #else
-    using SelectedState = BoardState;
+    using StateObj = BoardState;
 #endif
-using StateObj = State<SelectedState>;
 
 std::string action_to_uci(Action action, bool is960);
 

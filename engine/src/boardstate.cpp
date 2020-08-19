@@ -23,10 +23,12 @@
  * @author: queensgambit
  */
 
+#ifndef MODE_POMMERMAN
 #include "boardstate.h"
 #include "domain/crazyhouse/inputrepresentation.h"
 
-BoardState::BoardState() : State(),
+BoardState::BoardState():
+    State(),
     states(StateListPtr(new std::deque<StateInfo>(0)))
 {
 }
@@ -36,6 +38,7 @@ BoardState::BoardState(const BoardState &b) :
     board(b.board),
     states(StateListPtr(new std::deque<StateInfo>(0)))
 {
+    states->emplace_back(b.states->back());
 }
 
 vector<Action> BoardState::legal_actions() const
@@ -118,6 +121,24 @@ string BoardState::action_to_san(Action action, const vector<Action>& legalActio
 
 TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const
 {
+#ifdef ATOMIC
+        if (board.is_atomic_win()) {
+            return TERMINAL_WIN;
+        }
+        if (board.is_atomic_loss()) {
+            return TERMINAL_LOSS;
+        }
+#endif
+#ifdef ANTI
+    if (board.is_anti()) {
+        if (board.is_anti_win()) {
+            return TERMINAL_WIN;
+        }
+        if (board.is_anti_loss()) {
+            return TERMINAL_LOSS;
+        }
+    }
+#endif
     if (numberLegalMoves == 0) {
 #ifdef ANTI
         if (board.is_anti()) {
@@ -132,24 +153,6 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, floa
         // we reached a stalmate
         return TERMINAL_DRAW;
     }
-#ifdef ANTI
-    if (board.is_anti()) {
-        if (board.is_anti_win()) {
-            return TERMINAL_WIN;
-        }
-        if (board.is_anti_loss()) {
-            return TERMINAL_LOSS;
-        }
-    }
-#endif
-#ifdef ATOMIC
-        if (board.is_atomic_win()) {
-            return TERMINAL_WIN;
-        }
-        if (board.is_atomic_loss()) {
-            return TERMINAL_LOSS;
-        }
-#endif
     if (board.can_claim_3fold_repetition() || board.is_50_move_rule_draw() || board.draw_by_insufficient_material()) {
         // reached 3-fold-repetition or 50 moves rule draw or insufficient material
         return TERMINAL_DRAW;
@@ -174,7 +177,9 @@ void BoardState::print(ostream &os) const
     os << board;
 }
 
-unique_ptr<BoardState> BoardState::clone() const
+BoardState* BoardState::clone() const
 {
-    return make_unique<BoardState>(*this);
+    return new BoardState(*this);
 }
+
+#endif

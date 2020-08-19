@@ -37,6 +37,7 @@
 #include "agents/config/searchlimits.h"
 #include "agents/config/playsettings.h"
 #include "node.h"
+#include "uci.h"
 #ifdef USE_RL
 #include "rl/selfplay.h"
 #include "agents/config/rlsettings.h"
@@ -220,12 +221,12 @@ private:
  * @brief get_num_gpus Returns the number of GPU based on the UCI settings "First_Device_ID" and "Last_Device_ID"
  * @return number of gpus
  */
-size_t get_num_gpus(OptionsMap& option);
+size_t get_num_gpus(UCI::OptionsMap& option);
 
 /**
  * @brief validate_device_indices Valdiates if the "Last_Device_ID" >= "First_Device_ID"
  * @param option
  */
-void validate_device_indices(OptionsMap& option);
+void validate_device_indices(UCI::OptionsMap& option);
 
 #endif // CRAZYARA_H

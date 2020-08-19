@@ -280,8 +280,7 @@ void SearchThread::create_mini_batch()
            !transpositionNodes->is_full() &&
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
-        unique_ptr<StateObj> newState = rootState->clone();
-
+        newState = unique_ptr<StateObj>(rootState->clone());
         parentNode = get_new_child_to_evaluate(newState.get(), childIdx, description);
         Node* newNode = parentNode->get_child_node(childIdx);
         depthSum += description.depth;

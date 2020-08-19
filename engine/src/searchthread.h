@@ -62,6 +62,7 @@ class SearchThread
 private:
     Node* rootNode;
     StateObj* rootState;
+    unique_ptr<StateObj> newState;
 
     NeuralNetAPI* netBatch;
 

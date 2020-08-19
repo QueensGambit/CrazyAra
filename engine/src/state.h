@@ -36,6 +36,7 @@
 
 typedef uint64_t Key;
 typedef int Action;
+typedef int SideToMove;
 const int ACTION_NONE = 0;
 
 enum TerminalType {
@@ -53,10 +54,10 @@ enum Result {
     NO_RESULT,
 };
 
-template <class T>
 class State
 {
 public:
+    virtual ~State() = default;
 
     /**
      * @brief leads_to_terminal Checks if a given action leads to a terminal state
@@ -65,7 +66,7 @@ public:
      */
     bool leads_to_terminal(Action a)
     {
-        std::unique_ptr<State> posCheckTerminal = static_cast<T*>(this)->clone();
+        std::unique_ptr<State> posCheckTerminal = std::unique_ptr<State>(this->clone());
         bool givesCheck = posCheckTerminal->gives_check(a);
         posCheckTerminal->do_action(a);
         return posCheckTerminal->check_result(givesCheck) != NO_RESULT;
@@ -75,9 +76,7 @@ public:
      * @brief legal_actions Returns all legal actions as a vector list
      * @return vector of legal actions
      */
-    std::vector<Action> legal_actions() {
-        return static_cast<T*>(this)->legal_actions();
-    }
+    virtual std::vector<Action> legal_actions() const = 0;
 
     /**
      * @brief set Sets a new states and modifies the current state.
@@ -86,98 +85,74 @@ public:
      * @param variant Variant which the position corresponds to.
      * @return An alias to the updated state
      */
-    void set(const std::string& fenStr, bool isChess960, int variant) {
-        static_cast<T*>(this)->set(fenStr, isChess960, variant);
-    }
+    virtual void set(const std::string& fenStr, bool isChess960, int variant) = 0;
 
     /**
      * @brief get_state_planes Returns the state plane representation of the current state which can be used for NN inference.
      * @param normalize If true thw normalized represnetation should be returned, otherwise the raw representation
      * @param inputPlanes Pointer to the memory array where to set the state plane representation. It is assumed that the memory has already been allocated
      */
-    void get_state_planes(bool normalize, float* inputPlanes) const {
-        static_cast<const T*>(this)->get_state_planes(normalize, inputPlanes);
-    }
+    virtual void get_state_planes(bool normalize, float* inputPlanes) const = 0;
 
     /**
      * @brief steps_from_null Number of steps form the initial position (e.g. starting position)
      * @return number of steps
      */
-    unsigned int steps_from_null() const {
-        return static_cast<const T*>(this)->steps_from_null();
-    }
+    virtual unsigned int steps_from_null() const = 0;
 
     /**
      * @brief is_chess960 Returns true if the position is a 960 random position, else false
      * @return bool
      */
-    bool is_chess960() const {
-        return static_cast<const T*>(this)->is_chess960();
-    }
+    virtual bool is_chess960() const = 0;
 
     /**
      * @brief fen Returns the fen or string description of the current state
      * @return string
      */
-    std::string fen() const {
-        return static_cast<const T*>(this)->fen();
-    }
+    virtual std::string fen() const = 0;
 
     /**
      * @brief do_action Applies a given action to the current state
      * @param action Type of action to apply. It is assumed that the action is discrete and integer format
      */
-    void do_action(Action action) {
-        static_cast<T*>(this)->do_action(action);
-    }
+    virtual void do_action(Action action) = 0;
 
     /**
      * @brief undo_action Undos a given action
      * @param action Type of action to apply. It is assumed that the action is discrete and integer format
      */
-    void undo_action(Action action) {
-        static_cast<T*>(this)->undo_action(action);
-    }
+    virtual void undo_action(Action action) = 0;
 
     /**
      * @brief number_repetitions Returns the number of times this state has already occured in the current episode
      * @return int
      */
-    unsigned int number_repetitions() const {
-        return static_cast<const T*>(this)->number_repetitions();
-    }
+    virtual unsigned int number_repetitions() const = 0;
 
     /**
      * @brief side_to_move Returns the side to move (e.g. Color: WHITE or BLACK) in chess
      * @return int
      */
-    int side_to_move() const {
-        return static_cast<const T*>(this)->side_to_move();
-    }
-
+    virtual int side_to_move() const = 0;
     /**
      * @brief hash_key Returns a uique identifier for the current position which can be used for accessing the hash table
      * @return
      */
-    Key hash_key() const {
-        return static_cast<const T*>(this)->hash_key();
-    }
+
+    virtual Key hash_key() const = 0;
 
     /**
      * @brief flip Flips the state along the x-axis
      */
-    void flip() {
-        return static_cast<T*>(this)->flip();
-    }
+    virtual void flip() = 0;
 
     /**
      * @brief uci_to_action Converts the given action in uci notation to an action object
      * @param uciStr uci specification for the action
      * @return Action
      */
-    Action uci_to_action(std::string& uciStr) const {
-        return static_cast<const T*>(this)->uci_to_action(uciStr);
-    }
+     virtual Action uci_to_action(std::string& uciStr) const = 0;
 
     /**
      * @brief action_to_san Converts a given action to SAN (pgn move notation) usign the current position and legal moves
@@ -187,9 +162,7 @@ public:
      * @param bookMove Indicator which marks action as book move
      * @return SAN string
      */
-    std::string action_to_san(Action action, const std::vector<Action>& legalActions, bool leadsToWin=false, bool bookMove=false) const {
-        return static_cast<const T*>(this)->action_to_san(action, legalActions, leadsToWin, bookMove);
-    }
+    virtual std::string action_to_san(Action action, const std::vector<Action>& legalActions, bool leadsToWin=false, bool bookMove=false) const = 0;
 
     /**
      * @brief is_terminal Returns the terminal type for the current state. If the state is a non terminal state,
@@ -200,9 +173,7 @@ public:
      * otherwise the value will later be overwritten. In the default case, this parameter can be ignored.
      * @return TerminalType
      */
-    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const {
-        return static_cast<const T*>(this)->is_terminal(numberLegalMoves, inCheck, customTerminalValue);
-    }
+    virtual TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const = 0;
 
     /**
      * @brief check_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
@@ -210,26 +181,20 @@ public:
      * It can be computed by `gives_check(<last-move-before-current-position>)`.
      * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
      */
-    Result check_result(bool inCheck) const {
-        return static_cast<const T*>(this)->check_result(inCheck);
-    }
+    virtual Result check_result(bool inCheck) const = 0;
 
     /**
      * @brief gives_check Checks if the current action is a checking move
      * @param action Action
      * @return bool
      */
-    bool gives_check(Action action) const {
-        return static_cast<const T*>(this)->gives_check(action);
-    }
+    virtual bool gives_check(Action action) const = 0;
 
     /**
      * @brief print Print method used for the operator <<
      * @param os OS stream object
      */
-    void print(std::ostream& os) const {
-        static_cast<const T*>(this)->print(os);
-    }
+    virtual void print(std::ostream& os) const = 0;
 
     /**
      * @brief operator << Operator overload for <<
@@ -244,10 +209,12 @@ public:
     }
 
     /**
-     * @brief clone Clones the current state as a deep copy
+     * @brief clone Clones the current state as a deep copy.
+     * Returning a unique_ptr instead is possible but becomes messy:
+     * https://github.com/CppCodeReviewers/Covariant-Return-Types-and-Smart-Pointers
      * @return deep copy
      */
-    virtual std::unique_ptr<T> clone() const = 0;
+    virtual State* clone() const = 0;
 };
 
 #endif // GAMESTATE_H

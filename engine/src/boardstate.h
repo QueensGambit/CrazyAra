@@ -28,11 +28,12 @@
 #ifndef BOARTSTATE_H
 #define BOARTSTATE_H
 
+#ifndef MODE_POMMERMAN
 #include "uci.h"
 #include "state.h"
 #include "board.h"
 
-class BoardState : public State<BoardState>
+class BoardState : public State
 {
 private:
     Board board;
@@ -43,25 +44,26 @@ public:
     BoardState(const BoardState& b);
 
     // State interface
-    vector<Action> legal_actions() const;
-    void set(const string &fenStr, bool isChess960, int variant);
-    void get_state_planes(bool normalize, float *inputPlanes) const;
-    unsigned int steps_from_null() const;
-    bool is_chess960() const;
-    string fen() const;
-    void do_action(Action action);
-    void undo_action(Action action);
-    unsigned int number_repetitions() const;
-    int side_to_move() const;
-    Key hash_key() const;
-    void flip();
-    Action uci_to_action(string& uciStr) const;
-    string action_to_san(Action action, const vector<Action>& legalActions, bool leadsToWin, bool bookMove) const;
-    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const;
-    Result check_result(bool inCheck) const;
-    bool gives_check(Action action) const;
-    void print(ostream& os) const;
-    unique_ptr<BoardState> clone() const override;
+    vector<Action> legal_actions() const override;
+    void set(const string &fenStr, bool isChess960, int variant) override;
+    void get_state_planes(bool normalize, float *inputPlanes) const override;
+    unsigned int steps_from_null() const override;
+    bool is_chess960() const override;
+    string fen() const override;
+    void do_action(Action action) override;
+    void undo_action(Action action) override;
+    unsigned int number_repetitions() const override;
+    int side_to_move() const override;
+    Key hash_key() const override;
+    void flip() override;
+    Action uci_to_action(string& uciStr) const override;
+    string action_to_san(Action action, const vector<Action>& legalActions, bool leadsToWin=false, bool bookMove=false) const override;
+    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const override;
+    Result check_result(bool inCheck) const override;
+    bool gives_check(Action action) const override;
+    void print(ostream& os) const override;
+    BoardState* clone() const override;
 };
 
 #endif // BOARTSTATE_H
+#endif
