@@ -33,12 +33,10 @@
 #include <unordered_map>
 
 #include <blaze/Math.h>
-#include "movegen.h"
 #include "stateobj.h"
 
 #include "agents/config/searchsettings.h"
 #include "nodedata.h"
-#include "constants.h"
 #include "agents/util/gcthread.h"
 
 
@@ -397,12 +395,12 @@ private:
      */
     void check_for_terminal(StateObj* state, bool inCheck);
 
-    /**
-     * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
-     *  updates isTerminal and the value evaluation
-     * @param pos Current board position for this node
-     */
-    void check_for_tablebase_wdl(Board* pos);
+//    /**
+//     * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
+//     *  updates isTerminal and the value evaluation
+//     * @param pos Current board position for this node
+//     */
+//    void check_for_tablebase_wdl(Board* pos);
 
     /**
      * @brief solve_for_terminal Tries to solve the current node to be a forced win, loss or draw.
@@ -496,11 +494,11 @@ private:
      */
     void mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qValueWeight) const;
 
-    /**
-     * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
-     * @param pos Current board positions
-     */
-    void mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings);
+//    /**
+//     * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
+//     * @param pos Current board positions
+//     */
+//    void mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings);
 
     /**
      * @brief disable_move Disables a given move for futher visits by setting the corresponding Q-value to -INT_MAX
@@ -518,32 +516,6 @@ private:
  * @return Index for best move and child node
  */
 size_t get_best_action_index(const Node* curNode, bool fast);
-
-/**
- * @brief generate_dtz_values Generates the DTZ values for a given position and all legal moves.
- * This function assumes that the given position is a TB entry.
- * Warning: The DTZ values do not return the fastest way to win but the distance to zeroing (50 move rule counter reset)
- * @param legalMoves Legal moves
- * @param pos Current position
- * @param dtzValues Returned dtz-Values in the view of the current player to use
- */
-void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues);
-
-// https://stackoverflow.com/questions/6339970/c-using-function-as-parameter
-typedef bool (* vFunctionMoveType)(const Board* pos, Move move);
-inline bool is_check(const Board* pos, Move move);
-inline bool is_capture(const Board* pos, Move move);
-
-/**
- * @brief enhance_checks Enhances all possible checking moves below threshCheck by incrementCheck and returns true if a modification
- * was applied. This signals that a renormalization should be applied afterwards.
- * @param increment_check Constant factor which is added to the checks below threshCheck
- * @param threshCheck Probability threshold for checking moves
- * @param gcThread Reference to the garbage collector object
- * @return bool
-*/
-inline bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves,
-                              const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall);
 
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.

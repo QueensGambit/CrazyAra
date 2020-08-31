@@ -28,7 +28,7 @@
 #ifndef INPUTREPRESENTATION_H
 #define INPUTREPRESENTATION_H
 
-#include "../../board.h"
+#include "board.h"
 
 /**
  * @brief board_to_planes Converts the given board representation into the plane representation.
@@ -50,6 +50,4 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
  */
 inline void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color);
 
-
 #endif // INPUTREPRESENTATION_H
-

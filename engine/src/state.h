@@ -37,6 +37,7 @@
 typedef uint64_t Key;
 typedef int Action;
 typedef int SideToMove;
+#define FIRST_PLAYER_IDX 0
 const int ACTION_NONE = 0;
 
 enum TerminalType {

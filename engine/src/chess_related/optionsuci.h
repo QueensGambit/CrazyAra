@@ -18,21 +18,37 @@
 */
 
 /*
- * @file: main.cpp
- * Created on 17.08.2019
+ * @file: optionsuci.h
+ * Created on 13.07.2019
  * @author: queensgambit
  *
- * Main entry point for the engine CrazyAra
+ * UCI Option definition and initialization with default values.
  */
 
-#include "tests/tests.h"
-#include "crazyara.h"
+#ifndef OPTIONSUCI_H
+#define OPTIONSUCI_H
 
-#ifndef BUILD_TESTS
-int main(int argc, char* argv[]) {
-    CrazyAra crazyara;
-    crazyara.init();
-    crazyara.welcome();
-    crazyara.uci_loop(argc, argv);
+#include "uci.h"
+#include "misc.h"
+#include "variants.h"
+
+using namespace UCI;
+
+namespace OptionsUCI {
+
+    /**
+     * @brief init Defines and initiatlizes the UCI options
+     * @param o Alias to the option map which will get initialized
+     */
+    void init(OptionsMap& o);
+
+    /**
+     * @brief setoption Sets a given option value to the Options map.
+     * Method is based on 3rdparty/Stockfish/uci.cpp
+     * @param is Stringstream
+     */
+    void setoption(istringstream& is);
+
 }
-#endif
+
+#endif // OPTIONSUCI_H

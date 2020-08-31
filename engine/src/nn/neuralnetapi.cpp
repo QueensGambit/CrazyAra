@@ -25,7 +25,7 @@
 
 #include "neuralnetapi.h"
 #include <string>
-#include "../domain/crazyhouse/constants.h"
+#include "../constants.h"
 
 NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
     deviceID(deviceID),

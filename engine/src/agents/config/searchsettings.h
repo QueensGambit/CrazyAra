@@ -28,9 +28,7 @@
 #ifndef SEARCHSETTINGS_H
 #define SEARCHSETTINGS_H
 
-#include "uci.h"
-
-using namespace UCI;
+#include <cstdlib>
 
 struct SearchSettings
 {

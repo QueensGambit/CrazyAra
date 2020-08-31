@@ -30,8 +30,9 @@
 
 #ifndef MODE_POMMERMAN
 #include "uci.h"
-#include "state.h"
+#include "../state.h"
 #include "board.h"
+using namespace std;
 
 class BoardState : public State
 {

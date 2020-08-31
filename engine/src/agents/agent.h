@@ -28,7 +28,6 @@
 #ifndef AGENT_H
 #define AGENT_H
 
-#include "../board.h"
 #include "../stateobj.h"
 #include "../evalinfo.h"
 #include "config/searchlimits.h"

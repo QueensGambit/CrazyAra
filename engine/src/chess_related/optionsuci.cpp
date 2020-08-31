@@ -101,9 +101,9 @@ void OptionsUCI::init(OptionsMap &o)
     o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
 #endif
 #ifdef MODE_CRAZYHOUSE
-    o["Model_Directory"]               << Option("model/");
+    o["Model_Directory"]               << Option("model");
 #else
-    o["Model_Directory"]               << Option("model/");
+    o["Model_Directory"]               << Option("model");
 #endif
 #ifdef USE_RL
     o["Model_Directory_Contender"]     << Option("model_contender/");
@@ -127,6 +127,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["SyzygyPath"]                    << Option("<empty>");
     o["Log_File"]                      << Option("", on_logger);
     o["Use_NPS_Time_Manager"]          << Option(true);
+    o["Use_Advantage"]                 << Option(false);
 #ifdef SUPPORT960
     o["UCI_Chess960"]                  << Option(true);
 #endif

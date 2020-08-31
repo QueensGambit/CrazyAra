@@ -24,7 +24,6 @@
  */
 
 #include "evalinfo.h"
-#include "uci.h"
 #include "../util/blazeutil.h"
 
 void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, size_t elapsedTimeMS)

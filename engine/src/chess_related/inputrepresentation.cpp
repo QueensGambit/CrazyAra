@@ -24,10 +24,10 @@
  */
 
 #include "inputrepresentation.h"
-//#include "board.h"
-#include "constants.h"
 #include <iostream>
 #include <deque>
+#include "constants.h"
+#include "sfutil.h"
 using namespace std;
 
 void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color) {
@@ -218,8 +218,10 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     if (pos->is_chess960()) {
         std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
     }
-    current_channel++;
+#endif
 
+#if defined(MODE_CHESS) || defined(MODE_LICHESS)
+    current_channel = NB_CHANNELS_TOTAL - NB_CHANNELS_HISTORY;
     // (VI) Fill the bits of the last move planes
     for (const Move move : pos->get_last_moves()) {
         if (me == WHITE) {

@@ -32,9 +32,7 @@
 #include <iostream>
 #include <chrono>
 
-#include "types.h"
 #include <blaze/Math.h>
-#include "constants.h"
 #include "node.h"
 
 using blaze::HybridVector;

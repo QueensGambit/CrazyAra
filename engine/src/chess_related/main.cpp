@@ -18,18 +18,23 @@
 */
 
 /*
- * @file: policymaprepresentation.cpp
- * Created on 09.07.2019
+ * @file: main.cpp
+ * Created on 17.08.2019
  * @author: queensgambit
  *
- * Functionality for representing all possible moves in the policy feature maps.
- * Note, most of the entries in the policy feature map are unusable because the represent illegal moves
- * which would go beyond the board.
- * Most of the functions are 100% optimal in terms of performance, but there are only used to create a static look-up
- * table for retrieving the move probability from the policy feature maps, so this doesn't play a factor.
- *
- * The code is based on the python version:
- * CrazyAra/blob/master/DeepCrazyhouse/src/domain/crazyhouse/plane_policy_representation.py
+ * Main entry point for the engine CrazyAra
  */
 
-#include "policymaprepresentation.h"
+#include "tests/tests.h"
+#include "stateobj.h"
+#include <iostream>
+#include "crazyara.h"
+
+#ifndef BUILD_TESTS
+int main(int argc, char* argv[]) {
+    CrazyAra crazyara;
+    crazyara.init();
+    crazyara.welcome();
+    crazyara.uci_loop(argc, argv);
+}
+#endif

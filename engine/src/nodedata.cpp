@@ -25,6 +25,7 @@
 
 #include "nodedata.h"
 #include "util/blazeutil.h"
+#include "constants.h"
 
 void NodeData::add_empty_node()
 {

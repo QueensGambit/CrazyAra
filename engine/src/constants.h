@@ -36,11 +36,11 @@
 
 #include <string>
 #include <unordered_map>
-#include "types.h"
-#include "../../state.h"
-#include "../../util/sfutil.h"
 #include <iostream>
-#include "policymaprepresentation.h"
+#include "state.h"
+#ifndef MODE_POMMERMAN
+#include "types.h"
+#endif
 
 using namespace std;
 
@@ -73,8 +73,8 @@ const int NB_CHANNELS_PER_HISTORY = 0;
 const int NB_CHANNELS_POS = 27;
 const int NB_CHANNELS_CONST = 11;
 const int NB_CHANNELS_VARIANTS = 9;
-const int NB_LAST_MOVES = 0;
-const int NB_CHANNELS_PER_HISTORY = 0;
+const int NB_LAST_MOVES = 8;
+const int NB_CHANNELS_PER_HISTORY = 2;
 #else  // MODE = MODE_CHESS
 const int NB_CHANNELS_POS = 15;
 const int NB_CHANNELS_CONST = 7;
@@ -6736,30 +6736,5 @@ extern std::unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED_CLA
 
 //https://stackoverflow.com/questions/23390034/c-change-global-variable-value-in-different-files
 extern std::string LABELS_MIRRORED[NB_LABELS];
-
-namespace Constants {
-inline void init(bool isPolicyMap) {
-#ifdef SUPPORT960
-    const bool is960 = true;
-#else
-    const bool is960 = false;
-#endif
-
-    // fill mirrored label list and look-up table
-    for (size_t mvIdx=0; mvIdx < NB_LABELS; mvIdx++) {
-        LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);
-        std::vector<Move> moves = make_move(LABELS[mvIdx], is960);
-        for (Move move : moves) {
-            isPolicyMap ? MV_LOOKUP.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP.insert({move, mvIdx});
-            MV_LOOKUP_CLASSIC.insert({move, mvIdx});
-        }
-        std::vector<Move> moves_mirrored = make_move(LABELS_MIRRORED[mvIdx], is960);
-        for (Move move : moves_mirrored) {
-            isPolicyMap ? MV_LOOKUP_MIRRORED.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP_MIRRORED.insert({move, mvIdx});
-            MV_LOOKUP_MIRRORED_CLASSIC.insert({move, mvIdx});
-        }
-    }
-}
-}
 
 #endif // CONSTANTS_H

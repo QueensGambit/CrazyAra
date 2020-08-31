@@ -33,7 +33,6 @@
 #ifndef MCTSAGENT_H
 #define MCTSAGENT_H
 
-#include "position.h"
 #include "agent.h"
 #include "../evalinfo.h"
 #include "../node.h"

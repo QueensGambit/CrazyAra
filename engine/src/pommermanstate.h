@@ -33,7 +33,7 @@
 #include "bboard.hpp"
 
 
-class PommermanState : public State<PommermanState>
+class PommermanState : public State
 {
 public:
     PommermanState();
@@ -64,7 +64,7 @@ public:
     Result check_result(bool inCheck) const;
     bool gives_check(Action action) const;
     void print(std::ostream& os) const;
-    std::unique_ptr<PommermanState> clone() const;
+    PommermanState* clone() const;
 };
 
 #endif // POMMERMANSTATE_H

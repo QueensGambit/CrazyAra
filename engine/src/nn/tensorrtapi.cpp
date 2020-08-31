@@ -31,8 +31,11 @@
 #include <iostream>
 #include <sstream>
 #include "EntropyCalibrator.h"
-#include "constants.h"
+#include "../constants.h"
 #include "../util/communication.h"
+#ifndef MODE_POMMERMAN
+#include "chess_related/chessbatchstream.h"
+#endif
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
@@ -132,7 +135,7 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
 
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
     unique_ptr<IInt8Calibrator> calibrator;
-    unique_ptr<ChessBatchStream> calibrationStream;
+    unique_ptr<IBatchStream> calibrationStream;
     set_config_settings(config, network, 1_GiB, calibrator, calibrationStream);
 
     // conversion of ONNX model to TensorRT
@@ -184,7 +187,7 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
                                       SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
                                       size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
-                                      unique_ptr<ChessBatchStream>& calibrationStream)
+                                      unique_ptr<IBatchStream>& calibrationStream)
 {
     config->setMaxWorkspaceSize(maxWorkspace);
     switch (precision) {
@@ -202,7 +205,9 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 #elif defined MODE_CRAZYHOUSE
         calibrationStream.reset(new ChessBatchStream(1, 232));
 #endif
-        calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*calibrationStream.get(), 0, "model", "data"));
+#ifndef MODE_POMMERMAN
+        calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*(dynamic_cast<ChessBatchStream*>(calibrationStream.get())), 0, "model", "data"));
+#endif
         config->setInt8Calibrator(calibrator.get());
         samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
         break;
