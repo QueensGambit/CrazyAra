@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#ifndef MODE_POMMERMAN
 #include "board.h"
 #include "constants.h"
 #include "uci.h"
@@ -102,7 +103,7 @@ Board& Board::operator=(const Board &b)
     chess960 = b.chess960;
     var = b.var;
     subvar = b.subvar;
-#ifdef MODE_CHESS
+#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     lastMoves = b.lastMoves;  // vectors and deques are deeply copied by default
 #endif
     return *this;
@@ -179,7 +180,7 @@ bool Board::draw_by_insufficient_material() const
     return false;
 }
 
-#ifdef MODE_CHESS
+#if defined(MODE_CHESS) || defined(MODE_LICHESS)
 void Board::add_move_to_list(Move m)
 {
     lastMoves.push_front(m);
@@ -372,3 +373,45 @@ int probe_dtz(Board &pos, Tablebases::ProbeState *result)
 {
     return Tablebases::probe_dtz(pos, result);
 }
+
+void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues) {
+    StateListPtr states = StateListPtr(new std::deque<StateInfo>(0));
+    // fill dtz value vector
+    for (size_t idx = 0; idx < legalMoves.size(); ++idx) {
+        states->emplace_back();
+        pos.do_move(legalMoves[idx], states->back());
+        Tablebases::ProbeState result;
+        int dtzValue = -probe_dtz(pos, &result);
+        if (result != Tablebases::FAIL) {
+            dtzValues[idx] = dtzValue;
+        }
+        else {
+            cerr << "DTZ tablebase look-up failed!";
+        }
+        pos.undo_move(legalMoves[idx]);
+    }
+}
+
+bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves, const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall)
+{
+    bool update = false;
+    for (size_t i = 0; i < legalMoves.size(); ++i) {
+        if (moveType[i] && policyProbSmall[i] < thresh) {
+            policyProbSmall[i] += increment;
+            update = true;
+        }
+    }
+    return update;
+}
+
+bool is_check(const Board* pos, Move move)
+{
+    return pos->gives_check(move);
+}
+
+bool is_capture(const Board* pos, Move move)
+{
+    return pos->capture(move);
+}
+
+#endif

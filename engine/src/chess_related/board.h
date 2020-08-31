@@ -28,15 +28,19 @@
 #ifndef BOARD_H
 #define BOARD_H
 
+#ifndef MODE_POMMERMAN
 #include <position.h>
 #include <deque>
 #include "syzygy/tbprobe.h"
-#include "domain/crazyhouse/constants.h"
+#include "../constants.h"
+#include <blaze/Math.h>
+using blaze::StaticVector;
+using blaze::DynamicVector;
 
 class Board : public Position
 {
 private:
-#ifdef MODE_CHESS
+#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     // up to NB_LAST_MOVES are stored in a list, most recent moves first
     deque<Move> lastMoves;
     /**
@@ -109,7 +113,7 @@ public:
      */
     bool draw_by_insufficient_material() const;
 
-#ifdef MODE_CHESS
+#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     // overloaded function which include a last move list update
     void do_move(Move m, StateInfo& newSt);
     void do_move(Move m, StateInfo& newSt, bool givesCheck);
@@ -192,4 +196,31 @@ Tablebases::WDLScore probe_wdl(Board& pos, Tablebases::ProbeState* result);
  */
 int probe_dtz(Board& pos, Tablebases::ProbeState* result);
 
+/**
+ * @brief generate_dtz_values Generates the DTZ values for a given position and all legal moves.
+ * This function assumes that the given position is a TB entry.
+ * Warning: The DTZ values do not return the fastest way to win but the distance to zeroing (50 move rule counter reset)
+ * @param legalMoves Legal moves
+ * @param pos Current position
+ * @param dtzValues Returned dtz-Values in the view of the current player to use
+ */
+void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues);
+
+// https://stackoverflow.com/questions/6339970/c-using-function-as-parameter
+typedef bool (* vFunctionMoveType)(const Board* pos, Move move);
+inline bool is_check(const Board* pos, Move move);
+inline bool is_capture(const Board* pos, Move move);
+
+/**
+ * @brief enhance_checks Enhances all possible checking moves below threshCheck by incrementCheck and returns true if a modification
+ * was applied. This signals that a renormalization should be applied afterwards.
+ * @param increment_check Constant factor which is added to the checks below threshCheck
+ * @param threshCheck Probability threshold for checking moves
+ * @param gcThread Reference to the garbage collector object
+ * @return bool
+*/
+inline bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves,
+                              const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall);
+
 #endif // BOARD_H
+#endif

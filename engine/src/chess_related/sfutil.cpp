@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#ifndef MODE_POMMERMAN
 #include "sfutil.h"
 #include <unordered_map>
 #include <algorithm>
@@ -256,3 +257,4 @@ bool is_960_castling_candidate_move(Square origin, Square destination)
            (rank_of(origin) == RANK_1 || rank_of(origin) == RANK_8) &&
            file_of(origin) != FILE_A && file_of(origin) != FILE_H;
 }
+#endif

@@ -35,10 +35,9 @@
 #include "movegen.h"
 #include "search.h"
 #include "evalinfo.h"
-#include "domain/crazyhouse/constants.h"
 #include "constants.h"
 #include "state.h"
-#include "domain/variants.h"
+#include "variants.h"
 #include "optionsuci.h"
 #include "tests/benchmarkpositions.h"
 #include "util/communication.h"
@@ -49,13 +48,6 @@
 #endif
 
 using namespace std;
-
-// allocate memory
-string LABELS_MIRRORED[NB_LABELS];
-unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP = {};
-unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED = {};
-unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_CLASSIC = {};
-unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED_CLASSIC = {};
 
 CrazyAra::CrazyAra():
     rawAgent(nullptr),

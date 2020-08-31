@@ -18,9 +18,9 @@
 */
 
 #ifdef TENSORRT
+#ifndef MODE_POMMERMAN
 #include "chessbatchstream.h"
 #include "uci.h"
-
 
 ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     mBatchSize{batchSize},
@@ -163,4 +163,5 @@ void reset_to_startpos(Board& pos, Thread* uiThread, StateListPtr& states)
     pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, &states->back(), uiThread);
 #endif
 }
+#endif
 #endif

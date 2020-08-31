@@ -30,12 +30,13 @@
 #define CHESSBATCHSTREAM_H
 
 #ifdef TENSORRT
+#ifndef MODE_POMMERMAN
+
 #include "thread.h"
 #include "EntropyCalibrator.h"
 #include "BatchStream.h"
-#include "inputrepresentation.h"
-#include "../domain/variants.h"
-#include "../domain/crazyhouse/inputrepresentation.h"
+#include "chess_related/inputrepresentation.h"
+#include "chess_related/variants.h"
 #include "constants.h"
 
 /**
@@ -74,6 +75,7 @@ private:
 };
 
 void reset_to_startpos(Board& pos, Thread* uiThread, StateListPtr& states);
+#endif
 #endif
 
 #endif // CHESSBATCHSTREAM_H

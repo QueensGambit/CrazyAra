@@ -28,6 +28,7 @@
 #ifndef SFUTIL_H
 #define SFUTIL_H
 
+#ifndef MODE_POMMERMAN
 #include <string>
 #include <cctype>
 #include "types.h"
@@ -136,3 +137,4 @@ constexpr Square vertical_flip(Square s) {
 }
 
 #endif // SFUTIL_H
+#endif

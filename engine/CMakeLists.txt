@@ -67,22 +67,14 @@ if( blaze_FOUND )
 endif()
 
 file(GLOB source_files
-    "3rdparty/Stockfish/src/syzygy/*.h"
-    "3rdparty/Stockfish/src/syzygy/*.cpp"
-    "3rdparty/Stockfish/src/*.h"
-    "3rdparty/Stockfish/src/*.cpp"
     "3rdparty/catch-2.91/*.hpp"
     "*.h"
     "*.cpp"
     "*.md"
     "src/*.h"
     "src/*.cpp"
-    "src/tests/*.h"
-    "src/tests/*.cpp"
     "src/util/*.h"
     "src/util/*.cpp"
-    "src/domain/crazyhouse/*.h"
-    "src/domain/crazyhouse/*.cpp"
     "src/agents/*.cpp"
     "src/agents/*.h"
     "src/agents/config/*.cpp"
@@ -107,6 +99,7 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
 
 find_package (Threads)
 include_directories("3rdparty/Stockfish/src")
+include_directories("src")
 
 if (MODE_POMMERMAN)
     if(DEFINED ENV{CONDA_ENV_PATH})
@@ -126,6 +119,20 @@ if (MODE_POMMERMAN)
         )
     include_directories("3rdparty/pomcpp/include")
     include_directories("3rdparty/PommerLearn/cpp/include")
+else()
+    file(GLOB chess_related_files
+        "3rdparty/Stockfish/src/syzygy/*.h"
+        "3rdparty/Stockfish/src/syzygy/*.cpp"
+        "3rdparty/Stockfish/src/*.h"
+        "3rdparty/Stockfish/src/*.cpp"
+        "src/chess_related/*.h"
+        "src/chess_related/*.cpp"
+        "src/tests/*.h"
+        "src/tests/*.cpp")
+    set(source_files
+        ${source_files}
+        ${chess_related_files}
+        )
 endif()
 include_directories("3rdparty/catch-2.9.1")
 

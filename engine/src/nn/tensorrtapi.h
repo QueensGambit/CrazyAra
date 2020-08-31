@@ -42,7 +42,7 @@
 
 #include "NvInfer.h"
 #include <cuda_runtime_api.h>
-#include "util/chessbatchstream.h"
+#include "BatchStream.h"
 
 using namespace std;
 
@@ -127,7 +127,8 @@ private:
     void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
                              SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
                              size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
-                             unique_ptr<ChessBatchStream>& calibrationStream);
+                             unique_ptr<IBatchStream>& calibrationStream);
+
 
     /**
      * @brief configure_network Adds a softmax layer and extracts the I/O-dimensions of the network

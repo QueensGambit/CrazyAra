@@ -25,7 +25,7 @@
 
 #ifndef MODE_POMMERMAN
 #include "boardstate.h"
-#include "domain/crazyhouse/inputrepresentation.h"
+#include "inputrepresentation.h"
 
 BoardState::BoardState():
     State(),

@@ -25,6 +25,9 @@
  * Functionality for representing all possible moves in the policy feature maps.
  * Note, most of the entries in the policy feature map are unusable because the represent illegal moves
  * which would go beyond the board.
+ *
+ * The code is based on the python version:
+ * CrazyAra/blob/master/DeepCrazyhouse/src/domain/crazyhouse/plane_policy_representation.py
  */
 
 #ifndef POLICYMAPREPRESENTATION_H

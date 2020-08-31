@@ -28,7 +28,6 @@
 #include "syzygy/tbprobe.h"
 #include "util/blazeutil.h" // get_dirichlet_noise()
 #include "constants.h"
-#include "../util/sfutil.h"
 #include "../util/communication.h"
 #include "evalinfo.h"
 
@@ -698,27 +697,27 @@ void Node::check_for_terminal(StateObj* pos, bool inCheck)
     }
 }
 
-void Node::check_for_tablebase_wdl(Board *pos)
-{
-    Tablebases::ProbeState result;
-    Tablebases::WDLScore wdlScore = probe_wdl(*pos, &result);
+//void Node::check_for_tablebase_wdl(Board *pos)
+//{
+//    Tablebases::ProbeState result;
+//    Tablebases::WDLScore wdlScore = probe_wdl(*pos, &result);
 
-    if (result != Tablebases::FAIL) {
-        // TODO: Change return values
-        isTablebase = true;
-        switch(wdlScore) {
-        case Tablebases::WDLLoss:
-            set_value(-0.99); //LOSS);
-            break;
-        case Tablebases::WDLWin:
-            set_value(0.99); //WIN);
-            break;
-        default:
-            set_value(0.00001); //DRAW);
-        }
-    }
-    // default: isTablebase = false;
-}
+//    if (result != Tablebases::FAIL) {
+//        // TODO: Change return values
+//        isTablebase = true;
+//        switch(wdlScore) {
+//        case Tablebases::WDLLoss:
+//            set_value(-0.99); //LOSS);
+//            break;
+//        case Tablebases::WDLWin:
+//            set_value(0.99); //WIN);
+//            break;
+//        default:
+//            set_value(0.00001); //DRAW);
+//        }
+//    }
+//    // default: isTablebase = false;
+//}
 
 void Node::make_to_root()
 {
@@ -764,25 +763,25 @@ void Node::apply_softmax_to_policy()
     policyProbSmall = softmax(policyProbSmall);
 }
 
-void Node::mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings)
-{
-    //    const float numberChildNodes = get_number_child_nodes();
-    //    if (searchSettings->enhanceChecks || searchSettings->enhanceCaptures) {
-    //        isCheck.resize(numberChildNodes);
-    //        isCheck = false;
-    //        isCapture.resize(numberChildNodes);
-    //        isCapture = false;
+//void Node::mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings)
+//{
+//    //    const float numberChildNodes = get_number_child_nodes();
+//    //    if (searchSettings->enhanceChecks || searchSettings->enhanceCaptures) {
+//    //        isCheck.resize(numberChildNodes);
+//    //        isCheck = false;
+//    //        isCapture.resize(numberChildNodes);
+//    //        isCapture = false;
 
-    //        for (size_t idx = 0; idx < numberChildNodes; ++idx) {
-    //            if (pos->capture(legalMoves[idx])) {
-    //                isCapture[idx] = true;
-    //            }
-    //            if (pos->gives_check(legalMoves[idx])) {
-    //                isCheck[idx] = true;
-    //            }
-    //        }
-    //    }
-}
+//    //        for (size_t idx = 0; idx < numberChildNodes; ++idx) {
+//    //            if (pos->capture(legalMoves[idx])) {
+//    //                isCapture[idx] = true;
+//    //            }
+//    //            if (pos->gives_check(legalMoves[idx])) {
+//    //                isCheck[idx] = true;
+//    //            }
+//    //        }
+//    //    }
+//}
 
 void Node::disable_action(size_t childIdxForParent)
 {
@@ -811,28 +810,6 @@ void Node::enhance_moves(const SearchSettings* searchSettings)
     //    if (checkUpdate || captureUpdate) {
     //        policyProbSmall /= sum(policyProbSmall);
     //    }
-}
-
-bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves, const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall)
-{
-    bool update = false;
-    for (size_t i = 0; i < legalMoves.size(); ++i) {
-        if (moveType[i] && policyProbSmall[i] < thresh) {
-            policyProbSmall[i] += increment;
-            update = true;
-        }
-    }
-    return update;
-}
-
-bool is_check(const Board* pos, Move move)
-{
-    return pos->gives_check(move);
-}
-
-bool is_capture(const Board* pos, Move move)
-{
-    return pos->capture(move);
 }
 
 DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSettings)
@@ -962,24 +939,6 @@ NodeType flip_node_type(const enum NodeType nodeType) {
     }
 }
 
-void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues) {
-    StateListPtr states = StateListPtr(new std::deque<StateInfo>(0));
-    // fill dtz value vector
-    for (size_t idx = 0; idx < legalMoves.size(); ++idx) {
-        states->emplace_back();
-        pos.do_move(legalMoves[idx], states->back());
-        Tablebases::ProbeState result;
-        int dtzValue = -probe_dtz(pos, &result);
-        if (result != Tablebases::FAIL) {
-            dtzValues[idx] = dtzValue;
-        }
-        else {
-            info_string("DTZ tablebase look-up failed!");
-        }
-        pos.undo_move(legalMoves[idx]);
-    }
-}
-
 void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
 {
     if (node->get_parent_node() != nullptr) {
@@ -1047,7 +1006,7 @@ void Node::print_node_statistics(const StateObj* state)
             cout << setw(5) << action_to_uci(move, false) << " | ";
         }
         else {
-            cout << setw(5) << state->action_to_san(move, get_legal_action()) << " | ";
+            cout << setw(5) << state->action_to_san(move, get_legal_action(), false, false) << " | ";
         }
         cout << setw(12) << n << " | "
              << setw(9) << policyProbSmall[childIdx] << " | "

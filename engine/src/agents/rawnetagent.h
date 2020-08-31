@@ -29,11 +29,10 @@
 #ifndef RAWNETAGENT_H
 #define RAWNETAGENT_H
 
-#include "position.h"
 #include "../evalinfo.h"
 #include "../node.h"
 #include <thread>
-#include "../board.h"
+#include "../constants.h"
 #include "../nn/neuralnetapi.h"
 #include "config/searchsettings.h"
 #include "config/searchlimits.h"

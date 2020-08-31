@@ -4,7 +4,7 @@
 
 ## Folder Structure
 *   **`agents`**: Contains the specification for different search agent regimes
-*   **`domain`**: Contains conversion methods of the board into plane representation and constant definition for chess variants
+*   **`chess_related`**: Contains conversion methods of the board into plane representation and constant definition for chess variants. You don't need to include this directory when using CrazyAra as a library for a different game.
 *   **`manager`**: Contains manager classes for different aspects e.g. the search tree, the time and the states list
 *   **`nn`**: Contains the functionality methods for loading the neural network and predicting the policy and value evaluation
 *   **`util`**: Contains additional utility methods for the blaze library and stockfish backend

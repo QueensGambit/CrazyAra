@@ -31,14 +31,8 @@
 #include <iostream>
 #include <mutex>
 #include <unordered_map>
-
 #include <blaze/Math.h>
-#include "position.h"
-#include "movegen.h"
-#include "board.h"
-
 #include "agents/config/searchsettings.h"
-#include "constants.h"
 
 using blaze::HybridVector;
 using blaze::DynamicVector;

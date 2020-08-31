@@ -25,9 +25,7 @@
 
 #include <blaze/Math.h>
 #include "rawnetagent.h"
-#include "inputrepresentation.h"
-#include "outputrepresentation.h"
-#include "constants.h"
+#include "../stateobj.h"
 #include "misc.h"
 #include "../util/blazeutil.h"
 #include "uci.h"

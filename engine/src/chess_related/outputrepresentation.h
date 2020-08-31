@@ -18,9 +18,31 @@
 */
 
 /*
- * @file: constants.cpp
+ * @file: outputrepresentation.h
  * Created on 13.05.2019
  * @author: queensgambit
+ *
+ * Provides all methods to convert a move to policy representation and back.
  */
 
-#include "constants.h"
+#ifndef OUTPUTREPRESENTATION_H
+#define OUTPUTREPRESENTATION_H
+
+#include <blaze/Math.h>
+#include "../constants.h"
+#include "../../state.h"
+
+using blaze::HybridVector;
+using blaze::DynamicVector;
+
+using namespace std;
+
+//void get_probs_of_moves(const float *data, const vector<Move>& legalMoves,
+//                        unordered_map<Move, size_t, std::hash<int>>& moveLookup, DynamicVector<float> &policyProbSmall);
+
+void apply_softmax(DynamicVector<float> &policyProbSmall);
+
+void init_policy_constants(bool isPolicyMap);
+
+
+#endif // OUTPUTREPRESENTATION_H

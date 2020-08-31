@@ -40,7 +40,7 @@ PommermanState::PommermanState():
     agents::RandomAgent* r = new agents::RandomAgent;
     std::array<bboard::Agent*, 4> agents = {r,r,r,r};
     env.MakeGame(agents);
-    env.StartGame(1000, false, false);
+//    env.StartGame(1000, false, false);
 }
 
 PommermanState::~PommermanState()
@@ -146,7 +146,7 @@ bool PommermanState::gives_check(Action action) const
     return false;
 }
 
-std::unique_ptr<PommermanState> PommermanState::clone() const
+PommermanState* PommermanState::clone() const
 {
     // TODO
 }
