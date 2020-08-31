@@ -30,12 +30,12 @@
 #include <string>
 #include "catch.hpp"
 #include "uci.h"
-#include "../optionsuci.h"
-#include "../util/sfutil.h"
-#include "../domain/variants.h"
+#include "chess_related/optionsuci.h"
+#include "chess_related/sfutil.h"
+#include "chess_related/variants.h"
 #include "thread.h"
-#include "../domain/crazyhouse/constants.h"
-#include "../domain/crazyhouse/inputrepresentation.h"
+#include "constants.h"
+#include "chess_related/inputrepresentation.h"
 using namespace Catch::literals;
 using namespace std;
 using namespace OptionsUCI;
@@ -93,7 +93,7 @@ TEST_CASE("Chess960 castling moves") {
     REQUIRE(are_all_entries_true(castlingMoves, is_960_castling_candidate_move) == true);
 }
 
-#ifdef LICHESS_MODE
+#ifdef MODE_LICHESS
 TEST_CASE("Anti-Chess StartFEN"){
     init();
 
@@ -177,7 +177,7 @@ TEST_CASE("Draw_by_insufficient_material"){
     REQUIRE(pos.draw_by_insufficient_material() == false);
 }
 
-#ifdef CHESS_MODE
+#ifdef MODE_CHESS
 TEST_CASE("Chess_Input_Planes"){
     init();
     Board pos;

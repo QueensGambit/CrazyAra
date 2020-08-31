@@ -204,7 +204,7 @@ int probe_dtz(Board& pos, Tablebases::ProbeState* result);
  * @param pos Current position
  * @param dtzValues Returned dtz-Values in the view of the current player to use
  */
-void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues);
+void generate_dtz_values(const vector<Move>& legalMoves, Board& pos, DynamicVector<int>& dtzValues);
 
 // https://stackoverflow.com/questions/6339970/c-using-function-as-parameter
 typedef bool (* vFunctionMoveType)(const Board* pos, Move move);

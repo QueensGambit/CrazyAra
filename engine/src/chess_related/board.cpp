@@ -374,7 +374,7 @@ int probe_dtz(Board &pos, Tablebases::ProbeState *result)
     return Tablebases::probe_dtz(pos, result);
 }
 
-void generate_dtz_values(const vector<Move> legalMoves, Board& pos, DynamicVector<int>& dtzValues) {
+void generate_dtz_values(const vector<Move>& legalMoves, Board& pos, DynamicVector<int>& dtzValues) {
     StateListPtr states = StateListPtr(new std::deque<StateInfo>(0));
     // fill dtz value vector
     for (size_t idx = 0; idx < legalMoves.size(); ++idx) {

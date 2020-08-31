@@ -33,7 +33,7 @@
 #ifdef BUILD_TESTS
 #include <vector>
 #include <string>
-#include "../board.h"
+#include "chess_related/board.h"
 
 using namespace std;
 

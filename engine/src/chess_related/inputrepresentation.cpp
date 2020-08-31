@@ -218,14 +218,10 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     if (pos->is_chess960()) {
         std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
     }
-    current_channel++;
 #endif
 
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
-
-#ifdef MODE_LICHESS
-    current_channel = 46;
-#endif
+    current_channel = NB_CHANNELS_TOTAL - NB_CHANNELS_HISTORY;
     // (VI) Fill the bits of the last move planes
     for (const Move move : pos->get_last_moves()) {
         if (me == WHITE) {
