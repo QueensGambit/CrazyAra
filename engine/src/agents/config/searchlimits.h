@@ -25,11 +25,13 @@
  * Struct which stores information about when to stop the search
  */
 
-#include "misc.h"
+#include <chrono>
+#include <ostream>
 
 #ifndef SEARCHLIMITS_H
 #define SEARCHLIMITS_H
 
+typedef std::chrono::milliseconds::rep TimePoint; // A value in milliseconds
 
 struct SearchLimits
 {
@@ -39,8 +41,8 @@ public:
     int movestogo;
     int depth;
     int minMovetime;
-    int time[COLOR_NB];
-    int inc[COLOR_NB];
+    int time[2];
+    int inc[2];
     TimePoint npmsec;
     TimePoint startTime;
     int moveOverhead;

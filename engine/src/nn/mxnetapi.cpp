@@ -27,7 +27,7 @@
 
 #ifdef MXNET
 #include "../util/communication.h"
-#include "../domain/crazyhouse/constants.h"
+#include "constants.h"
 
 
 MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT) :

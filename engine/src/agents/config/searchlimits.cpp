@@ -24,14 +24,14 @@
  */
 
 #include "searchlimits.h"
-
+#include "state.h"
 
 std::ostream &operator<<(std::ostream &os, const SearchLimits &searchLimits)
 {
-    os << " wtime " << searchLimits.time[WHITE]
-          << " btime " << searchLimits.time[BLACK]
-             << " winc "  << searchLimits.inc[WHITE]
-                << " binc "  << searchLimits.inc[BLACK]
+    os << " wtime " << searchLimits.time[FIRST_PLAYER_IDX]
+          << " btime " << searchLimits.time[FIRST_PLAYER_IDX+1]
+             << " winc "  << searchLimits.inc[FIRST_PLAYER_IDX]
+                << " binc "  << searchLimits.inc[FIRST_PLAYER_IDX+1]
                    << "movestogo " << searchLimits.movestogo;
     return os;
 }
@@ -53,13 +53,13 @@ void SearchLimits::reset()
     moveOverhead = 0;
     infinite = false;
     ponder = false;
-    time[WHITE] = 0;
-    time[BLACK] = 0;
-    inc[WHITE] = 0;
-    inc[BLACK] = 0;
+    time[FIRST_PLAYER_IDX] = 0;
+    time[FIRST_PLAYER_IDX+1] = 0;
+    inc[FIRST_PLAYER_IDX] = 0;
+    inc[FIRST_PLAYER_IDX+1] = 0;
 }
 
 bool is_game_sceneario(const SearchLimits* searchLimits)
 {
-    return searchLimits->movestogo != 0 || searchLimits->time[WHITE] != 0 || searchLimits->time[BLACK] != 0;
+    return searchLimits->movestogo != 0 || searchLimits->time[FIRST_PLAYER_IDX] != 0 || searchLimits->time[FIRST_PLAYER_IDX+1] != 0;
 }

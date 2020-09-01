@@ -30,6 +30,7 @@
 #define TIMEMANAGER_H
 
 #include "../agents/config/searchlimits.h"
+#include "state.h"
 
 class TimeManager
 {
@@ -79,7 +80,7 @@ public:
      * @param moveNumber Move number of the position (ply//2)
      * @return movetime in ms
      */
-    int get_time_for_move(const SearchLimits* searchLimits, Color me, int moveNumber);
+    int get_time_for_move(const SearchLimits* searchLimits, SideToMove me, int moveNumber);
     int get_thresh_move() const;
 };
 
