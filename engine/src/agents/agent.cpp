@@ -27,8 +27,6 @@
 #include <chrono>
 
 #include "agent.h"
-#include "misc.h"
-#include "uci.h"
 #include "../util/communication.h"
 #include "../util/blazeutil.h"
 

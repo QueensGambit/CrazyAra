@@ -55,6 +55,31 @@ enum Result {
     NO_RESULT,
 };
 
+// -------------------------------------------------------------------------
+// from Stockfish/src/syzygy
+namespace Tablebase {
+
+enum WDLScore {
+    WDLLoss        = -2, // Loss
+    WDLBlessedLoss = -1, // Loss, but draw under 50-move rule
+    WDLDraw        =  0, // Draw
+    WDLCursedWin   =  1, // Win, but draw under 50-move rule
+    WDLWin         =  2, // Win
+
+    WDLScoreNone  = -1000
+};
+
+// Possible states after a probing operation
+enum ProbeState {
+    FAIL              =  0, // Probe failed (missing file table)
+    OK                =  1, // Probe succesful
+    CHANGE_STM        = -1, // DTZ should check the other side
+    ZEROING_BEST_MOVE =  2, // Best move zeroes DTZ (capture or pawn move)
+    THREAT            =  3  // Threatening to force capture in giveaway
+};
+}
+// -------------------------------------------------------------------------
+
 class State
 {
 public:
@@ -198,6 +223,14 @@ public:
     virtual void print(std::ostream& os) const = 0;
 
     /**
+     * @brief check_for_tablebase_wdl Checks the current state for a table base entry.
+     * Return Tablebase::WDLScoreNone and Tablebase::FAIL if your state doesn't support tablebases.
+     * @param result ProbeState result
+     * @return WDLScore
+     */
+    virtual Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState& result) = 0;
+
+    /*&
      * @brief operator << Operator overload for <<
      * @param os ostream object
      * @param state state object

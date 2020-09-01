@@ -26,6 +26,7 @@
 #ifndef MODE_POMMERMAN
 #include "boardstate.h"
 #include "inputrepresentation.h"
+#include "syzygy/tbprobe.h"
 
 BoardState::BoardState():
     State(),
@@ -175,6 +176,14 @@ bool BoardState::gives_check(Action action) const
 void BoardState::print(ostream &os) const
 {
     os << board;
+}
+
+Tablebase::WDLScore BoardState::check_for_tablebase_wdl(Tablebase::ProbeState &result)
+{
+    Tablebases::ProbeState res;
+    Tablebase::WDLScore wdlScore = Tablebase::WDLScore(Tablebases::probe_wdl(board, &res));
+    result = Tablebase::ProbeState(res);
+    return wdlScore;
 }
 
 BoardState* BoardState::clone() const

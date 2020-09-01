@@ -29,8 +29,8 @@
 #define OUTPUTREPRESENTATION_H
 
 #include <blaze/Math.h>
-#include "../constants.h"
-#include "../../state.h"
+#include "constants.h"
+#include "state.h"
 
 using blaze::HybridVector;
 using blaze::DynamicVector;

@@ -24,7 +24,6 @@
  */
 
 #include "gamepgn.h"
-#include "uci.h"
 
 ostream &operator<<(ostream& os, const GamePGN& gamePGN)
 {

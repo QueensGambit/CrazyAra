@@ -26,9 +26,7 @@
 #include <blaze/Math.h>
 #include "rawnetagent.h"
 #include "../stateobj.h"
-#include "misc.h"
 #include "../util/blazeutil.h"
-#include "uci.h"
 
 using blaze::HybridVector;
 
@@ -68,7 +66,7 @@ void RawNetAgent::evaluate_board_state()
     net->predict(begin(inputPlanes), &value, probOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
-    get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, Color(state->side_to_move()),
+    get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->side_to_move(),
                            !net->is_policy_map(), evalInfo->policyProbSmall, net->is_policy_map());
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];

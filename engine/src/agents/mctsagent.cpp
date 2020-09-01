@@ -26,10 +26,8 @@
 #include <thread>
 #include "mctsagent.h"
 #include "../evalinfo.h"
-#include "movegen.h"
 #include "../constants.h"
 #include "../util/blazeutil.h"
-#include "uci.h"
 #include "../manager/treemanager.h"
 #include "../manager/threadmanager.h"
 #include "../node.h"
@@ -191,7 +189,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
     state->get_state_planes(true, begin(inputPlanes));
     netSingle->predict(inputPlanes, &valueOutput, probOutputs.get());
     size_t tbHits = 0;
-    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs.get(), rootNode, tbHits, Color(state->side_to_move()), searchSettings);
+    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs.get(), rootNode, tbHits, state->side_to_move(), searchSettings);
     rootNode->prepare_node_for_visits();
 }
 
@@ -317,7 +315,7 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
-    int curMovetime = timeManager->get_time_for_move(searchLimits, Color(rootState->side_to_move()), rootNode->plies_from_null()/2);
+    int curMovetime = timeManager->get_time_for_move(searchLimits, rootState->side_to_move(), rootNode->plies_from_null()/2);
     threadManager = make_unique<ThreadManager>(rootNode, evalInfo, searchThreads, curMovetime, 250, searchSettings->multiPV, overallNPS, lastValueEval,
                                                is_game_sceneario(searchLimits),
                                                can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));

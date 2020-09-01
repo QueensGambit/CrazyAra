@@ -33,7 +33,6 @@
 #include <stdlib.h>
 #include <climits>
 #include "util/blazeutil.h"
-#include "uci.h"
 
 
 size_t SearchThread::get_max_depth() const
@@ -57,7 +56,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
 
     newNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
-    newNodeSideToMove = make_unique<FixedVector<Color>>(searchSettings->batchSize);
+    newNodeSideToMove = make_unique<FixedVector<SideToMove>>(searchSettings->batchSize);
     transpositionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize*2);
     collisionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
 }
@@ -213,7 +212,7 @@ void SearchThread::reset_stats()
     depthSum = 0;
 }
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, Color sideToMove, const SearchSettings* searchSettings)
+void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, is_policy_map), get_current_move_lookup(sideToMove));
     node_post_process_policy(node, searchSettings->nodePolicyTemperature, is_policy_map, searchSettings);
@@ -302,7 +301,7 @@ void SearchThread::create_mini_batch()
             // save a reference newly created list in the temporary list for node creation
             // it will later be updated with the evaluation of the NN
             newNodes->add_element(newNode);
-            newNodeSideToMove->add_element(Color(newState->side_to_move()));
+            newNodeSideToMove->add_element(newState->side_to_move());
         }
     }
 }

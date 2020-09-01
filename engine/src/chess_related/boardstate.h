@@ -63,6 +63,7 @@ public:
     Result check_result(bool inCheck) const override;
     bool gives_check(Action action) const override;
     void print(ostream& os) const override;
+    Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result) override;
     BoardState* clone() const override;
 };
 

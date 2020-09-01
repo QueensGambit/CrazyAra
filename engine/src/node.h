@@ -390,17 +390,17 @@ private:
 
     /**
      * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
-     * @param pos Current board position for this node
+     * @param state Current board position for this node
      * @param inCheck Boolean indicating if the king is in check
      */
     void check_for_terminal(StateObj* state, bool inCheck);
 
-//    /**
-//     * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
-//     *  updates isTerminal and the value evaluation
-//     * @param pos Current board position for this node
-//     */
-//    void check_for_tablebase_wdl(Board* pos);
+    /**
+     * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
+     *  updates isTerminal and the value evaluation
+     * @param state Current board position for this node
+     */
+    void check_for_tablebase_wdl(StateObj* state);
 
     /**
      * @brief solve_for_terminal Tries to solve the current node to be a forced win, loss or draw.

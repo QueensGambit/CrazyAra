@@ -24,7 +24,6 @@
  */
 
 #include "treemanager.h"
-#include "misc.h"
 #include "../node.h"
 
 Node* pick_next_node(Action move, const Node* parentNode)

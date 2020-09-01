@@ -25,7 +25,6 @@
 
 #include "node.h"
 #include <limits.h>
-#include "syzygy/tbprobe.h"
 #include "util/blazeutil.h" // get_dirichlet_noise()
 #include "constants.h"
 #include "../util/communication.h"
@@ -56,7 +55,7 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     check_for_terminal(state, inCheck);
 #ifdef MODE_CHESS
     if (searchSettings->useTablebase && !isTerminal) {
-        check_for_tablebase_wdl(pos);
+        check_for_tablebase_wdl(state);
     }
 #endif
     policyProbSmall.resize(numberChildNodes);
@@ -697,27 +696,27 @@ void Node::check_for_terminal(StateObj* pos, bool inCheck)
     }
 }
 
-//void Node::check_for_tablebase_wdl(Board *pos)
-//{
-//    Tablebases::ProbeState result;
-//    Tablebases::WDLScore wdlScore = probe_wdl(*pos, &result);
+void Node::check_for_tablebase_wdl(StateObj* state)
+{
+    Tablebase::ProbeState result;
+    Tablebase::WDLScore wdlScore = state->check_for_tablebase_wdl(result);
 
-//    if (result != Tablebases::FAIL) {
-//        // TODO: Change return values
-//        isTablebase = true;
-//        switch(wdlScore) {
-//        case Tablebases::WDLLoss:
-//            set_value(-0.99); //LOSS);
-//            break;
-//        case Tablebases::WDLWin:
-//            set_value(0.99); //WIN);
-//            break;
-//        default:
-//            set_value(0.00001); //DRAW);
-//        }
-//    }
-//    // default: isTablebase = false;
-//}
+    if (result != Tablebase::FAIL) {
+        // TODO: Change return values
+        isTablebase = true;
+        switch(wdlScore) {
+        case Tablebase::WDLLoss:
+            set_value(-0.99); //LOSS);
+            break;
+        case Tablebase::WDLWin:
+            set_value(0.99); //WIN);
+            break;
+        default:
+            set_value(0.00001); //DRAW);
+        }
+    }
+    // default: isTablebase = false;
+}
 
 void Node::make_to_root()
 {

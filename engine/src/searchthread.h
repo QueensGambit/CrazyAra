@@ -71,7 +71,7 @@ private:
 
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
-    unique_ptr<FixedVector<Color>> newNodeSideToMove;
+    unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<Node*>> transpositionNodes;
     unique_ptr<FixedVector<Node*>> collisionNodes;
 
@@ -194,7 +194,7 @@ void run_search_thread(SearchThread *t);
 
 void backup_values(FixedVector<Node*>* nodes, float virtualLoss);
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, Color sideToMove, const SearchSettings* searchSettings);
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings);
 void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx);
 
