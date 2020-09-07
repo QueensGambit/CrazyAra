@@ -77,6 +77,7 @@ protected:
     string deviceName;
 
     // file names for the loaded model and its parameters
+    string modelDir;
     string modelFilePath;
     string paramterFilePath;
 
@@ -148,5 +149,12 @@ protected:
      */
     virtual void check_if_policy_map() = 0;
 };
+
+/**
+ * @brief parse_directory Checks if the directory is empty and appends a "/" if necessary
+ * @param directory Directory path which can both be relative or absolute
+ * @return string with "/" as suffix
+ */
+string parse_directory(const string& directory);
 
 #endif // NEURALNETAPI_H

@@ -33,6 +33,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
     policyOutputLength(NB_LABELS * batchSize),
     enableTensorrt(enableTensorrt)
 {
+    modelDir = parse_directory(modelDirectory);
     deviceName = ctx + string("_") + to_string(deviceID);
 }
 
@@ -60,4 +61,15 @@ bool NeuralNetAPI::file_exists(const string& name)
 {
     struct stat buffer;
     return (stat(name.c_str(), &buffer) == 0);
+}
+
+string parse_directory(const string& directory)
+{
+    if (directory.length() == 0) {
+        throw invalid_argument("The given directory must not be empty.");
+    }
+    if (directory[directory.length()-1] != '/') {
+        return directory + "/";
+    }
+    return directory;
 }
