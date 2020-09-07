@@ -381,9 +381,11 @@ bool CrazyAra::is_ready()
 
 void CrazyAra::ucinewgame()
 {
-    wait_to_finish_last_search();
-    mctsAgent->clear_game_history();
-    cout << "info string newgame" << endl;
+    if (networkLoaded) {
+        wait_to_finish_last_search();
+        mctsAgent->clear_game_history();
+        cout << "info string newgame" << endl;
+    }
 }
 
 string CrazyAra::engine_info()
