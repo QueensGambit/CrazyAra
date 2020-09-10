@@ -72,7 +72,10 @@ void RawNetAgent::evaluate_board_state()
     Action bestmove = evalInfo->legalMoves[selIdx];
 
     evalInfo->centipawns.emplace_back(value_to_centipawn(value));
+    evalInfo->movesToMate.emplace_back(0);
     evalInfo->depth = 1;
+    evalInfo->selDepth = 1;
+    evalInfo->tbHits = 0;
     evalInfo->nodes = 1;
     evalInfo->isChess960 = state->is_chess960();
     evalInfo->pv.push_back({ bestmove });
