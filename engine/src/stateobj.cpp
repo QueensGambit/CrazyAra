@@ -35,8 +35,22 @@ unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED_CLASSIC = {};
 
 std::string action_to_uci(Action action, bool is960) {
 #ifdef MODE_POMMERMAN
-    // TDOO
-    return "";
+    switch(bboard::Move(action)) {
+    case (bboard::Move::IDLE):
+        return "IDLE";
+    case (bboard::Move::UP):
+        return "UP";
+    case (bboard::Move::DOWN):
+        return "DOWN";
+    case (bboard::Move::LEFT):
+        return "LEFT";
+    case (bboard::Move::RIGHT):
+        return "RIGHT";
+    case (bboard::Move::BOMB):
+        return "BOMB";
+    default:
+        return "UNKNOWN";
+    }
 #else
     return UCI::move(Move(action), is960);
 #endif

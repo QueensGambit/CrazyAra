@@ -30,8 +30,9 @@
 #define STATEOBJ_H
 
 #include <unordered_map>
-#include "state.h"
 #include <blaze/Math.h>
+#include "state.h"
+#include "constants.h"
 using blaze::StaticVector;
 using blaze::DynamicVector;
 
@@ -50,13 +51,27 @@ using blaze::DynamicVector;
 
 std::string action_to_uci(Action action, bool is960);
 
-#ifndef MODE_POMMERMAN
 namespace Constants {
+#ifndef MODE_POMMERMAN
 inline void init(bool isPolicyMap) {
     init_policy_constants(isPolicyMap);
 }
+
+#else
+inline void init(bool isPolicyMap) {
+    MV_LOOKUP = {{Action(bboard::Move::IDLE), 0},
+                {Action(bboard::Move::UP), 1},
+                {Action(bboard::Move::LEFT), 2},
+                {Action(bboard::Move::DOWN), 3},
+                {Action(bboard::Move::RIGHT), 4},
+                {Action(bboard::Move::BOMB), 5}
+                };
+    MV_LOOKUP_MIRRORED = MV_LOOKUP;
+    MV_LOOKUP_CLASSIC = MV_LOOKUP;
+    MV_LOOKUP_MIRRORED_CLASSIC = MV_LOOKUP;
 }
 #endif
+}
 
 /**
  * @brief get_probs_of_move_list Returns an array in which entry relates to the probability for the given move list.
