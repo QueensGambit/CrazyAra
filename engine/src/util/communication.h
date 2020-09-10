@@ -37,7 +37,7 @@ using namespace std;
  */
 template<typename T>
 void info_string(const T &message) {
-#ifndef USE_RL
+#ifndef DISABLE_UCI_INFO
     cout << "info string " << message << endl;
 #endif
 }
@@ -49,14 +49,14 @@ void info_string(const T &message) {
  */
 template<typename T, typename U>
 void info_string(const T &messageA, const U &messageB) {
-#ifndef USE_RL
+#ifndef DISABLE_UCI_INFO
     cout << "info string " << messageA << ' ' << messageB << endl;
 #endif
 }
 
 template<typename T>
 void info_msg(const T &message, bool endl=false) {
-#ifndef USE_RL
+#ifndef DISABLE_UCI_INFO
     cout << "info " << message;
     if (endl) {
         cout << endl;
@@ -66,7 +66,7 @@ void info_msg(const T &message, bool endl=false) {
 
 template<typename T>
 void info_bestmove(const T &message) {
-#ifndef USE_RL
+#ifndef DISABLE_UCI_INFO
     cout << "bestmove " << message << endl;
 #endif
 }
