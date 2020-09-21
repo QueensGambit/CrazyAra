@@ -12,9 +12,9 @@ matrix:
     - os: linux
       compiler: clang
       env:
-        - COMPILER=clang++-6.0
+        - COMPILER=clang++-7.0
         - COMP=clang
-        - LDFLAGS=-fuse-ld=lld
+        - LDFLAGS=-fuse-ld=lld -stdlib=libc++
 install:
   - cd
   - pwd
