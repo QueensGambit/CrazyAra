@@ -10,14 +10,8 @@ matrix:
         - COMP=gcc
 
     - os: linux
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-xenial-7.0
-          packages:
-            - clang-7.0
+      compiler: clang
       env:
-        - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
         - COMPILER=clang++-7.0
         - COMP=clang
         - LDFLAGS=-fuse-ld=lld -stdlib=libc++
