@@ -39,13 +39,12 @@
 #include "z5/attributes.hxx"
 #include "z5/dataset.hxx"
 
-#include "../domain/crazyhouse/inputrepresentation.h"
-#include "../domain/crazyhouse/constants.h"
+#include "chess_related/inputrepresentation.h"
 
-#include "../board.h"
-#include "../domain/crazyhouse/constants.h"
-#include "../node.h"
-#include "../evalinfo.h"
+#include "chess_related/board.h"
+#include "constants.h"
+#include "node.h"
+#include "evalinfo.h"
 
 class TrainDataExporter
 {

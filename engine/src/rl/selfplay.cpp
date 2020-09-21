@@ -31,10 +31,9 @@
 #include <iostream>
 #include <fstream>
 #include "uci.h"
-#include "../domain/variants.h"
-#include "../util/blazeutil.h"
-#include "../util/randomgen.h"
-#include "../util/chess960position.h"
+#include "chess_related/variants.h"
+#include "util/blazeutil.h"
+#include "util/randomgen.h"
 
 
 void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& gamePGN, Result& gameResult)
@@ -332,7 +331,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
 
 unique_ptr<StateObj> init_state(Variant variant, bool is960, GamePGN& gamePGN)
 {
-    unique_ptr<StateObj> state= make_unique<SelectedState>();
+    unique_ptr<StateObj> state= make_unique<StateObj>();
 #ifdef SUPPORT960
     if (is960) {
         string firstRank = startPos();

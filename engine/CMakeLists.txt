@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
-option(USE_RL                    "Build with reinforcement learning support"  OFF)
+option(USE_RL                    "Build with reinforcement learning support"  ON)
 option(USE_TENSORRT              "Build with TensorRT support"  ON)
 option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
@@ -13,7 +13,6 @@ option(BUILD_TESTS               "Build and run tests"  OFF)
 option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
-option(MODE_POMMERMAN            "Build with pommerman environment support"  OFF)
 
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
@@ -35,10 +34,6 @@ if (MODE_LICHESS)
     add_definitions(-DATOMIC)
     add_definitions(-DHORDE)
     add_definitions(-DRACE)
-endif()
-
-if (MODE_POMMERMAN)
-    add_definitions(-DMODE_POMMERMAN)
 endif()
 
 if (BUILD_TESTS)
@@ -101,39 +96,19 @@ find_package (Threads)
 include_directories("3rdparty/Stockfish/src")
 include_directories("src")
 
-if (MODE_POMMERMAN)
-    if(DEFINED ENV{CONDA_ENV_PATH})
-        MESSAGE(STATUS "CONDA_ENV_PATH set to: $ENV{CONDA_ENV_PATH}")
-    else()
-        MESSAGE(SEND_ERROR "CONDA_ENV_PATH not set")
-    endif()
-    include_directories("$ENV{CONDA_ENV_PATH}/include")
-
-    file(GLOB pomcpp_files
-        "3rdparty/pomcpp/src/bboard/*.cpp"
-        "3rdparty/pomcpp/src/agents/*.cpp"
-        "3rdparty/PommerLearn/cpp/src/*.cpp")
-    set(source_files
-        ${source_files}
-        ${pomcpp_files}
-        )
-    include_directories("3rdparty/pomcpp/include")
-    include_directories("3rdparty/PommerLearn/cpp/include")
-else()
-    file(GLOB chess_related_files
-        "3rdparty/Stockfish/src/syzygy/*.h"
-        "3rdparty/Stockfish/src/syzygy/*.cpp"
-        "3rdparty/Stockfish/src/*.h"
-        "3rdparty/Stockfish/src/*.cpp"
-        "src/chess_related/*.h"
-        "src/chess_related/*.cpp"
-        "src/tests/*.h"
-        "src/tests/*.cpp")
-    set(source_files
-        ${source_files}
-        ${chess_related_files}
-        )
-endif()
+file(GLOB chess_related_files
+    "3rdparty/Stockfish/src/syzygy/*.h"
+    "3rdparty/Stockfish/src/syzygy/*.cpp"
+    "3rdparty/Stockfish/src/*.h"
+    "3rdparty/Stockfish/src/*.cpp"
+    "src/chess_related/*.h"
+    "src/chess_related/*.cpp"
+    "src/tests/*.h"
+    "src/tests/*.cpp")
+set(source_files
+    ${source_files}
+    ${chess_related_files}
+    )
 include_directories("3rdparty/catch-2.9.1")
 
 # incude dirent library seperately because it's missing in the stdlib
@@ -224,16 +199,10 @@ if (USE_TENSORRT)
     target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
 endif()
 
-if (USE_RL OR MODE_POMMERMAN)
+if (USE_RL)
     # include filesystem (needed for z5)
     target_link_libraries(${PROJECT_NAME} stdc++fs)
 endif()
-
-if (MODE_POMMERMAN)
-    find_library(BLOSC_LIB blosc "$ENV{CONDA_ENV_PATH}/lib")
-    target_link_libraries(${PROJECT_NAME} "${BLOSC_LIB}")
-endif()
-
 
 find_package(Threads REQUIRED)
 
