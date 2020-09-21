@@ -55,7 +55,7 @@ def get_stem(data, channels, act_type):
 
 
 def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu', value_fc_size=256,
-               grad_scale_value=0.01, use_se=False, use_mix_conv=False):
+               grad_scale_value=0.01, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False):
     """
     Value head of the network which outputs the value evaluation. A floating point number in the range [-1,+1].
     :param data: Input data
@@ -84,6 +84,12 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
         avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name='value_pool0')
         pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
         value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
+
+    if orig_data is not None and use_avg_features:
+        avg_pool = mx.sym.Pooling(data=orig_data, kernel=(8, 8), pool_type='avg', name='value_pool0')
+        pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
+        value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
+
     value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
     value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
     value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')

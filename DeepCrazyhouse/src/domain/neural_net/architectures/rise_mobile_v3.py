@@ -79,7 +79,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                           grad_scale_value=0.01, grad_scale_policy=0.99,
                           select_policy_from_plane=True, kernels=None, n_labels=4992, se_ratio=4,
-                          se_types="se"):
+                          se_types="se", use_avg_features=False):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -118,9 +118,9 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
             raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
     # get the input data
-    data = mx.sym.Variable(name='data')
+    orig_data = mx.sym.Variable(name='data')
 
-    data = get_stem(data=data, channels=channels, act_type=act_type)
+    data = get_stem(data=orig_data, channels=channels, act_type=act_type)
 
     if kernels is None:
         kernels = [3] * 13
@@ -141,7 +141,8 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
         data = mx.sym.Dropout(data, p=dropout_rate)
 
     value_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
-                           value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value)
+                           value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value,
+                           orig_data=orig_data, use_avg_features=use_avg_features)
     policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
                              select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels,
                              grad_scale_policy=grad_scale_policy)
@@ -149,4 +150,3 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     sym = mx.symbol.Group([value_out, policy_out])
 
     return sym
-
