@@ -34,7 +34,7 @@ before_script:
 
 script:
   # Build tests
-  - cmake -DBUILD_TESTS=1 -DUSE_TENSORRT=0 -DUSE_MXNET=0 ..
+  - cmake -DUSE_PROFILING=0 -DUSE_RL=0 -DUSE_TENSORRT=0 -DUSE_MXNET=0 -DUSE_960=0 -DBUILD_TESTS=1 -DMODE_CRAZYHOUSE=1 -DMODE_CHESS=0 -DMODE_LICHESS=0 ..
   - make clean && make -j2
 
   # Run tests

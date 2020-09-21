@@ -4,7 +4,7 @@ set (CMAKE_CXX_STANDARD 17)
 project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
-option(USE_RL                    "Build with reinforcement learning support"  ON)
+option(USE_RL                    "Build with reinforcement learning support"  OFF)
 option(USE_TENSORRT              "Build with TensorRT support"  ON)
 option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
