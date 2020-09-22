@@ -52,7 +52,7 @@ Next you can start selplay from a given checkpoint file, which is stored in `mod
 
 ##### Generator
 ```shell script
-python rl_loop.py --device_id 0&
+python rl_loop.py --device-id 0&
 ```
 
 ##### Trainer
@@ -60,7 +60,7 @@ You need to specify at least one gpu to also update the current neural network w
 The gpu trainer will stop generating games and update the network as soon as enough training samples have been acquired.
 
 ```shell script
-python rl_loop.py --device_id 1 --trainer&
+python rl_loop.py --device-id 1 --trainer&
 ```
 
 ---
