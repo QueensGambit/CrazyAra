@@ -214,6 +214,7 @@ class RLLoop:
         """
         self.proc.stdin.write(b'setoption name Model_Directory value %s\n' % bytes(self.crazyara_binary_dir+"model/",
                                                                                    'utf-8'))
+        set_uci_param(self.proc, "UCI_Variant", self.args.uci_variant)
         set_uci_param(self.proc, "Context", self.args.context)
         set_uci_param(self.proc, "First_Device_ID", self.args.device_id)
         set_uci_param(self.proc, "Last_Device_ID", self.args.device_id)
@@ -516,6 +517,8 @@ def parse_args(cmd_args: list):
     parser.add_argument("--crazyara-binary-dir", type=str, default="/media/queensgambit/Volume/Deep_Learning/data/RL/chess960/20200425/", # /data/RL/",
                         help="directory where the CrazyAra executable is located and where the selfplay data will be "
                              "stored")
+    parser.add_argument('--uci-variant', type=str, default="crazyhouse",
+                        help="Selected UCI_Variant for RL. (default: crazyhouse)")
     parser.add_argument('--context', type=str, default="gpu",
                         help='Computational device context to use. Possible values ["cpu", "gpu"]. (default: gpu)')
     parser.add_argument("--device-id", type=int, default=0,
