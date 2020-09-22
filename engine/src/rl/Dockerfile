@@ -44,7 +44,7 @@ ENV MXNET_PATH /root/incubator-mxnet/
 
 # Clone TensorRT repository for TensorRT backend
 RUN cd /root \
-    && git clone https://github.com/NVIDIA/TensorRT
+    && git clone https://github.com/QueensGambit/TensorRT
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
 
