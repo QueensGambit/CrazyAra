@@ -14,7 +14,7 @@ from time import time
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
-from rtpt import RTPT
+from DeepCrazyhouse.src.training.rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP

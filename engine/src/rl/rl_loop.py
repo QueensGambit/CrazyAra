@@ -514,7 +514,7 @@ def parse_args(cmd_args: list):
     """
     parser = argparse.ArgumentParser(description='Reinforcement learning loop')
 
-    parser.add_argument("--crazyara-binary-dir", type=str, default="/media/queensgambit/Volume/Deep_Learning/data/RL/chess960/20200425/", # /data/RL/",
+    parser.add_argument("--crazyara-binary-dir", type=str, default="data/RL/",
                         help="directory where the CrazyAra executable is located and where the selfplay data will be "
                              "stored")
     parser.add_argument('--uci-variant', type=str, default="crazyhouse",
