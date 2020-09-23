@@ -51,6 +51,13 @@ private:
     Shape inputShape;
     Context globalCtx = Context::cpu();
 
+public:
+    MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT);
+    ~MXNetAPI();
+
+    void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
+
+protected:
     void load_model();
     void load_parameters();
     void bind_executor();
@@ -86,13 +93,6 @@ private:
      * @return Policy NDArray
      */
     NDArray predict(float* inputPlanes, float& value);
-
-public:
-    MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT);
-    ~MXNetAPI();
-
-    void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
-
 };
 
 #endif
