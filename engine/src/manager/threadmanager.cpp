@@ -44,13 +44,18 @@ ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchTh
 {
 }
 
+void ThreadManager::print_info()
+{
+    evalInfo->end = chrono::steady_clock::now();
+    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV);
+    info_msg(*evalInfo);
+}
+
 void ThreadManager::await_kill_signal()
 {
     while(isRunning) {
         if (wait_for(chrono::milliseconds(updateIntervalMS*4))){
-            evalInfo->end = chrono::steady_clock::now();
-            update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV);
-            info_msg(*evalInfo);
+            print_info();
         }
         else {
             return;
@@ -81,9 +86,7 @@ void ThreadManager::stop_search_based_on_limits()
                 }
                 // log every fourth iteration
                 if (var % 4 == 3) {
-                    evalInfo->end = chrono::steady_clock::now();
-                    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV);
-                    info_msg(*evalInfo);
+                    print_info();
                 }
             }
             else {

@@ -70,6 +70,11 @@ private:
      */
     inline bool continue_search();
 
+    /**
+     * @brief print_info Updates and prints the uci eval info to stdout
+     */
+    void print_info();
+
 public:
     ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, size_t multiPV, float overallNPS, float lastValueEval, bool inGame, bool canProlong);
 
