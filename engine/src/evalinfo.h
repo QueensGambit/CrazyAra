@@ -84,9 +84,8 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
  * @param rootNode root node of the tree
  * @param idx index of the pv line
  * @param indices sorted indices of each child node
- * @return
  */
-bool set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices);
+void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices);
 
 /**
  * @brief operator << Returns all MultiPV as a string sperated by endl

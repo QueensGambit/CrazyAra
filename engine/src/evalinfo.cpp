@@ -101,7 +101,7 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
 }
 
-bool set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices)
+void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices)
 {
     vector<Action> pv;
     size_t childIdx;
@@ -113,31 +113,26 @@ bool set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     }
     pv.push_back(rootNode->get_action(childIdx));
     const Node* nextNode = rootNode->get_child_node(childIdx);
-    if (nextNode == nullptr || !nextNode->is_playout_node()) {
-        evalInfo.movesToMate.resize(idx);
-        evalInfo.bestMoveQ.resize(idx);
-        evalInfo.centipawns.resize(idx);
-        return false;
-    }
     nextNode->get_principal_variation(pv);
     evalInfo.pv.emplace_back(pv);
 
     // scores
     // return mate score for known wins and losses
-    if (nextNode->get_node_type() == SOLVED_LOSS) {
-        // always round up the ply counter
-        evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
+    if (nextNode->is_playout_node()) {
+        if (nextNode->get_node_type() == SOLVED_LOSS) {
+            // always round up the ply counter
+            evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
+            return;
+        }
+        if (nextNode->get_node_type() == SOLVED_WIN) {
+            // always round up the ply counter
+            evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
+            return;
+        }
     }
-    else if (nextNode->get_node_type() == SOLVED_WIN) {
-        // always round up the ply counter
-        evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
-    }
-    else {
-        evalInfo.movesToMate[idx] = 0;
-        evalInfo.bestMoveQ[idx] = rootNode->get_q_value(childIdx);
-        evalInfo.centipawns[idx] = value_to_centipawn(evalInfo.bestMoveQ[idx]);
-    }
-    return true;
+    evalInfo.movesToMate[idx] = 0;
+    evalInfo.bestMoveQ[idx] = rootNode->get_q_value(childIdx);
+    evalInfo.centipawns[idx] = value_to_centipawn(evalInfo.bestMoveQ[idx]);
 }
 
 void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
@@ -157,11 +152,10 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
     size_t bestMoveIdx;
     rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx);
-    evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
     evalInfo.legalMoves = rootNode->get_legal_action();
 
     vector<size_t> indices;
-    size_t maxIdx = min(multiPV, evalInfo.legalMoves.size());
+    size_t maxIdx = min(multiPV, rootNode->get_no_visit_idx());
 
     if (maxIdx > 1) {
         sort_eval_lists(evalInfo, indices);
@@ -173,9 +167,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     evalInfo.centipawns.resize(maxIdx);
 
     for (size_t idx = 0; idx < maxIdx; ++idx) {
-        if (!set_eval_for_single_pv(evalInfo, rootNode, idx, indices)) {
-            break;
-        }
+        set_eval_for_single_pv(evalInfo, rootNode, idx, indices);
     }
 
     // rawAgent has no pv line and only single best move
