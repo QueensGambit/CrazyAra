@@ -380,7 +380,7 @@ public:
     /**
      * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
      */
-    void print_node_statistics(const StateObj* pos);
+    void print_node_statistics(const StateObj* pos) const;
 
 private:
     /**
@@ -472,7 +472,8 @@ private:
      * @param childNode Child nodes which backpropagates the value
      * @param targetValue Target value which will be set to be the new node value
      */
-    void update_solved_terminal(const Node* childNode, int targetValue);
+    template <int targetValue>
+    void update_solved_terminal(const Node* childNode);
 
     /**
      * @brief mcts_policy_based_on_wins Sets all known winning moves in a given policy to 1 and all

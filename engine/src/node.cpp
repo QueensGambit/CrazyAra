@@ -37,8 +37,8 @@ bool Node::is_sorted() const
 }
 
 Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
-    parentNode(parentNode),
     legalActions(state->legal_actions()),
+    parentNode(parentNode),
     key(state->hash_key()),
     value(0),
     d(nullptr),
@@ -183,14 +183,15 @@ void Node::define_end_ply_for_solved_terminal(const Node* childNode)
     d->endInPly = childNode->d->endInPly + 1;
 }
 
-void Node::update_solved_terminal(const Node* childNode, int targetValue)
+template <int targetValue>
+void Node::update_solved_terminal(const Node* childNode)
 {
     define_end_ply_for_solved_terminal(childNode);
     set_value(targetValue);
     if (parentNode != nullptr) {
         parentNode->lock();
         parentNode->d->numberUnsolvedChildNodes--;
-        parentNode->d->qValues[childIdxForParent] = targetValue;
+        parentNode->d->qValues[childIdxForParent] = -targetValue;
         if (targetValue == LOSS) {
             parentNode->d->checkmateIdx = childIdxForParent;
         }
@@ -253,17 +254,17 @@ void Node::solve_for_terminal(const Node* childNode)
     }
     if (solved_win(childNode)) {
         d->nodeType = SOLVED_WIN;
-        update_solved_terminal(childNode, WIN);
+        update_solved_terminal<WIN>(childNode);
         return;
     }
     if (solved_loss(childNode)) {
         d->nodeType = SOLVED_LOSS;
-        update_solved_terminal(childNode, LOSS);
+        update_solved_terminal<LOSS>(childNode);
         return;
     }
     if (solved_draw(childNode)) {
         d->nodeType = SOLVED_DRAW;
-        update_solved_terminal(childNode, DRAW);
+        update_solved_terminal<DRAW>(childNode);
     }
 }
 
@@ -481,8 +482,9 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
         d->qValues[childIdx] = value;
     }
     else {
-    // revert virtual loss and update the Q-value
-    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+        // revert virtual loss and update the Q-value
+        assert(d->childNumberVisits[childIdx] != 0);
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
     }
 
     if (virtualLoss != 1) {
@@ -984,7 +986,7 @@ float get_current_cput(float visits, const SearchSettings* searchSettings)
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
-void Node::print_node_statistics(const StateObj* state)
+void Node::print_node_statistics(const StateObj* state) const
 {
     const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
     const string filler = "-----+-------+--------------+-----------+------------+-------+------------";
