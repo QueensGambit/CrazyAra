@@ -36,6 +36,16 @@ bool Node::is_sorted() const
     return sorted;
 }
 
+bool Node::is_cell() const
+{
+    return isCell;
+}
+
+Action Node::get_predecessor_action() const
+{
+    return parentNode->get_action(childIdxForParent);
+}
+
 Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
     legalActions(state->legal_actions()),
     parentNode(parentNode),
@@ -47,7 +57,8 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     isTerminal(false),
     isTablebase(false),
     hasNNResults(false),
-    sorted(false)
+    sorted(false),
+    isCell(false)
 {
     // specify the number of direct child nodes of this node
     const int numberChildNodes = legalActions.size();
@@ -408,10 +419,20 @@ void Node::reserve_full_memory()
     d->childNodes.reserve(numberChildNodes);
 }
 
-void Node::increment_no_visit_idx()
+void Node::increment_no_visit_idx(Cells* cells)
 {
     if (d->noVisitIdx < get_number_child_nodes()) {
         ++d->noVisitIdx;
+        Node* node = this;
+        Node* parentNode = node->get_parent_node();
+        if (!this->is_root_node() && parentNode->is_playout_node() && parentNode->is_fully_expanded() && node->plies_from_null() != 0 && node->plies_from_null() % 2 == 0) {
+            size_t bestQIdx = parentNode->get_best_q_idx();
+            if (-parentNode->get_q_value(bestQIdx) > 0.5 && parentNode->get_no_visit_idx() < 2 && !node->isTerminal) {
+                cells->mtx.lock();
+                cells->trajectories.emplace_back(get_trajectory(parentNode));
+                cells->mtx.unlock();
+            }
+        }
         if (d->noVisitIdx == PRESERVED_ITEMS) {
             reserve_full_memory();
         }
@@ -1032,6 +1053,11 @@ void Node::print_node_statistics(const StateObj* state) const
        << "terminalVisits:\t" << get_terminal_visits() << endl;
 }
 
+void Node::make_to_cell()
+{
+    isCell = true;
+}
+
 bool is_terminal_value(float value)
 {
     return (value == WIN || value == DRAW || value == LOSS);
@@ -1040,4 +1066,14 @@ bool is_terminal_value(float value)
 size_t get_node_count(const Node *node)
 {
     return node->get_visits() - node->get_terminal_visits();
+}
+
+deque<size_t> get_trajectory(Node* currentNode)
+{
+    deque<size_t> trajectory;
+    while (!currentNode->is_root_node()) {
+        trajectory.emplace_front(currentNode->get_child_idx_for_parent());
+        currentNode = currentNode->get_parent_node();
+    }
+    return trajectory;
 }

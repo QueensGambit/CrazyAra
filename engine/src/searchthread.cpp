@@ -40,8 +40,8 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
+SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex, Cells* cells):
+    netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), cells(cells), searchSettings(searchSettings)
 {
     // allocate memory for all predictions and results
 #ifdef TENSORRT
@@ -129,7 +129,7 @@ SearchLimits *SearchThread::get_search_limits() const
     return searchLimits;
 }
 
-void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx)
+void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx, Cells* cells)
 {
     if (description.depth == 0 && size_t(currentNode->get_visits()) % RANDOM_MOVE_COUNTER == 0 && currentNode->get_visits() > RANDOM_MOVE_THRESH) {
         if (currentNode->is_fully_expanded()) {
@@ -146,7 +146,7 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
         else {
             childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
             currentNode->lock();
-            currentNode->increment_no_visit_idx();
+            currentNode->increment_no_visit_idx(cells);
             currentNode->unlock();
         }
     }
@@ -158,11 +158,35 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
     description.depth = 0;
     Node* currentNode = rootNode;
 
+    if (cells->trajectories.size() > 0 && rand() % 100 < 50) {
+        currentNode = rootNode;
+        // select random cell
+        cells->mtx.lock();
+        deque<size_t> trajectory = cells->select_trajectory();
+        cells->mtx.unlock();
+
+        // go to node cell
+        deque<Action> actions;
+        for (size_t idx : trajectory) {
+            if (currentNode != nullptr && currentNode->is_playout_node()) {
+                pos->do_action(currentNode->get_action(idx));
+                currentNode->lock();
+                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
+                Node* nextNode = currentNode->get_child_node(idx);
+                currentNode->unlock();
+                currentNode = nextNode;
+                childIdx = idx;
+                description.depth++;
+            }
+        }
+    }
+
     while (true) {
         childIdx = INT_MAX;
         if (searchSettings->useRandomPlayout) {
-            random_root_playout(description, currentNode, childIdx);
+            random_root_playout(description, currentNode, childIdx, cells);
         }
+
         currentNode->lock();
         if (childIdx == INT_MAX) {
             childIdx = currentNode->select_child_node(searchSettings);
@@ -170,12 +194,13 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
 
         Node* nextNode = currentNode->get_child_node(childIdx);
+
         description.depth++;
         if (nextNode == nullptr) {
             const bool inCheck = pos->gives_check(currentNode->get_action(childIdx));
             pos->do_action(currentNode->get_action(childIdx));
             description.type = add_new_node_to_tree(pos, currentNode, childIdx, inCheck);
-            currentNode->increment_no_visit_idx();
+            currentNode->increment_no_visit_idx(cells);
             currentNode->unlock();
             return currentNode;
         }

@@ -44,6 +44,15 @@ using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 
+struct Cells {
+    mutex mtx;
+    vector<deque<size_t>> trajectories;
+
+    deque<size_t> select_trajectory() {
+        return trajectories[rand() % trajectories.size()];
+    }
+};
+
 class Node
 {
 private:
@@ -69,6 +78,7 @@ private:
     bool isTablebase;
     bool hasNNResults;
     bool sorted;
+    bool isCell;
 
 public:
     /**
@@ -202,7 +212,7 @@ public:
     Node* get_parent_node() const;
     void increment_visits(size_t numberVisits);
     void subtract_visits(size_t numberVisits);
-    void increment_no_visit_idx();
+    void increment_no_visit_idx(Cells* cells);
     void fully_expand_node();
 
     Key hash_key() const;
@@ -382,6 +392,11 @@ public:
      */
     void print_node_statistics(const StateObj* pos) const;
 
+    void make_to_cell();
+
+    bool is_cell() const;
+
+    Action get_predecessor_action() const;
 private:
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
@@ -581,5 +596,12 @@ bool is_terminal_value(float value);
  * @return Number of subnodes for thhe given node
  */
 size_t get_node_count(const Node* node);
+
+/**
+ * @brief get_trajectory Returns the trajectory on how to get to the given node starting from the root node
+ * @param currentNode Node pointer
+ * @return trajetory
+ */
+deque<size_t> get_trajectory(Node* currentNode);
 
 #endif // NODE_H

@@ -83,6 +83,7 @@ private:
     bool isRunning;
 
     MapWithMutex* mapWithMutex;
+    Cells* cells;
     SearchSettings* searchSettings;
     SearchLimits* searchLimits;
     size_t tbHits;
@@ -97,7 +98,7 @@ public:
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex, Cells* cells);
     ~SearchThread();
 
     /**
@@ -206,6 +207,6 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
  * @param currentNode Current node during trajectory
  * @param childIdx Return child index (maybe unchanged)
  */
-inline void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx);
+inline void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx, Cells* cells);
 
 #endif // SEARCHTHREAD_H

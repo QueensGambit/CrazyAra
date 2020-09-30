@@ -74,6 +74,7 @@ private:
     Node* opponentsNextRoot;
 
     MapWithMutex mapWithMutex;
+    Cells cells;
     float lastValueEval;
 
     // boolean which indicates if the same node was requested twice for analysis
