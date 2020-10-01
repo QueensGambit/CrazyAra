@@ -38,6 +38,7 @@ def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", 
     """
     return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
 
+
 def get_stem(data, channels, act_type):
     """
     Creates the convolution stem before the residual head
@@ -54,9 +55,26 @@ def get_stem(data, channels, act_type):
     return body
 
 
+def get_depthwise_stem(data, channels, act_type):
+    """
+    Sames as get_stem() but with group depthwise convolutions
+    """
+    conv1 = mx.sym.Convolution(data=data, num_filter=channels, kernel=(1, 1), pad=(0, 0), no_bias=True, name="stem_conv0")
+    bn2 = mx.sym.BatchNorm(data=conv1, name='stem_bn0')
+    act1 = get_act(data=bn2, act_type=act_type, name='stem_act0')
+    conv2 = mx.sym.Convolution(data=act1, num_filter=channels, num_group=channels, kernel=(3, 3), pad=(1, 1),
+                               no_bias=True, name="stem_conv1")
+    bn3 = mx.sym.BatchNorm(data=conv2, name='stem_bn1')
+    out = get_act(data=bn3, act_type=act_type, name='stem_act1')
+    out = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
+                               pad=(0, 0), no_bias=True, name='stem_conv2')
+    return out
+
+
 def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu', value_fc_size=256,
                grad_scale_value=0.01, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False,
-               use_raw_features=False, value_nb_hidden=0, value_fc_size_hidden=32):
+               use_raw_features=False, value_nb_hidden=0, value_fc_size_hidden=256, use_batchnorm=False, dropout_rate=0.0,
+               use_conv_features=True):
     """
     Value head of the network which outputs the value evaluation. A floating point number in the range [-1,+1].
     :param data: Input data
@@ -67,39 +85,84 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
     :param grad_scale_value: Optional re-weighting of gradient
     :param use_se: Indicates if a squeeze excitation layer shall be used
     :param use_mix_conv: True, if an additional mix convolutional layer shall be used
+    :param orig_data: Original data input of the network
+    :param use_avg_features: If true average features are extracted from the original input
+    :param value_nb_hidden: Number of hidden layers
+    :param value_fc_size_hidden: Number of units in the hidden layers
+    :param use_batchnorm: If true batchnormalization is used
+    :param dropout_rate: If > 0, dropout is enabled after the last fully connected layer
+    :param use_conv_features: If true, features of the shared network are used
     """
     # for value output
-    value_out = mx.sym.Convolution(data=data, num_filter=channels_value_head,
-                                   kernel=(value_kernelsize, value_kernelsize),
-                                   pad=(value_kernelsize//2, value_kernelsize//2),
-                                   no_bias=True, name="value_conv0")
-    value_out = mx.sym.BatchNorm(data=value_out, name='value_bn0')
-    value_out = get_act(data=value_out, act_type=act_type, name='value_act0')
-    if use_mix_conv:
-        mix_conv(value_out, channels=channels_value_head, kernels=[3, 5, 7, 9], name='value_mix_conv0')
-        value_out = mx.sym.BatchNorm(data=value_out, name='value_mix_bn1')
-        value_out = get_act(data=value_out, act_type=act_type, name='value_mix_act1')
+    value_flatten = None
+    if use_conv_features:
+        value_out = mx.sym.Convolution(data=data, num_filter=channels_value_head,
+                                       kernel=(value_kernelsize, value_kernelsize),
+                                       pad=(value_kernelsize//2, value_kernelsize//2),
+                                       no_bias=True, name="value_conv0")
+        value_out = mx.sym.BatchNorm(data=value_out, name='value_bn0')
+        value_out = get_act(data=value_out, act_type=act_type, name='value_act0')
+        if use_mix_conv:
+            mix_conv(value_out, channels=channels_value_head, kernels=[3, 5, 7, 9], name='value_mix_conv0')
+            value_out = mx.sym.BatchNorm(data=value_out, name='value_mix_bn1')
+            value_out = get_act(data=value_out, act_type=act_type, name='value_mix_act1')
 
-    value_flatten = mx.sym.Flatten(data=value_out, name='value_flatten1')
-    if use_se:
-        avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name='value_pool0')
-        pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
-        value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
+        value_flatten = mx.sym.Flatten(data=value_out, name='value_flatten1')
+        if use_se:
+            avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name='value_pool0')
+            pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
+            value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
+
+    features = mx.sym.slice_axis(orig_data, axis=1, begin=0, end=13)
 
     if orig_data is not None and use_avg_features:
-        avg_pool = mx.sym.Pooling(data=orig_data, kernel=(8, 8), pool_type='avg', name='value_pool0')
-        pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
-        value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
+        avg_pool = mx.sym.Pooling(data=orig_data, kernel=(8, 8), pool_type='avg', name='value_avg_pool0')
+        pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_pool_flatten')
+
+        avg_pool1 = mx.sym.Pooling(data=features, kernel=(4, 4), stride=(1, 1), pool_type='avg', name='value_avg_pool1')
+        pool_flatten1 = mx.symbol.Flatten(data=avg_pool1, name='value_pool_flatten1')
+
+        avg_pool2 = mx.sym.Pooling(data=features, kernel=(2, 2), stride=(1, 1), pool_type='avg', name='value_avg_pool2')
+        pool_flatten2 = mx.symbol.Flatten(data=avg_pool2, name='value_pool_flatten2')
+
+        avg_mean = mx.sym.mean(data=features, axis=1)
+        mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_mean_flatten0')
+
+        w_pieces = mx.sym.slice_axis(features, axis=1, begin=0, end=6)
+        b_pieces = mx.sym.slice_axis(features, axis=1, begin=6, end=12)
+
+        avg_mean = mx.sym.mean(data=w_pieces, axis=1)
+        w_features_mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_w_features_mean_flatten0')
+        avg_mean = mx.sym.mean(data=b_pieces, axis=1)
+        b_features_mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_b_features_mean_flatten0')
+
+        if value_flatten is None:
+            value_flatten = mx.sym.Concat(*[pool_flatten, pool_flatten1, pool_flatten2, mean_flatten, w_features_mean_flatten, b_features_mean_flatten], name='value_concat')
+        else:
+            value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten, pool_flatten1, pool_flatten2, mean_flatten, w_features_mean_flatten, b_features_mean_flatten], name='value_concat')
+
     if orig_data is not None and use_raw_features:
-        raw_flatten = mx.symbol.Flatten(data=orig_data, name='value_flatten_raw')
-        value_flatten = mx.sym.Concat(*[value_flatten, raw_flatten], name='value_concat_raw')
+        raw_flatten = mx.symbol.Flatten(data=features, name='value_flatten_raw')
+        if value_flatten is None:
+            value_flatten = raw_flatten
+        else:
+            value_flatten = mx.sym.Concat(*[value_flatten, raw_flatten], name='value_concat_raw')
 
     value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
+    if use_batchnorm:
+        value_out = mx.sym.BatchNorm(data=value_out, name='value_bn1')
+
     value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
     for i in range(value_nb_hidden):
-        value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size_hidden, name=f'value_fc{i + 1}')
+        value_out = mx.sym.FullyConnected(data=value_out, num_hidden=value_fc_size_hidden, name=f'value_fc{i + 1}')
+        if use_batchnorm:
+            value_out = mx.sym.BatchNorm(data=value_out, name=f'value_bn{i+2}')
         value_out = get_act(data=value_out, act_type=act_type, name=f'value_act{i+2}')
-    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
+
+    if dropout_rate != 0:
+        value_out = mx.sym.Dropout(value_out, p=dropout_rate)
+
+    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc_final')
     value_out = get_act(data=value_out, act_type='tanh', name='value_out')
     value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
     return value_out
@@ -130,6 +193,43 @@ def policy_head(data, channels, act_type, channels_policy_head, select_policy_fr
     if select_policy_from_plane:
         policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(3, 3), pad=(1, 1),
                                         no_bias=no_bias, name="policy_conv1")
+        policy_out = mx.sym.flatten(data=policy_out, name='policy_out')
+        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
+    else:
+        policy_out = mx.sym.Flatten(data=policy_out, name='policy_flatten0')
+        policy_out = mx.sym.FullyConnected(data=policy_out, num_hidden=n_labels, name='policy_out')
+        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
+
+    return policy_out
+
+
+def policy_head_depthwise(data, channels, act_type, channels_policy_head, select_policy_from_plane, n_labels,
+                grad_scale_policy=1.0, no_bias=False):
+    """
+    Policy head of the network which outputs the policy distribution for a given position
+    :param data: Input data
+    :param channels_policy_head:
+    :param act_type: Activation function to use
+    :param select_policy_from_plane: True for policy head move representation
+    :param n_labels: Number of possible move targets
+    :param grad_scale_policy: Optional re-weighting of gradient
+    :param use_se: Indicates if a squeeze excitation layer shall be used
+    :param no_bias: If no bias shall be used for the last conv layer before softmax (backward compability)
+    """
+
+    policy_out = mx.sym.Convolution(data=data, num_filter=channels*2, kernel=(1, 1), pad=(0, 0), no_bias=True, name="policy_conv0")
+    policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
+    policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')
+    policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels*2, num_group=channels, kernel=(3, 3), pad=(1, 1),
+                               no_bias=True, name="policy_conv1")
+    policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn1')
+    policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act1')
+    policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(1, 1),
+                               pad=(0, 0), no_bias=no_bias, name='policy_conv2')
+
+    if select_policy_from_plane:
+        # policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(3, 3), pad=(1, 1),
+        #                                 no_bias=no_bias, name="policy_conv1")
         policy_out = mx.sym.flatten(data=policy_out, name='policy_out')
         policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
     else:

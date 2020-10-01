@@ -26,7 +26,7 @@ Influenced by the following papers:
 """
 import mxnet as mx
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, channel_squeeze_excitation, \
-    mix_conv, get_stem, value_head, policy_head, convolution_block_attention_module, ca_se, sa_se, cm_se, sm_se
+    mix_conv, get_depthwise_stem, value_head, policy_head_depthwise, convolution_block_attention_module, ca_se, sa_se, cm_se, sm_se
 
 
 def preact_residual_dmixconv_block(data, channels, channels_operating, name, kernels=None, act_type='relu',
@@ -79,7 +79,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                           grad_scale_value=0.01, grad_scale_policy=0.99,
                           select_policy_from_plane=True, kernels=None, n_labels=4992, se_ratio=4,
-                          se_types="se", use_avg_features=False, use_raw_features=False, value_nb_hidden=0, value_fc_size_hidden=32):
+                          se_types="se", use_avg_features=False, use_raw_features=False, value_nb_hidden=7, value_fc_size_hidden=256):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -106,6 +106,9 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     - "cm_se": Squeeze excitation with max operator
     - "sa_se": Spatial excitation with average operator
     - "sm_se": Spatial excitation with max operator
+    :param use_avg_features: If true the value head receives the avg of the each channel of the original input
+    :param use_raw_features: If true the value receives the raw features of the pieces positions one hot encoded
+    :param value_nb_hidden: Number of hidden layers of the vlaue head
     :return: symbol
     """
     if len(kernels) != len(se_types):
@@ -120,7 +123,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     # get the input data
     orig_data = mx.sym.Variable(name='data')
 
-    data = get_stem(data=orig_data, channels=channels, act_type=act_type)
+    data = get_depthwise_stem(data=orig_data, channels=channels, act_type='relu')
 
     if kernels is None:
         kernels = [3] * 13
@@ -134,8 +137,8 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
                                               se_ratio=se_ratio, se_type=se_types[idx])
         cur_channels += channel_expansion
 
-    data = mx.sym.BatchNorm(data=data, name='stem_bn1')
-    data = get_act(data=data, act_type=act_type, name='stem_act1')
+    data = mx.sym.BatchNorm(data=data, name='stem_bn_final')
+    data = get_act(data=data, act_type=act_type, name='stem_act_final')
 
     if dropout_rate != 0:
         data = mx.sym.Dropout(data, p=dropout_rate)
@@ -143,11 +146,36 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     value_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
                            value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value,
                            orig_data=orig_data, use_avg_features=use_avg_features,
-                           use_raw_features=use_raw_features, value_nb_hidden=value_nb_hidden,
-                           value_fc_size_hidden=value_fc_size_hidden)
-    policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
-                             select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels,
+                           use_raw_features=use_raw_features, value_nb_hidden=value_nb_hidden, dropout_rate=dropout_rate,
+                           use_batchnorm=True, value_fc_size_hidden=value_fc_size_hidden)
+    policy_out = policy_head_depthwise(data=data, act_type='relu', channels_policy_head=channels_policy_head, n_labels=n_labels,
+                             select_policy_from_plane=select_policy_from_plane, channels=channels,
                              grad_scale_policy=grad_scale_policy)
+    # group value_out and policy_out together
+    sym = mx.symbol.Group([value_out, policy_out])
+
+    return sym
+
+
+def value_network(act_type='relu', channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0,
+                  grad_scale_value=1, grad_scale_policy=0, use_avg_features=False, use_raw_features=False,
+                  value_nb_hidden=0, value_fc_size_hidden=32, use_batchnorm=False, use_conv_features=False):
+
+    # get the input data
+    orig_data = mx.sym.Variable(name='data')
+
+    value_out = value_head(data=orig_data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
+                           value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value,
+                           orig_data=orig_data, use_avg_features=use_avg_features,
+                           use_raw_features=use_raw_features, value_nb_hidden=value_nb_hidden,
+                           value_fc_size_hidden=value_fc_size_hidden, use_batchnorm=use_batchnorm, dropout_rate=dropout_rate,
+                           use_conv_features=use_conv_features)
+
+    policy_out = mx.sym.Convolution(data=orig_data, num_filter=channels_policy_head, kernel=(1, 1), pad=(0, 0),
+                                    no_bias=True, name="policy_conv1")
+    policy_out = mx.sym.flatten(data=policy_out, name='policy_out')
+    policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
+
     # group value_out and policy_out together
     sym = mx.symbol.Group([value_out, policy_out])
 
