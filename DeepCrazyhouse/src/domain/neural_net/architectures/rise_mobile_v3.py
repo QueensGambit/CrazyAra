@@ -79,7 +79,8 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                           grad_scale_value=0.01, grad_scale_policy=0.99,
                           select_policy_from_plane=True, kernels=None, n_labels=4992, se_ratio=4,
-                          se_types="se", use_avg_features=False, use_raw_features=False, value_nb_hidden=7, value_fc_size_hidden=256):
+                          se_types="se", use_avg_features=False, use_raw_features=False, value_nb_hidden=7,
+                          value_fc_size_hidden=256, value_dropout=0.15):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -146,7 +147,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     value_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
                            value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value,
                            orig_data=orig_data, use_avg_features=use_avg_features,
-                           use_raw_features=use_raw_features, value_nb_hidden=value_nb_hidden, dropout_rate=dropout_rate,
+                           use_raw_features=use_raw_features, value_nb_hidden=value_nb_hidden, dropout_rate=value_dropout,
                            use_batchnorm=True, value_fc_size_hidden=value_fc_size_hidden)
     policy_out = policy_head_depthwise(data=data, act_type='relu', channels_policy_head=channels_policy_head, n_labels=n_labels,
                              select_policy_from_plane=select_policy_from_plane, channels=channels,
