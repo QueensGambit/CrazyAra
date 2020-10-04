@@ -135,7 +135,7 @@ def alpha_zero_symbol(num_filter=256, channels_value_head=1, channels_policy_hea
                                         no_bias=True, name="policy_conv0", workspace=workspace)
         policy_out = mx.sym.BatchNorm(data=policy_out, fix_gamma=False, eps=2e-5, momentum=bn_mom, name='policy_bn0')
         policy_out = mx.sym.Activation(data=policy_out, act_type=act_type, name='policy_act0')
-        policy_out = mx.sym.Flatten(data=policy_out, name='policy_flatten0')
+        policy_out = mx.sym.Flatten(data=policy_out, name='policy_out')
         policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
     else:
         policy_out = mx.sym.Convolution(data=body, num_filter=channels_policy_head, kernel=(1, 1), pad=(0, 0),

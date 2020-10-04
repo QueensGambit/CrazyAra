@@ -26,7 +26,8 @@ Influenced by the following papers:
 """
 import mxnet as mx
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, channel_squeeze_excitation, \
-    mix_conv, get_depthwise_stem, value_head, policy_head_depthwise, convolution_block_attention_module, ca_se, sa_se, cm_se, sm_se
+    mix_conv, get_depthwise_stem, value_head, policy_head_depthwise, convolution_block_attention_module,\
+    ca_se, sa_se, cm_se, sm_se, eca_se, policy_head
 
 
 def preact_residual_dmixconv_block(data, channels, channels_operating, name, kernels=None, act_type='relu',
@@ -39,19 +40,10 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     :param act_type: Activation function to use
     :param se_ratio: Squeeze excitation ratio
     :param use_se: Boolean if a squeeze excitation module will be used
-    :param se_type: Squeeze excitation module type. Available [None, "se", "cbam", "ca_se", "cm_se", "sa_se", "sm_se"]
+    :param se_type: Squeeze excitation module type. Available [None, "se", "cbam", "ca_se", "eca_se", cm_se", "sa_se", "sm_se"]
     :return: symbol
     """
-    bn1 = mx.sym.BatchNorm(data=data, name=name + '_bn1')
-    conv1 = mx.sym.Convolution(data=bn1, num_filter=channels_operating, kernel=(1, 1), pad=(0, 0), no_bias=True,
-                               name=name + '_conv1')
-    bn2 = mx.sym.BatchNorm(data=conv1, name=name + '_bn2')
-    act1 = get_act(data=bn2, act_type=act_type, name=name + '_act1')
-    conv2 = mix_conv(data=act1, channels=channels_operating, kernels=kernels, name=name + 'conv2')
-    bn3 = mx.sym.BatchNorm(data=conv2, name=name + '_bn3')
-    out = get_act(data=bn3, act_type=act_type, name=name + '_act2')
-    out = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
-                               pad=(0, 0), no_bias=True, name=name + '_conv3')
+    out = mx.sym.BatchNorm(data=data, name=name + '_bn1')
     if se_type is not None:
         if se_type == "se":
            out = channel_squeeze_excitation(out, channels, name=name+'_se', ratio=se_ratio, act_type=act_type,
@@ -62,6 +54,8 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
                                                      use_hard_sigmoid=True)
         elif se_type == "ca_se":
             out = ca_se(out, channels, name=name+'_ca_se', ratio=se_ratio, act_type=act_type, use_hard_sigmoid=True)
+        elif se_type == "eca_se":
+            out = eca_se(out, channels, name=name+'_eca_se', use_hard_sigmoid=True)
         elif se_type == "cm_se":
             out = cm_se(out, channels, name=name+'_cm_se', ratio=se_ratio, act_type=act_type, use_hard_sigmoid=True)
         elif se_type == "sa_se":
@@ -70,6 +64,15 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
             out = sm_se(out, name=name+'sm_se', use_hard_sigmoid=True)
         else:
             raise Exception(f'Unsupported se_type "{se_type}"')
+    conv1 = mx.sym.Convolution(data=out, num_filter=channels_operating, kernel=(1, 1), pad=(0, 0), no_bias=True,
+                               name=name + '_conv1')
+    bn2 = mx.sym.BatchNorm(data=conv1, name=name + '_bn2')
+    act1 = get_act(data=bn2, act_type=act_type, name=name + '_act1')
+    conv2 = mix_conv(data=act1, channels=channels_operating, kernels=kernels, name=name + 'conv2')
+    bn3 = mx.sym.BatchNorm(data=conv2, name=name + '_bn3')
+    out = get_act(data=bn3, act_type=act_type, name=name + '_act2')
+    out = mx.sym.Convolution(data=out, num_filter=channels, kernel=(1, 1),
+                               pad=(0, 0), no_bias=True, name=name + '_conv3')
     out_sum = mx.sym.broadcast_add(data, out, name=name + '_add')
 
     return out_sum
@@ -80,7 +83,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
                           grad_scale_value=0.01, grad_scale_policy=0.99,
                           select_policy_from_plane=True, kernels=None, n_labels=4992, se_ratio=4,
                           se_types="se", use_avg_features=False, use_raw_features=False, value_nb_hidden=7,
-                          value_fc_size_hidden=256, value_dropout=0.15):
+                          value_fc_size_hidden=256, value_dropout=0.15, use_more_features=False):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -116,7 +119,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
         raise Exception(f'The length of "kernels": {len(kernels)} must be the same as'
                         f' the length of "se_types": {len(se_types)}')
 
-    valid_se_types = [None, "se", "cbam", "ca_se", "cm_se", "sa_se", "sm_se"]
+    valid_se_types = [None, "se", "cbam", "eca_se", "ca_se", "cm_se", "sa_se", "sm_se"]
     for se_type in se_types:
         if se_type not in valid_se_types:
             raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
@@ -124,7 +127,17 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     # get the input data
     orig_data = mx.sym.Variable(name='data')
 
-    data = get_depthwise_stem(data=orig_data, channels=channels, act_type='relu')
+    if use_more_features:
+        w_pieces = mx.sym.slice_axis(orig_data, axis=1, begin=0, end=6)
+        b_pieces = mx.sym.slice_axis(orig_data, axis=1, begin=6, end=12)
+
+        w_pieces_mask = mx.sym.max(data=w_pieces, axis=1, keepdims=True)
+        b_pieces_mask = mx.sym.max(data=b_pieces, axis=1, keepdims=True)
+        pieces_mean = w_pieces_mask + b_pieces_mask
+
+        orig_data = mx.sym.Concat(*[orig_data, pieces_mean, w_pieces_mask, b_pieces_mask], name='feature_concat_raw')
+
+    data = get_depthwise_stem(data=orig_data, channels=channels, act_type=act_type)
 
     if kernels is None:
         kernels = [3] * 13
@@ -132,13 +145,18 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     cur_channels = channels_operating_init
 
     for idx, cur_kernels in enumerate(kernels):
-
-        data = preact_residual_dmixconv_block(data=data, channels=channels, channels_operating=cur_channels,
-                                              kernels=cur_kernels, name='dconv_%d' % idx,
+        if cur_kernels[0] == 5:
+            temp_channels = cur_channels // 2
+        else:
+            temp_channels = cur_channels
+        data = preact_residual_dmixconv_block(data=data, channels=channels, channels_operating=temp_channels,
+                                              kernels=cur_kernels, name='dconv_%d' % idx, act_type=act_type,
                                               se_ratio=se_ratio, se_type=se_types[idx])
         cur_channels += channel_expansion
 
     data = mx.sym.BatchNorm(data=data, name='stem_bn_final')
+    # data = mx.sym.Convolution(data=data, num_filter=channels*4, kernel=(1, 1),
+    #                            pad=(0, 0), no_bias=True, name='stem_conv1x1_final')
     data = get_act(data=data, act_type=act_type, name='stem_act_final')
 
     if dropout_rate != 0:
@@ -149,7 +167,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
                            orig_data=orig_data, use_avg_features=use_avg_features,
                            use_raw_features=use_raw_features, value_nb_hidden=value_nb_hidden, dropout_rate=value_dropout,
                            use_batchnorm=True, value_fc_size_hidden=value_fc_size_hidden)
-    policy_out = policy_head_depthwise(data=data, act_type='relu', channels_policy_head=channels_policy_head, n_labels=n_labels,
+    policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
                              select_policy_from_plane=select_policy_from_plane, channels=channels,
                              grad_scale_policy=grad_scale_policy)
     # group value_out and policy_out together
@@ -176,6 +194,34 @@ def value_network(act_type='relu', channels_value_head=8, channels_policy_head=8
                                     no_bias=True, name="policy_conv1")
     policy_out = mx.sym.flatten(data=policy_out, name='policy_out')
     policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
+
+    # group value_out and policy_out together
+    sym = mx.symbol.Group([value_out, policy_out])
+
+    return sym
+
+
+def policy_network(channels=256, act_type='relu',
+                          channels_policy_head=81,
+                          grad_scale_policy=0.99,
+                          select_policy_from_plane=True, n_labels=4992,
+                          use_avg_features=False, use_raw_features=False, use_batchnorm=False, policy_nb_hidden=7,
+                          policy_fc_size_hidden=256, policy_dropout=0.15, grad_scale_value=0):
+
+    # get the input data
+    orig_data = mx.sym.Variable(name='data')
+
+    policy_out = policy_head_depthwise(data=orig_data, act_type=act_type, channels_policy_head=channels_policy_head,
+                                       n_labels=n_labels, select_policy_from_plane=select_policy_from_plane,
+                                       channels=channels, grad_scale_policy=grad_scale_policy,
+                                       use_avg_features=use_avg_features, use_raw_features=use_raw_features,
+                                       use_batchnorm=use_batchnorm, use_conv_features=False, orig_data=orig_data, dropout_rate=policy_dropout,
+                                       policy_fc_size=policy_fc_size_hidden, policy_nb_hidden=policy_nb_hidden, policy_fc_size_hidden=policy_fc_size_hidden
+                                       )
+
+    orig_data = mx.sym.Flatten(orig_data)
+    value_out = mx.sym.FullyConnected(data=orig_data, num_hidden=1)
+    value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
 
     # group value_out and policy_out together
     sym = mx.symbol.Group([value_out, policy_out])

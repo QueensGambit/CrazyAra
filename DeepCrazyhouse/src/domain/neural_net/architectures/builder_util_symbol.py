@@ -8,6 +8,8 @@ Utility methods for building the neural network using MXNet symbol API
 """
 
 import mxnet as mx
+from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, BOARD_WIDTH, BOARD_HEIGHT
+import math
 
 
 def get_act(data, act_type, name):
@@ -17,9 +19,9 @@ def get_act(data, act_type, name):
     if act_type == "lrelu":
         return mx.sym.LeakyReLU(data=data, slope=0.2, act_type='leaky', name=name)
     if act_type == "hard_sigmoid":
-        return mx.sym.clip(data=data + 3.0, a_min=0.0, a_max=6.0, name=name) / 6.0
+        return mx.sym.hard_sigmoid(data=data)
     if act_type == "hard_swish":
-        return data * (mx.sym.clip(data + 3, 0, 6, name=name) / 6.0)
+        return data * mx.sym.hard_sigmoid(data=data)
 
     raise NotImplementedError
 
@@ -71,6 +73,15 @@ def get_depthwise_stem(data, channels, act_type):
     return out
 
 
+def ic_layer(data, droupout_rate=0.03):
+    """
+    https://arxiv.org/pdf/1905.05928.pdf
+    """
+    out = mx.sym.BatchNorm(data=data)
+    out = mx.sym.Dropout(data=out, p=droupout_rate)
+    return out
+
+
 def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu', value_fc_size=256,
                grad_scale_value=0.01, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False,
                use_raw_features=False, value_nb_hidden=0, value_fc_size_hidden=256, use_batchnorm=False, dropout_rate=0.0,
@@ -113,7 +124,7 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
             pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
             value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
 
-    features = mx.sym.slice_axis(orig_data, axis=1, begin=0, end=13)
+    features = mx.sym.slice_axis(orig_data, axis=1, begin=0, end=12)
 
     if orig_data is not None and use_avg_features:
         avg_pool = mx.sym.Pooling(data=orig_data, kernel=(8, 8), pool_type='avg', name='value_avg_pool0')
@@ -125,21 +136,21 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
         avg_pool2 = mx.sym.Pooling(data=features, kernel=(2, 2), stride=(1, 1), pool_type='avg', name='value_avg_pool2')
         pool_flatten2 = mx.symbol.Flatten(data=avg_pool2, name='value_pool_flatten2')
 
-        avg_mean = mx.sym.mean(data=features, axis=1)
-        mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_mean_flatten0')
-
         w_pieces = mx.sym.slice_axis(features, axis=1, begin=0, end=6)
         b_pieces = mx.sym.slice_axis(features, axis=1, begin=6, end=12)
 
-        avg_mean = mx.sym.mean(data=w_pieces, axis=1)
+        pieces = w_pieces + b_pieces
+        pieces_flatten = mx.symbol.Flatten(data=pieces, name='value_mean_flatten0')
+
+        avg_mean = mx.sym.max(data=w_pieces, axis=1)
         w_features_mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_w_features_mean_flatten0')
-        avg_mean = mx.sym.mean(data=b_pieces, axis=1)
+        avg_mean = mx.sym.max(data=b_pieces, axis=1)
         b_features_mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_b_features_mean_flatten0')
 
         if value_flatten is None:
-            value_flatten = mx.sym.Concat(*[pool_flatten, pool_flatten1, pool_flatten2, mean_flatten, w_features_mean_flatten, b_features_mean_flatten], name='value_concat')
+            value_flatten = mx.sym.Concat(*[pool_flatten, pool_flatten1, pool_flatten2, pieces_flatten, w_features_mean_flatten, b_features_mean_flatten], name='value_concat')
         else:
-            value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten, pool_flatten1, pool_flatten2, mean_flatten, w_features_mean_flatten, b_features_mean_flatten], name='value_concat')
+            value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten, pool_flatten1, pool_flatten2, pieces_flatten, w_features_mean_flatten, b_features_mean_flatten], name='value_concat')
 
     if orig_data is not None and use_raw_features:
         raw_flatten = mx.symbol.Flatten(data=features, name='value_flatten_raw')
@@ -151,8 +162,8 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
     value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
     if use_batchnorm:
         value_out = mx.sym.BatchNorm(data=value_out, name='value_bn1')
-
     value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
+
     for i in range(value_nb_hidden):
         value_out = mx.sym.FullyConnected(data=value_out, num_hidden=value_fc_size_hidden, name=f'value_fc{i + 1}')
         if use_batchnorm:
@@ -204,7 +215,8 @@ def policy_head(data, channels, act_type, channels_policy_head, select_policy_fr
 
 
 def policy_head_depthwise(data, channels, act_type, channels_policy_head, select_policy_from_plane, n_labels,
-                grad_scale_policy=1.0, no_bias=False):
+                grad_scale_policy=1.0, no_bias=False, use_avg_features=False, use_raw_features=False,
+                use_batchnorm=False, use_conv_features=True, orig_data=None, dropout_rate=0, policy_fc_size=0, policy_nb_hidden=0, policy_fc_size_hidden=4094):
     """
     Policy head of the network which outputs the policy distribution for a given position
     :param data: Input data
@@ -217,15 +229,77 @@ def policy_head_depthwise(data, channels, act_type, channels_policy_head, select
     :param no_bias: If no bias shall be used for the last conv layer before softmax (backward compability)
     """
 
-    policy_out = mx.sym.Convolution(data=data, num_filter=channels*2, kernel=(1, 1), pad=(0, 0), no_bias=True, name="policy_conv0")
-    policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
-    policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')
-    policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels*2, num_group=channels, kernel=(3, 3), pad=(1, 1),
-                               no_bias=True, name="policy_conv1")
-    policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn1')
-    policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act1')
-    policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(1, 1),
-                               pad=(0, 0), no_bias=no_bias, name='policy_conv2')
+    if use_conv_features:
+        policy_out = mx.sym.Convolution(data=data, num_filter=channels*2, kernel=(1, 1), pad=(0, 0), no_bias=True, name="policy_conv0")
+        policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn0')
+        policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act0')
+        policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels*2, num_group=channels, kernel=(3, 3), pad=(1, 1),
+                                   no_bias=True, name="policy_conv1")
+        policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn1')
+        policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act1')
+        policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(1, 1),
+                                   pad=(0, 0), no_bias=no_bias, name='policy_conv2')
+
+    # features = mx.sym.slice_axis(orig_data, axis=1, begin=0, end=13)
+    # value_flatten = None
+    # if orig_data is not None and use_avg_features:
+    #     avg_pool = mx.sym.Pooling(data=orig_data, kernel=(8, 8), pool_type='avg', name='value_avg_pool0')
+    #     pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_pool_flatten')
+    #
+    #     avg_pool1 = mx.sym.Pooling(data=features, kernel=(4, 4), stride=(1, 1), pool_type='avg', name='value_avg_pool1')
+    #     pool_flatten1 = mx.symbol.Flatten(data=avg_pool1, name='value_pool_flatten1')
+    #
+    #     # avg_pool2 = mx.sym.Pooling(data=features, kernel=(3, 3), stride=(1, 1), pad=1, pool_type='avg', name='value_avg_pool2')
+    #     # pool_flatten2 = mx.symbol.Flatten(data=avg_pool2, name='value_pool_flatten2')
+    #
+    #     avg_pool2 = mx.sym.Pooling(data=features, kernel=(2, 2), stride=(1, 1), pool_type='avg', name='value_avg_pool3')
+    #     pool_flatten2 = mx.symbol.Flatten(data=avg_pool2, name='value_pool_flatten3')
+    #
+    #     avg_mean = mx.sym.mean(data=features, axis=1)
+    #     mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_mean_flatten0')
+    #
+    #     w_pieces = mx.sym.slice_axis(features, axis=1, begin=0, end=6)
+    #     b_pieces = mx.sym.slice_axis(features, axis=1, begin=6, end=12)
+    #
+    #     avg_mean = mx.sym.mean(data=w_pieces, axis=1)
+    #     w_features_mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_w_features_mean_flatten0')
+    #     avg_mean = mx.sym.mean(data=b_pieces, axis=1)
+    #     b_features_mean_flatten = mx.symbol.Flatten(data=avg_mean, name='value_b_features_mean_flatten0')
+    #
+    #     # if value_flatten is None:
+    #     value_flatten = mx.sym.Concat(*[pool_flatten, pool_flatten1, pool_flatten2, mean_flatten, w_features_mean_flatten, b_features_mean_flatten], name='value_concat')
+    #     # else:
+    #     #     value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten, pool_flatten1, pool_flatten2, mean_flatten, w_features_mean_flatten, b_features_mean_flatten], name='value_concat')
+    #
+    # if orig_data is not None and use_raw_features:
+    #     raw_flatten = mx.symbol.Flatten(data=features, name='value_flatten_raw')
+    #     if value_flatten is None:
+    #         value_flatten = raw_flatten
+    #     else:
+    #         value_flatten = mx.sym.Concat(*[value_flatten, raw_flatten], name='value_concat_raw')
+    #
+    # policy_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=policy_fc_size, name='value_fc0')
+    # # if use_batchnorm:
+    # #     policy_out = mx.sym.BatchNorm(data=policy_out, name='value_bn1')
+    # #     policy_out = mx.sym.Dropout(policy_out, p=dropout_rate)
+    #
+    # policy_out = get_act(data=policy_out, act_type=act_type, name='value_act1')
+    # if use_batchnorm:
+    #     policy_out = mx.sym.BatchNorm(data=policy_out, name='value_bn1')
+    #     policy_out = mx.sym.Dropout(policy_out, p=dropout_rate)
+    #
+    # for i in range(policy_nb_hidden):
+    #     policy_out = mx.sym.FullyConnected(data=policy_out, num_hidden=policy_fc_size_hidden, name=f'value_fc{i + 1}')
+    #     policy_out = get_act(data=policy_out, act_type=act_type, name=f'value_act{i+2}')
+    #     if use_batchnorm:
+    #         policy_out = mx.sym.BatchNorm(data=policy_out, name=f'value_bn{i+2}')
+    #         policy_out = mx.sym.Dropout(policy_out, p=dropout_rate)
+    #
+    # # if dropout_rate != 0:
+    # #     policy_out = mx.sym.Dropout(policy_out, p=dropout_rate)
+    #
+    # policy_out = mx.sym.FullyConnected(data=policy_out, num_hidden=NB_POLICY_MAP_CHANNELS*BOARD_WIDTH*BOARD_HEIGHT,
+    #                                    name=f'value_fc_final')
 
     if select_policy_from_plane:
         # policy_out = mx.sym.Convolution(data=policy_out, num_filter=channels_policy_head, kernel=(3, 3), pad=(1, 1),
@@ -280,16 +354,7 @@ def channel_attention_module(data, channels, name, ratio=16, act_type="relu", us
     :param pool_type: Pooling type to use. If "both" are used, then the features will be concatenated.
     Available options are: ["both", "avg", "max"]
      """
-    if pool_type == "both":
-        avg_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
-        max_pool = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
-        merge = mx.sym.Concat(avg_pool, max_pool, dim=1, name=name + '_concat_0')
-    elif pool_type == "avg":
-        merge = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
-    elif pool_type == "max":
-        merge = mx.sym.Pooling(data=data, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
-    else:
-        raise Exception(f"Invalid value for pool_type given: {pool_type}")
+    merge = se_pooling(data, name, pool_type)
 
     flatten = mx.symbol.Flatten(data=merge, name=name + '_flatten0')
     fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=channels // ratio, name=name + '_fc0')
@@ -301,6 +366,49 @@ def channel_attention_module(data, channels, name, ratio=16, act_type="relu", us
         act_type = 'sigmoid'
     act2 = get_act(data=fc2, act_type=act_type, name=name + '_act1')
     return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
+
+
+def efficient_channel_attention_module(data, channels, name, gamma=2, b=1, use_hard_sigmoid=False, pool_type="avg"):
+    """
+    ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks - Wang et al. - https://arxiv.org/pdf/1910.03151.pdf
+    :param data: Input data
+    :param channels: Number of input channels
+    :param name: Layer name
+    :param ratio: Reduction ratio
+    :param act_type: Activation type for hidden layer in MLP
+    :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
+     MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
+    :param pool_type: Pooling type to use. If "both" are used, then the features will be concatenated.
+    Available options are: ["both", "avg", "max"]
+     """
+    merge = se_pooling(data, name, pool_type)
+
+    t = int(abs((math.log(channels, 2) + b) / gamma))
+    kernel = t if t % 2 else t + 1
+
+    conv = mx.sym.Convolution(data=mx.symbol.reshape(data=merge, shape=(-1, 1, channels)), num_filter=1, kernel=(kernel,), pad=(kernel//2,), no_bias=False)
+
+    if use_hard_sigmoid:
+        act_type = 'hard_sigmoid'
+    else:
+        act_type = 'sigmoid'
+    act2 = get_act(data=conv, act_type=act_type, name=name + '_act1')
+
+    return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
+
+
+def se_pooling(data, name, pool_type):
+    if pool_type == "both":
+        avg_pool = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
+        max_pool = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
+        merge = mx.sym.Concat(avg_pool, max_pool, dim=1, name=name + '_concat_0')
+    elif pool_type == "avg":
+        merge = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
+    elif pool_type == "max":
+        merge = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
+    else:
+        raise Exception(f"Invalid value for pool_type given: {pool_type}")
+    return merge
 
 
 def spatial_attention_module(data, name, use_hard_sigmoid=False, pool_type="both"):
@@ -359,6 +467,14 @@ def ca_se(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=Fals
     return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
 
 
+def eca_se(data, channels, name, use_hard_sigmoid=False):
+    """
+    ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks (ecaSE)
+    Alias function for efficient_channel_attention_module() with average pooling
+    """
+    return efficient_channel_attention_module(data, channels, name, gamma=2, b=1, use_hard_sigmoid=use_hard_sigmoid, pool_type="avg")
+
+
 def cm_se(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
     """
     Channel-Max-Squeeze-Excitation (cmSE)
@@ -374,9 +490,11 @@ def sa_se(data, name, use_hard_sigmoid=False):
     """
     return spatial_attention_module(data, name, use_hard_sigmoid, pool_type="avg")
 
+
 def sm_se(data, name, use_hard_sigmoid=False):
     """
     Spatial-Max-Squeeze-Excitation (smSE)
     Alias function for spatial_attention_module() with max pooling
     """
     return spatial_attention_module(data, name, use_hard_sigmoid, pool_type="max")
+
