@@ -65,7 +65,7 @@ NodeData::NodeData(size_t numberChildNodes):
     reserve_initial_space();
 }
 
-auto NodeData::get_q_values()
+blaze::Subvector<blaze::DynamicVector<float>> NodeData::get_q_values()
 {
     return blaze::subvector(qValues, 0, noVisitIdx);
 }

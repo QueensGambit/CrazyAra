@@ -67,7 +67,7 @@ struct NodeData
     NodeType nodeType;
     NodeData(size_t numberChildNodes);
 
-    auto get_q_values();
+    blaze::Subvector<blaze::DynamicVector<float>> get_q_values();
 
 public:
     /**
