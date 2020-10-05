@@ -46,6 +46,16 @@ Action Node::get_predecessor_action() const
     return parentNode->get_action(childIdxForParent);
 }
 
+bool Node::is_unstable() const
+{
+    return isUnstable;
+}
+
+void Node::mark_as_unstable()
+{
+    isUnstable = true;
+}
+
 Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
     legalActions(state->legal_actions()),
     parentNode(parentNode),
@@ -58,7 +68,8 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     isTablebase(false),
     hasNNResults(false),
     sorted(false),
-    isCell(false)
+    isCell(false),
+    isUnstable(false)
 {
     // specify the number of direct child nodes of this node
     const int numberChildNodes = legalActions.size();
@@ -919,6 +930,15 @@ size_t get_best_action_index(const Node *curNode, bool fast)
     return bestMoveIdx;
 }
 
+bool Node::all_q_values_smaller_X(float thresh) const {
+    for (auto qValue : d->get_q_values()) {
+        if (qValue > thresh) {
+            return false;
+        }
+    }
+    return true;
+}
+
 size_t Node::select_child_node(const SearchSettings* searchSettings)
 {
     if (!sorted) {
@@ -929,6 +949,9 @@ size_t Node::select_child_node(const SearchSettings* searchSettings)
     }
     if (has_forced_win()) {
         return d->checkmateIdx;
+    }
+    if (is_unstable() && is_fully_expanded() && get_visits() > 10000 && all_q_values_smaller_X(-0.1f)) {
+        disable_node_acces(this);
     }
     // find the move according to the q- and u-values for each move
     // calculate the current u values
@@ -1076,4 +1099,16 @@ deque<size_t> get_trajectory(Node* currentNode)
         currentNode = currentNode->get_parent_node();
     }
     return trajectory;
+}
+
+void disable_node_acces(Node* node)
+{
+    Node* parentNode = node->get_parent_node();
+    // disable drawing move for selection
+    if (parentNode != nullptr) {
+        parentNode->lock();
+        parentNode->disable_action(node->get_child_idx_for_parent());
+        parentNode->mark_as_unstable();
+        parentNode->unlock();
+    }
 }

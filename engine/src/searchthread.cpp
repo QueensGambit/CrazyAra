@@ -158,28 +158,28 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
     description.depth = 0;
     Node* currentNode = rootNode;
 
-    if (cells->trajectories.size() > 0 && rand() % 100 < 50) {
-        currentNode = rootNode;
-        // select random cell
-        cells->mtx.lock();
-        deque<size_t> trajectory = cells->select_trajectory();
-        cells->mtx.unlock();
+//    if (cells->trajectories.size() > 0 && rand() % 100 < 50) {
+//        currentNode = rootNode;
+//        // select random cell
+//        cells->mtx.lock();
+//        deque<size_t> trajectory = cells->select_trajectory();
+//        cells->mtx.unlock();
 
-        // go to node cell
-        deque<Action> actions;
-        for (size_t idx : trajectory) {
-            if (currentNode != nullptr && currentNode->is_playout_node()) {
-                pos->do_action(currentNode->get_action(idx));
-                currentNode->lock();
-                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
-                Node* nextNode = currentNode->get_child_node(idx);
-                currentNode->unlock();
-                currentNode = nextNode;
-                childIdx = idx;
-                description.depth++;
-            }
-        }
-    }
+//        // go to node cell
+//        deque<Action> actions;
+//        for (size_t idx : trajectory) {
+//            if (currentNode != nullptr && currentNode->is_playout_node()) {
+//                pos->do_action(currentNode->get_action(idx));
+//                currentNode->lock();
+//                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
+//                Node* nextNode = currentNode->get_child_node(idx);
+//                currentNode->unlock();
+//                currentNode = nextNode;
+//                childIdx = idx;
+//                description.depth++;
+//            }
+//        }
+//    }
 
     while (true) {
         childIdx = INT_MAX;
@@ -310,6 +310,11 @@ void SearchThread::create_mini_batch()
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
+            if (-newNode->get_value() == DRAW && newNode->get_visits() > 1000) {
+                // TODO: save trajectory as safe drawing line
+                disable_node_acces(newNode);
+                disable_node_acces(newNode->get_parent_node());
+            }
             parentNode->backup_value(childIdx, -newNode->get_value(), searchSettings->virtualLoss);
         }
         else if (description.type == NODE_COLLISION) {

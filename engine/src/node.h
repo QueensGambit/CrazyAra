@@ -79,6 +79,7 @@ private:
     bool hasNNResults;
     bool sorted;
     bool isCell;
+    bool isUnstable;  // the node has been manually modified
 
 public:
     /**
@@ -397,6 +398,19 @@ public:
     bool is_cell() const;
 
     Action get_predecessor_action() const;
+
+    bool is_unstable() const;
+
+    void mark_as_unstable();
+
+
+    /**
+     * @brief disable_move Disables a given move for futher visits by setting the corresponding Q-value to -INT_MAX
+     * and the move probability to 0.
+     * @param childIdxForParent Index for the move which will be disabled
+     */
+    void disable_action(size_t childIdxForParent);
+
 private:
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
@@ -517,11 +531,10 @@ private:
 //    void mark_enhanced_moves(const Board* pos, const SearchSettings* searchSettings);
 
     /**
-     * @brief disable_move Disables a given move for futher visits by setting the corresponding Q-value to -INT_MAX
-     * and the move probability to 0.
-     * @param childIdxForParent Index for the move which will be disabled
+     * @brief q_values_smaller_0 Checks if every Q-value is smaller than 0
+     * @return True if this is the case, else false
      */
-    void disable_action(size_t childIdxForParent);
+    bool all_q_values_smaller_X(float thresh) const;
 };
 
 /**
@@ -603,5 +616,11 @@ size_t get_node_count(const Node* node);
  * @return trajetory
  */
 deque<size_t> get_trajectory(Node* currentNode);
+
+/**
+ * @brief disable_node_acces
+ * @param node
+ */
+void disable_node_acces(Node* node);
 
 #endif // NODE_H
