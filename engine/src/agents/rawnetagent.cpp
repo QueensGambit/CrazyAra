@@ -25,21 +25,13 @@
 
 #include <blaze/Math.h>
 #include "rawnetagent.h"
-#include "../stateobj.h"
 #include "../util/blazeutil.h"
 
 using blaze::HybridVector;
 
-RawNetAgent::RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings_, bool verbose_):
-    Agent(playSettings_, verbose_), net(net), valueOutput(0)
+RawNetAgent::RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose):
+    Agent(net, playSettings, verbose)
 {
-    fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);  // will be filled in evaluate_board_state()
-    probOutputs = new float[net->get_policy_output_length()];
-}
-
-RawNetAgent::~RawNetAgent()
-{
-    delete [] probOutputs;
 }
 
 void RawNetAgent::evaluate_board_state()
@@ -60,10 +52,8 @@ void RawNetAgent::evaluate_board_state()
         evalInfo->pv[0] = {evalInfo->legalMoves[0]};
         return;
     }
-
-    state->get_state_planes(true, begin(inputPlanes));
-    float value;
-    net->predict(begin(inputPlanes), &value, probOutputs);
+    state->get_state_planes(true, inputPlanes);
+    net->predict(inputPlanes, valueOutputs, probOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
     get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->side_to_move(),
@@ -71,7 +61,7 @@ void RawNetAgent::evaluate_board_state()
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];
 
-    evalInfo->centipawns.emplace_back(value_to_centipawn(value));
+    evalInfo->centipawns.emplace_back(value_to_centipawn(valueOutputs[0]));
     evalInfo->movesToMate.emplace_back(0);
     evalInfo->depth = 1;
     evalInfo->selDepth = 1;

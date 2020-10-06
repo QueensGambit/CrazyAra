@@ -32,7 +32,193 @@
 #include "uci.h"
 #include "../state.h"
 #include "board.h"
+#include "outputrepresentation.h
 using namespace std;
+
+
+class StateConstantsBoard : public StateConstantsInterface<StateConstantsBoard>
+{
+private:
+    static action_idx_map MV_LOOKUP;
+    static action_idx_map MV_LOOKUP_MIRRORED;
+    static action_idx_map MV_LOOKUP_CLASSIC;
+    static action_idx_map MV_LOOKUP_MIRRORED_CLASSIC;
+public:
+    static int BOARD_WIDTH() {
+        return 8;
+    }
+    static int BOARD_HEIGHT() {
+        return 8;
+    }
+    static int NB_CHANNELS_TOTAL() {
+        return NB_CHANNELS_POS() + NB_CHANNELS_CONST() + NB_CHANNELS_VARIANTS() + NB_CHANNELS_HISTORY();
+    }
+    static int NB_LABELS() {
+        // legal moves total which are represented in the NN
+        #ifdef MODE_CRAZYHOUSE
+        return 2272;
+        #elif defined MODE_LICHESS
+        return 2316;
+        #else  // MODE = MODE_CHESS
+        return 1968;
+        #endif
+    }
+    static int NB_LABELS_POLICY_MAP() {
+        return NB_CHANNELS_POLICY_MAP() * BOARD_HEIGHT() * BOARD_WIDTH();
+    }
+    static int NB_PLAYERS() {
+        return 2;
+    }
+    static std::string action_to_uci(Action action, bool is960) {
+        return UCI::move(Move(action), is960);
+    }
+    template<PolicyType p, MirrorType m>
+    static size_t action_to_index(Action action) {
+        switch (p) {
+        case normal:
+            switch (m) {
+            case notMirrored:
+                return MV_LOOKUP[action];
+            case mirrored:
+                return MV_LOOKUP_MIRRORED[action];
+            default:
+                return MV_LOOKUP[action];
+            }
+        case classic:
+            switch (m) {
+            case notMirrored:
+                return MV_LOOKUP_CLASSIC[action];
+            case mirrored:
+                return MV_LOOKUP_MIRRORED_CLASSIC[action];
+            default:
+                return MV_LOOKUP_CLASSIC[action];
+            }
+        default:
+            return MV_LOOKUP[action];
+        }
+    }
+    static void init(bool isPolicyMap) {
+        init_policy_constants(isPolicyMap,
+                              MV_LOOKUP,
+                              MV_LOOKUP_MIRRORED,
+                              MV_LOOKUP_CLASSIC,
+                              MV_LOOKUP_MIRRORED_CLASSIC);
+    }
+    // -------------------------------------------------
+    // |           Additional custom methods           |
+    // -------------------------------------------------
+#ifdef MODE_CRAZYHOUSE
+    static int NB_CHANNELS_POS() {
+        return 27;
+    }
+    static int NB_CHANNELS_CONST() {
+        return 7;
+    }
+    static int NB_CHANNELS_VARIANTS() {
+        return 0;
+    }
+    static int NB_LAST_MOVES() {
+        return 0;
+    }
+    static int NB_CHANNELS_PER_HISTORY() {
+        return 0;
+    }
+#elif defined MODE_LICHESS
+    static int NB_CHANNELS_POS() {
+        return 27;
+    }
+    static int NB_CHANNELS_CONST() {
+        return 11;
+    }
+    static int NB_CHANNELS_VARIANTS() {
+        return 9;
+    }
+    static int NB_LAST_MOVES() {
+        return 8;
+    }
+    static int NB_CHANNELS_PER_HISTORY() {
+        return 2;
+    }
+#elif defined MODE_CHESS
+    static int NB_CHANNELS_POS() {
+        return 15;
+    }
+    static int NB_CHANNELS_CONST() {
+        return 7;
+    }
+    static int NB_CHANNELS_VARIANTS() {
+        return 1;
+    }
+    static int NB_LAST_MOVES() {
+        return 8;
+    }
+    static int NB_CHANNELS_PER_HISTORY() {
+        return 2;
+    }
+#endif
+    static int NB_CHANNELS_HISTORY() {
+        return NB_LAST_MOVES() * NB_CHANNELS_PER_HISTORY();
+    }
+    // the number of different piece types in the game
+    static int NB_PIECE_TYPES() {
+        return 6;
+    }
+    // define the number of different pieces one can have in his pocket (the king is excluded)
+    static int POCKETS_SIZE_PIECE_TYPE() {
+        return 5;
+    }
+    //  (this used for normalization the input planes and setting an appropriate integer representation (e.g. int16)
+    // these are defined as float to avoid integer division
+    #ifdef MODE_CRAZYHOUSE
+    // define the maximum number of pieces of each type in a pocket
+    static float MAX_NB_PRISONERS() {
+        return 32;
+    }
+    // 500 was set as the max number of total moves
+    static float MAX_FULL_MOVE_COUNTER() {
+        return 500;
+    }
+    // originally this was set to 40, but actually it is meant to be 50 move rule
+    static float MAX_NB_NO_PROGRESS() {
+        return 40;
+    }
+    #else  // MODE = MODE_LICHESS or MODE = MODE_CHESS:
+    // at maximum you can have only 16 pawns (your own and the ones of the opponent)
+    static float MAX_NB_PRISONERS() {
+        return 16;
+    }
+    // 500 was set as the max number of total moves
+    static float MAX_FULL_MOVE_COUNTER() {
+        return 500;
+    }
+    // after 50 moves of no progress the 50 moves rule for draw applies
+    static float MAX_NB_NO_PROGRESS() {
+        return 50;
+    }
+    #endif
+    static int NB_CHANNELS_POLICY_MAP() {
+        #ifdef MODE_CRAZYHOUSE
+        return 81;
+        #elif defined MODE_LICHESS
+        return 84;
+        #else  // MODE = MODE_CHESS
+        return 76;
+        #endif
+    }
+    #ifdef MODE_LICHESS
+    static std::unordered_map<Variant, int> CHANNEL_MAPPING_VARIANTS() {
+         {  {CHESS_VARIANT, 1},
+            {CRAZYHOUSE_VARIANT, 2},
+            {KOTH_VARIANT, 3},
+            {THREECHECK_VARIANT, 4},
+            {ANTI_VARIANT, 5},
+            {ATOMIC_VARIANT, 6},
+            {HORDE_VARIANT, 7},
+            {RACE_VARIANT, 8}
+        };
+    }
+    #endif
+};
 
 class BoardState : public State
 {

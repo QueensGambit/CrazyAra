@@ -29,6 +29,7 @@
 #include "agent.h"
 #include "../util/communication.h"
 #include "../util/blazeutil.h"
+#include "stateobj.h"
 
 using namespace std;
 
@@ -50,7 +51,8 @@ void Agent::set_best_move(size_t moveCounter)
     }
 }
 
-Agent::Agent(PlaySettings* playSettings, bool verbose):
+Agent::Agent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose):
+    NeuralNetAPIUser(net),
     playSettings(playSettings), verbose(verbose)
 {
 }
@@ -75,7 +77,7 @@ void Agent::perform_action()
     set_best_move(state->steps_from_null());
     info_msg(*evalInfo);
     info_string(state->fen());
-    info_bestmove(action_to_uci(evalInfo->bestMove, state->is_chess960()));
+    info_bestmove(StateConstants::action_to_uci(evalInfo->bestMove, state->is_chess960()));
 }
 
 void run_agent_thread(Agent* agent)

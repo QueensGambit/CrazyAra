@@ -32,8 +32,6 @@
 #include "../evalinfo.h"
 #include "../node.h"
 #include <thread>
-#include "../constants.h"
-#include "../nn/neuralnetapi.h"
 #include "config/searchsettings.h"
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
@@ -42,15 +40,8 @@
 
 class RawNetAgent: public Agent
 {
-private:
-    NeuralNetAPI *net;
-    float inputPlanes[NB_VALUES_TOTAL];
-    float valueOutput;
-    float* probOutputs;
-
 public:
-    RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings_, bool verbose);
-    ~RawNetAgent();
+    RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose);
     RawNetAgent(const RawNetAgent&) = delete;
     RawNetAgent& operator=(RawNetAgent const&) = delete;
 

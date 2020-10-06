@@ -25,7 +25,7 @@
 
 #ifdef TORCH
 #include "torchapi.h"
-#include "constants.h"
+#include "stateobj.h"
 
 TorchAPI::TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string &modelDirectory):
     NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, false)
@@ -40,7 +40,7 @@ TorchAPI::TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
 void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutputs)
 {
     // Create a vector of inputs.
-    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH})};
+    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()})};
 
     // Execute the model and turn its output into a tensor.
     auto output = module.forward(inputs).toList();

@@ -25,12 +25,17 @@
 
 #include "neuralnetapi.h"
 #include <string>
-#include "../constants.h"
+#include "../stateobj.h"
+
+unsigned int NeuralNetAPI::get_batch_size() const
+{
+    return batchSize;
+}
 
 NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
     deviceID(deviceID),
     batchSize(batchSize),
-    policyOutputLength(NB_LABELS * batchSize),
+    policyOutputLength(StateConstants::NB_LABELS() * batchSize),
     enableTensorrt(enableTensorrt)
 {
     modelDir = parse_directory(modelDirectory);

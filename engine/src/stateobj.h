@@ -45,33 +45,12 @@ using blaze::DynamicVector;
 
 #ifdef MODE_POMMERMAN
     using StateObj = PommermanState;
+    using StateConstants = StateConstantsPommerMan;
 #else
     using StateObj = BoardState;
+    using StateConstants = StateConstantsBoard;
 #endif
 
-std::string action_to_uci(Action action, bool is960);
-
-namespace Constants {
-#ifndef MODE_POMMERMAN
-inline void init(bool isPolicyMap) {
-    init_policy_constants(isPolicyMap);
-}
-
-#else
-inline void init(bool isPolicyMap) {
-    MV_LOOKUP = {{Action(bboard::Move::IDLE), 0},
-                {Action(bboard::Move::UP), 1},
-                {Action(bboard::Move::LEFT), 2},
-                {Action(bboard::Move::DOWN), 3},
-                {Action(bboard::Move::RIGHT), 4},
-                {Action(bboard::Move::BOMB), 5}
-                };
-    MV_LOOKUP_MIRRORED = MV_LOOKUP;
-    MV_LOOKUP_CLASSIC = MV_LOOKUP;
-    MV_LOOKUP_MIRRORED_CLASSIC = MV_LOOKUP;
-}
-#endif
-}
 
 /**
  * @brief get_probs_of_move_list Returns an array in which entry relates to the probability for the given move list.
@@ -96,12 +75,5 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
  * @return Starting pointer for predictions of the current batch
  */
 const float*  get_policy_data_batch(const size_t batchIdx, const float* policyProb, bool isPolicyMap);
-
-/**
- * @brief get_current_move_lookup Returns the look-up table to use depending on the side to move
- * @param sideToMove Current side to move
- * @return Returns either MOVE_LOOK_UP or MOVE_LOOK_UP_MIRRORED
- */
-std::unordered_map<Action, size_t, std::hash<int>>& get_current_move_lookup(SideToMove sideToMove);
 
 #endif // STATEOBJ_H

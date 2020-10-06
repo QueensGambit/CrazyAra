@@ -34,6 +34,7 @@
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
+using action_idx_map = unordered_map<Action, size_t, std::hash<int>>;
 
 using namespace std;
 
@@ -42,7 +43,11 @@ using namespace std;
 
 void apply_softmax(DynamicVector<float> &policyProbSmall);
 
-void init_policy_constants(bool isPolicyMap);
-
+void init_policy_constants(bool isPolicyMap,
+                           action_idx_map& MV_LOOKUP,
+                           action_idx_map& MV_LOOKUP_MIRRORED,
+                           action_idx_map& MV_LOOKUP_CLASSIC,
+                           action_idx_map& MV_LOOKUP_MIRRORED_CLASSIC
+                           );
 
 #endif // OUTPUTREPRESENTATION_H

@@ -26,47 +26,17 @@
 #include "stateobj.h"
 #include "constants.h"
 
-// allocate memory
-string LABELS_MIRRORED[NB_LABELS];
-unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP = {};
-unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED = {};
-unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_CLASSIC = {};
-unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED_CLASSIC = {};
 
-std::string action_to_uci(Action action, bool is960) {
-#ifdef MODE_POMMERMAN
-    switch(bboard::Move(action)) {
-    case (bboard::Move::IDLE):
-        return "IDLE";
-    case (bboard::Move::UP):
-        return "UP";
-    case (bboard::Move::DOWN):
-        return "DOWN";
-    case (bboard::Move::LEFT):
-        return "LEFT";
-    case (bboard::Move::RIGHT):
-        return "RIGHT";
-    case (bboard::Move::BOMB):
-        return "BOMB";
-    default:
-        return "UNKNOWN";
-    }
-#else
-    return UCI::move(Move(action), is960);
-#endif
-}
-
-// TODO: Change this later to blaze::HybridVector<float, MAX_NB_LEGAL_MOVES>
 void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, SideToMove sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool selectPolicyFromPlane)
 {
     size_t vectorIdx;
     for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
         if (sideToMove == FIRST_PLAYER_IDX) {
             // find the according index in the vector
-            vectorIdx = MV_LOOKUP[legalMoves[mvIdx]];
+            vectorIdx = StateConstants::action_to_index<normal,notMirrored>(legalMoves[mvIdx]);
         } else {
             // use the mirrored look-up table instead
-            vectorIdx = MV_LOOKUP_MIRRORED[legalMoves[mvIdx]];
+            vectorIdx = StateConstants::action_to_index<normal,mirrored>(legalMoves[mvIdx]);
         }
         assert(vectorIdx < NB_LABELS);
 
@@ -74,9 +44,9 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
         // accessing the data on the raw floating point vector is faster
         // than calling policyProb.At(batchIdx, vectorIdx)
         if (selectPolicyFromPlane) {
-            policyProbSmall[mvIdx] = policyProb[batchIdx*NB_LABELS_POLICY_MAP+vectorIdx];
+            policyProbSmall[mvIdx] = policyProb[batchIdx*StateConstants::NB_LABELS_POLICY_MAP()+vectorIdx];
         } else {
-            policyProbSmall[mvIdx] = policyProb[batchIdx*NB_LABELS+vectorIdx];
+            policyProbSmall[mvIdx] = policyProb[batchIdx*StateConstants::NB_LABELS()+vectorIdx];
         }
     }
 
@@ -88,17 +58,7 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
 const float* get_policy_data_batch(const size_t batchIdx, const float* probOutputs, bool isPolicyMap)
 {
     if (isPolicyMap) {
-        return probOutputs + batchIdx*NB_LABELS_POLICY_MAP;
+        return probOutputs + batchIdx*StateConstants::NB_LABELS_POLICY_MAP();
     }
-    return probOutputs + batchIdx*NB_LABELS;
-}
-
-std::unordered_map<Action, size_t, std::hash<int>>& get_current_move_lookup(SideToMove sideToMove)
-{
-    if (sideToMove == FIRST_PLAYER_IDX) {
-        // use the look-up table for the first player
-        return MV_LOOKUP;
-    }
-    // use the mirrored look-up table instead
-    return MV_LOOKUP_MIRRORED;
+    return probOutputs + batchIdx*StateConstants::NB_LABELS();
 }

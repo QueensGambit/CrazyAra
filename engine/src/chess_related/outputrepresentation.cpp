@@ -47,7 +47,11 @@ void apply_softmax(DynamicVector<float> &policyProbSmall)
     policyProbSmall = softmax(policyProbSmall);
 }
 
-void init_policy_constants(bool isPolicyMap)
+void init_policy_constants(bool isPolicyMap,
+                           action_idx_map& MV_LOOKUP,
+                           action_idx_map& MV_LOOKUP_MIRRORED,
+                           action_idx_map& MV_LOOKUP_CLASSIC,
+                           action_idx_map& MV_LOOKUP_MIRRORED_CLASSIC)
 {
 #ifdef SUPPORT960
     const bool is960 = true;

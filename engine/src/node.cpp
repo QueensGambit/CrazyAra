@@ -746,7 +746,7 @@ void Node::apply_temperature_to_prior_policy(float temperature)
     apply_temperature(policyProbSmall, temperature);
 }
 
-void Node::set_probabilities_for_moves(const float *data, unordered_map<Action, size_t, std::hash<int>>& moveLookup)
+void Node::set_probabilities_for_moves(const float *data, SideToMove sideToMove)
 {
     // allocate sufficient memory -> is assumed that it has already been done
     assert(legalActions.size() == policyProbSmall.size());
@@ -755,7 +755,13 @@ void Node::set_probabilities_for_moves(const float *data, unordered_map<Action, 
         // set the right prob value
         // accessing the data on the raw floating point vector is faster
         // than calling policyProb.At(batchIdx, vectorIdx)
-        policyProbSmall[mvIdx] = data[moveLookup[legalActions[mvIdx]]];
+        if (sideToMove == FIRST_PLAYER_IDX) {
+            // use the look-up table for the first player
+            policyProbSmall[mvIdx] = data[StateConstants::action_to_index<normal,notMirrored>(legalActions[mvIdx])];
+        }
+        else {
+            policyProbSmall[mvIdx] = data[StateConstants::action_to_index<normal,mirrored>(legalActions[mvIdx])];
+        }
     }
 }
 
@@ -1004,7 +1010,7 @@ void Node::print_node_statistics(const StateObj* state) const
         const Action move = get_legal_action()[childIdx];
         cout << " " << setfill('0') << setw(3) << childIdx << " | " << setfill(' ');
         if (state == nullptr) {
-            cout << setw(5) << action_to_uci(move, false) << " | ";
+            cout << setw(5) << StateConstants::action_to_uci(move, false) << " | ";
         }
         else {
             cout << setw(5) << state->action_to_san(move, get_legal_action(), false, false) << " | ";

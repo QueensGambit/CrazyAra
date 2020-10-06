@@ -50,7 +50,7 @@ void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, siz
        << " time " << elapsedTimeMS
        << " pv";
     for (Action move: evalInfo.pv[idx]) {
-        os << " " << action_to_uci(move, evalInfo.isChess960);
+        os << " " << StateConstants::action_to_uci(move, evalInfo.isChess960);
     }
     os << endl;
 }

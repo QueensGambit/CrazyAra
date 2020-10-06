@@ -41,37 +41,15 @@ size_t SearchThread::get_max_depth() const
 }
 
 SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
+    NeuralNetAPIUser(netBatch),
+    isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
 {
-    // allocate memory for all predictions and results
-#ifdef TENSORRT
-    CHECK(cudaMallocHost((void**) &inputPlanes, searchSettings->batchSize * NB_VALUES_TOTAL * sizeof(float)));
-    CHECK(cudaMallocHost((void**) &valueOutputs, searchSettings->batchSize * sizeof(float)));
-    CHECK(cudaMallocHost((void**) &probOutputs, netBatch->get_policy_output_length() * sizeof(float)));
-#else
-    inputPlanes = new float[searchSettings->batchSize * NB_VALUES_TOTAL];
-    valueOutputs = new float[searchSettings->batchSize];
-    probOutputs = new float[netBatch->get_policy_output_length()];
-#endif
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
 
     newNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
     newNodeSideToMove = make_unique<FixedVector<SideToMove>>(searchSettings->batchSize);
     transpositionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize*2);
     collisionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
-}
-
-SearchThread::~SearchThread()
-{
-#ifdef TENSORRT
-    CHECK(cudaFreeHost(inputPlanes));
-    CHECK(cudaFreeHost(valueOutputs));
-    CHECK(cudaFreeHost(probOutputs));
-#else
-    delete [] inputPlanes;
-    delete [] valueOutputs;
-    delete [] probOutputs;
-#endif
 }
 
 void SearchThread::set_root_node(Node *value)
@@ -214,7 +192,7 @@ void SearchThread::reset_stats()
 
 void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
 {
-    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, is_policy_map), get_current_move_lookup(sideToMove));
+    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, is_policy_map), sideToMove);
     node_post_process_policy(node, searchSettings->nodePolicyTemperature, is_policy_map, searchSettings);
     node_assign_value(node, valueOutputs, tbHits, batchIdx);
     node->enable_has_nn_results();
@@ -225,7 +203,7 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
+            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
         }
         ++batchIdx;
         mapWithMutex->mtx.lock();
@@ -297,7 +275,7 @@ void SearchThread::create_mini_batch()
         else {  // NODE_NEW_NODE
             // fill a new board in the input_planes vector
             // we shift the index by NB_VALUES_TOTAL each time
-            newState->get_state_planes(true, inputPlanes+newNodes->size()*NB_VALUES_TOTAL);
+            newState->get_state_planes(true, inputPlanes+newNodes->size()*StateConstants::NB_VALUES_TOTAL());
             // save a reference newly created list in the temporary list for node creation
             // it will later be updated with the evaluation of the NN
             newNodes->add_element(newNode);
@@ -310,7 +288,7 @@ void SearchThread::thread_iteration()
 {
     create_mini_batch();
     if (newNodes->size() != 0) {
-        netBatch->predict(inputPlanes, valueOutputs, probOutputs);
+        net->predict(inputPlanes, valueOutputs, probOutputs);
         set_nn_results_to_child_nodes();
     }
     backup_value_outputs();

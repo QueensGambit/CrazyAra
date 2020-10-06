@@ -35,8 +35,14 @@
 #ifdef USE_RL
 #include "../rl/traindataexporter.h"
 #endif
+#include "nn/neuralnetapiuser.h"
 
-class Agent
+/**
+ * @brief The Agent class defines a generic agent interface which use to find the best move.
+ * It is assumed that the agent uses a neural network in some way,
+ * therefore it inherits from NeuralNetAPIUser.
+ */
+class Agent : public NeuralNetAPIUser
 {
 private:
     /**
@@ -54,7 +60,7 @@ protected:
     bool verbose;
 
 public:
-    Agent(PlaySettings* playSettings, bool verbose);
+    Agent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose);
 
     /**
      * @brief perform_action Selects an action based on the evaluation result

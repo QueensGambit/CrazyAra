@@ -56,92 +56,6 @@ const string engineName = "ClassicAra";
 const string engineVersion = "0.8.1";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
 
-// Define the board size
-const int BOARD_WIDTH = 8;
-const int BOARD_HEIGHT = 8;
-const int NB_SQUARES = BOARD_WIDTH * BOARD_HEIGHT;
-
-// define two constants indicating the number of channels for the input plane presentation
-
-#ifdef MODE_CRAZYHOUSE
-const int NB_CHANNELS_POS = 27;
-const int NB_CHANNELS_CONST = 7;
-const int NB_CHANNELS_VARIANTS = 0;
-const int NB_LAST_MOVES = 0;
-const int NB_CHANNELS_PER_HISTORY = 0;
-#elif defined MODE_LICHESS
-const int NB_CHANNELS_POS = 27;
-const int NB_CHANNELS_CONST = 11;
-const int NB_CHANNELS_VARIANTS = 9;
-const int NB_LAST_MOVES = 8;
-const int NB_CHANNELS_PER_HISTORY = 2;
-#else  // MODE = MODE_CHESS
-const int NB_CHANNELS_POS = 15;
-const int NB_CHANNELS_CONST = 7;
-const int NB_CHANNELS_VARIANTS = 1;  // is960
-const int NB_LAST_MOVES = 8;
-const int NB_CHANNELS_PER_HISTORY = 2;  // number of planes you spent for a history item
-#endif
-const int NB_CHANNELS_HISTORY = NB_LAST_MOVES * NB_CHANNELS_PER_HISTORY;
-const int NB_CHANNELS_TOTAL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS + NB_CHANNELS_HISTORY;
-const int NB_VALUES_TOTAL = NB_CHANNELS_TOTAL * BOARD_HEIGHT * BOARD_WIDTH;
-
-// number of players of the game
-const int NB_PLAYERS = 2;
-// the number of different piece types in the game
-const int NB_PIECE_TYPES = 6;
-// define the number of different pieces one can have in his pocket (the king is excluded)
-const int POCKETS_SIZE_PIECE_TYPE = 5;
-
-//  (this used for normalization the input planes and setting an appropriate integer representation (e.g. int16)
-// these are defined as float to avoid integer division
-#ifdef MODE_CRAZYHOUSE
-    const float MAX_NB_PRISONERS = 32;  // define the maximum number of pieces of each type in a pocket
-    const float MAX_FULL_MOVE_COUNTER = 500; // 500 was set as the max number of total moves
-    const float MAX_NB_NO_PROGRESS = 40;  // originally this was set to 40, but actually it is meant to be 50 move rule
-#else  // MODE = MODE_LICHESS or MODE = MODE_CHESS:
-    const float MAX_NB_PRISONERS = 16;  // at maximum you can have only 16 pawns (your own and the ones of the opponent)
-    const float MAX_FULL_MOVE_COUNTER = 500;  // 500 was set as the max number of total moves
-    const float MAX_NB_NO_PROGRESS = 50;  // after 50 moves of no progress the 50 moves rule for draw applies
-#endif
-
-// this is used during the MCTS for static memory allocation (for Crazyhouse this number will never be reached)
-// definition for the maximum number of legal moves in an arbitrary board position
-const unsigned long MAX_NB_LEGAL_MOVES = 512;
-
-// Policy Vector Description:
-// (Note that this vector does only work for the white player.
-// For the black player you have ot mirror the move afterwards by using mirror_move())
-
-// legal moves total which are represented in the NN
-#ifdef MODE_CRAZYHOUSE
-const int NB_LABELS = 2272;
-#elif defined MODE_LICHESS
-const int NB_LABELS = 2316;
-#else  // MODE = MODE_CHESS
-const int NB_LABELS = 1968;
-#endif
-
-// this describes the number of channels in the policy map representation
-#ifdef MODE_CRAZYHOUSE
-const int NB_CHANNELS_POLICY_MAP = 81;
-#elif defined MODE_LICHESS
-const int NB_CHANNELS_POLICY_MAP = 84;
-const std::unordered_map<Variant, int> CHANNEL_MAPPING_VARIANTS = {
-    {CHESS_VARIANT, 1},
-    {CRAZYHOUSE_VARIANT, 2},
-    {KOTH_VARIANT, 3},
-    {THREECHECK_VARIANT, 4},
-    {ANTI_VARIANT, 5},
-    {ATOMIC_VARIANT, 6},
-    {HORDE_VARIANT, 7},
-    {RACE_VARIANT, 8}
-};
-#else  // MODE = MODE_CHESS
-const int NB_CHANNELS_POLICY_MAP = 76;
-#endif
-const int NB_LABELS_POLICY_MAP = NB_CHANNELS_POLICY_MAP * BOARD_HEIGHT * BOARD_WIDTH;
-
 #define LOSS -1
 #define DRAW 0
 #define WIN 1
@@ -6724,17 +6638,5 @@ const std::string LABELS[] = {
     "h7g8n",
 };
 #endif
-
-// will be filled in init()
-// stores a mapping from Stockfish's move representation to the NN index in the policy
-extern std::unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP;
-extern std::unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED;
-
-// classical flattened look up tables, which are later used for policy export
-extern std::unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_CLASSIC;
-extern std::unordered_map<Action, size_t, std::hash<int>> MV_LOOKUP_MIRRORED_CLASSIC;
-
-//https://stackoverflow.com/questions/23390034/c-change-global-variable-value-in-different-files
-extern std::string LABELS_MIRRORED[NB_LABELS];
 
 #endif // CONSTANTS_H

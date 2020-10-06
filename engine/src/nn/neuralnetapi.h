@@ -37,7 +37,6 @@
 #include <cstring>
 #include "../util/communication.h"
 
-using namespace std;
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
@@ -119,6 +118,8 @@ public:
     virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs) = 0;
 
     unsigned int get_policy_output_length() const;
+
+    unsigned int get_batch_size() const;
 
 protected:
     /**

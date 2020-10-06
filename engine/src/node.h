@@ -257,7 +257,7 @@ public:
 
     DynamicVector<float>& get_policy_prob_small();
 
-    void set_probabilities_for_moves(const float *data, unordered_map<Action, size_t, std::hash<int>>& moveLookup);
+    void set_probabilities_for_moves(const float *data, SideToMove sideToMove);
 
     void apply_softmax_to_policy();
 

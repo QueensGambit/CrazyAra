@@ -26,7 +26,7 @@
 #include "inputrepresentation.h"
 #include <iostream>
 #include <deque>
-#include "constants.h"
+#include "stateobj.h"
 #include "sfutil.h"
 using namespace std;
 
@@ -37,11 +37,11 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
     while (bitboard != 0) {
         if (bitboard & 0x1) {
             if (color == WHITE) {
-                inputPlanes[channel * NB_SQUARES + p] = 1;
+                inputPlanes[channel * StateConstants::NB_SQUARES() + p] = 1;
             }
             else {
                 //                                         row            col
-                inputPlanes[channel * NB_SQUARES + (7 - (p / 8)) * 8 + (p % 8)] = 1;
+                inputPlanes[channel * StateConstants::NB_SQUARES() + (7 - (p / 8)) * 8 + (p % 8)] = 1;
             }
         }
         bitboard >>= 1;
@@ -54,7 +54,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
 {
 
     // intialize the input_planes with 0
-    std::fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);
+    std::fill(inputPlanes, inputPlanes+StateConstants::NB_VALUES_TOTAL(), 0.0f);
 
     // Fill in the piece positions
     // Iterate over both color starting with WHITE
@@ -78,9 +78,9 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // this is used to check for claiming the 3 fold repetition rule
     // A game to test out if everything is working correctly is: https://lichess.org/jkItXBWy#73
     if (boardRepetition >= 1) {
-        std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+        std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         if (boardRepetition >= 2) {
-            std::fill(inputPlanes + (current_channel+1) * NB_SQUARES, inputPlanes + (current_channel+2) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+2) * StateConstants::NB_SQUARES(), 1.0f);
         }
     }
     current_channel+= 2;
@@ -93,7 +93,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
             // unfortunately you can't use a loop over count_in_hand() PieceType because of template arguments
             int pocket_cnt = pos->get_pocket_count(color, piece);
             if (pocket_cnt > 0) {
-                std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
+                std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(),
                           normalize ? pocket_cnt / MAX_NB_PRISONERS : pocket_cnt);
             }
             current_channel++;
@@ -112,19 +112,19 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // mark the square where an en-passant capture is possible
     if (pos->ep_square() != SQ_NONE) {
         unsigned int ep_square = me == WHITE ? int(pos->ep_square()) : int(vertical_flip(pos->ep_square()));
-        inputPlanes[current_channel * NB_SQUARES + ep_square] = 1.0f;
+        inputPlanes[current_channel * StateConstants::NB_SQUARES() + ep_square] = 1.0f;
     }
     current_channel++;
 
     // (VI) Constant Value Inputs
     // (VI.1) Color
     if (me == WHITE) {
-        std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+        std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
     }
     current_channel++;
 
     // (VI.2) Total Move Count
-    std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
+    std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(),
               // stockfish starts counting from 0, the full move counter starts at 1 in FEN
               normalize ? ((pos->game_ply()/2)+1) / MAX_FULL_MOVE_COUNTER : ((pos->game_ply()/2)+1));
     current_channel++;
@@ -133,36 +133,36 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // check for King Side Castling
     if (me == WHITE) {
         if (pos->can_castle(WHITE_OO)) {
-            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         }
         current_channel++;
         if (pos->can_castle(WHITE_OOO)) {
-            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         }
         current_channel++;
         if (pos->can_castle(BLACK_OO)) {
-            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         }
         current_channel++;
         if (pos->can_castle(BLACK_OOO)) {
-            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         }
         current_channel++;
     }   else {
         if (pos->can_castle(BLACK_OO)) {
-            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         }
         current_channel++;
         if (pos->can_castle(BLACK_OOO)) {
-            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         }
         current_channel++;
         if (pos->can_castle(WHITE_OO)) {
-            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         }
         current_channel++;
         if (pos->can_castle(WHITE_OOO)) {
-            std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+            std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
         }
         current_channel++;
 
@@ -174,8 +174,8 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // however, whenever a piece gets dropped, a piece is captured or a pawn is moved, it is reset to 0
     // halfmove_clock is an official metric in fen notation
     //  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
-    std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES,
-              normalize ? pos->rule50_count() / MAX_NB_NO_PROGRESS: pos->rule50_count());
+    std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(),
+              normalize ? pos->rule50_count() / StateConstants::MAX_NB_NO_PROGRESS(): pos->rule50_count());
 #ifndef MODE_CRAZYHOUSE
     current_channel++;
 #endif
@@ -185,10 +185,10 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     if (pos->is_three_check()) {
         for (Color color : {me, you}) {
             if (pos->checks_given(color) != 0) {
-                std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+                std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
                 current_channel++;
                 if (pos->checks_given(color) >= 2) {
-                    std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+                    std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
                 }
                 current_channel++;
             }
@@ -204,33 +204,33 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // (V) Variants specification
     // set the is960 boolean flag when active
     if (pos->is_chess960()) {
-        std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+        std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
     }
 
     // set the current active variant as a one-hot encoded entry
-    current_channel += CHANNEL_MAPPING_VARIANTS.at(pos->variant());
-    std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+    current_channel += StateConstants::CHANNEL_MAPPING_VARIANTS().at(pos->variant());
+    std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
 #endif
 
 #ifdef MODE_CHESS
     // (V) Variants specification
     // set the is960 boolean flag when active
     if (pos->is_chess960()) {
-        std::fill(inputPlanes + current_channel * NB_SQUARES, inputPlanes + (current_channel+1) * NB_SQUARES, 1.0f);
+        std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(), 1.0f);
     }
 #endif
 
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
-    current_channel = NB_CHANNELS_TOTAL - NB_CHANNELS_HISTORY;
+    current_channel = StateConstants::NB_CHANNELS_TOTAL() - StateConstants::NB_CHANNELS_HISTORY();
     // (VI) Fill the bits of the last move planes
     for (const Move move : pos->get_last_moves()) {
         if (me == WHITE) {
-            inputPlanes[current_channel++ * NB_SQUARES + from_sq(move)] = 1.0f;
-            inputPlanes[current_channel++ * NB_SQUARES + to_sq(move)] = 1.0f;
+            inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + from_sq(move)] = 1.0f;
+            inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + to_sq(move)] = 1.0f;
         }
         else {
-            inputPlanes[current_channel++ * NB_SQUARES + int(vertical_flip(from_sq(move)))] = 1.0f;
-            inputPlanes[current_channel++ * NB_SQUARES + int(vertical_flip(to_sq(move)))] = 1.0f;
+            inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + int(vertical_flip(from_sq(move)))] = 1.0f;
+            inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + int(vertical_flip(to_sq(move)))] = 1.0f;
         }
     }
 #endif

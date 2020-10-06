@@ -50,15 +50,8 @@
 class MCTSAgent : public Agent
 {
 private:
-    NeuralNetAPI* netSingle;
-
     SearchSettings* searchSettings;
     vector<SearchThread*> searchThreads;
-
-    float inputPlanes[NB_VALUES_TOTAL];
-    float valueOutput;
-    unique_ptr<float[]> probOutputs;
-
     unique_ptr<TimeManager> timeManager;
 
     Node* rootNode;

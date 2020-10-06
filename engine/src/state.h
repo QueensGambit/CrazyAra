@@ -40,6 +40,16 @@ typedef int SideToMove;
 #define FIRST_PLAYER_IDX 0
 const int ACTION_NONE = 0;
 
+enum PolicyType {
+    normal,
+    classic
+};
+
+enum MirrorType {
+    notMirrored,
+    mirrored
+};
+
 enum TerminalType {
     TERMINAL_LOSS,
     TERMINAL_DRAW,
@@ -79,6 +89,46 @@ enum ProbeState {
 };
 }
 // -------------------------------------------------------------------------
+
+template<typename T>
+class StateConstantsInterface
+{
+public:
+    static int BOARD_WIDTH() {
+        return T::BOARD_WIDTH();
+    }
+    static int BOARD_HEIGHT() {
+        return T::BOARD_HEIGHT();
+    }
+    static int NB_CHANNELS_TOTAL() {
+        return T::NB_CHANNELS_TOTAL();
+    }
+    static int NB_SQUARES() {
+        return BOARD_WIDTH() * BOARD_HEIGHT();
+    }
+    static int NB_VALUES_TOTAL() {
+        return NB_CHANNELS_TOTAL() * NB_SQUARES();
+    }
+    static int NB_LABELS() {
+        return T::NB_LABELS();
+    }
+    static int NB_LABELS_POLICY_MAP() {
+        return T::NB_LABELS_POLICY_MAP();
+    }
+    static int NB_PLAYERS() {
+        return T::NB_PLAYERS();
+    }
+    static std::string action_to_uci(Action action, bool is960) {
+        return T::action_to_uci(action, is960);
+    }
+    template<PolicyType p, MirrorType m>
+    static size_t action_to_index(Action action) {
+        return T::action_to_index<p, m>(action);
+    }
+    static void init(bool isPolicyMap) {
+        return T::init(isPolicyMap);
+    }
+};
 
 class State
 {
@@ -178,7 +228,7 @@ public:
      * @param uciStr uci specification for the action
      * @return Action
      */
-     virtual Action uci_to_action(std::string& uciStr) const = 0;
+    virtual Action uci_to_action(std::string& uciStr) const = 0;
 
     /**
      * @brief action_to_san Converts a given action to SAN (pgn move notation) usign the current position and legal moves

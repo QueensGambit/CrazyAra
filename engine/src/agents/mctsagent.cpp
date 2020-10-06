@@ -37,8 +37,7 @@
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches,
                      SearchSettings* searchSettings, PlaySettings* playSettings):
-    Agent(playSettings, true),
-    netSingle(netSingle),
+    Agent(netSingle, playSettings, true),
     searchSettings(searchSettings),
     rootNode(nullptr),
     rootState(nullptr),
@@ -58,10 +57,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     for (auto i = 0; i < searchSettings->threads; ++i) {
         searchThreads.emplace_back(new SearchThread(netBatches[i].get(), searchSettings, &mapWithMutex));
     }
-    probOutputs = make_unique<float[]>(netSingle->get_policy_output_length());
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
-    fill(inputPlanes, inputPlanes+NB_VALUES_TOTAL, 0.0f);  // will be filled in evalute_board_state()
 }
 
 MCTSAgent::~MCTSAgent()
@@ -83,7 +80,7 @@ Node* MCTSAgent::get_root_node() const
 
 string MCTSAgent::get_device_name() const
 {
-    return netSingle->get_device_name();
+    return net->get_device_name();
 }
 
 float MCTSAgent::get_dirichlet_noise() const
@@ -186,10 +183,10 @@ void MCTSAgent::create_new_root_node(StateObj* state)
     rootNode = new Node(state, false, dummyNode, 0, searchSettings);
     dummyNode->add_new_child_node(rootNode, 0);
     oldestRootNode = rootNode;
-    state->get_state_planes(true, begin(inputPlanes));
-    netSingle->predict(inputPlanes, &valueOutput, probOutputs.get());
+    state->get_state_planes(true, inputPlanes);
+    net->predict(inputPlanes, valueOutputs, probOutputs);
     size_t tbHits = 0;
-    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs.get(), rootNode, tbHits, state->side_to_move(), searchSettings);
+    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, rootNode, tbHits, state->side_to_move(), searchSettings);
     rootNode->prepare_node_for_visits();
 }
 
@@ -258,12 +255,12 @@ void MCTSAgent::clear_game_history()
 
 bool MCTSAgent::is_policy_map()
 {
-    return netSingle->is_policy_map();
+    return net->is_policy_map();
 }
 
 string MCTSAgent::get_name() const
 {
-    return engineName + "-" + engineVersion + "-" + netSingle->get_model_name();
+    return engineName + "-" + engineVersion + "-" + net->get_model_name();
 }
 
 void MCTSAgent::update_stats()

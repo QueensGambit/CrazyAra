@@ -33,6 +33,7 @@
 #include "neuralnetapi.h"
 #include "config/searchlimits.h"
 #include "util/fixedvector.h"
+#include "nn/neuralnetapiuser.h"
 
 
 // wrapper for unordered_map with a mutex for thread safe access
@@ -57,28 +58,18 @@ struct NodeDescription
     size_t depth;
 };
 
-class SearchThread
+class SearchThread : NeuralNetAPIUser
 {
 private:
     Node* rootNode;
     StateObj* rootState;
     unique_ptr<StateObj> newState;
 
-    NeuralNetAPI* netBatch;
-
-    // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
-    float* inputPlanes;
-
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<Node*>> transpositionNodes;
     unique_ptr<FixedVector<Node*>> collisionNodes;
-
-    // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
-    // sufficient memory according to the batch-size will be allocated in the constructor
-    float* valueOutputs;
-    float* probOutputs;
 
     bool isRunning;
 
