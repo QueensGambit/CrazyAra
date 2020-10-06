@@ -79,7 +79,8 @@ private:
     bool hasNNResults;
     bool sorted;
     bool isCell;
-    bool isUnstable;  // the node has been manually modified
+    bool isUnstable;  // the node has been manually modified (default: false)
+    bool inspected;  // certain moves (e.g. checks, captures) of this node have been enforced (default: false)
 
 public:
     /**
@@ -411,6 +412,9 @@ public:
      */
     void disable_action(size_t childIdxForParent);
 
+    bool was_inspected() const;
+
+    void set_as_inspected();
 private:
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes

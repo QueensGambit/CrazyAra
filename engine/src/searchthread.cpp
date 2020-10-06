@@ -188,6 +188,9 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
         }
 
         currentNode->lock();
+
+        childIdx = select_enhanced_move(currentNode, pos, cells);
+
         if (childIdx == INT_MAX) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
@@ -392,4 +395,22 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
     return  it->second->has_nn_results() &&
             it->second->plies_from_null() == state->steps_from_null() &&
             state->number_repetitions() == 0;
+}
+
+size_t select_enhanced_move(Node* currentNode, StateObj* pos, Cells* cells) {
+    if (!currentNode->was_inspected() && currentNode->get_visits() > 100 && !currentNode->is_terminal()) {
+        // make sure a check has been explored at least once
+        for (size_t idx = currentNode->get_no_visit_idx(); idx < currentNode->get_number_child_nodes(); ++idx) {
+            Action action = currentNode->get_action(idx);
+            if (pos->gives_check(action)) {
+                for (size_t idx2 = currentNode->get_no_visit_idx(); idx2 < idx+1; ++idx2) {
+                    currentNode->increment_no_visit_idx(cells);
+                }
+                return idx;
+            }
+        }
+        // a full loop has been done
+        currentNode->set_as_inspected();
+    }
+    return INT_MAX;
 }

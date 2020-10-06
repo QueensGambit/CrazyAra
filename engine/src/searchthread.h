@@ -209,4 +209,13 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
  */
 inline void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx, Cells* cells);
 
+/**
+ * @brief select_enhanced_move Returns a child index for custom enhanced moves if a given number visits has been reached
+ * @param currentNode Current node during simulation
+ * @param pos Position for the current node
+ * @param cells Cell struct
+ * @return INT_MAX if unchanged (default) and custom index otherwise
+ */
+size_t select_enhanced_move(Node* currentNode, StateObj* pos, Cells* cells);
+
 #endif // SEARCHTHREAD_H

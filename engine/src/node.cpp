@@ -56,6 +56,16 @@ void Node::mark_as_unstable()
     isUnstable = true;
 }
 
+bool Node::was_inspected() const
+{
+    return inspected;
+}
+
+void Node::set_as_inspected()
+{
+    inspected = true;
+}
+
 Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
     legalActions(state->legal_actions()),
     parentNode(parentNode),
@@ -69,7 +79,8 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     hasNNResults(false),
     sorted(false),
     isCell(false),
-    isUnstable(false)
+    isUnstable(false),
+    inspected(false)
 {
     // specify the number of direct child nodes of this node
     const int numberChildNodes = legalActions.size();
@@ -434,16 +445,16 @@ void Node::increment_no_visit_idx(Cells* cells)
 {
     if (d->noVisitIdx < get_number_child_nodes()) {
         ++d->noVisitIdx;
-        Node* node = this;
-        Node* parentNode = node->get_parent_node();
-        if (!this->is_root_node() && parentNode->is_playout_node() && parentNode->is_fully_expanded() && node->plies_from_null() != 0 && node->plies_from_null() % 2 == 0) {
-            size_t bestQIdx = parentNode->get_best_q_idx();
-            if (-parentNode->get_q_value(bestQIdx) > 0.5 && parentNode->get_no_visit_idx() < 2 && !node->isTerminal) {
-                cells->mtx.lock();
-                cells->trajectories.emplace_back(get_trajectory(parentNode));
-                cells->mtx.unlock();
-            }
-        }
+//        Node* node = this;
+//        Node* parentNode = node->get_parent_node();
+//        if (!this->is_root_node() && parentNode->is_playout_node() && parentNode->is_fully_expanded() && node->plies_from_null() != 0 && node->plies_from_null() % 2 == 0) {
+//            size_t bestQIdx = parentNode->get_best_q_idx();
+//            if (-parentNode->get_q_value(bestQIdx) > 0.5 && parentNode->get_no_visit_idx() < 2 && !node->isTerminal) {
+//                cells->mtx.lock();
+//                cells->trajectories.emplace_back(get_trajectory(parentNode));
+//                cells->mtx.unlock();
+//            }
+//        }
         if (d->noVisitIdx == PRESERVED_ITEMS) {
             reserve_full_memory();
         }
