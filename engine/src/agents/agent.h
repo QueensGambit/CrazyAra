@@ -101,10 +101,9 @@ public:
      */
     Action get_best_action();
 };
-
-
-void run_agent_thread(Agent* agent);
 }
+
+void run_agent_thread(crazyara::Agent* agent);
 
 /**
  * @brief apply_quantile_clipping Sets all value in the given quantile to 0
