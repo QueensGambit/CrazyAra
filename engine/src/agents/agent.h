@@ -37,6 +37,7 @@
 #endif
 #include "nn/neuralnetapiuser.h"
 
+namespace crazyara {
 /**
  * @brief The Agent class defines a generic agent interface which use to find the best move.
  * It is assumed that the agent uses a neural network in some way,
@@ -101,7 +102,9 @@ public:
     Action get_best_action();
 };
 
+
 void run_agent_thread(Agent* agent);
+}
 
 /**
  * @brief apply_quantile_clipping Sets all value in the given quantile to 0
@@ -109,5 +112,6 @@ void run_agent_thread(Agent* agent);
  * @param policyProbSmall Policy to be modified
  */
 void apply_quantile_clipping(float quantile, DynamicVector<double>& policyProbSmall);
+
 
 #endif // AGENT_H

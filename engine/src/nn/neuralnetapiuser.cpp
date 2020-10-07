@@ -25,7 +25,6 @@
 
 #include "neuralnetapiuser.h"
 #include "stateobj.h"
-#include "searchsettings.h"
 #ifdef TENSORRT
 #include "NvInfer.h"
 #include <cuda_runtime_api.h>

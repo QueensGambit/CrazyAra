@@ -37,6 +37,7 @@
 #include "config/playsettings.h"
 #include "agent.h"
 
+using namespace crazyara;
 
 class RawNetAgent: public Agent
 {

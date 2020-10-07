@@ -43,6 +43,8 @@
 #include "agents/config/rlsettings.h"
 #endif
 
+using namespace crazyara;
+
 class CrazyAra
 {
 private:

@@ -45,7 +45,7 @@ using blaze::DynamicVector;
 
 #ifdef MODE_POMMERMAN
     using StateObj = PommermanState;
-    using StateConstants = StateConstantsPommerMan;
+    using StateConstants = StateConstantsPommerman;
 #else
     using StateObj = BoardState;
     using StateConstants = StateConstantsBoard;

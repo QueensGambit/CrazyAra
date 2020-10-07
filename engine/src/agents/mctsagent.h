@@ -47,6 +47,8 @@
 #include "util/gcthread.h"
 
 
+using namespace crazyara;
+
 class MCTSAgent : public Agent
 {
 private:

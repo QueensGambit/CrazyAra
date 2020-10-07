@@ -464,7 +464,9 @@ void Node::backup_value(size_t childIdx, float value, float virtualLoss)
     do {
         currentNode->revert_virtual_loss_and_update(childIdx, value, virtualLoss);
         childIdx = currentNode->childIdxForParent;
+#ifndef MODE_POMMERMAN
         value = -value;
+#endif
         currentNode = currentNode->parentNode;
     } while(currentNode->parentNode != nullptr);
     // revert virtual loss for root

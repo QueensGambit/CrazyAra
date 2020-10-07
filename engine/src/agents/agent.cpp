@@ -32,6 +32,7 @@
 #include "stateobj.h"
 
 using namespace std;
+using namespace crazyara;
 
 
 void Agent::set_best_move(size_t moveCounter)
