@@ -82,22 +82,27 @@ vector<string> uci_labels::promotion_pieces()
 vector<tuple<int,int>> uci_labels::get_square_destinations(int rank1, int fileIdx) {
     vector<tuple<int,int>> destinations;
     for (int i = 0; i < 8; ++i) {
-        destinations.push_back({i, rank1});
+        tuple<int,int> t{i, rank1};
+        destinations.emplace_back(t);
     }
     for (int i = 0; i < 8; ++i) {
-        destinations.push_back({fileIdx, i});
+        tuple<int,int> t{fileIdx, i};
+        destinations.emplace_back(t);
     }
     for (int i = -7; i < 8; ++i) {
-        destinations.push_back({fileIdx + i, rank1 + i});
+        tuple<int,int> t{fileIdx + i, rank1 + i};
+        destinations.emplace_back(t);
     }
     for (int i = -7; i < 8; ++i) {
-        destinations.push_back({fileIdx + i, rank1 - i});
+        tuple<int,int> t{fileIdx + i, rank1 - i};
+        destinations.emplace_back(t);
     }
-    vector<tuple<int,int>> knightJumps = {{-2, -1}, {-1, -2}, {-2, 1}, {1, -2}, {2, -1}, {-1, 2}, {2, 1}, {1, 2}};
+    vector<tuple<int,int>> knightJumps{{-2, -1}, {-1, -2}, {-2, 1}, {1, -2}, {2, -1}, {-1, 2}, {2, 1}, {1, 2}};
     for (tuple<int,int> curTuple : knightJumps ) {
-        int a = std::get<0>(curTuple);
-        int b = std::get<1>(curTuple);
-        destinations.push_back({fileIdx + a, rank1 + b});
+        int fileOffset = std::get<0>(curTuple);
+        int rankOffset = std::get<1>(curTuple);
+        tuple<int,int> t{fileIdx + fileOffset, rank1 + rankOffset};
+        destinations.emplace_back(t);
     }
     return destinations;
 }
