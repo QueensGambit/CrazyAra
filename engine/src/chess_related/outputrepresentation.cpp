@@ -97,10 +97,11 @@ vector<tuple<int,int>> uci_labels::get_square_destinations(int rank1, int fileId
         tuple<int,int> t{fileIdx + i, rank1 - i};
         destinations.emplace_back(t);
     }
-    vector<tuple<int,int>> knightJumps{{-2, -1}, {-1, -2}, {-2, 1}, {1, -2}, {2, -1}, {-1, 2}, {2, 1}, {1, 2}};
-    for (tuple<int,int> curTuple : knightJumps ) {
-        int fileOffset = std::get<0>(curTuple);
-        int rankOffset = std::get<1>(curTuple);
+    array<int,8> knightJumpsfileOffsets = {-2, -1, -2, 1, 2, -1, 2, 1};
+    array<int,8> knightJumpsRankOffsets = {-1, -2, 1, -2, -1, 2, 1, 2};
+    for (int i = 0; i < 8; ++i) {
+        int fileOffset = knightJumpsfileOffsets[i];
+        int rankOffset = knightJumpsRankOffsets[i];
         tuple<int,int> t{fileIdx + fileOffset, rank1 + rankOffset};
         destinations.emplace_back(t);
     }
