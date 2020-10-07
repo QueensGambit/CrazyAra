@@ -25,7 +25,7 @@
 
 #ifndef MODE_POMMERMAN
 #include "board.h"
-#include "constants.h"
+#include "stateobj.h"
 #include "uci.h"
 #include <iostream>
 #include "movegen.h"
@@ -184,7 +184,7 @@ bool Board::draw_by_insufficient_material() const
 void Board::add_move_to_list(Move m)
 {
     lastMoves.push_front(m);
-    if (lastMoves.size() > NB_LAST_MOVES) {
+    if (lastMoves.size() > StateConstants::NB_LAST_MOVES()) {
         lastMoves.pop_back();
     }
 }

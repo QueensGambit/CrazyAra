@@ -21,11 +21,12 @@
 #ifndef MODE_POMMERMAN
 #include "chessbatchstream.h"
 #include "uci.h"
+#include "stateobj.h"
 
 ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     mBatchSize{batchSize},
     mMaxBatches{maxBatches},
-    mDims{batchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH}
+    mDims{batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()}
 {
     Bitboards::init();
     Position::init();
@@ -34,7 +35,7 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     auto uiThread = make_shared<Thread>(0);
 
     // allocate memory
-    mData.resize(NB_VALUES_TOTAL * batchSize * maxBatches);
+    mData.resize(StateConstants::NB_VALUES_TOTAL() * batchSize * maxBatches);
     StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
     reset_to_startpos(pos, uiThread.get(), states);
 
@@ -98,7 +99,7 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
 
     for (size_t idx = 0; idx < size_t(batchSize * maxBatches); ++idx) {
         states->emplace_back();
-        board_to_planes(&pos, pos.number_repetitions(), true, mData.data() + NB_VALUES_TOTAL * idx);
+        board_to_planes(&pos, pos.number_repetitions(), true, mData.data() + StateConstants::NB_VALUES_TOTAL() * idx);
         if (idx == curUciMoves.size()) {
             reset_to_startpos(pos, uiThread.get(), states);
             offset = curUciMoves.size();

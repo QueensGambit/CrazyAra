@@ -94,7 +94,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
             int pocket_cnt = pos->get_pocket_count(color, piece);
             if (pocket_cnt > 0) {
                 std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(),
-                          normalize ? pocket_cnt / MAX_NB_PRISONERS : pocket_cnt);
+                          normalize ? pocket_cnt / StateConstants::MAX_NB_PRISONERS() : pocket_cnt);
             }
             current_channel++;
         }
@@ -126,7 +126,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // (VI.2) Total Move Count
     std::fill(inputPlanes + current_channel * StateConstants::NB_SQUARES(), inputPlanes + (current_channel+1) * StateConstants::NB_SQUARES(),
               // stockfish starts counting from 0, the full move counter starts at 1 in FEN
-              normalize ? ((pos->game_ply()/2)+1) / MAX_FULL_MOVE_COUNTER : ((pos->game_ply()/2)+1));
+              normalize ? ((pos->game_ply()/2)+1) / StateConstants::MAX_FULL_MOVE_COUNTER() : ((pos->game_ply()/2)+1));
     current_channel++;
 
     // (IV.3) Castling Rights

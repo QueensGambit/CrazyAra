@@ -31,7 +31,7 @@
 #include <iostream>
 #include <sstream>
 #include "EntropyCalibrator.h"
-#include "../constants.h"
+#include "stateobj.h"
 #include "../util/communication.h"
 #ifndef MODE_POMMERMAN
 #include "chess_related/chessbatchstream.h"
@@ -86,7 +86,7 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
-    memorySizes[idxInput] = batchSize * NB_VALUES_TOTAL * sizeof(float);
+    memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
     memorySizes[idxPolicyOutput] = policyOutputLength * sizeof(float);
     CHECK(cudaMalloc(&deviceMemory[idxInput], memorySizes[idxInput]));
@@ -96,9 +96,9 @@ void TensorrtAPI::bind_executor()
 
 void TensorrtAPI::check_if_policy_map()
 {
-    if (policyOutputDims.d[1] != NB_LABELS) {
+    if (policyOutputDims.d[1] != StateConstants::NB_LABELS()) {
         isPolicyMap = true;
-        policyOutputLength = NB_LABELS_POLICY_MAP * batchSize;
+        policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
     }
 }
 

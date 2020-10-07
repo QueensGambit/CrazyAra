@@ -28,6 +28,14 @@
 #include "inputrepresentation.h"
 #include "syzygy/tbprobe.h"
 
+
+action_idx_map OutputRepresentation::MV_LOOKUP = {};
+action_idx_map OutputRepresentation::MV_LOOKUP_MIRRORED = {};
+action_idx_map OutputRepresentation::MV_LOOKUP_CLASSIC = {};
+action_idx_map OutputRepresentation::MV_LOOKUP_MIRRORED_CLASSIC = {};
+vector<std::string> OutputRepresentation::LABELS;
+vector<std::string> OutputRepresentation::LABELS_MIRRORED;
+
 BoardState::BoardState():
     State(),
     states(StateListPtr(new std::deque<StateInfo>(0)))

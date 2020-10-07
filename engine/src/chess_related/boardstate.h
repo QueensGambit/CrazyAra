@@ -32,17 +32,12 @@
 #include "uci.h"
 #include "../state.h"
 #include "board.h"
-#include "outputrepresentation.h
+#include "outputrepresentation.h"
 using namespace std;
 
 
 class StateConstantsBoard : public StateConstantsInterface<StateConstantsBoard>
 {
-private:
-    static action_idx_map MV_LOOKUP;
-    static action_idx_map MV_LOOKUP_MIRRORED;
-    static action_idx_map MV_LOOKUP_CLASSIC;
-    static action_idx_map MV_LOOKUP_MIRRORED_CLASSIC;
 public:
     static int BOARD_WIDTH() {
         return 8;
@@ -55,13 +50,13 @@ public:
     }
     static int NB_LABELS() {
         // legal moves total which are represented in the NN
-        #ifdef MODE_CRAZYHOUSE
+#ifdef MODE_CRAZYHOUSE
         return 2272;
-        #elif defined MODE_LICHESS
+#elif defined MODE_LICHESS
         return 2316;
-        #else  // MODE = MODE_CHESS
+#else  // MODE = MODE_CHESS
         return 1968;
-        #endif
+#endif
     }
     static int NB_LABELS_POLICY_MAP() {
         return NB_CHANNELS_POLICY_MAP() * BOARD_HEIGHT() * BOARD_WIDTH();
@@ -78,31 +73,28 @@ public:
         case normal:
             switch (m) {
             case notMirrored:
-                return MV_LOOKUP[action];
+                return OutputRepresentation::MV_LOOKUP[action];
             case mirrored:
-                return MV_LOOKUP_MIRRORED[action];
+                return OutputRepresentation::MV_LOOKUP_MIRRORED[action];
             default:
-                return MV_LOOKUP[action];
+                return OutputRepresentation::MV_LOOKUP[action];
             }
         case classic:
             switch (m) {
             case notMirrored:
-                return MV_LOOKUP_CLASSIC[action];
+                return OutputRepresentation::MV_LOOKUP_CLASSIC[action];
             case mirrored:
-                return MV_LOOKUP_MIRRORED_CLASSIC[action];
+                return OutputRepresentation::MV_LOOKUP_MIRRORED_CLASSIC[action];
             default:
-                return MV_LOOKUP_CLASSIC[action];
+                return OutputRepresentation::MV_LOOKUP_CLASSIC[action];
             }
         default:
-            return MV_LOOKUP[action];
+            return OutputRepresentation::MV_LOOKUP[action];
         }
     }
     static void init(bool isPolicyMap) {
-        init_policy_constants(isPolicyMap,
-                              MV_LOOKUP,
-                              MV_LOOKUP_MIRRORED,
-                              MV_LOOKUP_CLASSIC,
-                              MV_LOOKUP_MIRRORED_CLASSIC);
+        OutputRepresentation::init_labels();
+        OutputRepresentation::init_policy_constants(isPolicyMap);
     }
     // -------------------------------------------------
     // |           Additional custom methods           |
@@ -169,7 +161,7 @@ public:
     }
     //  (this used for normalization the input planes and setting an appropriate integer representation (e.g. int16)
     // these are defined as float to avoid integer division
-    #ifdef MODE_CRAZYHOUSE
+#ifdef MODE_CRAZYHOUSE
     // define the maximum number of pieces of each type in a pocket
     static float MAX_NB_PRISONERS() {
         return 32;
@@ -182,7 +174,7 @@ public:
     static float MAX_NB_NO_PROGRESS() {
         return 40;
     }
-    #else  // MODE = MODE_LICHESS or MODE = MODE_CHESS:
+#else  // MODE = MODE_LICHESS or MODE = MODE_CHESS:
     // at maximum you can have only 16 pawns (your own and the ones of the opponent)
     static float MAX_NB_PRISONERS() {
         return 16;
@@ -195,19 +187,19 @@ public:
     static float MAX_NB_NO_PROGRESS() {
         return 50;
     }
-    #endif
+#endif
     static int NB_CHANNELS_POLICY_MAP() {
-        #ifdef MODE_CRAZYHOUSE
+#ifdef MODE_CRAZYHOUSE
         return 81;
-        #elif defined MODE_LICHESS
+#elif defined MODE_LICHESS
         return 84;
-        #else  // MODE = MODE_CHESS
+#else  // MODE = MODE_CHESS
         return 76;
-        #endif
+#endif
     }
-    #ifdef MODE_LICHESS
+#ifdef MODE_LICHESS
     static std::unordered_map<Variant, int> CHANNEL_MAPPING_VARIANTS() {
-         {  {CHESS_VARIANT, 1},
+        return {{CHESS_VARIANT, 1},
             {CRAZYHOUSE_VARIANT, 2},
             {KOTH_VARIANT, 3},
             {THREECHECK_VARIANT, 4},
@@ -217,7 +209,7 @@ public:
             {RACE_VARIANT, 8}
         };
     }
-    #endif
+#endif
 };
 
 class BoardState : public State

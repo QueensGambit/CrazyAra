@@ -49,6 +49,7 @@ protected:
 public:
     NeuralNetAPIUser(NeuralNetAPI* net);
     ~NeuralNetAPIUser();
+    NeuralNetAPIUser(NeuralNetAPIUser&) = delete;
 };
 
 #endif // NEURALNETAPIUSER_H

@@ -268,7 +268,7 @@ void CrazyAra::benchmark(istringstream &is)
 
     for (TestPosition pos : benchmark.positions) {
         go(pos.fen, goCommand, evalInfo);
-        string uciMove = action_to_uci(evalInfo.bestMove, false);
+        string uciMove = StateConstants::action_to_uci(evalInfo.bestMove, false);
         if (uciMove != pos.blunderMove) {
             cout << "passed      -- " << uciMove << " != " << pos.blunderMove << endl;
             passedCounter++;
@@ -373,7 +373,7 @@ bool CrazyAra::is_ready()
         netBatches = create_new_net_batches(Options["Model_Directory"]);
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
-        Constants::init(mctsAgent->is_policy_map());
+        StateConstants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
     }
     return networkLoaded;

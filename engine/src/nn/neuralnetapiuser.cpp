@@ -25,16 +25,21 @@
 
 #include "neuralnetapiuser.h"
 #include "stateobj.h"
-
+#include "searchsettings.h"
+#ifdef TENSORRT
+#include "NvInfer.h"
+#include <cuda_runtime_api.h>
+#include "common.h"
+#endif
 
 NeuralNetAPIUser::NeuralNetAPIUser(NeuralNetAPI *net):
     net(net)
 {
     // allocate memory for all predictions and results
 #ifdef TENSORRT
-    CHECK(cudaMallocHost((void**) &inputPlanes, searchSettings->batchSize * StateConstants::NB_VALUES_TOTAL * sizeof(float)));
-    CHECK(cudaMallocHost((void**) &valueOutputs, searchSettings->batchSize * sizeof(float)));
-    CHECK(cudaMallocHost((void**) &probOutputs, netBatch->get_policy_output_length() * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &inputPlanes, net->get_batch_size() * StateConstants::NB_VALUES_TOTAL() * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &valueOutputs, net->get_batch_size() * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &probOutputs, net->get_policy_output_length() * sizeof(float)));
 #else
     inputPlanes = new float[net->get_batch_size() * StateConstants::NB_VALUES_TOTAL()];
     valueOutputs = new float[net->get_batch_size()];

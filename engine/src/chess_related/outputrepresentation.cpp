@@ -24,43 +24,27 @@
  */
 
 #include "outputrepresentation.h"
-//#include "types.h"
 #include "policymaprepresentation.h"
 #include "sfutil.h"
+#include "constants.h"
+#include "stateobj.h"
+#include <bits/stdc++.h>
 using namespace std;
-
-//void get_probs_of_moves(const float *data, const vector<Move>& legalMoves, unordered_map<Move, size_t, std::hash<int>>& moveLookup, DynamicVector<float> &policyProbSmall)
-//{
-//    //    // allocate sufficient memory -> is assumed that it has already been done
-//    //    policyProbSmall.resize(legalMoves.size());
-//    for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
-//        // retrieve vector index from look-up table
-//        // set the right prob value
-//        // accessing the data on the raw floating point vector is faster
-//        // than calling policyProb.At(batchIdx, vectorIdx)
-//        policyProbSmall[mvIdx] = data[moveLookup[legalMoves[mvIdx]]];
-//    }
-//}
 
 void apply_softmax(DynamicVector<float> &policyProbSmall)
 {
     policyProbSmall = softmax(policyProbSmall);
 }
 
-void init_policy_constants(bool isPolicyMap,
-                           action_idx_map& MV_LOOKUP,
-                           action_idx_map& MV_LOOKUP_MIRRORED,
-                           action_idx_map& MV_LOOKUP_CLASSIC,
-                           action_idx_map& MV_LOOKUP_MIRRORED_CLASSIC)
+void OutputRepresentation::init_policy_constants(bool isPolicyMap)
 {
 #ifdef SUPPORT960
     const bool is960 = true;
 #else
     const bool is960 = false;
 #endif
-
     // fill mirrored label list and look-up table
-    for (size_t mvIdx=0; mvIdx < NB_LABELS; mvIdx++) {
+    for (int mvIdx=0; mvIdx < StateConstants::NB_LABELS(); mvIdx++) {
         LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);
         std::vector<Move> moves = make_move(LABELS[mvIdx], is960);
         for (Move move : moves) {
@@ -73,4 +57,126 @@ void init_policy_constants(bool isPolicyMap,
             MV_LOOKUP_MIRRORED_CLASSIC.insert({move, mvIdx});
         }
     }
+}
+
+array<string, 8> uci_labels::files() {
+    return {"a", "b", "c", "d", "e", "f", "g", "h"};
+}
+
+array<string, 8> uci_labels::ranks() {
+    return {"1", "2", "3", "4", "5", "6", "7", "8"};
+}
+
+array<string, 6> uci_labels::pieces() {
+    return {"P", "N", "B", "R", "Q", "K"};
+}
+
+vector<string> uci_labels::promotion_pieces()
+{
+#ifdef MODE_LICHESS
+    return {"q", "r", "b", "n", "k"};  // king promotion was added to support the antichess variant
+#endif
+    return {"q", "r", "b", "n"};
+}
+
+vector<tuple<int,int>> uci_labels::get_square_destinations(int rank1, int fileIdx) {
+    vector<tuple<int,int>> destinations;
+    for (int i = 0; i < 8; ++i) {
+        destinations.push_back({i, rank1});
+    }
+    for (int i = 0; i < 8; ++i) {
+        destinations.push_back({fileIdx, i});
+    }
+    for (int i = -7; i < 8; ++i) {
+        destinations.push_back({fileIdx + i, rank1 + i});
+    }
+    for (int i = -7; i < 8; ++i) {
+        destinations.push_back({fileIdx + i, rank1 - i});
+    }
+    vector<tuple<int,int>> knightJumps = {{-2, -1}, {-1, -2}, {-2, 1}, {1, -2}, {2, -1}, {-1, 2}, {2, 1}, {1, 2}};
+    for (tuple<int,int> curTuple : knightJumps ) {
+        int a = std::get<0>(curTuple);
+        int b = std::get<1>(curTuple);
+        destinations.push_back({fileIdx + a, rank1 + b});
+    }
+    return destinations;
+}
+
+
+vector<string> uci_labels::generate_uci_labels(const vector<string>& promotionPieces) {
+    vector<string> labels;
+    const auto ranks = uci_labels::ranks();
+    const auto files = uci_labels::files();
+    // generate classical moves
+    for (int fileIdx = 0; fileIdx < 8; ++fileIdx) {
+        for (int rankIdx = 0; rankIdx < 8; ++rankIdx) {
+            vector<tuple<int,int>> destinations = uci_labels::get_square_destinations(rankIdx, fileIdx);
+            for (tuple<int,int> curTuple : destinations) {
+                int fileIdx2 = std::get<0>(curTuple);
+                int rankIdx2 = std::get<1>(curTuple);
+                if ((fileIdx != fileIdx2 || rankIdx != rankIdx2) && fileIdx2 >= 0 && fileIdx2 < 8 && rankIdx2 >= 0 && rankIdx2 < 8) {
+                    string move = files[fileIdx] + ranks[rankIdx] + files[fileIdx2] + uci_labels::ranks()[rankIdx2];
+                    labels.emplace_back(move);
+                }
+            }
+        }
+    }
+    // generate promotion moves
+    for (int fileIdx = 0; fileIdx < 8; ++fileIdx) {
+        string file = files[fileIdx];
+        for (string p : promotionPieces) {
+            labels.emplace_back(file + "2" + file + "1" + p);
+            labels.emplace_back(file + "7" + file + "8" + p);
+            if (fileIdx > 0) {
+                string l_l = files[fileIdx - 1];
+                labels.emplace_back(file + "2" + l_l + "1" + p);
+                labels.emplace_back(file + "7" + l_l + "8" + p);
+            }
+            if (fileIdx < 7) {
+                string l_r = files[fileIdx + 1];
+                labels.emplace_back(file + "2" + l_r + "1" + p);
+                labels.emplace_back(file + "7" + l_r + "8" + p);
+            }
+        }
+    }
+    return labels;
+}
+
+void uci_labels::generate_dropping_moves(vector<string>& labels) {
+    // iterate over all chess squares
+    const auto pieces = uci_labels::pieces();
+    for (int l1 = 0; l1 < 8; ++l1) {
+        for (int n1 = 0; n1 < 8; ++n1) {
+            // add all possible dropping moves
+            // we don't want the first symbol which is empty and not the last which is the king
+            for (auto pieceIt = pieces.begin(); pieceIt != pieces.end()-1; ++pieceIt) {
+                // make sure not to add pawn dropping in the first or last row
+                if (*pieceIt != "P" || !(uci_labels::ranks()[n1] == "1" || uci_labels::ranks()[n1] == "8")) {
+                    const string move = *pieceIt + "@" + uci_labels::files()[l1] + uci_labels::ranks()[n1];
+                    labels.emplace_back(move);
+                }
+            }
+        }
+    }
+}
+
+void OutputRepresentation::init_labels()
+{
+#ifdef MODE_CRAZYHOUSE
+    // start with the normal chess labels
+    LABELS = uci_labels::generate_uci_labels(uci_labels::promotion_pieces());
+    uci_labels::generate_dropping_moves(LABELS);
+#elif MODE_LICHESS
+    // start with the normal chess labels
+    LABELS = uci_labels::generate_uci_labels(uci_labels::promotion_pieces());
+    uci_labels::generate_dropping_moves(LABELS);
+#elif MODE_CHESS
+    // start with the normal chess labels
+    LABELS = uci_labels::generate_uci_labels(uci_labels::promotion_pieces());
+#endif
+    if (int(LABELS.size()) != StateConstants::NB_LABELS()) {
+        cerr << "LABELS.size() != StateConstants::NB_LABELS():" <<  LABELS.size() << " " << StateConstants::NB_LABELS() << endl;
+        assert(false);
+    }
+    LABELS_MIRRORED.resize(LABELS.size());
 }
