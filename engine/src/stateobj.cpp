@@ -38,7 +38,7 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
             // use the mirrored look-up table instead
             vectorIdx = StateConstants::action_to_index<normal,mirrored>(legalMoves[mvIdx]);
         }
-        assert(vectorIdx < NB_LABELS);
+        assert(vectorIdx < StateConstants::NB_LABELS());
 
         // set the right prob value
         // accessing the data on the raw floating point vector is faster
