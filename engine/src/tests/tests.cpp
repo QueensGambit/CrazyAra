@@ -35,6 +35,7 @@
 #include "chess_related/variants.h"
 #include "thread.h"
 #include "constants.h"
+#include "stateobj.h"
 #include "chess_related/inputrepresentation.h"
 using namespace Catch::literals;
 using namespace std;
@@ -48,13 +49,13 @@ void init() {
 }
 
 void get_planes_statistics(const Board* pos, bool normalize, double& sum, double& maxNum, double& key, size_t& argMax) {
-    float inputPlanes[NB_VALUES_TOTAL];
+    float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
     board_to_planes(pos, pos->number_repetitions(), normalize, inputPlanes);
     sum = 0;
     maxNum = 0;
     key = 0;
     argMax = 0;
-    for (size_t i = 0; i < NB_VALUES_TOTAL; ++i) {
+    for (int i = 0; i < StateConstants::NB_VALUES_TOTAL(); ++i) {
         const float val = inputPlanes[i];
         sum += val;
         if (inputPlanes[i] > maxNum) {
@@ -101,7 +102,7 @@ TEST_CASE("Anti-Chess StartFEN"){
     string token, cmd;
     auto uiThread = make_shared<Thread>(0);
 
-    float *inputPlanes = new float[NB_VALUES_TOTAL];
+    float *inputPlanes = new float[StateConstants::NB_VALUES_TOTAL()];
 
     StateInfo newState;
     pos.set(StartFENs[ANTI_VARIANT], false, ANTI_VARIANT, &newState, uiThread.get());
@@ -117,7 +118,7 @@ TEST_CASE("Anti-Chess StartFEN"){
         }
         key += i * val;
     }
-    REQUIRE(NB_VALUES_TOTAL == 3008);
+    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008);
     REQUIRE(int(max_num) == 1);
     REQUIRE(int(sum) == 224);
     REQUIRE(int(key) == 417296);
@@ -195,7 +196,7 @@ TEST_CASE("Chess_Input_Planes"){
     size_t argMax;
     get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
 
-    REQUIRE(NB_VALUES_TOTAL == 39*64);
+    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 39*64);
     REQUIRE(maxNum == 4);
     REQUIRE(argMax == 1024);
     REQUIRE(sum == 557);
