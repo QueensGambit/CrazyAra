@@ -263,7 +263,11 @@ void SearchThread::create_mini_batch()
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
+#ifndef MODE_POMMERMAN
             parentNode->backup_value(childIdx, -newNode->get_value(), searchSettings->virtualLoss);
+#else
+            parentNode->backup_value(childIdx, newNode->get_value(), searchSettings->virtualLoss);
+#endif
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
