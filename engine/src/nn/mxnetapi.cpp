@@ -27,12 +27,12 @@
 
 #ifdef MXNET
 #include "../util/communication.h"
-#include "constants.h"
+#include "stateobj.h"
 
 
 MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT) :
     NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, tensorRT),
-    inputShape(Shape(miniBatchSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH))
+    inputShape(Shape(miniBatchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()))
 {
     const vector<string>& files = get_directory_files(modelDir);
     for (const string& file : files) {
@@ -163,22 +163,22 @@ void MXNetAPI::bind_executor()
 
 void MXNetAPI::check_if_policy_map()
 {
-    float* inputPlanes = new float[batchSize*NB_VALUES_TOTAL];
-    fill(inputPlanes, inputPlanes+batchSize*NB_VALUES_TOTAL, 0.0f);
+    float* inputPlanes = new float[batchSize*StateConstants::NB_VALUES_TOTAL()];
+    fill(inputPlanes, inputPlanes+batchSize*StateConstants::NB_VALUES_TOTAL(), 0.0f);
 
     float value;
     NDArray probOutputs = predict(inputPlanes, value);
-    isPolicyMap = probOutputs.GetShape()[1] != NB_LABELS;
+    isPolicyMap = probOutputs.GetShape()[1] != size_t(StateConstants::NB_LABELS());
     info_string("isPolicyMap:", isPolicyMap);
     if (isPolicyMap) {
-        policyOutputLength = NB_LABELS_POLICY_MAP * batchSize;
+        policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
     }
     delete[] inputPlanes;
 }
 
 NDArray MXNetAPI::predict(float* inputPlanes, float& value)
 {
-    executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, NB_VALUES_TOTAL * batchSize);
+    executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, StateConstants::NB_VALUES_TOTAL() * batchSize);
 
     // Run the forward pass.
     executor->Forward(false);
@@ -200,7 +200,7 @@ NDArray MXNetAPI::predict(float* inputPlanes, float& value)
 
 void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutputs)
 {
-    executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, NB_VALUES_TOTAL * batchSize);
+    executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, StateConstants::NB_VALUES_TOTAL() * batchSize);
 
     // Run the forward pass.
     executor->Forward(false);

@@ -23,12 +23,12 @@
  * @author: queensgambit
  */
 
+#include <tuple>
 #include "outputrepresentation.h"
 #include "policymaprepresentation.h"
 #include "sfutil.h"
 #include "constants.h"
 #include "stateobj.h"
-#include <bits/stdc++.h>
 using namespace std;
 
 void apply_softmax(DynamicVector<float> &policyProbSmall)
