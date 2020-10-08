@@ -25,7 +25,7 @@
  * Main entry point for the engine CrazyAra
  */
 
-#include "tests/tests.h"
+#include "../tests/tests.h"
 #include "stateobj.h"
 #include <iostream>
 #include "crazyara.h"

@@ -28,7 +28,6 @@
 #ifndef TESTS_H
 #define TESTS_H
 
-//#define BUILD_TESTS
 
 #ifdef BUILD_TESTS
 #include <vector>

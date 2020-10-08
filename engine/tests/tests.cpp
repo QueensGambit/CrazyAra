@@ -37,6 +37,7 @@
 #include "constants.h"
 #include "stateobj.h"
 #include "chess_related/inputrepresentation.h"
+#include "legacyconstants.h"
 using namespace Catch::literals;
 using namespace std;
 using namespace OptionsUCI;
@@ -225,5 +226,33 @@ TEST_CASE("Chess_Input_Planes"){
     REQUIRE(key == 909458);
 }
 #endif
+
+TEST_CASE("LABELS length"){
+    StateConstants::init(true);
+    REQUIRE(OutputRepresentation::LABELS.size() == size_t(StateConstants::NB_LABELS()));
+    REQUIRE(OutputRepresentation::LABELS_MIRRORED.size() == size_t(StateConstants::NB_LABELS()));
+}
+
+TEST_CASE("LABELS equality"){
+    for (int idx = 0; idx < StateConstants::NB_LABELS(); ++idx) {
+        REQUIRE(OutputRepresentation::LABELS[idx] == legacy_constants::LABELS[idx]);
+    }
+}
+
+TEST_CASE("Board representation constants"){
+    REQUIRE(StateConstants::BOARD_WIDTH() == legacy_constants::BOARD_WIDTH);
+    REQUIRE(StateConstants::BOARD_HEIGHT() == legacy_constants::BOARD_HEIGHT);
+    REQUIRE(StateConstants::NB_PLAYERS() == legacy_constants::NB_PLAYERS);
+    REQUIRE(StateConstants::NB_CHANNELS_TOTAL() == legacy_constants::NB_CHANNELS_TOTAL);
+    REQUIRE(StateConstants::NB_CHANNELS_CONST() == legacy_constants::NB_CHANNELS_CONST);
+    REQUIRE(StateConstants::NB_CHANNELS_POLICY_MAP() == legacy_constants::NB_CHANNELS_POLICY_MAP);
+    REQUIRE(StateConstants::NB_CHANNELS_HISTORY() == legacy_constants::NB_CHANNELS_HISTORY);
+    REQUIRE(StateConstants::NB_VALUES_TOTAL() == legacy_constants::NB_VALUES_TOTAL);
+    REQUIRE(StateConstants::NB_PIECE_TYPES() == legacy_constants::NB_PIECE_TYPES);
+    REQUIRE(StateConstants::MAX_NB_NO_PROGRESS() == legacy_constants::MAX_NB_NO_PROGRESS);
+    REQUIRE(StateConstants::MAX_NB_PRISONERS() == legacy_constants::MAX_NB_PRISONERS);
+    REQUIRE(StateConstants::NB_CHANNELS_VARIANTS() == legacy_constants::NB_CHANNELS_VARIANTS);
+    REQUIRE(StateConstants::MAX_FULL_MOVE_COUNTER() == legacy_constants::MAX_FULL_MOVE_COUNTER);
+}
 
 #endif

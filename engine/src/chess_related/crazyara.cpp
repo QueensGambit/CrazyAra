@@ -39,7 +39,7 @@
 #include "state.h"
 #include "variants.h"
 #include "optionsuci.h"
-#include "tests/benchmarkpositions.h"
+#include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
 #ifdef MXNET
 #include "nn/mxnetapi.h"

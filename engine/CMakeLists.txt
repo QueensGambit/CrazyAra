@@ -7,7 +7,7 @@ option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
 option(USE_TENSORRT              "Build with TensorRT support"  ON)
 option(USE_MXNET                 "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
-option(USE_TORCH                 "Build with Torch backend (CPU/GPU) support OFF")
+option(USE_TORCH                 "Build with Torch backend (CPU/GPU) support" OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
 # enable a single mode for different model input / outputs
@@ -104,8 +104,8 @@ file(GLOB chess_related_files
     "3rdparty/Stockfish/src/*.cpp"
     "src/chess_related/*.h"
     "src/chess_related/*.cpp"
-    "src/tests/*.h"
-    "src/tests/*.cpp")
+    "tests/*.h"
+    "tests/*.cpp")
 set(source_files
     ${source_files}
     ${chess_related_files}
