@@ -24,6 +24,7 @@
  */
 
 #include <thread>
+#include <fstream>
 #include "mctsagent.h"
 #include "../evalinfo.h"
 #include "../constants.h"
@@ -343,4 +344,67 @@ void MCTSAgent::print_root_node()
         return;
     }
     rootNode->print_node_statistics(rootState);
+}
+
+void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t parentId, size_t& nodeId, ostream& outFile, size_t depth, size_t maxDepth)
+{
+    int initialId = nodeId;
+    if (maxDepth != 0 && depth > maxDepth) {
+        return;
+    }
+    size_t childIdx = 0;
+    for (Node* node : parentNode->get_child_nodes()) {
+        if (node != nullptr) {
+            Action action = parentNode->get_action(node->get_child_idx_for_parent());
+            outFile << "N" << ++nodeId << " [label = \""
+                    <<  state->action_to_san(action, state->legal_actions(), false, false)
+                     << "\"]" << endl;
+            int perc = (float(parentNode->get_child_number_visits()[childIdx++]) / parentNode->get_visits()) * 100 + 0.5;
+            perc = min(perc+10, 100);
+            outFile << "N" << parentId << " -> " << "N" << nodeId
+                    << " [color = gray" << 100-perc << "]"
+                    <<   ";" << endl;
+        }
+    }
+    outFile  << "{ rank=same; ";
+    for (size_t idx = initialId+1; idx < initialId+parentNode->get_no_visit_idx(); ++idx) {
+        outFile << "N" << idx << " ";
+    }
+    outFile << "}" << endl;
+    for (Node* node : parentNode->get_child_nodes()) {
+        if (node != nullptr && node->is_playout_node()) {
+            unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state->clone());
+            Action action = parentNode->get_action(node->get_child_idx_for_parent());
+            state2->do_action(action);
+            print_child_nodes_to_file(node, state2.get(), ++initialId, nodeId, outFile, depth+1, maxDepth);
+        }
+    }
+}
+
+void MCTSAgent::export_search_tree(size_t maxDepth, const string& filename)
+{
+    size_t nodeId = 0;
+    ofstream outFile;
+    outFile.open (filename);
+    outFile << "digraph g {" << endl;
+    outFile << "graph [layout = dot]" << endl << endl;
+    outFile << "node [shape = circle," << endl
+            << " fontname = Helvetica," << endl
+            << " fontsize = 8.5," << endl
+            << " fixedsize = true," << endl
+            << " color = black," << endl
+            << " width = 0.3," << endl
+            << " height = 0.3," << endl
+            << " label = \"\"]" << endl << endl;
+
+    outFile << "edge [" << endl
+            << "arrowhead = vee," << endl
+            << "arrowsize = 0.2," << endl
+            << "color = grey" << endl
+            << "]" << endl << endl;
+
+    outFile << "N0 [label = \"root\", xlabel=\"fen: " << rootState->fen() << "\"]" << endl << endl;
+    print_child_nodes_to_file(rootNode, rootState, 0, nodeId, outFile, 1, maxDepth);
+    outFile << "}" << endl;
+    outFile.close();
 }

@@ -141,6 +141,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         // Additional custom non-UCI commands, mainly for debugging
         else if (token == "benchmark")  benchmark(is);
         else if (token == "root")       mctsAgent->print_root_node();
+        else if (token == "tree")      export_search_tree(is);
         else if (token == "flip")       state->flip();
         else if (token == "d")          cout << *(state.get()) << endl;
 #ifdef USE_RL
@@ -297,6 +298,22 @@ void CrazyAra::benchmark(istringstream &is)
     cout << "NPS (avg):\t" << setw(2) << totalNPS /  benchmark.positions.size() << endl;
     cout << "NPS (median):\t" << setw(2) << nps[nps.size()/2] << endl;
     cout << "PV-Depth:\t" << setw(2) << totalDepth /  benchmark.positions.size() << endl;
+}
+
+void CrazyAra::export_search_tree(istringstream &is)
+{
+    string depth, filename;
+    is >> depth;
+    is >> filename;
+    if (depth == "") {
+        mctsAgent->export_search_tree(2, "tree.gv");
+        return;
+    }
+    if (filename == "") {
+        mctsAgent->export_search_tree(std::stoi(depth), "tree.gv");
+        return;
+    }
+    mctsAgent->export_search_tree(std::stoi(depth), filename);
 }
 
 #ifdef USE_RL

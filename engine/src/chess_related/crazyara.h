@@ -152,6 +152,13 @@ public:
      */
     void benchmark(istringstream& is);
 
+    /**
+     * @brief export_search_tree Exports the current search tree as a graph in a .gv/.dot-file
+     * @param is Input stream. If no argument is given:
+     * maxDepth is set to 2 and filename is set to "graph.gv"
+     */
+    void export_search_tree(istringstream& is);
+
 #ifdef USE_RL
     /**
      * @brief selfplay Starts self play for a given number of games

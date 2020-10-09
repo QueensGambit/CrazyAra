@@ -113,6 +113,13 @@ public:
      */
     void print_root_node();
 
+    /**
+     * @brief export_search_tree Exports the current search tree as a graph in a .gv/.dot-file
+     * @param maxDepth Maximum depth which will be printed. If 0, the full tree will be printed
+     * @param filename File name where the information will be written to (should end with .gv or .dot)
+     */
+    void export_search_tree(size_t maxDepth, const string& filename);
+
     void apply_move_to_tree(Action move, bool ownMove) override;
 
     /**
@@ -203,5 +210,17 @@ private:
      */
     void update_nps_measurement(float curNPS);
 };
+
+/**
+ * @brief print_child_nodes_to_file Prints all child nodes to outFile until a given depth has been reached.
+ * @param parentNode Current parent node
+ * @param state State which relates to the parent
+ * @param parentId Node index of the parent
+ * @param nodeId Current node index which gets increment by 1 for each node
+ * @param outFile Outstream (supposed to be a .dot/.gv file)
+ * @param depth Current depth in the search tree
+ * @param maxDepth Maximum depth which will be printed. If 0, the full tree will be printed
+ */
+void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t parentId, size_t& nodeId, ostream& outFile, size_t depth, size_t maxDepth);
 
 #endif // MCTSAGENT_H
