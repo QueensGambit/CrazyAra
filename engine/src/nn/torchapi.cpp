@@ -44,8 +44,11 @@ void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutput
 
     // Execute the model and turn its output into a tensor.
     auto output = module.forward(inputs).toList();
-    valueOutput = output.get(1).toTensor().data_ptr<float>();
-    probOutputs = output.get(1).toTensor().data_ptr<float>();
+
+    const float* torchValuePt = output.get(0).toTensor().data_ptr<float>();
+    std::copy(torchValuePt, torchValuePt+batchSize, valueOutput);
+    const float* torchPolicyPt = output.get(1).toTensor().data_ptr<float>();
+    std::copy(torchPolicyPt, torchPolicyPt+policyOutputLength, probOutputs);
 }
 
 void TorchAPI::load_model()
@@ -71,6 +74,18 @@ void TorchAPI::bind_executor()
 
 void TorchAPI::check_if_policy_map()
 {
-    // TODO
+    float* inputPlanes = new float[batchSize*StateConstants::NB_VALUES_TOTAL()];
+
+    // Create a vector of inputs.
+    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()})};
+
+    auto output = module.forward(inputs).toList();
+    auto probOutputs = output.get(1).toTensor();
+
+    isPolicyMap = probOutputs.size(1) != size_t(StateConstants::NB_LABELS());
+    info_string("isPolicyMap:", isPolicyMap);
+    if (isPolicyMap) {
+        policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
+    }
 }
 #endif
