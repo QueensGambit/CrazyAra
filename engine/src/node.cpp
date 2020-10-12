@@ -494,7 +494,9 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
     }
     if (is_terminal_value(value)) {
         ++d->terminalVisits;
+#ifndef MODE_POMMERMAN
         solve_for_terminal(d->childNodes[childIdx]);
+#endif
     }
     unlock();
 }
