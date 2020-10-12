@@ -312,7 +312,11 @@ void run_search_thread(SearchThread *t)
 void backup_values(FixedVector<Node*>* nodes, float virtualLoss)
 {
     for (auto node: *nodes) {
+#ifndef MODE_POMMERMAN
         node->get_parent_node()->backup_value(node->get_child_idx_for_parent(), -node->get_value(), virtualLoss);
+#else
+        node->get_parent_node()->backup_value(node->get_child_idx_for_parent(), node->get_value(), virtualLoss);
+#endif
     }
     nodes->reset_idx();
 }
