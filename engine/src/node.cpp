@@ -110,6 +110,7 @@ Node::Node(const Node &b)
     isTablebase = b.isTablebase;
     hasNNResults = b.hasNNResults;
     sorted = b.sorted;
+    inspected = false;
     if (isTerminal) {
         d = make_unique<NodeData>(numberChildNodes);
         d->nodeType = b.d->nodeType;

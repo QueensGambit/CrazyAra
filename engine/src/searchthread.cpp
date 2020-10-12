@@ -398,7 +398,7 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
 }
 
 size_t select_enhanced_move(Node* currentNode, StateObj* pos, Cells* cells) {
-    if (!currentNode->was_inspected() && currentNode->get_visits() > 100 && !currentNode->is_terminal()) {
+    if (!currentNode->was_inspected() && currentNode->is_playout_node() && currentNode->get_visits() > 100 && !currentNode->is_terminal()) {
         // make sure a check has been explored at least once
         for (size_t idx = currentNode->get_no_visit_idx(); idx < currentNode->get_number_child_nodes(); ++idx) {
             Action action = currentNode->get_action(idx);
