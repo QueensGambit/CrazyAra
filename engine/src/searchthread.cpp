@@ -41,7 +41,7 @@ size_t SearchThread::get_max_depth() const
 }
 
 SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex, Cells* cells):
-    netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), cells(cells), searchSettings(searchSettings)
+    netBatch(netBatch), isRunning(false), mapWithMutex(mapWithMutex), cells(cells), searchSettings(searchSettings), bestActionIdx(INT_MAX)
 {
     // allocate memory for all predictions and results
 #ifdef TENSORRT
@@ -59,6 +59,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     newNodeSideToMove = make_unique<FixedVector<SideToMove>>(searchSettings->batchSize);
     transpositionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize*2);
     collisionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
+    //    comebackNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
 }
 
 SearchThread::~SearchThread()
@@ -158,28 +159,48 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
     description.depth = 0;
     Node* currentNode = rootNode;
 
-//    if (cells->trajectories.size() > 0 && rand() % 100 < 50) {
-//        currentNode = rootNode;
-//        // select random cell
-//        cells->mtx.lock();
-//        deque<size_t> trajectory = cells->select_trajectory();
-//        cells->mtx.unlock();
+    //    if (cells->trajectories.size() > 0 && rand() % 100 < 50) {
+    //        currentNode = rootNode;
+    //        // select random cell
+    //        cells->mtx.lock();
+    //        deque<size_t> trajectory = cells->select_trajectory();
+    //        cells->mtx.unlock();
 
-//        // go to node cell
-//        deque<Action> actions;
-//        for (size_t idx : trajectory) {
-//            if (currentNode != nullptr && currentNode->is_playout_node()) {
-//                pos->do_action(currentNode->get_action(idx));
-//                currentNode->lock();
-//                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
-//                Node* nextNode = currentNode->get_child_node(idx);
-//                currentNode->unlock();
-//                currentNode = nextNode;
-//                childIdx = idx;
-//                description.depth++;
-//            }
-//        }
-//    }
+    //        // go to node cell
+    //        deque<Action> actions;
+    //        for (size_t idx : trajectory) {
+    //            if (currentNode != nullptr && currentNode->is_playout_node()) {
+    //                pos->do_action(currentNode->get_action(idx));
+    //                currentNode->lock();
+    //                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
+    //                Node* nextNode = currentNode->get_child_node(idx);
+    //                currentNode->unlock();
+    //                currentNode = nextNode;
+    //                childIdx = idx;
+    //                description.depth++;
+    //            }
+    //        }
+    //    }
+
+    if (comebackNodes.size() != 0) {
+        Node* comebackNode = comebackNodes.back();
+        deque<size_t> trajectory = get_trajectory(comebackNode);
+        comebackNodes.pop_back();
+        //        // go to node cell
+        deque<Action> actions;
+        for (size_t idx : trajectory) {
+            if (currentNode != nullptr && currentNode->is_playout_node()) {
+                pos->do_action(currentNode->get_action(idx));
+                currentNode->lock();
+                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
+                Node* nextNode = currentNode->get_child_node(idx);
+                currentNode->unlock();
+                currentNode = nextNode;
+                childIdx = idx;
+                description.depth++;
+            }
+        }
+    }
 
     while (true) {
         childIdx = INT_MAX;
@@ -189,7 +210,7 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
 
         currentNode->lock();
 
-        childIdx = select_enhanced_move(currentNode, pos, cells);
+        // childIdx = select_enhanced_move(currentNode, pos, cells);
 
         if (childIdx == INT_MAX) {
             childIdx = currentNode->select_child_node(searchSettings);
@@ -205,6 +226,13 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
             description.type = add_new_node_to_tree(pos, currentNode, childIdx, inCheck);
             currentNode->increment_no_visit_idx(cells);
             currentNode->unlock();
+            //            comebackNodes.emplace_back(currentNode);
+            //            for (Action action : currentNode->get_legal_action()) {
+            //            if (currentNode->get_number_child_nodes() == 1)
+            //                if (pos->gives_check(action)) {
+            //                    comebackNodes.emplace_back(currentNode);
+            //                    break;
+            //            }
             return currentNode;
         }
         if (nextNode->is_terminal()) {
@@ -220,6 +248,52 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
         currentNode->unlock();
         pos->do_action(currentNode->get_action(childIdx));
         currentNode = nextNode;
+
+
+        // ------------------ PV line Transfer ----------------------
+        if (description.depth == 1) {
+            const size_t curBestActionIdx = get_best_action_index(rootNode, false);
+            if (bestActionIdx != curBestActionIdx && childIdx == curBestActionIdx && rootNode->get_visits() > 10000) {
+                if (bestActionIdx != INT_MAX) {
+                    Node* oldBest = rootNode->get_child_node(bestActionIdx);
+                    vector<Action> pvLine;
+                    oldBest->get_principal_variation(pvLine);
+                    for (Action action: pvLine) {
+                        cout << action_to_uci(action, false) << " ";
+                    }
+                    // go to node cell
+                    for (Action action: pvLine) {
+                        if (currentNode != nullptr && currentNode->is_playout_node()) {
+                            currentNode->fully_expand_node();
+                            const auto actions = currentNode->get_legal_action();
+                            auto it = std::find(actions.begin(), actions.end(), action);
+                            if (it != actions.end()) {
+                                pos->do_action(action);
+                                cout << action_to_uci(action, false) << " ";
+                                currentNode->lock();
+                                size_t idx = distance(actions.begin(), it);
+                                cout << "idx: " << idx << endl;
+                                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
+                                nextNode = currentNode->get_child_node(idx);
+                                if (nextNode != nullptr && nextNode->is_playout_node()) {
+                                currentNode = nextNode;
+                                }
+                                else {
+                                    break;
+                                }
+                                currentNode->unlock();
+                                childIdx = idx;
+                                description.depth++;
+                            }
+                        }
+                    }
+
+                }
+                bestActionIdx = curBestActionIdx;
+            }
+        }
+        // ------------------ PV line Transfer ----------------------
+
     }
 }
 
@@ -240,11 +314,11 @@ void SearchThread::reset_stats()
     depthSum = 0;
 }
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
+void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings, vector<Node*>& comebackNodes)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, is_policy_map), get_current_move_lookup(sideToMove));
     node_post_process_policy(node, searchSettings->nodePolicyTemperature, is_policy_map, searchSettings);
-    node_assign_value(node, valueOutputs, tbHits, batchIdx);
+    node_assign_value(node, valueOutputs, tbHits, batchIdx, comebackNodes);
     node->enable_has_nn_results();
 }
 
@@ -253,7 +327,7 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
+            fill_nn_results(batchIdx, netBatch->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings, comebackNodes);
         }
         ++batchIdx;
         mapWithMutex->mtx.lock();
@@ -315,6 +389,7 @@ void SearchThread::create_mini_batch()
             ++numTerminalNodes;
             if (-newNode->get_value() == DRAW && newNode->get_visits() > 1000) {
                 // TODO: save trajectory as safe drawing line
+                cout << "disabled" << endl;
                 disable_node_acces(newNode);
                 disable_node_acces(newNode->get_parent_node());
             }
@@ -368,10 +443,18 @@ void backup_values(FixedVector<Node*>* nodes, float virtualLoss)
     nodes->reset_idx();
 }
 
-void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)
+void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, vector<Node*>& comebackNodes)
 {
     if (!node->is_tablebase()) {
         node->set_value(valueOutputs[batchIdx]);
+        //        if (node->get_number_child_nodes() == 1) {
+        //            node->set_value(valueOutputs[batchIdx]-0.2f);
+        //        }
+        //        if (node->get_value() + 0.2f < -node->get_parent_node()->get_value()) {
+        //        if (node->get_value() - 0.2f > -node->get_parent_node()->get_value()) {
+        // upset
+        //            comebackNodes.emplace_back(node); //node->get_parent_node());
+        //        }
     }
     else {
         ++tbHits;

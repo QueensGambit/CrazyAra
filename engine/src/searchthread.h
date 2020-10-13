@@ -74,6 +74,7 @@ private:
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<Node*>> transpositionNodes;
     unique_ptr<FixedVector<Node*>> collisionNodes;
+    vector<Node*> comebackNodes;
 
     // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
     // sufficient memory according to the batch-size will be allocated in the constructor
@@ -90,6 +91,7 @@ private:
     size_t depthSum;
     size_t depthMax;
     size_t visitsPreSearch;
+    size_t bestActionIdx;
 
 public:
     /**
@@ -195,9 +197,9 @@ void run_search_thread(SearchThread *t);
 
 void backup_values(FixedVector<Node*>* nodes, float virtualLoss);
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings);
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings, vector<Node*>& comebackNodes);
 void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
-void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx);
+void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, vector<Node*>& comebackNodes);
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateObj* state);
 
