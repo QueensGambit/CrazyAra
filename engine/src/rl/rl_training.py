@@ -21,9 +21,10 @@ from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, a
     remove_no_sparse_cross_entropy, prepare_policy
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, LinearWarmUp,\
     CosineAnnealingSchedule
+from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
 
 
-def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filename, params_filename, cwd):
+def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filename, params_filename, cwd, convert_to_onnx):
     """
     Creates a new NN checkpoint in the model contender directory after training using the game files stored in the
      training directory
@@ -36,6 +37,7 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
     :param params_filename: Weight file which will be loaded before training
     Updates the neural network with the newly acquired games from the replay memory
     :param cwd: Current working directory (must end with "/")
+    :param convert_to_onnx: Boolean indicating if the network shall be exported to ONNX to allow TensorRT inference
     :return: k_steps_final
     """
 
@@ -151,8 +153,14 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
     prefix = cwd + "model_contender/model-%.5f-%.5f-%.3f-%.3f" % (val_value_loss_final, val_policy_loss_final,
                                                                   val_value_acc_sign_final, val_policy_acc_final)
 
-    symbol.save(prefix + "-symbol.json")
-    model.save_params(prefix + "-" + "%04d.params" % nn_update_idx)
+    sym_file = prefix + "-symbol.json"
+    params_file = prefix + "-" + "%04d.params" % nn_update_idx
+    symbol.save(sym_file)
+    model.save_params(params_file)
+
+    if convert_to_onnx:
+        convert_mxnet_model_to_onnx(sym_file, params_file, ["value_out_output", "policy_out_output"], input_shape,
+                                    [1, 8, 16], False)
 
     logging.info("k_steps_final %d" % k_steps_final)
     queue.put(k_steps_final)

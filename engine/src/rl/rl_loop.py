@@ -472,7 +472,7 @@ class RLLoop:
             process = Process(target=update_network, args=(queue, self.nn_update_index, self.k_steps,
                                                            self.max_lr, self._get_current_model_arch_file(),
                                                            self._get_current_model_weight_file(),
-                                                           self.crazyara_binary_dir))
+                                                           self.crazyara_binary_dir, not self.args.no_onnx_export))
             logging.info("start training")
             process.start()
             self.k_steps = queue.get() + 1
@@ -539,6 +539,9 @@ def parse_args(cmd_args: list):
                         help="How many arena games will be done to judge the quality of the new network")
     parser.add_argument("--precision", type=str, default="float16", #10,
                         help="-")
+    parser.add_argument('--no-onnx-export', default=False, action="store_true",
+                        help="By default the networks will be converted to ONNX to allow TensorRT inference."
+                             " If this parameter is enabled no conversion will be done")
 
     args = parser.parse_args(cmd_args)
 
