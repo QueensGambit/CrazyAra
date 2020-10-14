@@ -28,10 +28,17 @@
 #include "stateobj.h"
 
 TorchAPI::TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string &modelDirectory):
-    NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, false)
+    NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, false),
+    device(torch::kCPU)
 {
     modelFilePath = modelDir + "model-bsize-" + to_string(batchSize) + ".pt";
-
+    if (ctx == "cpu" || ctx == "CPU") {
+        device = torch::kCPU;
+    } else if (ctx == "gpu" || ctx == "GPU") {
+        device = torch::Device(torch::kCUDA, deviceID);
+    } else {
+        throw "unsupported context " + ctx + " given";
+    }
     load_model();
     check_if_policy_map();
     bind_executor();
@@ -40,7 +47,7 @@ TorchAPI::TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
 void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutputs)
 {
     // Create a vector of inputs.
-    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()})};
+    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()}, device)};
 
     // Execute the model and turn its output into a tensor.
     auto output = module.forward(inputs).toList();
@@ -55,7 +62,7 @@ void TorchAPI::load_model()
 {
     try {
       // Deserialize the ScriptModule from a file using torch::jit::load().
-      module = torch::jit::load(modelFilePath);
+      module = torch::jit::load(modelFilePath, device);
     }
     catch (const c10::Error& e) {
       std::cerr << "error loading the model: " <<  modelFilePath << std::endl;
@@ -77,7 +84,7 @@ void TorchAPI::check_if_policy_map()
     float* inputPlanes = new float[batchSize*StateConstants::NB_VALUES_TOTAL()];
 
     // Create a vector of inputs.
-    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()})};
+    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()}), device};
 
     auto output = module.forward(inputs).toList();
     auto probOutputs = output.get(1).toTensor();

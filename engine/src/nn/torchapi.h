@@ -41,7 +41,7 @@ class TorchAPI : public NeuralNetAPI
 {
 private:
     torch::jit::script::Module module;
-
+    torch::Device device;
 public:
     TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory);
 
