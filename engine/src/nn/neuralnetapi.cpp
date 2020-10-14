@@ -27,6 +27,19 @@
 #include <string>
 #include "../stateobj.h"
 
+
+string get_file_ending_with(const string& dir, const string& suffix) {
+    const vector<string>& files = get_directory_files(dir);
+    for (const string& file : files) {
+        if (has_suffix(file, suffix)) {
+            return file;
+        }
+    }
+    throw invalid_argument( "The given directory at " + dir + " doesn't contain a file ending with " + suffix);
+    return "";
+}
+
+
 unsigned int NeuralNetAPI::get_batch_size() const
 {
     return batchSize;

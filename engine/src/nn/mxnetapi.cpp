@@ -34,22 +34,11 @@ MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
     NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, tensorRT),
     inputShape(Shape(miniBatchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()))
 {
-    const vector<string>& files = get_directory_files(modelDir);
-    for (const string& file : files) {
-        size_t pos_json = file.find(".json");
-        size_t pos_params = file.find(".params");
-        if (pos_json != string::npos) {
-            modelFilePath = modelDir + file;
-        }
-        else if (pos_params != string::npos) {
-            paramterFilePath = modelDir + file;
-            modelName = file.substr(0, file.length()-string(".params").length());
-        }
-    }
-    if (modelFilePath == "" || paramterFilePath == "") {
-        throw invalid_argument( "The given directory at " + modelDirectory
-                                     + " doesn't contain a .json and a .params file.");
-    }
+    modelFilePath = modelDir + get_file_ending_with(modelDir, ".json");
+    parameterFilePath = get_file_ending_with(modelDir, ".params");;
+    modelName = parameterFilePath.substr(0, parameterFilePath.length()-string(".params").length());
+    parameterFilePath = modelDir + parameterFilePath;
+
     info_string("json file:", modelFilePath);
 
     if (ctx == "cpu" || ctx == "CPU") {
@@ -110,13 +99,13 @@ void MXNetAPI::ConvertParamMapToTargetContext(const std::map<std::string, NDArra
 }
 
 void MXNetAPI::load_parameters() {
-    if (!file_exists(paramterFilePath)) {
-        info_string("Parameter file does not exist:", paramterFilePath);
+    if (!file_exists(parameterFilePath)) {
+        info_string("Parameter file does not exist:", parameterFilePath);
         throw runtime_error("Model parameters does not exist");
     }
-    info_string("Loading the model parameters from:", paramterFilePath);
+    info_string("Loading the model parameters from:", parameterFilePath);
     map<string, NDArray> parameters;
-    NDArray::Load(paramterFilePath, 0, &parameters);
+    NDArray::Load(parameterFilePath, 0, &parameters);
 
     if (enableTensorrt) {
       #ifdef TENSORRT

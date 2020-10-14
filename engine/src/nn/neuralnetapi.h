@@ -55,7 +55,23 @@ vector<string> get_directory_files(const string& dir) {
     }
     return files;
 }
+
+// https://stackoverflow.com/questions/20446201/how-to-check-if-string-ends-with-txt/20446257
+bool has_suffix(const std::string &str, const std::string &suffix)
+{
+    return str.size() >= suffix.size() &&
+           str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
 }  // namespace
+
+/**
+ * @brief get_file_ending_with Returns the first file of a directory ending with the given suffix
+ * @param dir Directory where to look for the file
+ * @param suffix Suffix which must be at the end of the file
+ * @return The filename of found file excluding the directory and "" and invalid_argument if no file was found
+ */
+string get_file_ending_with(const string& dir, const string& suffix);
+
 
 /**
  * @brief The NeuralNetAPI class is an abstract class for accessing a neural network back-end and to run inference
@@ -78,7 +94,7 @@ protected:
     // file names for the loaded model and its parameters
     string modelDir;
     string modelFilePath;
-    string paramterFilePath;
+    string parameterFilePath;
 
 public:
     /**
