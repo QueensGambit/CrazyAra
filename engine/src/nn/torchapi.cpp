@@ -84,12 +84,12 @@ void TorchAPI::check_if_policy_map()
     float* inputPlanes = new float[batchSize*StateConstants::NB_VALUES_TOTAL()];
 
     // Create a vector of inputs.
-    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()}), device};
+    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()}, device)};
 
     auto output = module.forward(inputs).toList();
     auto probOutputs = output.get(1).toTensor();
 
-    isPolicyMap = probOutputs.size(1) != size_t(StateConstants::NB_LABELS());
+    isPolicyMap = probOutputs.size(1) != StateConstants::NB_LABELS();
     info_string("isPolicyMap:", isPolicyMap);
     if (isPolicyMap) {
         policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
