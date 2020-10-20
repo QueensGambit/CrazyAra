@@ -47,8 +47,6 @@
 #include "nn/tensorrtapi.h"
 #endif
 
-using namespace std;
-
 CrazyAra::CrazyAra():
     rawAgent(nullptr),
     mctsAgent(nullptr),
