@@ -98,9 +98,16 @@ include_directories("3rdparty/Stockfish/src")
 include_directories("src")
 
 file(GLOB chess_related_files
-    "3rdparty/Stockfish/src/syzygy/*.h"
-    "3rdparty/Stockfish/src/syzygy/*.cpp"
-    "3rdparty/Stockfish/src/*.h"
+    "3rdparty/Stockfish/src/syzygy/tbprobe.h"
+    "3rdparty/Stockfish/src/syzygy/tbprobe.cpp"
+    "3rdparty/Stockfish/src/types.h"
+    "3rdparty/Stockfish/src/types.cpp"
+    "3rdparty/Stockfish/src/position.h"
+    "3rdparty/Stockfish/src/position.cpp"
+    "3rdparty/Stockfish/src/uci.h"
+    "3rdparty/Stockfish/src/uci.cpp"
+    "3rdparty/Stockfish/src/bitboard.h"
+    "3rdparty/Stockfish/src/bitboard.cpp"
     "3rdparty/Stockfish/src/*.cpp"
     "src/chess_related/*.h"
     "src/chess_related/*.cpp"
