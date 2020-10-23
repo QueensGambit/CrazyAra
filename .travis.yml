@@ -8,12 +8,13 @@ matrix:
       env:
         - COMPILER=g++-8
         - COMP=gcc
-
+        - CFLAGS=-std=c++17
     - os: linux
       compiler: clang
       env:
         - COMPILER=clang++-7.0
         - COMP=clang
+        - CFLAGS=-std=c++17
         - LDFLAGS=-fuse-ld=lld -stdlib=libc++
 install:
   - cd
