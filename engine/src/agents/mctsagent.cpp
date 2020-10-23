@@ -189,7 +189,8 @@ void MCTSAgent::create_new_root_node(StateObj* state)
     state->get_state_planes(true, begin(inputPlanes));
     netSingle->predict(inputPlanes, &valueOutput, probOutputs.get());
     size_t tbHits = 0;
-    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs.get(), rootNode, tbHits, state->side_to_move(), searchSettings);
+    vector<Node*> comebackNodes;
+    fill_nn_results(0, netSingle->is_policy_map(), &valueOutput, probOutputs.get(), rootNode, tbHits, state->side_to_move(), searchSettings, comebackNodes);
     rootNode->prepare_node_for_visits();
 }
 

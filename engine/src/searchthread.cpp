@@ -210,7 +210,9 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
 
         currentNode->lock();
 
-        // childIdx = select_enhanced_move(currentNode, pos, cells);
+        if (searchSettings->enhanceChecks) {
+            childIdx = select_enhanced_move(currentNode, pos, cells);
+        }
 
         if (childIdx == INT_MAX) {
             childIdx = currentNode->select_child_node(searchSettings);
@@ -251,47 +253,47 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
 
 
         // ------------------ PV line Transfer ----------------------
-        if (description.depth == 1) {
-            const size_t curBestActionIdx = get_best_action_index(rootNode, false);
-            if (bestActionIdx != curBestActionIdx && childIdx == curBestActionIdx && rootNode->get_visits() > 10000) {
-                if (bestActionIdx != INT_MAX) {
-                    Node* oldBest = rootNode->get_child_node(bestActionIdx);
-                    vector<Action> pvLine;
-                    oldBest->get_principal_variation(pvLine);
-                    for (Action action: pvLine) {
-                        cout << action_to_uci(action, false) << " ";
-                    }
-                    // go to node cell
-                    for (Action action: pvLine) {
-                        if (currentNode != nullptr && currentNode->is_playout_node()) {
-                            currentNode->fully_expand_node();
-                            const auto actions = currentNode->get_legal_action();
-                            auto it = std::find(actions.begin(), actions.end(), action);
-                            if (it != actions.end()) {
-                                pos->do_action(action);
-                                cout << action_to_uci(action, false) << " ";
-                                currentNode->lock();
-                                size_t idx = distance(actions.begin(), it);
-                                cout << "idx: " << idx << endl;
-                                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
-                                nextNode = currentNode->get_child_node(idx);
-                                if (nextNode != nullptr && nextNode->is_playout_node()) {
-                                currentNode = nextNode;
-                                }
-                                else {
-                                    break;
-                                }
-                                currentNode->unlock();
-                                childIdx = idx;
-                                description.depth++;
-                            }
-                        }
-                    }
+//        if (description.depth == 1) {
+//            const size_t curBestActionIdx = get_best_action_index(rootNode, false);
+//            if (bestActionIdx != curBestActionIdx && childIdx == curBestActionIdx && rootNode->get_visits() > 10000) {
+//                if (bestActionIdx != INT_MAX) {
+//                    Node* oldBest = rootNode->get_child_node(bestActionIdx);
+//                    vector<Action> pvLine;
+//                    oldBest->get_principal_variation(pvLine);
+//                    for (Action action: pvLine) {
+//                        cout << action_to_uci(action, false) << " ";
+//                    }
+//                    // go to node cell
+//                    for (Action action: pvLine) {
+//                        if (currentNode != nullptr && currentNode->is_playout_node()) {
+//                            currentNode->fully_expand_node();
+//                            const auto actions = currentNode->get_legal_action();
+//                            auto it = std::find(actions.begin(), actions.end(), action);
+//                            if (it != actions.end()) {
+//                                pos->do_action(action);
+//                                cout << action_to_uci(action, false) << " ";
+//                                currentNode->lock();
+//                                size_t idx = distance(actions.begin(), it);
+//                                cout << "idx: " << idx << endl;
+//                                currentNode->apply_virtual_loss_to_child(idx, searchSettings->virtualLoss);
+//                                nextNode = currentNode->get_child_node(idx);
+//                                if (nextNode != nullptr && nextNode->is_playout_node()) {
+//                                currentNode = nextNode;
+//                                }
+//                                else {
+//                                    break;
+//                                }
+//                                currentNode->unlock();
+//                                childIdx = idx;
+//                                description.depth++;
+//                            }
+//                        }
+//                    }
 
-                }
-                bestActionIdx = curBestActionIdx;
-            }
-        }
+//                }
+//                bestActionIdx = curBestActionIdx;
+//            }
+//        }
         // ------------------ PV line Transfer ----------------------
 
     }
@@ -387,12 +389,12 @@ void SearchThread::create_mini_batch()
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-            if (-newNode->get_value() == DRAW && newNode->get_visits() > 1000) {
-                // TODO: save trajectory as safe drawing line
-                cout << "disabled" << endl;
-                disable_node_acces(newNode);
-                disable_node_acces(newNode->get_parent_node());
-            }
+//            if (-newNode->get_value() == DRAW && newNode->get_visits() > 1000) {
+//                // TODO: save trajectory as safe drawing line
+//                cout << "disabled" << endl;
+//                disable_node_acces(newNode);
+//                disable_node_acces(newNode->get_parent_node());
+//            }
             parentNode->backup_value(childIdx, -newNode->get_value(), searchSettings->virtualLoss);
         }
         else if (description.type == NODE_COLLISION) {
@@ -481,7 +483,7 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
 }
 
 size_t select_enhanced_move(Node* currentNode, StateObj* pos, Cells* cells) {
-    if (!currentNode->was_inspected() && currentNode->is_playout_node() && currentNode->get_visits() > 100 && !currentNode->is_terminal()) {
+    if (!currentNode->was_inspected() && currentNode->is_playout_node() && currentNode->get_visits() % 1000 == 0 && !currentNode->is_terminal()) {
         // make sure a check has been explored at least once
         for (size_t idx = currentNode->get_no_visit_idx(); idx < currentNode->get_number_child_nodes(); ++idx) {
             Action action = currentNode->get_action(idx);
