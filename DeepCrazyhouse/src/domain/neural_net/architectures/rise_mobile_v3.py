@@ -145,7 +145,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_exp
     cur_channels = channels_operating_init
 
     for idx, cur_kernels in enumerate(kernels):
-        if cur_kernels[0] == 5:
+        if 5 in cur_kernels:
             temp_channels = cur_channels // 2
         else:
             temp_channels = cur_channels
