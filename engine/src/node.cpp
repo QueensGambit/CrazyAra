@@ -90,7 +90,11 @@ Node::Node(const Node &b)
 
 bool Node::solved_win(const Node* childNode) const
 {
+#ifndef MODE_POMMERMAN
     if (childNode->d->nodeType == SOLVED_LOSS) {
+#else
+    if (childNode->d->nodeType == SOLVED_WIN) {
+#endif
         d->checkmateIdx = childNode->get_child_idx_for_parent();
         return true;
     }
@@ -135,7 +139,11 @@ bool Node::only_won_child_nodes() const
 
 bool Node::solved_loss(const Node* childNode) const
 {
+#ifndef MODE_POMMERMAN
     if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == SOLVED_WIN) {
+#else
+    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == SOLVED_LOSS) {
+#endif
         return only_won_child_nodes();
     }
     return false;
@@ -192,10 +200,18 @@ void Node::update_solved_terminal(const Node* childNode)
         parentNode->lock();
         parentNode->d->numberUnsolvedChildNodes--;
         parentNode->d->qValues[childIdxForParent] = -targetValue;
+#ifndef MODE_POMMERMAN
         if (targetValue == LOSS) {
+#else
+        if (targetValue == WIN) {
+#endif
             parentNode->d->checkmateIdx = childIdxForParent;
         }
+#ifndef MODE_POMMERMAN
         else if (targetValue == WIN && !is_root_node() && parentNode->is_root_node()) {
+#else
+        else if (targetValue == LOSS && !is_root_node() && parentNode->is_root_node()) {
+#endif
             parentNode->disable_action(childIdxForParent);
         }
         parentNode->unlock();
@@ -494,9 +510,7 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
     }
     if (is_terminal_value(value)) {
         ++d->terminalVisits;
-#ifndef MODE_POMMERMAN
         solve_for_terminal(d->childNodes[childIdx]);
-#endif
     }
     unlock();
 }
