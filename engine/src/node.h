@@ -382,6 +382,11 @@ public:
      */
     void print_node_statistics(const StateObj* pos) const;
 
+    /**
+     * @brief get_nodes Returns the number of nodes in the subtree of this node
+     * @return uint32_t
+     */
+    uint32_t get_nodes();
 private:
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes

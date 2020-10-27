@@ -1056,6 +1056,11 @@ void Node::print_node_statistics(const StateObj* state) const
        << "terminalVisits:\t" << get_terminal_visits() << endl;
 }
 
+uint32_t Node::get_nodes()
+{
+    return get_visits() - get_terminal_visits();
+}
+
 bool is_terminal_value(float value)
 {
     return (value == WIN || value == DRAW || value == LOSS);

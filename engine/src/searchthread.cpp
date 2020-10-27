@@ -229,7 +229,8 @@ void SearchThread::backup_collisions()
 
 bool SearchThread::nodes_limits_ok()
 {
-    return searchLimits->nodes == 0 || (rootNode->get_visits() - rootNode->get_terminal_visits() < searchLimits->nodes);
+    return (searchLimits->nodes == 0 || (rootNode->get_nodes() < searchLimits->nodes)) &&
+           (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations));
 }
 
 bool SearchThread::is_root_node_unsolved()
