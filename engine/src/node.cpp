@@ -46,6 +46,7 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     pliesFromNull(state->steps_from_null()),
     isTerminal(false),
     isTablebase(false),
+    isTransposition(false),
     hasNNResults(false),
     sorted(false)
 {
@@ -75,6 +76,7 @@ Node::Node(const Node &b)
     //    childIdxForParent = // is not copied
     isTerminal = b.isTerminal;
     isTablebase = b.isTablebase;
+    isTransposition = b.isTransposition;
     hasNNResults = b.hasNNResults;
     sorted = b.sorted;
     if (isTerminal) {
@@ -474,20 +476,19 @@ uint32_t Node::get_visits() const
     return parentNode->d->childNumberVisits[childIdxForParent];
 }
 
-void Node::backup_value(size_t childIdx, float value, float virtualLoss)
-{
-    Node* currentNode = this;
-    do {
+void backup_value(Node* rootNode, float value, float virtualLoss, const vector<size_t>& trajectory) {
+    Node* currentNode = rootNode;
+#ifndef MODE_POMMERMAN
+    if (trajectory.size() % 2 == 1) {
+        value = -value;
+    }
+#endif
+    for (size_t childIdx : trajectory) {
         currentNode->revert_virtual_loss_and_update(childIdx, value, virtualLoss);
-        childIdx = currentNode->childIdxForParent;
 #ifndef MODE_POMMERMAN
         value = -value;
 #endif
-        currentNode = currentNode->parentNode;
-    } while(currentNode->parentNode != nullptr);
-    // revert virtual loss for root
-    if (virtualLoss != 1) {
-        currentNode->get_child_node(childIdx)->subtract_visits(virtualLoss-1);
+        currentNode = currentNode->get_child_node(childIdx);
     }
 }
 
@@ -515,16 +516,13 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
     unlock();
 }
 
-void Node::backup_collision(size_t childIdx, float virtualLoss)
-{
-    Node* currentNode = this;
-    do {
+void backup_collision(Node* rootNode, float virtualLoss, const vector<size_t>& trajectory) {
+    Node* currentNode = rootNode;
+
+    for (size_t childIdx : trajectory) {
         currentNode->revert_virtual_loss(childIdx, virtualLoss);
-        childIdx = currentNode->childIdxForParent;
-        currentNode = currentNode->parentNode;
-    } while(currentNode->parentNode != nullptr);
-    // revert virtual loss for root
-    currentNode->get_child_node(childIdx)->subtract_visits(virtualLoss);
+        currentNode = currentNode->get_child_node(childIdx);
+    }
 }
 
 void Node::revert_virtual_loss(size_t childIdx, float virtualLoss)

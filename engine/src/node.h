@@ -67,6 +67,7 @@ private:
 
     bool isTerminal;
     bool isTablebase;
+    bool isTransposition;
     bool hasNNResults;
     bool sorted;
 
@@ -112,24 +113,11 @@ public:
     size_t select_child_node(const SearchSettings* searchSettings);
 
     /**
-     * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
-     * The value is flipped at every ply.
-     * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
-     */
-    void backup_value(size_t childIdx, float value, float virtualLoss);
-
-    /**
      * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
      * @param childIdx Index to the child node to update
      * @param value Specifies the value evaluation to backpropagate
      */
     void revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss);
-
-    /**
-     * @brief backup_collision Iteratively removes the virtual loss of the collision event that occurred
-     * @param childIdx Index to the child node to update
-     */
-    void backup_collision(size_t childIdx, float virtualLoss);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
@@ -586,5 +574,23 @@ bool is_terminal_value(float value);
  * @return Number of subnodes for thhe given node
  */
 size_t get_node_count(const Node* node);
+
+/**
+ * @brief backup_collision Iteratively removes the virtual loss of the collision event that occurred
+ * @param rootNode Root node of the tree
+ * @param virtualLoss Virtual loss value
+ * @param trajectory Trajectory on how to get to the given collision
+ */
+void backup_collision(Node* rootNode, float virtualLoss, const vector<size_t>& trajectory);
+
+/**
+ * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
+ * The value is flipped at every ply.
+ * @param rootNode Root node of the tree
+ * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
+ * @param virtualLoss Virtual loss value
+ * @param trajectory Trajectory on how to get to the given value eval
+ */
+void backup_value(Node* rootNode, float value, float virtualLoss, const vector<size_t>& trajectory);
 
 #endif // NODE_H

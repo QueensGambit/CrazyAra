@@ -130,7 +130,7 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
     }
 }
 
-Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, NodeDescription& description)
+Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, NodeDescription& description, vector<size_t>& trajectory)
 {
     rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
@@ -146,6 +146,7 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
             childIdx = currentNode->select_child_node(searchSettings);
         }
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
+        trajectory.emplace_back(childIdx);
 
         Node* nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
@@ -214,17 +215,17 @@ void SearchThread::set_nn_results_to_child_nodes()
 
 void SearchThread::backup_value_outputs()
 {
-    backup_values(newNodes.get(), searchSettings->virtualLoss);
+    backup_values(newNodes.get(), newTrajectories);
     newNodeSideToMove->reset_idx();
-    backup_values(transpositionNodes.get(), searchSettings->virtualLoss);
+    backup_values(transpositionNodes.get(), transpositionTrajectories);
 }
 
-void SearchThread::backup_collisions()
-{
-    for (auto node: *collisionNodes) {
-        node->get_parent_node()->backup_collision(node->get_child_idx_for_parent(), searchSettings->virtualLoss);
+void SearchThread::backup_collisions() {
+    for (size_t idx = 0; idx < collisionNodes->size(); ++idx) {
+        backup_collision(rootNode, searchSettings->virtualLoss, collisionTrajectories[idx]);
     }
     collisionNodes->reset_idx();
+    collisionTrajectories.clear();
 }
 
 bool SearchThread::nodes_limits_ok()
@@ -257,25 +258,24 @@ void SearchThread::create_mini_batch()
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
         newState = unique_ptr<StateObj>(rootState->clone());
-        parentNode = get_new_child_to_evaluate(newState.get(), childIdx, description);
+        vector<size_t> trajectory;
+        parentNode = get_new_child_to_evaluate(newState.get(), childIdx, description, trajectory);
         Node* newNode = parentNode->get_child_node(childIdx);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-#ifndef MODE_POMMERMAN
-            parentNode->backup_value(childIdx, -newNode->get_value(), searchSettings->virtualLoss);
-#else
-            parentNode->backup_value(childIdx, newNode->get_value(), searchSettings->virtualLoss);
-#endif
+            backup_value(rootNode, newNode->get_value(), searchSettings->virtualLoss, trajectory);
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
             collisionNodes->add_element(newNode);
+            collisionTrajectories.emplace_back(trajectory);
         }
         else if (description.type == NODE_TRANSPOSITION) {
             transpositionNodes->add_element(newNode);
+            transpositionTrajectories.emplace_back(trajectory);
         }
         else {  // NODE_NEW_NODE
             // fill a new board in the input_planes vector
@@ -285,6 +285,7 @@ void SearchThread::create_mini_batch()
             // it will later be updated with the evaluation of the NN
             newNodes->add_element(newNode);
             newNodeSideToMove->add_element(newState->side_to_move());
+            newTrajectories.emplace_back(trajectory);
         }
     }
 }
@@ -310,16 +311,12 @@ void run_search_thread(SearchThread *t)
     t->set_is_running(false);
 }
 
-void backup_values(FixedVector<Node*>* nodes, float virtualLoss)
-{
-    for (auto node: *nodes) {
-#ifndef MODE_POMMERMAN
-        node->get_parent_node()->backup_value(node->get_child_idx_for_parent(), -node->get_value(), virtualLoss);
-#else
-        node->get_parent_node()->backup_value(node->get_child_idx_for_parent(), node->get_value(), virtualLoss);
-#endif
+void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories) {
+    for (size_t idx = 0; idx < nodes->size(); ++idx) {
+        backup_value(rootNode, nodes->get_element(idx)->get_value(), searchSettings->virtualLoss, trajectories[idx]);
     }
     nodes->reset_idx();
+    trajectories.clear();
 }
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)

@@ -40,13 +40,13 @@ template <typename T>
 class FixedVector
 {
 private:
-    size_t capacity;
+    size_t maxCapacity;
     size_t curIdx;
     T* data;
 
 public:
     FixedVector(size_t size):
-        capacity(size),
+        maxCapacity(size),
         curIdx(0)
     {
         data = new T[size];
@@ -96,7 +96,7 @@ public:
      */
     bool is_full()
     {
-        return curIdx == capacity;
+        return curIdx == maxCapacity;
     }
 
     /**
@@ -114,6 +114,24 @@ public:
      * @return size
      */
     size_t size()
+    {
+        return curIdx;
+    }
+
+    /**
+     * @brief size Returns the capacity of the array
+     * @return size_t
+     */
+    size_t capacity()
+    {
+        return maxCapacity;
+    }
+
+    /**
+     * @brief current_index Returns the current index of the array
+     * @return size_t
+     */
+    size_t current_index()
     {
         return curIdx;
     }

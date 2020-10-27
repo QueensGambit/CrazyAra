@@ -71,6 +71,10 @@ private:
     unique_ptr<FixedVector<Node*>> transpositionNodes;
     unique_ptr<FixedVector<Node*>> collisionNodes;
 
+    vector<vector<size_t>> newTrajectories;
+    vector<vector<size_t>> transpositionTrajectories;
+    vector<vector<size_t>> collisionTrajectories;
+
     bool isRunning;
 
     MapWithMutex* mapWithMutex;
@@ -177,12 +181,12 @@ private:
      * @param states States list which is used for 3-fold-repetition detection
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(StateObj* state, size_t& childIdx, NodeDescription& description);
+    Node* get_new_child_to_evaluate(StateObj* state, size_t& childIdx, NodeDescription& description, vector<size_t>& trajectory);
+
+    void backup_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories);
 };
 
 void run_search_thread(SearchThread *t);
-
-void backup_values(FixedVector<Node*>* nodes, float virtualLoss);
 
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings);
 void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
