@@ -48,8 +48,7 @@ class GameState(AbsGameState):
 
     def get_state_planes(self):
         """Transform the current board state to a plane"""
-        return board_to_planes(self.board, board_occ=self._board_occ, normalize=True,
-                               crazyhouse_only=main_config['policy_version'] == 1)
+        return board_to_planes(self.board, board_occ=self._board_occ, normalize=True, mode=main_config['mode'])
 
     def get_pythonchess_board(self):
         """ Get the board by calling a method"""

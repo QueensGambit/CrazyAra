@@ -53,7 +53,7 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     const int numberChildNodes = legalActions.size();
 
     check_for_terminal(state, inCheck);
-#ifdef MODE_CHESS
+#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     if (searchSettings->useTablebase && !isTerminal) {
         check_for_tablebase_wdl(state);
     }
