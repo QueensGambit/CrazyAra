@@ -184,6 +184,7 @@ private:
     Node* get_new_child_to_evaluate(StateObj* state, size_t& childIdx, NodeDescription& description, vector<size_t>& trajectory);
 
     void backup_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories);
+    void backup_transposition_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories);
 };
 
 void run_search_thread(SearchThread *t);

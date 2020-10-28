@@ -54,20 +54,19 @@ private:
     //    DynamicVector<bool> isCheck;
     //    DynamicVector<bool> isCapture;
 
-    Node* parentNode;
+    vector<Node*> parentNodes;
     Key key;
 
     // singular values
     float value;
     unique_ptr<NodeData> d;
 
-    uint16_t childIdxForParent;
+    vector<uint16_t> childIndicesForParent;
     // identifiers
     uint16_t pliesFromNull;
 
     bool isTerminal;
     bool isTablebase;
-    bool isTransposition;
     bool hasNNResults;
     bool sorted;
 
@@ -187,7 +186,7 @@ public:
      */
     void revert_virtual_loss_and_update(float value);
 
-    Node* get_parent_node() const;
+    Node* main_parent_node() const;
     void increment_visits(size_t numberVisits);
     void subtract_visits(size_t numberVisits);
     void increment_no_visit_idx();
@@ -238,7 +237,7 @@ public:
      * doesn't set the value for the parent node itself.
      * @param value
      */
-    void set_parent_node(Node* value);
+    void add_parent_node(Node* value);
     size_t get_no_visit_idx() const;
 
     bool is_fully_expanded() const;
@@ -256,7 +255,7 @@ public:
     void enhance_moves(const SearchSettings* searchSettings);
 
     void set_value(float value);
-    size_t get_child_idx_for_parent() const;
+    uint16_t main_child_idx_for_parent() const;
 
     void add_new_child_node(Node* newNode, size_t childIdx);
 
@@ -266,7 +265,7 @@ public:
      * @param parentNode Parent node of the new node
      * @param childIdx Index on how to visit the child node from its parent
      */
-    void add_transposition_child_node(Node* newNode, size_t childIdx);
+    void add_transposition_child_node(Node* newNode, uint16_t childIdx);
 
     /**
      * @brief max_prob Returns the maximum policy value
@@ -375,7 +374,16 @@ public:
      * @return uint32_t
      */
     uint32_t get_nodes();
+
+    float main_q_value();
+    bool is_transposition_return(const Node* parentNode) const;
+
+    bool is_transposition() const;
+
+    void remove_parent_node(const Node* parentNode, uint16_t childIdxForParent);
 private:
+    const Node* parent_node_most_visits() const;
+
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
      */
@@ -500,6 +508,7 @@ private:
      * @param childIdxForParent Index for the move which will be disabled
      */
     void disable_action(size_t childIdxForParent);
+    void set_checkmate_idx(const Node* childNode) const;
 };
 
 /**

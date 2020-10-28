@@ -151,24 +151,24 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
     if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node()) {
         delete_sibling_subtrees(ownNextRoot, mapWithMutex.hashTable, gcThread);
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        if (rootNode->get_parent_node() != nullptr) {
-            gcThread.add_item_to_delete(rootNode->get_parent_node());
+        if (rootNode->main_parent_node() != nullptr) {
+            gcThread.add_item_to_delete(rootNode->main_parent_node());
         }
         gcThread.add_item_to_delete(rootNode);
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node()) {
         delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        if (opponentsNextRoot->get_parent_node() != nullptr) {
-            gcThread.add_item_to_delete(opponentsNextRoot->get_parent_node());
+        if (opponentsNextRoot->main_parent_node() != nullptr) {
+            gcThread.add_item_to_delete(opponentsNextRoot->main_parent_node());
         }
         return opponentsNextRoot;
     }
 
     // the node wasn't found, clear the old tree
     delete_old_tree();
-    if (rootNode->get_parent_node() != nullptr) {
-        gcThread.add_item_to_delete(rootNode->get_parent_node());
+    if (rootNode->main_parent_node() != nullptr) {
+        gcThread.add_item_to_delete(rootNode->main_parent_node());
     }
     gcThread.add_item_to_delete(rootNode);
 
@@ -355,7 +355,7 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
     size_t childIdx = 0;
     for (Node* node : parentNode->get_child_nodes()) {
         if (node != nullptr) {
-            Action action = parentNode->get_action(node->get_child_idx_for_parent());
+            Action action = parentNode->get_action(node->main_child_idx_for_parent());
             outFile << "N" << ++nodeId << " [label = \""
                     <<  state->action_to_san(action, state->legal_actions(), false, false)
                      << "\"]" << endl;
@@ -374,7 +374,7 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
     for (Node* node : parentNode->get_child_nodes()) {
         if (node != nullptr && node->is_playout_node()) {
             unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state->clone());
-            Action action = parentNode->get_action(node->get_child_idx_for_parent());
+            Action action = parentNode->get_action(node->main_child_idx_for_parent());
             state2->do_action(action);
             print_child_nodes_to_file(node, state2.get(), ++initialId, nodeId, outFile, depth+1, maxDepth);
         }

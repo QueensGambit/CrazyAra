@@ -80,8 +80,7 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
     if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
             is_transposition_verified(it, newState)) {
         mapWithMutex->mtx.unlock();
-        Node *newNode = new Node(*it->second);
-        parentNode->add_transposition_child_node(newNode, childIdx);
+        parentNode->add_transposition_child_node(it->second, childIdx);
         return NODE_TRANSPOSITION;
     }
     mapWithMutex->mtx.unlock();
@@ -158,6 +157,11 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
             currentNode->unlock();
             return currentNode;
         }
+        if (nextNode->is_transposition_return(currentNode)) {
+            description.type = NODE_TRANSPOSITION;
+            currentNode->unlock();
+            return currentNode;
+        }
         if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
@@ -217,7 +221,7 @@ void SearchThread::backup_value_outputs()
 {
     backup_values(newNodes.get(), newTrajectories);
     newNodeSideToMove->reset_idx();
-    backup_values(transpositionNodes.get(), transpositionTrajectories);
+    backup_transposition_values(transpositionNodes.get(), transpositionTrajectories);
 }
 
 void SearchThread::backup_collisions() {
@@ -319,6 +323,18 @@ void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<vector<size_t
     trajectories.clear();
 }
 
+void SearchThread::backup_transposition_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories) {
+    for (size_t idx = 0; idx < nodes->size(); ++idx) {
+#ifndef MODE_POMMERMAN
+        backup_value(rootNode, -nodes->get_element(idx)->main_q_value(), searchSettings->virtualLoss, trajectories[idx]);
+#else
+        backup_value(rootNode, nodes->get_element(idx)->main_q_value(), searchSettings->virtualLoss, trajectories[idx]);
+#endif
+    }
+    nodes->reset_idx();
+    trajectories.clear();
+}
+
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)
 {
     if (!node->is_tablebase()) {
@@ -326,7 +342,7 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
     }
     else {
         ++tbHits;
-        if (node->get_value() != 0 && node->get_parent_node() != nullptr && node->get_parent_node()->is_tablebase()) {
+        if (node->get_value() != 0 && node->main_parent_node() != nullptr && node->main_parent_node()->is_tablebase()) {
             // use the average of the TB entry and NN eval for non-draws
             node->set_value((valueOutputs[batchIdx] + node->get_value()) * 0.5f);
         }

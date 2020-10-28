@@ -36,23 +36,50 @@ bool Node::is_sorted() const
     return sorted;
 }
 
+bool Node::is_transposition_return(const Node* parentNode) const
+{
+    return is_transposition() && parentNode != parent_node_most_visits();
+}
+
+const Node *Node::parent_node_most_visits() const
+{
+    size_t masterIdx = 0;
+    for (size_t idx = 1; idx < parentNodes.size(); ++idx) {
+        if (parentNodes[idx]->d->childNumberVisits[childIndicesForParent[idx]] > parentNodes[masterIdx]->d->childNumberVisits[childIndicesForParent[masterIdx]]) {
+            masterIdx = idx;
+        }
+    }
+    return parentNodes[masterIdx];
+}
+
+bool Node::is_transposition() const
+{
+    return parentNodes.size() != 1;
+}
+
+void Node::remove_parent_node(const Node *parentNode, uint16_t childIdxForParent)
+{
+    auto foundNode = std::find(parentNodes.begin(), parentNodes.end(), parentNode);
+    auto foundIdx = std::find(childIndicesForParent.begin(), childIndicesForParent.end(), childIdxForParent);
+    parentNodes.erase(foundNode);
+    childIndicesForParent.erase(foundIdx);
+}
+
 Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
     legalActions(state->legal_actions()),
-    parentNode(parentNode),
     key(state->hash_key()),
     value(0),
     d(nullptr),
-    childIdxForParent(childIdxForParent),
     pliesFromNull(state->steps_from_null()),
     isTerminal(false),
     isTablebase(false),
-    isTransposition(false),
     hasNNResults(false),
     sorted(false)
 {
     // specify the number of direct child nodes of this node
     const int numberChildNodes = legalActions.size();
-
+    parentNodes.emplace_back(parentNode);
+    childIndicesForParent.emplace_back(childIdxForParent);
     check_for_terminal(state, inCheck);
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
     if (searchSettings->useTablebase && !isTerminal) {
@@ -76,7 +103,6 @@ Node::Node(const Node &b)
     //    childIdxForParent = // is not copied
     isTerminal = b.isTerminal;
     isTablebase = b.isTablebase;
-    isTransposition = b.isTransposition;
     hasNNResults = b.hasNNResults;
     sorted = b.sorted;
     if (isTerminal) {
@@ -97,7 +123,7 @@ bool Node::solved_win(const Node* childNode) const
 #else
     if (childNode->d->nodeType == SOLVED_WIN) {
 #endif
-        d->checkmateIdx = childNode->get_child_idx_for_parent();
+        d->checkmateIdx = childNode->main_child_idx_for_parent();
         return true;
     }
     return false;
@@ -198,25 +224,25 @@ void Node::update_solved_terminal(const Node* childNode)
 {
     define_end_ply_for_solved_terminal(childNode);
     set_value(targetValue);
-    if (parentNode != nullptr) {
-        parentNode->lock();
-        parentNode->d->numberUnsolvedChildNodes--;
-        parentNode->d->qValues[childIdxForParent] = -targetValue;
+    if (main_parent_node() != nullptr) {
+        main_parent_node()->lock();
+        main_parent_node()->d->numberUnsolvedChildNodes--;
+        main_parent_node()->d->qValues[main_child_idx_for_parent()] = -targetValue;
 #ifndef MODE_POMMERMAN
         if (targetValue == LOSS) {
 #else
         if (targetValue == WIN) {
 #endif
-            parentNode->d->checkmateIdx = childIdxForParent;
+            main_parent_node()->d->checkmateIdx = main_child_idx_for_parent();
         }
 #ifndef MODE_POMMERMAN
-        else if (targetValue == WIN && !is_root_node() && parentNode->is_root_node()) {
+        else if (targetValue == WIN && !is_root_node() && main_parent_node()->is_root_node()) {
 #else
-        else if (targetValue == LOSS && !is_root_node() && parentNode->is_root_node()) {
+        else if (targetValue == LOSS && !is_root_node() && main_parent_node()->is_root_node()) {
 #endif
-            parentNode->disable_action(childIdxForParent);
+            main_parent_node()->disable_action(main_child_idx_for_parent());
         }
-        parentNode->unlock();
+        main_parent_node()->unlock();
     }
 }
 
@@ -294,7 +320,7 @@ void Node::mark_nodes_as_fully_expanded()
 
 bool Node::is_root_node() const
 {
-    return parentNode->parentNode == nullptr;
+    return main_parent_node()->main_parent_node() == nullptr;
 }
 
 Node::~Node()
@@ -374,23 +400,23 @@ void Node::apply_virtual_loss_to_child(size_t childIdx, float virtualLoss)
     d->childNumberVisits[childIdx] += size_t(virtualLoss);
 }
 
-Node *Node::get_parent_node() const
+Node *Node::main_parent_node() const
 {
-    return parentNode;
+    return parentNodes[0];
 }
 
 void Node::increment_visits(size_t numberVisits)
 {
-    parentNode->lock();
-    parentNode->d->childNumberVisits[childIdxForParent] += numberVisits;
-    parentNode->unlock();
+    main_parent_node()->lock();
+    main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()] += numberVisits;
+    main_parent_node()->unlock();
 }
 
 void Node::subtract_visits(size_t numberVisits)
 {
-    parentNode->lock();
-    parentNode->d->childNumberVisits[childIdxForParent] -= numberVisits;
-    parentNode->unlock();
+    main_parent_node()->lock();
+    main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()] -= numberVisits;
+    main_parent_node()->unlock();
 }
 
 float Node::get_q_value(size_t idx)
@@ -473,7 +499,7 @@ void Node::prepare_node_for_visits()
 
 uint32_t Node::get_visits() const
 {
-    return parentNode->d->childNumberVisits[childIdxForParent];
+    return main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()];
 }
 
 void backup_value(Node* rootNode, float value, float virtualLoss, const vector<size_t>& trajectory) {
@@ -553,9 +579,9 @@ bool Node::has_forced_win() const
     return get_checkmate_idx() != NO_CHECKMATE;
 }
 
-void Node::set_parent_node(Node* value)
+void Node::add_parent_node(Node* value)
 {
-    parentNode = value;
+    parentNodes.emplace_back(value);
 }
 
 size_t Node::get_no_visit_idx() const
@@ -578,9 +604,9 @@ void Node::set_value(float value)
     this->value = value;
 }
 
-size_t Node::get_child_idx_for_parent() const
+uint16_t Node::main_child_idx_for_parent() const
 {
-    return childIdxForParent;
+    return childIndicesForParent[0];
 }
 
 void Node::add_new_child_node(Node *newNode, size_t childIdx)
@@ -588,10 +614,10 @@ void Node::add_new_child_node(Node *newNode, size_t childIdx)
     d->childNodes[childIdx] = newNode;
 }
 
-void Node::add_transposition_child_node(Node* newNode, size_t childIdx)
+void Node::add_transposition_child_node(Node* newNode, uint16_t childIdx)
 {
-    newNode->parentNode = this;
-    newNode->childIdxForParent = childIdx;
+    newNode->parentNodes.emplace_back(this);
+    newNode->childIndicesForParent.emplace_back(childIdx);
     d->childNodes[childIdx] = newNode;
 }
 
@@ -738,7 +764,7 @@ void Node::check_for_tablebase_wdl(StateObj* state)
 
 void Node::make_to_root()
 {
-    parentNode->parentNode = nullptr;
+    parentNodes[0]->parentNodes[0] = nullptr;
 }
 
 void Node::lock()
@@ -964,9 +990,9 @@ NodeType flip_node_type(const enum NodeType nodeType) {
 
 void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
 {
-    if (node->get_parent_node() != nullptr) {
+    if (node->main_parent_node() != nullptr) {
         info_string("delete unused subtrees");
-        for (Node* childNode: node->get_parent_node()->get_child_nodes()) {
+        for (Node* childNode: node->main_parent_node()->get_child_nodes()) {
             if (childNode != node) {
                 delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
             }
@@ -981,8 +1007,15 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>& hash
     }
     // if the current node hasn't been expanded or is a terminal node then childNodes is empty and the recursion ends
     if (node->is_sorted()) {
+        uint16_t childIdx = 0;
         for (Node* childNode: node->get_child_nodes()) {
-            delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+            if (childNode != nullptr && childNode->is_transposition()) {
+                childNode->remove_parent_node(node, childIdx);
+            }
+            else {
+                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+            }
+            ++childIdx;
         }
     }
     // the board position is only filled if the node has been extended
@@ -1057,6 +1090,11 @@ void Node::print_node_statistics(const StateObj* state) const
 uint32_t Node::get_nodes()
 {
     return get_visits() - get_terminal_visits();
+}
+
+float Node::main_q_value()
+{
+    return parentNodes[0]->get_q_value(childIndicesForParent[0]);
 }
 
 bool is_terminal_value(float value)
