@@ -187,6 +187,8 @@ public:
     void revert_virtual_loss_and_update(float value);
 
     Node* main_parent_node() const;
+    Node* get_parent_node(uint8_t parentIdx) const;
+    uint16_t get_child_idx_for_parent(uint8_t parentIdx)  const;
     void increment_visits(size_t numberVisits);
     void subtract_visits(size_t numberVisits);
     void increment_no_visit_idx();
@@ -342,7 +344,7 @@ public:
      * @param idx Child Index
      * @return Q-value
      */
-    float get_q_value(size_t idx);
+    float get_q_value(size_t idx) const;
 
     /**
      * @brief set_q_value Sets a Q-value for a given child index
@@ -381,8 +383,10 @@ public:
     bool is_transposition() const;
 
     void remove_parent_node(const Node* parentNode, uint16_t childIdxForParent);
+
+    uint8_t parent_idx_most_visits() const;
+
 private:
-    const Node* parent_node_most_visits() const;
 
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes

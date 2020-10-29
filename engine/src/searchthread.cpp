@@ -81,6 +81,11 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
             is_transposition_verified(it, newState)) {
         mapWithMutex->mtx.unlock();
         parentNode->add_transposition_child_node(it->second, childIdx);
+#ifndef MODE_POMMERMAN
+        it->second->set_value(-it->second->main_q_value());
+#elif
+        it->second->set_value(it->second->main_q_value());
+#endif
         return NODE_TRANSPOSITION;
     }
     mapWithMutex->mtx.unlock();
@@ -129,6 +134,18 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
     }
 }
 
+float SearchThread::get_transposition_q_value(const Node* currentNode, const Node* nextNode, uint16_t childIdx)
+{
+    const uint8_t mainIdx = nextNode->parent_idx_most_visits();
+    const uint16_t masterChildIdx = nextNode->get_child_idx_for_parent(mainIdx);
+    const Node* masterParentNode = nextNode->get_parent_node(mainIdx);
+    const float masterVisits = masterParentNode->get_child_number_visits()[masterChildIdx];
+    const float masterQsum = masterVisits * masterParentNode->get_q_value(masterChildIdx);
+    const float transposVisits = currentNode->get_child_number_visits()[childIdx] - searchSettings->virtualLoss;
+    const float transposQsum = transposVisits * currentNode->get_q_value(childIdx) + searchSettings->virtualLoss;
+    return (masterQsum - transposQsum) / (masterVisits - transposVisits);
+}
+
 Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, NodeDescription& description, vector<size_t>& trajectory)
 {
     rootNode->increment_visits(searchSettings->virtualLoss);
@@ -158,6 +175,11 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
             return currentNode;
         }
         if (nextNode->is_transposition_return(currentNode)) {
+#ifndef MODE_POMMERMAN
+            nextNode->set_value(-get_transposition_q_value(currentNode, nextNode, childIdx));
+#elif
+            nextNode->set_value(get_transposition_q_value(currentNode, nextNode, childIdx));
+#endif
             description.type = NODE_TRANSPOSITION;
             currentNode->unlock();
             return currentNode;
@@ -221,7 +243,7 @@ void SearchThread::backup_value_outputs()
 {
     backup_values(newNodes.get(), newTrajectories);
     newNodeSideToMove->reset_idx();
-    backup_transposition_values(transpositionNodes.get(), transpositionTrajectories);
+    backup_values(transpositionNodes.get(), transpositionTrajectories);
 }
 
 void SearchThread::backup_collisions() {
@@ -318,18 +340,6 @@ void run_search_thread(SearchThread *t)
 void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories) {
     for (size_t idx = 0; idx < nodes->size(); ++idx) {
         backup_value(rootNode, nodes->get_element(idx)->get_value(), searchSettings->virtualLoss, trajectories[idx]);
-    }
-    nodes->reset_idx();
-    trajectories.clear();
-}
-
-void SearchThread::backup_transposition_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories) {
-    for (size_t idx = 0; idx < nodes->size(); ++idx) {
-#ifndef MODE_POMMERMAN
-        backup_value(rootNode, -nodes->get_element(idx)->main_q_value(), searchSettings->virtualLoss, trajectories[idx]);
-#else
-        backup_value(rootNode, nodes->get_element(idx)->main_q_value(), searchSettings->virtualLoss, trajectories[idx]);
-#endif
     }
     nodes->reset_idx();
     trajectories.clear();

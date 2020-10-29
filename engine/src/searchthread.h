@@ -155,6 +155,8 @@ public:
 
     size_t get_max_depth() const;
 
+    float get_transposition_q_value(const Node* currentNode, const Node* nextNode, uint16_t childIdx);
+
 private:
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
@@ -184,7 +186,6 @@ private:
     Node* get_new_child_to_evaluate(StateObj* state, size_t& childIdx, NodeDescription& description, vector<size_t>& trajectory);
 
     void backup_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories);
-    void backup_transposition_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories);
 };
 
 void run_search_thread(SearchThread *t);

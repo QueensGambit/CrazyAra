@@ -38,18 +38,18 @@ bool Node::is_sorted() const
 
 bool Node::is_transposition_return(const Node* parentNode) const
 {
-    return is_transposition() && parentNode != parent_node_most_visits();
+    return is_transposition() && parentNode != parentNodes[parent_idx_most_visits()];
 }
 
-const Node *Node::parent_node_most_visits() const
+uint8_t Node::parent_idx_most_visits() const
 {
-    size_t masterIdx = 0;
+    uint8_t masterIdx = 0;
     for (size_t idx = 1; idx < parentNodes.size(); ++idx) {
         if (parentNodes[idx]->d->childNumberVisits[childIndicesForParent[idx]] > parentNodes[masterIdx]->d->childNumberVisits[childIndicesForParent[masterIdx]]) {
             masterIdx = idx;
         }
     }
-    return parentNodes[masterIdx];
+    return masterIdx;
 }
 
 bool Node::is_transposition() const
@@ -405,6 +405,16 @@ Node *Node::main_parent_node() const
     return parentNodes[0];
 }
 
+Node *Node::get_parent_node(uint8_t parentIdx) const
+{
+    return parentNodes[parentIdx];
+}
+
+uint16_t Node::get_child_idx_for_parent(uint8_t parentIdx) const
+{
+    return childIndicesForParent[parentIdx];
+}
+
 void Node::increment_visits(size_t numberVisits)
 {
     main_parent_node()->lock();
@@ -419,7 +429,7 @@ void Node::subtract_visits(size_t numberVisits)
     main_parent_node()->unlock();
 }
 
-float Node::get_q_value(size_t idx)
+float Node::get_q_value(size_t idx) const
 {
     return d->qValues[idx];
 }
@@ -1094,7 +1104,8 @@ uint32_t Node::get_nodes()
 
 float Node::main_q_value()
 {
-    return parentNodes[0]->get_q_value(childIndicesForParent[0]);
+    const size_t masterIdx = parent_idx_most_visits();
+    return parentNodes[masterIdx]->get_q_value(childIndicesForParent[masterIdx]);
 }
 
 bool is_terminal_value(float value)
