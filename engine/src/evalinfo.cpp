@@ -150,8 +150,13 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
 {
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
+    evalInfo.policyProbSmall = 0.0f;  // initialize with 0 (e.g. for unvisited nodes)
     size_t bestMoveIdx;
     rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx);
+    // ensure the policy has the correct length even if some child nodes have not been visited
+    if (evalInfo.policyProbSmall.size() != rootNode->get_number_child_nodes()) {
+        evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
+    }
     evalInfo.legalMoves = rootNode->get_legal_action();
 
     vector<size_t> indices;
