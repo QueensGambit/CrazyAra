@@ -274,4 +274,20 @@ void apply_permutation_in_place(std::vector<T>& vec, const std::vector<std::size
     }
 }
 
+/**
+ * @brief fill_missing_values Resizes a given vector to a target length and fills missing values starting from startIdx with fillValue.
+ * @param vec Vector to be adjusted
+ * @param startIdx Starting index from which the value will be altered
+ * @param targetLength New vector length after the operation
+ * @param fillValue Filling value for new entries
+ */
+template <typename T>
+void fill_missing_values(DynamicVector<T>& vec, size_t startIdx, size_t targetLength, T fillValue) {
+    vec.resize(targetLength);
+    for (size_t idx = startIdx; idx < targetLength; ++idx) {
+        vec[idx] = fillValue;
+    }
+}
+
+
 #endif // BLAZEUTIL_H

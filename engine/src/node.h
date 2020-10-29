@@ -303,7 +303,7 @@ public:
      * @return float
      */
     float updated_value_eval() const;
-    std::vector<Action> get_legal_action() const;
+    std::vector<Action> get_legal_actions() const;
     int get_checkmate_idx() const;
 
     /**
@@ -356,6 +356,12 @@ public:
      * @return Q-value
      */
     float get_q_value(size_t idx);
+
+    /**
+     * @brief get_q_values Returns the Q-values for all child nodes
+     * @return Q-values
+     */
+    DynamicVector<float> get_q_values();
 
     /**
      * @brief set_q_value Sets a Q-value for a given child index

@@ -46,6 +46,7 @@ struct EvalInfo
     std::vector<Action> legalMoves;
     DynamicVector<float> policyProbSmall;
     DynamicVector<float> childNumberVisits;
+    DynamicVector<float> qValues;
     std::vector<int> centipawns;
     size_t depth;
     size_t selDepth;

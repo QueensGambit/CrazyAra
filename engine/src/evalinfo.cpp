@@ -148,16 +148,19 @@ void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
 
 void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV)
 {
+    const size_t targetLength = rootNode->get_number_child_nodes();
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
-    evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
-    evalInfo.policyProbSmall = 0.0f;  // initialize with 0 (e.g. for unvisited nodes)
+    evalInfo.qValues = rootNode->get_q_values();
     size_t bestMoveIdx;
     rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx);
     // ensure the policy has the correct length even if some child nodes have not been visited
-    if (evalInfo.policyProbSmall.size() != rootNode->get_number_child_nodes()) {
-        evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
+    if (evalInfo.policyProbSmall.size() != targetLength) {
+        const size_t startIdx = evalInfo.policyProbSmall.size();
+        fill_missing_values<float>(evalInfo.policyProbSmall, startIdx, targetLength, 0.0f);
+        fill_missing_values<float>(evalInfo.childNumberVisits, startIdx, targetLength, 0.0f);
+        fill_missing_values<float>(evalInfo.qValues, startIdx, targetLength, LOSS);
     }
-    evalInfo.legalMoves = rootNode->get_legal_action();
+    evalInfo.legalMoves = rootNode->get_legal_actions();
 
     vector<size_t> indices;
     size_t maxIdx = min(multiPV, rootNode->get_no_visit_idx());

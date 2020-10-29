@@ -396,6 +396,11 @@ float Node::get_q_value(size_t idx)
     return d->qValues[idx];
 }
 
+DynamicVector<float> Node::get_q_values()
+{
+    return d->qValues;
+}
+
 void Node::set_q_value(size_t idx, float value)
 {
     d->qValues[idx] = value;
@@ -632,7 +637,7 @@ float Node::updated_value_eval() const
     return d->qValues[argmax(d->childNumberVisits)];
 }
 
-std::vector<Action> Node::get_legal_action() const
+std::vector<Action> Node::get_legal_actions() const
 {
     return legalActions;
 }
@@ -1025,13 +1030,13 @@ void Node::print_node_statistics(const StateObj* state) const
             q = max(d->qValues[childIdx], -1.0f);
         }
 
-        const Action move = get_legal_action()[childIdx];
+        const Action move = get_legal_actions()[childIdx];
         cout << " " << setfill('0') << setw(3) << childIdx << " | " << setfill(' ');
         if (state == nullptr) {
             cout << setw(5) << StateConstants::action_to_uci(move, false) << " | ";
         }
         else {
-            cout << setw(5) << state->action_to_san(move, get_legal_action(), false, false) << " | ";
+            cout << setw(5) << state->action_to_san(move, get_legal_actions(), false, false) << " | ";
         }
         cout << setw(12) << n << " | "
              << setw(9) << policyProbSmall[childIdx] << " | "
