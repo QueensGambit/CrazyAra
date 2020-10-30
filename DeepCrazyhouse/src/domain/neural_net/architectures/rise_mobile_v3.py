@@ -78,6 +78,23 @@ def preact_residual_dmixconv_block(data, channels, channels_operating, name, ker
     return out_sum
 
 
+def sequential_ghost_block(data, channels, name, kernels=None, act_type='relu'):
+    """
+    Modified version of Ghost Block as in https://arxiv.org/pdf/1911.11907.pdf - Han et al.
+    """
+    kernel = kernels[0]
+    conv1 = mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel), pad=(kernel//2, kernel//2), no_bias=True,
+                               name=name + '_conv1', num_group=channels)
+    bn1 = mx.sym.BatchNorm(data=conv1, name=name + '_bn1')
+    act1 = get_act(data=bn1, act_type=act_type, name=name + '_act1')
+    conv2 = mx.sym.Convolution(data=act1, num_filter=channels, kernel=(3, 3), pad=(1, 1), no_bias=True, name=name + '_conv2')
+    bn2 = mx.sym.BatchNorm(data=conv2, name=name + '_bn2')
+
+    out_sum = mx.sym.broadcast_add(data, bn2, name=name + '_add')
+
+    return out_sum
+
+
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                           grad_scale_value=0.01, grad_scale_policy=0.99,
