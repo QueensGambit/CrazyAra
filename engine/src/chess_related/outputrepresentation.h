@@ -35,7 +35,7 @@
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
-using action_idx_map = unordered_map<Action, size_t, std::hash<int>>;
+using action_idx_map = unordered_map<Action, MoveIdx, std::hash<Action>>;
 
 using namespace std;
 

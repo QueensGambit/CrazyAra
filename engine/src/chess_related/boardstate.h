@@ -68,7 +68,7 @@ public:
         return UCI::move(Move(action), is960);
     }
     template<PolicyType p, MirrorType m>
-    static size_t action_to_index(Action action) {
+    static MoveIdx action_to_index(Action action) {
         switch (p) {
         case normal:
             switch (m) {
