@@ -183,7 +183,7 @@ private:
      * @param states States list which is used for 3-fold-repetition detection
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(StateObj* state, size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory);
+    Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory);
 
     void backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories);
 };

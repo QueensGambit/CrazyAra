@@ -146,11 +146,12 @@ float SearchThread::get_transposition_q_value(const Node* currentNode, const Nod
     return (masterQsum - transposQsum) / (masterVisits - transposVisits);
 }
 
-Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory)
+Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory)
 {
     rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
     Node* currentNode = rootNode;
+    vector<Action> actions;
 
     while (true) {
         childIdx = INT_MAX;
@@ -167,11 +168,25 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
         Node* nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
         if (nextNode == nullptr) {
-            const bool inCheck = pos->gives_check(currentNode->get_action(childIdx));
-            pos->do_action(currentNode->get_action(childIdx));
-            description.type = add_new_node_to_tree(pos, currentNode, childIdx, inCheck);
+            newState = unique_ptr<StateObj>(rootState->clone());
+            for (Action action : actions) {
+                newState->do_action(action);
+            }
+            const bool inCheck = newState->gives_check(currentNode->get_action(childIdx));
+            newState->do_action(currentNode->get_action(childIdx));
+            description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx, inCheck);
             currentNode->increment_no_visit_idx();
             currentNode->unlock();
+
+            if (description.type == NODE_NEW_NODE) {
+                // fill a new board in the input_planes vector
+                // we shift the index by NB_VALUES_TOTAL each time
+                newState->get_state_planes(true, inputPlanes+newNodes->size()*StateConstants::NB_VALUES_TOTAL());
+                // save a reference newly created list in the temporary list for node creation
+                // it will later be updated with the evaluation of the NN
+                newNodeSideToMove->add_element(newState->side_to_move());
+            }
+
             return currentNode;
         }
         if (nextNode->is_transposition_return(currentNode)) {
@@ -195,7 +210,8 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
             return currentNode;
         }
         currentNode->unlock();
-        pos->do_action(currentNode->get_action(childIdx));
+        actions.emplace_back(currentNode->get_action(childIdx));
+
         currentNode = nextNode;
     }
 }
@@ -283,9 +299,8 @@ void SearchThread::create_mini_batch()
            !transpositionNodes->is_full() &&
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
-        newState = unique_ptr<StateObj>(rootState->clone());
         vector<MoveIdx> trajectory;
-        parentNode = get_new_child_to_evaluate(newState.get(), childIdx, description, trajectory);
+        parentNode = get_new_child_to_evaluate(childIdx, description, trajectory);
         Node* newNode = parentNode->get_child_node(childIdx);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
@@ -304,13 +319,7 @@ void SearchThread::create_mini_batch()
             transpositionTrajectories.emplace_back(trajectory);
         }
         else {  // NODE_NEW_NODE
-            // fill a new board in the input_planes vector
-            // we shift the index by NB_VALUES_TOTAL each time
-            newState->get_state_planes(true, inputPlanes+newNodes->size()*StateConstants::NB_VALUES_TOTAL());
-            // save a reference newly created list in the temporary list for node creation
-            // it will later be updated with the evaluation of the NN
             newNodes->add_element(newNode);
-            newNodeSideToMove->add_element(newState->side_to_move());
             newTrajectories.emplace_back(trajectory);
         }
     }
