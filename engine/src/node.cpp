@@ -512,14 +512,14 @@ uint32_t Node::get_visits() const
     return main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()];
 }
 
-void backup_value(Node* rootNode, float value, float virtualLoss, const vector<size_t>& trajectory) {
+void backup_value(Node* rootNode, float value, float virtualLoss, const vector<MoveIdx>& trajectory) {
     Node* currentNode = rootNode;
 #ifndef MODE_POMMERMAN
     if (trajectory.size() % 2 == 1) {
         value = -value;
     }
 #endif
-    for (size_t childIdx : trajectory) {
+    for (MoveIdx childIdx : trajectory) {
         currentNode->revert_virtual_loss_and_update(childIdx, value, virtualLoss);
 #ifndef MODE_POMMERMAN
         value = -value;
@@ -552,10 +552,10 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
     unlock();
 }
 
-void backup_collision(Node* rootNode, float virtualLoss, const vector<size_t>& trajectory) {
+void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& trajectory) {
     Node* currentNode = rootNode;
 
-    for (size_t childIdx : trajectory) {
+    for (MoveIdx childIdx : trajectory) {
         currentNode->revert_virtual_loss(childIdx, virtualLoss);
         currentNode = currentNode->get_child_node(childIdx);
     }

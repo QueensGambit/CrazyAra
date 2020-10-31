@@ -594,7 +594,7 @@ size_t get_node_count(const Node* node);
  * @param virtualLoss Virtual loss value
  * @param trajectory Trajectory on how to get to the given collision
  */
-void backup_collision(Node* rootNode, float virtualLoss, const vector<size_t>& trajectory);
+void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& trajectory);
 
 /**
  * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
@@ -604,6 +604,6 @@ void backup_collision(Node* rootNode, float virtualLoss, const vector<size_t>& t
  * @param virtualLoss Virtual loss value
  * @param trajectory Trajectory on how to get to the given value eval
  */
-void backup_value(Node* rootNode, float value, float virtualLoss, const vector<size_t>& trajectory);
+void backup_value(Node* rootNode, float value, float virtualLoss, const vector<MoveIdx>& trajectory);
 
 #endif // NODE_H

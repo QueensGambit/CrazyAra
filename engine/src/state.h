@@ -36,6 +36,7 @@
 
 typedef uint64_t Key;
 typedef int Action;
+typedef u_int16_t MoveIdx;
 typedef int SideToMove;
 #define FIRST_PLAYER_IDX 0
 const int ACTION_NONE = 0;

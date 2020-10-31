@@ -146,7 +146,7 @@ float SearchThread::get_transposition_q_value(const Node* currentNode, const Nod
     return (masterQsum - transposQsum) / (masterVisits - transposVisits);
 }
 
-Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, NodeDescription& description, vector<size_t>& trajectory)
+Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory)
 {
     rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
@@ -284,7 +284,7 @@ void SearchThread::create_mini_batch()
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
         newState = unique_ptr<StateObj>(rootState->clone());
-        vector<size_t> trajectory;
+        vector<MoveIdx> trajectory;
         parentNode = get_new_child_to_evaluate(newState.get(), childIdx, description, trajectory);
         Node* newNode = parentNode->get_child_node(childIdx);
         depthSum += description.depth;
@@ -337,7 +337,7 @@ void run_search_thread(SearchThread *t)
     t->set_is_running(false);
 }
 
-void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<vector<size_t>>& trajectories) {
+void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories) {
     for (size_t idx = 0; idx < nodes->size(); ++idx) {
         backup_value(rootNode, nodes->get_element(idx)->get_value(), searchSettings->virtualLoss, trajectories[idx]);
     }
