@@ -134,15 +134,9 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
     }
 }
 
-float SearchThread::get_transposition_q_value(const Node* currentNode, const Node* nextNode, uint16_t childIdx)
+float SearchThread::get_transposition_q_value(float transposVisits, float transposQsum, float masterVisits, float masterQsum)
 {
-    const uint8_t mainIdx = nextNode->parent_idx_most_visits();
-    const uint16_t masterChildIdx = nextNode->get_child_idx_for_parent(mainIdx);
-    const Node* masterParentNode = nextNode->get_parent_node(mainIdx);
-    const float masterVisits = masterParentNode->get_child_number_visits()[masterChildIdx];
-    const float masterQsum = masterVisits * masterParentNode->get_q_value(masterChildIdx);
-    const float transposVisits = currentNode->get_child_number_visits()[childIdx] - searchSettings->virtualLoss;
-    const float transposQsum = transposVisits * currentNode->get_q_value(childIdx) + searchSettings->virtualLoss;
+    assert((masterVisits - transposVisits) != 0);
     return (masterQsum - transposQsum) / (masterVisits - transposVisits);
 }
 
@@ -176,15 +170,19 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
             currentNode->unlock();
             return currentNode;
         }
-        if (nextNode->is_transposition_return(currentNode)) {
+        if (nextNode->is_transposition()) {
+            float masterVisits;
+            float masterQsum;
+            if (nextNode->is_transposition_return(currentNode->get_real_visits(childIdx), searchSettings->virtualLoss, masterVisits, masterQsum)) {
 #ifndef MODE_POMMERMAN
-            nextNode->set_value(-get_transposition_q_value(currentNode, nextNode, childIdx));
+                nextNode->set_value(-get_transposition_q_value(currentNode->get_real_visits(childIdx), currentNode->get_q_sum(childIdx, searchSettings->virtualLoss), masterVisits, masterQsum));
 #elif
-            nextNode->set_value(get_transposition_q_value(currentNode, nextNode, childIdx));
+                nextNode->set_value(get_transposition_q_value(currentNode, nextNode, childIdx));
 #endif
-            description.type = NODE_TRANSPOSITION;
-            currentNode->unlock();
-            return currentNode;
+                description.type = NODE_TRANSPOSITION;
+                currentNode->unlock();
+                return currentNode;
+            }
         }
         if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
@@ -259,7 +257,7 @@ void SearchThread::backup_collisions() {
 bool SearchThread::nodes_limits_ok()
 {
     return (searchLimits->nodes == 0 || (rootNode->get_nodes() < searchLimits->nodes)) &&
-           (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations));
+            (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations));
 }
 
 bool SearchThread::is_root_node_unsolved()

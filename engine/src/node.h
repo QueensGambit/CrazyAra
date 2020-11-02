@@ -211,7 +211,18 @@ public:
      */
     void make_to_root();
 
+    /**
+     * @brief get_visits Returns the sum of all visited child nodes with virtual loss applied
+     * @return uint32_t
+     */
     uint32_t get_visits() const;
+
+    /**
+     * @brief get_real_visits Returns visits for given child idx without virtual loss applied
+     * @param childIdx Child index
+     * @return uint32_t
+     */
+    uint32_t get_real_visits(uint16_t childIdx) const;
 
     void lock();
     void unlock();
@@ -378,13 +389,21 @@ public:
     uint32_t get_nodes();
 
     float main_q_value();
-    bool is_transposition_return(const Node* parentNode) const;
+    bool is_transposition_return(uint32_t myVisits, float virtualLoss, float& masterVisits, float& masterQsum) const;
 
     bool is_transposition() const;
 
     void remove_parent_node(const Node* parentNode, uint16_t childIdxForParent);
 
+    uint32_t max_parent_visits() const;
     uint8_t parent_idx_most_visits() const;
+
+    float get_q_sum(uint16_t childIdx, float virtualLoss) const;
+
+    template<bool increment>
+    void update_virtual_loss_counter(uint16_t childIdx);
+
+    uint8_t get_virtual_loss_counter(uint16_t childIdx) const;
 
 private:
 

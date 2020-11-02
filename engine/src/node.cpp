@@ -36,9 +36,34 @@ bool Node::is_sorted() const
     return sorted;
 }
 
-bool Node::is_transposition_return(const Node* parentNode) const
+bool Node::is_transposition_return(uint32_t myVisits, float virtualLoss, float& masterVisits, float& masterQsum) const
 {
-    return is_transposition() && parentNode != parentNodes[parent_idx_most_visits()];
+    masterVisits = myVisits;
+    for (size_t idx = 0; idx < parentNodes.size(); ++idx) {
+        const Node* parentNode = parentNodes[idx];
+        const uint16_t childIdx = childIndicesForParent[idx];
+        const uint32_t curVists = parentNode->get_real_visits(childIdx);
+        if (curVists > masterVisits && curVists > myVisits) {
+            masterVisits = curVists;
+            masterQsum = parentNode->get_q_sum(childIdx, virtualLoss);
+        }
+    }
+    if (myVisits != masterVisits) {
+        return true;
+    }
+    return false;
+}
+
+uint32_t Node::max_parent_visits() const
+{
+    uint32_t curMax = parentNodes[0]->get_real_visits(childIndicesForParent[0]);
+    for (size_t idx = 1; idx < parentNodes.size(); ++idx) {
+        const uint32_t curVists = parentNodes[idx]->get_real_visits(childIndicesForParent[idx]);
+        if (curVists > curMax) {
+            curMax = curVists;
+        }
+    }
+    return curMax;
 }
 
 uint8_t Node::parent_idx_most_visits() const
@@ -52,6 +77,11 @@ uint8_t Node::parent_idx_most_visits() const
     return masterIdx;
 }
 
+float Node::get_q_sum(uint16_t childIdx, float virtualLoss) const
+{
+    return get_child_number_visits()[childIdx] * get_q_value(childIdx) + get_virtual_loss_counter(childIdx) * virtualLoss;
+}
+
 bool Node::is_transposition() const
 {
     return parentNodes.size() != 1;
@@ -63,6 +93,11 @@ void Node::remove_parent_node(const Node *parentNode, uint16_t childIdxForParent
     auto foundIdx = std::find(childIndicesForParent.begin(), childIndicesForParent.end(), childIdxForParent);
     parentNodes.erase(foundNode);
     childIndicesForParent.erase(foundIdx);
+}
+
+uint8_t Node::get_virtual_loss_counter(uint16_t childIdx) const
+{
+    return d->virtualLossCounter[childIdx];
 }
 
 Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
@@ -402,6 +437,18 @@ bool Node::has_nn_results() const
     return hasNNResults;
 }
 
+template<bool increment>
+void Node::update_virtual_loss_counter(uint16_t childIdx)
+{
+    if (increment) {
+        ++d->virtualLossCounter[childIdx];
+    }
+    else {
+        assert(d->virtualLossCounter[childIdx] != 0);
+        --d->virtualLossCounter[childIdx];
+    }
+}
+
 void Node::apply_virtual_loss_to_child(size_t childIdx, float virtualLoss)
 {
     // update the stats of the parent node
@@ -411,6 +458,8 @@ void Node::apply_virtual_loss_to_child(size_t childIdx, float virtualLoss)
     d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - virtualLoss) / (d->childNumberVisits[childIdx] + virtualLoss);
     // virtual increase the number of visits
     d->childNumberVisits[childIdx] += size_t(virtualLoss);
+    // increment virtual loss counter
+    update_virtual_loss_counter<true>(childIdx);
 }
 
 Node *Node::main_parent_node() const
@@ -525,6 +574,11 @@ uint32_t Node::get_visits() const
     return main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()];
 }
 
+uint32_t Node::get_real_visits(uint16_t childIdx) const
+{
+    return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
+}
+
 void backup_value(Node* rootNode, float value, float virtualLoss, const vector<MoveIdx>& trajectory) {
     Node* currentNode = rootNode;
 #ifndef MODE_POMMERMAN
@@ -544,6 +598,9 @@ void backup_value(Node* rootNode, float value, float virtualLoss, const vector<M
 void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss)
 {
     lock();
+    // decrement virtual loss counter
+    update_virtual_loss_counter<false>(childIdx);
+
     if (d->childNumberVisits[childIdx] == virtualLoss) {
         // set new Q-value based on return
         // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
@@ -579,6 +636,8 @@ void Node::revert_virtual_loss(size_t childIdx, float virtualLoss)
     lock();
     d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
     d->childNumberVisits[childIdx] -= virtualLoss;
+    // decrement virtual loss counter
+    update_virtual_loss_counter<false>(childIdx);
     unlock();
 }
 
