@@ -31,6 +31,7 @@ void NodeData::add_empty_node()
 {
     append(childNumberVisits, 0U);
     append(qValues, Q_INIT);
+    append(virtualLossCounter, uint8_t(0));
     childNodes.emplace_back(nullptr);
 }
 

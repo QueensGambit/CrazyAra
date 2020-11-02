@@ -155,7 +155,7 @@ public:
 
     size_t get_max_depth() const;
 
-    float get_transposition_q_value(const Node* currentNode, const Node* nextNode, uint16_t childIdx);
+    float get_transposition_q_value(float transposVisits, float transposQsum, float masterVisits, float masterQsum);
 
 private:
     /**
