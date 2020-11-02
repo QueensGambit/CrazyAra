@@ -123,7 +123,14 @@ bool Node::solved_win(const Node* childNode) const
 #else
     if (childNode->d->nodeType == SOLVED_WIN) {
 #endif
-        d->checkmateIdx = childNode->main_child_idx_for_parent();
+        // set checkMateIdx for **all** parent nodes
+        for (size_t idx = 0; idx < childNode->parentNodes.size(); ++idx) {
+            Node* parentNode = childNode->parentNodes[idx];
+            if (parentNode != nullptr) {
+                uint16_t childIdxForParent = childNode->childIndicesForParent[idx];
+                parentNode->d->checkmateIdx = childIdxForParent;
+            }
+        }
         return true;
     }
     return false;
@@ -224,25 +231,31 @@ void Node::update_solved_terminal(const Node* childNode)
 {
     define_end_ply_for_solved_terminal(childNode);
     set_value(targetValue);
-    if (main_parent_node() != nullptr) {
-        main_parent_node()->lock();
-        main_parent_node()->d->numberUnsolvedChildNodes--;
-        main_parent_node()->d->qValues[main_child_idx_for_parent()] = -targetValue;
+    // update statistics of **all** parent nodes
+    for (size_t idx = 0; idx < parentNodes.size(); ++idx) {
+        Node* parentNode = parentNodes[idx];
+
+        if (parentNode != nullptr) {
+            const uint16_t childIdxForParent = childIndicesForParent[idx];
+            parentNode->lock();
+            parentNode->d->numberUnsolvedChildNodes--;
+            parentNode->d->qValues[childIdxForParent] = -targetValue;
 #ifndef MODE_POMMERMAN
-        if (targetValue == LOSS) {
+            if (targetValue == LOSS) {
 #else
-        if (targetValue == WIN) {
+            if (targetValue == WIN) {
 #endif
-            main_parent_node()->d->checkmateIdx = main_child_idx_for_parent();
-        }
+                parentNode->d->checkmateIdx = childIdxForParent;
+            }
 #ifndef MODE_POMMERMAN
-        else if (targetValue == WIN && !is_root_node() && main_parent_node()->is_root_node()) {
+            else if (targetValue == WIN && !is_root_node() && parentNode->is_root_node()) {
 #else
-        else if (targetValue == LOSS && !is_root_node() && main_parent_node()->is_root_node()) {
+            else if (targetValue == LOSS && !is_root_node() && parentNode->is_root_node()) {
 #endif
-            main_parent_node()->disable_action(main_child_idx_for_parent());
+                parentNode->disable_action(childIdxForParent);
+            }
+            parentNode->unlock();
         }
-        main_parent_node()->unlock();
     }
 }
 
@@ -899,18 +912,18 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
             mctsPolicy[secondArg] = firstMax;
             bestMoveIdx = secondArg;
         }
-// TODO: check if this is useful
-//        else {
-//            size_t qIdx = get_best_q_idx();
-//            if (bestMoveIdx != qIdx) {
-//                const float qDiff = 1.0f - (d->childNumberVisits[qIdx] / d->childNumberVisits[bestMoveIdx]);
-//                if (d->qValues[qIdx]-qDiff > d->qValues[bestMoveIdx]) {
-//                    mctsPolicy[bestMoveIdx] = d->childNumberVisits[qIdx];
-//                    mctsPolicy[secondArg] = firstMax;
-//                    bestMoveIdx = qIdx;
-//                }
-//            }
-//        }
+        // TODO: check if this is useful
+        //        else {
+        //            size_t qIdx = get_best_q_idx();
+        //            if (bestMoveIdx != qIdx) {
+        //                const float qDiff = 1.0f - (d->childNumberVisits[qIdx] / d->childNumberVisits[bestMoveIdx]);
+        //                if (d->qValues[qIdx]-qDiff > d->qValues[bestMoveIdx]) {
+        //                    mctsPolicy[bestMoveIdx] = d->childNumberVisits[qIdx];
+        //                    mctsPolicy[secondArg] = firstMax;
+        //                    bestMoveIdx = qIdx;
+        //                }
+        //            }
+        //        }
     }
     else {
         mctsPolicy = d->childNumberVisits;
@@ -1056,8 +1069,8 @@ void Node::print_node_statistics(const StateObj* state) const
     const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
     const string filler = "-----+-------+--------------+-----------+------------+-------+------------";
     cout << header << endl
-       << std::showpoint << std::fixed << std::setprecision(7) // << std::noshowpcout
-       << filler << endl;
+         << std::showpoint << std::fixed << std::setprecision(7) // << std::noshowpcout
+         << filler << endl;
     for (size_t childIdx = 0; childIdx < get_number_child_nodes(); ++childIdx) {
         size_t n = 0;
         float q = Q_INIT;
@@ -1080,7 +1093,7 @@ void Node::print_node_statistics(const StateObj* state) const
              << setw(5) << value_to_centipawn(q) << " | ";
         if (childIdx < get_no_visit_idx() && d->childNodes[childIdx] != nullptr && d->childNodes[childIdx]->d != nullptr && d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
             cout << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(d->childNodes[childIdx]->d->nodeType)))
-               << " in " << setfill('0') << setw(2) << d->childNodes[childIdx]->d->endInPly+1;
+                 << " in " << setfill('0') << setw(2) << d->childNodes[childIdx]->d->endInPly+1;
         }
         else {
             cout << setfill(' ') << setw(9) << node_type_to_string(UNSOLVED);
@@ -1088,13 +1101,13 @@ void Node::print_node_statistics(const StateObj* state) const
         cout << endl;
     }
     cout << filler << endl
-       << "initial value:\t" << get_value() << endl
-       << "nodeType:\t" << node_type_to_string(NodeType(d->nodeType)) << endl
-       << "isTerminal:\t" << is_terminal() << endl
-       << "isTablebase:\t" << is_tablebase() << endl
-       << "unsolvedNodes:\t" << d->numberUnsolvedChildNodes << endl
-       << "Visits:\t\t" << get_visits() << endl
-       << "terminalVisits:\t" << get_terminal_visits() << endl;
+         << "initial value:\t" << get_value() << endl
+         << "nodeType:\t" << node_type_to_string(NodeType(d->nodeType)) << endl
+         << "isTerminal:\t" << is_terminal() << endl
+         << "isTablebase:\t" << is_tablebase() << endl
+         << "unsolvedNodes:\t" << d->numberUnsolvedChildNodes << endl
+         << "Visits:\t\t" << get_visits() << endl
+         << "terminalVisits:\t" << get_terminal_visits() << endl;
 }
 
 uint32_t Node::get_nodes()
