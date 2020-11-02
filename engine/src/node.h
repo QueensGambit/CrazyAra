@@ -99,7 +99,7 @@ public:
      * @brief get_current_u_values Calucates and returns the current u-values for this node
      * @return DynamicVector<float>
      */
-    DynamicVector<float> get_current_u_values(const SearchSettings* searchSettings);
+    DynamicVector<float> get_current_u_values(uint32_t visitSum, const SearchSettings* searchSettings);
 
     /**
      * @brief get_child_node Returns the child node at the given index.
@@ -109,7 +109,7 @@ public:
      */
     Node* get_child_node(size_t childIdx);
 
-    size_t select_child_node(const SearchSettings* searchSettings);
+    size_t select_child_node(uint32_t visitSum, const SearchSettings* searchSettings);
 
     /**
      * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node

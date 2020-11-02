@@ -148,6 +148,7 @@ float SearchThread::get_transposition_q_value(const Node* currentNode, const Nod
 
 Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory)
 {
+    uint32_t visitSum = rootNode->get_visits();
     rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
     Node* currentNode = rootNode;
@@ -159,8 +160,9 @@ Node* SearchThread::get_new_child_to_evaluate(StateObj* pos, size_t& childIdx, N
         }
         currentNode->lock();
         if (childIdx == INT_MAX) {
-            childIdx = currentNode->select_child_node(searchSettings);
+            childIdx = currentNode->select_child_node(visitSum, searchSettings);
         }
+        visitSum = currentNode->get_child_number_visits()[childIdx];
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
         trajectory.emplace_back(childIdx);
 

@@ -871,9 +871,9 @@ void Node::enhance_moves(const SearchSettings* searchSettings)
     //    }
 }
 
-DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSettings)
+DynamicVector<float> Node::get_current_u_values(uint32_t visitSum, const SearchSettings* searchSettings)
 {
-    return get_current_cput(get_visits(), searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(get_visits()) / (d->childNumberVisits + 1.0));
+    return get_current_cput(visitSum, searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(visitSum) / (d->childNumberVisits + 1.0));
 }
 
 Node *Node::get_child_node(size_t childIdx)
@@ -956,7 +956,7 @@ size_t get_best_action_index(const Node *curNode, bool fast)
     return bestMoveIdx;
 }
 
-size_t Node::select_child_node(const SearchSettings* searchSettings)
+size_t Node::select_child_node(uint32_t visitSum, const SearchSettings* searchSettings)
 {
     if (!sorted) {
         prepare_node_for_visits();
@@ -970,7 +970,7 @@ size_t Node::select_child_node(const SearchSettings* searchSettings)
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    return argmax(d->qValues + get_current_u_values(searchSettings));
+    return argmax(d->qValues + get_current_u_values(visitSum, searchSettings));
 }
 
 const char* node_type_to_string(enum NodeType nodeType)
