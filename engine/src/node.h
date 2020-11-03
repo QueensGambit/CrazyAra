@@ -84,13 +84,6 @@ public:
          const SearchSettings* searchSettings);
 
     /**
-     * @brief Node Copy constructor which copies the value evaluation, board position, prior policy and checkmateIdx.
-     * The qValues, actionValues and visits aren't copied over.
-     * @param b Node from which the stats will be copied
-     */
-    Node(const Node& b);
-
-    /**
      * @brief ~Node Destructor which frees memory and the board position
      */
     ~Node();
@@ -190,7 +183,6 @@ public:
     Node* get_parent_node(uint8_t parentIdx) const;
     uint16_t get_child_idx_for_parent(uint8_t parentIdx)  const;
     void increment_visits(size_t numberVisits);
-    void subtract_visits(size_t numberVisits);
     void increment_no_visit_idx();
     void fully_expand_node();
 
@@ -216,6 +208,8 @@ public:
      * @return uint32_t
      */
     uint32_t get_visits() const;
+
+    void set_visits(uint32_t visits);
 
     /**
      * @brief get_real_visits Returns visits for given child idx without virtual loss applied
@@ -245,12 +239,6 @@ public:
     float get_action_value() const;
     SearchSettings* get_search_settings() const;
 
-    /**
-     * @brief set_parent_node Sets the parent node of this node. This is required when operator()= is used because this operator
-     * doesn't set the value for the parent node itself.
-     * @param value
-     */
-    void add_parent_node(Node* value);
     size_t get_no_visit_idx() const;
 
     bool is_fully_expanded() const;
@@ -272,13 +260,7 @@ public:
 
     void add_new_child_node(Node* newNode, size_t childIdx);
 
-    /**
-     * @brief add_transposition_child_node Copies the node with the NN evaluation based on a preexisting node
-     * @param it Iterator which from the hash table
-     * @param parentNode Parent node of the new node
-     * @param childIdx Index on how to visit the child node from its parent
-     */
-    void add_transposition_child_node(Node* newNode, uint16_t childIdx);
+    void add_transposition_parent_node(Node* newNode, uint16_t childIdx);
 
     /**
      * @brief max_prob Returns the maximum policy value
@@ -336,6 +318,8 @@ public:
     bool is_root_node() const;
 
     DynamicVector<uint32_t> get_child_number_visits() const;
+    uint32_t get_child_number_visits(uint16_t childIdx) const;
+
     void enable_has_nn_results();
     uint16_t plies_from_null() const;
     bool is_tablebase() const;
@@ -393,7 +377,7 @@ public:
 
     bool is_transposition() const;
 
-    void remove_parent_node(const Node* parentNode, uint16_t childIdxForParent);
+    void remove_parent_node(const Node* parentNode);
 
     uint32_t max_parent_visits() const;
     uint8_t parent_idx_most_visits() const;
@@ -405,7 +389,13 @@ public:
 
     uint8_t get_virtual_loss_counter(uint16_t childIdx) const;
 
+    void remove_transpositions(size_t depth, size_t curDepth);
+
+    bool has_transposition_child_node();
+
 private:
+
+    void remove_all_parents_but_one(Node* remainingParentNode);
 
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
@@ -555,7 +545,7 @@ void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>& hash
  * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr
  * @param hashTable Pointer to the hashTables
  */
-void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
+void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
 
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);

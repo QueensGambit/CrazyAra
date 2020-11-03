@@ -80,7 +80,9 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
     if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
             is_transposition_verified(it, newState)) {
         mapWithMutex->mtx.unlock();
-        parentNode->add_transposition_child_node(it->second, childIdx);
+        it->second->lock();
+        it->second->add_transposition_parent_node(parentNode, childIdx);
+        it->second->unlock();
 #ifndef MODE_POMMERMAN
         it->second->set_value(-it->second->main_q_value());
 #elif

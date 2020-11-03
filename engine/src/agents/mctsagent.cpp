@@ -149,17 +149,17 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
     }
 
     if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node()) {
-        delete_sibling_subtrees(ownNextRoot, mapWithMutex.hashTable, gcThread);
-        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        if (rootNode->main_parent_node() != nullptr) {
+        delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
+        delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
+        if (rootNode->main_parent_node() != nullptr && !rootNode->main_parent_node()->has_transposition_child_node()) {
             gcThread.add_item_to_delete(rootNode->main_parent_node());
         }
         gcThread.add_item_to_delete(rootNode);
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node()) {
-        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        if (opponentsNextRoot->main_parent_node() != nullptr) {
+        delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
+        if (opponentsNextRoot->main_parent_node() != nullptr && !opponentsNextRoot->main_parent_node()->has_transposition_child_node()) {
             gcThread.add_item_to_delete(opponentsNextRoot->main_parent_node());
         }
         return opponentsNextRoot;
@@ -167,7 +167,7 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
 
     // the node wasn't found, clear the old tree
     delete_old_tree();
-    if (rootNode->main_parent_node() != nullptr) {
+    if (rootNode->main_parent_node() != nullptr && !rootNode->main_parent_node()->has_transposition_child_node()) {
         gcThread.add_item_to_delete(rootNode->main_parent_node());
     }
     gcThread.add_item_to_delete(rootNode);
@@ -274,6 +274,13 @@ void MCTSAgent::update_stats()
 void MCTSAgent::evaluate_board_state()
 {
     evalInfo->nodesPreSearch = init_root_node(state);
+    assert(!rootNode->is_transposition());
+
+    // ensure that the parent node has the correct amount of visits
+    if (evalInfo->nodesPreSearch != 0) {
+        rootNode->set_visits(sum(rootNode->get_child_number_visits()));
+    }
+
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();
     rootState = state;

@@ -79,7 +79,7 @@ uint8_t Node::parent_idx_most_visits() const
 
 float Node::get_q_sum(uint16_t childIdx, float virtualLoss) const
 {
-    return get_child_number_visits()[childIdx] * get_q_value(childIdx) + get_virtual_loss_counter(childIdx) * virtualLoss;
+    return get_child_number_visits(childIdx) * get_q_value(childIdx) + get_virtual_loss_counter(childIdx) * virtualLoss;
 }
 
 bool Node::is_transposition() const
@@ -87,17 +87,60 @@ bool Node::is_transposition() const
     return parentNodes.size() != 1;
 }
 
-void Node::remove_parent_node(const Node *parentNode, uint16_t childIdxForParent)
+void Node::remove_parent_node(const Node *parentNode)
 {
-    auto foundNode = std::find(parentNodes.begin(), parentNodes.end(), parentNode);
-    auto foundIdx = std::find(childIndicesForParent.begin(), childIndicesForParent.end(), childIdxForParent);
-    parentNodes.erase(foundNode);
-    childIndicesForParent.erase(foundIdx);
+    int offset = -1;
+    for (uint8_t idx = 0; idx < parentNodes.size(); ++idx) {
+        if (parentNodes[idx] != parentNode) {
+            offset = idx;
+            break;
+        }
+    }
+    assert(offset == -1);
+    parentNodes.erase(parentNodes.begin()+offset);
+    childIndicesForParent.erase(childIndicesForParent.begin()+offset);
 }
 
 uint8_t Node::get_virtual_loss_counter(uint16_t childIdx) const
 {
     return d->virtualLossCounter[childIdx];
+}
+
+void Node::remove_transpositions(size_t depth, size_t curDepth)
+{
+    if (!is_playout_node()) {
+        return;
+    }
+    if (curDepth == depth) {
+        return;
+    }
+    Node* parentNode = this;
+    for (uint16_t idx = 0; idx < get_no_visit_idx(); ++idx) {
+        Node* childNode = get_child_node(idx);
+        if (childNode != nullptr){
+            childNode->remove_transpositions(depth, curDepth+1);
+            if (childNode->is_transposition()){
+                parentNode->d->childNumberVisits[idx] = sum(childNode->d->childNumberVisits);
+                childNode->remove_all_parents_but_one(parentNode);
+            }
+        }
+    }
+
+}
+
+bool Node::has_transposition_child_node()
+{
+    for (Node* childNode : d->childNodes){
+        if (childNode != nullptr && childNode->is_transposition()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Node::remove_all_parents_but_one(Node *remainingParentNode)
+{
+    parentNodes = {remainingParentNode};
 }
 
 Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
@@ -122,33 +165,6 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     }
 #endif
     policyProbSmall.resize(numberChildNodes);
-}
-
-Node::Node(const Node &b)
-{
-    set_value(b.get_value());
-    key = b.key;
-    pliesFromNull = b.plies_from_null();
-    const int numberChildNodes = b.legalActions.size();
-    policyProbSmall.resize(numberChildNodes);
-    policyProbSmall = b.policyProbSmall;
-    legalActions = b.legalActions;
-    isTerminal = b.isTerminal;
-    //    parentNode = // is not copied
-    //    childIdxForParent = // is not copied
-    isTerminal = b.isTerminal;
-    isTablebase = b.isTablebase;
-    hasNNResults = b.hasNNResults;
-    sorted = b.sorted;
-    if (isTerminal) {
-        d = make_unique<NodeData>(numberChildNodes);
-        d->nodeType = b.d->nodeType;
-        return;
-    }
-    if (sorted) {
-        d = make_unique<NodeData>(numberChildNodes);
-    }
-    // TODO: Allow copying checkmateIndex
 }
 
 bool Node::solved_win(const Node* childNode) const
@@ -484,13 +500,6 @@ void Node::increment_visits(size_t numberVisits)
     main_parent_node()->unlock();
 }
 
-void Node::subtract_visits(size_t numberVisits)
-{
-    main_parent_node()->lock();
-    main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()] -= numberVisits;
-    main_parent_node()->unlock();
-}
-
 float Node::get_q_value(size_t idx) const
 {
     return d->qValues[idx];
@@ -572,6 +581,11 @@ void Node::prepare_node_for_visits()
 uint32_t Node::get_visits() const
 {
     return main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()];
+}
+
+void Node::set_visits(uint32_t visits)
+{
+    main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()] = visits;
 }
 
 uint32_t Node::get_real_visits(uint16_t childIdx) const
@@ -661,11 +675,6 @@ bool Node::has_forced_win() const
     return get_checkmate_idx() != NO_CHECKMATE;
 }
 
-void Node::add_parent_node(Node* value)
-{
-    parentNodes.emplace_back(value);
-}
-
 size_t Node::get_no_visit_idx() const
 {
     return d->noVisitIdx;
@@ -696,11 +705,11 @@ void Node::add_new_child_node(Node *newNode, size_t childIdx)
     d->childNodes[childIdx] = newNode;
 }
 
-void Node::add_transposition_child_node(Node* newNode, uint16_t childIdx)
+void Node::add_transposition_parent_node(Node* parentNode, uint16_t childIdx)
 {
-    newNode->parentNodes.emplace_back(this);
-    newNode->childIndicesForParent.emplace_back(childIdx);
-    d->childNodes[childIdx] = newNode;
+    parentNodes.emplace_back(parentNode);
+    childIndicesForParent.emplace_back(childIdx);
+    parentNode->d->childNodes[childIdx] = this;
 }
 
 float Node::max_policy_prob()
@@ -751,6 +760,11 @@ int Node::get_checkmate_idx() const
 DynamicVector<uint32_t> Node::get_child_number_visits() const
 {
     return d->childNumberVisits;
+}
+
+uint32_t Node::get_child_number_visits(uint16_t childIdx) const
+{
+    return d->childNumberVisits[childIdx];
 }
 
 void Node::enable_has_nn_results()
@@ -1070,14 +1084,12 @@ NodeType flip_node_type(const enum NodeType nodeType) {
     }
 }
 
-void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
+void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
 {
-    if (node->main_parent_node() != nullptr) {
-        info_string("delete unused subtrees");
-        for (Node* childNode: node->main_parent_node()->get_child_nodes()) {
-            if (childNode != node) {
-                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
-            }
+    info_string("delete unused subtrees");
+    for (Node* childNode: parentNode->get_child_nodes()) {
+        if (childNode != node && childNode != nullptr && !childNode->has_transposition_child_node()) {
+            delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
         }
     }
 }
@@ -1092,7 +1104,7 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>& hash
         uint16_t childIdx = 0;
         for (Node* childNode: node->get_child_nodes()) {
             if (childNode != nullptr && childNode->is_transposition()) {
-                childNode->remove_parent_node(node, childIdx);
+                childNode->remove_parent_node(node);
             }
             else {
                 delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
