@@ -372,7 +372,7 @@ public:
      */
     uint32_t get_nodes();
 
-    float main_q_value();
+    float main_real_q_value(float virtualLoss);
     bool is_transposition_return(uint32_t myVisits, float virtualLoss, float& masterVisits, float& masterQsum) const;
 
     bool is_transposition() const;

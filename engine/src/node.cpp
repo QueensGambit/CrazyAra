@@ -43,7 +43,7 @@ bool Node::is_transposition_return(uint32_t myVisits, float virtualLoss, float& 
         const Node* parentNode = parentNodes[idx];
         const uint16_t childIdx = childIndicesForParent[idx];
         const uint32_t curVists = parentNode->get_real_visits(childIdx);
-        if (curVists > masterVisits && curVists > myVisits) {
+        if (curVists > masterVisits) {
             masterVisits = curVists;
             masterQsum = parentNode->get_q_sum(childIdx, virtualLoss);
         }
@@ -70,7 +70,7 @@ uint8_t Node::parent_idx_most_visits() const
 {
     uint8_t masterIdx = 0;
     for (size_t idx = 1; idx < parentNodes.size(); ++idx) {
-        if (parentNodes[idx]->d->childNumberVisits[childIndicesForParent[idx]] > parentNodes[masterIdx]->d->childNumberVisits[childIndicesForParent[masterIdx]]) {
+        if (parentNodes[idx]->get_real_visits(childIndicesForParent[idx]) > parentNodes[masterIdx]->get_real_visits(childIndicesForParent[masterIdx])) {
             masterIdx = idx;
         }
     }
@@ -1191,10 +1191,10 @@ uint32_t Node::get_nodes()
     return get_visits() - get_terminal_visits();
 }
 
-float Node::main_q_value()
+float Node::main_real_q_value(float virtualLoss)
 {
     const size_t masterIdx = parent_idx_most_visits();
-    return parentNodes[masterIdx]->get_q_value(childIndicesForParent[masterIdx]);
+    return parentNodes[masterIdx]->get_q_sum(childIndicesForParent[masterIdx], virtualLoss) / parentNodes[masterIdx]->get_real_visits(childIndicesForParent[masterIdx]);
 }
 
 bool is_terminal_value(float value)

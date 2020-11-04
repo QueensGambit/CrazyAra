@@ -84,9 +84,9 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
         it->second->add_transposition_parent_node(parentNode, childIdx);
         it->second->unlock();
 #ifndef MODE_POMMERMAN
-        it->second->set_value(-it->second->main_q_value());
+        it->second->set_value(-it->second->main_real_q_value(searchSettings->virtualLoss));
 #elif
-        it->second->set_value(it->second->main_q_value());
+        it->second->set_value(it->second->main_real_q_value(searchSettings->virtualLoss));
 #endif
         return NODE_TRANSPOSITION;
     }
