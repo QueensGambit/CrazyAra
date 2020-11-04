@@ -91,12 +91,12 @@ void Node::remove_parent_node(const Node *parentNode)
 {
     int offset = -1;
     for (uint8_t idx = 0; idx < parentNodes.size(); ++idx) {
-        if (parentNodes[idx] != parentNode) {
+        if (parentNodes[idx] == parentNode) {
             offset = idx;
             break;
         }
     }
-    assert(offset == -1);
+    assert(offset != -1);
     parentNodes.erase(parentNodes.begin()+offset);
     childIndicesForParent.erase(childIndicesForParent.begin()+offset);
 }
