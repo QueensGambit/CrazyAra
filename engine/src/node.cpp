@@ -1088,8 +1088,13 @@ void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, No
 {
     info_string("delete unused subtrees");
     for (Node* childNode: parentNode->get_child_nodes()) {
-        if (childNode != node && childNode != nullptr && !childNode->has_transposition_child_node()) {
-            delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+        if (childNode != node && childNode != nullptr) {
+            if (childNode->is_transposition()) {
+                childNode->remove_parent_node(parentNode);
+            }
+            else {
+                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+            }
         }
     }
 }
