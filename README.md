@@ -134,66 +134,7 @@ For more details about the initial python version visit the wiki pages:
 
 ## Compilation
 
-Please follow these steps to build _CrazyAra_ from source:
-
-### Linux
-
-1. Clone the _CrazyAra_ repository:
-
-   ```bash
-   git clone https://github.com/QueensGambit/CrazyAra.git --recursive
-   ```
-
-2. Download and install the [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/) library of version **>=3.6** or current master:
-	*   <https://bitbucket.org/blaze-lib/blaze/downloads/>
-	```bash
-	tar -xvzf blaze-3.6.tar.gz
-	cd blaze-3.6
-	cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
-	sudo make install
-	```
-	Detailed build instruction can be found here:
-
-    *   <https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20and%20Installation>
-
-
-3. Build the MXNet C++ package. Building with OpenCV is not required:
-
-   Install the prerequesites (e.g. for IntelMKL):
-   * https://github.com/intel/mkl-dnn/releases
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y build-essential git
-   sudo apt-get install -y libopenblas-dev liblapack-dev
-   sudo apt-get install -y graphviz
-   ```
-   
-   ```bash
-   git clone https://github.com/apache/incubator-mxnet --recursive
-   ```
-   
-   [IntelMKL](https://github.com/intel/mkl-dnn): ```make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=1```
-   
-   [CUDA](https://developer.nvidia.com/cuda-zone) / [cuDNN](https://developer.nvidia.com/cudnn): ```make -j $(nproc) USE_CPP_PACKAGE=1 USE_OPENCV=0 USE_MKL=0 USE_CUDA=1 USE_CUDNN=1```
-   
-   _You might have to reduce the number of jobs to run in paralell e.g. `-j 4` if you run out of memory (RAM) during building. Building the MXNet-C++ examples is not required._
-   
-   Detailed build instruction can be found here:
-   *   <https://mxnet.incubator.apache.org/get_started/ubuntu_setup.html#build-mxnet-from-source>
-   *   IntelMKL: <https://github.com/apache/incubator-mxnet/blob/master/docs/python_docs/python/tutorials/performance/backend/mkldnn/mkldnn_readme.md>
-
-4. Build the _CrazyAra_ binary
-   ```bash
-   export MXNET_PATH=<path_to_mxnet>/incubator-mxnet/
-   cd engine
-   mkdir build
-   cd build
-   cmake -DCMAKE_BUILD_TYPE=Release ..
-   make
-   ```
-
-### Windows
-Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Compile-instructions-for-Windows).
+Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra/wiki/Build-instructions).
 
 ## Rating
 
