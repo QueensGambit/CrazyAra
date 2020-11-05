@@ -27,8 +27,6 @@
 *   [Variants](#variants)
 *   [Documentation](#documentation)
 *   [Compilation](#compilation)
-    *   [Linux](#linux)
-    *   [Windows](#windows)
 *   [Rating](#rating)
 *   [Libraries](#libraries)
 *   [Players](#players)
