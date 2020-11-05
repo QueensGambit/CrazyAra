@@ -159,7 +159,7 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         if (childIdx == INT_MAX) {
             childIdx = currentNode->select_child_node(visitSum, searchSettings);
         }
-        visitSum = currentNode->get_child_number_visits()[childIdx];
+        visitSum = currentNode->get_child_number_visits()[childIdx] - 1;
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
         trajectory.emplace_back(childIdx);
 

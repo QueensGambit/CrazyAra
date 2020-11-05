@@ -182,7 +182,7 @@ public:
     Node* main_parent_node() const;
     Node* get_parent_node(uint8_t parentIdx) const;
     uint16_t get_child_idx_for_parent(uint8_t parentIdx)  const;
-    void increment_visits(size_t numberVisits);
+    void increment_visits(int numberVisits);
     void increment_no_visit_idx();
     void fully_expand_node();
 

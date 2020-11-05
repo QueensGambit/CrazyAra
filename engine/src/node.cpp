@@ -493,7 +493,7 @@ uint16_t Node::get_child_idx_for_parent(uint8_t parentIdx) const
     return childIndicesForParent[parentIdx];
 }
 
-void Node::increment_visits(size_t numberVisits)
+void Node::increment_visits(int numberVisits)
 {
     main_parent_node()->lock();
     main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()] += numberVisits;
@@ -643,6 +643,7 @@ void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& 
         currentNode->revert_virtual_loss(childIdx, virtualLoss);
         currentNode = currentNode->get_child_node(childIdx);
     }
+    rootNode->increment_visits(-virtualLoss);
 }
 
 void Node::revert_virtual_loss(size_t childIdx, float virtualLoss)
@@ -1053,6 +1054,8 @@ size_t Node::select_child_node(uint32_t visitSum, const SearchSettings* searchSe
     if (has_forced_win()) {
         return d->checkmateIdx;
     }
+
+    assert(sum(d->childNumberVisits) == visitSum);
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
