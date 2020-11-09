@@ -36,24 +36,6 @@ bool Node::is_sorted() const
     return sorted;
 }
 
-bool Node::is_transposition_return(uint32_t myVisits, float virtualLoss, float& masterVisits, float& masterQsum) const
-{
-    masterVisits = myVisits;
-    for (size_t idx = 0; idx < parentNodes.size(); ++idx) {
-        const Node* parentNode = parentNodes[idx];
-        const uint16_t childIdx = childIndicesForParent[idx];
-        const uint32_t curVists = parentNode->get_real_visits(childIdx);
-        if (curVists > masterVisits) {
-            masterVisits = curVists;
-            masterQsum = parentNode->get_q_sum(childIdx, virtualLoss);
-        }
-    }
-    if (myVisits != masterVisits) {
-        return true;
-    }
-    return false;
-}
-
 uint32_t Node::max_parent_visits() const
 {
     uint32_t curMax = parentNodes[0]->get_real_visits(childIndicesForParent[0]);
@@ -572,6 +554,11 @@ size_t Node::get_number_child_nodes() const
     return legalActions.size();
 }
 
+uint8_t Node::get_number_parent_nodes() const
+{
+    return parentNodes.size();
+}
+
 void Node::prepare_node_for_visits()
 {
     sort_moves_by_probabilities();
@@ -638,7 +625,6 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
 
 void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& trajectory) {
     Node* currentNode = rootNode;
-
     for (MoveIdx childIdx : trajectory) {
         currentNode->revert_virtual_loss(childIdx, virtualLoss);
         currentNode = currentNode->get_child_node(childIdx);

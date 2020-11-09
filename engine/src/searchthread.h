@@ -48,7 +48,8 @@ enum NodeBackup : uint8_t {
     NODE_COLLISION,
     NODE_TERMINAL,
     NODE_TRANSPOSITION,
-    NODE_NEW_NODE
+    NODE_NEW_NODE,
+    NODE_UNKNOWN,
 };
 
 struct NodeDescription
@@ -84,7 +85,6 @@ private:
     size_t depthSum;
     size_t depthMax;
     size_t visitsPreSearch;
-
 public:
     /**
      * @brief SearchThread
@@ -186,6 +186,8 @@ private:
     Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory);
 
     void backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories);
+
+    NodeBackup is_transposition_return(const Node* parentNode, uint16_t childIdx, float& masterVisits, float& masterQsum);
 };
 
 void run_search_thread(SearchThread *t);

@@ -189,7 +189,7 @@ public:
     Key hash_key() const;
 
     size_t get_number_child_nodes() const;
-
+    uint8_t get_number_parent_nodes() const;
 
     void prepare_node_for_visits();
 
@@ -373,7 +373,6 @@ public:
     uint32_t get_nodes();
 
     float main_real_q_value(float virtualLoss);
-    bool is_transposition_return(uint32_t myVisits, float virtualLoss, float& masterVisits, float& masterQsum) const;
 
     bool is_transposition() const;
 
