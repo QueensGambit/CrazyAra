@@ -345,7 +345,7 @@ void run_search_thread(SearchThread *t)
     t->set_is_running(false);
 }
 
-void SearchThread::backup_values(FixedVector<Node*>* nodes, Trajectories& trajectories) {
+void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < nodes->size(); ++idx) {
         const Node* node = nodes->get_element(idx);
         if (!isnan(node->get_value())){

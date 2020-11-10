@@ -185,7 +185,7 @@ private:
      */
     Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, Trajectory& trajectory);
 
-    void backup_values(FixedVector<Node*>* nodes, Trajectories& trajectories);
+    void backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories);
 };
 
 void run_search_thread(SearchThread *t);
