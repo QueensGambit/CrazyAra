@@ -573,19 +573,12 @@ uint32_t Node::get_real_visits(uint16_t childIdx) const
     return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
 }
 
-void backup_value(Node* rootNode, float value, float virtualLoss, const vector<MoveIdx>& trajectory) {
-    Node* currentNode = rootNode;
-#ifndef MODE_POMMERMAN
-    if (trajectory.size() % 2 == 1) {
-        value = -value;
-    }
-#endif
-    for (MoveIdx childIdx : trajectory) {
-        currentNode->revert_virtual_loss_and_update(childIdx, value, virtualLoss);
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory) {
+    for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
 #ifndef MODE_POMMERMAN
         value = -value;
 #endif
-        currentNode = currentNode->get_child_node(childIdx);
+        it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss);
     }
 }
 
@@ -618,11 +611,9 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
     unlock();
 }
 
-void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& trajectory) {
-    Node* currentNode = rootNode;
-    for (MoveIdx childIdx : trajectory) {
-        currentNode->revert_virtual_loss(childIdx, virtualLoss);
-        currentNode = currentNode->get_child_node(childIdx);
+void backup_collision(float virtualLoss, const Trajectory& trajectory) {
+    for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
+        it->node->revert_virtual_loss(it->childIdx, virtualLoss);
     }
 }
 

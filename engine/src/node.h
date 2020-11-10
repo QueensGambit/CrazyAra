@@ -52,6 +52,15 @@ struct ParentNode {
     bool isDead = false;
 };
 
+struct NodeAndIdx {
+    Node* node;
+    uint16_t childIdx;
+    NodeAndIdx(Node* node, uint16_t childIdx) :
+        node(node), childIdx(childIdx) {}
+};
+using Trajectory = vector<NodeAndIdx>;
+
+
 class Node
 {
 private:
@@ -616,7 +625,7 @@ size_t get_node_count(const Node* node);
  * @param virtualLoss Virtual loss value
  * @param trajectory Trajectory on how to get to the given collision
  */
-void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& trajectory);
+void backup_collision(float virtualLoss, const Trajectory& trajectory);
 
 /**
  * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
@@ -626,6 +635,6 @@ void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& 
  * @param virtualLoss Virtual loss value
  * @param trajectory Trajectory on how to get to the given value eval
  */
-void backup_value(Node* rootNode, float value, float virtualLoss, const vector<MoveIdx>& trajectory);
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory);
 
 #endif // NODE_H

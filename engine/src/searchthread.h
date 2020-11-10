@@ -72,9 +72,9 @@ private:
     unique_ptr<FixedVector<Node*>> transpositionNodes;
     unique_ptr<FixedVector<Node*>> collisionNodes;
 
-    vector<vector<MoveIdx>> newTrajectories;
-    vector<vector<MoveIdx>> transpositionTrajectories;
-    vector<vector<MoveIdx>> collisionTrajectories;
+    vector<Trajectory> newTrajectories;
+    vector<Trajectory> transpositionTrajectories;
+    vector<Trajectory> collisionTrajectories;
 
     bool isRunning;
 
@@ -183,9 +183,9 @@ private:
      * @param states States list which is used for 3-fold-repetition detection
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory);
+    Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, Trajectory& trajectory);
 
-    void backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories);
+    void backup_values(FixedVector<Node*>* nodes, Trajectories& trajectories);
 };
 
 void run_search_thread(SearchThread *t);
