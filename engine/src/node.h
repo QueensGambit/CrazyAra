@@ -47,7 +47,7 @@ using namespace std;
 struct ParentNode {
     Node* node;
     uint32_t visits;
-    float qSum;
+    double qSum;
     uint16_t childIdxForParent;
     bool isDead = false;
 };
@@ -380,10 +380,12 @@ public:
 
     bool is_transposition() const;
 
-    void remove_parent_node(const Node* parentNode);
+    void kill_parent_node(const Node* parentNode);
 
     uint32_t max_parent_visits() const;
     ParentNode* parent_with_most_visits();
+
+    bool only_dead_parents() const;
 
     double get_q_sum(uint16_t childIdx, float virtualLoss) const;
 
@@ -394,9 +396,13 @@ public:
 
     bool has_transposition_child_node();
 
+    bool is_transposition_return(uint16_t childIdx, float virtualLoss, uint32_t& masterVisits, double& masterQsum) const;
+
 private:
 
     uint32_t get_real_visits_for_parent(const ParentNode& parent) const;
+
+    double get_q_sum_for_parent(const ParentNode& parent, float virtualLoss) const;
 
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes

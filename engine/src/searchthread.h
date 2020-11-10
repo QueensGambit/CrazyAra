@@ -186,8 +186,6 @@ private:
     Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory);
 
     void backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories);
-
-    bool is_transposition_return(const Node* parentNode, uint16_t childIdx, uint32_t& masterVisits, double& masterQsum);
 };
 
 void run_search_thread(SearchThread *t);

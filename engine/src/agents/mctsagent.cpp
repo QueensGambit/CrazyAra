@@ -151,9 +151,6 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
     if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node()) {
         delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
         delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        if (rootNode->main_parent_node() != nullptr && !rootNode->main_parent_node()->has_transposition_child_node()) {
-            gcThread.add_item_to_delete(rootNode->main_parent_node());
-        }
         gcThread.add_item_to_delete(rootNode);
         return ownNextRoot;
     }
@@ -167,9 +164,6 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
 
     // the node wasn't found, clear the old tree
     delete_old_tree();
-    if (rootNode->main_parent_node() != nullptr && !rootNode->main_parent_node()->has_transposition_child_node()) {
-        gcThread.add_item_to_delete(rootNode->main_parent_node());
-    }
     gcThread.add_item_to_delete(rootNode);
 
     return nullptr;
@@ -179,10 +173,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
-    Node* dummyNode = new Node(state, false, nullptr, 0, searchSettings);
-    dummyNode->init_node_data(1);
-    rootNode = new Node(state, false, dummyNode, 0, searchSettings);
-    dummyNode->add_new_child_node(rootNode, 0);
+    rootNode = new Node(state, false, nullptr, 0, searchSettings);
     oldestRootNode = rootNode;
     state->get_state_planes(true, inputPlanes);
     net->predict(inputPlanes, valueOutputs, probOutputs);
