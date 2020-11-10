@@ -149,27 +149,21 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
     }
 
     if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node()) {
-        delete_sibling_subtrees(ownNextRoot, mapWithMutex.hashTable, gcThread);
-        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        if (rootNode->get_parent_node() != nullptr) {
-            gcThread.add_item_to_delete(rootNode->get_parent_node());
-        }
+        delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
+        delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         gcThread.add_item_to_delete(rootNode);
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node()) {
-        delete_sibling_subtrees(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        if (opponentsNextRoot->get_parent_node() != nullptr) {
-            gcThread.add_item_to_delete(opponentsNextRoot->get_parent_node());
+        delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
+        if (opponentsNextRoot->main_parent_node() != nullptr && !opponentsNextRoot->main_parent_node()->has_transposition_child_node()) {
+            gcThread.add_item_to_delete(opponentsNextRoot->main_parent_node());
         }
         return opponentsNextRoot;
     }
 
     // the node wasn't found, clear the old tree
     delete_old_tree();
-    if (rootNode->get_parent_node() != nullptr) {
-        gcThread.add_item_to_delete(rootNode->get_parent_node());
-    }
     gcThread.add_item_to_delete(rootNode);
 
     return nullptr;
@@ -179,10 +173,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
-    Node* dummyNode = new Node(state, false, nullptr, 0, searchSettings);
-    dummyNode->init_node_data(1);
-    rootNode = new Node(state, false, dummyNode, 0, searchSettings);
-    dummyNode->add_new_child_node(rootNode, 0);
+    rootNode = new Node(state, false, nullptr, 0, searchSettings);
     oldestRootNode = rootNode;
     state->get_state_planes(true, inputPlanes);
     net->predict(inputPlanes, valueOutputs, probOutputs);
@@ -274,6 +265,7 @@ void MCTSAgent::update_stats()
 void MCTSAgent::evaluate_board_state()
 {
     evalInfo->nodesPreSearch = init_root_node(state);
+
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();
     rootState = state;
@@ -355,7 +347,7 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
     size_t childIdx = 0;
     for (Node* node : parentNode->get_child_nodes()) {
         if (node != nullptr) {
-            Action action = parentNode->get_action(node->get_child_idx_for_parent());
+            Action action = parentNode->get_action(node->main_child_idx_for_parent());
             outFile << "N" << ++nodeId << " [label = \""
                     <<  state->action_to_san(action, state->legal_actions(), false, false)
                      << "\"]" << endl;
@@ -374,7 +366,7 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
     for (Node* node : parentNode->get_child_nodes()) {
         if (node != nullptr && node->is_playout_node()) {
             unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state->clone());
-            Action action = parentNode->get_action(node->get_child_idx_for_parent());
+            Action action = parentNode->get_action(node->main_child_idx_for_parent());
             state2->do_action(action);
             print_child_nodes_to_file(node, state2.get(), ++initialId, nodeId, outFile, depth+1, maxDepth);
         }

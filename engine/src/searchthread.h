@@ -48,7 +48,8 @@ enum NodeBackup : uint8_t {
     NODE_COLLISION,
     NODE_TERMINAL,
     NODE_TRANSPOSITION,
-    NODE_NEW_NODE
+    NODE_NEW_NODE,
+    NODE_UNKNOWN,
 };
 
 struct NodeDescription
@@ -71,6 +72,10 @@ private:
     unique_ptr<FixedVector<Node*>> transpositionNodes;
     unique_ptr<FixedVector<Node*>> collisionNodes;
 
+    vector<vector<MoveIdx>> newTrajectories;
+    vector<vector<MoveIdx>> transpositionTrajectories;
+    vector<vector<MoveIdx>> collisionTrajectories;
+
     bool isRunning;
 
     MapWithMutex* mapWithMutex;
@@ -80,7 +85,6 @@ private:
     size_t depthSum;
     size_t depthMax;
     size_t visitsPreSearch;
-
 public:
     /**
      * @brief SearchThread
@@ -151,6 +155,8 @@ public:
 
     size_t get_max_depth() const;
 
+    float get_transposition_q_value(uint32_t transposVisits, double transposQsum, uint32_t masterVisits, double masterQsum);
+
 private:
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
@@ -177,12 +183,12 @@ private:
      * @param states States list which is used for 3-fold-repetition detection
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(StateObj* state, size_t& childIdx, NodeDescription& description);
+    Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory);
+
+    void backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories);
 };
 
 void run_search_thread(SearchThread *t);
-
-void backup_values(FixedVector<Node*>* nodes, float virtualLoss);
 
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings);
 void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);

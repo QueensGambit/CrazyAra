@@ -44,6 +44,14 @@ using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 
+struct ParentNode {
+    Node* node;
+    uint32_t visits;
+    double qSum;
+    uint16_t childIdxForParent;
+    bool isDead = false;
+};
+
 class Node
 {
 private:
@@ -54,14 +62,13 @@ private:
     //    DynamicVector<bool> isCheck;
     //    DynamicVector<bool> isCapture;
 
-    Node* parentNode;
+    vector<ParentNode> parentNodes;
     Key key;
 
     // singular values
     float value;
     unique_ptr<NodeData> d;
 
-    uint16_t childIdxForParent;
     // identifiers
     uint16_t pliesFromNull;
 
@@ -82,13 +89,6 @@ public:
          Node *parentNode,
          size_t childIdxForParent,
          const SearchSettings* searchSettings);
-
-    /**
-     * @brief Node Copy constructor which copies the value evaluation, board position, prior policy and checkmateIdx.
-     * The qValues, actionValues and visits aren't copied over.
-     * @param b Node from which the stats will be copied
-     */
-    Node(const Node& b);
 
     /**
      * @brief ~Node Destructor which frees memory and the board position
@@ -112,24 +112,11 @@ public:
     size_t select_child_node(const SearchSettings* searchSettings);
 
     /**
-     * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
-     * The value is flipped at every ply.
-     * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
-     */
-    void backup_value(size_t childIdx, float value, float virtualLoss);
-
-    /**
      * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
      * @param childIdx Index to the child node to update
      * @param value Specifies the value evaluation to backpropagate
      */
     void revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss);
-
-    /**
-     * @brief backup_collision Iteratively removes the virtual loss of the collision event that occurred
-     * @param childIdx Index to the child node to update
-     */
-    void backup_collision(size_t childIdx, float virtualLoss);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
@@ -199,16 +186,16 @@ public:
      */
     void revert_virtual_loss_and_update(float value);
 
-    Node* get_parent_node() const;
-    void increment_visits(size_t numberVisits);
-    void subtract_visits(size_t numberVisits);
+    Node* main_parent_node() const;
+    Node* get_parent_node(uint8_t parentIdx) const;
+    uint16_t get_child_idx_for_parent(uint8_t parentIdx)  const;
     void increment_no_visit_idx();
     void fully_expand_node();
 
     Key hash_key() const;
 
     size_t get_number_child_nodes() const;
-
+    uint8_t get_number_parent_nodes() const;
 
     void prepare_node_for_visits();
 
@@ -222,7 +209,18 @@ public:
      */
     void make_to_root();
 
+    /**
+     * @brief get_visits Returns the sum of all visited child nodes with virtual loss applied
+     * @return uint32_t
+     */
     uint32_t get_visits() const;
+
+    /**
+     * @brief get_real_visits Returns visits for given child idx without virtual loss applied
+     * @param childIdx Child index
+     * @return uint32_t
+     */
+    uint32_t get_real_visits(uint16_t childIdx) const;
 
     void lock();
     void unlock();
@@ -245,12 +243,6 @@ public:
     float get_action_value() const;
     SearchSettings* get_search_settings() const;
 
-    /**
-     * @brief set_parent_node Sets the parent node of this node. This is required when operator()= is used because this operator
-     * doesn't set the value for the parent node itself.
-     * @param value
-     */
-    void set_parent_node(Node* value);
     size_t get_no_visit_idx() const;
 
     bool is_fully_expanded() const;
@@ -268,17 +260,11 @@ public:
     void enhance_moves(const SearchSettings* searchSettings);
 
     void set_value(float value);
-    size_t get_child_idx_for_parent() const;
+    uint16_t main_child_idx_for_parent() const;
 
     void add_new_child_node(Node* newNode, size_t childIdx);
 
-    /**
-     * @brief add_transposition_child_node Copies the node with the NN evaluation based on a preexisting node
-     * @param it Iterator which from the hash table
-     * @param parentNode Parent node of the new node
-     * @param childIdx Index on how to visit the child node from its parent
-     */
-    void add_transposition_child_node(Node* newNode, size_t childIdx);
+    void add_transposition_parent_node(Node* newNode, uint16_t childIdx);
 
     /**
      * @brief max_prob Returns the maximum policy value
@@ -336,6 +322,8 @@ public:
     bool is_root_node() const;
 
     DynamicVector<uint32_t> get_child_number_visits() const;
+    uint32_t get_child_number_visits(uint16_t childIdx) const;
+
     void enable_has_nn_results();
     uint16_t plies_from_null() const;
     bool is_tablebase() const;
@@ -355,7 +343,7 @@ public:
      * @param idx Child Index
      * @return Q-value
      */
-    float get_q_value(size_t idx);
+    float get_q_value(size_t idx) const;
 
     /**
      * @brief get_q_values Returns the Q-values for all child nodes
@@ -393,7 +381,35 @@ public:
      * @return uint32_t
      */
     uint32_t get_nodes();
+
+    float main_real_q_value(float virtualLoss);
+
+    bool is_transposition() const;
+
+    void kill_parent_node(const Node* parentNode);
+
+    uint32_t max_parent_visits() const;
+    ParentNode* parent_with_most_visits();
+
+    bool only_dead_parents() const;
+
+    double get_q_sum(uint16_t childIdx, float virtualLoss) const;
+
+    template<bool increment>
+    void update_virtual_loss_counter(uint16_t childIdx);
+
+    uint8_t get_virtual_loss_counter(uint16_t childIdx) const;
+
+    bool has_transposition_child_node();
+
+    bool is_transposition_return(uint16_t childIdx, float virtualLoss, uint32_t& masterVisits, double& masterQsum) const;
+
 private:
+
+    uint32_t get_real_visits_for_parent(const ParentNode& parent) const;
+
+    double get_q_sum_for_parent(const ParentNode& parent, float virtualLoss) const;
+
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
      */
@@ -518,6 +534,7 @@ private:
      * @param childIdxForParent Index for the move which will be disabled
      */
     void disable_action(size_t childIdxForParent);
+    void set_checkmate_idx(const Node* childNode) const;
 };
 
 /**
@@ -541,7 +558,7 @@ void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>& hash
  * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr
  * @param hashTable Pointer to the hashTables
  */
-void delete_sibling_subtrees(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
+void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
 
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
@@ -592,5 +609,23 @@ bool is_terminal_value(float value);
  * @return Number of subnodes for thhe given node
  */
 size_t get_node_count(const Node* node);
+
+/**
+ * @brief backup_collision Iteratively removes the virtual loss of the collision event that occurred
+ * @param rootNode Root node of the tree
+ * @param virtualLoss Virtual loss value
+ * @param trajectory Trajectory on how to get to the given collision
+ */
+void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& trajectory);
+
+/**
+ * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
+ * The value is flipped at every ply.
+ * @param rootNode Root node of the tree
+ * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
+ * @param virtualLoss Virtual loss value
+ * @param trajectory Trajectory on how to get to the given value eval
+ */
+void backup_value(Node* rootNode, float value, float virtualLoss, const vector<MoveIdx>& trajectory);
 
 #endif // NODE_H
