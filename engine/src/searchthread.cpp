@@ -85,7 +85,7 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
         it->second->unlock();
 #ifndef MODE_POMMERMAN
         it->second->set_value(-it->second->main_real_q_value(searchSettings->virtualLoss));
-#elif
+#else
         it->second->set_value(it->second->main_real_q_value(searchSettings->virtualLoss));
 #endif
         return NODE_TRANSPOSITION;
@@ -189,10 +189,11 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             double masterQsum;
             if (currentNode->is_transposition_return(childIdx, searchSettings->virtualLoss, masterVisits, masterQsum)) {
                 description.type = NODE_TRANSPOSITION;
+                const float qValue = get_transposition_q_value(currentNode->get_real_visits(childIdx), currentNode->get_q_sum(childIdx, searchSettings->virtualLoss), masterVisits, masterQsum);
 #ifndef MODE_POMMERMAN
-                nextNode->set_value(-get_transposition_q_value(currentNode->get_real_visits(childIdx), currentNode->get_q_sum(childIdx, searchSettings->virtualLoss), masterVisits, masterQsum));
-#elif
-                nextNode->set_value(get_transposition_q_value(currentNode, nextNode, childIdx));
+                nextNode->set_value(-qValue);
+#else
+                nextNode->set_value(qValue);
 #endif
                 currentNode->unlock();
                 return currentNode;
