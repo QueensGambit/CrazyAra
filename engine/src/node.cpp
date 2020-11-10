@@ -38,9 +38,11 @@ bool Node::is_sorted() const
 
 uint32_t Node::max_parent_visits() const
 {
-    uint32_t curMax = parentNodes[0]->get_real_visits(childIndicesForParent[0]);
-    for (size_t idx = 1; idx < parentNodes.size(); ++idx) {
-        const uint32_t curVists = parentNodes[idx]->get_real_visits(childIndicesForParent[idx]);
+    uint32_t curMax = get_real_visits_for_parent(parentNodes.front());
+
+    for (auto it = parentNodes.begin()+1; it != parentNodes.end(); ++it) {
+        const uint32_t curVists = get_real_visits_for_parent(*it);
+
         if (curVists > curMax) {
             curMax = curVists;
         }
@@ -48,15 +50,19 @@ uint32_t Node::max_parent_visits() const
     return curMax;
 }
 
-uint8_t Node::parent_idx_most_visits() const
+ParentNode* Node::parent_with_most_visits()
 {
-    uint8_t masterIdx = 0;
-    for (size_t idx = 1; idx < parentNodes.size(); ++idx) {
-        if (parentNodes[idx]->get_real_visits(childIndicesForParent[idx]) > parentNodes[masterIdx]->get_real_visits(childIndicesForParent[masterIdx])) {
-            masterIdx = idx;
+    uint32_t curMax = get_real_visits_for_parent(parentNodes.front());
+    ParentNode* maxParent = &parentNodes.front();
+
+    for (auto it = parentNodes.begin()+1; it != parentNodes.end(); ++it) {
+        uint32_t curVisits=  get_real_visits_for_parent(*it);
+        if (curVisits > curMax) {
+            curMax = curVisits;
+            maxParent = &(*it);
         }
     }
-    return masterIdx;
+    return maxParent;
 }
 
 double Node::get_q_sum(uint16_t childIdx, float virtualLoss) const
@@ -73,41 +79,18 @@ void Node::remove_parent_node(const Node *parentNode)
 {
     int offset = -1;
     for (uint8_t idx = 0; idx < parentNodes.size(); ++idx) {
-        if (parentNodes[idx] == parentNode) {
+        if (parentNodes[idx].node == parentNode) {
             offset = idx;
             break;
         }
     }
     assert(offset != -1);
     parentNodes.erase(parentNodes.begin()+offset);
-    childIndicesForParent.erase(childIndicesForParent.begin()+offset);
 }
 
 uint8_t Node::get_virtual_loss_counter(uint16_t childIdx) const
 {
     return d->virtualLossCounter[childIdx];
-}
-
-void Node::remove_transpositions(size_t depth, size_t curDepth)
-{
-    if (!is_playout_node()) {
-        return;
-    }
-    if (curDepth == depth) {
-        return;
-    }
-    Node* parentNode = this;
-    for (uint16_t idx = 0; idx < get_no_visit_idx(); ++idx) {
-        Node* childNode = get_child_node(idx);
-        if (childNode != nullptr){
-            childNode->remove_transpositions(depth, curDepth+1);
-            if (childNode->is_transposition()){
-                parentNode->d->childNumberVisits[idx] = sum(childNode->d->childNumberVisits);
-                childNode->remove_all_parents_but_one(parentNode);
-            }
-        }
-    }
-
 }
 
 bool Node::has_transposition_child_node()
@@ -120,9 +103,9 @@ bool Node::has_transposition_child_node()
     return false;
 }
 
-void Node::remove_all_parents_but_one(Node *remainingParentNode)
+uint32_t Node::get_real_visits_for_parent(const ParentNode& parent) const
 {
-    parentNodes = {remainingParentNode};
+    return parent.node->get_real_visits(parent.childIdxForParent);
 }
 
 Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForParent, const SearchSettings* searchSettings):
@@ -137,16 +120,16 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     sorted(false)
 {
     // specify the number of direct child nodes of this node
-    const int numberChildNodes = legalActions.size();
-    parentNodes.emplace_back(parentNode);
-    childIndicesForParent.emplace_back(childIdxForParent);
+    parentNodes.emplace_back(ParentNode());
+    parentNodes.front().node = parentNode;
+    parentNodes.front().childIdxForParent = childIdxForParent;
     check_for_terminal(state, inCheck);
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
     if (searchSettings->useTablebase && !isTerminal) {
         check_for_tablebase_wdl(state);
     }
 #endif
-    policyProbSmall.resize(numberChildNodes);
+    policyProbSmall.resize(legalActions.size());
 }
 
 bool Node::solved_win(const Node* childNode) const
@@ -157,11 +140,9 @@ bool Node::solved_win(const Node* childNode) const
     if (childNode->d->nodeType == SOLVED_WIN) {
 #endif
         // set checkMateIdx for **all** parent nodes
-        for (size_t idx = 0; idx < childNode->parentNodes.size(); ++idx) {
-            Node* parentNode = childNode->parentNodes[idx];
-            if (parentNode != nullptr) {
-                uint16_t childIdxForParent = childNode->childIndicesForParent[idx];
-                parentNode->d->checkmateIdx = childIdxForParent;
+        for (auto it = childNode->parentNodes.begin(); it != childNode->parentNodes.end(); ++it) {
+            if (it->node != nullptr) {
+                it->node->d->checkmateIdx = it->childIdxForParent;
             }
         }
         return true;
@@ -266,10 +247,10 @@ void Node::update_solved_terminal(const Node* childNode)
     set_value(targetValue);
     // update statistics of **all** parent nodes
     for (size_t idx = 0; idx < parentNodes.size(); ++idx) {
-        Node* parentNode = parentNodes[idx];
+        Node* parentNode = parentNodes[idx].node;
 
         if (parentNode != nullptr) {
-            const uint16_t childIdxForParent = childIndicesForParent[idx];
+            const uint16_t childIdxForParent = parentNodes[idx].childIdxForParent;
             parentNode->lock();
             parentNode->d->numberUnsolvedChildNodes--;
             parentNode->d->qValues[childIdxForParent] = -targetValue;
@@ -463,17 +444,17 @@ void Node::apply_virtual_loss_to_child(size_t childIdx, float virtualLoss)
 
 Node *Node::main_parent_node() const
 {
-    return parentNodes[0];
+    return parentNodes.front().node;
 }
 
 Node *Node::get_parent_node(uint8_t parentIdx) const
 {
-    return parentNodes[parentIdx];
+    return parentNodes[parentIdx].node;
 }
 
 uint16_t Node::get_child_idx_for_parent(uint8_t parentIdx) const
 {
-    return childIndicesForParent[parentIdx];
+    return parentNodes[parentIdx].childIdxForParent;
 }
 
 float Node::get_q_value(size_t idx) const
@@ -675,7 +656,7 @@ void Node::set_value(float value)
 
 uint16_t Node::main_child_idx_for_parent() const
 {
-    return childIndicesForParent[0];
+    return parentNodes.front().childIdxForParent;
 }
 
 void Node::add_new_child_node(Node *newNode, size_t childIdx)
@@ -685,9 +666,11 @@ void Node::add_new_child_node(Node *newNode, size_t childIdx)
 
 void Node::add_transposition_parent_node(Node* parentNode, uint16_t childIdx)
 {
-    parentNodes.emplace_back(parentNode);
-    childIndicesForParent.emplace_back(childIdx);
     parentNode->d->childNodes[childIdx] = this;
+    ParentNode parent;
+    parent.node = parentNode;
+    parent.childIdxForParent = childIdx;
+    parentNodes.emplace_back(parent);
 }
 
 float Node::max_policy_prob()
@@ -838,7 +821,7 @@ void Node::check_for_tablebase_wdl(StateObj* state)
 
 void Node::make_to_root()
 {
-    parentNodes[0]->parentNodes[0] = nullptr;
+    parentNodes[0].node->parentNodes[0].node = nullptr;
 }
 
 void Node::lock()
@@ -1173,8 +1156,8 @@ uint32_t Node::get_nodes()
 
 float Node::main_real_q_value(float virtualLoss)
 {
-    const size_t masterIdx = parent_idx_most_visits();
-    return parentNodes[masterIdx]->get_q_sum(childIndicesForParent[masterIdx], virtualLoss) / parentNodes[masterIdx]->get_real_visits(childIndicesForParent[masterIdx]);
+    const ParentNode* masterParent = parent_with_most_visits();
+    return masterParent->node->get_q_sum(masterParent->childIdxForParent, virtualLoss) / get_real_visits_for_parent(*masterParent);
 }
 
 bool is_terminal_value(float value)

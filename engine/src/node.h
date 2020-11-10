@@ -44,6 +44,14 @@ using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 
+struct ParentNode {
+    Node* node;
+    uint32_t visits;
+    float qSum;
+    uint16_t childIdxForParent;
+    bool isDead = false;
+};
+
 class Node
 {
 private:
@@ -54,14 +62,13 @@ private:
     //    DynamicVector<bool> isCheck;
     //    DynamicVector<bool> isCapture;
 
-    vector<Node*> parentNodes;
+    vector<ParentNode> parentNodes;
     Key key;
 
     // singular values
     float value;
     unique_ptr<NodeData> d;
 
-    vector<uint16_t> childIndicesForParent;
     // identifiers
     uint16_t pliesFromNull;
 
@@ -376,7 +383,7 @@ public:
     void remove_parent_node(const Node* parentNode);
 
     uint32_t max_parent_visits() const;
-    uint8_t parent_idx_most_visits() const;
+    ParentNode* parent_with_most_visits();
 
     double get_q_sum(uint16_t childIdx, float virtualLoss) const;
 
@@ -385,13 +392,11 @@ public:
 
     uint8_t get_virtual_loss_counter(uint16_t childIdx) const;
 
-    void remove_transpositions(size_t depth, size_t curDepth);
-
     bool has_transposition_child_node();
 
 private:
 
-    void remove_all_parents_but_one(Node* remainingParentNode);
+    uint32_t get_real_visits_for_parent(const ParentNode& parent) const;
 
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
