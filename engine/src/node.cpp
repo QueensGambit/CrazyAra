@@ -456,6 +456,7 @@ void Node::apply_virtual_loss_to_child(size_t childIdx, float virtualLoss)
     d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - virtualLoss) / (d->childNumberVisits[childIdx] + virtualLoss);
     // virtual increase the number of visits
     d->childNumberVisits[childIdx] += size_t(virtualLoss);
+    d->visitSum += virtualLoss;
     // increment virtual loss counter
     update_virtual_loss_counter<true>(childIdx);
 }
@@ -473,13 +474,6 @@ Node *Node::get_parent_node(uint8_t parentIdx) const
 uint16_t Node::get_child_idx_for_parent(uint8_t parentIdx) const
 {
     return childIndicesForParent[parentIdx];
-}
-
-void Node::increment_visits(int numberVisits)
-{
-    main_parent_node()->lock();
-    main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()] += numberVisits;
-    main_parent_node()->unlock();
 }
 
 float Node::get_q_value(size_t idx) const
@@ -567,12 +561,7 @@ void Node::prepare_node_for_visits()
 
 uint32_t Node::get_visits() const
 {
-    return main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()];
-}
-
-void Node::set_visits(uint32_t visits)
-{
-    main_parent_node()->d->childNumberVisits[main_child_idx_for_parent()] = visits;
+    return d->visitSum;
 }
 
 uint32_t Node::get_real_visits(uint16_t childIdx) const
@@ -615,6 +604,7 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
 
     if (virtualLoss != 1) {
         d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
+        d->visitSum -= size_t(virtualLoss) - 1;
     }
     if (is_terminal_value(value)) {
         ++d->terminalVisits;
@@ -629,7 +619,6 @@ void backup_collision(Node* rootNode, float virtualLoss, const vector<MoveIdx>& 
         currentNode->revert_virtual_loss(childIdx, virtualLoss);
         currentNode = currentNode->get_child_node(childIdx);
     }
-    rootNode->increment_visits(-virtualLoss);
 }
 
 void Node::revert_virtual_loss(size_t childIdx, float virtualLoss)
@@ -637,6 +626,7 @@ void Node::revert_virtual_loss(size_t childIdx, float virtualLoss)
     lock();
     d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
     d->childNumberVisits[childIdx] -= virtualLoss;
+    d->visitSum -= virtualLoss;
     // decrement virtual loss counter
     update_virtual_loss_counter<false>(childIdx);
     unlock();
@@ -944,9 +934,9 @@ void Node::enhance_moves(const SearchSettings* searchSettings)
     //    }
 }
 
-DynamicVector<float> Node::get_current_u_values(uint32_t visitSum, const SearchSettings* searchSettings)
+DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSettings)
 {
-    return get_current_cput(visitSum, searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(visitSum) / (d->childNumberVisits + 1.0));
+    return get_current_cput(d->visitSum, searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(d->visitSum) / (d->childNumberVisits + 1.0));
 }
 
 Node *Node::get_child_node(size_t childIdx)
@@ -1029,7 +1019,7 @@ size_t get_best_action_index(const Node *curNode, bool fast)
     return bestMoveIdx;
 }
 
-size_t Node::select_child_node(uint32_t visitSum, const SearchSettings* searchSettings)
+size_t Node::select_child_node(const SearchSettings* searchSettings)
 {
     if (!sorted) {
         prepare_node_for_visits();
@@ -1041,11 +1031,11 @@ size_t Node::select_child_node(uint32_t visitSum, const SearchSettings* searchSe
         return d->checkmateIdx;
     }
 
-    assert(sum(d->childNumberVisits) == visitSum);
+    assert(sum(d->childNumberVisits) == d->visitSum);
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    return argmax(d->qValues + get_current_u_values(visitSum, searchSettings));
+    return argmax(d->qValues + get_current_u_values(searchSettings));
 }
 
 const char* node_type_to_string(enum NodeType nodeType)

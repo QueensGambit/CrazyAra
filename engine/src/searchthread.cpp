@@ -144,8 +144,6 @@ float SearchThread::get_transposition_q_value(float transposVisits, float transp
 
 Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, vector<MoveIdx>& trajectory)
 {
-    uint32_t visitSum = rootNode->get_visits();
-    rootNode->increment_visits(searchSettings->virtualLoss);
     description.depth = 0;
     Node* currentNode = rootNode;
     vector<Action> actions;
@@ -157,9 +155,8 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         }
         currentNode->lock();
         if (childIdx == INT_MAX) {
-            childIdx = currentNode->select_child_node(visitSum, searchSettings);
+            childIdx = currentNode->select_child_node(searchSettings);
         }
-        visitSum = currentNode->get_child_number_visits()[childIdx] - 1;
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
         trajectory.emplace_back(childIdx);
 
@@ -190,8 +187,8 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         if (nextNode->is_transposition()) {
             float masterVisits;
             float masterQsum;
-            description.type = is_transposition_return(currentNode, childIdx, masterVisits, masterQsum);
-            if (description.type == NODE_TRANSPOSITION) {
+            if (is_transposition_return(currentNode, childIdx, masterVisits, masterQsum)) {
+                description.type = NODE_TRANSPOSITION;
 #ifndef MODE_POMMERMAN
                 nextNode->set_value(-get_transposition_q_value(currentNode->get_real_visits(childIdx), currentNode->get_q_sum(childIdx, searchSettings->virtualLoss), masterVisits, masterQsum));
 #elif
@@ -200,11 +197,6 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
                 currentNode->unlock();
                 return currentNode;
             }
-            if (description.type == NODE_COLLISION) {
-                currentNode->unlock();
-                return currentNode;
-            }
-            // if (description.type == NODE_UNKNOWN) -> pass
         }
         if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
@@ -360,12 +352,11 @@ void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<vector<MoveId
     trajectories.clear();
 }
 
-NodeBackup SearchThread::is_transposition_return(const Node* parentNode, uint16_t childIdx, float& masterVisits, float& masterQsum)
+bool SearchThread::is_transposition_return(const Node* parentNode, uint16_t childIdx, float& masterVisits, float& masterQsum)
 {
     const uint32_t myVisits = parentNode->get_child_number_visits(childIdx) - 1;
     const Node* node = parentNode->get_child_node(childIdx);
     masterVisits = myVisits;
-    bool virtualLossPlayout = false;
     for (uint8_t parentIdx = 0; parentIdx < node->get_number_parent_nodes(); ++parentIdx) {
         const Node* curParentNode = node->get_parent_node(parentIdx);
         if (curParentNode == parentNode) {
@@ -373,23 +364,13 @@ NodeBackup SearchThread::is_transposition_return(const Node* parentNode, uint16_
         }
         const uint16_t childIdx = node->get_child_idx_for_parent(parentIdx);
         const uint32_t curVists = curParentNode->get_real_visits(childIdx);
-        const uint8_t virtualLossCounter = curParentNode->get_virtual_loss_counter(childIdx);
 
-        if (virtualLossCounter != 0) {
-            virtualLossPlayout = true;
-        }
         if (curVists > masterVisits) {
             masterVisits = curVists;
             masterQsum = curParentNode->get_q_sum(childIdx, searchSettings->virtualLoss);
         }
     }
-    if (myVisits != masterVisits) {
-        return NODE_TRANSPOSITION;
-    }
-    if (virtualLossPlayout) {
-        return NODE_COLLISION;
-    }
-    return NODE_UNKNOWN;
+    return myVisits != masterVisits;
 }
 
 

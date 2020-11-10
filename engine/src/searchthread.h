@@ -187,7 +187,7 @@ private:
 
     void backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories);
 
-    NodeBackup is_transposition_return(const Node* parentNode, uint16_t childIdx, float& masterVisits, float& masterQsum);
+    bool is_transposition_return(const Node* parentNode, uint16_t childIdx, float& masterVisits, float& masterQsum);
 };
 
 void run_search_thread(SearchThread *t);

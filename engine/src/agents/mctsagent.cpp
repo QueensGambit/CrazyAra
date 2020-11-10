@@ -276,11 +276,6 @@ void MCTSAgent::evaluate_board_state()
     evalInfo->nodesPreSearch = init_root_node(state);
     assert(!rootNode->is_transposition());
 
-    // ensure that the parent node has the correct amount of visits
-    if (evalInfo->nodesPreSearch != 0) {
-        rootNode->set_visits(sum(rootNode->get_child_number_visits()));
-    }
-
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();
     rootState = state;
