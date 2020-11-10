@@ -378,7 +378,7 @@ public:
     uint32_t max_parent_visits() const;
     uint8_t parent_idx_most_visits() const;
 
-    float get_q_sum(uint16_t childIdx, float virtualLoss) const;
+    double get_q_sum(uint16_t childIdx, float virtualLoss) const;
 
     template<bool increment>
     void update_virtual_loss_counter(uint16_t childIdx);

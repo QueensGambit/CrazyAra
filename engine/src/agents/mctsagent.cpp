@@ -274,7 +274,6 @@ void MCTSAgent::update_stats()
 void MCTSAgent::evaluate_board_state()
 {
     evalInfo->nodesPreSearch = init_root_node(state);
-    assert(!rootNode->is_transposition());
 
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();

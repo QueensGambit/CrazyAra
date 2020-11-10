@@ -59,9 +59,9 @@ uint8_t Node::parent_idx_most_visits() const
     return masterIdx;
 }
 
-float Node::get_q_sum(uint16_t childIdx, float virtualLoss) const
+double Node::get_q_sum(uint16_t childIdx, float virtualLoss) const
 {
-    return get_child_number_visits(childIdx) * get_q_value(childIdx) + get_virtual_loss_counter(childIdx) * virtualLoss;
+    return get_child_number_visits(childIdx) * double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * virtualLoss;
 }
 
 bool Node::is_transposition() const
@@ -600,6 +600,7 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
         // revert virtual loss and update the Q-value
         assert(d->childNumberVisits[childIdx] != 0);
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+        assert(!isnan(d->qValues[childIdx]));
     }
 
     if (virtualLoss != 1) {

@@ -155,7 +155,7 @@ public:
 
     size_t get_max_depth() const;
 
-    float get_transposition_q_value(float transposVisits, float transposQsum, float masterVisits, float masterQsum);
+    float get_transposition_q_value(uint32_t transposVisits, double transposQsum, uint32_t masterVisits, double masterQsum);
 
 private:
     /**
@@ -187,7 +187,7 @@ private:
 
     void backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories);
 
-    bool is_transposition_return(const Node* parentNode, uint16_t childIdx, float& masterVisits, float& masterQsum);
+    bool is_transposition_return(const Node* parentNode, uint16_t childIdx, uint32_t& masterVisits, double& masterQsum);
 };
 
 void run_search_thread(SearchThread *t);

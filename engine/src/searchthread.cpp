@@ -136,7 +136,7 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
     }
 }
 
-float SearchThread::get_transposition_q_value(float transposVisits, float transposQsum, float masterVisits, float masterQsum)
+float SearchThread::get_transposition_q_value(uint32_t transposVisits, double transposQsum, uint32_t masterVisits, double masterQsum)
 {
     assert((masterVisits - transposVisits) != 0);
     return (masterQsum - transposQsum) / (masterVisits - transposVisits);
@@ -185,8 +185,8 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             return currentNode;
         }
         if (nextNode->is_transposition()) {
-            float masterVisits;
-            float masterQsum;
+            uint32_t masterVisits;
+            double masterQsum;
             if (is_transposition_return(currentNode, childIdx, masterVisits, masterQsum)) {
                 description.type = NODE_TRANSPOSITION;
 #ifndef MODE_POMMERMAN
@@ -346,13 +346,16 @@ void run_search_thread(SearchThread *t)
 
 void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<vector<MoveIdx>>& trajectories) {
     for (size_t idx = 0; idx < nodes->size(); ++idx) {
-        backup_value(rootNode, nodes->get_element(idx)->get_value(), searchSettings->virtualLoss, trajectories[idx]);
+        const Node* node = nodes->get_element(idx);
+        if (!isnan(node->get_value())){
+            backup_value(rootNode, node->get_value(), searchSettings->virtualLoss, trajectories[idx]);
+        }
     }
     nodes->reset_idx();
     trajectories.clear();
 }
 
-bool SearchThread::is_transposition_return(const Node* parentNode, uint16_t childIdx, float& masterVisits, float& masterQsum)
+bool SearchThread::is_transposition_return(const Node* parentNode, uint16_t childIdx, uint32_t& masterVisits, double& masterQsum)
 {
     const uint32_t myVisits = parentNode->get_child_number_visits(childIdx) - 1;
     const Node* node = parentNode->get_child_node(childIdx);
@@ -362,12 +365,16 @@ bool SearchThread::is_transposition_return(const Node* parentNode, uint16_t chil
         if (curParentNode == parentNode) {
             continue;
         }
+        if (!curParentNode->is_playout_node()) {
+            continue;
+        }
         const uint16_t childIdx = node->get_child_idx_for_parent(parentIdx);
         const uint32_t curVists = curParentNode->get_real_visits(childIdx);
-
         if (curVists > masterVisits) {
-            masterVisits = curVists;
             masterQsum = curParentNode->get_q_sum(childIdx, searchSettings->virtualLoss);
+            if (!isnan(masterQsum)) {
+                masterVisits = curVists;
+            }
         }
     }
     return myVisits != masterVisits;
