@@ -36,7 +36,8 @@
 
 typedef uint64_t Key;
 typedef int Action;
-typedef u_int16_t MoveIdx;
+typedef uint16_t MoveIdx;
+
 typedef int SideToMove;
 #define FIRST_PLAYER_IDX 0
 const int ACTION_NONE = 0;
@@ -123,7 +124,7 @@ public:
         return T::action_to_uci(action, is960);
     }
     template<PolicyType p, MirrorType m>
-    static size_t action_to_index(Action action) {
+    static MoveIdx action_to_index(Action action) {
         return T::action_to_index<p, m>(action);
     }
     static void init(bool isPolicyMap) {

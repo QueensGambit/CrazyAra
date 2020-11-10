@@ -67,7 +67,11 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 #define RANDOM_MOVE_THRESH 10000
 #define Q_INIT -1.0f
 
+#ifndef MODE_POMMERMAN
 #define TERMINAL_NODE_CACHE 8192
+#else
+#define TERMINAL_NODE_CACHE 1
+#endif
 
 const std::string result[] = {"1/2-1/2", "1-0", "0-1"};
 
