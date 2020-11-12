@@ -136,11 +136,14 @@ size_t MCTSAgent::init_root_node(StateObj *state)
 
 Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
 {
+    reusedFullTree = false;
+
     if (rootNode == nullptr) {
         return nullptr;
     }
     if (same_hash_key(rootNode, state)) {
         info_string("reuse the full tree");
+        reusedFullTree = true;
         return rootNode;
     }
 
