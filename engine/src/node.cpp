@@ -141,9 +141,7 @@ Node::Node(StateObj* state, bool inCheck, Node* parentNode, size_t childIdxForPa
     sorted(false)
 {
     // specify the number of direct child nodes of this node
-    parentNodes.emplace_back(ParentNode());
-    parentNodes.front().node = parentNode;
-    parentNodes.front().childIdxForParent = childIdxForParent;
+    parentNodes.emplace_back(ParentNode(parentNode, childIdxForParent));
     check_for_terminal(state, inCheck);
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
     if (searchSettings->useTablebase && !isTerminal) {
@@ -683,10 +681,7 @@ void Node::add_new_child_node(Node *newNode, size_t childIdx)
 void Node::add_transposition_parent_node(Node* parentNode, uint16_t childIdx)
 {
     parentNode->d->childNodes[childIdx] = this;
-    ParentNode parent;
-    parent.node = parentNode;
-    parent.childIdxForParent = childIdx;
-    parentNodes.emplace_back(parent);
+    parentNodes.emplace_back(ParentNode(parentNode, childIdx));
 }
 
 float Node::max_policy_prob()

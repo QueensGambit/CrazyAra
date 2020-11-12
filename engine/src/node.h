@@ -50,6 +50,8 @@ struct ParentNode {
     double qSum;
     uint16_t childIdxForParent;
     bool isDead = false;
+    ParentNode(Node* node, uint16_t childIdxForParent) :
+        node(node), childIdxForParent(childIdxForParent) {}
 };
 
 struct NodeAndIdx {
