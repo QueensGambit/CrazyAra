@@ -58,10 +58,6 @@ private:
 
     Node* rootNode;
     StateObj* rootState;
-    // The oldes root node stores a reference to the node with with the current root nodes is based on.
-    // This is used in the case of tree reusage. The old subtree cannot be cleared immediatly because of
-    // stateInfos for 3-fold repetition, but can be cleared as soon as the tree cannot be reused anymore.
-    Node* oldestRootNode;
 
     // stores the pointer to the root node which will become the new root
     Node* ownNextRoot;

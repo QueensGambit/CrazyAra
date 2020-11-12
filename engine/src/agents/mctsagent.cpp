@@ -42,7 +42,6 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     searchSettings(searchSettings),
     rootNode(nullptr),
     rootState(nullptr),
-    oldestRootNode(nullptr),
     ownNextRoot(nullptr),
     opponentsNextRoot(nullptr),
     lastValueEval(-1.0f),
@@ -137,34 +136,28 @@ size_t MCTSAgent::init_root_node(StateObj *state)
 
 Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
 {
-    reusedFullTree = false;
-
     if (rootNode == nullptr) {
         return nullptr;
     }
     if (same_hash_key(rootNode, state)) {
         info_string("reuse the full tree");
-        reusedFullTree = true;
         return rootNode;
     }
 
     if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node()) {
         delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
         delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        gcThread.add_item_to_delete(rootNode);
+        add_item_to_delete(rootNode, mapWithMutex.hashTable, gcThread);
+        add_item_to_delete(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         return ownNextRoot;
     }
     if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node()) {
         delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        if (opponentsNextRoot->main_parent_node() != nullptr && !opponentsNextRoot->main_parent_node()->has_transposition_child_node()) {
-            gcThread.add_item_to_delete(opponentsNextRoot->main_parent_node());
-        }
+        add_item_to_delete(rootNode, mapWithMutex.hashTable, gcThread);
         return opponentsNextRoot;
     }
-
     // the node wasn't found, clear the old tree
     delete_old_tree();
-    gcThread.add_item_to_delete(rootNode);
 
     return nullptr;
 }
@@ -174,7 +167,6 @@ void MCTSAgent::create_new_root_node(StateObj* state)
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
     rootNode = new Node(state, false, nullptr, 0, searchSettings);
-    oldestRootNode = rootNode;
     state->get_state_planes(true, inputPlanes);
     net->predict(inputPlanes, valueOutputs, probOutputs);
     size_t tbHits = 0;
@@ -185,11 +177,8 @@ void MCTSAgent::create_new_root_node(StateObj* state)
 void MCTSAgent::delete_old_tree()
 {
     // clear all remaining node of the former root node
-    if (rootNode != nullptr) {
-        for (Node* childNode: rootNode->get_child_nodes()) {
-            delete_subtree_and_hash_entries(childNode, mapWithMutex.hashTable, gcThread);
-        }
-    }
+    delete_subtree_and_hash_entries(rootNode, mapWithMutex.hashTable, gcThread);
+    assert(mapWithMutex.hashTable.size() == 0);
 }
 
 void MCTSAgent::sleep_and_log_for(size_t timeMS, size_t updateIntervalMS)
@@ -234,9 +223,6 @@ void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)
 void MCTSAgent::clear_game_history()
 {
     delete_old_tree();
-    assert(mapWithMutex.hashTable.size() == 0);
-    mapWithMutex.hashTable.clear();
-    oldestRootNode = nullptr;
     ownNextRoot = nullptr;
     opponentsNextRoot = nullptr;
     rootNode = nullptr;

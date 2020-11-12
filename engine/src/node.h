@@ -555,6 +555,8 @@ private:
  */
 size_t get_best_action_index(const Node* curNode, bool fast);
 
+void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
+
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
  * @param node Node of the subtree to delete

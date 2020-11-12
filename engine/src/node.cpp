@@ -92,8 +92,10 @@ void Node::kill_parent_node(const Node *parentNode)
             it->visits = get_real_visits_for_parent(*it);
             it->qSum = get_q_sum_for_parent(*it, 1);
             it->isDead = true;
+            return;
         }
     }
+    assert(false);
 }
 
 uint8_t Node::get_virtual_loss_counter(uint16_t childIdx) const
@@ -977,6 +979,7 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
         mctsPolicy = d->childNumberVisits;
         bestMoveIdx = argmax(d->childNumberVisits);
     }
+
     mctsPolicy /= sum(mctsPolicy);
 }
 
@@ -1061,20 +1064,21 @@ NodeType flip_node_type(const enum NodeType nodeType) {
     }
 }
 
+void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread) {
+    // the board position is only filled if the node has been extended
+    auto it = hashTable.find(node->hash_key());
+    if(it != hashTable.end()) {
+        hashTable.erase(node->hash_key());
+    }
+    gcThread.add_item_to_delete(node);
+}
+
 void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
 {
     info_string("delete unused subtrees");
     for (Node* childNode: parentNode->get_child_nodes()) {
         if (childNode != node && childNode != nullptr) {
-            if (childNode->is_transposition()) {
-                childNode->kill_parent_node(parentNode);
-                if (childNode->only_dead_parents()) {
-                    delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
-                }
-            }
-            else {
                 delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
-            }
         }
     }
 }
@@ -1086,23 +1090,19 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>& hash
     }
     // if the current node hasn't been expanded or is a terminal node then childNodes is empty and the recursion ends
     if (node->is_sorted()) {
-        uint16_t childIdx = 0;
         for (Node* childNode: node->get_child_nodes()) {
             if (childNode != nullptr && childNode->is_transposition()) {
                 childNode->kill_parent_node(node);
+                if (childNode->only_dead_parents()) {
+                    delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+                }
             }
             else {
                 delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
             }
-            ++childIdx;
         }
     }
-    // the board position is only filled if the node has been extended
-    auto it = hashTable.find(node->hash_key());
-    if(it != hashTable.end()) {
-        hashTable.erase(node->hash_key());
-    }
-    gcThread.add_item_to_delete(node);
+    add_item_to_delete(node, hashTable, gcThread);
 }
 
 float get_visits(Node* node)
