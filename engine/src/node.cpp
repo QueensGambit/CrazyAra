@@ -680,7 +680,6 @@ void Node::add_new_child_node(Node *newNode, size_t childIdx)
 
 void Node::add_transposition_parent_node(Node* parentNode, uint16_t childIdx)
 {
-    parentNode->d->childNodes[childIdx] = this;
     parentNodes.emplace_back(ParentNode(parentNode, childIdx));
 }
 
@@ -1175,25 +1174,31 @@ float Node::main_real_q_value(float virtualLoss)
     return get_q_sum_for_parent(*masterParent, virtualLoss) / get_real_visits_for_parent(*masterParent);
 }
 
-bool Node::is_transposition_return(uint16_t childIdx, float virtualLoss, uint32_t& masterVisits, double& masterQsum) const
+bool Node::is_transposition_return(const Node* parentNode, uint32_t myVisits, float virtualLoss, uint32_t& masterRealVisits, double& masterQsum) const
 {
-    const uint32_t myVisits = get_child_number_visits(childIdx) - 1;
-    const Node* node = get_child_node(childIdx);
-    masterVisits = myVisits;
-
-    for (auto it = node->parentNodes.begin(); it != node->parentNodes.end(); ++it) {
-        if (it->node == this) {
+    masterRealVisits = myVisits;
+    for (auto it = parentNodes.begin(); it != parentNodes.end(); ++it) {
+        if (it->node == parentNode) {
             continue;
         }
-
+        if (!it->node->hasNNResults) {
+            continue;
+        }
+        if (!it->isDead) {
+            it->node->lock();
+        }
         const uint32_t curVists = get_real_visits_for_parent(*it);
-        if (curVists > masterVisits) {
+        if (curVists > masterRealVisits) {
             masterQsum = get_q_sum_for_parent(*it, virtualLoss);
             assert(!isnan(masterQsum));
-            masterVisits = curVists;
+            masterRealVisits = curVists;
+        }
+        if (!it->isDead) {
+            it->node->unlock();
         }
     }
-    return myVisits != masterVisits;
+    assert(masterRealVisits != 0);
+    return myVisits != masterRealVisits;
 }
 
 bool is_terminal_value(float value)

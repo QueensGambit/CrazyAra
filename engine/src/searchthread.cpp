@@ -48,7 +48,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
 
     newNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
     newNodeSideToMove = make_unique<FixedVector<SideToMove>>(searchSettings->batchSize);
-    transpositionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize*2);
+    transpositionValues = make_unique<FixedVector<float>>(searchSettings->batchSize*2);
     collisionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
 }
 
@@ -80,14 +80,26 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
     if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
             is_transposition_verified(it, newState)) {
         mapWithMutex->mtx.unlock();
+        uint32_t masterRealVisits;
+        double masterQSum;
+        parentNode->unlock();
+        float qValue;
+        if (it->second->is_transposition_return(parentNode, 0, searchSettings->virtualLoss, masterRealVisits, masterQSum)) {
+            qValue = masterQSum / masterRealVisits;
+        }
+        else {
+            qValue = -it->second->get_value();
+        }
+        parentNode->lock();
         it->second->lock();
         it->second->add_transposition_parent_node(parentNode, childIdx);
         it->second->unlock();
 #ifndef MODE_POMMERMAN
-        it->second->set_value(-it->second->main_real_q_value(searchSettings->virtualLoss));
+        transpositionValues->add_element(-qValue);
 #else
-        it->second->set_value(it->second->main_real_q_value(searchSettings->virtualLoss));
+        transpositionValues->add_element(qValue);
 #endif
+        parentNode->add_new_child_node(it->second, childIdx);
         return NODE_TRANSPOSITION;
     }
     mapWithMutex->mtx.unlock();
@@ -185,19 +197,23 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             return currentNode;
         }
         if (nextNode->is_transposition()) {
-            uint32_t masterVisits;
+            const uint32_t curVisits = currentNode->get_child_number_visits(childIdx) - 1;
+            const uint32_t curRealVisits = currentNode->get_real_visits(childIdx);
+            const double currentQsum = currentNode->get_q_sum(childIdx, searchSettings->virtualLoss);
+            currentNode->unlock();
+            uint32_t masterRealVisits;
             double masterQsum;
-            if (currentNode->is_transposition_return(childIdx, searchSettings->virtualLoss, masterVisits, masterQsum)) {
+            if (nextNode->is_transposition_return(currentNode, curVisits, searchSettings->virtualLoss, masterRealVisits, masterQsum)) {
                 description.type = NODE_TRANSPOSITION;
-                const float qValue = get_transposition_q_value(currentNode->get_real_visits(childIdx), currentNode->get_q_sum(childIdx, searchSettings->virtualLoss), masterVisits, masterQsum);
+                const float qValue = get_transposition_q_value(curRealVisits, currentQsum, masterRealVisits, masterQsum);
 #ifndef MODE_POMMERMAN
-                nextNode->set_value(-qValue);
+                transpositionValues->add_element(-qValue);
 #else
-                nextNode->set_value(qValue);
+                transpositionValues->add_element(qValue);
 #endif
-                currentNode->unlock();
                 return currentNode;
             }
+            currentNode->lock();
         }
         if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
@@ -258,7 +274,7 @@ void SearchThread::backup_value_outputs()
 {
     backup_values(newNodes.get(), newTrajectories);
     newNodeSideToMove->reset_idx();
-    backup_values(transpositionNodes.get(), transpositionTrajectories);
+    backup_values(transpositionValues.get(), transpositionTrajectories);
 }
 
 void SearchThread::backup_collisions() {
@@ -295,7 +311,7 @@ void SearchThread::create_mini_batch()
 
     while (!newNodes->is_full() &&
            !collisionNodes->is_full() &&
-           !transpositionNodes->is_full() &&
+           !transpositionValues->is_full() &&
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
         Trajectory trajectory;
@@ -314,7 +330,6 @@ void SearchThread::create_mini_batch()
             collisionTrajectories.emplace_back(trajectory);
         }
         else if (description.type == NODE_TRANSPOSITION) {
-            transpositionNodes->add_element(newNode);
             transpositionTrajectories.emplace_back(trajectory);
         }
         else {  // NODE_NEW_NODE
@@ -348,13 +363,20 @@ void run_search_thread(SearchThread *t)
 void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < nodes->size(); ++idx) {
         const Node* node = nodes->get_element(idx);
-        if (!isnan(node->get_value())){
-            backup_value(node->get_value(), searchSettings->virtualLoss, trajectories[idx]);
-        }
+        backup_value(node->get_value(), searchSettings->virtualLoss, trajectories[idx]);
     }
     nodes->reset_idx();
     trajectories.clear();
 }
+
+void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories) {
+    for (size_t idx = 0; idx < values->size(); ++idx) {
+        backup_value(values->get_element(idx), searchSettings->virtualLoss, trajectories[idx]);
+    }
+    values->reset_idx();
+    trajectories.clear();
+}
+
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)
 {

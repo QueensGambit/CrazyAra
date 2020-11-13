@@ -69,7 +69,7 @@ private:
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
-    unique_ptr<FixedVector<Node*>> transpositionNodes;
+    unique_ptr<FixedVector<float>> transpositionValues;
     unique_ptr<FixedVector<Node*>> collisionNodes;
 
     vector<Trajectory> newTrajectories;
@@ -186,6 +186,7 @@ private:
     Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, Trajectory& trajectory);
 
     void backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories);
+    void backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories);
 };
 
 void run_search_thread(SearchThread *t);

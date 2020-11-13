@@ -413,7 +413,7 @@ public:
 
     bool has_transposition_child_node();
 
-    bool is_transposition_return(uint16_t childIdx, float virtualLoss, uint32_t& masterVisits, double& masterQsum) const;
+    bool is_transposition_return(const Node* parentNode, uint32_t myVisits, float virtualLoss, uint32_t& masterVisits, double& masterQsum) const;
 
 private:
 
