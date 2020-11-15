@@ -37,7 +37,7 @@ void NodeData::add_empty_node()
 
 void NodeData::reserve_initial_space()
 {
-    const int initSize = min(PRESERVED_ITEMS, int(numberUnsolvedChildNodes));  //numberChildNodes
+    const int initSize = min(PRESERVED_ITEMS, int(numberUnsolvedChildNodes));
 
     // # visit count of all its child nodes
     childNumberVisits.reserve(initSize);
@@ -48,7 +48,7 @@ void NodeData::reserve_initial_space()
     qValues.reserve(initSize);
 
     childNodes.reserve(initSize);
-
+    virtualLossCounter.reserve(initSize);
     add_empty_node();
 }
 
@@ -71,4 +71,3 @@ auto NodeData::get_q_values()
 {
     return blaze::subvector(qValues, 0, noVisitIdx);
 }
-

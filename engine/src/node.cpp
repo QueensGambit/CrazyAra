@@ -1184,17 +1184,11 @@ bool Node::is_transposition_return(const Node* parentNode, uint32_t myVisits, fl
         if (!it->node->hasNNResults) {
             continue;
         }
-        if (!it->isDead) {
-            it->node->lock();
-        }
         const uint32_t curVists = get_real_visits_for_parent(*it);
         if (curVists > masterRealVisits) {
             masterQsum = get_q_sum_for_parent(*it, virtualLoss);
             assert(!isnan(masterQsum));
             masterRealVisits = curVists;
-        }
-        if (!it->isDead) {
-            it->node->unlock();
         }
     }
     assert(masterRealVisits != 0);

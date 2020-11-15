@@ -82,7 +82,6 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
         mapWithMutex->mtx.unlock();
         uint32_t masterRealVisits;
         double masterQSum;
-        parentNode->unlock();
         float qValue;
         if (it->second->is_transposition_return(parentNode, 0, searchSettings->virtualLoss, masterRealVisits, masterQSum)) {
             qValue = masterQSum / masterRealVisits;
@@ -90,7 +89,6 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
         else {
             qValue = -it->second->get_value();
         }
-        parentNode->lock();
         it->second->lock();
         it->second->add_transposition_parent_node(parentNode, childIdx);
         it->second->unlock();
@@ -100,6 +98,7 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
         transpositionValues->add_element(qValue);
 #endif
         parentNode->add_new_child_node(it->second, childIdx);
+        parentNode->unlock();
         return NODE_TRANSPOSITION;
     }
     mapWithMutex->mtx.unlock();
@@ -198,22 +197,19 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         }
         if (nextNode->is_transposition()) {
             const uint32_t curVisits = currentNode->get_child_number_visits(childIdx) - 1;
-            const uint32_t curRealVisits = currentNode->get_real_visits(childIdx);
-            const double currentQsum = currentNode->get_q_sum(childIdx, searchSettings->virtualLoss);
-            currentNode->unlock();
             uint32_t masterRealVisits;
             double masterQsum;
             if (nextNode->is_transposition_return(currentNode, curVisits, searchSettings->virtualLoss, masterRealVisits, masterQsum)) {
                 description.type = NODE_TRANSPOSITION;
-                const float qValue = get_transposition_q_value(curRealVisits, currentQsum, masterRealVisits, masterQsum);
+                const float qValue = masterQsum / masterRealVisits;
 #ifndef MODE_POMMERMAN
                 transpositionValues->add_element(-qValue);
 #else
                 transpositionValues->add_element(qValue);
 #endif
+                currentNode->unlock();
                 return currentNode;
             }
-            currentNode->lock();
         }
         if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
