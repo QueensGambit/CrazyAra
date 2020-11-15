@@ -70,7 +70,6 @@ private:
     unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<float>> transpositionValues;
-    unique_ptr<FixedVector<Node*>> collisionNodes;
 
     vector<Trajectory> newTrajectories;
     vector<Trajectory> transpositionTrajectories;

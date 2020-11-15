@@ -511,6 +511,7 @@ void Node::reserve_full_memory()
     d->childNumberVisits.reserve(numberChildNodes);
     d->qValues.reserve(numberChildNodes);
     d->childNodes.reserve(numberChildNodes);
+    d->virtualLossCounter.reserve(numberChildNodes);
 }
 
 void Node::increment_no_visit_idx()
@@ -1181,7 +1182,7 @@ bool Node::is_transposition_return(const Node* parentNode, uint32_t myVisits, fl
         if (it->node == parentNode) {
             continue;
         }
-        if (!it->node->hasNNResults) {
+        if (!it->isDead && !it->node->hasNNResults) {
             continue;
         }
         const uint32_t curVists = get_real_visits_for_parent(*it);

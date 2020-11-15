@@ -49,7 +49,6 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     newNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
     newNodeSideToMove = make_unique<FixedVector<SideToMove>>(searchSettings->batchSize);
     transpositionValues = make_unique<FixedVector<float>>(searchSettings->batchSize*2);
-    collisionNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
 }
 
 void SearchThread::set_root_node(Node *value)
@@ -140,9 +139,7 @@ void random_root_playout(NodeDescription& description, Node* currentNode, size_t
         }
         else {
             childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
-            currentNode->lock();
             currentNode->increment_no_visit_idx();
-            currentNode->unlock();
         }
     }
 }
@@ -161,10 +158,10 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
 
     while (true) {
         childIdx = INT_MAX;
+        currentNode->lock();
         if (searchSettings->useRandomPlayout) {
             random_root_playout(description, currentNode, childIdx);
         }
-        currentNode->lock();
         if (childIdx == INT_MAX) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
@@ -180,8 +177,8 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             }
             const bool inCheck = newState->gives_check(currentNode->get_action(childIdx));
             newState->do_action(currentNode->get_action(childIdx));
-            description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx, inCheck);
             currentNode->increment_no_visit_idx();
+            description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx, inCheck);
             currentNode->unlock();
 
             if (description.type == NODE_NEW_NODE) {
@@ -274,10 +271,9 @@ void SearchThread::backup_value_outputs()
 }
 
 void SearchThread::backup_collisions() {
-    for (size_t idx = 0; idx < collisionNodes->size(); ++idx) {
+    for (size_t idx = 0; idx < collisionTrajectories.size(); ++idx) {
         backup_collision(searchSettings->virtualLoss, collisionTrajectories[idx]);
     }
-    collisionNodes->reset_idx();
     collisionTrajectories.clear();
 }
 
@@ -306,7 +302,7 @@ void SearchThread::create_mini_batch()
     size_t numTerminalNodes = 0;
 
     while (!newNodes->is_full() &&
-           !collisionNodes->is_full() &&
+           collisionTrajectories.size() != searchSettings->batchSize &&
            !transpositionValues->is_full() &&
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
@@ -322,7 +318,6 @@ void SearchThread::create_mini_batch()
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
-            collisionNodes->add_element(newNode);
             collisionTrajectories.emplace_back(trajectory);
         }
         else if (description.type == NODE_TRANSPOSITION) {
