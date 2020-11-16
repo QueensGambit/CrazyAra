@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
 set (CMAKE_CXX_STANDARD 17)
-project(CrazyAra CXX)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
@@ -19,14 +18,17 @@ add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
 
 if (MODE_CRAZYHOUSE)
+    project(CrazyAra CXX)
     add_definitions(-DMODE_CRAZYHOUSE)
 endif()
 
 if (MODE_CHESS)
+    project(ClassicAra CXX)
     add_definitions(-DMODE_CHESS)
 endif()
 
 if (MODE_LICHESS)
+    project(LichessAra CXX)
     add_definitions(-DMODE_LICHESS)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DKOTH)
