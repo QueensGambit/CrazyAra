@@ -169,7 +169,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
-    rootNode = new Node(state, false, nullptr, 0, searchSettings);
+    rootNode = new Node(state, false, searchSettings);
     state->get_state_planes(true, inputPlanes);
     net->predict(inputPlanes, valueOutputs, probOutputs);
     size_t tbHits = 0;
@@ -336,7 +336,7 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
     size_t childIdx = 0;
     for (Node* node : parentNode->get_child_nodes()) {
         if (node != nullptr) {
-            Action action = parentNode->get_action(node->main_child_idx_for_parent());
+            Action action = parentNode->get_action(childIdx);
             outFile << "N" << ++nodeId << " [label = \""
                     <<  state->action_to_san(action, state->legal_actions(), false, false)
                      << "\"]" << endl;
@@ -355,7 +355,7 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
     for (Node* node : parentNode->get_child_nodes()) {
         if (node != nullptr && node->is_playout_node()) {
             unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state->clone());
-            Action action = parentNode->get_action(node->main_child_idx_for_parent());
+            Action action = parentNode->get_action(childIdx);
             state2->do_action(action);
             print_child_nodes_to_file(node, state2.get(), ++initialId, nodeId, outFile, depth+1, maxDepth);
         }

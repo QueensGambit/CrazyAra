@@ -57,6 +57,7 @@ struct NodeData
     DynamicVector<float> qValues;
     vector<Node*> childNodes;
     DynamicVector<uint8_t> virtualLossCounter;
+    DynamicVector<NodeType> nodeTypes;
 
     uint32_t terminalVisits;
     uint32_t visitSum;

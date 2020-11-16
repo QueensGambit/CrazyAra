@@ -32,6 +32,7 @@ void NodeData::add_empty_node()
     append(childNumberVisits, 0U);
     append(qValues, Q_INIT);
     append(virtualLossCounter, uint8_t(0));
+    append(nodeTypes, UNSOLVED);
     childNodes.emplace_back(nullptr);
 }
 
@@ -49,6 +50,7 @@ void NodeData::reserve_initial_space()
 
     childNodes.reserve(initSize);
     virtualLossCounter.reserve(initSize);
+    nodeTypes.reserve(initSize);
     add_empty_node();
 }
 

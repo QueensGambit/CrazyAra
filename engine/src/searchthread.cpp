@@ -79,30 +79,23 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
     if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
             is_transposition_verified(it, newState)) {
         mapWithMutex->mtx.unlock();
-        uint32_t masterRealVisits;
-        double masterQSum;
-        float qValue;
-        if (it->second->is_transposition_return(parentNode, 0, searchSettings->virtualLoss, masterRealVisits, masterQSum)) {
-            qValue = masterQSum / masterRealVisits;
-        }
-        else {
-            qValue = -it->second->get_value();
-        }
         it->second->lock();
-        it->second->add_transposition_parent_node(parentNode, childIdx);
+        const float qValue =  it->second->get_value();
+
+        it->second->add_transposition_parent_node();
         it->second->unlock();
 #ifndef MODE_POMMERMAN
-        transpositionValues->add_element(-qValue);
-#else
-        transpositionValues->add_element(qValue);
+        if (it->second->is_playout_node() && it->second->get_node_type() == SOLVED_LOSS) {
+            parentNode->set_checkmate_idx(childIdx);
+        }
 #endif
+        transpositionValues->add_element(qValue);
         parentNode->add_new_child_node(it->second, childIdx);
-        parentNode->unlock();
         return NODE_TRANSPOSITION;
     }
     mapWithMutex->mtx.unlock();
     assert(parentNode != nullptr);
-    Node *newNode = new Node(newState, inCheck, parentNode, childIdx, searchSettings);
+    Node *newNode = new Node(newState, inCheck, searchSettings);
     // connect the Node to the parent
     parentNode->add_new_child_node(newNode, childIdx);
     return NODE_NEW_NODE;
@@ -192,22 +185,6 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
 
             return currentNode;
         }
-        if (nextNode->is_transposition()) {
-            const uint32_t curVisits = currentNode->get_child_number_visits(childIdx) - 1;
-            uint32_t masterRealVisits;
-            double masterQsum;
-            if (nextNode->is_transposition_return(currentNode, curVisits, searchSettings->virtualLoss, masterRealVisits, masterQsum)) {
-                description.type = NODE_TRANSPOSITION;
-                const float qValue = masterQsum / masterRealVisits;
-#ifndef MODE_POMMERMAN
-                transpositionValues->add_element(-qValue);
-#else
-                transpositionValues->add_element(qValue);
-#endif
-                currentNode->unlock();
-                return currentNode;
-            }
-        }
         if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
@@ -217,6 +194,18 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             description.type = NODE_COLLISION;
             currentNode->unlock();
             return currentNode;
+        }
+        if (nextNode->is_transposition()) {
+            nextNode->lock();
+            if (nextNode->is_transposition_return(-currentNode->get_q_sum(childIdx, searchSettings->virtualLoss) / currentNode->get_real_visits(childIdx))) {
+                const float qValue = nextNode->get_value();
+                nextNode->unlock();
+                description.type = NODE_TRANSPOSITION;
+                transpositionValues->add_element(qValue);
+                currentNode->unlock();
+                return currentNode;
+            }
+            nextNode->unlock();
         }
         currentNode->unlock();
         actions.emplace_back(currentNode->get_action(childIdx));
@@ -376,7 +365,8 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
     }
     else {
         ++tbHits;
-        if (node->get_value() != 0 && node->main_parent_node() != nullptr && node->main_parent_node()->is_tablebase()) {
+        // TODO: Improvement the value assignment for table bases
+        if (node->get_value() != 0) {
             // use the average of the TB entry and NN eval for non-draws
             node->set_value((valueOutputs[batchIdx] + node->get_value()) * 0.5f);
         }

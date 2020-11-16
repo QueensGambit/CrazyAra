@@ -72,17 +72,19 @@ private:
     vector<Action> legalActions;
     //    DynamicVector<bool> isCheck;
     //    DynamicVector<bool> isCapture;
-
-    vector<ParentNode> parentNodes;
     Key key;
 
     // singular values
-    float value;
+    // valueSum stores the sum of all incoming value evaluations
+    double valueSum;
+
     unique_ptr<NodeData> d;
+    uint32_t realVisitsSum;
 
     // identifiers
     uint16_t pliesFromNull;
 
+    uint8_t numberParentNodes;
     bool isTerminal;
     bool isTablebase;
     bool hasNNResults;
@@ -97,8 +99,6 @@ public:
      */
     Node(StateObj *state,
          bool inCheck,
-         Node *parentNode,
-         size_t childIdxForParent,
          const SearchSettings* searchSettings);
 
     /**
@@ -127,7 +127,7 @@ public:
      * @param childIdx Index to the child node to update
      * @param value Specifies the value evaluation to backpropagate
      */
-    void revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss);
+    void revert_virtual_loss_and_update(size_t childIdx, float valueSum, float virtualLoss);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
@@ -160,6 +160,8 @@ public:
     bool is_terminal() const;
     bool has_nn_results() const;
     float get_value() const;
+    double get_value_sum() const;
+    uint32_t get_real_visits() const;
 
     void apply_virtual_loss_to_child(size_t childIdx, float virtualLoss);
 
@@ -195,18 +197,14 @@ public:
      *       = 0.6
      *
      */
-    void revert_virtual_loss_and_update(float value);
+    void revert_virtual_loss_and_update(float valueSum);
 
-    Node* main_parent_node() const;
-    Node* get_parent_node(uint8_t parentIdx) const;
-    uint16_t get_child_idx_for_parent(uint8_t parentIdx)  const;
     void increment_no_visit_idx();
     void fully_expand_node();
 
     Key hash_key() const;
 
     size_t get_number_child_nodes() const;
-    uint8_t get_number_parent_nodes() const;
 
     void prepare_node_for_visits();
 
@@ -270,12 +268,12 @@ public:
      */
     void enhance_moves(const SearchSettings* searchSettings);
 
-    void set_value(float value);
+    void set_value(float valueSum);
     uint16_t main_child_idx_for_parent() const;
 
     void add_new_child_node(Node* newNode, size_t childIdx);
 
-    void add_transposition_parent_node(Node* newNode, uint16_t childIdx);
+    void add_transposition_parent_node();
 
     /**
      * @brief max_prob Returns the maximum policy value
@@ -367,7 +365,7 @@ public:
      * @param idx Child index
      * @param value value to set
      */
-    void set_q_value(size_t idx, float value);
+    void set_q_value(size_t idx, float valueSum);
 
     /**
      * @brief get_best_q_idx Return the child index with the highest Q-value
@@ -393,11 +391,9 @@ public:
      */
     uint32_t get_nodes();
 
-    float main_real_q_value(float virtualLoss);
-
     bool is_transposition() const;
 
-    void kill_parent_node(const Node* parentNode);
+    void kill_parent_node();
 
     uint32_t max_parent_visits() const;
     ParentNode* parent_with_most_visits();
@@ -413,7 +409,9 @@ public:
 
     bool has_transposition_child_node();
 
-    bool is_transposition_return(const Node* parentNode, uint32_t myVisits, float virtualLoss, uint32_t& masterVisits, double& masterQsum) const;
+    bool is_transposition_return(double myQvalue) const;
+
+    void set_checkmate_idx(uint_fast16_t) const;
 
 private:
 
@@ -447,7 +445,7 @@ private:
      * The solver uses the current backpropagating child node as well as all available child nodes.
      * @param childNode Child nodes which backpropagates the value
      */
-    void solve_for_terminal(const Node* childNode);
+    void solve_for_terminal(uint_fast16_t childIdx);
 
     /**
      * @brief solved_win Checks if the current node is a solved win based on the given child node
@@ -511,7 +509,7 @@ private:
      * @param targetValue Target value which will be set to be the new node value
      */
     template <int targetValue>
-    void update_solved_terminal(const Node* childNode);
+    void update_solved_terminal(const Node* childNode, uint_fast16_t childIdx);
 
     /**
      * @brief mcts_policy_based_on_wins Sets all known winning moves in a given policy to 1 and all
@@ -545,7 +543,6 @@ private:
      * @param childIdxForParent Index for the move which will be disabled
      */
     void disable_action(size_t childIdxForParent);
-    void set_checkmate_idx(const Node* childNode) const;
 };
 
 /**
