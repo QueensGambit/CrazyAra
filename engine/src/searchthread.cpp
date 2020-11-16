@@ -49,6 +49,9 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSetting
     newNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
     newNodeSideToMove = make_unique<FixedVector<SideToMove>>(searchSettings->batchSize);
     transpositionValues = make_unique<FixedVector<float>>(searchSettings->batchSize*2);
+
+    trajectoryBuffer.reserve(DEPTH_INIT);
+    actionsBuffer.reserve(DEPTH_INIT);
 }
 
 void SearchThread::set_root_node(Node *value)
@@ -143,11 +146,10 @@ float SearchThread::get_transposition_q_value(uint32_t transposVisits, double tr
     return (masterQsum - transposQsum) / (masterVisits - transposVisits);
 }
 
-Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, Trajectory& trajectory)
+Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description)
 {
     description.depth = 0;
     Node* currentNode = rootNode;
-    vector<Action> actions;
 
     while (true) {
         childIdx = INT_MAX;
@@ -159,13 +161,13 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             childIdx = currentNode->select_child_node(searchSettings);
         }
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
-        trajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
+        trajectoryBuffer.emplace_back(NodeAndIdx(currentNode, childIdx));
 
         Node* nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
         if (nextNode == nullptr) {
             newState = unique_ptr<StateObj>(rootState->clone());
-            for (Action action : actions) {
+            for (Action action : actionsBuffer) {
                 newState->do_action(action);
             }
             const bool inCheck = newState->gives_check(currentNode->get_action(childIdx));
@@ -208,7 +210,7 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             nextNode->unlock();
         }
         currentNode->unlock();
-        actions.emplace_back(currentNode->get_action(childIdx));
+        actionsBuffer.emplace_back(currentNode->get_action(childIdx));
         currentNode = nextNode;
     }
 }
@@ -295,26 +297,27 @@ void SearchThread::create_mini_batch()
            !transpositionValues->is_full() &&
            numTerminalNodes < TERMINAL_NODE_CACHE) {
 
-        Trajectory trajectory;
-        parentNode = get_new_child_to_evaluate(childIdx, description, trajectory);
+        trajectoryBuffer.clear();
+        actionsBuffer.clear();
+        parentNode = get_new_child_to_evaluate(childIdx, description);
         Node* newNode = parentNode->get_child_node(childIdx);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-            backup_value(newNode->get_value(), searchSettings->virtualLoss, trajectory);
+            backup_value(newNode->get_value(), searchSettings->virtualLoss, trajectoryBuffer);
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
-            collisionTrajectories.emplace_back(trajectory);
+            collisionTrajectories.emplace_back(trajectoryBuffer);
         }
         else if (description.type == NODE_TRANSPOSITION) {
-            transpositionTrajectories.emplace_back(trajectory);
+            transpositionTrajectories.emplace_back(trajectoryBuffer);
         }
         else {  // NODE_NEW_NODE
             newNodes->add_element(newNode);
-            newTrajectories.emplace_back(trajectory);
+            newTrajectories.emplace_back(trajectoryBuffer);
         }
     }
 }

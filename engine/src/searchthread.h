@@ -75,6 +75,9 @@ private:
     vector<Trajectory> transpositionTrajectories;
     vector<Trajectory> collisionTrajectories;
 
+    Trajectory trajectoryBuffer;
+    vector<Action> actionsBuffer;
+
     bool isRunning;
 
     MapWithMutex* mapWithMutex;
@@ -182,7 +185,7 @@ private:
      * @param states States list which is used for 3-fold-repetition detection
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description, Trajectory& trajectory);
+    Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description);
 
     void backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories);
     void backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories);
