@@ -46,7 +46,7 @@ bool Node::is_transposition() const
     return numberParentNodes != 1;
 }
 
-void Node::kill_parent_node()
+void Node::decrement_number_parents()
 {
     --numberParentNodes;
 }
@@ -1024,7 +1024,7 @@ void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>& hash
     if (node->is_sorted()) {
         for (Node* childNode: node->get_child_nodes()) {
             if (childNode != nullptr && childNode->is_transposition()) {
-                childNode->kill_parent_node();
+                childNode->decrement_number_parents();
             }
             else {
                 delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
@@ -1108,6 +1108,16 @@ bool Node::is_transposition_return(double myQvalue) const
 void Node::set_checkmate_idx(uint_fast16_t childIdx) const
 {
     d->checkmateIdx = childIdx;
+}
+
+bool Node::was_inspected()
+{
+    return d->inspected;
+}
+
+void Node::set_as_inspected()
+{
+    d->inspected = true;
 }
 
 bool is_terminal_value(float value)

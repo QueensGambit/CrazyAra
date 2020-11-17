@@ -67,6 +67,7 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 #define RANDOM_MOVE_THRESH 10000
 #define Q_INIT -1.0f
 #define DEPTH_INIT 64
+#define CHECK_ENHANCE_COUNTER_PERIOD 1000
 
 #ifndef MODE_POMMERMAN
 #define TERMINAL_NODE_CACHE 8192

@@ -93,7 +93,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Allow_Early_Stopping"]          << Option(true);
     o["Use_Raw_Network"]               << Option(false);
-//    o["Enhance_Checks"]                << Option(false);         currently disabled
+    o["Enhance_Checks"]                << Option(true);
 //    o["Enhance_Captures"]              << Option(false);         currently disabled
     o["Use_Transposition_Table"]       << Option(true);
 #ifdef TENSORRT

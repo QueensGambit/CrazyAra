@@ -189,6 +189,14 @@ private:
 
     void backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories);
     void backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories);
+
+    /**
+     * @brief select_enhanced_move Selects an enhanced move (e.g. checking move) which has not been explored under given conditions.
+     * @param currentNode Current node during forward simulation
+     * @param pos Current position during forward simulation
+     * @return INT_MAX for no action else custom idx
+     */
+    uint_fast16_t select_enhanced_move(Node* currentNode, StateObj* pos) const;
 };
 
 void run_search_thread(SearchThread *t);

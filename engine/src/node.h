@@ -393,12 +393,11 @@ public:
 
     bool is_transposition() const;
 
-    void kill_parent_node();
-
-    uint32_t max_parent_visits() const;
-    ParentNode* parent_with_most_visits();
-
-    bool only_dead_parents() const;
+    /**
+     * @brief decrement_number_parents Decrements the counter of the number of parent nodes.
+     * This is needed for memory clearing to avoid double free.
+     */
+    void decrement_number_parents();
 
     double get_q_sum(uint16_t childIdx, float virtualLoss) const;
 
@@ -413,6 +412,16 @@ public:
 
     void set_checkmate_idx(uint_fast16_t) const;
 
+    /**
+     * @brief was_inspected Returns true if the node has already been inspected for e.g. checks.
+     * @return bool
+     */
+    bool was_inspected();
+
+    /**
+     * @brief set_as_inspected Sets the inspected variable to true
+     */
+    void set_as_inspected();
 private:
 
     uint32_t get_real_visits_for_parent(const ParentNode& parent) const;

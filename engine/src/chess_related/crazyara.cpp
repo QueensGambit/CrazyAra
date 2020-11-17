@@ -459,7 +459,7 @@ void CrazyAra::init_search_settings()
 //    searchSettings.uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
 //    searchSettings.uBase = Options["U_Base"];                                   currently disabled
     searchSettings.qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
-//    searchSettings.enhanceChecks = Options["Enhance_Checks"];                   //currently disabled
+    searchSettings.enhanceChecks = Options["Enhance_Checks"];
 //    searchSettings.enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
     searchSettings.cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
     searchSettings.cpuctBase = Options["CPuct_Base"];

@@ -68,6 +68,7 @@ struct NodeData
     uint16_t numberUnsolvedChildNodes;
 
     NodeType nodeType;
+    bool inspected;
     NodeData(size_t numberChildNodes);
 
     auto get_q_values();

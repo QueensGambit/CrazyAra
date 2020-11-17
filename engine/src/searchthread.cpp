@@ -150,6 +150,7 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
 {
     description.depth = 0;
     Node* currentNode = rootNode;
+    newState = unique_ptr<StateObj>(rootState->clone());
 
     while (true) {
         childIdx = INT_MAX;
@@ -157,6 +158,10 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         if (searchSettings->useRandomPlayout) {
             random_root_playout(description, currentNode, childIdx);
         }
+        if (searchSettings->enhanceChecks) {
+            childIdx = select_enhanced_move(currentNode, newState.get());
+        }
+
         if (childIdx == INT_MAX) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
@@ -166,10 +171,6 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         Node* nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
         if (nextNode == nullptr) {
-            newState = unique_ptr<StateObj>(rootState->clone());
-            for (Action action : actionsBuffer) {
-                newState->do_action(action);
-            }
             const bool inCheck = newState->gives_check(currentNode->get_action(childIdx));
             newState->do_action(currentNode->get_action(childIdx));
             currentNode->increment_no_visit_idx();
@@ -210,6 +211,7 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             nextNode->unlock();
         }
         currentNode->unlock();
+        newState->do_action(currentNode->get_action(childIdx));
         actionsBuffer.emplace_back(currentNode->get_action(childIdx));
         currentNode = nextNode;
     }
@@ -360,6 +362,22 @@ void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>&
     trajectories.clear();
 }
 
+uint_fast16_t SearchThread::select_enhanced_move(Node* currentNode, StateObj* pos) const {
+    if (currentNode->is_playout_node() && !currentNode->was_inspected() && currentNode->get_real_visits() % CHECK_ENHANCE_COUNTER_PERIOD == 0 && !currentNode->is_terminal()) {
+        // make sure a check has been explored at least once
+        for (size_t childIdx = currentNode->get_no_visit_idx(); childIdx < currentNode->get_number_child_nodes(); ++childIdx) {
+            if (pos->gives_check(currentNode->get_action(childIdx))) {
+                for (size_t idx = currentNode->get_no_visit_idx(); idx < childIdx+1; ++idx) {
+                    currentNode->increment_no_visit_idx();
+                }
+                return childIdx;
+            }
+        }
+        // a full loop has been done
+        currentNode->set_as_inspected();
+    }
+    return INT_MAX;
+}
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)
 {
