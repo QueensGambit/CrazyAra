@@ -153,7 +153,7 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
     newState = unique_ptr<StateObj>(rootState->clone());
 
     while (true) {
-        childIdx = INT_MAX;
+        childIdx = uint16_t(-1);
         currentNode->lock();
         if (searchSettings->useRandomPlayout) {
             random_root_playout(description, currentNode, childIdx);
@@ -162,7 +162,7 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             childIdx = select_enhanced_move(currentNode, newState.get());
         }
 
-        if (childIdx == INT_MAX) {
+        if (childIdx == uint16_t(-1)) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
