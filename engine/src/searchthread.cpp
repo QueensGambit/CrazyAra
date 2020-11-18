@@ -376,7 +376,7 @@ uint_fast16_t SearchThread::select_enhanced_move(Node* currentNode, StateObj* po
         // a full loop has been done
         currentNode->set_as_inspected();
     }
-    return INT_MAX;
+    return uint16_t(-1);
 }
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)

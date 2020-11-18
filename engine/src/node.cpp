@@ -259,7 +259,7 @@ void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qVal
     mctsPolicy = (1.0f - qValueWeight) * normalizedVisits + qValueWeight * qValuePruned;
 }
 
-void Node::solve_for_terminal( uint_fast16_t childIdx)
+void Node::solve_for_terminal(uint_fast16_t childIdx)
 {
     if (d->nodeType != UNSOLVED) {
         // already solved
