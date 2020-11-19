@@ -117,9 +117,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         is >> skipws >> token;
 
         if (token == "stop" || token == "quit") {
-            if (mctsAgent != nullptr) {
-                mctsAgent->stop();
-            }
+            stop_search();
 		}
 		else if (token == "uci") {
 			cout << engine_info()
@@ -213,6 +211,13 @@ void CrazyAra::wait_to_finish_last_search()
     if (ongoingSearch) {
         mainSearchThread.join();
         ongoingSearch = false;
+    }
+}
+
+void CrazyAra::stop_search()
+{
+    if (mctsAgent != nullptr) {
+        mctsAgent->stop();
     }
 }
 
@@ -391,6 +396,7 @@ bool CrazyAra::is_ready()
         StateConstants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
     }
+    wait_to_finish_last_search();
     return networkLoaded;
 }
 

@@ -278,7 +278,11 @@ void Node::solve_for_terminal(uint_fast16_t childIdx)
         --d->numberUnsolvedChildNodes;
         d->nodeTypes[childIdx] = childNode->d->nodeType;
         switch(childNode->d->nodeType) {
+#ifndef MODE_POMMERMAN
         case SOLVED_WIN:
+#else
+        case SOLVED_LOSS:
+#endif
             disable_action(childIdx);
             break;
         default: ; // pass
@@ -722,8 +726,8 @@ void Node::mark_as_terminal()
 
 void Node::check_for_terminal(StateObj* pos, bool inCheck)
 {
-    float dummy;
-    TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), inCheck, dummy);
+    float customValue;
+    TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), inCheck, customValue);
 
     if (terminalType != TERMINAL_NONE) {
         mark_as_terminal();
@@ -738,6 +742,7 @@ void Node::check_for_terminal(StateObj* pos, bool inCheck)
             mark_as_loss();
             break;
         case TERMINAL_CUSTOM:
+            set_value(customValue);
         case TERMINAL_NONE:
             ;  // pass
         }
@@ -1061,7 +1066,7 @@ void Node::print_node_statistics(const StateObj* state) const
         float q = Q_INIT;
         if (childIdx < d->noVisitIdx) {
             n = d->childNumberVisits[childIdx];
-            q = max(d->qValues[childIdx], -1.0f);
+            q = d->qValues[childIdx];
         }
 
         const Action move = get_legal_actions()[childIdx];
