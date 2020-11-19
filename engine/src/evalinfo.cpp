@@ -112,22 +112,26 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
         childIdx = indices[idx];
     }
     pv.push_back(rootNode->get_action(childIdx));
-    const Node* nextNode = rootNode->get_child_node(childIdx);
-    nextNode->get_principal_variation(pv);
-    evalInfo.pv.emplace_back(pv);
 
-    // scores
-    // return mate score for known wins and losses
-    if (nextNode->is_playout_node()) {
-        if (nextNode->get_node_type() == SOLVED_LOSS) {
-            // always round up the ply counter
-            evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
-            return;
-        }
-        if (nextNode->get_node_type() == SOLVED_WIN) {
-            // always round up the ply counter
-            evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
-            return;
+    const Node* nextNode = rootNode->get_child_node(childIdx);
+    // make sure the nextNode has been expanded (e.g. when inference of the NN is too slow on the given hardware to evaluate the next node in time)
+    if (nextNode != nullptr) {
+        nextNode->get_principal_variation(pv);
+        evalInfo.pv.emplace_back(pv);
+
+        // scores
+        // return mate score for known wins and losses
+        if (nextNode->is_playout_node()) {
+            if (nextNode->get_node_type() == SOLVED_LOSS) {
+                // always round up the ply counter
+                evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
+                return;
+            }
+            if (nextNode->get_node_type() == SOLVED_WIN) {
+                // always round up the ply counter
+                evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
+                return;
+            }
         }
     }
     evalInfo.movesToMate[idx] = 0;
