@@ -27,6 +27,7 @@
 #include "traindataexporter.h"
 #include <inttypes.h>
 #include "../util/communication.h"
+#include "stateobj.h"
 
 void TrainDataExporter::save_sample(const StateObj* pos, const EvalInfo& eval)
 {
@@ -134,12 +135,12 @@ void TrainDataExporter::new_game()
 void TrainDataExporter::save_planes(const StateObj *pos)
 {
     // x / plane representation
-    float inputPlanes[NB_VALUES_TOTAL];
+    float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
     pos->get_state_planes(false, inputPlanes);
     // write array to roi
-    xt::xarray<int16_t>::shape_type planesShape = { 1, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
+    xt::xarray<int16_t>::shape_type planesShape = { 1, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()};
     xt::xarray<int16_t> planes(planesShape);
-    for (size_t idx = 0; idx < NB_VALUES_TOTAL; ++idx) {
+    for (size_t idx = 0; idx < StateConstants::NB_VALUES_TOTAL(); ++idx) {
         planes.data()[idx] = int16_t(inputPlanes[idx]);
     }
 
@@ -156,16 +157,16 @@ void TrainDataExporter::save_policy(const vector<Action>& legalMoves, const Dyna
 {
     assert(legalMoves.size() == policyProbSmall.size());
 
-    xt::xarray<float>::shape_type shapePolicy = { 1, NB_LABELS };
+    xt::xarray<float>::shape_type shapePolicy = { 1, StateConstants::NB_LABELS() };
     xt::xarray<float> policy(shapePolicy, 0);
 
     for (size_t idx = 0; idx < legalMoves.size(); ++idx) {
         size_t policyIdx;
         if (sideToMove == WHITE) {
-            policyIdx = MV_LOOKUP_CLASSIC[legalMoves[idx]];
+            policyIdx = StateConstants::action_to_index<classic, notMirrored>(legalMoves[idx]);
         }
         else {
-            policyIdx = MV_LOOKUP_MIRRORED_CLASSIC[legalMoves[idx]];
+            policyIdx = StateConstants::action_to_index<classic, mirrored>(legalMoves[idx]);
         }
         policy[policyIdx] = policyProbSmall[idx];
     }
@@ -204,12 +205,12 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     z5::createFile(file, createAsZarr);
 
     // create a new zarr dataset
-    std::vector<size_t> shape = { numberSamples, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
-    std::vector<size_t> chunks = { chunkSize, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH };
+    std::vector<size_t> shape = { numberSamples, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH() };
+    std::vector<size_t> chunks = { chunkSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH() };
     dStartIndex = z5::createDataset(file, "start_indices", "int32", { numberSamples }, { chunkSize });
     dx = z5::createDataset(file, "x", "int16", shape, chunks);
     dValue = z5::createDataset(file, "y_value", "int16", { numberSamples }, { chunkSize });
-    dPolicy = z5::createDataset(file, "y_policy", "float32", { numberSamples, NB_LABELS }, { chunkSize, NB_LABELS });
+    dPolicy = z5::createDataset(file, "y_policy", "float32", { numberSamples, StateConstants::NB_LABELS() }, { chunkSize, StateConstants::NB_LABELS() });
     dbestMoveQ = z5::createDataset(file, "y_best_move_q", "float32", { numberSamples }, { chunkSize });
 
     save_start_idx();
