@@ -96,28 +96,28 @@ template<typename T>
 class StateConstantsInterface
 {
 public:
-    static int BOARD_WIDTH() {
+    static uint BOARD_WIDTH() {
         return T::BOARD_WIDTH();
     }
-    static int BOARD_HEIGHT() {
+    static uint BOARD_HEIGHT() {
         return T::BOARD_HEIGHT();
     }
-    static int NB_CHANNELS_TOTAL() {
+    static uint NB_CHANNELS_TOTAL() {
         return T::NB_CHANNELS_TOTAL();
     }
-    static int NB_SQUARES() {
+    static uint NB_SQUARES() {
         return BOARD_WIDTH() * BOARD_HEIGHT();
     }
-    static int NB_VALUES_TOTAL() {
+    static uint NB_VALUES_TOTAL() {
         return NB_CHANNELS_TOTAL() * NB_SQUARES();
     }
-    static int NB_LABELS() {
+    static uint NB_LABELS() {
         return T::NB_LABELS();
     }
-    static int NB_LABELS_POLICY_MAP() {
+    static uint NB_LABELS_POLICY_MAP() {
         return T::NB_LABELS_POLICY_MAP();
     }
-    static int NB_PLAYERS() {
+    static uint NB_PLAYERS() {
         return T::NB_PLAYERS();
     }
     static std::string action_to_uci(Action action, bool is960) {

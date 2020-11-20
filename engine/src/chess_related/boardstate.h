@@ -39,16 +39,16 @@ using namespace std;
 class StateConstantsBoard : public StateConstantsInterface<StateConstantsBoard>
 {
 public:
-    static int BOARD_WIDTH() {
+    static uint BOARD_WIDTH() {
         return 8;
     }
-    static int BOARD_HEIGHT() {
+    static uint BOARD_HEIGHT() {
         return 8;
     }
-    static int NB_CHANNELS_TOTAL() {
+    static uint NB_CHANNELS_TOTAL() {
         return NB_CHANNELS_POS() + NB_CHANNELS_CONST() + NB_CHANNELS_VARIANTS() + NB_CHANNELS_HISTORY();
     }
-    static int NB_LABELS() {
+    static uint NB_LABELS() {
         // legal moves total which are represented in the NN
 #ifdef MODE_CRAZYHOUSE
         return 2272;
@@ -58,10 +58,10 @@ public:
         return 1968;
 #endif
     }
-    static int NB_LABELS_POLICY_MAP() {
+    static uint NB_LABELS_POLICY_MAP() {
         return NB_CHANNELS_POLICY_MAP() * BOARD_HEIGHT() * BOARD_WIDTH();
     }
-    static int NB_PLAYERS() {
+    static uint NB_PLAYERS() {
         return 2;
     }
     static std::string action_to_uci(Action action, bool is960) {
@@ -100,63 +100,63 @@ public:
     // |           Additional custom methods           |
     // -------------------------------------------------
 #ifdef MODE_CRAZYHOUSE
-    static int NB_CHANNELS_POS() {
+    static uint NB_CHANNELS_POS() {
         return 27;
     }
-    static int NB_CHANNELS_CONST() {
+    static uint NB_CHANNELS_CONST() {
         return 7;
     }
-    static int NB_CHANNELS_VARIANTS() {
+    static uint NB_CHANNELS_VARIANTS() {
         return 0;
     }
-    static int NB_LAST_MOVES() {
+    static uint NB_LAST_MOVES() {
         return 0;
     }
-    static int NB_CHANNELS_PER_HISTORY() {
+    static uint NB_CHANNELS_PER_HISTORY() {
         return 0;
     }
 #elif defined MODE_LICHESS
-    static int NB_CHANNELS_POS() {
+    static uint NB_CHANNELS_POS() {
         return 27;
     }
-    static int NB_CHANNELS_CONST() {
+    static uint NB_CHANNELS_CONST() {
         return 11;
     }
-    static int NB_CHANNELS_VARIANTS() {
+    static uint NB_CHANNELS_VARIANTS() {
         return 9;
     }
-    static int NB_LAST_MOVES() {
+    static uint NB_LAST_MOVES() {
         return 8;
     }
-    static int NB_CHANNELS_PER_HISTORY() {
+    static uint NB_CHANNELS_PER_HISTORY() {
         return 2;
     }
 #elif defined MODE_CHESS
-    static int NB_CHANNELS_POS() {
+    static uint NB_CHANNELS_POS() {
         return 15;
     }
-    static int NB_CHANNELS_CONST() {
+    static uint NB_CHANNELS_CONST() {
         return 7;
     }
-    static int NB_CHANNELS_VARIANTS() {
+    static uint NB_CHANNELS_VARIANTS() {
         return 1;
     }
-    static int NB_LAST_MOVES() {
+    static uint NB_LAST_MOVES() {
         return 8;
     }
-    static int NB_CHANNELS_PER_HISTORY() {
+    static uint NB_CHANNELS_PER_HISTORY() {
         return 2;
     }
 #endif
-    static int NB_CHANNELS_HISTORY() {
+    static uint NB_CHANNELS_HISTORY() {
         return NB_LAST_MOVES() * NB_CHANNELS_PER_HISTORY();
     }
     // the number of different piece types in the game
-    static int NB_PIECE_TYPES() {
+    static uint NB_PIECE_TYPES() {
         return 6;
     }
     // define the number of different pieces one can have in his pocket (the king is excluded)
-    static int POCKETS_SIZE_PIECE_TYPE() {
+    static uint POCKETS_SIZE_PIECE_TYPE() {
         return 5;
     }
     //  (this used for normalization the input planes and setting an appropriate integer representation (e.g. int16)
@@ -188,7 +188,7 @@ public:
         return 50;
     }
 #endif
-    static int NB_CHANNELS_POLICY_MAP() {
+    static uint NB_CHANNELS_POLICY_MAP() {
 #ifdef MODE_CRAZYHOUSE
         return 81;
 #elif defined MODE_LICHESS
