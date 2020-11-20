@@ -192,7 +192,15 @@ public:
      */
     void init_play_settings();
 
+    /**
+     * @brief wait_to_finish_last_search Halts the current main thread until the current search has been finished
+     */
     void wait_to_finish_last_search();
+
+    /**
+     * @brief stop_search Stops the current search if an mcts agent has been defined
+     */
+    void stop_search();
 
 private:
     /**
