@@ -119,9 +119,9 @@ SearchLimits *SearchThread::get_search_limits() const
     return searchLimits;
 }
 
-void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx)
+void random_playout(NodeDescription& description, Node* currentNode, size_t& childIdx)
 {
-    if (description.depth == 0 && size_t(currentNode->get_visits()) % RANDOM_MOVE_COUNTER == 0 && currentNode->get_visits() > RANDOM_MOVE_THRESH) {
+    if (rand() % RANDOM_MOVE_COUNTER * (description.depth + 1) == 0 && currentNode->is_sorted()) {
         if (currentNode->is_fully_expanded()) {
             const size_t idx = rand() % currentNode->get_number_child_nodes();
             if (currentNode->get_child_node(idx) == nullptr || !currentNode->get_child_node(idx)->is_playout_node()) {
@@ -156,7 +156,7 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         childIdx = uint16_t(-1);
         currentNode->lock();
         if (searchSettings->useRandomPlayout) {
-            random_root_playout(description, currentNode, childIdx);
+            random_playout(description, currentNode, childIdx);
         }
         if (searchSettings->enhanceChecks) {
             childIdx = select_enhanced_move(currentNode, newState.get());

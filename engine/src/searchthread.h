@@ -208,11 +208,11 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateObj* state);
 
 /**
- * @brief random_root_playout Uses random move exploreation from the ROOT
+ * @brief random_root_playout Uses random move exploration (epsilon greedy) from the given position. The probability for doing a random move decays by depth.
  * @param description Serach description struct
  * @param currentNode Current node during trajectory
  * @param childIdx Return child index (maybe unchanged)
  */
-inline void random_root_playout(NodeDescription& description, Node* currentNode, size_t& childIdx);
+inline void random_playout(NodeDescription& description, Node* currentNode, size_t& childIdx);
 
 #endif // SEARCHTHREAD_H

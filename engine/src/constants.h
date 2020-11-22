@@ -63,8 +63,7 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 // Pre-initialized index when no forced win was found: 2^16 - 1
 #define NO_CHECKMATE 65535
 #define Q_VALUE_DIFF 0.1f
-#define RANDOM_MOVE_COUNTER 20
-#define RANDOM_MOVE_THRESH 10000
+#define RANDOM_MOVE_COUNTER 25
 #define Q_INIT -1.0f
 #define DEPTH_INIT 64
 #define CHECK_ENHANCE_COUNTER_PERIOD 1000
