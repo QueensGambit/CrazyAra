@@ -71,7 +71,7 @@ struct SearchSettings
     bool useNPSTimemanager;
     // boolean indicator if tablebases were loaded correctly
     bool useTablebase;
-    // If true ranom root exploration is used
+    // If true random exploration is used
     bool useRandomPlayout;
     SearchSettings();
 

@@ -121,7 +121,7 @@ SearchLimits *SearchThread::get_search_limits() const
 
 void random_playout(NodeDescription& description, Node* currentNode, size_t& childIdx)
 {
-    if (rand() % RANDOM_MOVE_COUNTER * (description.depth + 1) == 0 && currentNode->is_sorted()) {
+    if (rand() % int(pow(RANDOM_MOVE_COUNTER, description.depth + 1)) == 0 && currentNode->is_sorted()) {
         if (currentNode->is_fully_expanded()) {
             const size_t idx = rand() % currentNode->get_number_child_nodes();
             if (currentNode->get_child_node(idx) == nullptr || !currentNode->get_child_node(idx)->is_playout_node()) {
