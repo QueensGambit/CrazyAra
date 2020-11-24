@@ -53,7 +53,7 @@ const string engineName = "LichessAra";
 const string engineName = "ClassicAra";
 #endif
 
-const string engineVersion = "0.8.3";
+const string engineVersion = "0.8.4";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
 
 #define LOSS -1

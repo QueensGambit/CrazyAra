@@ -26,7 +26,7 @@
 ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     mBatchSize{batchSize},
     mMaxBatches{maxBatches},
-    mDims{batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()}
+    mDims{batchSize, int(StateConstants::NB_CHANNELS_TOTAL()), int(StateConstants::BOARD_HEIGHT()), int(StateConstants::BOARD_WIDTH())}
 {
     Bitboards::init();
     Position::init();
