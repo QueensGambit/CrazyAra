@@ -61,6 +61,11 @@ struct EvalInfo
     size_t calculate_elapsed_time_ms() const;
     size_t calculate_nps(size_t elapsedTimeMS) const;
     size_t calculate_nps() const;
+
+    /**
+     * @brief init_vectors_for_multi_pv Initializes the memory of the vectors accoring to the multi pv size
+     */
+    void init_vectors_for_multi_pv(size_t multiPV);
 };
 
 /**

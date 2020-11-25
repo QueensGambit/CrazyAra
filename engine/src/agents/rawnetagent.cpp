@@ -37,6 +37,7 @@ RawNetAgent::RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings, bool ver
 void RawNetAgent::evaluate_board_state()
 {
     evalInfo->legalMoves = state->legal_actions();
+    evalInfo->init_vectors_for_multi_pv(1UL);
 
     // sanity check
     assert(evalInfo->legalMoves.size() >= 1);
@@ -61,14 +62,14 @@ void RawNetAgent::evaluate_board_state()
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];
 
-    evalInfo->centipawns.emplace_back(value_to_centipawn(valueOutputs[0]));
-    evalInfo->movesToMate.emplace_back(0);
+    evalInfo->centipawns[0] = value_to_centipawn(valueOutputs[0]);
+    evalInfo->movesToMate[0] = 0;
     evalInfo->depth = 1;
     evalInfo->selDepth = 1;
     evalInfo->tbHits = 0;
     evalInfo->nodes = 1;
     evalInfo->isChess960 = state->is_chess960();
-    evalInfo->pv.push_back({ bestmove });
+    evalInfo->pv[0] = { bestmove };
 }
 
 void RawNetAgent::stop()

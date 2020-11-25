@@ -84,6 +84,14 @@ size_t EvalInfo::calculate_nps() const
     return calculate_nps(calculate_elapsed_time_ms());
 }
 
+void EvalInfo::init_vectors_for_multi_pv(size_t multiPV)
+{
+    pv.resize(multiPV);
+    movesToMate.resize(multiPV);
+    bestMoveQ.resize(multiPV);
+    centipawns.resize(multiPV);
+}
+
 // https://helloacm.com/how-to-implement-the-sgn-function-in-c/
 template <class T>
 inline int
@@ -117,7 +125,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     // make sure the nextNode has been expanded (e.g. when inference of the NN is too slow on the given hardware to evaluate the next node in time)
     if (nextNode != nullptr) {
         nextNode->get_principal_variation(pv);
-        evalInfo.pv.emplace_back(pv);
+        evalInfo.pv[idx] = pv;
 
         // scores
         // return mate score for known wins and losses
@@ -173,10 +181,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
         sort_eval_lists(evalInfo, indices);
     }
 
-    evalInfo.pv.clear();
-    evalInfo.movesToMate.resize(maxIdx);
-    evalInfo.bestMoveQ.resize(maxIdx);
-    evalInfo.centipawns.resize(maxIdx);
+    evalInfo.init_vectors_for_multi_pv(multiPV);
 
     for (size_t idx = 0; idx < maxIdx; ++idx) {
         set_eval_for_single_pv(evalInfo, rootNode, idx, indices);
