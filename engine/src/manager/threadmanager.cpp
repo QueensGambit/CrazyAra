@@ -136,8 +136,14 @@ bool ThreadManager::early_stopping()
     size_t firstArg;
     size_t secondArg;
     first_and_second_max(rootNode->get_child_number_visits(), rootNode->get_no_visit_idx(), firstMax, secondMax, firstArg, secondArg);
-    firstMax -= rootNode->get_child_node(firstArg)->get_terminal_visits();
-    secondMax -= rootNode->get_child_node(secondArg)->get_terminal_visits();
+    const Node* firstNode = rootNode->get_child_node(firstArg);
+    const Node* secondNode = rootNode->get_child_node(secondArg);
+    if (firstNode != nullptr && firstNode->is_playout_node()) {
+        firstMax -= firstNode->get_terminal_visits();
+    }
+    if (secondNode != nullptr && secondNode->is_playout_node()) {
+        secondMax -= secondNode->get_terminal_visits();
+    }
     if (secondMax + remainingMoveTimeMS * (overallNPS / 1000) < firstMax * 2 &&
         rootNode->get_q_value(firstArg) > rootNode->get_q_value(secondArg)) {
         info_string("Early stopping, saved time:", remainingMoveTimeMS);
