@@ -76,7 +76,9 @@ private:
     vector<Trajectory> collisionTrajectories;
 
     Trajectory trajectoryBuffer;
-    vector<Action> actionsBuffer;
+    ActionTrajectory actionsBuffer;
+
+    TrajectoryTransferBuffer trajectoryTransferBuffer;
 
     bool isRunning;
 
@@ -197,6 +199,8 @@ private:
      * @return uint_16_t(-1) for no action else custom idx
      */
     uint_fast16_t select_enhanced_move(Node* currentNode, StateObj* pos) const;
+
+    bool trajectoryTransfer(Node* currentNode, size_t& childIdx, NodeDescription& description);
 };
 
 void run_search_thread(SearchThread *t);

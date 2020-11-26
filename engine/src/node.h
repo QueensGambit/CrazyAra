@@ -61,7 +61,8 @@ struct NodeAndIdx {
         node(node), childIdx(childIdx) {}
 };
 using Trajectory = vector<NodeAndIdx>;
-
+using ActionTrajectory = vector<Action>;
+using TrajectoryTransferBuffer = vector<vector<ActionTrajectory>>;
 
 class Node
 {
@@ -127,7 +128,7 @@ public:
      * @param childIdx Index to the child node to update
      * @param value Specifies the value evaluation to backpropagate
      */
-    void revert_virtual_loss_and_update(size_t childIdx, float valueSum, float virtualLoss);
+    void revert_virtual_loss_and_update(size_t childIdx, float valueSum, float virtualLoss, bool& addToTrajectoryBuffer);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
@@ -315,7 +316,7 @@ public:
      * The moves a are pushed into the pv vector.
      * @param pv Vector in which moves will be pushed.
      */
-    void get_principal_variation(vector<Action>& pv) const;
+    void get_principal_variation(ActionTrajectory& pv) const;
 
     /**
      * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
@@ -454,7 +455,7 @@ private:
      * The solver uses the current backpropagating child node as well as all available child nodes.
      * @param childNode Child nodes which backpropagates the value
      */
-    void solve_for_terminal(uint_fast16_t childIdx);
+    void solve_for_terminal(uint_fast16_t childIdx, bool& addToTrajectoryBuffer);
 
     /**
      * @brief solved_win Checks if the current node is a solved win based on the given child node
@@ -645,6 +646,6 @@ void backup_collision(float virtualLoss, const Trajectory& trajectory);
  * @param virtualLoss Virtual loss value
  * @param trajectory Trajectory on how to get to the given value eval
  */
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory);
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, TrajectoryTransferBuffer& trajectoryTransferBuffer);
 
 #endif // NODE_H

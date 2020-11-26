@@ -119,8 +119,10 @@ bool Node::solved_win(const Node* childNode) const
 
 bool Node::solved_draw(const Node* childNode) const
 {
-    if (d->numberUnsolvedChildNodes == 0 &&
-            (childNode->d->nodeType == SOLVED_DRAW || childNode->d->nodeType == SOLVED_WIN)) {
+    if (d->numberUnsolvedChildNodes != 0) {
+        return false;
+    }
+    if ((childNode->d->nodeType == SOLVED_DRAW || childNode->d->nodeType == SOLVED_WIN)) {
         return at_least_one_drawn_child();
     }
     return false;
@@ -155,10 +157,13 @@ bool Node::only_won_child_nodes() const
 
 bool Node::solved_loss(const Node* childNode) const
 {
+    if (d->numberUnsolvedChildNodes != 0) {
+        return false;
+    }
 #ifndef MODE_POMMERMAN
-    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == SOLVED_WIN) {
+    if (childNode->d->nodeType == SOLVED_WIN) {
 #else
-    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == SOLVED_LOSS) {
+    if (childNode->d->nodeType == SOLVED_LOSS) {
 #endif
         return only_won_child_nodes();
     }
@@ -259,7 +264,7 @@ void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qVal
     mctsPolicy = (1.0f - qValueWeight) * normalizedVisits + qValueWeight * qValuePruned;
 }
 
-void Node::solve_for_terminal(uint_fast16_t childIdx)
+void Node::solve_for_terminal(uint_fast16_t childIdx, bool& addToTrajectoryBuffer)
 {
     if (d->nodeType != UNSOLVED) {
         // already solved
@@ -292,6 +297,7 @@ void Node::solve_for_terminal(uint_fast16_t childIdx)
     if (solved_win(childNode)) {
         d->nodeType = SOLVED_WIN;
         update_solved_terminal<WIN>(childNode, childIdx);
+        addToTrajectoryBuffer = true;
         return;
     }
     if (solved_loss(childNode)) {
@@ -514,17 +520,34 @@ uint32_t Node::get_real_visits(uint16_t childIdx) const
     return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
 }
 
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory) {
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, TrajectoryTransferBuffer& trajectoryTransferBuffer) {
+    size_t depth = trajectory.size();
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
+        --depth;
 #ifndef MODE_POMMERMAN
         value = -value;
 #endif
-        it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss);
+        bool addToTrajectoryBuffer;
+        it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss, addToTrajectoryBuffer);
+        if (addToTrajectoryBuffer && depth == 1) {
+            ActionTrajectory actionTrajectory;
+//            cout << "actionTrajectory: ";
+            for (auto it2 = trajectory.begin()+1; it2 != trajectory.end(); ++it2) {
+                actionTrajectory.emplace_back(it2->node->get_action(it2->childIdx));
+//                cout << StateConstants::action_to_uci(it2->node->get_action(it2->childIdx), false) << " ";
+            }
+//            cout << endl;
+            const Node* rootNode = trajectory.begin()->node;
+            for (size_t idx = 0; idx < rootNode->get_number_child_nodes(); ++idx) {
+                trajectoryTransferBuffer[idx].push_back(actionTrajectory);
+            }
+        }
     }
 }
 
-void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss)
+void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss, bool& addToTrajectoryBuffer)
 {
+    addToTrajectoryBuffer = false;
     lock();
     // decrement virtual loss counter
     update_virtual_loss_counter<false>(childIdx);
@@ -550,7 +573,7 @@ void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float vi
     }
     if (is_terminal_value(value)) {
         ++d->terminalVisits;
-        solve_for_terminal(childIdx);
+        solve_for_terminal(childIdx, addToTrajectoryBuffer);
     }
     unlock();
 }
@@ -920,7 +943,7 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
     mctsPolicy /= sum(mctsPolicy);
 }
 
-void Node::get_principal_variation(vector<Action>& pv) const
+void Node::get_principal_variation(ActionTrajectory& pv) const
 {
     const Node* curNode = this;
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
