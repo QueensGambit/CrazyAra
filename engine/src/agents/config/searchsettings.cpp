@@ -49,7 +49,11 @@ SearchSettings::SearchSettings():
         threshCheck(0.1f),
         checkFactor(0.5f),
         threshCapture(0.02f),
-        captureFactor(0.05f)
+        captureFactor(0.05f),
+        allowEarlyStopping(false),
+        useNPSTimemanager(false),
+        useTablebase(false),
+        useRandomPlayout(false)
 {
 
 }
