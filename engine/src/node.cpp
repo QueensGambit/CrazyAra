@@ -1105,9 +1105,12 @@ uint32_t Node::get_nodes()
     return get_visits() - get_terminal_visits();
 }
 
-bool Node::is_transposition_return(double myQvalue) const
+//bool Node::is_transposition_return(double myQvalue) const
+bool Node::is_transposition_return(double myQvalue, uint32_t myVisits) const
 {
-    return abs(myQvalue - get_value()) > 0.1;
+//    return myVisits + 32 < get_real_visits(); // * 0.9 + 1;
+//    return myVisits < get_real_visits() * 0.9 + 1;
+    return abs(myQvalue - get_value()) > 0.1 || myVisits * 2 < get_real_visits();
 }
 
 void Node::set_checkmate_idx(uint_fast16_t childIdx) const

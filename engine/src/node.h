@@ -408,7 +408,8 @@ public:
 
     bool has_transposition_child_node();
 
-    bool is_transposition_return(double myQvalue) const;
+//    bool is_transposition_return(double myQvalue) const;
+    bool is_transposition_return(double myQvalue, uint32_t myVisits) const;
 
     void set_checkmate_idx(uint_fast16_t) const;
 
