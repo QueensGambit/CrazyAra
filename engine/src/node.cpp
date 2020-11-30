@@ -515,44 +515,50 @@ uint32_t Node::get_real_visits(uint16_t childIdx) const
 }
 
 void backup_value(float value, float virtualLoss, const Trajectory& trajectory) {
+    double targetQ = value;
+
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
 #ifndef MODE_POMMERMAN
-        value = -value;
+        targetQ = -targetQ;
 #endif
-        it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss);
+        targetQ = it->node->revert_virtual_loss_and_update(it->childIdx, targetQ, virtualLoss);
     }
 }
 
-void Node::revert_virtual_loss_and_update(size_t childIdx, float value, float virtualLoss)
+double Node::revert_virtual_loss_and_update(size_t childIdx, double targetQValue, float virtualLoss)
 {
     lock();
-    // decrement virtual loss counter
-    update_virtual_loss_counter<false>(childIdx);
-
-    valueSum += value;
-    ++realVisitsSum;
-
-    if (d->childNumberVisits[childIdx] == virtualLoss) {
+    double qUpdate;
+    if (d->childNumberVisits[childIdx] == virtualLoss || get_real_visits(childIdx) == 0) {
         // set new Q-value based on return
         // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
-        d->qValues[childIdx] = value;
+        d->qValues[childIdx] = targetQValue;
+        qUpdate = targetQValue;
     }
     else {
         // revert virtual loss and update the Q-value
         assert(d->childNumberVisits[childIdx] != 0);
-        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+        const double curQ = get_q_sum(childIdx, 1) / get_real_visits(childIdx);
+        qUpdate = get_real_visits(childIdx) * (targetQValue - curQ) + targetQValue;
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + qUpdate) / d->childNumberVisits[childIdx];
         assert(!isnan(d->qValues[childIdx]));
     }
+    // decrement virtual loss counter
+    update_virtual_loss_counter<false>(childIdx);
+    valueSum += qUpdate;
+    ++realVisitsSum;
 
     if (virtualLoss != 1) {
         d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
         d->visitSum -= size_t(virtualLoss) - 1;
     }
-    if (is_terminal_value(value)) {
-        ++d->terminalVisits;
-        solve_for_terminal(childIdx);
-    }
+//    if (is_terminal_value(qUpdate)) {
+//        ++d->terminalVisits;
+//        solve_for_terminal(childIdx);
+//    }
+    targetQValue = valueSum / realVisitsSum;
     unlock();
+    return targetQValue;
 }
 
 void backup_collision(float virtualLoss, const Trajectory& trajectory) {
@@ -1107,6 +1113,7 @@ uint32_t Node::get_nodes()
 
 bool Node::is_transposition_return(double myQvalue) const
 {
+//    cout << "myQvalue: " << myQvalue << " targetQ: " << get_value() << " visits: " << get_real_visits() << endl;
     return abs(myQvalue - get_value()) > 0.1;
 }
 

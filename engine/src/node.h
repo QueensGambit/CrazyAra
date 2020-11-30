@@ -125,9 +125,10 @@ public:
     /**
      * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
      * @param childIdx Index to the child node to update
-     * @param value Specifies the value evaluation to backpropagate
+     * @param targetQValue Specifies the Q-target value which we aim to approximate
+     * @return Expectation of all applied value updates -> new Q-target
      */
-    void revert_virtual_loss_and_update(size_t childIdx, float valueSum, float virtualLoss);
+    double revert_virtual_loss_and_update(size_t childIdx, double targetQValue, float virtualLoss);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node

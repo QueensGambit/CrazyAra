@@ -198,18 +198,6 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             currentNode->unlock();
             return currentNode;
         }
-        if (nextNode->is_transposition()) {
-            nextNode->lock();
-            if (nextNode->is_transposition_return(-currentNode->get_q_sum(childIdx, searchSettings->virtualLoss) / currentNode->get_real_visits(childIdx))) {
-                const float qValue = nextNode->get_value();
-                nextNode->unlock();
-                description.type = NODE_TRANSPOSITION;
-                transpositionValues->add_element(qValue);
-                currentNode->unlock();
-                return currentNode;
-            }
-            nextNode->unlock();
-        }
         currentNode->unlock();
         newState->do_action(currentNode->get_action(childIdx));
         actionsBuffer.emplace_back(currentNode->get_action(childIdx));
