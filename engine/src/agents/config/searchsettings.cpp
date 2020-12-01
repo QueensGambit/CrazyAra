@@ -53,7 +53,8 @@ SearchSettings::SearchSettings():
         allowEarlyStopping(false),
         useNPSTimemanager(false),
         useTablebase(false),
-        useRandomPlayout(false)
+        useRandomPlayout(false),
+        reuseTree(true)
 {
 
 }

@@ -141,6 +141,11 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
     if (rootNode == nullptr) {
         return nullptr;
     }
+    if (!searchSettings->reuseTree) {
+        delete_old_tree();
+        return nullptr;
+    }
+
     if (same_hash_key(rootNode, state)) {
         info_string("reuse the full tree");
         reusedFullTree = true;
