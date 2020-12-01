@@ -514,17 +514,23 @@ uint32_t Node::get_real_visits(uint16_t childIdx) const
     return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
 }
 
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory) {
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, bool isTerminalBackup) {
     double targetQ = value;
 
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
 #ifndef MODE_POMMERMAN
         targetQ = -targetQ;
 #endif
-        targetQ = it->node->revert_virtual_loss_and_update(it->childIdx, targetQ, virtualLoss);
+        if (isTerminalBackup) {
+            targetQ = it->node->revert_virtual_loss_and_update<true>(it->childIdx, targetQ, virtualLoss);
+        }
+        else {
+            targetQ = it->node->revert_virtual_loss_and_update<false>(it->childIdx, targetQ, virtualLoss);
+        }
     }
 }
 
+template <bool isTerminalBackup>
 double Node::revert_virtual_loss_and_update(size_t childIdx, double targetQValue, float virtualLoss)
 {
     lock();
@@ -540,6 +546,7 @@ double Node::revert_virtual_loss_and_update(size_t childIdx, double targetQValue
         assert(d->childNumberVisits[childIdx] != 0);
         const double curQ = get_q_sum(childIdx, 1) / get_real_visits(childIdx);
         qUpdate = get_real_visits(childIdx) * (targetQValue - curQ) + targetQValue;
+        qUpdate = clamp(qUpdate, -0.99, +0.99);
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + qUpdate) / d->childNumberVisits[childIdx];
         assert(!isnan(d->qValues[childIdx]));
     }
@@ -552,10 +559,10 @@ double Node::revert_virtual_loss_and_update(size_t childIdx, double targetQValue
         d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
         d->visitSum -= size_t(virtualLoss) - 1;
     }
-//    if (is_terminal_value(qUpdate)) {
-//        ++d->terminalVisits;
-//        solve_for_terminal(childIdx);
-//    }
+    if (isTerminalBackup) {
+        ++d->terminalVisits;
+        solve_for_terminal(childIdx);
+    }
     targetQValue = valueSum / realVisitsSum;
     unlock();
     return targetQValue;
@@ -850,7 +857,7 @@ void Node::apply_softmax_to_policy()
 void Node::disable_action(size_t childIdxForParent)
 {
     policyProbSmall[childIdxForParent] = 0;
-    d->qValues[childIdxForParent] = -INT_MAX;
+//    d->qValues[childIdxForParent] = -INT_MAX;
 }
 
 void Node::enhance_moves(const SearchSettings* searchSettings)
@@ -1113,7 +1120,6 @@ uint32_t Node::get_nodes()
 
 bool Node::is_transposition_return(double myQvalue) const
 {
-//    cout << "myQvalue: " << myQvalue << " targetQ: " << get_value() << " visits: " << get_real_visits() << endl;
     return abs(myQvalue - get_value()) > 0.1;
 }
 

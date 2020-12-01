@@ -128,6 +128,7 @@ public:
      * @param targetQValue Specifies the Q-target value which we aim to approximate
      * @return Expectation of all applied value updates -> new Q-target
      */
+    template<bool isTerminalBackup>
     double revert_virtual_loss_and_update(size_t childIdx, double targetQValue, float virtualLoss);
 
     /**
@@ -646,6 +647,6 @@ void backup_collision(float virtualLoss, const Trajectory& trajectory);
  * @param virtualLoss Virtual loss value
  * @param trajectory Trajectory on how to get to the given value eval
  */
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory);
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, bool isTerminalBackup);
 
 #endif // NODE_H
