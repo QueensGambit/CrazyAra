@@ -82,11 +82,21 @@ double Node::get_q_sum_for_parent(const ParentNode &parent, float virtualLoss) c
     return parent.node->get_q_sum(parent.childIdxForParent, virtualLoss);
 }
 
+#ifdef MCTS_STORE_STATES
+StateObj* Node::get_state() const
+{
+    return state.get();
+}
+#endif
+
 Node::Node(StateObj* state, bool inCheck, const SearchSettings* searchSettings):
     legalActions(state->legal_actions()),
     key(state->hash_key()),
     valueSum(0),
     d(nullptr),
+#ifdef MCTS_STORE_STATES
+    state(state),
+#endif
     realVisitsSum(0),
     pliesFromNull(state->steps_from_null()),
     numberParentNodes(1),
@@ -502,6 +512,9 @@ void Node::prepare_node_for_visits()
 {
     sort_moves_by_probabilities();
     init_node_data();
+#ifdef MCTS_STORE_STATES
+    state->prepare_action();
+#endif
 }
 
 uint32_t Node::get_visits() const

@@ -79,6 +79,10 @@ private:
     double valueSum;
 
     unique_ptr<NodeData> d;
+#ifdef MCTS_STORE_STATES
+    unique_ptr<StateObj> state;
+#endif
+
     uint32_t realVisitsSum;
 
     // identifiers
@@ -422,6 +426,11 @@ public:
      * @brief set_as_inspected Sets the inspected variable to true
      */
     void set_as_inspected();
+
+#ifdef MCTS_STORE_STATES
+    StateObj* get_state() const;
+#endif
+
 private:
 
     uint32_t get_real_visits_for_parent(const ParentNode& parent) const;

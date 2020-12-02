@@ -203,6 +203,13 @@ public:
     virtual void undo_action(Action action) = 0;
 
     /**
+     * @brief prepare_action Function which is called once in case of MCTS_STORE_STATES before a new action is applied in a leaf node.
+     * It can be used to store e.g. action buffers in the state which can then be used for all other legal actions.
+     * By default keep this method empty.
+     */
+    virtual void prepare_action() = 0;
+
+    /**
      * @brief number_repetitions Returns the number of times this state has already occured in the current episode
      * @return int
      */
@@ -282,7 +289,7 @@ public:
      */
     virtual Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState& result) = 0;
 
-    /*&
+    /**
      * @brief operator << Operator overload for <<
      * @param os ostream object
      * @param state state object
