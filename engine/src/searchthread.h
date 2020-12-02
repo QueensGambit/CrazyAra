@@ -200,7 +200,7 @@ private:
      */
     uint_fast16_t select_enhanced_move(Node* currentNode, StateObj* pos) const;
 
-    bool trajectoryTransfer(Node* currentNode, size_t& childIdx, NodeDescription& description);
+    bool trajectoryTransfer(Node* currentNode, size_t& childIdx, NodeDescription& description, StateObj* newState, vector<size_t>& idxTrajectory);
 };
 
 void run_search_thread(SearchThread *t);

@@ -148,57 +148,53 @@ float SearchThread::get_transposition_q_value(uint32_t transposVisits, double tr
     return (masterQsum - transposQsum) / (masterVisits - transposVisits);
 }
 
-bool action_trajectory_to_trajectory(Node* startNode, ActionTrajectory actionTrajectory, vector<size_t>& idxTrajectory) {
+bool action_trajectory_to_trajectory(Node* startNode, const ActionTrajectory& actionTrajectory, vector<size_t>& idxTrajectory) {
     Node* curNode = startNode;
     for (Action action : actionTrajectory) {
-        auto found = std::find(curNode->get_legal_actions().begin(), curNode->get_legal_actions().end(), action);
-        if (found == curNode->get_legal_actions().end()) {
-            // the move is incompatible with the current legal moves
-            return false;
+        if (curNode == nullptr) {
+            return true;
         }
-        if (curNode == nullptr || !curNode->has_nn_results()) {
+        curNode->lock();
+        if (!curNode->has_nn_results()) {
+            curNode->unlock();
             return true;
         }
         if (!curNode->is_sorted()) {
             curNode->prepare_node_for_visits();
+        }
+        vector<Action> legalActions = curNode->get_legal_actions();
+        auto found = std::find(legalActions.begin(), legalActions.end(), action);
+        if (found == legalActions.end()) {
+            // the move is incompatible with the current legal moves
+            curNode->unlock();
+            return false;
+        }
+
+        const size_t childIdx = std::distance(legalActions.begin(), found);
+        idxTrajectory.emplace_back(childIdx);
+        if (childIdx+1 > curNode->get_no_visit_idx()) {
+            for (size_t idx = curNode->get_no_visit_idx(); idx < childIdx+1; ++idx) {
+                curNode->increment_no_visit_idx();
+            }
+            curNode->unlock();
             return true;
         }
-        const size_t childIdx = std::distance(curNode->get_legal_actions().begin(), found);
-        idxTrajectory.emplace_back(childIdx);
-        for (size_t idx = curNode->get_no_visit_idx(); idx < childIdx; ++idx) {
-            curNode->lock();
-            curNode->increment_no_visit_idx();
-            curNode->unlock();
-        }
-        curNode = curNode->get_child_node(childIdx);
-
+        Node* nextNode = curNode->get_child_node(childIdx);
+        curNode->unlock();
+        curNode = nextNode;
     }
     return false;
 }
 
-bool SearchThread::trajectoryTransfer(Node* currentNode, size_t& childIdx, NodeDescription& description) {
+bool SearchThread::trajectoryTransfer(Node* currentNode, size_t& childIdx, NodeDescription& description, StateObj* newState, vector<size_t>& idxTrajectory) {
     if (description.depth == 1) {
         if (!trajectoryTransferBuffer[childIdx].empty()) {
-            vector<size_t> idxTrajectory;
             if (action_trajectory_to_trajectory(currentNode, trajectoryTransferBuffer[childIdx].back(), idxTrajectory)) {
-                for (size_t idx = 0; idx < idxTrajectory.size()-1; ++idx) {
-                    childIdx = idxTrajectory[idx];
-                    currentNode->lock();
-                    currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
-                    trajectoryBuffer.emplace_back(NodeAndIdx(currentNode, childIdx));
-                    newState->do_action(currentNode->get_action(childIdx));
-                    actionsBuffer.emplace_back(currentNode->get_action(childIdx));
-                    currentNode->unlock();
-                    currentNode = currentNode->get_child_node(idx);
-//                    ++description.depth;
-                }
-                childIdx = idxTrajectory.back();
                 return true;
             }
             else {
                 trajectoryTransferBuffer[childIdx].pop_back();
-//                cout << "trajectoryTransferBuffer[childIdx].pop_back(): " << StateConstants::action_to_uci(trajectoryBuffer[0].node->get_action(trajectoryBuffer[0].childIdx), false) << endl;
-                return false;
+                return true;
             }
         }
     }
@@ -211,10 +207,19 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
     Node* currentNode = rootNode;
     newState = unique_ptr<StateObj>(rootState->clone());
 
+    vector<size_t> idxTrajectory;
     while (true) {
-        if (!trajectoryTransfer(currentNode, childIdx, description)) {
-            childIdx = uint16_t(-1);
+
+        trajectoryTransfer(currentNode, childIdx, description, newState.get(), idxTrajectory);
+        childIdx = uint16_t(-1);
+
+        if (!idxTrajectory.empty()) {
+            childIdx = idxTrajectory[description.depth-1];
+            if (description.depth == idxTrajectory.size()) {
+                idxTrajectory.clear();
+            }
         }
+
         currentNode->lock();
         if (searchSettings->useRandomPlayout) {
             random_playout(description, currentNode, childIdx);

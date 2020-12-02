@@ -532,10 +532,10 @@ void backup_value(float value, float virtualLoss, const Trajectory& trajectory, 
         if (addToTrajectoryBuffer && depth == 1) {
             ActionTrajectory actionTrajectory;
 //            cout << "actionTrajectory: ";
-            for (auto it2 = trajectory.begin()+1; it2 != trajectory.end(); ++it2) {
-                actionTrajectory.emplace_back(it2->node->get_action(it2->childIdx));
+//            for (auto it2 = trajectory.begin()+1; it2 != trajectory.end(); ++it2) {
+//                actionTrajectory.emplace_back(it2->node->get_action(it2->childIdx));
 //                cout << StateConstants::action_to_uci(it2->node->get_action(it2->childIdx), false) << " ";
-            }
+//            }
 //            cout << endl;
             const Node* rootNode = trajectory.begin()->node;
             for (size_t idx = 0; idx < rootNode->get_number_child_nodes(); ++idx) {
