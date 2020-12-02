@@ -174,7 +174,11 @@ void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
     // TODO: Make sure that "inCheck=False" does not cause issues
+#ifdef MCTS_STORE_STATES
+    rootNode = new Node(state->clone(), false, searchSettings);
+#else
     rootNode = new Node(state, false, searchSettings);
+#endif
     state->get_state_planes(true, inputPlanes);
     net->predict(inputPlanes, valueOutputs, probOutputs);
     size_t tbHits = 0;

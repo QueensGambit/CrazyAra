@@ -152,7 +152,9 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
 {
     description.depth = 0;
     Node* currentNode = rootNode;
+#ifndef MCTS_STORE_STATES
     newState = unique_ptr<StateObj>(rootState->clone());
+#endif
 
     while (true) {
         childIdx = uint16_t(-1);
@@ -173,10 +175,17 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         Node* nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
         if (nextNode == nullptr) {
+#ifdef MCTS_STORE_STATES
+            StateObj* newState = currentNode->get_state()->clone();
+#endif
             const bool inCheck = newState->gives_check(currentNode->get_action(childIdx));
             newState->do_action(currentNode->get_action(childIdx));
             currentNode->increment_no_visit_idx();
+#ifdef MCTS_STORE_STATES
+            description.type = add_new_node_to_tree(newState, currentNode, childIdx, inCheck);
+#else
             description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx, inCheck);
+#endif
             currentNode->unlock();
 
             if (description.type == NODE_NEW_NODE) {
@@ -213,8 +222,10 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             nextNode->unlock();
         }
         currentNode->unlock();
+#ifndef MCTS_STORE_STATES
         newState->do_action(currentNode->get_action(childIdx));
         actionsBuffer.emplace_back(currentNode->get_action(childIdx));
+#endif
         currentNode = nextNode;
     }
 }
