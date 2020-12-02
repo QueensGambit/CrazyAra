@@ -77,26 +77,28 @@ void SearchThread::set_is_running(bool value)
 
 NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, size_t childIdx, bool inCheck)
 {
-    mapWithMutex->mtx.lock();
-    unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
-    if(searchSettings->useTranspositionTable && it != mapWithMutex->hashTable.end() &&
-            is_transposition_verified(it, newState)) {
-        mapWithMutex->mtx.unlock();
-        it->second->lock();
-        const float qValue =  it->second->get_value();
+    if(searchSettings->useTranspositionTable) {
+        mapWithMutex->mtx.lock();
+        unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
+        if(it != mapWithMutex->hashTable.end() &&
+                is_transposition_verified(it, newState)) {
+            mapWithMutex->mtx.unlock();
+            it->second->lock();
+            const float qValue =  it->second->get_value();
 
-        it->second->add_transposition_parent_node();
-        it->second->unlock();
-#ifndef MODE_POMMERMAN
-        if (it->second->is_playout_node() && it->second->get_node_type() == SOLVED_LOSS) {
-            parentNode->set_checkmate_idx(childIdx);
+            it->second->add_transposition_parent_node();
+            it->second->unlock();
+    #ifndef MODE_POMMERMAN
+            if (it->second->is_playout_node() && it->second->get_node_type() == SOLVED_LOSS) {
+                parentNode->set_checkmate_idx(childIdx);
+            }
+    #endif
+            transpositionValues->add_element(qValue);
+            parentNode->add_new_child_node(it->second, childIdx);
+            return NODE_TRANSPOSITION;
         }
-#endif
-        transpositionValues->add_element(qValue);
-        parentNode->add_new_child_node(it->second, childIdx);
-        return NODE_TRANSPOSITION;
+        mapWithMutex->mtx.unlock();
     }
-    mapWithMutex->mtx.unlock();
     assert(parentNode != nullptr);
     Node *newNode = new Node(newState, inCheck, searchSettings);
     // connect the Node to the parent
@@ -250,9 +252,11 @@ void SearchThread::set_nn_results_to_child_nodes()
             fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
         }
         ++batchIdx;
-        mapWithMutex->mtx.lock();
-        mapWithMutex->hashTable.insert({node->hash_key(), node});
-        mapWithMutex->mtx.unlock();
+        if (searchSettings->useTranspositionTable) {
+            mapWithMutex->mtx.lock();
+            mapWithMutex->hashTable.insert({node->hash_key(), node});
+            mapWithMutex->mtx.unlock();
+        }
     }
 }
 
