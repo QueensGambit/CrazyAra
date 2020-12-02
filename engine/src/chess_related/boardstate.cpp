@@ -98,6 +98,11 @@ void BoardState::undo_action(Action action)
     board.undo_move(Move(action));
 }
 
+void BoardState::prepare_action()
+{
+    // pass
+}
+
 unsigned int BoardState::number_repetitions() const
 {
     return board.number_repetitions();

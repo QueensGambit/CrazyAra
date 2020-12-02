@@ -231,6 +231,7 @@ public:
     string fen() const override;
     void do_action(Action action) override;
     void undo_action(Action action) override;
+    void prepare_action() override;
     unsigned int number_repetitions() const override;
     int side_to_move() const override;
     Key hash_key() const override;
