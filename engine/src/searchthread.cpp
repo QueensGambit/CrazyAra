@@ -142,10 +142,10 @@ void random_playout(NodeDescription& description, Node* currentNode, size_t& chi
     }
 }
 
-float SearchThread::get_transposition_q_value(uint32_t transposVisits, double transposQsum, uint32_t masterVisits, double masterQsum)
+float SearchThread::get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue)
 {
     assert((masterVisits - transposVisits) != 0);
-    return (masterQsum - transposQsum) / (masterVisits - transposVisits);
+    return clamp(transposVisits * (masterQValue - transposQValue) + masterQValue, -0.99, +0.99);
 }
 
 Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description)
@@ -211,8 +211,10 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         }
         if (nextNode->is_transposition()) {
             nextNode->lock();
-            if (nextNode->is_transposition_return(-currentNode->get_q_sum(childIdx, searchSettings->virtualLoss) / currentNode->get_real_visits(childIdx))) {
-                const float qValue = nextNode->get_value();
+            const uint_fast32_t transposVisits = currentNode->get_real_visits(childIdx);
+            const double transposQValue = -currentNode->get_q_sum(childIdx, searchSettings->virtualLoss) / currentNode->get_real_visits(childIdx);
+            if (nextNode->is_transposition_return(transposQValue)) {
+                const float qValue = get_transposition_q_value(transposVisits, transposQValue, nextNode->get_value());
                 nextNode->unlock();
                 description.type = NODE_TRANSPOSITION;
                 transpositionValues->add_element(qValue);

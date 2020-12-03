@@ -157,7 +157,7 @@ public:
 
     size_t get_max_depth() const;
 
-    float get_transposition_q_value(uint32_t transposVisits, double transposQsum, uint32_t masterVisits, double masterQsum);
+    float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue);
 
 private:
     /**
