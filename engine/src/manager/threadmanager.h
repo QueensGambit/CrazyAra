@@ -51,6 +51,7 @@ private:
     size_t remainingMoveTimeMS;
     size_t updateIntervalMS;
     size_t multiPV;
+    float qValueWeight;
     float overallNPS;
     float lastValueEval;
 
@@ -76,7 +77,7 @@ private:
     void print_info();
 
 public:
-    ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, size_t multiPV, float overallNPS, float lastValueEval, bool inGame, bool canProlong);
+    ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, size_t multiPV, float qValueWeight, float overallNPS, float lastValueEval, bool inGame, bool canProlong);
 
     /**
     * @brief stop_search_based_on_limits Checks for the search limit condition and possible early break-ups

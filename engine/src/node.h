@@ -152,14 +152,6 @@ public:
     Action get_action(size_t childIdx) const;
     Node* get_child_node(size_t childIdx) const;
 
-    Action get_best_action() const;
-
-    /**
-     * @brief get_ponder_moves Returns a list for possible ponder moves
-     * @return vector of moves
-     */
-    vector<Action> get_ponder_moves() const;
-
     vector<Node*> get_child_nodes() const;
     bool is_terminal() const;
     bool has_nn_results() const;
@@ -308,18 +300,19 @@ public:
     /**
      * @brief get_mcts_policy Returns the final policy after the mcts search which is used for move selection, in most cases argmax(mctsPolicy).
      * Depending on the searchSettings, Q-values will be taken into account for creating this.
-     * @param node Node for which the mcts policy should be calculated
-     * @param childNumberVisits Number of visits for each child node after search
      * @param mctsPolicy Output of the final mcts policy after search
+     * @param bestMoveIdx Index for the best move
+     * @param qValueWeight Decides if Q-values are taken into account
      */
-    void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight = 1) const;
+     void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
      * The moves a are pushed into the pv vector.
      * @param pv Vector in which moves will be pushed.
+     * @param qValueWeight Decides if Q-values are taken into account
      */
-    void get_principal_variation(vector<Action>& pv) const;
+     void get_principal_variation(vector<Action>& pv, bool qValueWeight) const;
 
     /**
      * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
@@ -568,9 +561,10 @@ private:
  * or solved wins / draws / losses.
  * @param curNode Current node
  * @param fast If true, then the argmax(childNumberVisits) is returned for unsolved nodes
+ * @param qValueWeight Decides if qValues are taken into account
  * @return Index for best move and child node
  */
-size_t get_best_action_index(const Node* curNode, bool fast);
+ size_t get_best_action_index(const Node* curNode, bool fast, bool qValueWeight);
 
 void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
 

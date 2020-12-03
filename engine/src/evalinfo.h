@@ -57,6 +57,7 @@ struct EvalInfo
     Action bestMove;
     std::vector<int> movesToMate;
     size_t tbHits;
+    float qValueWeight;
 
     size_t calculate_elapsed_time_ms() const;
     size_t calculate_nps(size_t elapsedTimeMS) const;
@@ -81,8 +82,9 @@ int value_to_centipawn(float value);
  * @param rootNode Root node of the search tree
  * @param selDepth Selective depth, in this case the maximum reached depth
  * @param multiPV Number of pv lines (default=1)
+ * @param qValueWeight Decides if Q-values shall be used to compute the MCTS policy (e.g. qValueWeight=0, visitsOnly)
  */
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV);
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV, float qValueWeight);
 
 /**
  * @brief set_eval_for_single_pv Sets the eval struct pv line and score for a single pv
