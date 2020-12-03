@@ -38,10 +38,10 @@ void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, siz
        << " score";
 
     if (evalInfo.movesToMate[idx] == 0) {
-       os << " cp " << evalInfo.centipawns[idx];
+        os << " cp " << evalInfo.centipawns[idx];
     }
     else {
-       os << " mate " << evalInfo.movesToMate[idx];
+        os << " mate " << evalInfo.movesToMate[idx];
     }
 
     os << " nodes " << evalInfo.nodes
@@ -114,7 +114,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     vector<Action> pv;
     size_t childIdx;
     if (idx == 0) {
-        childIdx = get_best_action_index(rootNode, false);
+        childIdx = get_best_action_index(rootNode, false, evalInfo.qValueWeight);
     }
     else {
         childIdx = indices[idx];
@@ -124,7 +124,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     const Node* nextNode = rootNode->get_child_node(childIdx);
     // make sure the nextNode has been expanded (e.g. when inference of the NN is too slow on the given hardware to evaluate the next node in time)
     if (nextNode != nullptr) {
-        nextNode->get_principal_variation(pv);
+        nextNode->get_principal_variation(pv, evalInfo.qValueWeight);
         evalInfo.pv[idx] = pv;
 
         // scores
@@ -158,13 +158,14 @@ void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
     apply_permutation_in_place(indices, p);
 }
 
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV)
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV, float qValueWeight)
 {
+    evalInfo.qValueWeight = qValueWeight;
     const size_t targetLength = rootNode->get_number_child_nodes();
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.qValues = rootNode->get_q_values();
     size_t bestMoveIdx;
-    rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx);
+    rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, evalInfo.qValueWeight);
     // ensure the policy has the correct length even if some child nodes have not been visited
     if (evalInfo.policyProbSmall.size() != targetLength) {
         const size_t startIdx = evalInfo.policyProbSmall.size();
