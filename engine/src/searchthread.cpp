@@ -210,9 +210,7 @@ bool SearchThread::trajectoryTransfer(Node* currentNode, size_t& childIdx, NodeD
             }
             else {
                 if (disableAction) {
-                    cout << "disable action: " << childIdx << endl;
-                    rootNode->set_action_as_loss(childIdx, trajectoryTransferBuffer[childIdx].size()+1);
-                }
+                    rootNode->set_action_as_loss(childIdx, trajectoryTransferBuffer[childIdx].back().size());                }
                 trajectoryTransferBuffer[childIdx].pop_back();
                 return true;
             }
@@ -233,19 +231,19 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         trajectoryTransfer(currentNode, childIdx, description, newState.get(), idxTrajectory);
         childIdx = uint16_t(-1);
 
-        if (!idxTrajectory.empty()) {
-            childIdx = idxTrajectory[description.depth-1];
-            if (description.depth == idxTrajectory.size()) {
-                idxTrajectory.clear();
-            }
-        }
-
         currentNode->lock();
         if (searchSettings->useRandomPlayout) {
             random_playout(description, currentNode, childIdx);
         }
         if (searchSettings->enhanceChecks) {
             childIdx = select_enhanced_move(currentNode, newState.get());
+        }
+
+        if (!idxTrajectory.empty()) {
+            childIdx = idxTrajectory[description.depth-1];
+            if (description.depth == idxTrajectory.size()) {
+                idxTrajectory.clear();
+            }
         }
 
         if (childIdx == uint16_t(-1)) {
