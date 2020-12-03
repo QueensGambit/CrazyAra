@@ -148,6 +148,7 @@ void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
 
 void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV, float qValueWeight)
 {
+    evalInfo.qValueWeight = qValueWeight;
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
     size_t bestMoveIdx;
@@ -180,5 +181,4 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     evalInfo.selDepth = selDepth;
     evalInfo.nodes = get_node_count(rootNode);
     evalInfo.tbHits = tbHits;
-    evalInfo.qValueWeight = qValueWeight;
 }
