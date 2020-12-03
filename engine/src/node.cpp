@@ -1120,7 +1120,7 @@ uint32_t Node::get_nodes()
 
 bool Node::is_transposition_return(double myQvalue) const
 {
-    return abs(myQvalue - get_value()) > 0.1;
+    return abs(myQvalue - get_value()) > Q_TRANSPOS_DIFF;
 }
 
 void Node::set_checkmate_idx(uint_fast16_t childIdx) const
