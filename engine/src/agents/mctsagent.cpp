@@ -142,6 +142,10 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
     if (rootNode == nullptr) {
         return nullptr;
     }
+    if (!searchSettings->reuseTree) {
+        delete_old_tree();
+        return nullptr;
+    }
     if (same_hash_key(rootNode, state)) {
         info_string("reuse the full tree");
         reusedFullTree = true;
@@ -298,7 +302,7 @@ void MCTSAgent::evaluate_board_state()
         run_mcts_search();
         update_stats();
     }
-    update_eval_info(*evalInfo, rootNode, tbHits, maxDepth, searchSettings->multiPV);
+    update_eval_info(*evalInfo, rootNode, tbHits, maxDepth, searchSettings->multiPV, searchSettings->qValueWeight);
     lastValueEval = evalInfo->bestMoveQ[0];
     update_nps_measurement(evalInfo->calculate_nps());
     tGCThread.join();
@@ -314,7 +318,7 @@ void MCTSAgent::run_mcts_search()
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootState->side_to_move(), rootNode->plies_from_null()/2);
-    threadManager = make_unique<ThreadManager>(rootNode, evalInfo, searchThreads, curMovetime, 250, searchSettings->multiPV, overallNPS, lastValueEval,
+    threadManager = make_unique<ThreadManager>(rootNode, evalInfo, searchThreads, curMovetime, 250, searchSettings->multiPV, searchSettings->qValueWeight, overallNPS, lastValueEval,
                                                is_game_sceneario(searchLimits),
                                                can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());

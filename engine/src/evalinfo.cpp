@@ -106,14 +106,14 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     vector<Action> pv;
     size_t childIdx;
     if (idx == 0) {
-        childIdx = get_best_action_index(rootNode, false);
+        childIdx = get_best_action_index(rootNode, false, evalInfo.qValueWeight);
     }
     else {
         childIdx = indices[idx];
     }
     pv.push_back(rootNode->get_action(childIdx));
     const Node* nextNode = rootNode->get_child_node(childIdx);
-    nextNode->get_principal_variation(pv);
+    nextNode->get_principal_variation(pv, evalInfo.qValueWeight);
     evalInfo.pv.emplace_back(pv);
 
     // scores
@@ -146,12 +146,12 @@ void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
     apply_permutation_in_place(indices, p);
 }
 
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV)
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV, float qValueWeight)
 {
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.policyProbSmall.resize(rootNode->get_number_child_nodes());
     size_t bestMoveIdx;
-    rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx);
+    rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, evalInfo.qValueWeight);
     evalInfo.legalMoves = rootNode->get_legal_action();
 
     vector<size_t> indices;
@@ -180,4 +180,5 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     evalInfo.selDepth = selDepth;
     evalInfo.nodes = get_node_count(rootNode);
     evalInfo.tbHits = tbHits;
+    evalInfo.qValueWeight = qValueWeight;
 }

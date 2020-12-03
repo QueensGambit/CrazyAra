@@ -49,7 +49,9 @@ SearchSettings::SearchSettings():
         threshCheck(0.1f),
         checkFactor(0.5f),
         threshCapture(0.02f),
-        captureFactor(0.05f)
+        captureFactor(0.05f),
+        useRandomPlayout(false),
+        reuseTree(true)
 {
 
 }

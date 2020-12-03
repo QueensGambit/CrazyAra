@@ -317,35 +317,6 @@ Node *Node::get_child_node(size_t childIdx) const
     return d->childNodes[childIdx];
 }
 
-Action Node::get_best_action() const
-{
-    return get_action(get_best_action_index(this, false));
-}
-
-vector<Action> Node::get_ponder_moves() const
-{
-    vector<Action> ponderMoves;
-    const size_t visitThresh = 0.01 * get_visits();
-
-    for (const Node* childNode : get_child_nodes()) {
-        if (childNode == nullptr) {
-            break;
-        }
-        if (childNode->is_playout_node() && childNode->get_visits() > visitThresh) {
-            if (!childNode->is_terminal()) {
-
-                if (ponderMoves.size() == 0) {
-                    ponderMoves.emplace_back(childNode->get_best_action());
-                }
-                else if (find(ponderMoves.begin(), ponderMoves.end(), childNode->get_best_action()) == ponderMoves.end()) {
-                    ponderMoves.emplace_back(childNode->get_best_action());
-                }
-            }
-        }
-    }
-    return ponderMoves;
-}
-
 vector<Node*> Node::get_child_nodes() const
 {
     return d->childNodes;
@@ -859,6 +830,7 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
         float firstMax;
         float secondMax;
         mctsPolicy = d->childNumberVisits;
+        prune_losses_in_mcts_policy(mctsPolicy);
         first_and_second_max(mctsPolicy, d->noVisitIdx, firstMax, secondMax, bestMoveIdx, secondArg);
         if (d->qValues[secondArg]-Q_VALUE_DIFF > d->qValues[bestMoveIdx]) {
             mctsPolicy[bestMoveIdx] = secondMax;
@@ -880,22 +852,23 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
     }
     else {
         mctsPolicy = d->childNumberVisits;
+        prune_losses_in_mcts_policy(mctsPolicy);
         bestMoveIdx = argmax(d->childNumberVisits);
     }
     mctsPolicy /= sum(mctsPolicy);
 }
 
-void Node::get_principal_variation(vector<Action>& pv) const
+void Node::get_principal_variation(vector<Action>& pv, bool qValueWeight) const
 {
     const Node* curNode = this;
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
-        size_t childIdx = get_best_action_index(curNode, true);
+        size_t childIdx = get_best_action_index(curNode, true, qValueWeight);
         pv.push_back(curNode->get_action(childIdx));
         curNode = curNode->d->childNodes[childIdx];
     }
 }
 
-size_t get_best_action_index(const Node *curNode, bool fast)
+size_t get_best_action_index(const Node *curNode, bool fast, bool qValueWeight)
 {
     if (curNode->get_checkmate_idx() != NO_CHECKMATE) {
         // chose mating line
@@ -918,7 +891,7 @@ size_t get_best_action_index(const Node *curNode, bool fast)
     }
     DynamicVector<float> mctsPolicy(curNode->get_number_child_nodes());
     size_t bestMoveIdx;
-    curNode->get_mcts_policy(mctsPolicy, bestMoveIdx);
+    curNode->get_mcts_policy(mctsPolicy, bestMoveIdx, qValueWeight);
     return bestMoveIdx;
 }
 

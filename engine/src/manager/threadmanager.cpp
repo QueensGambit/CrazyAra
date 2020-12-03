@@ -27,7 +27,7 @@
 #include "../util/blazeutil.h"
 #include <chrono>
 
-ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, size_t multiPV, float overallNPS, float lastValueEval, bool inGame, bool canProlong):
+ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, size_t multiPV, float qValueWeight, float overallNPS, float lastValueEval, bool inGame, bool canProlong):
     rootNode(rootNode),
     evalInfo(evalInfo),
     searchThreads(searchThreads),
@@ -35,6 +35,7 @@ ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchTh
     remainingMoveTimeMS(movetimeMS),
     updateIntervalMS(updateIntervalMS),
     multiPV(multiPV),
+    qValueWeight(qValueWeight),
     overallNPS(overallNPS),
     lastValueEval(lastValueEval),
     checkedContinueSearch(0),
@@ -47,7 +48,7 @@ ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchTh
 void ThreadManager::print_info()
 {
     evalInfo->end = chrono::steady_clock::now();
-    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV);
+    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), multiPV, qValueWeight);
     info_msg(*evalInfo);
 }
 

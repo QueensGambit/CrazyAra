@@ -73,6 +73,8 @@ struct SearchSettings
     bool useTablebase;
     // If true ranom root exploration is used
     bool useRandomPlayout;
+    // If the tree or parts of the treee can be reused for the next search
+    bool reuseTree;
     SearchSettings();
 
 };

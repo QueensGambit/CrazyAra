@@ -150,14 +150,6 @@ public:
     Action get_action(size_t childIdx) const;
     Node* get_child_node(size_t childIdx) const;
 
-    Action get_best_action() const;
-
-    /**
-     * @brief get_ponder_moves Returns a list for possible ponder moves
-     * @return vector of moves
-     */
-    vector<Action> get_ponder_moves() const;
-
     vector<Node*> get_child_nodes() const;
     bool is_terminal() const;
     bool has_nn_results() const;
@@ -313,14 +305,14 @@ public:
      * @param childNumberVisits Number of visits for each child node after search
      * @param mctsPolicy Output of the final mcts policy after search
      */
-    void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight = 1) const;
+    void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
      * The moves a are pushed into the pv vector.
      * @param pv Vector in which moves will be pushed.
      */
-    void get_principal_variation(vector<Action>& pv) const;
+    void get_principal_variation(vector<Action>& pv, bool qValueWeight) const;
 
     /**
      * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
@@ -521,7 +513,7 @@ private:
  * @param fast If true, then the argmax(childNumberVisits) is returned for unsolved nodes
  * @return Index for best move and child node
  */
-size_t get_best_action_index(const Node* curNode, bool fast);
+size_t get_best_action_index(const Node* curNode, bool fast, bool qValueWeight);
 
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
