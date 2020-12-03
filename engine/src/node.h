@@ -63,6 +63,7 @@ struct NodeAndIdx {
 using Trajectory = vector<NodeAndIdx>;
 using ActionTrajectory = vector<Action>;
 using TrajectoryTransferBuffer = vector<vector<ActionTrajectory>>;
+using KillerMoves = unordered_map<Action,vector<size_t>>;
 
 class Node
 {
@@ -423,6 +424,13 @@ public:
      * @brief set_as_inspected Sets the inspected variable to true
      */
     void set_as_inspected();
+
+    /**
+     * @brief set_action_as_loss Disables a given action and assigns pliesToEnd and SOLVED_WIN
+     * @param childIdx Child index to action and child which will be disabled
+     * @param pliesToEnd Number of plies to the terminal node
+     */
+    void set_action_as_loss(uint_fast16_t childIdx, uint_fast16_t pliesToEnd);
 private:
 
     uint32_t get_real_visits_for_parent(const ParentNode& parent) const;
@@ -646,6 +654,6 @@ void backup_collision(float virtualLoss, const Trajectory& trajectory);
  * @param virtualLoss Virtual loss value
  * @param trajectory Trajectory on how to get to the given value eval
  */
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory, TrajectoryTransferBuffer& trajectoryTransferBuffer);
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, KillerMoves& killerMoves, TrajectoryTransferBuffer& trajectoryTransferBuffer);
 
 #endif // NODE_H

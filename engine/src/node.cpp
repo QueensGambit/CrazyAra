@@ -520,7 +520,46 @@ uint32_t Node::get_real_visits(uint16_t childIdx) const
     return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
 }
 
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory, TrajectoryTransferBuffer& trajectoryTransferBuffer) {
+void add_to_trajectory_buffer(const Trajectory& trajectory, KillerMoves& killerMoves, TrajectoryTransferBuffer& trajectoryTransferBuffer)
+{
+    Action firstAction = trajectory[1].node->get_action(trajectory[1].childIdx);
+    auto it = killerMoves.find(firstAction);
+
+    ActionTrajectory actionTrajectory;
+    cout << "actionTrajectory: ";
+
+    if (it == killerMoves.end()) {
+        vector<size_t> numberReplies;
+        size_t depth = 0;
+        for (auto it2 = trajectory.begin()+1; it2 != trajectory.end(); ++it2) {
+            if (depth % 2 == 1) {
+                numberReplies.emplace_back(it2->node->get_number_child_nodes());
+            }
+//        for (size_t idx = 0; idx < trajectory.size(); ++idx) {
+            actionTrajectory.emplace_back(it2->node->get_action(it2->childIdx));
+            cout << StateConstants::action_to_uci(it2->node->get_action(it2->childIdx), false) << " ";
+            ++depth;
+        }
+        cout << endl;
+
+        const Node* rootNode = trajectory.begin()->node;
+        for (size_t idx = 0; idx < rootNode->get_number_child_nodes(); ++idx) {
+            trajectoryTransferBuffer[idx].push_back(actionTrajectory);
+        }
+
+        cout << "numberReplies: ";
+        for (auto a : numberReplies) {
+            cout << a << " ";
+        }
+        cout << endl;
+        killerMoves[firstAction] = numberReplies;
+    }
+    else {
+        cout << "already in killerMoves!" << endl;
+    }
+}
+
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, KillerMoves& killerMoves, TrajectoryTransferBuffer& trajectoryTransferBuffer) {
     size_t depth = trajectory.size();
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
         --depth;
@@ -530,17 +569,7 @@ void backup_value(float value, float virtualLoss, const Trajectory& trajectory, 
         bool addToTrajectoryBuffer;
         it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss, addToTrajectoryBuffer);
         if (addToTrajectoryBuffer && depth == 1) {
-            ActionTrajectory actionTrajectory;
-//            cout << "actionTrajectory: ";
-//            for (auto it2 = trajectory.begin()+1; it2 != trajectory.end(); ++it2) {
-//                actionTrajectory.emplace_back(it2->node->get_action(it2->childIdx));
-//                cout << StateConstants::action_to_uci(it2->node->get_action(it2->childIdx), false) << " ";
-//            }
-//            cout << endl;
-            const Node* rootNode = trajectory.begin()->node;
-            for (size_t idx = 0; idx < rootNode->get_number_child_nodes(); ++idx) {
-                trajectoryTransferBuffer[idx].push_back(actionTrajectory);
-            }
+            add_to_trajectory_buffer(trajectory, killerMoves, trajectoryTransferBuffer);
         }
     }
 }
@@ -864,10 +893,10 @@ void Node::apply_softmax_to_policy()
 //    //    }
 //}
 
-void Node::disable_action(size_t childIdxForParent)
+void Node::disable_action(size_t childIdx)
 {
-    policyProbSmall[childIdxForParent] = 0;
-    d->qValues[childIdxForParent] = -INT_MAX;
+    policyProbSmall[childIdx] = 0;
+    d->qValues[childIdx] = -INT_MAX;
 }
 
 void Node::enhance_moves(const SearchSettings* searchSettings)
@@ -1146,6 +1175,17 @@ bool Node::was_inspected()
 void Node::set_as_inspected()
 {
     d->inspected = true;
+}
+
+void Node::set_action_as_loss(uint_fast16_t childIdx, uint_fast16_t endInPly)
+{
+    if (d->nodeTypes[childIdx] == UNSOLVED) {
+        --d->numberUnsolvedChildNodes;
+        disable_action(childIdx);
+        d->nodeTypes[childIdx] = SOLVED_WIN;
+        get_child_node(childIdx)->d->endInPly = endInPly;
+        get_child_node(childIdx)->d->nodeType = SOLVED_WIN;
+    }
 }
 
 bool is_terminal_value(float value)

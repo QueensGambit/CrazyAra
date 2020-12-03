@@ -60,6 +60,7 @@ void SearchThread::set_root_node(Node *value)
     visitsPreSearch = rootNode->get_visits();
     trajectoryTransferBuffer.clear();
     trajectoryTransferBuffer.resize(rootNode->get_number_child_nodes());
+    killerMoves.clear();
 }
 
 void SearchThread::set_search_limits(SearchLimits *s)
@@ -148,8 +149,12 @@ float SearchThread::get_transposition_q_value(uint32_t transposVisits, double tr
     return (masterQsum - transposQsum) / (masterVisits - transposVisits);
 }
 
-bool action_trajectory_to_trajectory(Node* startNode, const ActionTrajectory& actionTrajectory, vector<size_t>& idxTrajectory) {
+bool action_trajectory_to_trajectory(Node* startNode, const ActionTrajectory& actionTrajectory, KillerMoves& killerMoves, vector<size_t>& idxTrajectory, bool& disableAction) {
     Node* curNode = startNode;
+    vector<size_t> numberReplies = killerMoves[actionTrajectory.front()];
+    size_t depth = 0;
+    size_t correctReplies = 0;
+    disableAction = false;
     for (Action action : actionTrajectory) {
         if (curNode == nullptr) {
             return true;
@@ -179,9 +184,19 @@ bool action_trajectory_to_trajectory(Node* startNode, const ActionTrajectory& ac
             curNode->unlock();
             return true;
         }
+        if (depth % 2 == 1) {
+            if (curNode->get_number_child_nodes() == numberReplies[depth/2]) {
+                ++correctReplies;
+            }
+        }
         Node* nextNode = curNode->get_child_node(childIdx);
         curNode->unlock();
         curNode = nextNode;
+        ++depth;
+    }
+    if (correctReplies != 0 && correctReplies == numberReplies.size()) {
+        // disable the first action if the full trajectory could be applied with the same number of replies at each depth
+        disableAction = true;
     }
     return false;
 }
@@ -189,10 +204,15 @@ bool action_trajectory_to_trajectory(Node* startNode, const ActionTrajectory& ac
 bool SearchThread::trajectoryTransfer(Node* currentNode, size_t& childIdx, NodeDescription& description, StateObj* newState, vector<size_t>& idxTrajectory) {
     if (description.depth == 1) {
         if (!trajectoryTransferBuffer[childIdx].empty()) {
-            if (action_trajectory_to_trajectory(currentNode, trajectoryTransferBuffer[childIdx].back(), idxTrajectory)) {
+            bool disableAction;
+            if (action_trajectory_to_trajectory(currentNode, trajectoryTransferBuffer[childIdx].back(), killerMoves, idxTrajectory, disableAction)) {
                 return true;
             }
             else {
+                if (disableAction) {
+                    cout << "disable action: " << childIdx << endl;
+                    rootNode->set_action_as_loss(childIdx, trajectoryTransferBuffer[childIdx].size()+1);
+                }
                 trajectoryTransferBuffer[childIdx].pop_back();
                 return true;
             }
@@ -374,7 +394,7 @@ void SearchThread::create_mini_batch()
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-            backup_value(newNode->get_value(), searchSettings->virtualLoss, trajectoryBuffer, trajectoryTransferBuffer);
+            backup_value(newNode->get_value(), searchSettings->virtualLoss, trajectoryBuffer, killerMoves, trajectoryTransferBuffer);
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
@@ -414,7 +434,7 @@ void run_search_thread(SearchThread *t)
 void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < nodes->size(); ++idx) {
         const Node* node = nodes->get_element(idx);
-        backup_value(node->get_value(), searchSettings->virtualLoss, trajectories[idx], trajectoryTransferBuffer);
+        backup_value(node->get_value(), searchSettings->virtualLoss, trajectories[idx], killerMoves, trajectoryTransferBuffer);
     }
     nodes->reset_idx();
     trajectories.clear();
@@ -422,7 +442,7 @@ void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& 
 
 void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < values->size(); ++idx) {
-        backup_value(values->get_element(idx), searchSettings->virtualLoss, trajectories[idx], trajectoryTransferBuffer);
+        backup_value(values->get_element(idx), searchSettings->virtualLoss, trajectories[idx], killerMoves, trajectoryTransferBuffer);
     }
     values->reset_idx();
     trajectories.clear();

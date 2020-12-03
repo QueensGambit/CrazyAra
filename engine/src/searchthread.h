@@ -79,6 +79,7 @@ private:
     ActionTrajectory actionsBuffer;
 
     TrajectoryTransferBuffer trajectoryTransferBuffer;
+    KillerMoves killerMoves;
 
     bool isRunning;
 
