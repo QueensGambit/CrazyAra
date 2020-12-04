@@ -144,7 +144,6 @@ void random_playout(NodeDescription& description, Node* currentNode, size_t& chi
 
 float SearchThread::get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double targetQValue)
 {
-    assert((masterVisits - transposVisits) != 0);
     return clamp(transposVisits * (targetQValue - transposQValue) + targetQValue, -0.99, +0.99);
 }
 
