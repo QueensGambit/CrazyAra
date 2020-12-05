@@ -90,6 +90,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Nodes"]                         << Option(800, 0, 99999999);
 #else
     o["Nodes"]                         << Option(0, 0, 99999999);
+    o["Simulations"]                   << Option(0, 0, 99999999);
 #endif
     o["Allow_Early_Stopping"]          << Option(true);
     o["Use_Raw_Network"]               << Option(false);

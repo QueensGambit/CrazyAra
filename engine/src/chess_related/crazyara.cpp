@@ -158,6 +158,7 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
     searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
     searchLimits.nodes = Options["Nodes"];
     searchLimits.movetime = Options["Fixed_Movetime"];
+    searchLimits.simulations = Options["Simulations"];
 
     string token;
     bool ponderMode = false;
