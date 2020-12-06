@@ -143,7 +143,7 @@ public:
      * @param inCheck Defines if the current position sets a player in check
      * @return Returns NODE_TRANSPOSITION if a tranpsosition node was added and NODE_NEW_NODE otherwise
      */
-    NodeBackup add_new_node_to_tree(StateObj* newPos, Node* parentNode, size_t childIdx, bool inCheck);
+    NodeBackup add_new_node_to_tree(StateObj* newPos, Node* parentNode, ChildIdx childIdx, bool inCheck);
 
     /**
      * @brief reset_tb_hits Sets the number of table hits to 0
@@ -156,8 +156,6 @@ public:
     size_t get_avg_depth();
 
     size_t get_max_depth() const;
-
-    float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue);
 
 private:
     /**
@@ -185,7 +183,7 @@ private:
      * @param states States list which is used for 3-fold-repetition detection
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description);
+    Node* get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescription& description);
 
     void backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories);
     void backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories);
@@ -193,10 +191,9 @@ private:
     /**
      * @brief select_enhanced_move Selects an enhanced move (e.g. checking move) which has not been explored under given conditions.
      * @param currentNode Current node during forward simulation
-     * @param pos Current position during forward simulation
      * @return uint_16_t(-1) for no action else custom idx
      */
-    uint_fast16_t select_enhanced_move(Node* currentNode, StateObj* pos) const;
+    ChildIdx select_enhanced_move(Node* currentNode) const;
 };
 
 void run_search_thread(SearchThread *t);
@@ -213,6 +210,6 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
  * @param currentNode Current node during trajectory
  * @param childIdx Return child index (maybe unchanged)
  */
-inline void random_playout(NodeDescription& description, Node* currentNode, size_t& childIdx);
+inline void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& childIdx);
 
 #endif // SEARCHTHREAD_H

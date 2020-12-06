@@ -43,6 +43,7 @@
 using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
+using ChildIdx = uint_fast16_t;
 
 struct ParentNode {
     Node* node;
@@ -122,22 +123,22 @@ public:
      * @param childIdx Index for the next child node to select
      * @return child node
      */
-    Node* get_child_node(size_t childIdx);
+    Node* get_child_node(ChildIdx childIdx);
 
-    size_t select_child_node(const SearchSettings* searchSettings);
+    ChildIdx select_child_node(const SearchSettings* searchSettings);
 
     /**
      * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
      * @param childIdx Index to the child node to update
      * @param value Specifies the value evaluation to backpropagate
      */
-    void revert_virtual_loss_and_update(size_t childIdx, float valueSum, float virtualLoss);
+    void revert_virtual_loss_and_update(ChildIdx childIdx, float valueSum, float virtualLoss);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
      * @param childIdx Index to the child node to update
      */
-    void revert_virtual_loss(size_t childIdx, float virtualLoss);
+    void revert_virtual_loss(ChildIdx childIdx, float virtualLoss);
 
     bool is_playout_node() const;
 
@@ -149,8 +150,8 @@ public:
     bool is_solved() const;
     bool has_forced_win() const;
 
-    Action get_action(size_t childIdx) const;
-    Node* get_child_node(size_t childIdx) const;
+    Action get_action(ChildIdx childIdx) const;
+    Node* get_child_node(ChildIdx childIdx) const;
 
     vector<Node*> get_child_nodes() const;
     bool is_terminal() const;
@@ -159,7 +160,7 @@ public:
     double get_value_sum() const;
     uint32_t get_real_visits() const;
 
-    void apply_virtual_loss_to_child(size_t childIdx, float virtualLoss);
+    void apply_virtual_loss_to_child(ChildIdx childIdx, float virtualLoss);
 
     /**
      * @brief revert_virtual_loss_and_update Reverts the virtual loss and updates the Q-value and visits
@@ -225,7 +226,7 @@ public:
      * @param childIdx Child index
      * @return uint32_t
      */
-    uint32_t get_real_visits(uint16_t childIdx) const;
+    uint32_t get_real_visits(ChildIdx childIdx) const;
 
     void lock();
     void unlock();
@@ -267,7 +268,7 @@ public:
     void set_value(float valueSum);
     uint16_t main_child_idx_for_parent() const;
 
-    void add_new_child_node(Node* newNode, size_t childIdx);
+    void add_new_child_node(Node* newNode, ChildIdx childIdx);
 
     void add_transposition_parent_node();
 
@@ -281,13 +282,13 @@ public:
      * @brief max_q_child Returns the child index with the highest Q-value
      * @return size_t
      */
-    size_t max_q_child();
+    ChildIdx max_q_child();
 
     /**
      * @brief max_visits_child Returns the child index with the most visits
      * @return size_t
      */
-    size_t max_visits_child();
+    ChildIdx max_visits_child();
 
     /**
      * @brief update_value_eval Returns the updated state evaluation based on the Q-value of the most visited child node
@@ -328,7 +329,7 @@ public:
     bool is_root_node() const;
 
     DynamicVector<uint32_t> get_child_number_visits() const;
-    uint32_t get_child_number_visits(uint16_t childIdx) const;
+    uint32_t get_child_number_visits(ChildIdx childIdx) const;
 
     void enable_has_nn_results();
     uint16_t plies_from_null() const;
@@ -349,7 +350,7 @@ public:
      * @param idx Child Index
      * @return Q-value
      */
-    float get_q_value(size_t idx) const;
+    float get_q_value(ChildIdx idx) const;
 
     /**
      * @brief get_q_values Returns the Q-values for all child nodes
@@ -362,20 +363,20 @@ public:
      * @param idx Child index
      * @param value value to set
      */
-    void set_q_value(size_t idx, float valueSum);
+    void set_q_value(ChildIdx idx, float valueSum);
 
     /**
      * @brief get_best_q_idx Return the child index with the highest Q-value
-     * @return maximum Q-value
+     * @return Index of child with maximum Q-value
      */
-    size_t get_best_q_idx() const;
+    ChildIdx get_best_q_idx() const;
 
     /**
      * @brief get_q_idx_over_thresh Returns all child node which coresponding Q-values are greater than qThresh
      * @param qThresh Threshold
      * @return vector of child indices
      */
-    vector<size_t> get_q_idx_over_thresh(float qThresh);
+    vector<ChildIdx> get_q_idx_over_thresh(float qThresh);
 
     /**
      * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
@@ -396,18 +397,18 @@ public:
      */
     void decrement_number_parents();
 
-    double get_q_sum(uint16_t childIdx, float virtualLoss) const;
+    double get_q_sum(ChildIdx childIdx, float virtualLoss) const;
 
     template<bool increment>
-    void update_virtual_loss_counter(uint16_t childIdx);
+    void update_virtual_loss_counter(ChildIdx childIdx);
 
-    uint8_t get_virtual_loss_counter(uint16_t childIdx) const;
+    uint8_t get_virtual_loss_counter(ChildIdx childIdx) const;
 
     bool has_transposition_child_node();
 
     bool is_transposition_return(double myQvalue) const;
 
-    void set_checkmate_idx(uint_fast16_t) const;
+    void set_checkmate_idx(ChildIdx childIdx) const;
 
     /**
      * @brief was_inspected Returns true if the node has already been inspected for e.g. checks.
@@ -649,5 +650,7 @@ void backup_collision(float virtualLoss, const Trajectory& trajectory);
  * @param trajectory Trajectory on how to get to the given value eval
  */
 void backup_value(float value, float virtualLoss, const Trajectory& trajectory);
+
+float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue);
 
 #endif // NODE_H

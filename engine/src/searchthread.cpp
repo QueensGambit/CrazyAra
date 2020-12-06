@@ -75,7 +75,7 @@ void SearchThread::set_is_running(bool value)
     isRunning = value;
 }
 
-NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, size_t childIdx, bool inCheck)
+NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx, bool inCheck)
 {
     if(searchSettings->useTranspositionTable) {
         mapWithMutex->mtx.lock();
@@ -123,7 +123,7 @@ SearchLimits *SearchThread::get_search_limits() const
 
 void random_playout(NodeDescription& description, Node* currentNode, size_t& childIdx)
 {
-    if (rand() % int(pow(RANDOM_MOVE_COUNTER, description.depth + 1)) == 0 && currentNode->is_sorted()) {
+    if (currentNode->get_real_visits() % int(pow(RANDOM_MOVE_COUNTER, description.depth + 1)) == 0 && currentNode->is_sorted()) {
         if (currentNode->is_fully_expanded()) {
             const size_t idx = rand() % currentNode->get_number_child_nodes();
             if (currentNode->get_child_node(idx) == nullptr || !currentNode->get_child_node(idx)->is_playout_node()) {
@@ -142,18 +142,10 @@ void random_playout(NodeDescription& description, Node* currentNode, size_t& chi
     }
 }
 
-float SearchThread::get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double targetQValue)
-{
-    return clamp(transposVisits * (targetQValue - transposQValue) + targetQValue, -0.99, +0.99);
-}
-
-Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription& description)
+Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescription& description)
 {
     description.depth = 0;
     Node* currentNode = rootNode;
-#ifndef MCTS_STORE_STATES
-    newState = unique_ptr<StateObj>(rootState->clone());
-#endif
 
     while (true) {
         childIdx = uint16_t(-1);
@@ -162,7 +154,7 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
             random_playout(description, currentNode, childIdx);
         }
         if (searchSettings->enhanceChecks) {
-            childIdx = select_enhanced_move(currentNode, newState.get());
+            childIdx = select_enhanced_move(currentNode);
         }
 
         if (childIdx == uint16_t(-1)) {
@@ -176,6 +168,11 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         if (nextNode == nullptr) {
 #ifdef MCTS_STORE_STATES
             StateObj* newState = currentNode->get_state()->clone();
+#else
+            newState = unique_ptr<StateObj>(rootState->clone());
+            for (Action action : actionsBuffer) {
+                newState->do_action(action);
+            }
 #endif
             const bool inCheck = newState->gives_check(currentNode->get_action(childIdx));
             newState->do_action(currentNode->get_action(childIdx));
@@ -224,7 +221,6 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
         }
         currentNode->unlock();
 #ifndef MCTS_STORE_STATES
-        newState->do_action(currentNode->get_action(childIdx));
         actionsBuffer.emplace_back(currentNode->get_action(childIdx));
 #endif
         currentNode = nextNode;
@@ -378,8 +374,15 @@ void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>&
     trajectories.clear();
 }
 
-uint_fast16_t SearchThread::select_enhanced_move(Node* currentNode, StateObj* pos) const {
-    if (currentNode->is_playout_node() && !currentNode->was_inspected() && currentNode->get_real_visits() % CHECK_ENHANCE_COUNTER_PERIOD == 0 && !currentNode->is_terminal()) {
+ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
+    if (currentNode->get_real_visits() % CHECK_ENHANCE_COUNTER_PERIOD == 0 && currentNode->is_playout_node() && !currentNode->was_inspected() && !currentNode->is_terminal()) {
+
+        // iterate over the current state
+        unique_ptr<StateObj> pos = unique_ptr<StateObj>(rootState->clone());
+        for (Action action : actionsBuffer) {
+            pos->do_action(action);
+        }
+
         // make sure a check has been explored at least once
         for (size_t childIdx = currentNode->get_no_visit_idx(); childIdx < currentNode->get_number_child_nodes(); ++childIdx) {
             if (pos->gives_check(currentNode->get_action(childIdx))) {
