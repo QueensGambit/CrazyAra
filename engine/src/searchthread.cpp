@@ -89,7 +89,7 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
             it->second->add_transposition_parent_node();
             it->second->unlock();
     #ifndef MODE_POMMERMAN
-            if (it->second->is_playout_node() && it->second->get_node_type() == SOLVED_LOSS) {
+            if (it->second->is_playout_node() && it->second->get_node_type() == LOSS) {
                 parentNode->set_checkmate_idx(childIdx);
             }
     #endif
@@ -130,7 +130,7 @@ void random_playout(NodeDescription& description, Node* currentNode, size_t& chi
                 childIdx = idx;
                 return;
             }
-            if (currentNode->get_child_node(idx)->get_node_type() != SOLVED_WIN) {
+            if (currentNode->get_child_node(idx)->get_node_type() != WIN) {
                 childIdx = idx;
                 return;
             }

@@ -107,7 +107,7 @@ Node::Node(StateObj* state, bool inCheck, const SearchSettings* searchSettings):
 {
     // specify the number of direct child nodes of this node
     check_for_terminal(state, inCheck);
-#if defined(MODE_CHESS) || defined(MODE_LICHESS)
+#if MCTS_TB_SUPPORT
     if (searchSettings->useTablebase && !isTerminal) {
         check_for_tablebase_wdl(state);
     }
@@ -117,20 +117,21 @@ Node::Node(StateObj* state, bool inCheck, const SearchSettings* searchSettings):
 
 bool Node::solved_win(const Node* childNode) const
 {
-#ifndef MODE_POMMERMAN
-    if (childNode->d->nodeType == SOLVED_LOSS) {
+#ifndef MCTS_SINGLE_PLAYER
+    return childNode->d->nodeType == LOSS;
 #else
-    if (childNode->d->nodeType == SOLVED_WIN) {
+    return childNode->d->nodeType == WIN;
 #endif
-        return true;
-    }
-    return false;
 }
 
 bool Node::solved_draw(const Node* childNode) const
 {
     if (d->numberUnsolvedChildNodes == 0 &&
-            (childNode->d->nodeType == SOLVED_DRAW || childNode->d->nodeType == SOLVED_WIN)) {
+#ifndef MCTS_SINGLE_PLAYER
+            (childNode->d->nodeType != LOSS)) {
+#else
+            (childNode->d->nodeType != WIN)) {
+#endif
         return at_least_one_drawn_child();
     }
     return false;
@@ -140,23 +141,20 @@ bool Node::at_least_one_drawn_child() const
 {
     bool atLeastOneDrawnChild = false;
     for (Node* childNode : d->childNodes) {
-        if (!childNode->is_playout_node() || (childNode->d->nodeType != SOLVED_DRAW && childNode->d->nodeType != SOLVED_WIN)) {
+        if (!childNode->is_playout_node() || (childNode->d->nodeType != DRAW && childNode->d->nodeType != WIN)) {
             return false;
         }
-        if (childNode->d->nodeType == SOLVED_DRAW) {
+        if (childNode->d->nodeType == DRAW) {
             atLeastOneDrawnChild = true;
         }
     }
-    if (atLeastOneDrawnChild) {
-        return true;
-    }
-    return false;
+    return atLeastOneDrawnChild;
 }
 
 bool Node::only_won_child_nodes() const
 {
     for (Node* childNode : d->childNodes) {
-        if (childNode->d->nodeType != SOLVED_WIN) {
+        if (childNode->d->nodeType != WIN) {
             return false;
         }
     }
@@ -165,10 +163,10 @@ bool Node::only_won_child_nodes() const
 
 bool Node::solved_loss(const Node* childNode) const
 {
-#ifndef MODE_POMMERMAN
-    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == SOLVED_WIN) {
+#ifndef MCTS_SINGLE_PLAYER
+    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == WIN) {
 #else
-    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == SOLVED_LOSS) {
+    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == LOSS) {
 #endif
         return only_won_child_nodes();
     }
@@ -177,25 +175,89 @@ bool Node::solved_loss(const Node* childNode) const
 
 void Node::mark_as_loss()
 {
-    set_value(LOSS);
-    d->nodeType = SOLVED_LOSS;
+    set_value(LOSS_VALUE);
+    d->nodeType = LOSS;
 }
 
 void Node::mark_as_draw()
 {
-    set_value(DRAW);
-    d->nodeType = SOLVED_DRAW;
+    set_value(DRAW_VALUE);
+    d->nodeType = DRAW;
 }
 
 void Node::mark_as_win()
 {
-    set_value(WIN);
-    d->nodeType = SOLVED_WIN;
+    set_value(WIN_VALUE);
+    d->nodeType = WIN;
 }
+
+#ifdef MCTS_TB_SUPPORT
+bool Node::solve_tb_win(const Node* childNode) const
+{
+#ifndef MCTS_SINGLE_PLAYER
+    return childNode->d->nodeType == TB_LOSS;
+#else
+    return childNode->d->nodeType == TB_WIN;
+#endif
+}
+
+bool Node::solved_tb_draw(const Node* childNode) const
+{
+    if (d->numberUnsolvedChildNodes == 0 &&
+#ifndef MCTS_SINGLE_PLAYER
+            (childNode->d->nodeType != TB_LOSS || childNode->d->nodeType == LOSS)) {
+#else
+            (childNode->d->nodeType != TB_WIN || childNode->d->nodeType == WIN)) {
+#endif
+        return at_least_one_drawn_child();
+    }
+    return false;
+}
+
+bool Node::solved_tb_loss(const Node* childNode) const
+{
+#ifndef MCTS_SINGLE_PLAYER
+    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == TB_WIN) {
+#else
+    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == TB_LOSS) {
+#endif
+        return only_won_tb_child_nodes();
+    }
+    return false;
+}
+
+bool Node::only_won_tb_child_nodes() const
+{
+    for (Node* childNode : d->childNodes) {
+        if (childNode->d->nodeType != TB_WIN) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Node::mark_as_tb_loss()
+{
+    set_value(LOSS_VALUE);
+    d->nodeType = TB_LOSS;
+}
+
+void Node::mark_as_tb_draw()
+{
+    set_value(DRAW_VALUE);
+    d->nodeType = TB_DRAW;
+}
+
+void Node::mark_as_tb_win()
+{
+    set_value(WIN_VALUE);
+    d->nodeType = TB_WIN;
+}
+#endif
 
 void Node::define_end_ply_for_solved_terminal(const Node* childNode)
 {
-    if (d->nodeType == SOLVED_LOSS) {
+    if (d->nodeType == LOSS) {
         // choose the longest pv line
         for (const Node* curChildNode : d->childNodes) {
             if (curChildNode->d->endInPly+1 > d->endInPly) {
@@ -204,10 +266,10 @@ void Node::define_end_ply_for_solved_terminal(const Node* childNode)
         }
         return;
     }
-    if (d->nodeType == SOLVED_DRAW) {
+    if (d->nodeType == DRAW) {
         // choose the shortest pv line for draws
         for (const Node* curChildNode : d->childNodes) {
-            if (curChildNode->d->nodeType == SOLVED_DRAW && curChildNode->d->endInPly+1 < d->endInPly) {
+            if (curChildNode->d->nodeType == DRAW && curChildNode->d->endInPly+1 < d->endInPly) {
                 d->endInPly = curChildNode->d->endInPly+1;
             }
         }
@@ -223,7 +285,7 @@ void Node::update_solved_terminal(const Node* childNode, ChildIdx childIdx)
     define_end_ply_for_solved_terminal(childNode);
     set_value(targetValue);
     d->qValues[childIdx] = targetValue;
-    if (targetValue == WIN) {
+    if (targetValue == WIN_VALUE) {
         d->checkmateIdx = childIdx;
     }
 }
@@ -233,7 +295,7 @@ void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
     mctsPolicy = 0;
     size_t childIdx = 0;
     for (auto childNode: get_child_nodes()) {
-        if (childNode != nullptr && childNode->d != nullptr && childNode->d->nodeType == SOLVED_LOSS) {
+        if (childNode != nullptr && childNode->d != nullptr && childNode->d->nodeType == LOSS) {
             mctsPolicy[childIdx] = 1.0f;
         }
         ++childIdx;
@@ -244,11 +306,11 @@ void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
 void Node::prune_losses_in_mcts_policy(DynamicVector<float> &mctsPolicy) const
 {
     // check if PV line leads to a loss
-    if (d->numberUnsolvedChildNodes != get_number_child_nodes() && d->nodeType != SOLVED_LOSS) {
+    if (d->numberUnsolvedChildNodes != get_number_child_nodes() && d->nodeType != LOSS) {
         // set all entries which lead to a WIN of the opponent to zero
         for (size_t childIdx = 0; childIdx < d->noVisitIdx; ++childIdx) {
             const Node* childNode = d->childNodes[childIdx];
-            if (childNode != nullptr && childNode->is_playout_node() && childNode->d->nodeType == SOLVED_WIN) {
+            if (childNode != nullptr && childNode->is_playout_node() && childNode->d->nodeType == WIN) {
                 mctsPolicy[childIdx] = 0;
             }
         }
@@ -288,10 +350,10 @@ void Node::solve_for_terminal(ChildIdx childIdx)
         --d->numberUnsolvedChildNodes;
         d->nodeTypes[childIdx] = childNode->d->nodeType;
         switch(childNode->d->nodeType) {
-#ifndef MODE_POMMERMAN
-        case SOLVED_WIN:
+#ifndef MCTS_SINGLE_PLAYER
+        case WIN:
 #else
-        case SOLVED_LOSS:
+        case LOSS:
 #endif
             disable_action(childIdx);
             break;
@@ -300,18 +362,18 @@ void Node::solve_for_terminal(ChildIdx childIdx)
     }
 
     if (solved_win(childNode)) {
-        d->nodeType = SOLVED_WIN;
-        update_solved_terminal<WIN>(childNode, childIdx);
+        d->nodeType = WIN;
+        update_solved_terminal<WIN_VALUE>(childNode, childIdx);
         return;
     }
     if (solved_loss(childNode)) {
-        d->nodeType = SOLVED_LOSS;
-        update_solved_terminal<LOSS>(childNode, childIdx);
+        d->nodeType = LOSS;
+        update_solved_terminal<LOSS_VALUE>(childNode, childIdx);
         return;
     }
     if (solved_draw(childNode)) {
-        d->nodeType = SOLVED_DRAW;
-        update_solved_terminal<DRAW>(childNode, childIdx);
+        d->nodeType = DRAW;
+        update_solved_terminal<DRAW_VALUE>(childNode, childIdx);
         return;
     }
 }
@@ -508,7 +570,7 @@ void backup_value(float value, float virtualLoss, const Trajectory& trajectory) 
                 value = get_transposition_q_value(transposVisits, transposQValue, targetQValue);
             }
         }
-#ifndef MODE_POMMERMAN
+#ifndef MCTS_SINGLE_PLAYER
         value = -value;
 #endif
         it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss);
@@ -645,12 +707,20 @@ float Node::updated_value_eval() const
         return get_value();
     }
     switch(d->nodeType) {
-    case SOLVED_WIN:
-        return WIN;
-    case SOLVED_DRAW:
-        return DRAW;
-    case SOLVED_LOSS:
-        return LOSS;
+    case WIN:
+        return WIN_VALUE;
+    case DRAW:
+        return DRAW_VALUE;
+    case LOSS:
+        return LOSS_VALUE;
+#ifdef MCTS_TB_SUPPORT
+    case TB_WIN:
+        return WIN_VALUE;
+    case TB_DRAW:
+        return DRAW_VALUE;
+    case TB_LOSS:
+        return LOSS_VALUE;
+#endif
     default: ;  // UNSOLVED
     }
     return d->qValues[argmax(d->childNumberVisits)];
@@ -757,13 +827,13 @@ void Node::check_for_tablebase_wdl(StateObj* state)
         isTablebase = true;
         switch(wdlScore) {
         case Tablebase::WDLLoss:
-            set_value(-0.99); //LOSS);
+            mark_as_tb_loss();
             break;
         case Tablebase::WDLWin:
-            set_value(0.99); //WIN);
+            mark_as_tb_win();
             break;
         default:
-            set_value(0.00001); //DRAW);
+            mark_as_tb_draw();
         }
     }
     // default: isTablebase = false;
@@ -881,7 +951,7 @@ Node *Node::get_child_node(size_t childIdx)
 void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight) const
 {
     // fill only the winning moves in case of a known win
-    if (d->nodeType == SOLVED_WIN) {
+    if (d->nodeType == WIN) {
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
         mcts_policy_based_on_wins(mctsPolicy);
         return;
@@ -936,7 +1006,7 @@ size_t get_best_action_index(const Node *curNode, bool fast, bool qValueWeight)
         // chose mating line
         return curNode->get_checkmate_idx();
     }
-    if (curNode->get_node_type() == SOLVED_LOSS) {
+    if (curNode->get_node_type() == LOSS) {
         // choose node which delays the mate
         size_t longestPVlength = 0;
         size_t childIdx = 0;
@@ -979,12 +1049,20 @@ size_t Node::select_child_node(const SearchSettings* searchSettings)
 const char* node_type_to_string(enum NodeType nodeType)
 {
     switch(nodeType) {
-    case SOLVED_WIN:
+    case WIN:
         return "WIN";
-    case SOLVED_DRAW:
+    case DRAW:
         return "DRAW";
-    case SOLVED_LOSS:
+    case LOSS:
         return "LOSS";
+#ifdef MCTS_TB_SUPPORT
+    case TB_WIN:
+        return "TB_WIN";
+    case TB_DRAW:
+        return "TB_DRAW";
+    case TB_LOSS:
+        return "TB_LOSS";
+#endif
     default:
         return "UNSOLVED";
     }
@@ -992,10 +1070,16 @@ const char* node_type_to_string(enum NodeType nodeType)
 
 NodeType flip_node_type(const enum NodeType nodeType) {
     switch(nodeType) {
-    case SOLVED_WIN:
-        return SOLVED_LOSS;
-    case SOLVED_LOSS:
-        return SOLVED_WIN;
+    case WIN:
+        return LOSS;
+    case LOSS:
+        return WIN;
+#ifdef MCTS_TB_SUPPORT
+    case TB_WIN:
+        return TB_LOSS;
+    case TB_LOSS:
+        return TB_WIN;
+#endif
     default:
         return nodeType;
     }
@@ -1127,7 +1211,7 @@ void Node::set_as_inspected()
 
 bool is_terminal_value(float value)
 {
-    return (value == WIN || value == DRAW || value == LOSS);
+    return (value == WIN_VALUE || value == DRAW_VALUE || value == LOSS_VALUE);
 }
 
 size_t get_node_count(const Node *node)
