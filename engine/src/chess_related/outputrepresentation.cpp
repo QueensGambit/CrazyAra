@@ -44,17 +44,18 @@ void OutputRepresentation::init_policy_constants(bool isPolicyMap)
     const bool is960 = false;
 #endif
     // fill mirrored label list and look-up table
-    for (int mvIdx=0; mvIdx < StateConstants::NB_LABELS(); mvIdx++) {
+    for (size_t mvIdx = 0; mvIdx < StateConstants::NB_LABELS(); mvIdx++) {
         LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);
         std::vector<Move> moves = make_move(LABELS[mvIdx], is960);
         for (Move move : moves) {
-            isPolicyMap ? MV_LOOKUP.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP.insert({move, mvIdx});
-            MV_LOOKUP_CLASSIC.insert({move, mvIdx});
+            isPolicyMap ? MV_LOOKUP[move] = FLAT_PLANE_IDX[mvIdx] : MV_LOOKUP[move] = mvIdx;
+
+            MV_LOOKUP_CLASSIC[move] = mvIdx;
         }
         std::vector<Move> moves_mirrored = make_move(LABELS_MIRRORED[mvIdx], is960);
         for (Move move : moves_mirrored) {
-            isPolicyMap ? MV_LOOKUP_MIRRORED.insert({move, FLAT_PLANE_IDX[mvIdx]}) : MV_LOOKUP_MIRRORED.insert({move, mvIdx});
-            MV_LOOKUP_MIRRORED_CLASSIC.insert({move, mvIdx});
+            isPolicyMap ? MV_LOOKUP_MIRRORED[move] = FLAT_PLANE_IDX[mvIdx] : MV_LOOKUP_MIRRORED[move] = mvIdx;
+            MV_LOOKUP_MIRRORED_CLASSIC[move] = mvIdx;
         }
     }
 }
@@ -180,7 +181,7 @@ void OutputRepresentation::init_labels()
     // start with the normal chess labels
     LABELS = uci_labels::generate_uci_labels(uci_labels::promotion_pieces());
 #endif
-    if (int(LABELS.size()) != StateConstants::NB_LABELS()) {
+    if (LABELS.size() != StateConstants::NB_LABELS()) {
         cerr << "LABELS.size() != StateConstants::NB_LABELS():" <<  LABELS.size() << " " << StateConstants::NB_LABELS() << endl;
         assert(false);
     }

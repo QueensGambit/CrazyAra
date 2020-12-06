@@ -28,14 +28,15 @@
 #ifndef OUTPUTREPRESENTATION_H
 #define OUTPUTREPRESENTATION_H
 
+#include <climits>
+#include <array>
 #include <blaze/Math.h>
 #include "constants.h"
 #include "state.h"
-#include <array>
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
-using action_idx_map = unordered_map<Action, MoveIdx, std::hash<Action>>;
+using action_idx_map = Action[USHRT_MAX];
 
 using namespace std;
 
