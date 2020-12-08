@@ -443,12 +443,14 @@ private:
      */
     void check_for_terminal(StateObj* state, bool inCheck);
 
+#ifdef MCTS_TB_SUPPORT
     /**
      * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
      *  updates isTerminal and the value evaluation
      * @param state Current board position for this node
      */
     void check_for_tablebase_wdl(StateObj* state);
+#endif
 
     /**
      * @brief solve_for_terminal Tries to solve the current node to be a forced win, loss or draw.
@@ -457,7 +459,7 @@ private:
      * The solver uses the current backpropagating child node as well as all available child nodes.
      * @param childNode Child nodes which backpropagates the value
      */
-    void solve_for_terminal(uint_fast16_t childIdx);
+    void solve_for_terminal(ChildIdx childIdx);
 
     /**
      * @brief solved_win Checks if the current node is a solved win based on the given child node

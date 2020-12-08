@@ -121,7 +121,7 @@ SearchLimits *SearchThread::get_search_limits() const
     return searchLimits;
 }
 
-void random_playout(NodeDescription& description, Node* currentNode, size_t& childIdx)
+void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& childIdx)
 {
     if (currentNode->get_real_visits() % int(pow(RANDOM_MOVE_COUNTER, description.depth + 1)) == 0 && currentNode->is_sorted()) {
         if (currentNode->is_fully_expanded()) {
@@ -303,7 +303,7 @@ void SearchThread::create_mini_batch()
     // select nodes to add to the mini-batch
     Node *parentNode;
     NodeDescription description;
-    size_t childIdx;
+    ChildIdx childIdx;
     size_t numTerminalNodes = 0;
 
     while (!newNodes->is_full() &&
