@@ -231,14 +231,19 @@ void Node::update_solved_terminal(const Node* childNode, ChildIdx childIdx)
 void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
 {
     mctsPolicy = 0;
-    size_t childIdx = 0;
+    ChildIdx childIdx = 0;
     for (auto childNode: get_child_nodes()) {
-        if (childNode != nullptr && childNode->d != nullptr && childNode->d->nodeType == SOLVED_LOSS) {
+        if (childNode != nullptr && childNode->d != nullptr) {
+#ifndef MCTS_SINGLE_PLAYER
+            if (childNode->d->nodeType == SOLVED_LOSS) {
+#else
+            if (childNode->d->nodeType == SOLVED_WIN) {
+#endif
             mctsPolicy[childIdx] = 1.0f;
+            }
         }
         ++childIdx;
     }
-    mctsPolicy /= sum(mctsPolicy);
 }
 
 void Node::prune_losses_in_mcts_policy(DynamicVector<float> &mctsPolicy) const
@@ -884,40 +889,25 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
     if (d->nodeType == SOLVED_WIN) {
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
         mcts_policy_based_on_wins(mctsPolicy);
-        return;
     }
-    if (qValueWeight > 0) {
+    else if (qValueWeight > 0) {
         size_t secondArg;
         float firstMax;
         float secondMax;
         mctsPolicy = d->childNumberVisits;
         prune_losses_in_mcts_policy(mctsPolicy);
         first_and_second_max(mctsPolicy, d->noVisitIdx, firstMax, secondMax, bestMoveIdx, secondArg);
-        if (d->qValues[secondArg]-Q_VALUE_DIFF > d->qValues[bestMoveIdx]) {
-            mctsPolicy[bestMoveIdx] = secondMax;
-            mctsPolicy[secondArg] = firstMax;
-            bestMoveIdx = secondArg;
+        if (bestMoveIdx != secondArg && d->qValues[secondArg] > d->qValues[bestMoveIdx]) {
+            const float qDiff = d->qValues[secondArg] - d->qValues[bestMoveIdx];
+            mctsPolicy[secondArg] += qDiff * qValueWeight * mctsPolicy[bestMoveIdx];
         }
-        // TODO: check if this is useful
-        //        else {
-        //            size_t qIdx = get_best_q_idx();
-        //            if (bestMoveIdx != qIdx) {
-        //                const float qDiff = 1.0f - (d->childNumberVisits[qIdx] / d->childNumberVisits[bestMoveIdx]);
-        //                if (d->qValues[qIdx]-qDiff > d->qValues[bestMoveIdx]) {
-        //                    mctsPolicy[bestMoveIdx] = d->childNumberVisits[qIdx];
-        //                    mctsPolicy[secondArg] = firstMax;
-        //                    bestMoveIdx = qIdx;
-        //                }
-        //            }
-        //        }
     }
     else {
         mctsPolicy = d->childNumberVisits;
         prune_losses_in_mcts_policy(mctsPolicy);
-        bestMoveIdx = argmax(d->childNumberVisits);
     }
-
     mctsPolicy /= sum(mctsPolicy);
+    bestMoveIdx = argmax(mctsPolicy);
 }
 
 void Node::get_principal_variation(vector<Action>& pv, bool qValueWeight) const
