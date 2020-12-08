@@ -16,6 +16,7 @@ option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
+add_definitions(-DMCTS_SOLVER)
 
 if (MODE_CRAZYHOUSE)
     project(CrazyAra CXX)
@@ -25,6 +26,7 @@ endif()
 if (MODE_CHESS)
     project(ClassicAra CXX)
     add_definitions(-DMODE_CHESS)
+    add_definitions(-DMCTS_TB_SUPPORT)
 endif()
 
 if (MODE_LICHESS)
@@ -37,6 +39,7 @@ if (MODE_LICHESS)
     add_definitions(-DATOMIC)
     add_definitions(-DHORDE)
     add_definitions(-DRACE)
+    add_definitions(-DMCTS_TB_SUPPORT)
 endif()
 
 if (BUILD_TESTS)

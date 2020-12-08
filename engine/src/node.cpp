@@ -615,7 +615,9 @@ void Node::revert_virtual_loss_and_update(ChildIdx childIdx, float value, float 
     }
     if (is_terminal_value(value)) {
         ++d->terminalVisits;
+#ifdef MCTS_SOLVER
         solve_for_terminal(childIdx);
+#endif
     }
     unlock();
 }
@@ -1213,6 +1215,6 @@ size_t get_node_count(const Node *node)
 
 float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double targetQValue)
 {
-    return clamp(transposVisits * (targetQValue - transposQValue) + targetQValue, -0.99, +0.99);
+    return clamp(transposVisits * (targetQValue - transposQValue) + targetQValue, double(LOSS_VALUE), double(WIN_VALUE));
 }
 
