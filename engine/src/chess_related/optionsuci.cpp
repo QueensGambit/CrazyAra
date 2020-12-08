@@ -122,16 +122,16 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
     o["Reuse_Tree"]                    << Option(false);
 #endif
-    o["Move_Overhead"]                 << Option(50, 0, 5000);
+    o["Move_Overhead"]                 << Option(20, 0, 5000);
     o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
     o["SyzygyPath"]                    << Option("<empty>");
     o["Log_File"]                      << Option("", on_logger);
-    o["Use_NPS_Time_Manager"]          << Option(true);
+    o["Use_NPS_Time_Manager"]          << Option(false);
     o["Use_Advantage"]                 << Option(false);
 #ifdef SUPPORT960
     o["UCI_Chess960"]                  << Option(true);
 #endif
-    o["Random_Playout"]                << Option(true);
+    o["Random_Playout"]                << Option(false);
     o["Fixed_Movetime"]                << Option(0, 0, 99999999);
     o["Reuse_Tree"]                    << Option(true);
 }
