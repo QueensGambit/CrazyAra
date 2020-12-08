@@ -40,9 +40,14 @@ using namespace std;
 
 
 enum NodeType : uint8_t {
-    SOLVED_WIN,
-    SOLVED_DRAW,
-    SOLVED_LOSS,
+    WIN,
+    DRAW,
+    LOSS,
+#ifdef MCTS_TB_SUPPORT
+    TB_WIN,
+    TB_DRAW,
+    TB_LOSS,
+#endif
     UNSOLVED
 };
 

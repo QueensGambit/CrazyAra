@@ -443,12 +443,14 @@ private:
      */
     void check_for_terminal(StateObj* state, bool inCheck);
 
+#ifdef MCTS_TB_SUPPORT
     /**
      * @brief check_for_tablebase_wdl Checks if the given board position is a tablebase position and
      *  updates isTerminal and the value evaluation
      * @param state Current board position for this node
      */
     void check_for_tablebase_wdl(StateObj* state);
+#endif
 
     /**
      * @brief solve_for_terminal Tries to solve the current node to be a forced win, loss or draw.
@@ -457,12 +459,12 @@ private:
      * The solver uses the current backpropagating child node as well as all available child nodes.
      * @param childNode Child nodes which backpropagates the value
      */
-    void solve_for_terminal(uint_fast16_t childIdx);
+    void solve_for_terminal(ChildIdx childIdx);
 
     /**
      * @brief solved_win Checks if the current node is a solved win based on the given child node
      * @param childNode Child nodes which backpropagates the value
-     * @return true for SOLVE_WIN else false
+     * @return true for WIN else false
      */
     bool solved_win(const Node* childNode) const;
 
@@ -470,7 +472,7 @@ private:
      * @brief solved_draw Checks if the current node is a solved draw based on the given child node
      * and all available child node
      * @param childNode Child nodes which backpropagates the value
-     * @return true for SOLVED_DRAW else false
+     * @return true for DRAW else false
      */
     bool solved_draw(const Node* childNode) const;
 
@@ -489,7 +491,7 @@ private:
     /**
      * @brief solved_loss Checks if the current node is a solved loss based on the given child node
      * @param childNode Child nodes which backpropagates the value
-     * @return true for SOLVED_LOSS else false
+     * @return true for LOSS else false
      */
     bool solved_loss(const Node* childNode) const;
 
@@ -507,6 +509,51 @@ private:
      * @brief mark_as_win Marks the current node as a winning node
      */
     void mark_as_win();
+
+#ifdef MCTS_TB_SUPPORT
+    /**
+     * @brief solve_tb_win Checks if the current node is a solved tablebase win based on the given child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for TB_WIN else false
+     */
+    bool solve_tb_win(const Node* childNode) const;
+
+    /**
+     * @brief solved_tb_draw Checks if the current node is a solved tablebase draw based on the given child node
+     * and all available child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for TB_DRAW else false
+     */
+    bool solved_tb_draw(const Node* childNode) const;
+
+    /**
+     * @brief solved_tb_loss Checks if the current node is a solved tablebase loss based on the given child node
+     * @param childNode Child nodes which backpropagates the value
+     * @return true for TB_LOSS else false
+     */
+    bool solved_tb_loss(const Node* childNode) const;
+
+    /**
+     * @brief only_won_tb_child_nodws Checks if this node has only WON child nodes
+     * @return true if only WIN_TB child nodes exist else false
+     */
+    bool only_won_tb_child_nodes() const;
+
+    /**
+     * @brief mark_as_tb_loss Marks the current node as a tablebase loss
+     */
+    void mark_as_tb_loss();
+
+    /**
+     * @brief mark_as_tb_draw Marks the current node as a tablebase draw
+     */
+    void mark_as_tb_draw();
+
+    /**
+     * @brief mark_as_tb_win Marks the current node as a tablebase win
+     */
+    void mark_as_tb_win();
+#endif
 
     /**
      * @brief define_end_ply_for_solved_terminal Calculates the number of plies in which the terminal will be reached.
@@ -613,7 +660,7 @@ float get_current_u_divisor(float numberVisits, float uMin, float uInit, float u
 const char* node_type_to_string(enum NodeType nodeType);
 
 /**
- * @brief flip_node_type Flips the node type value (e.g. SOLVED_WIN into SOLVED_LOSS)
+ * @brief flip_node_type Flips the node type value (e.g. WIN into LOSS)
  * @param nodeType Node type
  * @return flipped node type
  */

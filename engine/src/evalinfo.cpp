@@ -130,12 +130,12 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
         // scores
         // return mate score for known wins and losses
         if (nextNode->is_playout_node()) {
-            if (nextNode->get_node_type() == SOLVED_LOSS) {
+            if (nextNode->get_node_type() == LOSS) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
                 return;
             }
-            if (nextNode->get_node_type() == SOLVED_WIN) {
+            if (nextNode->get_node_type() == WIN) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
                 return;
@@ -171,7 +171,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
         const size_t startIdx = evalInfo.policyProbSmall.size();
         fill_missing_values<float>(evalInfo.policyProbSmall, startIdx, targetLength, 0.0f);
         fill_missing_values<float>(evalInfo.childNumberVisits, startIdx, targetLength, 0.0f);
-        fill_missing_values<float>(evalInfo.qValues, startIdx, targetLength, LOSS);
+        fill_missing_values<float>(evalInfo.qValues, startIdx, targetLength, LOSS_VALUE);
     }
     evalInfo.legalMoves = rootNode->get_legal_actions();
 

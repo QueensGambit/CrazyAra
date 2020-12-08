@@ -56,9 +56,9 @@ const string engineName = "ClassicAra";
 const string engineVersion = "0.8.4";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
 
-#define LOSS -1
-#define DRAW 0
-#define WIN 1
+#define LOSS_VALUE -1
+#define DRAW_VALUE 0
+#define WIN_VALUE 1
 #define PRESERVED_ITEMS 8
 // Pre-initialized index when no forced win was found: 2^16 - 1
 #define NO_CHECKMATE 65535
