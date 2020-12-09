@@ -131,8 +131,9 @@ public:
      * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
      * @param childIdx Index to the child node to update
      * @param value Specifies the value evaluation to backpropagate
+     * @param solveForTerminal Decides if the terminal solver will be used
      */
-    void revert_virtual_loss_and_update(ChildIdx childIdx, float valueSum, float virtualLoss);
+    void revert_virtual_loss_and_update(ChildIdx childIdx, float valueSum, float virtualLoss, bool solveForTerminal);
 
     /**
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
@@ -450,6 +451,8 @@ private:
      * @param state Current board position for this node
      */
     void check_for_tablebase_wdl(StateObj* state);
+
+    void mark_as_tablebase();
 #endif
 
     /**
@@ -695,8 +698,9 @@ void backup_collision(float virtualLoss, const Trajectory& trajectory);
  * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
  * @param virtualLoss Virtual loss value
  * @param trajectory Trajectory on how to get to the given value eval
+ * @param solveForTerminal Decides if the terminal solver will be used
  */
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory);
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, bool solveForTerminal);
 
 float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue);
 

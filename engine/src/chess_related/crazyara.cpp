@@ -493,6 +493,7 @@ void CrazyAra::init_search_settings()
         searchSettings.useTablebase = true;
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
+    searchSettings.mctsSolver = Options["MCTS_Solver"];
 }
 
 void CrazyAra::init_play_settings()

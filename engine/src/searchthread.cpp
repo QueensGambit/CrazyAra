@@ -320,7 +320,7 @@ void SearchThread::create_mini_batch()
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-            backup_value(newNode->get_value(), searchSettings->virtualLoss, trajectoryBuffer);
+            backup_value(newNode->get_value(), searchSettings->virtualLoss, trajectoryBuffer, true);
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
@@ -359,8 +359,11 @@ void run_search_thread(SearchThread *t)
 
 void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < nodes->size(); ++idx) {
-        const Node* node = nodes->get_element(idx);
-        backup_value(node->get_value(), searchSettings->virtualLoss, trajectories[idx]);
+        Node* node = nodes->get_element(idx);
+        node->lock();
+        bool solveForTerminal = searchSettings->mctsSolver && node->is_playout_node() && node->get_node_type() != UNSOLVED;
+        node->unlock();
+        backup_value(node->get_value(), searchSettings->virtualLoss, trajectories[idx], solveForTerminal);
     }
     nodes->reset_idx();
     trajectories.clear();
@@ -368,7 +371,9 @@ void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& 
 
 void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < values->size(); ++idx) {
-        backup_value(values->get_element(idx), searchSettings->virtualLoss, trajectories[idx]);
+        const float value = values->get_element(idx);
+        const bool solveForTerminal = searchSettings->mctsSolver && is_terminal_value(value);
+        backup_value(value, searchSettings->virtualLoss, trajectories[idx], solveForTerminal);
     }
     values->reset_idx();
     trajectories.clear();
@@ -400,17 +405,18 @@ ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)
 {
-    if (!node->is_tablebase()) {
-        node->set_value(valueOutputs[batchIdx]);
-    }
-    else {
+#ifdef MCTS_TB_SUPPORT
+    if (node->is_tablebase()) {
         ++tbHits;
         // TODO: Improvement the value assignment for table bases
         if (node->get_value() != 0) {
             // use the average of the TB entry and NN eval for non-draws
             node->set_value((valueOutputs[batchIdx] + node->get_value()) * 0.5f);
         }
+        return;
     }
+#endif
+    node->set_value(valueOutputs[batchIdx]);
 }
 
 void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings)

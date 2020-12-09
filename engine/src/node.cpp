@@ -357,7 +357,13 @@ void Node::solve_for_terminal(ChildIdx childIdx)
         switch(childNode->d->nodeType) {
 #ifndef MCTS_SINGLE_PLAYER
         case WIN:
+#ifdef MCTS_TB_SUPPORT
+        case TB_WIN:
+#endif
 #else
+#ifdef MCTS_TB_SUPPORT
+        case TB_LOSS:
+#endif
         case LOSS:
 #endif
             disable_action(childIdx);
@@ -381,6 +387,27 @@ void Node::solve_for_terminal(ChildIdx childIdx)
         update_solved_terminal<DRAW_VALUE>(childNode, childIdx);
         return;
     }
+
+#ifdef MCTS_TB_SUPPORT
+    if (isTablebase) {
+        return;
+    }
+    if (solve_tb_win(childNode)) {
+        d->nodeType = TB_WIN;
+        update_solved_terminal<WIN_VALUE>(childNode, childIdx);
+        return;
+    }
+    if (solved_tb_draw(childNode)) {
+        d->nodeType = TB_DRAW;
+        update_solved_terminal<DRAW_VALUE>(childNode, childIdx);
+        return;
+    }
+    if (solved_tb_loss(childNode)) {
+        d->nodeType = TB_LOSS;
+        update_solved_terminal<LOSS_VALUE>(childNode, childIdx);
+        return;
+    }
+#endif
 }
 
 void Node::mark_nodes_as_fully_expanded()
@@ -565,7 +592,7 @@ uint32_t Node::get_real_visits(ChildIdx childIdx) const
     return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
 }
 
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory) {
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, bool solveForTerminal) {
     double targetQValue = 0;
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
         if (targetQValue != 0) {
@@ -578,7 +605,7 @@ void backup_value(float value, float virtualLoss, const Trajectory& trajectory) 
 #ifndef MCTS_SINGLE_PLAYER
         value = -value;
 #endif
-        it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss);
+        it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss, solveForTerminal);
         if (it->node->is_transposition()) {
             targetQValue = it->node->get_value();
         }
@@ -588,7 +615,7 @@ void backup_value(float value, float virtualLoss, const Trajectory& trajectory) 
     }
 }
 
-void Node::revert_virtual_loss_and_update(ChildIdx childIdx, float value, float virtualLoss)
+void Node::revert_virtual_loss_and_update(ChildIdx childIdx, float value, float virtualLoss, bool solveForTerminal)
 {
     lock();
     // decrement virtual loss counter
@@ -613,11 +640,11 @@ void Node::revert_virtual_loss_and_update(ChildIdx childIdx, float value, float 
         d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
         d->visitSum -= size_t(virtualLoss) - 1;
     }
-    if (is_terminal_value(value)) {
-        ++d->terminalVisits;
-#ifdef MCTS_SOLVER
+    if (solveForTerminal) {
+        if (is_terminal_value(value)) {
+            ++d->terminalVisits;
+        }
         solve_for_terminal(childIdx);
-#endif
     }
     unlock();
 }
@@ -831,8 +858,7 @@ void Node::check_for_tablebase_wdl(StateObj* state)
     Tablebase::WDLScore wdlScore = state->check_for_tablebase_wdl(result);
 
     if (result != Tablebase::FAIL) {
-        // TODO: Change return values
-        isTablebase = true;
+        mark_as_tablebase();
         switch(wdlScore) {
         case Tablebase::WDLLoss:
             mark_as_tb_loss();
@@ -845,6 +871,12 @@ void Node::check_for_tablebase_wdl(StateObj* state)
         }
     }
     // default: isTablebase = false;
+}
+
+void Node::mark_as_tablebase()
+{
+    init_node_data();
+    isTablebase = true;
 }
 #endif
 

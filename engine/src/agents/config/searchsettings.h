@@ -75,6 +75,8 @@ struct SearchSettings
     bool useRandomPlayout;
     // If the tree or parts of the treee can be reused for the next search
     bool reuseTree;
+    // If true, then the MCTS solver for terminals and tablebases will be active
+    bool mctsSolver;
     SearchSettings();
 
 };

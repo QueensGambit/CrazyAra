@@ -16,7 +16,6 @@ option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
-add_definitions(-DMCTS_SOLVER)
 
 if (MODE_CRAZYHOUSE)
     project(CrazyAra CXX)

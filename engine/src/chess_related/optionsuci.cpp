@@ -135,6 +135,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Random_Playout"]                << Option(false);
     o["Fixed_Movetime"]                << Option(0, 0, 99999999);
     o["Reuse_Tree"]                    << Option(true);
+    o["MCTS_Solver"]                   << Option(true);
 }
 
 void OptionsUCI::setoption(istringstream &is)
