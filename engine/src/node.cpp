@@ -520,6 +520,7 @@ uint32_t Node::get_real_visits(uint16_t childIdx) const
     return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
 }
 
+template <bool isMateThreat>
 void add_to_trajectory_buffer(const Node* rootNode, const Node* curNode, Action firstAction, KillerMoves& killerMoves, TrajectoryTransferBuffer& trajectoryTransferBuffer)
 {
     auto it = killerMoves.find(firstAction);
@@ -531,12 +532,18 @@ void add_to_trajectory_buffer(const Node* rootNode, const Node* curNode, Action 
         size_t depth = 0;
         while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
             size_t childIdx = get_best_action_index(curNode, true);
-            if (depth % 2 == 1) {
-                numberReplies.emplace_back(curNode->get_number_child_nodes());
+            if (isMateThreat) {
+                if (depth % 2 == 1) {
+                    numberReplies.emplace_back(curNode->get_number_child_nodes());
+                }
             }
             actionTrajectory.emplace_back(curNode->get_action(childIdx));
             curNode = curNode->get_child_node(childIdx);
             ++depth;
+
+            if (depth == 7 && !isMateThreat) {
+                break;
+            }
         }
 
         for (size_t idx = 0; idx < rootNode->get_number_child_nodes(); ++idx) {
@@ -556,8 +563,15 @@ void backup_value(float value, float virtualLoss, const Trajectory& trajectory, 
 #endif
         bool addToTrajectoryBuffer;
         it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss, addToTrajectoryBuffer);
-        if (addToTrajectoryBuffer && depth == 1) {
-            add_to_trajectory_buffer(trajectory.begin()->node, trajectory[1].node, trajectory[1].node->get_action(trajectory[1].childIdx), killerMoves, trajectoryTransferBuffer);
+        if (depth == 1) {
+            if (addToTrajectoryBuffer) {
+                add_to_trajectory_buffer<true>(trajectory.begin()->node, trajectory[1].node, trajectory[1].node->get_action(trajectory[1].childIdx), killerMoves, trajectoryTransferBuffer);
+            }
+//            Node* nodeDepthOne = trajectory[1].node;
+//            const size_t childIdx = trajectory[1].childIdx;
+//            if (nodeDepthOne->get_policy_prob_small()[childIdx] < min(0.02, 1.0 / nodeDepthOne->get_number_child_nodes()) && nodeDepthOne->max_visits_child() && nodeDepthOne->max_q_child()) {
+//                add_to_trajectory_buffer<false>(trajectory.begin()->node, trajectory[1].node, trajectory[1].node->get_action(trajectory[1].childIdx), killerMoves, trajectoryTransferBuffer);
+//            }
         }
     }
 }

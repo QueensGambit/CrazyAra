@@ -184,9 +184,11 @@ bool action_trajectory_to_trajectory(Node* startNode, const ActionTrajectory& ac
             curNode->unlock();
             return true;
         }
-        if (depth % 2 == 1) {
-            if (curNode->get_number_child_nodes() == numberReplies[depth/2]) {
-                ++correctReplies;
+        if (!numberReplies.empty()) {
+            if (depth % 2 == 1) {
+                if (curNode->get_number_child_nodes() == numberReplies[depth/2]) {
+                    ++correctReplies;
+                }
             }
         }
         Node* nextNode = curNode->get_child_node(childIdx);
@@ -228,7 +230,9 @@ Node* SearchThread::get_new_child_to_evaluate(size_t& childIdx, NodeDescription&
     vector<size_t> idxTrajectory;
     while (true) {
 
-        trajectoryTransfer(currentNode, childIdx, description, newState.get(), idxTrajectory);
+        if (searchSettings->trajectoryTransfer) {
+            trajectoryTransfer(currentNode, childIdx, description, newState.get(), idxTrajectory);
+        }
         childIdx = uint16_t(-1);
 
         currentNode->lock();

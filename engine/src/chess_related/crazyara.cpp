@@ -490,6 +490,7 @@ void CrazyAra::init_search_settings()
     else {
         searchSettings.useTablebase = true;
     }
+    searchSettings.trajectoryTransfer = Options["Trajectory_Transfer"];
 }
 
 void CrazyAra::init_play_settings()

@@ -73,6 +73,10 @@ struct SearchSettings
     bool useTablebase;
     // If true random exploration is used
     bool useRandomPlayout;
+
+    // If true, then trajectories can be transferred between different subtrees
+    bool trajectoryTransfer;
+
     SearchSettings();
 
 };
