@@ -64,6 +64,12 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 #define NO_CHECKMATE 65535
 #define Q_VALUE_DIFF 0.1f
 #define RANDOM_MOVE_COUNTER 25
+#define RANDOM_MAX_DEPTH 5U
+const uint random_move_counter[RANDOM_MAX_DEPTH] = {RANDOM_MOVE_COUNTER,
+                                                    RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER,
+                                                    RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER,
+                                                    RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER,
+                                                    RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER*RANDOM_MOVE_COUNTER};
 #define Q_INIT -1.0f
 #define DEPTH_INIT 64
 #define CHECK_ENHANCE_COUNTER_PERIOD 1000
