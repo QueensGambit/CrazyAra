@@ -128,42 +128,6 @@ public:
     ChildIdx select_child_node(const SearchSettings* searchSettings);
 
     /**
-     * @brief revert_virtual_loss_and_update Revert the virtual loss effect and apply the backpropagated value of its child node
-     * @param childIdx Index to the child node to update
-     * @param value Specifies the value evaluation to backpropagate
-     * @param solveForTerminal Decides if the terminal solver will be used
-     */
-    void revert_virtual_loss_and_update(ChildIdx childIdx, float valueSum, float virtualLoss, bool solveForTerminal);
-
-    /**
-     * @brief revert_virtual_loss Reverts the virtual loss for a target node
-     * @param childIdx Index to the child node to update
-     */
-    void revert_virtual_loss(ChildIdx childIdx, float virtualLoss);
-
-    bool is_playout_node() const;
-
-    /**
-     * @brief is_blank_root_node Returns true if the node is a blank root node with no visits
-     * @return True if initialized but no visits else false
-     */
-    bool is_blank_root_node() const;
-    bool is_solved() const;
-    bool has_forced_win() const;
-
-    Action get_action(ChildIdx childIdx) const;
-    Node* get_child_node(ChildIdx childIdx) const;
-
-    vector<Node*> get_child_nodes() const;
-    bool is_terminal() const;
-    bool has_nn_results() const;
-    float get_value() const;
-    double get_value_sum() const;
-    uint32_t get_real_visits() const;
-
-    void apply_virtual_loss_to_child(ChildIdx childIdx, float virtualLoss);
-
-    /**
      * @brief revert_virtual_loss_and_update Reverts the virtual loss and updates the Q-value and visits
      * @param value New value to update Q
      *
@@ -194,8 +158,72 @@ public:
      *       = (-0.25 * 2 + 1 + 0.7) / 2
      *       = 0.6
      *
+     * @param childIdx Index to the child node to update
+     * @param value Specifies the value evaluation to backpropagate
+     * @param solveForTerminal Decides if the terminal solver will be used
      */
-    void revert_virtual_loss_and_update(float valueSum);
+    template<bool terminalBackup>
+    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, float virtualLoss, bool& solveForTerminal)
+    {
+        lock();
+        // decrement virtual loss counter
+        update_virtual_loss_counter<false>(childIdx);
+
+        valueSum += value;
+        ++realVisitsSum;
+
+        if (d->childNumberVisits[childIdx] == virtualLoss) {
+            // set new Q-value based on return
+            // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
+            d->qValues[childIdx] = value;
+        }
+        else {
+            // revert virtual loss and update the Q-value
+            assert(d->childNumberVisits[childIdx] != 0);
+            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+            assert(!isnan(d->qValues[childIdx]));
+        }
+
+        if (virtualLoss != 1) {
+            d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
+            d->visitSum -= size_t(virtualLoss) - 1;
+        }
+        if (terminalBackup) {
+            ++d->terminalVisits;
+        }
+        if (solveForTerminal) {
+            solveForTerminal = solve_for_terminal(childIdx);
+        }
+        unlock();
+    }
+
+    /**
+     * @brief revert_virtual_loss Reverts the virtual loss for a target node
+     * @param childIdx Index to the child node to update
+     */
+    void revert_virtual_loss(ChildIdx childIdx, float virtualLoss);
+
+    bool is_playout_node() const;
+
+    /**
+     * @brief is_blank_root_node Returns true if the node is a blank root node with no visits
+     * @return True if initialized but no visits else false
+     */
+    bool is_blank_root_node() const;
+    bool is_solved() const;
+    bool has_forced_win() const;
+
+    Action get_action(ChildIdx childIdx) const;
+    Node* get_child_node(ChildIdx childIdx) const;
+
+    vector<Node*> get_child_nodes() const;
+    bool is_terminal() const;
+    bool has_nn_results() const;
+    float get_value() const;
+    double get_value_sum() const;
+    uint32_t get_real_visits() const;
+
+    void apply_virtual_loss_to_child(ChildIdx childIdx, float virtualLoss);
 
     void increment_no_visit_idx();
     void fully_expand_node();
@@ -401,7 +429,16 @@ public:
     double get_q_sum(ChildIdx childIdx, float virtualLoss) const;
 
     template<bool increment>
-    void update_virtual_loss_counter(ChildIdx childIdx);
+    void update_virtual_loss_counter(ChildIdx childIdx)
+    {
+        if (increment) {
+            ++d->virtualLossCounter[childIdx];
+        }
+        else {
+            assert(d->virtualLossCounter[childIdx] != 0);
+            --d->virtualLossCounter[childIdx];
+        }
+    }
 
     uint8_t get_virtual_loss_counter(ChildIdx childIdx) const;
 
@@ -461,8 +498,9 @@ private:
      * https://www.researchgate.net/publication/331216459_Exact-Win_Strategy_for_Overcoming_AlphaZero
      * The solver uses the current backpropagating child node as well as all available child nodes.
      * @param childNode Child nodes which backpropagates the value
+     * @return true, if the node type of the current node was modified
      */
-    void solve_for_terminal(ChildIdx childIdx);
+    bool solve_for_terminal(ChildIdx childIdx);
 
     /**
      * @brief solved_win Checks if the current node is a solved win based on the given child node
@@ -691,6 +729,8 @@ size_t get_node_count(const Node* node);
  */
 void backup_collision(float virtualLoss, const Trajectory& trajectory);
 
+float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue);
+
 /**
  * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
  * The value is flipped at every ply.
@@ -700,8 +740,31 @@ void backup_collision(float virtualLoss, const Trajectory& trajectory);
  * @param trajectory Trajectory on how to get to the given value eval
  * @param solveForTerminal Decides if the terminal solver will be used
  */
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory, bool solveForTerminal);
+template <bool terminal>
+void backup_value(float value, float virtualLoss, const Trajectory& trajectory, bool solveForTerminal) {
+    double targetQValue = 0;
+    for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
+        if (targetQValue != 0) {
+            const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
+            if (transposVisits != 0) {
+                const double transposQValue = -it->node->get_q_sum(it->childIdx, virtualLoss) / transposVisits;
+                value = get_transposition_q_value(transposVisits, transposQValue, targetQValue);
+            }
+        }
+#ifndef MCTS_SINGLE_PLAYER
+        value = -value;
+#endif
+        terminal ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, virtualLoss, solveForTerminal) :
+                   it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, virtualLoss, solveForTerminal);
 
-float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue);
+        if (it->node->is_transposition()) {
+            targetQValue = it->node->get_value();
+        }
+        else {
+            targetQValue = 0;
+        }
+    }
+}
+
 
 #endif // NODE_H

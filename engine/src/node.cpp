@@ -336,19 +336,19 @@ void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qVal
     mctsPolicy = (1.0f - qValueWeight) * normalizedVisits + qValueWeight * qValuePruned;
 }
 
-void Node::solve_for_terminal(ChildIdx childIdx)
+bool Node::solve_for_terminal(ChildIdx childIdx)
 {
     if (d->nodeType != UNSOLVED) {
         // already solved
-        return;
+        return false;
     }
     const Node* childNode = d->childNodes[childIdx];
 
     if (!childNode->is_playout_node()) {
-        return;
+        return false;
     }
     if (childNode->d->nodeType == UNSOLVED) {
-        return;
+        return false;
     }
 
     if (d->nodeTypes[childIdx] == UNSOLVED) {
@@ -375,39 +375,39 @@ void Node::solve_for_terminal(ChildIdx childIdx)
     if (solved_win(childNode)) {
         d->nodeType = WIN;
         update_solved_terminal<WIN_VALUE>(childNode, childIdx);
-        return;
+        return true;
     }
     if (solved_loss(childNode)) {
         d->nodeType = LOSS;
         update_solved_terminal<LOSS_VALUE>(childNode, childIdx);
-        return;
+        return true;
     }
     if (solved_draw(childNode)) {
         d->nodeType = DRAW;
         update_solved_terminal<DRAW_VALUE>(childNode, childIdx);
-        return;
+        return true;
     }
-
 #ifdef MCTS_TB_SUPPORT
     if (isTablebase) {
-        return;
+        return false;
     }
     if (solve_tb_win(childNode)) {
         d->nodeType = TB_WIN;
         update_solved_terminal<WIN_VALUE>(childNode, childIdx);
-        return;
+        return true;
     }
     if (solved_tb_draw(childNode)) {
         d->nodeType = TB_DRAW;
         update_solved_terminal<DRAW_VALUE>(childNode, childIdx);
-        return;
+        return true;
     }
     if (solved_tb_loss(childNode)) {
         d->nodeType = TB_LOSS;
         update_solved_terminal<LOSS_VALUE>(childNode, childIdx);
-        return;
+        return true;
     }
 #endif
+    return false;
 }
 
 void Node::mark_nodes_as_fully_expanded()
@@ -456,18 +456,6 @@ bool Node::is_terminal() const
 bool Node::has_nn_results() const
 {
     return hasNNResults;
-}
-
-template<bool increment>
-void Node::update_virtual_loss_counter(ChildIdx childIdx)
-{
-    if (increment) {
-        ++d->virtualLossCounter[childIdx];
-    }
-    else {
-        assert(d->virtualLossCounter[childIdx] != 0);
-        --d->virtualLossCounter[childIdx];
-    }
 }
 
 void Node::apply_virtual_loss_to_child(ChildIdx childIdx, float virtualLoss)
@@ -590,63 +578,6 @@ uint32_t Node::get_visits() const
 uint32_t Node::get_real_visits(ChildIdx childIdx) const
 {
     return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
-}
-
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory, bool solveForTerminal) {
-    double targetQValue = 0;
-    for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
-        if (targetQValue != 0) {
-            const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
-            if (transposVisits != 0) {
-                const double transposQValue = -it->node->get_q_sum(it->childIdx, virtualLoss) / transposVisits;
-                value = get_transposition_q_value(transposVisits, transposQValue, targetQValue);
-            }
-        }
-#ifndef MCTS_SINGLE_PLAYER
-        value = -value;
-#endif
-        it->node->revert_virtual_loss_and_update(it->childIdx, value, virtualLoss, solveForTerminal);
-        if (it->node->is_transposition()) {
-            targetQValue = it->node->get_value();
-        }
-        else {
-            targetQValue = 0;
-        }
-    }
-}
-
-void Node::revert_virtual_loss_and_update(ChildIdx childIdx, float value, float virtualLoss, bool solveForTerminal)
-{
-    lock();
-    // decrement virtual loss counter
-    update_virtual_loss_counter<false>(childIdx);
-
-    valueSum += value;
-    ++realVisitsSum;
-
-    if (d->childNumberVisits[childIdx] == virtualLoss) {
-        // set new Q-value based on return
-        // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
-        d->qValues[childIdx] = value;
-    }
-    else {
-        // revert virtual loss and update the Q-value
-        assert(d->childNumberVisits[childIdx] != 0);
-        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
-        assert(!isnan(d->qValues[childIdx]));
-    }
-
-    if (virtualLoss != 1) {
-        d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
-        d->visitSum -= size_t(virtualLoss) - 1;
-    }
-    if (solveForTerminal) {
-        if (is_terminal_value(value)) {
-            ++d->terminalVisits;
-        }
-        solve_for_terminal(childIdx);
-    }
-    unlock();
 }
 
 void backup_collision(float virtualLoss, const Trajectory& trajectory) {

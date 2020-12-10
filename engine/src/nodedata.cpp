@@ -64,9 +64,6 @@ NodeData::NodeData(size_t numberChildNodes):
     nodeType(UNSOLVED),
     inspected(false)
 {
-    // specify the number of direct child nodes of this node
-    numberUnsolvedChildNodes = numberChildNodes;
-
     reserve_initial_space();
 }
 
