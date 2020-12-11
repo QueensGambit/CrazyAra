@@ -361,7 +361,7 @@ void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& 
     for (size_t idx = 0; idx < nodes->size(); ++idx) {
         Node* node = nodes->get_element(idx);
 #ifdef MCTS_TB_SUPPORT
-        const bool solveForTerminal = searchSettings->mctsSolver && node->isTablebase;
+        const bool solveForTerminal = searchSettings->mctsSolver && node->is_tablebase();
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], solveForTerminal);
 #else
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], false);
