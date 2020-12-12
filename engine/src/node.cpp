@@ -736,9 +736,9 @@ uint16_t Node::get_end_in_ply() const
     return d->endInPly;
 }
 
-uint32_t Node::get_terminal_visits() const
+uint32_t Node::get_free_visits() const
 {
-    return d->terminalVisits;
+    return d->freeVisits;
 }
 
 void Node::init_node_data(size_t numberNodes)
@@ -1138,12 +1138,12 @@ void Node::print_node_statistics(const StateObj* state) const
          << "isTablebase:\t" << is_tablebase() << endl
          << "unsolvedNodes:\t" << d->numberUnsolvedChildNodes << endl
          << "Visits:\t\t" << get_visits() << endl
-         << "terminalVisits:\t" << get_terminal_visits() << endl;
+         << "freeVisits:\t" << get_free_visits() << endl;
 }
 
 uint32_t Node::get_nodes()
 {
-    return get_visits() - get_terminal_visits();
+    return get_visits() - get_free_visits();
 }
 
 bool Node::is_transposition_return(double myQvalue) const
@@ -1173,7 +1173,7 @@ bool is_terminal_value(float value)
 
 size_t get_node_count(const Node *node)
 {
-    return node->get_visits() - node->get_terminal_visits();
+    return node->get_visits() - node->get_free_visits();
 }
 
 float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double targetQValue)

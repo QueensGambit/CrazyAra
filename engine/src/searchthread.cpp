@@ -374,7 +374,7 @@ void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& 
 void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < values->size(); ++idx) {
         const float value = values->get_element(idx);
-        backup_value<false>(value, searchSettings->virtualLoss, trajectories[idx], false);
+        backup_value<true>(value, searchSettings->virtualLoss, trajectories[idx], false);
     }
     values->reset_idx();
     trajectories.clear();

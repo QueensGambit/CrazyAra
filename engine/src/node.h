@@ -162,7 +162,7 @@ public:
      * @param value Specifies the value evaluation to backpropagate
      * @param solveForTerminal Decides if the terminal solver will be used
      */
-    template<bool terminalBackup>
+    template<bool freeBackup>
     void revert_virtual_loss_and_update(ChildIdx childIdx, float value, float virtualLoss, bool& solveForTerminal)
     {
         lock();
@@ -188,8 +188,8 @@ public:
             d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
             d->visitSum -= size_t(virtualLoss) - 1;
         }
-        if (terminalBackup) {
-            ++d->terminalVisits;
+        if (freeBackup) {
+            ++d->freeVisits;
         }
         if (solveForTerminal) {
             solveForTerminal = solve_for_terminal(childIdx);
@@ -365,7 +365,7 @@ public:
     bool is_tablebase() const;
     uint8_t get_node_type() const;
     uint16_t get_end_in_ply() const;
-    uint32_t get_terminal_visits() const;
+    uint32_t get_free_visits() const;
 
     void init_node_data(size_t numberNodes);
     void init_node_data();

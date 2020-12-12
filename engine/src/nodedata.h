@@ -64,7 +64,7 @@ struct NodeData
     DynamicVector<uint8_t> virtualLossCounter;
     DynamicVector<NodeType> nodeTypes;
 
-    uint32_t terminalVisits;
+    uint32_t freeVisits;
     uint32_t visitSum;
 
     uint16_t checkmateIdx;

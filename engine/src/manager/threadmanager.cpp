@@ -126,7 +126,7 @@ bool ThreadManager::early_stopping()
         return false;
     }
 
-    if (rootNode->get_visits()-rootNode->get_terminal_visits() > overallNPS * (movetimeMS / 1000.0f) * 2 &&
+    if (rootNode->get_visits()-rootNode->get_free_visits() > overallNPS * (movetimeMS / 1000.0f) * 2 &&
             rootNode->max_q_child() == rootNode->max_visits_child()) {
         info_string("Early stopping (max nodes), saved time:", remainingMoveTimeMS);
         return true;
@@ -140,10 +140,10 @@ bool ThreadManager::early_stopping()
     const Node* firstNode = rootNode->get_child_node(firstArg);
     const Node* secondNode = rootNode->get_child_node(secondArg);
     if (firstNode != nullptr && firstNode->is_playout_node()) {
-        firstMax -= firstNode->get_terminal_visits();
+        firstMax -= firstNode->get_free_visits();
     }
     if (secondNode != nullptr && secondNode->is_playout_node()) {
-        secondMax -= secondNode->get_terminal_visits();
+        secondMax -= secondNode->get_free_visits();
     }
     if (secondMax + remainingMoveTimeMS * (overallNPS / 1000) < firstMax * 2 &&
             rootNode->get_q_value(firstArg) > rootNode->get_q_value(secondArg)) {
