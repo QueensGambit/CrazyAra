@@ -123,7 +123,7 @@ size_t MCTSAgent::init_root_node(StateObj *state)
         // This way the memory won't be freed for the next new move
         nodesPreSearch = size_t(rootNode->get_visits());
         if (rootNode->is_playout_node()) {
-            nodesPreSearch -= rootNode->get_terminal_visits();
+            nodesPreSearch -= rootNode->get_free_visits();
         }
         info_string(nodesPreSearch, "nodes of former tree will be reused");
     }
