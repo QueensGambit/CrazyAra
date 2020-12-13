@@ -157,6 +157,8 @@ public:
 
     size_t get_max_depth() const;
 
+    Node* get_starting_node(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
+
 private:
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
@@ -211,5 +213,19 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
  * @param childIdx Return child index (maybe unchanged)
  */
 inline void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& childIdx);
+
+/**
+ * @brief get_random_depth
+ * Example: drawing a random number from a uniform distribution in [0, 100]
+ * DEPTH 0: 0 - 50
+ * DEPTH 1: 51 - 75
+ * DEPTH 2: 76 - 77
+ * DEPTH 3: 77 - 94
+ * DEPTH 4: 95 - 97
+ * DEPTH 5: 98 - 99
+ * DEPTH 6: 100
+ * @return random depth while the probability of choosing higher depths decreases exponetially
+ */
+size_t get_random_depth();
 
 #endif // SEARCHTHREAD_H

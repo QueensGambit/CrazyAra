@@ -88,11 +88,11 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
 
             it->second->add_transposition_parent_node();
             it->second->unlock();
-    #ifndef MODE_POMMERMAN
+#ifndef MODE_POMMERMAN
             if (it->second->is_playout_node() && it->second->get_node_type() == LOSS) {
                 parentNode->set_checkmate_idx(childIdx);
             }
-    #endif
+#endif
             transpositionValues->add_element(qValue);
             parentNode->add_new_child_node(it->second, childIdx);
             return NODE_TRANSPOSITION;
@@ -123,23 +123,42 @@ SearchLimits *SearchThread::get_search_limits() const
 
 void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& childIdx)
 {
-    if (description.depth < RANDOM_MAX_DEPTH && currentNode->get_real_visits() % random_move_counter[description.depth] == 0 && currentNode->is_sorted()) {
-        if (currentNode->is_fully_expanded()) {
-            const size_t idx = rand() % currentNode->get_number_child_nodes();
-            if (currentNode->get_child_node(idx) == nullptr || !currentNode->get_child_node(idx)->is_playout_node()) {
-                childIdx = idx;
-                return;
-            }
-            if (currentNode->get_child_node(idx)->get_node_type() != WIN) {
-                childIdx = idx;
-                return;
-            }
+    if (currentNode->is_fully_expanded()) {
+        const size_t idx = rand() % currentNode->get_number_child_nodes();
+        if (currentNode->get_child_node(idx) == nullptr || !currentNode->get_child_node(idx)->is_playout_node()) {
+            childIdx = idx;
+            return;
         }
-        else {
-            childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
-            currentNode->increment_no_visit_idx();
+        if (currentNode->get_child_node(idx)->get_node_type() != WIN) {
+            childIdx = idx;
+            return;
         }
+        childIdx = uint16_t(-1);
     }
+    else {
+        childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
+        currentNode->increment_no_visit_idx();
+        return;
+    }
+}
+
+Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& description, ChildIdx& childIdx)
+{
+    size_t depth = get_random_depth();
+    for (uint curDepth = 0; curDepth < depth; ++curDepth) {
+        currentNode->lock();
+        childIdx = get_best_action_index(currentNode, true, 0);
+        Node* nextNode = currentNode->get_child_node(childIdx);
+        if (nextNode == nullptr || !nextNode->is_playout_node() || nextNode->get_visits() < RANDOM_MOVE_COUNTER || nextNode->get_node_type() != UNSOLVED) {
+            currentNode->unlock();
+            break;
+        }
+        currentNode->unlock();
+        actionsBuffer.emplace_back(currentNode->get_action(childIdx));
+        currentNode = nextNode;
+        ++description.depth;
+    }
+    return currentNode;
 }
 
 Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescription& description)
@@ -147,16 +166,25 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
     description.depth = 0;
     Node* currentNode = rootNode;
 
-    while (true) {
-        childIdx = uint16_t(-1);
-        currentNode->lock();
-        if (searchSettings->useRandomPlayout) {
+    childIdx = uint16_t(-1);
+    if (searchSettings->useRandomPlayout && rootNode->is_playout_node() && rand() % RANDOM_MOVE_COUNTER == 0) {
+        currentNode = get_starting_node(currentNode, description, childIdx);
+            currentNode->lock();
             random_playout(description, currentNode, childIdx);
-        }
-        if (searchSettings->enhanceChecks) {
+            currentNode->unlock();
+    }
+    else if (searchSettings->enhanceChecks && rootNode->is_playout_node() && rand() % CHECK_ENHANCE_COUNTER_PERIOD == 0) {
+        currentNode = get_starting_node(currentNode, description, childIdx);
+            currentNode->lock();
             childIdx = select_enhanced_move(currentNode);
-        }
+            if (childIdx ==  uint16_t(-1)) {
+                random_playout(description, currentNode, childIdx);
+            }
+            currentNode->unlock();
+    }
 
+    while (true) {
+        currentNode->lock();
         if (childIdx == uint16_t(-1)) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
@@ -170,6 +198,7 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
             StateObj* newState = currentNode->get_state()->clone();
 #else
             newState = unique_ptr<StateObj>(rootState->clone());
+            assert(actionsBuffer.size() == description.depth-1);
             for (Action action : actionsBuffer) {
                 newState->do_action(action);
             }
@@ -224,6 +253,7 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
         actionsBuffer.emplace_back(currentNode->get_action(childIdx));
 #endif
         currentNode = nextNode;
+        childIdx = uint16_t(-1);
     }
 }
 
@@ -381,7 +411,7 @@ void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>&
 }
 
 ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
-    if (currentNode->get_real_visits() % CHECK_ENHANCE_COUNTER_PERIOD == 0 && currentNode->is_playout_node() && !currentNode->was_inspected() && !currentNode->is_terminal()) {
+    if (currentNode->is_playout_node() && !currentNode->was_inspected() && !currentNode->is_terminal()) {
 
         // iterate over the current state
         unique_ptr<StateObj> pos = unique_ptr<StateObj>(rootState->clone());
@@ -433,4 +463,10 @@ bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& i
     return  it->second->has_nn_results() &&
             it->second->plies_from_null() == state->steps_from_null() &&
             state->number_repetitions() == 0;
+}
+
+size_t get_random_depth()
+{
+    const int randInt = rand() % 100 + 1;
+    return std::ceil(-std::log2(1 - randInt / 100.0) - 1);
 }
