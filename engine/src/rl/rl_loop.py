@@ -138,14 +138,17 @@ class RLLoop:
         :param k_steps: Amount of total batch-updates for the NN so far (sets the tensorboard offset properly)
         """
 
+        self.args = args
         self.crazyara_binary_dir = args.crazyara_binary_dir
+        binary_mappings = {"crazyhouse": "CrazyAra",
+                "chess": "ClassicAra"}
+        self.crazyara_binary_name = binary_mappings[self.args.uci_variant]
         self.proc = None
         self.nb_games_to_update = nb_games_to_update
         if nb_arena_games % 2 == 1:
             raise Exception("The number of tournament games should be an even number to avoid giving one player more"
                             "games as white.")
         self.nb_arena_games = nb_arena_games
-        self.args = args
         self.device_name = "%s_%d" % (args.context, args.device_id)
 
         self.export_dir_gen_data = self.crazyara_binary_dir + "export/new_data/"
@@ -223,6 +226,7 @@ class RLLoop:
 #        set_uci_param(self.proc, "Centi_Dirichlet_Alpha", 20) cz
         set_uci_param(self.proc, "Centi_Dirichlet_Alpha", 30)
         set_uci_param(self.proc, "Nodes", 800)
+        set_uci_param(self.proc, "Simulations", 3200)
         set_uci_param(self.proc, "Allow_Early_Stopping", "false")
         set_uci_param(self.proc, "Centi_Node_Temperature", 100)
 #        set_uci_param(self.proc, "Temperature_Moves", 500) cz
@@ -246,6 +250,20 @@ class RLLoop:
         else:
 #            set_uci_param(self.proc, "Centi_Temperature", 80) cz
             set_uci_param(self.proc, "Centi_Temperature", 80)
+
+        if self.args.config == "default":
+            set_uci_param(self.proc, "Random_Playout", "false")
+            set_uci_param(self.proc, "MCTS_Solver", "false")
+            set_uci_param(self.proc, "Use_Transposition_Table", "false")
+            set_uci_param(self.proc, "Enhance_Checks", "false")
+            set_uci_param(self.proc, "Centi_Q_Value_Weight", 0)
+        elif self.args.config == "all":
+            set_uci_param(self.proc, "Random_Playout", "true")
+            set_uci_param(self.proc, "MCTS_Solver", "true")
+            set_uci_param(self.proc, "Use_Transposition_Table", "true")
+            set_uci_param(self.proc, "Enhance_Checks", "true")
+            set_uci_param(self.proc, "Centi_Q_Value_Weight", 200)
+
 
     def _read_output_arena(self):
         """
@@ -278,7 +296,7 @@ class RLLoop:
         """
         # initialize
         self.model_name = self._get_current_model_weight_file()
-        self.proc = Popen([self.crazyara_binary_dir+"CrazyAra"],
+        self.proc = Popen([self.crazyara_binary_dir+self.crazyara_binary_name],
                           stdin=PIPE,
                           stdout=PIPE,
                           stderr=PIPE,
@@ -514,11 +532,11 @@ def parse_args(cmd_args: list):
     """
     parser = argparse.ArgumentParser(description='Reinforcement learning loop')
 
-    parser.add_argument("--crazyara-binary-dir", type=str, default="data/RL/",
+    parser.add_argument("--crazyara-binary-dir", type=str, default="/data/RL/",
                         help="directory where the CrazyAra executable is located and where the selfplay data will be "
                              "stored")
     parser.add_argument('--uci-variant', type=str, default="crazyhouse",
-                        help="Selected UCI_Variant for RL. (default: crazyhouse)")
+                        help="Selected UCI_Variant for RL. (default: crazyhouse, chess)")
     parser.add_argument('--context', type=str, default="gpu",
                         help='Computational device context to use. Possible values ["cpu", "gpu"]. (default: gpu)')
     parser.add_argument("--device-id", type=int, default=0,
@@ -542,11 +560,13 @@ def parse_args(cmd_args: list):
     parser.add_argument('--no-onnx-export', default=False, action="store_true",
                         help="By default the networks will be converted to ONNX to allow TensorRT inference."
                              " If this parameter is enabled no conversion will be done")
-
+    parser.add_argument("--config", type=str, default="default",
+                        help="config parameters for icaps paper, possible values ['default', 'all'")
+ 
     args = parser.parse_args(cmd_args)
 
     if not os.path.exists(args.crazyara_binary_dir):
-        raise Exception("Your given args.crazyara_binary_dir: %s does not exist. Make sure to define a valid directory")
+        raise Exception(f"Your given args.crazyara_binary_dir: {args.crazyara_binary_dir} does not exist. Make sure to define a valid directory")
 
     if args.crazyara_binary_dir[-1] != '/':
         args.crazyara_binary_dir += '/'

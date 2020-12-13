@@ -51,7 +51,7 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), rlSettings(rlSettings),
     gameIdx(0), gamesPerMin(0), samplesPerMin(0)
 {
-    bool is960 = true;
+    const bool is960 = false;
 #ifdef MODE_CRAZYHOUSE
     gamePGN.variant = "crazyhouse";
 #elif defined MODE_CHESS

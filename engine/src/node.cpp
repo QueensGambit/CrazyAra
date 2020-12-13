@@ -1178,6 +1178,6 @@ size_t get_node_count(const Node *node)
 
 float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double targetQValue)
 {
-    return clamp(transposVisits * (targetQValue - transposQValue) + targetQValue, double(LOSS_VALUE), double(WIN_VALUE));
+    return std::clamp(transposVisits * (targetQValue - transposQValue) + targetQValue, double(LOSS_VALUE), double(WIN_VALUE));
 }
 
