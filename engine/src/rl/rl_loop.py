@@ -143,6 +143,9 @@ class RLLoop:
         binary_mappings = {"crazyhouse": "CrazyAra",
                 "chess": "ClassicAra"}
         self.crazyara_binary_name = binary_mappings[self.args.uci_variant]
+        main_config["planes_train_dir"] =  args.crazyara_binary_dir + "export/train/"
+        main_config["planes_val_dir"] =  args.crazyara_binary_dir + "export/val/"
+
         self.proc = None
         self.nb_games_to_update = nb_games_to_update
         if nb_arena_games % 2 == 1:
@@ -242,7 +245,9 @@ class RLLoop:
         # set_uci_param(self.proc, "MaxInitPly", 30)
         set_uci_param(self.proc, "Reuse_Tree", "false")
         set_uci_param(self.proc, "Precision", self.args.precision)
-        # set_uci_param(self.proc, "Selfplay_Number_Chunks", 1)
+        #set_uci_param(self.proc, "Selfplay_Number_Chunks", 1)
+        set_uci_param(self.proc, "Selfplay_Number_Chunks", 640)
+        set_uci_param(self.proc, "Selfplay_Chunk_Size", 128)
 
         if is_arena is True:
 #            set_uci_param(self.proc, "Centi_Temperature", 60) cz
@@ -490,7 +495,8 @@ class RLLoop:
             process = Process(target=update_network, args=(queue, self.nn_update_index, self.k_steps,
                                                            self.max_lr, self._get_current_model_arch_file(),
                                                            self._get_current_model_weight_file(),
-                                                           self.crazyara_binary_dir, not self.args.no_onnx_export))
+                                                           self.crazyara_binary_dir, not self.args.no_onnx_export,
+                                                           main_config, train_config))
             logging.info("start training")
             process.start()
             self.k_steps = queue.get() + 1
@@ -551,7 +557,7 @@ def parse_args(cmd_args: list):
     parser.add_argument('--nn-update-idx', type=int, default=0,
                         help="Index of how many NN updates have been done so far."
                              " This will be used to label the NN weights (default: 0)")
-    parser.add_argument("--nn-update-files", type=int, default=15, #10,
+    parser.add_argument("--nn-update-files", type=int, default=10,
                         help="How many new generated training files are needed to apply an update to the NN")
     parser.add_argument("--arena-games", type=int, default=100,
                         help="How many arena games will be done to judge the quality of the new network")

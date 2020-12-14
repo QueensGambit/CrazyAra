@@ -13,8 +13,6 @@ import logging
 import mxnet as mx
 
 sys.path.append("../../../")
-from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.configs.train_config import train_config
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy, acc_distribution
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import TrainerAgentMXNET, add_non_sparse_cross_entropy,\
@@ -24,7 +22,7 @@ from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedu
 from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
 
 
-def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filename, params_filename, cwd, convert_to_onnx):
+def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filename, params_filename, cwd, convert_to_onnx, main_config, train_config):
     """
     Creates a new NN checkpoint in the model contender directory after training using the game files stored in the
      training directory
@@ -38,6 +36,8 @@ def update_network(queue, nn_update_idx, k_steps_initial, max_lr, symbol_filenam
     Updates the neural network with the newly acquired games from the replay memory
     :param cwd: Current working directory (must end with "/")
     :param convert_to_onnx: Boolean indicating if the network shall be exported to ONNX to allow TensorRT inference
+    :param main_config: Dict of the main_config (imported from main_config.py)
+    :param train_config: Dict of the train_config (imported from train_config.py)
     :return: k_steps_final
     """
 
