@@ -125,7 +125,8 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
 
 ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
 {
-    info_string("build TensorRT engine");
+    info_string("Building TensorRT engine...");
+    info_string("This may take a few minutes...");
     // create an engine builder
     IBuilder* builder = createInferBuilder(gLogger.getTRTLogger());
     builder->setMaxBatchSize(int(batchSize));
