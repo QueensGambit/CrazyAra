@@ -13,6 +13,7 @@ option(BUILD_TESTS               "Build and run tests"  OFF)
 option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
+option(MODE_OPEN_SPIEL           "Build with open_spiel environment support"  OFF)
 
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
@@ -121,6 +122,42 @@ set(source_files
     ${source_files}
     ${chess_related_files}
     )
+
+file(GLOB open_spiel_related_files
+    "3rdparty/open_spiel/open_spiel/*.h"
+    "3rdparty/open_spiel/open_spiel/*.cpp"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.h"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.cpp"
+
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.h"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.cpp"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.h"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.cpp"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.h"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.cpp"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.h"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.cpp"
+
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.h"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.cpp"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.h"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.cpp"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/types/*.h"
+    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/types/*.cpp"
+    "3rdparty/open_spiel/open_spiel/games/*.h"
+    "3rdparty/open_spiel/open_spiel/games/*.cpp"
+    "src/envs/open_spiel/*.h"
+    "src/envs/open_spiel/*.cpp")
+
+if (MODE_OPEN_SPIEL)
+    include_directories("3rdparty/open_spiel/abseil-cpp")
+    include_directories("3rdparty/open_spiel")
+    set(source_files
+        ${source_files}
+        ${open_spiel_related_files}
+        )
+endif()
+
 include_directories("3rdparty/catch-2.9.1")
 
 # incude dirent library seperately because it's missing in the stdlib
