@@ -37,6 +37,8 @@
 #include "chess_related/chessbatchstream.h"
 #endif
 
+using namespace sample;
+
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
     precision(str_to_precision(strPrecision))
