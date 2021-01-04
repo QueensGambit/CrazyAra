@@ -87,7 +87,7 @@ def main():
     print(epoch)
 
     # load calibration dataset
-    start_indices, x_train, yv_train, yp_train, plys_to_end, _ = load_pgn_dataset(normalize=True)
+    _, x_train, yv_train, yp_train, plys_to_end, _ = load_pgn_dataset(normalize=True)
     calib_data = mx.io.NDArrayIter({'data': x_train},
                                    {},
                                    batch_size,
