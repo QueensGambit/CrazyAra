@@ -29,6 +29,7 @@
 #define COMMUNICATION_H
 
 #include <iostream>
+#include <chrono>
 using namespace std;
 
 /**
@@ -68,6 +69,17 @@ template<typename T>
 void info_bestmove(const T &message) {
 #ifndef DISABLE_UCI_INFO
     cout << "bestmove " << message << endl;
+#endif
+}
+
+template<typename T>
+void info_elapsed_time(const T &message, const chrono::steady_clock::time_point& begin, const chrono::steady_clock::time_point& end) {
+#ifndef DISABLE_UCI_INFO
+    const int elapsedMilliSeconds = chrono::duration_cast<chrono::milliseconds>(end - begin).count();
+    const int elapsedSeconds = chrono::duration_cast<chrono::seconds>(end - begin).count();
+    const int elapsedMinutes = chrono::duration_cast<chrono::minutes>(end - begin).count();
+    cout << "info string " << message << ' '
+         << elapsedMinutes << "[min] " << elapsedSeconds % 60 << "." << elapsedMilliSeconds % 1000 << "[s]" << endl;
 #endif
 }
 

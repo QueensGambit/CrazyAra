@@ -26,6 +26,7 @@
 #ifdef TENSORRT
 #include "tensorrtapi.h"
 
+#include <chrono>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -171,7 +172,10 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 
     if (!engine) {
         // fallback: Create engine from scratch
+        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         engine = create_cuda_engine_from_onnx();
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        info_elapsed_time("Elapsed time for building TensorRT engine:", begin, end);
 
         if (engine) {
             info_string("serialize engine:", trtFilePath);
