@@ -1095,14 +1095,15 @@ float get_current_cput(float visits, const SearchSettings* searchSettings)
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
-void Node::print_node_statistics(const StateObj* state) const
+void Node::print_node_statistics(const StateObj* state, const vector<size_t>& customOrdering) const
 {
     const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
     const string filler = "-----+-------+--------------+-----------+------------+-------+------------";
     cout << header << endl
-         << std::showpoint << std::fixed << std::setprecision(7) // << std::noshowpcout
+         << std::showpoint << std::fixed << std::setprecision(7)
          << filler << endl;
-    for (size_t childIdx = 0; childIdx < get_number_child_nodes(); ++childIdx) {
+    for (size_t idx = 0; idx < get_number_child_nodes(); ++idx) {
+        const size_t childIdx = customOrdering.size() == get_number_child_nodes() ? customOrdering[idx] : idx;
         size_t n = 0;
         float q = Q_INIT;
         if (childIdx < d->noVisitIdx) {
@@ -1138,7 +1139,7 @@ void Node::print_node_statistics(const StateObj* state) const
          << "isTablebase:\t" << is_tablebase() << endl
          << "unsolvedNodes:\t" << d->numberUnsolvedChildNodes << endl
          << "Visits:\t\t" << get_visits() << endl
-         << "freeVisits:\t" << get_free_visits() << endl;
+         << "freeVisits:\t" << get_free_visits() << "/" << get_visits() << endl;
 }
 
 uint32_t Node::get_nodes()

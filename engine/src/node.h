@@ -410,7 +410,15 @@ public:
     /**
      * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
      */
-    void print_node_statistics(const StateObj* pos) const;
+
+    /**
+     * @brief print_node_statistics
+     * @param pos Position object related to the current position.
+     *  If the position is given as "nulltptr" the moves will be displayed in UCI notation instead of SAN.
+     * @param customOrdering Optional custom ordering of how the moves shall be displayed (e.g. according to the MCTS policy after search).
+     *  If an empty vector is given, it will use the current ordering of the child nodes (by default according to the prior policy).
+     */
+    void print_node_statistics(const StateObj* pos, const vector<size_t>& customOrdering) const;
 
     /**
      * @brief get_nodes Returns the number of nodes in the subtree of this node

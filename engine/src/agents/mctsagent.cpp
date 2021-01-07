@@ -103,9 +103,9 @@ void MCTSAgent::update_dirichlet_epsilon(float value)
     searchSettings->dirichletEpsilon = value;
 }
 
-StateObj *MCTSAgent::get_root_state() const
+StateObj* MCTSAgent::get_root_state() const
 {
-    return rootState;
+    return rootState.get();
 }
 
 bool MCTSAgent::is_running() const
@@ -266,7 +266,7 @@ void MCTSAgent::evaluate_board_state()
 
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();
-    rootState = state;
+    rootState = unique_ptr<StateObj>(state->clone());
     if (rootNode->get_number_child_nodes() == 1 && !rootNode->is_blank_root_node()) {
         info_string("Only single move available -> early stopping");
     }
@@ -299,7 +299,7 @@ void MCTSAgent::run_mcts_search()
     thread** threads = new thread*[searchSettings->threads];
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         searchThreads[i]->set_root_node(rootNode);
-        searchThreads[i]->set_root_state(rootState);
+        searchThreads[i]->set_root_state(rootState.get());
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
@@ -333,7 +333,8 @@ void MCTSAgent::print_root_node()
         info_string("You must do a search before you can print the root node statistics");
         return;
     }
-    rootNode->print_node_statistics(rootState);
+    const vector<size_t> customOrdering = sort_permutation(evalInfo->policyProbSmall, std::greater<float>());
+    rootNode->print_node_statistics(rootState.get(), customOrdering);
 }
 
 void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t parentId, size_t& nodeId, ostream& outFile, size_t depth, size_t maxDepth)
@@ -394,7 +395,7 @@ void MCTSAgent::export_search_tree(size_t maxDepth, const string& filename)
             << "]" << endl << endl;
 
     outFile << "N0 [label = \"root\", xlabel=\"fen: " << rootState->fen() << "\"]" << endl << endl;
-    print_child_nodes_to_file(rootNode, rootState, 0, nodeId, outFile, 1, maxDepth);
+    print_child_nodes_to_file(rootNode, rootState.get(), 0, nodeId, outFile, 1, maxDepth);
     outFile << "}" << endl;
     outFile.close();
 }
