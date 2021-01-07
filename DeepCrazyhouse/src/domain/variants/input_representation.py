@@ -26,10 +26,14 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     NB_CHANNELS_POS,
     NB_CHANNELS_VARIANTS,
     NB_CHANNELS_HISTORY,
+    NB_POLICY_MAP_CHANNELS,
+    MV_LOOKUP,
+    MV_LOOKUP_MIRRORED,
     PIECES,
     chess,
     VARIANT_MAPPING_BOARDS)
 from DeepCrazyhouse.src.domain.util import MATRIX_NORMALIZER, get_board_position_index, get_row_col, np
+from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 
 
 def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
@@ -166,7 +170,23 @@ def _fill_variants_plane(board, planes_variants):
             break
 
 
-def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, last_moves=None):
+def _fill_legal_move_planes(board, planes_legal_moves):
+    """
+    Sets all legal moves for the current position to 1 using the policy map representation.
+    This method can also be used to generate the opponent moves.
+    """
+    # Legal move planes
+    for move in board.legal_moves:
+        if board.turn == chess.WHITE:
+            mv_idx = MV_LOOKUP[move.uci()]
+        else:
+            mv_idx = MV_LOOKUP_MIRRORED[move.uci()]
+        mv_idx = FLAT_PLANE_IDX[mv_idx]
+        planes_legal_moves[mv_idx] = 1
+
+
+def board_to_planes(board: chess.variant.CrazyhouseBoard, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, last_moves=None,
+                    own_legal_moves=False, opponents_legal_moves=False):
     """
     Gets the plane representation of a given board state.
     (No history of past board positions is used.)
@@ -181,6 +201,10 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
                  2 - MODE_CHESS: Specification for chess only with chess960 support
                  (Visit variants.chess.input_representation for detailed documentation)
     :param last_moves: List of last moves. It is assumed that the most recent move is the first entry !
+    :param own_legal_moves: Boolean indicating if own legal moves should be set as additional inputs in policy map
+     representation
+    :param opponents_legal_moves: Boolean indicating if legal moves by the opponent should be set as additional inputs
+     in policy map representation
     :return: planes - the plane representation of the current board state
     """
 
@@ -230,6 +254,19 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
         planes = np.concatenate((planes_pos, planes_const), axis=0)
     else:  # mode = MODE_LICHESS | mode == MODE_CHESS
         planes = np.concatenate((planes_pos, planes_const, planes_variants, planes_moves), axis=0)
+
+    # Legal moves as input features
+    if own_legal_moves:
+        planes_own_legal_moves = np.zeros((NB_POLICY_MAP_CHANNELS, BOARD_HEIGHT, BOARD_WIDTH))
+        _fill_legal_move_planes(board, planes_own_legal_moves)
+        planes = np.concatenate((planes, planes_own_legal_moves), axis=0)
+
+    if opponents_legal_moves:
+        planes_opponents_legal_moves = np.zeros((NB_POLICY_MAP_CHANNELS, BOARD_HEIGHT, BOARD_WIDTH))
+        board.turn = ~board.turn
+        _fill_legal_move_planes(board, planes_opponents_legal_moves)
+        board.turn = ~board.turn
+        planes = np.concatenate((planes, planes_opponents_legal_moves), axis=0)
 
     # revert the board if the players turn was black
     # ! DO NOT DELETE OR UNCOMMENT THIS BLOCK BECAUSE THE PARAMETER board IS CHANGED IN PLACE !
