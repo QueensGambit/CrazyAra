@@ -257,15 +257,17 @@ def board_to_planes(board: chess.variant.CrazyhouseBoard, board_occ=0, normalize
 
     # Legal moves as input features
     if own_legal_moves:
-        planes_own_legal_moves = np.zeros((NB_POLICY_MAP_CHANNELS, BOARD_HEIGHT, BOARD_WIDTH))
+        planes_own_legal_moves = np.zeros((NB_POLICY_MAP_CHANNELS * BOARD_HEIGHT * BOARD_WIDTH,))
         _fill_legal_move_planes(board, planes_own_legal_moves)
+        planes_own_legal_moves = planes_own_legal_moves.reshape((NB_POLICY_MAP_CHANNELS, BOARD_HEIGHT, BOARD_WIDTH))
         planes = np.concatenate((planes, planes_own_legal_moves), axis=0)
 
     if opponents_legal_moves:
-        planes_opponents_legal_moves = np.zeros((NB_POLICY_MAP_CHANNELS, BOARD_HEIGHT, BOARD_WIDTH))
+        planes_opponents_legal_moves = np.zeros((NB_POLICY_MAP_CHANNELS * BOARD_HEIGHT * BOARD_WIDTH,))
         board.turn = ~board.turn
         _fill_legal_move_planes(board, planes_opponents_legal_moves)
         board.turn = ~board.turn
+        planes_opponents_legal_moves = planes_opponents_legal_moves.reshape((NB_POLICY_MAP_CHANNELS, BOARD_HEIGHT, BOARD_WIDTH))
         planes = np.concatenate((planes, planes_opponents_legal_moves), axis=0)
 
     # revert the board if the players turn was black
