@@ -121,7 +121,6 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Node_Random_Factor"]      << Option(10, 0, 100);
     o["Centi_Resign_Probability"]      << Option(90, 0, 100);
     o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
-    o["Reuse_Tree"]                    << Option(false);
 #endif
     o["Move_Overhead"]                 << Option(20, 0, 5000);
     o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
@@ -134,7 +133,11 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Random_Playout"]                << Option(false);
     o["Fixed_Movetime"]                << Option(0, 0, 99999999);
+#ifdef USE_RL
+    o["Reuse_Tree"]                    << Option(false);
+#else
     o["Reuse_Tree"]                    << Option(true);
+#endif
     o["MCTS_Solver"]                   << Option(true);
 }
 
