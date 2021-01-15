@@ -103,7 +103,7 @@ void MCTSAgent::update_dirichlet_epsilon(float value)
     searchSettings->dirichletEpsilon = value;
 }
 
-StateObj* MCTSAgent::get_root_state() const
+StateObj *MCTSAgent::get_root_state() const
 {
     return rootState.get();
 }
@@ -152,14 +152,14 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
         return rootNode;
     }
 
-    if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node()) {
-        delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
+    if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node() && ownNextRoot->get_number_of_nodes() > 0) {
         delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
+        delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
         add_item_to_delete(rootNode, mapWithMutex.hashTable, gcThread);
         add_item_to_delete(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         return ownNextRoot;
     }
-    if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node()) {
+    if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node() && opponentsNextRoot->get_number_of_nodes() > 0) {
         delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         add_item_to_delete(rootNode, mapWithMutex.hashTable, gcThread);
         return opponentsNextRoot;
@@ -224,12 +224,17 @@ void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)
         if (ownMove) {
             info_string("apply move to tree");
             opponentsNextRoot = pick_next_node(move, rootNode);
+            return;
         }
         else if (opponentsNextRoot != nullptr && opponentsNextRoot->is_playout_node()){
             info_string("apply move to tree");
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
+            return;
         }
     }
+    // the full tree will be deleted next search
+    opponentsNextRoot = nullptr;
+    ownNextRoot = nullptr;
 }
 
 void MCTSAgent::clear_game_history()
