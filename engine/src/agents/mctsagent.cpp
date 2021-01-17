@@ -272,7 +272,7 @@ void MCTSAgent::evaluate_board_state()
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();
     rootState = unique_ptr<StateObj>(state->clone());
-    if (rootNode->get_number_child_nodes() == 1 && !rootNode->is_blank_root_node()) {
+    if (rootNode->get_number_child_nodes() == 1) {
         info_string("Only single move available -> early stopping");
     }
     else if (rootNode->get_number_child_nodes() == 0) {
