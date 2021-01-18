@@ -166,7 +166,6 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     evalInfo.qValues = rootNode->get_q_values();
     size_t bestMoveIdx;
     if (targetLength == 1) {
-        bestMoveIdx = 0;
         evalInfo.policyProbSmall = DynamicVector<float>(1);
         evalInfo.policyProbSmall[0] = 1.0f;
     }
