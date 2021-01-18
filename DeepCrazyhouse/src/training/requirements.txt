@@ -1,5 +1,5 @@
 numpy
-chess
+chess==1.3.3
 zarr
 numcodecs
 ipywidgets
