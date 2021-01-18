@@ -21,7 +21,10 @@
 # Created on 08.11.2019
 # @author: queensgambit
 
-FROM nvcr.io/nvidia/mxnet:20.01-py3
+# Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
+# see release page for  all current available releases:
+# https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
+FROM nvcr.io/nvidia/mxnet:20.09-py3
 
 MAINTAINER QueensGambit
 
@@ -35,19 +38,11 @@ RUN cd /root \
     && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ \
     && make install
 
-# Clone MXNet repository
-RUN cd /root \
-    && git clone https://github.com/apache/incubator-mxnet --recursive \
-    && cd incubator-mxnet/cpp-package/include/mxnet-cpp/ \
-    && wget https://raw.githubusercontent.com/dmlc/MXNet.cpp/master/include/mxnet-cpp/op.h
-ENV MXNET_PATH /root/incubator-mxnet/
-
 # Clone TensorRT repository for TensorRT backend
 RUN cd /root \
     && git clone https://github.com/QueensGambit/TensorRT
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
-
 
 # Additional dependencies for reinforcement learning
 # ---------------------------------------------------
@@ -79,26 +74,23 @@ RUN cd /root \
 ENV Z5_PATH /root/z5/
 
 # Clone the CrazyAra repository
-RUN cd /root \
-    && git clone https://github.com/QueensGambit/CrazyAra.git --recursive
-
 # Install python dependencies for training the neural network
-RUN cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
+RUN cd /root \
+    && git clone https://github.com/QueensGambit/CrazyAra.git --recursive \
+    && cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
     && pip install -r requirements.txt
 
 # Install graphviz for plotting NN architectures
-RUN apt-get update && apt-get install -y --no-install-recommends graphviz=2.40.1 \
+RUN apt-get update && apt-get install -y graphviz \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Build CrazyAra executable
-RUN export MXNET_PATH=/root/incubator-mxnet/ \
-    && cd /root/CrazyAra/engine \
+RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Release ..
-
-CMD make -j8
+    && cmake -DCMAKE_BUILD_TYPE=Release .. \
+    && make -j8
 
 CMD cd /root
 CMD /bin/bash
