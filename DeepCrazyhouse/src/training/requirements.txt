@@ -1,5 +1,5 @@
 numpy
-python-chess
+chess
 zarr
 numcodecs
 ipywidgets
