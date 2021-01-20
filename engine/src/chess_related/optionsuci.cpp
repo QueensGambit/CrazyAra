@@ -126,11 +126,11 @@ void OptionsUCI::init(OptionsMap &o)
     o["SyzygyPath"]                    << Option("<empty>");
     o["Threads"]                       << Option(2, 1, 512);
 #ifdef MODE_CRAZYHOUSE
-    o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse"});
+    o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
 #elif defined MODE_LICHESS
     o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), availableVariants);
 #else  // MODE = MODE_CHESS
-    o["UCI_Variant"]                   << Option("chess", {"chess"});
+    o["UCI_Variant"]                   << Option("chess", {"chess", "chess"});
 #endif
     o["Use_Raw_Network"]               << Option(false);
     // additional UCI-Options for RL only
