@@ -31,6 +31,42 @@
 #include "state.h"
 #include "open_spiel/spiel.h"
 
+struct open_spiel::GameType gameType;
+
+class StateConstantsOpenSpiel : public StateConstantsInterface<StateConstantsOpenSpiel>
+{
+public:
+    static int BOARD_WIDTH() {
+        return 0;  // TODO
+    }
+    static int BOARD_HEIGHT() {
+        return 0;  // TODO
+    }
+    static int NB_CHANNELS_TOTAL() {
+        return 0;  // TODO
+    }
+    static int NB_LABELS() {
+        return 0;  // TODO
+    }
+    static int NB_LABELS_POLICY_MAP() {
+        return 0;  // TODO
+    }
+    static int NB_PLAYERS() {
+        assert(gameType.max_num_player == gameType.min_num_players);
+        return gameType.max_num_players;
+    }
+    static std::string action_to_uci(Action action, bool is960) {
+        // TODO
+    }
+    template<PolicyType p = normal, MirrorType m = notMirrored>
+    static MoveIdx action_to_index(Action action) {
+        return 0;  // TODO
+    }
+    static void init(bool isPolicyMap) {
+        return; // pass
+    }
+};
+
 class OpenSpielState : public State
 {
 private:

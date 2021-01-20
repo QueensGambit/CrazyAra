@@ -42,6 +42,11 @@ if (MODE_LICHESS)
     add_definitions(-DMCTS_TB_SUPPORT)
 endif()
 
+if (MODE_OPEN_SPIEL)
+    project(OpenSpielAra CXX)
+    add_definitions(-DMODE_OPEN_SPIEL)
+endif()
+
 if (BUILD_TESTS)
     add_definitions(-DBUILD_TESTS)
 endif()
@@ -128,7 +133,6 @@ file(GLOB open_spiel_related_files
     "3rdparty/open_spiel/open_spiel/*.cpp"
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.h"
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.cpp"
-
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.h"
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.cpp"
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.h"
@@ -137,7 +141,6 @@ file(GLOB open_spiel_related_files
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.cpp"
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.h"
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.cpp"
-
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.h"
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.cpp"
     "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.h"
@@ -150,6 +153,7 @@ file(GLOB open_spiel_related_files
     "src/envs/open_spiel/*.cpp")
 
 if (MODE_OPEN_SPIEL)
+    message(STATUS "MODE_OPEN_SPIEL")
     include_directories("3rdparty/open_spiel/abseil-cpp")
     include_directories("3rdparty/open_spiel")
     set(source_files
