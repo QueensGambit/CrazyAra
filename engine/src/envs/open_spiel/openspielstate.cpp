@@ -27,7 +27,7 @@
 
 std::vector<Action> OpenSpielState::legal_actions() const
 {
-    spielState->LegalActions(spielState->CurrentPlayer());
+    return spielState->LegalActions(spielState->CurrentPlayer());
 }
 
 unsigned int OpenSpielState::steps_from_null() const
@@ -37,7 +37,7 @@ unsigned int OpenSpielState::steps_from_null() const
 
 std::string OpenSpielState::fen() const
 {
-    spielState->ToString();
+    return spielState->ToString();
 }
 
 void OpenSpielState::do_action(Action action)
@@ -57,7 +57,7 @@ void OpenSpielState::prepare_action()
 
 int OpenSpielState::side_to_move() const
 {
-    spielState->CurrentPlayer();
+    return spielState->CurrentPlayer();
 }
 
 void OpenSpielState::flip()
