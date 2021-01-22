@@ -39,7 +39,7 @@ nvidia-docker run -it --rm \
 
 #### CrazyAra binary
 
-The Dockerfile builds the _CrazyAra_ binary from source with reinforcement learning support at `root/CrazyAra/engine/build/` and moves the binary to the main reinforcement learning directory `/data/RL` where the selfplay games are generated:
+The Dockerfile builds the _CrazyAra_ binary from source with reinforcement learning support at `root/CrazyAra/engine/build/` and moves the binary to the main reinforcement learning directory `/data/RL` where the selfplay games are generated.
 
 #### Network file
 You can download a network which was trained via
