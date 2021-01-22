@@ -39,8 +39,10 @@ RUN cd /root \
     && make install
 
 # Clone TensorRT repository for TensorRT backend
+# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
 RUN cd /root \
-    && git clone https://github.com/QueensGambit/TensorRT
+    && git clone https://github.com/NVIDIA/TensorRT \
+    && git checkout f693a6d723ef2766be36deb5e7987cd50159973a
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
 
@@ -58,6 +60,7 @@ RUN cd /root \
 RUN cd /root \
     && git clone https://github.com/xtensor-stack/xtl.git \
     && cd xtl \
+    && git checkout tags/0.6.5 \
     && cmake CMakeLists.txt \
     && make install
 
@@ -65,12 +68,15 @@ RUN cd /root \
 RUN cd /root \
     && git clone https://github.com/xtensor-stack/xtensor.git \
     && cd xtensor \
+    && git checkout tags/0.20.8 \
     && cmake CMakeLists.txt \
     && make install
 
 # Install z5-library (C++ interface for zarr data format)
 RUN cd /root \
-    && git clone https://github.com/constantinpape/z5.git
+    && git clone https://github.com/constantinpape/z5.git \
+    && cd z5 \
+    && git checkout tags/2.0.5
 ENV Z5_PATH /root/z5/
 
 # Clone the CrazyAra repository
@@ -85,12 +91,19 @@ RUN apt-get update && apt-get install -y graphviz \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Build CrazyAra executable
+# Build CrazyAra executable with reinforcement learning support
+# and move the resulting binary into /data/RL
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Release .. \
-    && make -j8
+    && cmake -DCMAKE_BUILD_TYPE=Release -DUSE_RL=ON .. \
+    && make -j8 \
+    && mv CrazyAra /data/RL
+
+# Rename the config files
+RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
+    && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
 
 CMD cd /root
 CMD /bin/bash
+
