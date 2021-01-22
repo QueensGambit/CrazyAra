@@ -122,7 +122,11 @@ void OptionsUCI::init(OptionsMap &o)
     o["UCI_Chess960"]                  << Option(true);
 #endif
     o["Search_Type"]                   << Option("mcts", {"mcts"});
+#ifdef USE_RL
+    o["Simulations"]                   << Option(3200, 0, 99999999);
+#else
     o["Simulations"]                   << Option(0, 0, 99999999);
+#endif
     o["SyzygyPath"]                    << Option("<empty>");
     o["Threads"]                       << Option(2, 1, 512);
 #ifdef MODE_CRAZYHOUSE
