@@ -89,7 +89,7 @@ RUN apt-get update && apt-get install -y graphviz \
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Release .. \
+    && cmake -DCMAKE_BUILD_TYPE=Release -DUSE_RL=ON .. \
     && make -j8
 
 CMD cd /root
