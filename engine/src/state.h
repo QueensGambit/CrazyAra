@@ -35,7 +35,7 @@
 #include <memory>
 
 typedef uint64_t Key;
-typedef int Action;
+typedef int64_t Action;
 typedef uint16_t MoveIdx;
 typedef unsigned int uint;
 typedef int SideToMove;

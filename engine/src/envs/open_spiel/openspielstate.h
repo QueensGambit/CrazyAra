@@ -74,6 +74,7 @@ private:
     open_spiel::State* spielState;
 public:
     OpenSpielState();
+    OpenSpielState(const OpenSpielState& openSpielState);
 
     // State interface
 public:

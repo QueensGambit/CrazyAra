@@ -154,7 +154,7 @@ file(GLOB open_spiel_related_files
 
 if (MODE_OPEN_SPIEL)
     message(STATUS "MODE_OPEN_SPIEL")
-    include_directories("3rdparty/open_spiel/abseil-cpp")
+    include_directories("3rdparty/open_spiel/open_spiel/abseil-cpp")
     include_directories("3rdparty/open_spiel")
     set(source_files
         ${source_files}

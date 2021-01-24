@@ -25,14 +25,40 @@
 
 #include "openspielstate.h"
 
+OpenSpielState::OpenSpielState()
+{
+
+}
+
+OpenSpielState::OpenSpielState(const OpenSpielState &openSpielState)
+{
+    // todo implement copy constructor
+}
+
 std::vector<Action> OpenSpielState::legal_actions() const
 {
     return spielState->LegalActions(spielState->CurrentPlayer());
 }
 
+void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant)
+{
+    // pass
+//    open_spiel::DeserializeGameAndState(fenStr);
+}
+
+void OpenSpielState::get_state_planes(bool normalize, float *inputPlanes) const
+{
+
+}
+
 unsigned int OpenSpielState::steps_from_null() const
 {
     return spielState->MoveNumber();  // note: MoveNumber != PlyCount
+}
+
+bool OpenSpielState::is_chess960() const
+{
+    return false;
 }
 
 std::string OpenSpielState::fen() const
@@ -55,9 +81,19 @@ void OpenSpielState::prepare_action()
     // pass
 }
 
+unsigned int OpenSpielState::number_repetitions() const
+{
+
+}
+
 int OpenSpielState::side_to_move() const
 {
     return spielState->CurrentPlayer();
+}
+
+Key OpenSpielState::hash_key() const
+{
+    return 0;
 }
 
 void OpenSpielState::flip()
@@ -70,10 +106,33 @@ Action OpenSpielState::uci_to_action(std::string &uciStr) const
     return spielState->StringToAction(uciStr);
 }
 
+std::string OpenSpielState::action_to_san(Action action, const std::vector<Action> &legalActions, bool leadsToWin, bool bookMove) const
+{
+
+}
+
 TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, bool inCheck, float &customTerminalValue) const
 {
-    spielState->IsTerminal();
-    // TODO check which terminal value
+    if (spielState->IsTerminal()) {
+        const double reward = spielState->PlayerReward(spielState->CurrentPlayer());
+        if (reward == spielGame->MaxUtility()) {
+            return  TERMINAL_WIN;
+            if (reward == spielGame->MinUtility() + spielGame->MaxUtility()) {
+                return TERMINAL_DRAW;
+            }
+            if (reward == spielGame->MinUtility()) {
+                return TERMINAL_LOSS;
+            }
+            customTerminalValue = reward;
+            return TERMINAL_CUSTOM;
+        }
+    }
+    return TERMINAL_NONE;
+}
+
+Result OpenSpielState::check_result(bool inCheck) const
+{
+    return NO_RESULT;
 }
 
 bool OpenSpielState::gives_check(Action action) const
@@ -84,6 +143,11 @@ bool OpenSpielState::gives_check(Action action) const
 void OpenSpielState::print(std::ostream &os) const
 {
     os << spielState->ToString();
+}
+
+Tablebase::WDLScore OpenSpielState::check_for_tablebase_wdl(Tablebase::ProbeState &result)
+{
+    return Tablebase::WDLScoreNone;
 }
 
 State *OpenSpielState::clone() const

@@ -55,7 +55,7 @@ vector<Action> BoardState::legal_actions() const
     vector<Action> legalMoves;
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(board)) {
-        legalMoves.push_back(Action(move));
+        legalMoves.push_back(Action(move.move));
     }
     return legalMoves;
 }
