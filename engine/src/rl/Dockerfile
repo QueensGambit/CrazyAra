@@ -42,6 +42,7 @@ RUN cd /root \
 # checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
 RUN cd /root \
     && git clone https://github.com/NVIDIA/TensorRT \
+    && cd TensorRT \
     && git checkout f693a6d723ef2766be36deb5e7987cd50159973a
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
@@ -87,7 +88,8 @@ RUN cd /root \
     && pip install -r requirements.txt
 
 # Install graphviz for plotting NN architectures
-RUN apt-get update && apt-get install -y graphviz \
+RUN apt-get update -y \
+    && apt-get install -y graphviz \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -97,8 +99,7 @@ RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
     && cmake -DCMAKE_BUILD_TYPE=Release -DUSE_RL=ON .. \
-    && make -j8 \
-    && mv CrazyAra /data/RL
+    && make -j8
 
 # Rename the config files
 RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
