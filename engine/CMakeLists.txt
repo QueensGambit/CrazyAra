@@ -128,37 +128,102 @@ set(source_files
     ${chess_related_files}
     )
 
+set (OPEN_SPIEL_CORE_FILES
+  action_view.h
+  action_view.cc
+  canonical_game_strings.cc
+  canonical_game_strings.h
+  fog/fog_constants.h
+  fog/observation_history.cc
+  fog/observation_history.h
+  game_parameters.cc
+  game_parameters.h
+  matrix_game.cc
+  matrix_game.h
+  normal_form_game.h
+  observer.cc
+  observer.h
+  policy.cc
+  policy.h
+  simultaneous_move_game.cc
+  simultaneous_move_game.h
+  spiel.cc
+  spiel.h
+  spiel_bots.cc
+  spiel_bots.h
+  spiel_globals.h
+  spiel_utils.cc
+  spiel_utils.h
+  tensor_game.cc
+  tensor_game.h
+)
+
 file(GLOB open_spiel_related_files
-    "3rdparty/open_spiel/open_spiel/*.h"
-    "3rdparty/open_spiel/open_spiel/*.cpp"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.h"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.cpp"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.h"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.cpp"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.h"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.cpp"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.h"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.cpp"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.h"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.cpp"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.h"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.cpp"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.h"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.cpp"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/types/*.h"
-    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/types/*.cpp"
-    "3rdparty/open_spiel/open_spiel/games/*.h"
-    "3rdparty/open_spiel/open_spiel/games/*.cpp"
-    "src/envs/open_spiel/*.h"
-    "src/envs/open_spiel/*.cpp")
+#    "3rdparty/open_spiel/open_spiel/*.h"
+#    "3rdparty/open_spiel/open_spiel/*.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.h"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.h"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.h"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.h"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.h"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.h"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.h"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/types/*.h"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/types/*.cc"
+#    "3rdparty/open_spiel/open_spiel/games/*.h"
+#    "3rdparty/open_spiel/open_spiel/games/*.cc"
+    "src/environments/open_spiel/*.h"
+    "src/environments/open_spiel/*.cpp")
+#get_filename_component(full_path_test_cpp ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/periodic_sampler_benchmark.cc ABSOLUTE)
+#list(REMOVE_ITEM open_spiel_related_files "${full_path_test_cpp}")
+
+list(TRANSFORM OPEN_SPIEL_CORE_FILES PREPEND "3rdparty/open_spiel/open_spiel/")
+#list(FILTER open_spiel_related_files EXCLUDE REGEX "^.*test.*$")
+#list(FILTER open_spiel_related_files EXCLUDE REGEX "^.*benchmark.*$")
+#file(GLOB to_remove file_to_remove.cpp)
+#file(GLOB to_remove
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*_benchmark.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*_test.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/benchmarks.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*_test.cc"
+
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*_test.cc"
+#    "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*_test.cc"
+#    )
+#list(REMOVE_ITEM open_spiel_related_files ${to_remove})
+    message(STATUS "Files: ${to_remove}")
+
+
+# Just the minimal base library: no games.
+set (OPEN_SPIEL_CORE_OBJECTS $<TARGET_OBJECTS:open_spiel_core>)
+
+set (OPEN_SPIEL_OBJECTS
+  $<TARGET_OBJECTS:open_spiel_core>
+  $<TARGET_OBJECTS:games>
+  $<TARGET_OBJECTS:game_transforms>
+  $<TARGET_OBJECTS:bridge_double_dummy_solver>
+  $<TARGET_OBJECTS:algorithms>
+  $<TARGET_OBJECTS:utils>
+)
 
 if (MODE_OPEN_SPIEL)
+    # We add the subdirectory here so open_spiel_core can #include absl.
+    add_subdirectory ("3rdparty/open_spiel/open_spiel/abseil-cpp")
+    set (BUILD_TESTING OFF)
     message(STATUS "MODE_OPEN_SPIEL")
-    include_directories("3rdparty/open_spiel/open_spiel/abseil-cpp")
+#    include_directories("3rdparty/open_spiel/open_spiel/abseil-cpp")
     include_directories("3rdparty/open_spiel")
     set(source_files
         ${source_files}
         ${open_spiel_related_files}
+        ${OPEN_SPIEL_CORE_FILES}
         )
 endif()
 
@@ -253,6 +318,23 @@ if (USE_960)
 endif()
 
 add_executable(${PROJECT_NAME} ${source_files})
+
+# Just the core without any of the games
+#add_library(${PROJECT_NAME} OBJECT ${OPEN_SPIEL_CORE_FILES})
+
+target_include_directories (
+  ${PROJECT_NAME} PUBLIC "3rdparty/open_spiel/open_spiel/abseil-cpp")
+link_libraries(${PROJECT_NAME}
+  absl::container
+  absl::flags
+  absl::flags_parse
+  absl::flat_hash_map
+  absl::optional
+  absl::random_random
+  absl::str_format
+  absl::strings
+  absl::time
+)
 
 if (BACKEND_TENSORRT)
     target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})

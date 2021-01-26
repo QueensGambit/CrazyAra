@@ -140,7 +140,7 @@ TEST_CASE("PGN_Move_Ambiguity"){
     vector<Action> legalMoves;
     // generate legal moves
     for (const ExtMove& move : MoveList<LEGAL>(pos)) {
-        legalMoves.push_back(Action(move));
+        legalMoves.push_back(Action(move.move));
     }
     bool isRankAmbigious;
     bool isFileAmbigious;
