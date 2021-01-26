@@ -94,7 +94,6 @@ RUN apt-get update -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Build CrazyAra executable with reinforcement learning support
-# and move the resulting binary into /data/RL
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \

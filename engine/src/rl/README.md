@@ -12,6 +12,7 @@ The dockerfile is based on the [official NVIDIA
 MXNet Docker container](https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/overview.html#overview) and
 installs all additional libraries for reinforcement learning.
 Lastly, it compiles the CrazyAra executable from the C++ source code using the current repository state.
+:warning: NVIDIA Docker [does not work on Windows](https://github.com/NVIDIA/nvidia-docker/wiki/Frequently-Asked-Questions#is-microsoft-windows-supported).
 
 In order to build the docker container, use the following command:
  
