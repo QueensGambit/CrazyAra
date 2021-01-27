@@ -36,7 +36,6 @@
 #include "EntropyCalibrator.h"
 #include "BatchStream.h"
 #include "chess_related/inputrepresentation.h"
-#include "chess_related/variants.h"
 #include "constants.h"
 
 /**

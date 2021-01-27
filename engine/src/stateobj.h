@@ -38,6 +38,8 @@ using blaze::DynamicVector;
 
 #ifdef MODE_POMMERMAN
 #include "pommermanstate.h"
+#elif MODE_OPEN_SPIEL
+#include "environments/open_spiel/openspielstate.h"
 #else
 #include "chess_related/boardstate.h"
 #include "chess_related/outputrepresentation.h"
@@ -46,6 +48,9 @@ using blaze::DynamicVector;
 #ifdef MODE_POMMERMAN
     using StateObj = PommermanState;
     using StateConstants = StateConstantsPommerman;
+#elif MODE_OPEN_SPIEL
+    using StateObj = OpenSpielState;
+    using StateConstants = StateConstantsOpenSpiel;
 #else
     using StateObj = BoardState;
     using StateConstants = StateConstantsBoard;
