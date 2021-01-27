@@ -27,12 +27,14 @@
 
 OpenSpielState::OpenSpielState()
 {
-
+    spielGame = open_spiel::LoadGame("chess()");
+    spielState = spielGame->NewInitialState();
 }
 
 OpenSpielState::OpenSpielState(const OpenSpielState &openSpielState)
 {
-    // todo implement copy constructor
+    spielState = openSpielState.spielState->Clone();
+    spielGame = openSpielState.spielGame->shared_from_this();
 }
 
 std::vector<Action> OpenSpielState::legal_actions() const
@@ -42,13 +44,14 @@ std::vector<Action> OpenSpielState::legal_actions() const
 
 void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant)
 {
-    // pass
-//    open_spiel::DeserializeGameAndState(fenStr);
+    spielState = spielGame->NewInitialState(fenStr);  // TODO: Fix Spiel Fatal Error: Invalid FEN: [...]
+//    spielState = spielGame->NewInitialState("r6k/2p1Np1r/3p4/pp2p1P1/4P3/2qnPQK1/8/R7 w - - 0 44");  // hard coded seems to work surprisingly
 }
 
 void OpenSpielState::get_state_planes(bool normalize, float *inputPlanes) const
 {
-
+    std::fill(inputPlanes, inputPlanes+StateConstantsOpenSpiel::NB_VALUES_TOTAL(), 0.0f);
+    // TODO
 }
 
 unsigned int OpenSpielState::steps_from_null() const
@@ -83,7 +86,8 @@ void OpenSpielState::prepare_action()
 
 unsigned int OpenSpielState::number_repetitions() const
 {
-
+    // TODO
+    return 0;
 }
 
 int OpenSpielState::side_to_move() const
@@ -93,7 +97,8 @@ int OpenSpielState::side_to_move() const
 
 Key OpenSpielState::hash_key() const
 {
-    return 0;
+    // TODO
+    return 0;  // not you need to set Use_Transposition_Table = False if this is not implemented
 }
 
 void OpenSpielState::flip()
@@ -108,24 +113,25 @@ Action OpenSpielState::uci_to_action(std::string &uciStr) const
 
 std::string OpenSpielState::action_to_san(Action action, const std::vector<Action> &legalActions, bool leadsToWin, bool bookMove) const
 {
-
+    // current use UCI move as replacement
+    return spielState->ActionToString(action);
 }
 
 TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, bool inCheck, float &customTerminalValue) const
 {
     if (spielState->IsTerminal()) {
-        const double reward = spielState->PlayerReward(spielState->CurrentPlayer());
-        if (reward == spielGame->MaxUtility()) {
+        const double currentReturn = spielState->Returns()[!spielState->CurrentPlayer()];
+        if (currentReturn == spielGame->MaxUtility()) {
             return  TERMINAL_WIN;
-            if (reward == spielGame->MinUtility() + spielGame->MaxUtility()) {
-                return TERMINAL_DRAW;
-            }
-            if (reward == spielGame->MinUtility()) {
-                return TERMINAL_LOSS;
-            }
-            customTerminalValue = reward;
-            return TERMINAL_CUSTOM;
         }
+        if (currentReturn == spielGame->MinUtility() + spielGame->MaxUtility()) {
+            return TERMINAL_DRAW;
+        }
+        if (currentReturn == spielGame->MinUtility()) {
+            return TERMINAL_LOSS;
+        }
+        customTerminalValue = currentReturn;
+        return TERMINAL_CUSTOM;
     }
     return TERMINAL_NONE;
 }
@@ -137,7 +143,8 @@ Result OpenSpielState::check_result(bool inCheck) const
 
 bool OpenSpielState::gives_check(Action action) const
 {
-    std::cerr << "gives_check() is unavailable" << std::endl;
+    // gives_check() is unavailable
+    return false;
 }
 
 void OpenSpielState::print(std::ostream &os) const
@@ -150,7 +157,7 @@ Tablebase::WDLScore OpenSpielState::check_for_tablebase_wdl(Tablebase::ProbeStat
     return Tablebase::WDLScoreNone;
 }
 
-State *OpenSpielState::clone() const
+OpenSpielState* OpenSpielState::clone() const
 {
     return new OpenSpielState(*this);
 }

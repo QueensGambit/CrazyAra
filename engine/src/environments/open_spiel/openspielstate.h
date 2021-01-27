@@ -30,33 +30,33 @@
 
 #include "state.h"
 #include "open_spiel/spiel.h"
+#include "open_spiel/games/chess.h"
 
-struct open_spiel::GameType gameType;
 
 class StateConstantsOpenSpiel : public StateConstantsInterface<StateConstantsOpenSpiel>
 {
 public:
     static int BOARD_WIDTH() {
-        return 0;  // TODO
+        return open_spiel::chess::BoardSize();
     }
     static int BOARD_HEIGHT() {
-        return 0;  // TODO
+        return  open_spiel::chess::BoardSize();
     }
     static int NB_CHANNELS_TOTAL() {
-        return 0;  // TODO
+        return 34;  // TODO
     }
     static int NB_LABELS() {
-        return 0;  // TODO
+        return 2272;  // TODO
     }
     static int NB_LABELS_POLICY_MAP() {
-        return 0;  // TODO
+        return 5184;  // TODO
     }
     static int NB_PLAYERS() {
-        assert(gameType.max_num_player == gameType.min_num_players);
-        return gameType.max_num_players;
+        return  open_spiel::chess::NumPlayers();
     }
     static std::string action_to_uci(Action action, bool is960) {
-        // TODO
+        // TODO use actual uci for this
+        return std::to_string(action);
     }
     template<PolicyType p = normal, MirrorType m = notMirrored>
     static MoveIdx action_to_index(Action action) {
@@ -70,8 +70,8 @@ public:
 class OpenSpielState : public State
 {
 private:
-    open_spiel::Game* spielGame;
-    open_spiel::State* spielState;
+    std::shared_ptr<const open_spiel::Game> spielGame;
+    std::unique_ptr<open_spiel::State> spielState;
 public:
     OpenSpielState();
     OpenSpielState(const OpenSpielState& openSpielState);
@@ -98,7 +98,7 @@ public:
     bool gives_check(Action action) const;
     void print(std::ostream &os) const;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result);
-    State *clone() const;
+    OpenSpielState *clone() const;
 };
 
 #endif // OPENSPIELSTATE_H
