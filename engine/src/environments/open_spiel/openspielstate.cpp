@@ -25,16 +25,16 @@
 
 #include "openspielstate.h"
 
-OpenSpielState::OpenSpielState()
+OpenSpielState::OpenSpielState():
+    spielGame(open_spiel::LoadGame("chess()")),
+    spielState(spielGame->NewInitialState())
 {
-    spielGame = open_spiel::LoadGame("chess()");
-    spielState = spielGame->NewInitialState();
 }
 
-OpenSpielState::OpenSpielState(const OpenSpielState &openSpielState)
+OpenSpielState::OpenSpielState(const OpenSpielState &openSpielState):
+    spielGame(openSpielState.spielGame->shared_from_this()),
+    spielState(openSpielState.spielState->Clone())
 {
-    spielState = openSpielState.spielState->Clone();
-    spielGame = openSpielState.spielGame->shared_from_this();
 }
 
 std::vector<Action> OpenSpielState::legal_actions() const
@@ -44,8 +44,7 @@ std::vector<Action> OpenSpielState::legal_actions() const
 
 void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant)
 {
-    spielState = spielGame->NewInitialState(fenStr);  // TODO: Fix Spiel Fatal Error: Invalid FEN: [...]
-//    spielState = spielGame->NewInitialState("r6k/2p1Np1r/3p4/pp2p1P1/4P3/2qnPQK1/8/R7 w - - 0 44");  // hard coded seems to work surprisingly
+    spielState = spielGame->NewInitialState(fenStr);
 }
 
 void OpenSpielState::get_state_planes(bool normalize, float *inputPlanes) const

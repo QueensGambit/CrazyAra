@@ -237,9 +237,11 @@ void CrazyAra::position(StateObj* state, istringstream& is)
         fen = StartFENs[variant];
         is >> token; // Consume "moves" token if any
     }
-    else if (token == "fen")
+    else if (token == "fen") {
         while (is >> token && token != "moves")
             fen += token + " ";
+        fen = fen.substr(0, fen.length()-1);  // remove last ' ' to avoid parsing problems
+    }
     else
         return;
 
