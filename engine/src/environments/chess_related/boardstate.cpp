@@ -11,7 +11,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License fåor more details.
+  GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -55,7 +55,7 @@ vector<Action> BoardState::legal_actions() const
     vector<Action> legalMoves;
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(board)) {
-        legalMoves.push_back(Action(move));
+        legalMoves.push_back(Action(move.move));
     }
     return legalMoves;
 }

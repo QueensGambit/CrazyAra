@@ -22,6 +22,7 @@
 #include "chessbatchstream.h"
 #include "uci.h"
 #include "stateobj.h"
+#include "uci/variants.h"
 
 ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     mBatchSize{batchSize},
