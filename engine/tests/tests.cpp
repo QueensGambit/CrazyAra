@@ -30,13 +30,13 @@
 #include <string>
 #include "catch.hpp"
 #include "uci.h"
-#include "chess_related/optionsuci.h"
-#include "chess_related/sfutil.h"
-#include "chess_related/variants.h"
+#include "uci/optionsuci.h"
+#include "environments/chess_related/sfutil.h"
+#include "uci/variants.h"
 #include "thread.h"
 #include "constants.h"
 #include "stateobj.h"
-#include "chess_related/inputrepresentation.h"
+#include "environments/chess_related/inputrepresentation.h"
 #include "legacyconstants.h"
 using namespace Catch::literals;
 using namespace std;

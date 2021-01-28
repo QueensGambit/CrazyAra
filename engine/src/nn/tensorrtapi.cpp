@@ -34,7 +34,7 @@
 #include "stateobj.h"
 #include "../util/communication.h"
 #ifndef MODE_POMMERMAN
-#include "chess_related/chessbatchstream.h"
+#include "environments/chess_related/chessbatchstream.h"
 #endif
 
 using namespace sample;
@@ -68,14 +68,9 @@ void TensorrtAPI::load_model()
 {
     // load an engine from file or build an engine from the ONNX network
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
-    idxInput = engine->getBindingIndex("data");
-#ifdef MODE_CRAZYHOUSE
-    idxValueOutput = engine->getBindingIndex("value_tanh0");
-    idxPolicyOutput = engine->getBindingIndex("policy_softmax");
-#else
-    idxValueOutput = engine->getBindingIndex("value_out");
-    idxPolicyOutput = engine->getBindingIndex("policy_softmax");
-#endif
+    idxInput = 0;  // engine->getBindingIndex("data");
+    idxValueOutput = 1;  // engine->getBindingIndex("value_out"); or engine->getBindingIndex("value_tanh0");
+    idxPolicyOutput = 2;  // engine->getBindingIndex("policy_softmax");
 }
 
 void TensorrtAPI::load_parameters()
@@ -209,7 +204,7 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 #elif defined MODE_CRAZYHOUSE
         calibrationStream.reset(new ChessBatchStream(1, 232));
 #endif
-#ifndef MODE_POMMERMAN
+#if !defined(MODE_POMMERMAN) && !defined(MODE_OPEN_SPIEL)
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*(dynamic_cast<ChessBatchStream*>(calibrationStream.get())), 0, "model", "data"));
 #endif
         config->setInt8Calibrator(calibrator.get());
@@ -240,9 +235,15 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
     network->markOutput(*softmaxLayer->getOutput(0));
     softmaxLayer->getOutput(0)->setName("policy_softmax");
 
-    info_string("inputDims:", inputDims);
-    info_string("valueOutputDims:", valueOutputDims);
-    info_string("policyOutputDims:", policyOutputDims);
+    std::stringstream ssInputDims;
+    ssInputDims << inputDims;
+    std::stringstream ssValueOutputDims;
+    ssValueOutputDims << valueOutputDims;
+    std::stringstream ssPolicyOutputDims;
+    ssPolicyOutputDims << policyOutputDims;
+    info_string("inputDims:", ssInputDims.str());
+    info_string("valueOutputDims:", ssValueOutputDims.str());
+    info_string("policyOutputDims:", ssPolicyOutputDims.str());
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
