@@ -14,7 +14,7 @@ from time import time
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
-from DeepCrazyhouse.src.training.rtpt import RTPT
+from rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
@@ -130,7 +130,7 @@ def prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label):
 
 
 class TrainerAgentMXNET:  # Probably needs refactoring
-    """Main training loop"""   
+    """Main training loop"""
     # x_train = yv_train = yp_train = None
 
     def __init__(
@@ -235,8 +235,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.variant_metrics = variant_metrics
         self.name_initials = name_initials
         # we use k-steps instead of epochs here
-        self.rtpt = RTPT(name_initials=name_initials, base_title='crazyara_training', number_of_epochs=self.k_steps_end,
-                         epoch_n=self._k_steps_initial)
+        self.rtpt = RTPT(name_initials=name_initials, experiment_name='crazyara',
+                         max_iterations=self.k_steps_end-self._k_steps_initial)
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -271,9 +271,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.patience_cnt = epoch = self.batch_proc_tmp = 0
         self.k_steps = self._k_steps_initial  # counter for thousands steps
 
-        # inform rtpt that training has started
-        self.rtpt.epoch_starts()
-
         if cur_it is None:
             self.cur_it = self._k_steps_initial * 1000
         else:
@@ -289,6 +286,9 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
+
+        # Start the RTPT tracking
+        self.rtpt.start()
 
         while self.continue_training:  # Too many nested blocks (7/5)
             # reshuffle the ordering of the training game batches (shuffle works in place)
@@ -381,7 +381,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         logging.info("Step %dK/%dK - %dms/step", self.k_steps, self.k_steps_end, ms_step)
         logging.info("-------------------------")
         logging.debug("Iteration %d/%d", self.cur_it, self._total_it)
-        self.rtpt.epoch_ends()  # update proctitle
         if self.optimizer_name == "nag":
             logging.debug("lr: %.7f - momentum: %.7f", self.optimizer.lr, self.optimizer.momentum)
         else:
@@ -395,6 +394,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self._val_iter,
             self._model,
         )
+        # update process title according to loss
+        self.rtpt.step(subtitle=f"loss={self.val_metric_values['loss']:2.2f}")
         if self._use_spike_recovery and (
                 self.old_val_loss * self._spike_thresh < self.val_metric_values["loss"]
                 or np.isnan(self.val_metric_values["loss"])
@@ -500,7 +501,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
             if self._log_metrics_to_tensorboard:
                 self.sum_writer.close()
-                
+
     def batch_callback(self):
         """
         Callback which is executed after every batch to update the momentum and learning rate
@@ -514,7 +515,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
         self.cur_it += 1
         self.batch_proc_tmp += 1
-    
+
         if self.batch_proc_tmp >= self._batch_steps:  # show metrics every thousands steps
             self.batch_proc_tmp = self.batch_proc_tmp - self._batch_steps
             # update the counters

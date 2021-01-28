@@ -89,7 +89,7 @@ private:
     // identifiers
     uint16_t pliesFromNull;
 
-    uint8_t numberParentNodes;
+    uint16_t numberParentNodes;
     bool isTerminal;
     bool isTablebase;
     bool hasNNResults;
@@ -408,9 +408,13 @@ public:
     vector<ChildIdx> get_q_idx_over_thresh(float qThresh);
 
     /**
-     * @brief print_node_statistics Prints all node statistics of the child nodes to stdout
+     * @brief print_node_statistics
+     * @param pos Position object related to the current position.
+     *  If the position is given as "nulltptr" the moves will be displayed in UCI notation instead of SAN.
+     * @param customOrdering Optional custom ordering of how the moves shall be displayed (e.g. according to the MCTS policy after search).
+     *  If an empty vector is given, it will use the current ordering of the child nodes (by default according to the prior policy).
      */
-    void print_node_statistics(const StateObj* pos) const;
+    void print_node_statistics(const StateObj* pos, const vector<size_t>& customOrdering) const;
 
     /**
      * @brief get_nodes Returns the number of nodes in the subtree of this node
@@ -463,6 +467,7 @@ public:
     StateObj* get_state() const;
 #endif
 
+    uint32_t get_number_of_nodes() const;
 private:
 
     uint32_t get_real_visits_for_parent(const ParentNode& parent) const;

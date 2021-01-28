@@ -54,16 +54,22 @@ void NodeData::reserve_initial_space()
     add_empty_node();
 }
 
-NodeData::NodeData(size_t numberChildNodes):
+NodeData::NodeData():
     freeVisits(0),
     visitSum(0),
     checkmateIdx(NO_CHECKMATE),
     endInPly(0),
     noVisitIdx(1),
-    numberUnsolvedChildNodes(numberChildNodes),
     nodeType(UNSOLVED),
     inspected(false)
 {
+
+}
+
+NodeData::NodeData(size_t numberChildNodes):
+    NodeData()
+{
+    numberUnsolvedChildNodes = numberChildNodes;
     reserve_initial_space();
 }
 

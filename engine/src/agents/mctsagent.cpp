@@ -105,7 +105,7 @@ void MCTSAgent::update_dirichlet_epsilon(float value)
 
 StateObj *MCTSAgent::get_root_state() const
 {
-    return rootState;
+    return rootState.get();
 }
 
 bool MCTSAgent::is_running() const
@@ -152,14 +152,14 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
         return rootNode;
     }
 
-    if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node()) {
-        delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
+    if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node() && ownNextRoot->get_number_of_nodes() > 0) {
         delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
+        delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
         add_item_to_delete(rootNode, mapWithMutex.hashTable, gcThread);
         add_item_to_delete(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         return ownNextRoot;
     }
-    if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node()) {
+    if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node() && opponentsNextRoot->get_number_of_nodes() > 0) {
         delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
         add_item_to_delete(rootNode, mapWithMutex.hashTable, gcThread);
         return opponentsNextRoot;
@@ -224,12 +224,17 @@ void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)
         if (ownMove) {
             info_string("apply move to tree");
             opponentsNextRoot = pick_next_node(move, rootNode);
+            return;
         }
         else if (opponentsNextRoot != nullptr && opponentsNextRoot->is_playout_node()){
             info_string("apply move to tree");
             ownNextRoot = pick_next_node(move, opponentsNextRoot);
+            return;
         }
     }
+    // the full tree will be deleted next search
+    opponentsNextRoot = nullptr;
+    ownNextRoot = nullptr;
 }
 
 void MCTSAgent::clear_game_history()
@@ -266,8 +271,8 @@ void MCTSAgent::evaluate_board_state()
 
     thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();
-    rootState = state;
-    if (rootNode->get_number_child_nodes() == 1 && !rootNode->is_blank_root_node()) {
+    rootState = unique_ptr<StateObj>(state->clone());
+    if (rootNode->get_number_child_nodes() == 1) {
         info_string("Only single move available -> early stopping");
     }
     else if (rootNode->get_number_child_nodes() == 0) {
@@ -299,7 +304,7 @@ void MCTSAgent::run_mcts_search()
     thread** threads = new thread*[searchSettings->threads];
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         searchThreads[i]->set_root_node(rootNode);
-        searchThreads[i]->set_root_state(rootState);
+        searchThreads[i]->set_root_state(rootState.get());
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
@@ -333,7 +338,8 @@ void MCTSAgent::print_root_node()
         info_string("You must do a search before you can print the root node statistics");
         return;
     }
-    rootNode->print_node_statistics(rootState);
+    const vector<size_t> customOrdering = sort_permutation(evalInfo->policyProbSmall, std::greater<float>());
+    rootNode->print_node_statistics(rootState.get(), customOrdering);
 }
 
 void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t parentId, size_t& nodeId, ostream& outFile, size_t depth, size_t maxDepth)
@@ -394,7 +400,7 @@ void MCTSAgent::export_search_tree(size_t maxDepth, const string& filename)
             << "]" << endl << endl;
 
     outFile << "N0 [label = \"root\", xlabel=\"fen: " << rootState->fen() << "\"]" << endl << endl;
-    print_child_nodes_to_file(rootNode, rootState, 0, nodeId, outFile, 1, maxDepth);
+    print_child_nodes_to_file(rootNode, rootState.get(), 0, nodeId, outFile, 1, maxDepth);
     outFile << "}" << endl;
     outFile.close();
 }

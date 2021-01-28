@@ -74,7 +74,7 @@ void BoardState::get_state_planes(bool normalize, float *inputPlanes) const
 
 unsigned int BoardState::steps_from_null() const
 {
-    return board.plies_from_null();
+    return board.game_ply();
 }
 
 bool BoardState::is_chess960() const

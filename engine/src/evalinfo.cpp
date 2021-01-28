@@ -165,7 +165,13 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.qValues = rootNode->get_q_values();
     size_t bestMoveIdx;
-    rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, evalInfo.qValueWeight);
+    if (targetLength == 1) {
+        evalInfo.policyProbSmall = DynamicVector<float>(1);
+        evalInfo.policyProbSmall[0] = 1.0f;
+    }
+    else {
+        rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, evalInfo.qValueWeight);
+    }
     // ensure the policy has the correct length even if some child nodes have not been visited
     if (evalInfo.policyProbSmall.size() != targetLength) {
         const size_t startIdx = evalInfo.policyProbSmall.size();
@@ -184,8 +190,17 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
 
     evalInfo.init_vectors_for_multi_pv(multiPV);
 
-    for (size_t idx = 0; idx < maxIdx; ++idx) {
-        set_eval_for_single_pv(evalInfo, rootNode, idx, indices);
+    if (targetLength == 1 && rootNode->is_blank_root_node()) {
+        // single move with no tree reuse
+        evalInfo.pv[0] = {rootNode->get_action(0)};
+        // there are no q-values available, therefore use the state value evaluation as bestMoveQ
+        evalInfo.bestMoveQ[0] = rootNode->get_value();
+        evalInfo.centipawns[0] = value_to_centipawn(evalInfo.bestMoveQ[0]);
+    }
+    else {
+        for (size_t idx = 0; idx < maxIdx; ++idx) {
+            set_eval_for_single_pv(evalInfo, rootNode, idx, indices);
+        }
     }
 
     // rawAgent has no pv line and only single best move

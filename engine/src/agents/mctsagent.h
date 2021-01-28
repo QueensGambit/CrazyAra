@@ -57,7 +57,7 @@ private:
     unique_ptr<TimeManager> timeManager;
 
     Node* rootNode;
-    StateObj* rootState;
+    unique_ptr<StateObj> rootState;
 
     // stores the pointer to the root node which will become the new root
     Node* ownNextRoot;

@@ -754,7 +754,9 @@ void Node::init_node_data()
 void Node::mark_as_terminal()
 {
     isTerminal = true;
-    init_node_data();
+    d = make_unique<NodeData>();
+    sorted = true;
+    d->noVisitIdx = 0;
 }
 
 void Node::check_for_terminal(StateObj* pos, bool inCheck)
@@ -770,6 +772,7 @@ void Node::check_for_terminal(StateObj* pos, bool inCheck)
             break;
         case TERMINAL_DRAW:
             mark_as_draw();
+            legalActions.clear();  // in case of non stale-mate, legal actions could have moves
             break;
         case TERMINAL_LOSS:
             mark_as_loss();
@@ -1056,7 +1059,12 @@ void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, No
     info_string("delete unused subtrees");
     for (Node* childNode: parentNode->get_child_nodes()) {
         if (childNode != node && childNode != nullptr) {
-            delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+            if (childNode->is_transposition()) {
+                childNode->decrement_number_parents();
+            }
+            else {
+                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+            }
         }
     }
 }
@@ -1095,14 +1103,15 @@ float get_current_cput(float visits, const SearchSettings* searchSettings)
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
-void Node::print_node_statistics(const StateObj* state) const
+void Node::print_node_statistics(const StateObj* state, const vector<size_t>& customOrdering) const
 {
     const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
     const string filler = "-----+-------+--------------+-----------+------------+-------+------------";
     cout << header << endl
-         << std::showpoint << std::fixed << std::setprecision(7) // << std::noshowpcout
+         << std::showpoint << std::fixed << std::setprecision(7)
          << filler << endl;
-    for (size_t childIdx = 0; childIdx < get_number_child_nodes(); ++childIdx) {
+    for (size_t idx = 0; idx < get_number_child_nodes(); ++idx) {
+        const size_t childIdx = customOrdering.size() == get_number_child_nodes() ? customOrdering[idx] : idx;
         size_t n = 0;
         float q = Q_INIT;
         if (childIdx < d->noVisitIdx) {
@@ -1138,7 +1147,7 @@ void Node::print_node_statistics(const StateObj* state) const
          << "isTablebase:\t" << is_tablebase() << endl
          << "unsolvedNodes:\t" << d->numberUnsolvedChildNodes << endl
          << "Visits:\t\t" << get_visits() << endl
-         << "freeVisits:\t" << get_free_visits() << endl;
+         << "freeVisits:\t" << get_free_visits() << "/" << get_visits() << endl;
 }
 
 uint32_t Node::get_nodes()
@@ -1164,6 +1173,11 @@ bool Node::was_inspected()
 void Node::set_as_inspected()
 {
     d->inspected = true;
+}
+
+uint32_t Node::get_number_of_nodes() const
+{
+    return get_visits() - get_free_visits();
 }
 
 bool is_terminal_value(float value)
