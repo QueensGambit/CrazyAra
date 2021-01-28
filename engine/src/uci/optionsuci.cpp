@@ -37,26 +37,13 @@ void on_logger(const Option& o) {
 
 void OptionsUCI::init(OptionsMap &o)
 {
-#ifdef MODE_CRAZYHOUSE
-    o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse"});
-#elif defined MODE_LICHESS
-    o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), availableVariants);
-#else  // MODE = MODE_CHESS
-    o["UCI_Variant"]                   << Option("chess", {"chess"});
-#endif
-    o["MultiPV"]                       << Option(1, 1, 99999);
-    o["Search_Type"]                   << Option("mcts", {"mcts"});
-    o["Context"]                       << Option("gpu", {"cpu", "gpu"});
-    o["First_Device_ID"]               << Option(0, 0, 99999);
-    o["Last_Device_ID"]                << Option(0, 0, 99999);
+    o["Allow_Early_Stopping"]          << Option(true);
 #ifdef USE_RL
     o["Batch_Size"]                    << Option(8, 1, 8192);
 #else
     o["Batch_Size"]                    << Option(16, 1, 8192);
 #endif
-    o["Threads"]                       << Option(2, 1, 512);
     o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
-    o["CPuct_Base"]                    << Option(19652, 1, 99999);
 #ifdef USE_RL
     o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);
 #else
@@ -66,76 +53,107 @@ void OptionsUCI::init(OptionsMap &o)
 //    o["Centi_U_Init"]                  << Option(100, 0, 100);         currently disabled
 //    o["Centi_U_Min"]                   << Option(100, 0, 100);         currently disabled
 //    o["U_Base"]                        << Option(1965, 0, 99999);      currently disabled
-    o["Centi_U_Init_Divisor"]          << Option(100, 1, 99999);
+    o["Centi_Node_Temperature"]        << Option(170, 1, 99999);
     o["Centi_Q_Value_Weight"]          << Option(0, 0, 99999);
     o["Centi_Q_Thresh_Init"]           << Option(50, 0, 100);
     o["Centi_Q_Thresh_Max"]            << Option(90, 0, 100);
-    o["Q_Thresh_Base"]                 << Option(1965, 0, 99999);
-    o["Max_Search_Depth"]              << Option(99, 1, 99999);
-#ifdef USE_RL
-    o["Centi_Temperature"]             << Option(80, 0, 99999);
-#else
-    o["Centi_Temperature"]             << Option(170, 0, 99999);
-#endif
-    o["Temperature_Moves"]             << Option(0, 0, 99999);
 #ifdef USE_RL
     o["Centi_Quantile_Clipping"]       << Option(0, 0, 100);
 #else
     o["Centi_Quantile_Clipping"]       << Option(25, 0, 100);
 #endif
-    o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
-    o["Centi_Node_Temperature"]        << Option(170, 1, 99999);
-    o["Centi_Virtual_Loss"]            << Option(100, 0, 99999);
+    o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
 #ifdef USE_RL
-    o["Nodes"]                         << Option(800, 0, 99999999);
+    o["Centi_Temperature"]             << Option(80, 0, 99999);
 #else
-    o["Nodes"]                         << Option(0, 0, 99999999);
-    o["Simulations"]                   << Option(0, 0, 99999999);
+    o["Centi_Temperature"]             << Option(170, 0, 99999);
 #endif
-    o["Allow_Early_Stopping"]          << Option(true);
-    o["Use_Raw_Network"]               << Option(false);
+    o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
+    o["Centi_U_Init_Divisor"]          << Option(100, 1, 99999);
+    o["Centi_Virtual_Loss"]            << Option(100, 0, 99999);
+#if defined(MXNET) && defined(TENSORRT)
+    o["Context"]                       << Option("gpu", {"cpu", "gpu"});
+#elif defined (TORCH)
+    o["Context"]                       << Option("gpu", {"cpu", "gpu"});
+#elif defined (TENSORRT)
+    o["Context"]                       << Option("gpu", {"gpu"});
+#else
+    o["Context"]                       << Option("cpu");
+#endif
+    o["CPuct_Base"]                    << Option(19652, 1, 99999);
     o["Enhance_Checks"]                << Option(false);
 //    o["Enhance_Captures"]              << Option(false);         currently disabled
-    o["Use_Transposition_Table"]       << Option(true);
-#ifdef TENSORRT
-    o["Use_TensorRT"]                  << Option(true);
-    o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
-#endif
+    o["First_Device_ID"]               << Option(0, 0, 99999);
+    o["Fixed_Movetime"]                << Option(0, 0, 99999999);
+    o["Last_Device_ID"]                << Option(0, 0, 99999);
+    o["Log_File"]                      << Option("", on_logger);
+    o["Max_Search_Depth"]              << Option(99, 1, 99999);
+    o["MCTS_Solver"]                   << Option(true);
 #ifdef MODE_CRAZYHOUSE
     o["Model_Directory"]               << Option("model");
 #else
     o["Model_Directory"]               << Option("model");
 #endif
-#ifdef USE_RL
-    o["Model_Directory_Contender"]     << Option("model_contender/");
-    o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
-    o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
-    o["Centi_Raw_Prob_Temperature"]    << Option(25, 0, 100);
-    o["Milli_Policy_Clip_Thresh"]      << Option(0, 0, 100);
-    o["MeanInitPly"]                   << Option(15, 0, 99999);
-    o["MaxInitPly"]                    << Option(30, 0, 99999);
-    o["Quick_Nodes"]                   << Option(100, 0, 99999);
-    o["Centi_Quick_Probability"]       << Option(0, 0, 100);
-    o["Centi_Quick_Q_Value_Weight"]    << Option(70, 0, 99999);
-    o["Centi_Quick_Dirichlet_Epsilon"] << Option(0, 0, 99999);
-    o["Centi_Node_Random_Factor"]      << Option(10, 0, 100);
-    o["Centi_Resign_Probability"]      << Option(90, 0, 100);
-    o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
-    o["Reuse_Tree"]                    << Option(false);
-#endif
     o["Move_Overhead"]                 << Option(20, 0, 5000);
-    o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
-    o["SyzygyPath"]                    << Option("<empty>");
-    o["Log_File"]                      << Option("", on_logger);
-    o["Use_NPS_Time_Manager"]          << Option(false);
+    o["MultiPV"]                       << Option(1, 1, 99999);
+#ifdef USE_RL
+    o["Nodes"]                         << Option(800, 0, 99999999);
+#else
+    o["Nodes"]                         << Option(0, 0, 99999999);
+#endif
+#ifdef TENSORRT
+    o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
+#endif
+    o["Q_Thresh_Base"]                 << Option(1965, 0, 99999);
+    o["Random_Playout"]                << Option(false);
+#ifdef USE_RL
+    o["Reuse_Tree"]                    << Option(false);
+#else
+    o["Reuse_Tree"]                    << Option(true);
+#endif
+    o["Temperature_Moves"]             << Option(0, 0, 99999);
     o["Use_Advantage"]                 << Option(false);
+    o["Use_NPS_Time_Manager"]          << Option(false);
+#ifdef TENSORRT
+    o["Use_TensorRT"]                  << Option(true);
+#endif
+    o["Use_Transposition_Table"]       << Option(true);
 #ifdef SUPPORT960
     o["UCI_Chess960"]                  << Option(true);
 #endif
-    o["Random_Playout"]                << Option(false);
-    o["Fixed_Movetime"]                << Option(0, 0, 99999999);
-    o["Reuse_Tree"]                    << Option(true);
-    o["MCTS_Solver"]                   << Option(true);
+    o["Search_Type"]                   << Option("mcts", {"mcts"});
+#ifdef USE_RL
+    o["Simulations"]                   << Option(3200, 0, 99999999);
+#else
+    o["Simulations"]                   << Option(0, 0, 99999999);
+#endif
+    o["SyzygyPath"]                    << Option("<empty>");
+    o["Threads"]                       << Option(2, 1, 512);
+#ifdef MODE_CRAZYHOUSE
+    o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
+#elif defined MODE_LICHESS
+    o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), availableVariants);
+#else  // MODE = MODE_CHESS
+    o["UCI_Variant"]                   << Option("chess", {"chess", "chess"});
+#endif
+    o["Use_Raw_Network"]               << Option(false);
+    // additional UCI-Options for RL only
+#ifdef USE_RL
+    o["Centi_Node_Random_Factor"]      << Option(10, 0, 100);
+    o["Centi_Quick_Dirichlet_Epsilon"] << Option(0, 0, 99999);
+    o["Centi_Quick_Probability"]       << Option(0, 0, 100);
+    o["Centi_Quick_Q_Value_Weight"]    << Option(70, 0, 99999);
+    o["Centi_Raw_Prob_Temperature"]    << Option(25, 0, 100);
+    o["Centi_Resign_Probability"]      << Option(90, 0, 100);
+    o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
+    o["MaxInitPly"]                    << Option(30, 0, 99999);
+    o["MeanInitPly"]                   << Option(15, 0, 99999);
+    o["Model_Directory_Contender"]     << Option("model_contender/");
+    o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
+    o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
+    o["Milli_Policy_Clip_Thresh"]      << Option(0, 0, 100);
+    o["Quick_Nodes"]                   << Option(100, 0, 99999);
+#endif
 }
 
 void OptionsUCI::setoption(istringstream &is)
