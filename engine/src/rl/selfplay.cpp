@@ -373,7 +373,7 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, 
     return state;
 }
 
-unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, Variant variant, const vector<Action> actions)
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, Variant variant, const vector<Action>& actions)
 {
     unique_ptr<StateObj> state = init_state(variant, false, gamePGN);
     for (Action action : actions) {

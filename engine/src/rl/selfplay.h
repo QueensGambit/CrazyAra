@@ -215,7 +215,7 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, 
  * @param actions Vector of actions
  * @return New state object
  */
-unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN& gamePGN, Variant variant, const vector<Action> actions);
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN& gamePGN, Variant variant, const vector<Action>& actions);
 
 /**
  * @brief apply_raw_policy_temp Applies a temperature scaling to the policyProbSmall of the eval struct.
