@@ -14,6 +14,7 @@ option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 option(MODE_OPEN_SPIEL           "Build with open_spiel environment support"  OFF)
+option(SEARCH_UCT                "Build with UCT instead of PUCT search"  OFF)
 
 add_definitions(-DIS_64BIT)
 add_definitions(-DCRAZYHOUSE)
@@ -70,6 +71,10 @@ find_package( blaze )
 if( blaze_FOUND )
      add_library( blaze_target INTERFACE )
      target_link_libraries( blaze_target INTERFACE blaze::blaze )
+endif()
+
+if (SEARCH_UCT)
+    add_definitions(-DSEARCH_UCT)
 endif()
 
 file(GLOB source_files
@@ -222,6 +227,8 @@ if (MODE_OPEN_SPIEL)
         "3rdparty/open_spiel/open_spiel/games/chess.cc"
         "3rdparty/open_spiel/open_spiel/games/chess/*.h"
         "3rdparty/open_spiel/open_spiel/games/chess/*.cc"
+        "3rdparty/open_spiel/open_spiel/games/hex.h"
+        "3rdparty/open_spiel/open_spiel/games/hex.cc"
         )
 
     list(TRANSFORM OPEN_SPIEL_CORE_FILES PREPEND "3rdparty/open_spiel/open_spiel/")
