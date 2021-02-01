@@ -123,7 +123,7 @@ void BoardState::flip()
     board.flip();
 }
 
-Action BoardState::uci_to_action(string& uciStr) const
+Action BoardState::uci_to_action(const string& uciStr) const
 {
     return Action(UCI::to_move(board, uciStr));
 }

@@ -39,9 +39,8 @@
 #include "z5/attributes.hxx"
 #include "z5/dataset.hxx"
 
-#include "chess_related/inputrepresentation.h"
-
-#include "chess_related/board.h"
+#include "environments/chess_related/inputrepresentation.h"
+#include "environments/chess_related/board.h"
 #include "constants.h"
 #include "node.h"
 #include "evalinfo.h"

@@ -215,9 +215,10 @@ private:
      * @param states State-Manager, needed to keep track of 3-fold-repetition
      * @param netSingle Neural net with batch-size 1. It will be loaded from file.
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
+     * @param searchSettings Search settings object
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings& searchSettings);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory

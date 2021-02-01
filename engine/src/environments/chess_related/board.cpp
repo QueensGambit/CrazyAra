@@ -359,11 +359,6 @@ Result get_result(const Board& pos, bool inCheck)
     return NO_RESULT;
 }
 
-bool is_win(Result res)
-{
-    return res == WHITE_WIN || res == BLACK_WIN;
-}
-
 Tablebases::WDLScore probe_wdl(Board& pos, Tablebases::ProbeState* result)
 {
     return Tablebases::probe_wdl(pos, result);

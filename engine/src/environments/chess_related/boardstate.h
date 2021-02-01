@@ -236,7 +236,7 @@ public:
     int side_to_move() const override;
     Key hash_key() const override;
     void flip() override;
-    Action uci_to_action(string& uciStr) const override;
+    Action uci_to_action(const string& uciStr) const override;
     string action_to_san(Action action, const vector<Action>& legalActions, bool leadsToWin=false, bool bookMove=false) const override;
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const override;
     Result check_result(bool inCheck) const override;

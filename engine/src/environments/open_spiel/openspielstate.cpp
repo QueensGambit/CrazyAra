@@ -24,9 +24,11 @@
  */
 
 #include "openspielstate.h"
+#include <functional>
 
 OpenSpielState::OpenSpielState():
     spielGame(open_spiel::LoadGame("chess()")),
+//    spielGame(open_spiel::LoadGame("hex(board_size=5)")),
     spielState(spielGame->NewInitialState())
 {
 }
@@ -96,8 +98,8 @@ int OpenSpielState::side_to_move() const
 
 Key OpenSpielState::hash_key() const
 {
-    // TODO
-    return 0;  // not you need to set Use_Transposition_Table = False if this is not implemented
+    std::hash<std::string> hash_string;
+    return hash_string(this->fen());
 }
 
 void OpenSpielState::flip()
@@ -105,7 +107,7 @@ void OpenSpielState::flip()
     std::cerr << "flip() is unavailable" << std::endl;
 }
 
-Action OpenSpielState::uci_to_action(std::string &uciStr) const
+Action OpenSpielState::uci_to_action(const std::string &uciStr) const
 {
     return spielState->StringToAction(uciStr);
 }
@@ -113,15 +115,15 @@ Action OpenSpielState::uci_to_action(std::string &uciStr) const
 std::string OpenSpielState::action_to_san(Action action, const std::vector<Action> &legalActions, bool leadsToWin, bool bookMove) const
 {
     // current use UCI move as replacement
-    return spielState->ActionToString(action);
+    return spielState->ActionToString(spielState->CurrentPlayer(), action);
 }
 
 TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, bool inCheck, float &customTerminalValue) const
 {
     if (spielState->IsTerminal()) {
-        const double currentReturn = spielState->Returns()[!spielState->CurrentPlayer()];
+        const double currentReturn = spielState->Returns()[spielState->MoveNumber() % 2];
         if (currentReturn == spielGame->MaxUtility()) {
-            return  TERMINAL_WIN;
+            return TERMINAL_WIN;
         }
         if (currentReturn == spielGame->MinUtility() + spielGame->MaxUtility()) {
             return TERMINAL_DRAW;
@@ -137,6 +139,31 @@ TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, bool inCheck, 
 
 Result OpenSpielState::check_result(bool inCheck) const
 {
+    float dummy;
+    const TerminalType terminalType = is_terminal(0, 0, dummy);
+
+    switch(terminalType) {
+    case TERMINAL_WIN:
+        // spielState->CurrentPlayer()) my return negative values
+        // this implementation assumes a two player game with ordered turns
+        switch (spielState->MoveNumber() % 2) {
+        case 0:
+            return WHITE_WIN;
+        default:
+            return BLACK_WIN;
+        }
+    case TERMINAL_LOSS:
+        switch (spielState->MoveNumber() % 2) {
+        case 0:
+            return BLACK_WIN;
+        default:
+            return WHITE_WIN;
+        }
+    case TERMINAL_NONE:
+        return NO_RESULT;
+    default:
+        return DRAWN;
+    }
     return NO_RESULT;
 }
 

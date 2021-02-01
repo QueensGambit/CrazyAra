@@ -174,13 +174,6 @@ bool leads_to_terminal(const Board& pos, Move m, StateListPtr& states);
 Result get_result(const Board& pos, bool inCheck);
 
 /**
- * @brief is_win Return true if the given result is a win, else false
- * @param res Result
- * @return Bool
- */
-bool is_win(Result res);
-
-/**
  * @brief probe_wdl Wrapper for probe_wdl(Position& pos, Tablebases::ProbeState* result)
  * @param pos Board position
  * @param result If result == FAIL then probe was unsuccessful

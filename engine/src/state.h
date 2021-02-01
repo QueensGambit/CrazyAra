@@ -67,6 +67,13 @@ enum Result {
     NO_RESULT,
 };
 
+/**
+ * @brief is_win Return true if the given result is a win, else false
+ * @param res Result
+ * @return Bool
+ */
+bool is_win(Result res);
+
 // -------------------------------------------------------------------------
 // from Stockfish/src/syzygy
 namespace Tablebase {
@@ -149,6 +156,18 @@ public:
         posCheckTerminal->do_action(a);
         return posCheckTerminal->check_result(givesCheck) != NO_RESULT;
     }
+
+    /**
+     * @brief random_rollout Does a random rollout until it reaches a terminal node.
+     * @return Terminal type
+     */
+    TerminalType random_rollout(float& customValueTerminal);
+
+    /**
+     * @brief random_rollout Does a random rollout until it reaches a terminal node.
+     * @return Terminal type
+     */
+    float random_rollout();
 
     /**
      * @brief legal_actions Returns all legal actions as a vector list
@@ -237,7 +256,7 @@ public:
      * @param uciStr uci specification for the action
      * @return Action
      */
-    virtual Action uci_to_action(std::string& uciStr) const = 0;
+    virtual Action uci_to_action(const std::string& uciStr) const = 0;
 
     /**
      * @brief action_to_san Converts a given action to SAN (pgn move notation) usign the current position and legal moves

@@ -214,14 +214,24 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
             currentNode->unlock();
 
             if (description.type == NODE_NEW_NODE) {
+#ifdef SEARCH_UCT
+                Node* nextNode = currentNode->get_child_node(childIdx);
+                nextNode->set_value(newState->random_rollout());
+                nextNode->enable_has_nn_results();
+                if (searchSettings->useTranspositionTable && !nextNode->is_terminal()) {
+                    mapWithMutex->mtx.lock();
+                    mapWithMutex->hashTable.insert({nextNode->hash_key(), nextNode});
+                    mapWithMutex->mtx.unlock();
+                }
+#else
                 // fill a new board in the input_planes vector
                 // we shift the index by NB_VALUES_TOTAL each time
                 newState->get_state_planes(true, inputPlanes+newNodes->size()*StateConstants::NB_VALUES_TOTAL());
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
+#endif
             }
-
             return currentNode;
         }
         if (nextNode->is_terminal()) {
@@ -369,10 +379,12 @@ void SearchThread::create_mini_batch()
 void SearchThread::thread_iteration()
 {
     create_mini_batch();
+#ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
         net->predict(inputPlanes, valueOutputs, probOutputs);
         set_nn_results_to_child_nodes();
     }
+#endif
     backup_value_outputs();
     backup_collisions();
 }
