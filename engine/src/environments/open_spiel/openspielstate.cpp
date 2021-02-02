@@ -107,7 +107,7 @@ void OpenSpielState::flip()
     std::cerr << "flip() is unavailable" << std::endl;
 }
 
-Action OpenSpielState::uci_to_action(const std::string &uciStr) const
+Action OpenSpielState::uci_to_action(std::string &uciStr) const
 {
     return spielState->StringToAction(uciStr);
 }

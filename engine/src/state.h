@@ -239,11 +239,11 @@ public:
      * @return int
      */
     virtual int side_to_move() const = 0;
+
     /**
      * @brief hash_key Returns a uique identifier for the current position which can be used for accessing the hash table
      * @return
      */
-
     virtual Key hash_key() const = 0;
 
     /**
@@ -253,10 +253,11 @@ public:
 
     /**
      * @brief uci_to_action Converts the given action in uci notation to an action object
+     * Note: The "const" modifier had to be dropped for "uciStr" because Stockfish's UCI::to_move() method does not allow "const".
      * @param uciStr uci specification for the action
      * @return Action
      */
-    virtual Action uci_to_action(const std::string& uciStr) const = 0;
+    virtual Action uci_to_action(std::string& uciStr) const = 0;
 
     /**
      * @brief action_to_san Converts a given action to SAN (pgn move notation) usign the current position and legal moves
