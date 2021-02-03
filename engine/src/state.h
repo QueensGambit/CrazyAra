@@ -67,6 +67,13 @@ enum Result {
     NO_RESULT,
 };
 
+/**
+ * @brief is_win Return true if the given result is a win, else false
+ * @param res Result
+ * @return Bool
+ */
+bool is_win(Result res);
+
 // -------------------------------------------------------------------------
 // from Stockfish/src/syzygy
 namespace Tablebase {
@@ -151,6 +158,18 @@ public:
     }
 
     /**
+     * @brief random_rollout Does a random rollout until it reaches a terminal node.
+     * @return Terminal type
+     */
+    TerminalType random_rollout(float& customValueTerminal);
+
+    /**
+     * @brief random_rollout Does a random rollout until it reaches a terminal node.
+     * @return Terminal type
+     */
+    float random_rollout();
+
+    /**
      * @brief legal_actions Returns all legal actions as a vector list
      * @return vector of legal actions
      */
@@ -220,11 +239,11 @@ public:
      * @return int
      */
     virtual int side_to_move() const = 0;
+
     /**
      * @brief hash_key Returns a uique identifier for the current position which can be used for accessing the hash table
      * @return
      */
-
     virtual Key hash_key() const = 0;
 
     /**
@@ -234,6 +253,7 @@ public:
 
     /**
      * @brief uci_to_action Converts the given action in uci notation to an action object
+     * Note: The "const" modifier had to be dropped for "uciStr" because Stockfish's UCI::to_move() method does not allow "const".
      * @param uciStr uci specification for the action
      * @return Action
      */

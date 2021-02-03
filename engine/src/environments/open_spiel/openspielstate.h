@@ -31,25 +31,40 @@
 #include "state.h"
 #include "open_spiel/spiel.h"
 #include "open_spiel/games/chess.h"
+#include "open_spiel/games/hex.h"
 
+namespace open_spiel {
+namespace gametype {
+enum SupportedOpenSpielVariants : uint8_t {
+    CHESS = 0,
+    HEX = 1,
+    YORKTOWN = 2,
+};
+const static std::string variantToString[] = {
+    "chess",
+    "hex",
+    "yorktown",
+};
+}
+}
 
 class StateConstantsOpenSpiel : public StateConstantsInterface<StateConstantsOpenSpiel>
 {
 public:
-    static int BOARD_WIDTH() {
+    static uint BOARD_WIDTH() {
         return open_spiel::chess::BoardSize();
     }
-    static int BOARD_HEIGHT() {
+    static uint BOARD_HEIGHT() {
         return  open_spiel::chess::BoardSize();
     }
-    static int NB_CHANNELS_TOTAL() {
-        return 34;  // TODO
+    static uint NB_CHANNELS_TOTAL() {
+        return 34U;  // TODO
     }
-    static int NB_LABELS() {
-        return 2272;  // TODO
+    static uint NB_LABELS() {
+        return 2272U;  // TODO
     }
-    static int NB_LABELS_POLICY_MAP() {
-        return 5184;  // TODO
+    static uint NB_LABELS_POLICY_MAP() {
+        return 5184U;  // TODO
     }
     static int NB_PLAYERS() {
         return  open_spiel::chess::NumPlayers();

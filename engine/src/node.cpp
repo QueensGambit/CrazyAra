@@ -915,7 +915,11 @@ void Node::enhance_moves(const SearchSettings* searchSettings)
 
 DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSettings)
 {
+#ifdef SEARCH_UCT
+    return searchSettings->cpuctInit * (sqrt(log(d->visitSum)) / (d->childNumberVisits + FLT_EPSILON));
+#else
     return get_current_cput(d->visitSum, searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(d->visitSum) / (d->childNumberVisits + 1.0));
+#endif
 }
 
 Node *Node::get_child_node(ChildIdx childIdx)

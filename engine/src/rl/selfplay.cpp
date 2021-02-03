@@ -31,7 +31,7 @@
 #include <iostream>
 #include <fstream>
 #include "uci.h"
-#include "chess_related/variants.h"
+#include "uci/variants.h"
 #include "util/blazeutil.h"
 #include "util/randomgen.h"
 
@@ -39,10 +39,10 @@
 void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& gamePGN, Result& gameResult)
 {
     bool givesCheck = state->gives_check(evalInfo.bestMove);
-    state->do_action(evalInfo.bestMove);
-    gameResult = state->check_result(givesCheck);
-    state->undo_action(evalInfo.bestMove); // undo and later redo move to get PGN move with result
-    gamePGN.gameMoves.push_back(state->action_to_san(evalInfo.bestMove, evalInfo.legalMoves, is_win(gameResult)));
+    std::unique_ptr<StateObj> stateClone = std::unique_ptr<StateObj>(state->clone());
+    stateClone->do_action(evalInfo.bestMove);
+    gameResult = stateClone->check_result(givesCheck);
+    gamePGN.gameMoves.push_back(state->action_to_san(evalInfo.bestMove, evalInfo.legalMoves, is_win(gameResult), false));
     state->do_action(evalInfo.bestMove);
 }
 
@@ -137,7 +137,7 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
     ply = clip_ply(ply, playSettings->maxInitPly);
 
     srand(unsigned(int(time(nullptr))));
-    unique_ptr<StateObj> state= init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, rlSettings->rawPolicyProbabilityTemperature);
+    unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, rlSettings->rawPolicyProbabilityTemperature);
     EvalInfo evalInfo;
     Result gameResult;
     exporter->new_game();
@@ -369,6 +369,16 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, 
             gamePGN.gameMoves.push_back(state->action_to_san(eval.legalMoves[moveIdx], eval.legalMoves, false, true));
             state->do_action(eval.bestMove);
         }
+    }
+    return state;
+}
+
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, Variant variant, const vector<Action>& actions)
+{
+    unique_ptr<StateObj> state = init_state(variant, false, gamePGN);
+    for (Action action : actions) {
+        gamePGN.gameMoves.push_back(state->action_to_san(action, {}, false, true));
+        state->do_action(action);
     }
     return state;
 }

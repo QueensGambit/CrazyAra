@@ -342,7 +342,7 @@ void CrazyAra::arena(istringstream &is)
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings);
     netSingle = create_new_net_single(Options["Model_Directory_Contender"]);
     netBatches = create_new_net_batches(Options["Model_Directory_Contender"]);
-    mctsAgentContender = create_new_mcts_agent(netSingle.get(), netBatches);
+    mctsAgentContender = create_new_mcts_agent(netSingle.get(), netBatches, searchSettings);
     size_t numberOfGames;
     is >> numberOfGames;
     TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender.get(), numberOfGames, variant);
@@ -395,7 +395,7 @@ bool CrazyAra::is_ready()
 #endif
         netSingle = create_new_net_single(Options["Model_Directory"]);
         netBatches = create_new_net_batches(Options["Model_Directory"]);
-        mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches);
+        mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
         StateConstants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
@@ -453,7 +453,7 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
     return netBatches;
 }
 
-unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches)
+unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings& searchSettings)
 {
     return make_unique<MCTSAgent>(netSingle, netBatches, &searchSettings, &playSettings);
 }
