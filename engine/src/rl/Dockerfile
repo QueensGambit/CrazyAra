@@ -104,6 +104,8 @@ RUN cd /root/CrazyAra/engine \
 RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
     && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
 
-CMD cd /root
-CMD /bin/bash
+CMD mv /root/CrazyAra/engine/build/CrazyAra /data/RL/ \
+    && cd /root/CrazyAra/engine/src/rl/ \
+    && /bin/bash
+
 
