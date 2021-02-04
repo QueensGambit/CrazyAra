@@ -15,6 +15,8 @@ import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
 from rtpt import RTPT
+import mxnet as mx
+from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
@@ -108,12 +110,14 @@ def remove_no_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_na
     return mx.symbol.Group([value_out, policy_out])
 
 
-def prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label):
+def prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label, is_policy_from_plane_data):
     """
     Modifies the layout of the policy vector in place according to the given definitions
     :param y_policy: Target policy vector
     :param select_policy_from_plane: If policy map representation shall be applied
     :param sparse_policy_label: True, if the labels are sparse (one-hot-encoded)
+    :param is_policy_from_plane_data: True, if the policy representation is already in
+     "select_policy_from_plane" representation
     :return: modified y_policy
     """
     if sparse_policy_label:
@@ -122,106 +126,67 @@ def prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label):
         if select_policy_from_plane:
             y_policy[:] = FLAT_PLANE_IDX[y_policy]
     else:
-        if select_policy_from_plane:
+        if select_policy_from_plane and not is_policy_from_plane_data:
             tmp = np.zeros((len(y_policy), NB_LABELS_POLICY_MAP), np.float32)
             tmp[:, FLAT_PLANE_IDX] = y_policy[:, :]
             y_policy = tmp
     return y_policy
 
 
+def get_context(context: str, device_id: int):
+    """
+    Returns the computation context as an MXNet object
+    :param context: Computational context either "gpu" or "cpu"
+    :param device_id: Device index to use (only relevant for context=="gpu")
+    :return: MXNet ctx object
+    """
+    if context == "gpu":
+        return mx.gpu(device_id)
+    else:
+        return mx.cpu()
+
+
 class TrainerAgentMXNET:  # Probably needs refactoring
     """Main training loop"""
-    # x_train = yv_train = yp_train = None
 
     def __init__(
         self,
         model,
         symbol,
         val_iter,
-        nb_parts,
-        lr_schedule,
-        momentum_schedule,
-        total_it,
-        optimizer_name="nag",  # or "adam"
-        wd=0.0001,
-        batch_steps=1000,
-        k_steps_initial=0,
-        cpu_count=16,
-        batch_size=2048,
-        normalize=True,
-        export_weights=True,
-        export_grad_histograms=True,
-        log_metrics_to_tensorboard=True,
-        ctx=mx.gpu(),
-        metrics=None,  # clip_gradient=60,
-        use_spike_recovery=True,
-        max_spikes=5,
-        spike_thresh=1.5,
-        seed=42,
-        val_loss_factor=0.01,
-        policy_loss_factor=0.99,
-        select_policy_from_plane=True,
-        discount=1,  # 0.995,
-        sparse_policy_label=True,
-        q_value_ratio=0,
-        cwd=None,
-        variant_metrics=None,
-        # prefix for the process name in order to identify the process on a server
-        name_initials="JC"
+        train_config: TrainConfig,
+        train_objects: TrainObjects,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
-        # , lr_warmup_k_steps=30, lr_warmup_init=0.01):
-        if metrics is None:
-            metrics = {}
-        self._log_metrics_to_tensorboard = log_metrics_to_tensorboard
-        self._ctx = ctx
-        self._metrics = metrics
+        self.tc = train_config
+        self.to = train_objects
+        if to.metrics is None:
+            to.metrics = {}
         self._model = model
         self._symbol = symbol
-        self._graph_exported = False
-        self._normalize = normalize
-        self._lr_schedule = lr_schedule
-        self._momentum_schedule = momentum_schedule
-        self._total_it = total_it
-        self._batch_size = batch_size
-        self._export_grad_histograms = export_grad_histograms
-        self._cpu_count = cpu_count
-        self._k_steps_initial = k_steps_initial
         self._val_iter = val_iter
-        self._export_weights = export_weights
-        self._batch_steps = batch_steps
-        self._use_spike_recovery = use_spike_recovery
-        self._max_spikes = max_spikes
-        self._spike_thresh = spike_thresh
-        self._seed = seed
-        self._val_loss_factor = val_loss_factor
-        self._policy_loss_factor = policy_loss_factor
         self.x_train = self.yv_train = self.yp_train = None
-        self.discount = discount
-        self._q_value_ratio = q_value_ratio
+        self._ctx = get_context(train_config.context, train_config.device_id)
+
         # defines if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
         self.sparse_policy_label = sparse_policy_label
+        self.is_policy_from_plane_data = is_policy_from_plane_data
         # define the current working directory
-        if cwd is None:
-            self.cwd = os.getcwd()
-        else:
-            self.cwd = cwd
+        if self.tc.cwd is None:
+            self.tc.cwd = os.getcwd()
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir="%s/logs" % self.cwd, flush_secs=5, verbose=False)
-        # Define the two loss functions
-        self.optimizer_name = optimizer_name
-        if optimizer_name == "adam":
+        # Define the optimizer
+        if self.tc.optimizer_name == "adam":
             self.optimizer = mx.optimizer.Adam(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8, lazy_update=True, rescale_grad=(1.0/batch_size))
-        elif optimizer_name == "nag":
+        elif self.tc.optimizer_name == "nag":
             self.optimizer = mx.optimizer.NAG(momentum=momentum_schedule(0), wd=wd, rescale_grad=(1.0/batch_size))
         else:
             raise Exception("%s is currently not supported as an optimizer." % optimizer_name)
         self.ordering = list(range(nb_parts))  # define a list which describes the order of the processed batches
         # decides if the policy indices shall be selected directly from spatial feature maps without dense layer
-        self.select_policy_from_plane = select_policy_from_plane
-
         self.batch_end_callbacks = [self.batch_callback]
 
         # few variables which are internally used
@@ -229,14 +194,12 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.old_label = self.value_out = self.t_s = None
         self.patience_cnt = self.batch_proc_tmp = None
         # calculate how many log states will be processed
-        self.k_steps_end = self._total_it / self._batch_steps
+        self.k_steps_end = self.tc.total_it / self.tc.batch_steps
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
-        self.variant_metrics = variant_metrics
-        self.name_initials = name_initials
         # we use k-steps instead of epochs here
         self.rtpt = RTPT(name_initials=name_initials, experiment_name='crazyara',
-                         max_iterations=self.k_steps_end-self._k_steps_initial)
+                         max_iterations=self.k_steps_end-self.tc.k_steps_initial)
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -250,7 +213,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         for name in metric_values.keys():  # show the metric stats
             print(" - %s%s: %.4f" % (prefix, name, metric_values[name]), end="")
             # add the metrics to the tensorboard event file
-            if self._log_metrics_to_tensorboard:
+            if self.tc.log_metrics_to_tensorboard:
                 self.sum_writer.add_scalar(name, [prefix.replace("_", ""), metric_values[name]],
                                                         global_step)
 
@@ -263,16 +226,16 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         """
         # Too many local variables (44/15) - Too many branches (18/12) - Too many statements (108/50)
         # set a custom seed for reproducibility
-        if self._seed is not None:
-            random.seed(self._seed)
+        if self.tc.seed is not None:
+            random.seed(self.tc.seed)
         # define and initialize the variables which will be used
         self.t_s = time()
         # track on how many batches have been processed in this epoch
         self.patience_cnt = epoch = self.batch_proc_tmp = 0
-        self.k_steps = self._k_steps_initial  # counter for thousands steps
+        self.k_steps = self.tc.k_steps_initial  # counter for thousands steps
 
         if cur_it is None:
-            self.cur_it = self._k_steps_initial * 1000
+            self.cur_it = self.tc.k_steps_initial * 1000
         else:
             self.cur_it = cur_it
         self.nb_spikes = 0  # count the number of spikes that have been detected
@@ -280,9 +243,9 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.old_val_loss = 9000
         self.graph_exported = False  # create a state variable to check if the net architecture has been reported yet
         self.continue_training = True
-        self.optimizer.lr = self._lr_schedule(self.cur_it)
+        self.optimizer.lr = self.to.lr_schedule(self.cur_it)
         if self.optimizer_name == "nag":
-            self.optimizer.momentum = self._momentum_schedule(self.cur_it)
+            self.optimizer.momentum = self.to.momentum_schedule(self.cur_it)
 
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
@@ -305,35 +268,35 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                 # load one chunk of the dataset from memory
                 _, self.x_train, self.yv_train, self.yp_train, plys_to_end, _ = load_pgn_dataset(dataset_type="train",
                                                                                                  part_id=part_id,
-                                                                                                 normalize=self._normalize,
+                                                                                                 normalize=self.tc.normalize,
                                                                                                  verbose=False,
-                                                                                                 q_value_ratio=self._q_value_ratio)
+                                                                                                 q_value_ratio=self.tc.q_value_ratio)
                 # fill_up_batch if there aren't enough games
-                if len(self.yv_train) < self._batch_size:
+                if len(self.yv_train) < self.tc.batch_size:
                     logging.info("filling up batch with too few samples %d" % len(self.yv_train))
-                    self.x_train = fill_up_batch(self.x_train, self._batch_size)
-                    self.yv_train = fill_up_batch(self.yv_train, self._batch_size)
-                    self.yp_train = fill_up_batch(self.yp_train, self._batch_size)
+                    self.x_train = fill_up_batch(self.x_train, self.tc.batch_size)
+                    self.yv_train = fill_up_batch(self.yv_train, self.tc.batch_size)
+                    self.yp_train = fill_up_batch(self.yp_train, self.tc.batch_size)
                     if plys_to_end is not None:
-                        plys_to_end = fill_up_batch(plys_to_end, self._batch_size)
+                        plys_to_end = fill_up_batch(plys_to_end, self.tc.batch_size)
 
                 if self.discount != 1:
                     self.yv_train *= self.discount**plys_to_end
 
-                self.yp_train = prepare_policy(self.yp_train, self.select_policy_from_plane, self.sparse_policy_label)
+                self.yp_train = prepare_policy(self.yp_train, self.tc.select_policy_from_plane, self.tc.sparse_policy_label, self.tc.is_policy_from_plane_data)
 
                 self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
                                                      {'value_label': self.yv_train, 'policy_label': self.yp_train},
-                                                     self._batch_size,
+                                                     self.tc.batch_size,
                                                      shuffle=True)
 
                 # avoid memory leaks by adding synchronization
                 mx.nd.waitall()
 
-                reset_metrics(self._metrics)
+                reset_metrics(self.to.metrics)
                 for batch in self._train_iter:
                     self._model.forward(batch, is_train=True)  # compute predictions
-                    for metric in self._metrics:  # update the metrics
+                    for metric in self.to.metrics:  # update the metrics
                         self._model.update_metric(metric, batch.label)
 
                     self._model.backward()
@@ -349,7 +312,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                         return self._return_metrics_and_stop_training()
 
                 # add the graph representation of the network to the tensorboard log file
-                if not self.graph_exported and self._log_metrics_to_tensorboard:
+                if not self.graph_exported and self.tc.log_metrics_to_tensorboard:
                     # self.sum_writer.add_graph(self._symbol)
                     self.graph_exported = True
 
@@ -365,7 +328,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         :return:
         """
         self.train_metric_values = {}
-        for metric in self._metrics:
+        for metric in self.to.metrics:
             name, value = metric.get()
             self.train_metric_values[name] = value
 
@@ -377,11 +340,11 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         Recomputes the score on the validataion data
         :return:
         """
-        ms_step = ((time() - self.t_s_steps) / self._batch_steps) * 1000
+        ms_step = ((time() - self.t_s_steps) / self.tc.batch_steps) * 1000
         logging.info("Step %dK/%dK - %dms/step", self.k_steps, self.k_steps_end, ms_step)
         logging.info("-------------------------")
-        logging.debug("Iteration %d/%d", self.cur_it, self._total_it)
-        if self.optimizer_name == "nag":
+        logging.debug("Iteration %d/%d", self.cur_it, self.tc.total_it)
+        if self.tc.optimizer_name == "nag":
             logging.debug("lr: %.7f - momentum: %.7f", self.optimizer.lr, self.optimizer.momentum)
         else:
             logging.debug("lr: %.7f - momentum: -", self.optimizer.lr)
@@ -390,14 +353,14 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self._fill_train_metrics()
 
         self.val_metric_values = evaluate_metrics(
-            self._metrics,
+            self.to.metrics,
             self._val_iter,
             self._model,
         )
         # update process title according to loss
         self.rtpt.step(subtitle=f"loss={self.val_metric_values['loss']:2.2f}")
-        if self._use_spike_recovery and (
-                self.old_val_loss * self._spike_thresh < self.val_metric_values["loss"]
+        if self.tc.use_spike_recovery and (
+                self.old_val_loss * self.tc.spike_thresh < self.val_metric_values["loss"]
                 or np.isnan(self.val_metric_values["loss"])
         ):  # check for spikes
             self.handle_spike()
@@ -413,10 +376,10 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         logging.warning(
             "Spike %d/%d occurred - val_loss: %.3f",
             self.nb_spikes,
-            self._max_spikes,
+            self.tc.max_spikes,
             self.val_metric_values["loss"],
         )
-        if self.nb_spikes >= self._max_spikes:
+        if self.nb_spikes >= self.tc.max_spikes:
             val_loss = self.val_metric_values["loss"]
             val_p_acc = self.val_metric_values["policy_acc"]
             # finally stop training because the number of lr drops has been achieved
@@ -424,7 +387,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             logging.debug("The maximum number of spikes has been reached. Stop training.")
             self.continue_training = False
 
-            if self._log_metrics_to_tensorboard:
+            if self.tc.log_metrics_to_tensorboard:
                 self.sum_writer.close()
             return self._return_metrics_and_stop_training()
 
@@ -433,7 +396,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         prefix = "%s/weights/model-%.5f-%.3f" % (self.cwd, self.val_loss_best, self.val_p_acc_best)
 
         logging.debug("load current best model:%s", prefix)
-        # self._net.load_parameters(model_path, ctx=self._ctx)
         self._model.load(prefix, epoch=self.k_steps_best)
 
         self.k_steps = self.k_steps_best
@@ -461,7 +423,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.val_p_acc_best = self.val_metric_values["policy_acc"]
             self.k_steps_best = self.k_steps
 
-            if self._export_weights:
+            if self.tc.export_weights:
                 prefix = "%s/weights/model-%.5f-%.3f" % (self.cwd, self.val_loss_best, self.val_p_acc_best)
                 # the export function saves both the architecture and the weights
                 print()
@@ -476,21 +438,21 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         # log the samples per second metric to tensorboard
         self.sum_writer.add_scalar(
             tag="samples_per_second",
-            value={"hybrid_sync": self._batch_size * self._batch_steps / t_delta},
+            value={"hybrid_sync": self.tc.batch_size * self.tc.batch_steps / t_delta},
             global_step=self.k_steps,
         )
 
         # log the current learning rate
-        self.sum_writer.add_scalar(tag="lr", value=self._lr_schedule(self.cur_it),
+        self.sum_writer.add_scalar(tag="lr", value=self.to.lr_schedule(self.cur_it),
                                    global_step=self.k_steps)
         if self.optimizer_name == "nag":
             # log the current momentum value
             self.sum_writer.add_scalar(
-                tag="momentum", value=self._momentum_schedule(self.cur_it),
+                tag="momentum", value=self.to.momentum_schedule(self.cur_it),
                 global_step=self.k_steps
             )
 
-        if self.cur_it >= self._total_it:
+        if self.cur_it >= self.tc.total_it:
 
             self.continue_training = False
 
@@ -499,7 +461,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             # finally stop training because the number of lr drops has been achieved
             logging.debug("The number of given iterations has been reached")
 
-            if self._log_metrics_to_tensorboard:
+            if self.tc.log_metrics_to_tensorboard:
                 self.sum_writer.close()
 
     def batch_callback(self):
@@ -509,15 +471,15 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         """
 
         # update the learning rate and momentum
-        self.optimizer.lr = self._lr_schedule(self.cur_it)
-        if self.optimizer_name == "nag":
-            self.optimizer.momentum = self._momentum_schedule(self.cur_it)
+        self.optimizer.lr = self.to.lr_schedule(self.cur_it)
+        if self.tc.optimizer_name == "nag":
+            self.optimizer.momentum = self.to.momentum_schedule(self.cur_it)
 
         self.cur_it += 1
         self.batch_proc_tmp += 1
 
-        if self.batch_proc_tmp >= self._batch_steps:  # show metrics every thousands steps
-            self.batch_proc_tmp = self.batch_proc_tmp - self._batch_steps
+        if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+            self.batch_proc_tmp = self.batch_proc_tmp - self.tc.batch_steps
             # update the counters
             self.k_steps += 1
             self.patience_cnt += 1
@@ -536,20 +498,20 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             # load one chunk of the dataset from memory
             _, x_val, yv_val, yp_val, _, _ = load_pgn_dataset(dataset_type="val",
                                                                          part_id=part_id,
-                                                                         normalize=self._normalize,
+                                                                         normalize=self.tc.normalize,
                                                                          verbose=False,
-                                                                         q_value_ratio=self._q_value_ratio)
+                                                                         q_value_ratio=self.tc.q_value_ratio)
 
-            if self.select_policy_from_plane:
+            if self.tc.select_policy_from_plane:
                 val_iter = mx.io.NDArrayIter({'data': x_val}, {'value_label': yv_val,
                                                                'policy_label': np.array(FLAT_PLANE_IDX)[
-                                                                   yp_val.argmax(axis=1)]}, self._batch_size)
+                                                                   yp_val.argmax(axis=1)]}, self.tc.batch_size)
             else:
                 val_iter = mx.io.NDArrayIter({'data': x_val},
                                              {'value_label': yv_val, 'policy_label': yp_val.argmax(axis=1)},
-                                             self._batch_size)
+                                             self.tc.batch_size)
 
-            results = self._model.score(val_iter, self._metrics)
+            results = self._model.score(val_iter, self.to.metrics)
             prefix = "val_"
 
             for entry in results:
@@ -557,6 +519,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                 value = entry[1]
                 print(" - %s%s: %.4f" % (prefix, name, value), end="")
                 # add the metrics to the tensorboard event file
-                if self._log_metrics_to_tensorboard:
+                if self.tc.log_metrics_to_tensorboard:
                     self.sum_writer.add_scalar(name, [prefix.replace("_", ""), value], self.k_steps)
         print()
