@@ -75,10 +75,6 @@ class TrainConfig:
 
     policy_loss_factor: float = 1  # 0.99
 
-    # layer name of the policy output layer without softmax applied (e.g. flatten0 for legacy crazyhouse networks
-    # policy_out for newer networks)
-    policy_output: str = "policy_out"
-
     # ratio for mixing the value return with the corresponding q-value
     # for a ratio of 0 no q-value information will be used
     q_value_ratio: float = 0.15
@@ -102,10 +98,6 @@ class TrainConfig:
     use_spike_recovery: bool = True
     # weight the value loss a lot lower than the policy loss in order to prevent overfitting
     val_loss_factor: float = 0.5  # 0.01
-
-    # layer name of the value output layer (e.g. value_tanh0 for legacy crazyhouse networks and value_out for newer
-    # networks)
-    value_output: str = "value_out"
 
     # weight decay
     wd: float = 1e-4
