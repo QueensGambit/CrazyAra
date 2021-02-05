@@ -37,6 +37,8 @@ class TrainConfig:
 
     discount: float = 1.0
 
+    dropout_rate: float = 0
+
     export_weights: bool = True
 
     export_grad_histograms: bool = True
@@ -50,10 +52,10 @@ class TrainConfig:
     # (k_steps_initial != 0 if you continue training from a checkpoint)
     k_steps_initial: int = 0  # 498
     # these are the weights to continue training with
-    # symbol_file = 'model_init-symbol.json' #model-1.19246-0.603-symbol.json'
-    # params_file = 'model_init-0000.params' #model-1.19246-0.603-0223.params'
-    symbol_file: str = 'model-1.19246-0.603-symbol.json'
-    params_file: str = 'model-1.19246-0.603-0223.params'
+    # symbol_file = 'model_init-symbol.json' # model-1.19246-0.603-symbol.json'
+    # params_file = 'model_init-0000.params' # model-1.19246-0.603-0223.params'
+    symbol_file: str = ''
+    params_file: str = ''
 
     # # optimization parameters
     optimizer_name: str = "nag"
@@ -101,7 +103,6 @@ class TrainConfig:
 
     # weight decay
     wd: float = 1e-4
-    # dropout_rate = 0  # 0.2
 
 
 @dataclass

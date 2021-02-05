@@ -136,7 +136,6 @@ class TrainerAgent:  # Probably needs refactoring
         if self.tc.log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
         # Define the two loss functions
-        #  sparse_policy_label defines if the policy target is one-hot encoded (sparse=True)
         self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=self.tc.sparse_policy_label)
         self._l2_loss = gluon.loss.L2Loss()
         if self.tc.optimizer_name != "nag":
@@ -185,7 +184,7 @@ class TrainerAgent:  # Probably needs refactoring
             # old_label = value_label
             with autograd.record():
                 [value_out, policy_out] = self._net(data)
-                if self.tc.select_policy_from_plane:
+                if self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data:
                     policy_out = policy_out[:, FLAT_PLANE_IDX]
                 value_loss = self._l2_loss(value_out, value_label)
                 policy_loss = self._softmax_cross_entropy(policy_out, policy_label)
@@ -267,7 +266,6 @@ class TrainerAgent:  # Probably needs refactoring
                     old_label = value_label
                     with autograd.record():
                         [value_out, policy_out] = self._net(data)
-
                         value_loss = self._l2_loss(value_out, value_label)
                         policy_loss = self._softmax_cross_entropy(policy_out, policy_label)
                         # weight the components of the combined loss
