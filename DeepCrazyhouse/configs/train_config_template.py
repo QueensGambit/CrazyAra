@@ -115,7 +115,7 @@ class TrainConfig:
 @dataclass
 class TrainObjects:
     """Defines training objects which must be set before the training"""
-    lr_schedule: object = None  # learning rate schedule
-    momentum_schedule: object = None
-    metrics: object = None
-    variant_metrics: object = None
+    lr_schedule = None  # learning rate schedule
+    momentum_schedule = None
+    metrics = None
+    variant_metrics = None

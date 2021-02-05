@@ -18,6 +18,8 @@ from tqdm import tqdm_notebook
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy
+from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
+from DeepCrazyhouse.src.training.trainer_agent_mxnet import get_context
 
 
 def acc_sign(y_true, y_pred):
@@ -31,6 +33,7 @@ def acc_sign(y_true, y_pred):
     if denominator != 0:
         return (np.sign(y_pred).flatten() == np.sign(y_true)).sum() / denominator
     return 0
+
 
 def acc_distribution(y_true, y_pred):
     """
@@ -123,8 +126,8 @@ class TrainerAgent:  # Probably needs refactoring
         # Too few public methods (1/2)
         self.tc = train_config
         self.to = train_objects
-        if to.metrics is None:
-            to.metrics = {}
+        if self.to.metrics is None:
+            self.to.metrics = {}
         self._ctx = get_context(train_config.context, train_config.device_id)
         self._net = net
         self._graph_exported = False
@@ -134,25 +137,24 @@ class TrainerAgent:  # Probably needs refactoring
             self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
         # Define the two loss functions
         #  sparse_policy_label defines if the policy target is one-hot encoded (sparse=True)
-        self._sparse_policy_label = sparse_policy_label
-        self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=sparse_policy_label)
+        self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=self.tc.sparse_policy_label)
         self._l2_loss = gluon.loss.L2Loss()
         if self.tc.optimizer_name != "nag":
-            raise NotImplementedError("The requested optimizer %s Isn't supported yet." % optimizer_name)
+            raise NotImplementedError("The requested optimizer %s Isn't supported yet." % self.tc.optimizer_name)
         self._trainer = gluon.Trainer(
             self._net.collect_params(),
             "nag",
             {
-                "learning_rate": lr_schedule(0),
-                "momentum": momentum_schedule(0),
-                "wd": wd,
+                "learning_rate": self.to.lr_schedule(0),
+                "momentum": self.to.momentum_schedule(0),
+                "wd": self.tc.wd,
             },
         )
 
         # collect parameter names for logging the gradients of parameters in each epoch
         self._params = self._net.collect_params()
         self._param_names = self._params.keys()
-        self.ordering = list(range(nb_parts))  # define a list which describes the order of the processed batches
+        self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -183,7 +185,7 @@ class TrainerAgent:  # Probably needs refactoring
             # old_label = value_label
             with autograd.record():
                 [value_out, policy_out] = self._net(data)
-                if self.select_policy_from_plane:
+                if self.tc.select_policy_from_plane:
                     policy_out = policy_out[:, FLAT_PLANE_IDX]
                 value_loss = self._l2_loss(value_out, value_label)
                 policy_loss = self._softmax_cross_entropy(policy_out, policy_label)
@@ -240,7 +242,7 @@ class TrainerAgent:  # Probably needs refactoring
                     q_value_ratio=self.tc.q_value_ratio
                 )
 
-                yp_train = prepare_policy(y_policy=yp_train, select_policy_from_plane=self.select_policy_from_plane,
+                yp_train = prepare_policy(y_policy=yp_train, select_policy_from_plane=self.tc.select_policy_from_plane,
                                           sparse_policy_label=self.tc.sparse_policy_label,
                                           is_policy_from_plane_data=self.tc.is_policy_from_plane_data)
 
@@ -270,7 +272,7 @@ class TrainerAgent:  # Probably needs refactoring
                         policy_loss = self._softmax_cross_entropy(policy_out, policy_label)
                         # weight the components of the combined loss
                         combined_loss = (
-                            self._val_loss_factor * value_loss + self._policy_loss_factor * policy_loss
+                            self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
                         )
                         # update a dummy metric to see a proper progress bar
                         # self._metrics['value_loss'].update(preds=value_out, labels=value_label)
@@ -284,7 +286,7 @@ class TrainerAgent:  # Probably needs refactoring
                     cur_it += 1
                     batch_proc_tmp += 1
                     # add the graph representation of the network to the tensorboard log file
-                    if not graph_exported and self._log_metrics_to_tensorboard:
+                    if not graph_exported and self.tc.log_metrics_to_tensorboard:
                         self.sum_writer.add_graph(self._net)
                         graph_exported = True
 
@@ -301,7 +303,7 @@ class TrainerAgent:  # Probably needs refactoring
                         logging.debug("Iteration %d/%d", cur_it, self.tc.total_it)
                         logging.debug("lr: %.7f - momentum: %.7f", learning_rate, momentum)
                         train_metric_values = evaluate_metrics(
-                            self._metrics,
+                            self.to.metrics,
                             train_data,
                             self._net,
                             nb_batches=10, #25,

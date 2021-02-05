@@ -15,7 +15,6 @@ import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
 from rtpt import RTPT
-import mxnet as mx
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
@@ -161,31 +160,28 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         # Too few public methods (1/2)
         self.tc = train_config
         self.to = train_objects
-        if to.metrics is None:
-            to.metrics = {}
+        if self.to.metrics is None:
+            self.to.metrics = {}
         self._model = model
         self._symbol = symbol
         self._val_iter = val_iter
         self.x_train = self.yv_train = self.yp_train = None
         self._ctx = get_context(train_config.context, train_config.device_id)
 
-        # defines if the policy target is one-hot encoded (sparse=True) or a target distribution (sparse=False)
-        self.sparse_policy_label = sparse_policy_label
-        self.is_policy_from_plane_data = is_policy_from_plane_data
         # define the current working directory
         if self.tc.cwd is None:
             self.tc.cwd = os.getcwd()
         # define a summary writer that logs data and flushes to the file every 5 seconds
-        if log_metrics_to_tensorboard:
-            self.sum_writer = SummaryWriter(logdir="%s/logs" % self.cwd, flush_secs=5, verbose=False)
+        if self.tc.log_metrics_to_tensorboard:
+            self.sum_writer = SummaryWriter(logdir="%s/logs" % self.tc.cwd, flush_secs=5, verbose=False)
         # Define the optimizer
         if self.tc.optimizer_name == "adam":
             self.optimizer = mx.optimizer.Adam(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8, lazy_update=True, rescale_grad=(1.0/batch_size))
         elif self.tc.optimizer_name == "nag":
-            self.optimizer = mx.optimizer.NAG(momentum=momentum_schedule(0), wd=wd, rescale_grad=(1.0/batch_size))
+            self.optimizer = mx.optimizer.NAG(momentum=self.to.momentum_schedule(0), wd=self.tc.wd, rescale_grad=(1.0/self.tc.batch_size))
         else:
-            raise Exception("%s is currently not supported as an optimizer." % optimizer_name)
-        self.ordering = list(range(nb_parts))  # define a list which describes the order of the processed batches
+            raise Exception("%s is currently not supported as an optimizer." % self.tc.optimizer_name)
+        self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
         # decides if the policy indices shall be selected directly from spatial feature maps without dense layer
         self.batch_end_callbacks = [self.batch_callback]
 
@@ -194,11 +190,11 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.old_label = self.value_out = self.t_s = None
         self.patience_cnt = self.batch_proc_tmp = None
         # calculate how many log states will be processed
-        self.k_steps_end = self.tc.total_it / self.tc.batch_steps
+        self.k_steps_end = round(self.tc.total_it / self.tc.batch_steps)
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
         # we use k-steps instead of epochs here
-        self.rtpt = RTPT(name_initials=name_initials, experiment_name='crazyara',
+        self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
                          max_iterations=self.k_steps_end-self.tc.k_steps_initial)
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
@@ -244,7 +240,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.graph_exported = False  # create a state variable to check if the net architecture has been reported yet
         self.continue_training = True
         self.optimizer.lr = self.to.lr_schedule(self.cur_it)
-        if self.optimizer_name == "nag":
+        if self.tc.optimizer_name == "nag":
             self.optimizer.momentum = self.to.momentum_schedule(self.cur_it)
 
         if not self.ordering:  # safety check to prevent eternal loop
@@ -280,10 +276,11 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                     if plys_to_end is not None:
                         plys_to_end = fill_up_batch(plys_to_end, self.tc.batch_size)
 
-                if self.discount != 1:
-                    self.yv_train *= self.discount**plys_to_end
+                if self.tc.discount != 1:
+                    self.yv_train *= self.tc.discount**plys_to_end
 
-                self.yp_train = prepare_policy(self.yp_train, self.tc.select_policy_from_plane, self.tc.sparse_policy_label, self.tc.is_policy_from_plane_data)
+                self.yp_train = prepare_policy(self.yp_train, self.tc.select_policy_from_plane,
+                                               self.tc.sparse_policy_label, self.tc.is_policy_from_plane_data)
 
                 self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
                                                      {'value_label': self.yv_train, 'policy_label': self.yp_train},
@@ -393,7 +390,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
         logging.debug("Recover to latest checkpoint")
         # Load the best model once again
-        prefix = "%s/weights/model-%.5f-%.3f" % (self.cwd, self.val_loss_best, self.val_p_acc_best)
+        prefix = "%s/weights/model-%.5f-%.3f" % (self.tc.cwd, self.val_loss_best, self.val_p_acc_best)
 
         logging.debug("load current best model:%s", prefix)
         self._model.load(prefix, epoch=self.k_steps_best)
@@ -424,7 +421,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.k_steps_best = self.k_steps
 
             if self.tc.export_weights:
-                prefix = "%s/weights/model-%.5f-%.3f" % (self.cwd, self.val_loss_best, self.val_p_acc_best)
+                prefix = "%s/weights/model-%.5f-%.3f" % (self.tc.cwd, self.val_loss_best, self.val_p_acc_best)
                 # the export function saves both the architecture and the weights
                 print()
                 self._model.save_checkpoint(prefix, epoch=self.k_steps_best)
@@ -445,7 +442,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         # log the current learning rate
         self.sum_writer.add_scalar(tag="lr", value=self.to.lr_schedule(self.cur_it),
                                    global_step=self.k_steps)
-        if self.optimizer_name == "nag":
+        if self.tc.optimizer_name == "nag":
             # log the current momentum value
             self.sum_writer.add_scalar(
                 tag="momentum", value=self.to.momentum_schedule(self.cur_it),
@@ -491,10 +488,10 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         Evaluates the model based on the validation set of different variants
         """
 
-        if self.variant_metrics is None:
+        if self.to.variant_metrics is None:
             return
 
-        for part_id, variant_name in enumerate(self.variant_metrics):
+        for part_id, variant_name in enumerate(self.to.variant_metrics):
             # load one chunk of the dataset from memory
             _, x_val, yv_val, yp_val, _, _ = load_pgn_dataset(dataset_type="val",
                                                                          part_id=part_id,
