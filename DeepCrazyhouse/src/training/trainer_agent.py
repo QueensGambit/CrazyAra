@@ -15,6 +15,7 @@ from mxnet import autograd, gluon, nd
 import numpy as np
 from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
+from rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy
@@ -82,6 +83,8 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(),
         policy_label = policy_label.as_in_context(ctx)
         [value_out, policy_out] = net(data)
         value_out[0][0].wait_to_read()
+        if not sparse_policy_label:  # these metrics only accept one-hot encoded targets
+            policy_label = nd.argmax(policy_label, axis=1)
         if apply_select_policy_from_plane:
             policy_out = policy_out[:, FLAT_PLANE_IDX]
         # update the metrics
@@ -90,7 +93,7 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(),
                                       labels=policy_label)
         metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
         metrics["policy_acc"].update(preds=nd.argmax(policy_out, axis=1),
-                                     labels=policy_label if sparse_policy_label else nd.argmax(policy_label, axis=1))
+                                     labels=policy_label)
         # stop after evaluating x batches (only recommended to use this for the train set evaluation)
         if nb_batches and i == nb_batches:
             break
@@ -155,6 +158,7 @@ class TrainerAgent:  # Probably needs refactoring
         self._param_names = self._params.keys()
         self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
 
+
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
         Logs a dictionary object of metric value to the console and to tensorboard
@@ -214,7 +218,10 @@ class TrainerAgent:  # Probably needs refactoring
         patience_cnt = epoch = batch_proc_tmp = 0  # track on how many batches have been processed in this epoch
         k_steps = self.tc.k_steps_initial  # counter for thousands steps
         # calculate how many log states will be processed
-        k_steps_end = self.tc.total_it / self.tc.batch_steps
+        k_steps_end = round(self.tc.total_it / self.tc.batch_steps)
+        # we use k-steps instead of epochs here
+        self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
+                         max_iterations=k_steps_end-self.tc.k_steps_initial)
         if cur_it is None:
             cur_it = self.tc.k_steps_initial * 1000
         nb_spikes = 0  # count the number of spikes that have been detected
@@ -224,6 +231,9 @@ class TrainerAgent:  # Probably needs refactoring
 
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
+
+        # Start the RTPT tracking
+        self.rtpt.start()
 
         while True:  # Too many nested blocks (7/5)
             # reshuffle the ordering of the training game batches (shuffle works in place)
@@ -307,6 +317,7 @@ class TrainerAgent:  # Probably needs refactoring
                             nb_batches=10, #25,
                             ctx=self._ctx,
                             sparse_policy_label=self.tc.sparse_policy_label,
+                            apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data
                         )
                         val_metric_values = evaluate_metrics(
                             self.to.metrics,
@@ -315,7 +326,10 @@ class TrainerAgent:  # Probably needs refactoring
                             nb_batches=None,
                             ctx=self._ctx,
                             sparse_policy_label=self.tc.sparse_policy_label,
+                            apply_select_policy_from_plane=True # self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data
                         )
+                        # update process title according to loss
+                        self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
                         if self.tc.use_spike_recovery and (
                             old_val_loss * self.tc.spike_thresh < val_metric_values["loss"]
                             or np.isnan(val_metric_values["loss"])

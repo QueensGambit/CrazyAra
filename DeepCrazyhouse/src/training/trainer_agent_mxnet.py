@@ -278,7 +278,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
                 if self.tc.discount != 1:
                     self.yv_train *= self.tc.discount**plys_to_end
-
                 self.yp_train = prepare_policy(self.yp_train, self.tc.select_policy_from_plane,
                                                self.tc.sparse_policy_label, self.tc.is_policy_from_plane_data)
 
