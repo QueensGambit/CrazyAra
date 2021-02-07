@@ -159,12 +159,14 @@ public:
 
     /**
      * @brief random_rollout Does a random rollout until it reaches a terminal node.
+     * This functions modifies the current state and returns the terminal type.
      * @return Terminal type
      */
     TerminalType random_rollout(float& customValueTerminal);
 
     /**
      * @brief random_rollout Does a random rollout until it reaches a terminal node.
+     * This functions modifies the current state and returns the corresponding value evaluation of the terminal type.
      * @return Terminal type
      */
     float random_rollout();
