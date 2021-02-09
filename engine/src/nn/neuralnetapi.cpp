@@ -49,7 +49,8 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
     deviceID(deviceID),
     batchSize(batchSize),
     policyOutputLength(StateConstants::NB_LABELS() * batchSize),
-    enableTensorrt(enableTensorrt)
+    enableTensorrt(enableTensorrt),
+    modelName("")
 {
     modelDir = parse_directory(modelDirectory);
     deviceName = ctx + string("_") + to_string(deviceID);
