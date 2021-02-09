@@ -8,6 +8,7 @@ Training configuration file
 """
 from dataclasses import dataclass
 
+
 @dataclass
 class TrainConfig:
     """Class which stores all training configuration"""
@@ -30,7 +31,7 @@ class TrainConfig:
 
     cpu_count: int = 4
 
-    # current working directory. If None it calls os.getcwd()
+    #  Current working directory (must end with "/"). If None it calls os.getcwd()
     cwd: str = None
 
     device_id: int = 0

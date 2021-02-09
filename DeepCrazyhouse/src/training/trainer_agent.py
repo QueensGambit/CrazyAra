@@ -18,7 +18,7 @@ from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy
+from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, return_metrics_and_stop_training
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import get_context
 
@@ -43,7 +43,7 @@ def acc_distribution(y_true, y_pred):
     :param y_pred: Predicted distribution
     :return:
     """
-    return (np.argmax(y_pred, axis=1).flatten() == np.argmax(y_true, axis=1)).sum() / len(y_true)
+    return (y_pred.flatten() == np.argmax(y_true, axis=1)).sum() / len(y_true)
 
 
 def cross_entropy(y_true, y_pred):
@@ -83,10 +83,7 @@ def evaluate_metrics(metrics, data_iterator, net, nb_batches=None, ctx=mx.gpu(),
         policy_label = policy_label.as_in_context(ctx)
         [value_out, policy_out] = net(data)
         value_out[0][0].wait_to_read()
-        if not sparse_policy_label:  # these metrics only accept one-hot encoded targets
-            policy_label = nd.argmax(policy_label, axis=1)
-        if apply_select_policy_from_plane:
-            policy_out = policy_out[:, FLAT_PLANE_IDX]
+
         # update the metrics
         metrics["value_loss"].update(preds=value_out, labels=value_label)
         metrics["policy_loss"].update(preds=nd.SoftmaxActivation(policy_out),
@@ -157,7 +154,6 @@ class TrainerAgent:  # Probably needs refactoring
         self._params = self._net.collect_params()
         self._param_names = self._params.keys()
         self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
-
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -326,7 +322,7 @@ class TrainerAgent:  # Probably needs refactoring
                             nb_batches=None,
                             ctx=self._ctx,
                             sparse_policy_label=self.tc.sparse_policy_label,
-                            apply_select_policy_from_plane=True # self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data
+                            apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data
                         )
                         # update process title according to loss
                         self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
@@ -354,7 +350,8 @@ class TrainerAgent:  # Probably needs refactoring
 
                                 if self.tc.log_metrics_to_tensorboard:
                                     self.sum_writer.close()
-                                return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)
+                                return return_metrics_and_stop_training(k_steps, val_metric_values, k_steps_best,
+                                                                        val_loss_best, val_p_acc_best)
 
                             logging.debug("Recover to latest checkpoint")
                             model_path = "./weights/model-%.5f-%.3f-%04d.params" % (
@@ -436,4 +433,5 @@ class TrainerAgent:  # Probably needs refactoring
                                 if self.tc.log_metrics_to_tensorboard:
                                     self.sum_writer.close()
 
-                                return (k_steps, val_loss, val_p_acc), (k_steps_best, val_loss_best, val_p_acc_best)
+                                return return_metrics_and_stop_training(k_steps, val_metric_values, k_steps_best,
+                                                                        val_loss_best, val_p_acc_best)

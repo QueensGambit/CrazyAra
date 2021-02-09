@@ -39,6 +39,7 @@ def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", 
     """
     return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
 
+
 def get_stem(data, channels, act_type):
     """
     Creates the convolution stem before the residual head
@@ -95,6 +96,7 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
     value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
     value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
     value_out = get_act(data=value_out, act_type='tanh', name=main_config["value_output"])
+    value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
     return value_out
 
 
@@ -124,11 +126,13 @@ def policy_head(data, channels, act_type, channels_policy_head, select_policy_fr
                                     no_bias=no_bias, name="policy_conv1")
     if select_policy_from_plane:
         policy_out = mx.sym.flatten(data=policy_out, name=main_config["policy_output"])
+        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
     else:
         policy_out = mx.sym.BatchNorm(data=policy_out, name='policy_bn1')
         policy_out = get_act(data=policy_out, act_type=act_type, name='policy_act1')
         policy_out = mx.sym.Flatten(data=policy_out, name='policy_flatten0')
         policy_out = mx.sym.FullyConnected(data=policy_out, num_hidden=n_labels, name=main_config["policy_output"])
+        policy_out = mx.sym.SoftmaxOutput(data=policy_out, name='policy', grad_scale=grad_scale_policy)
 
     return policy_out
 
