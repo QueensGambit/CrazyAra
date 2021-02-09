@@ -39,7 +39,6 @@ TerminalType invert_terminal_type(TerminalType terminalType) {
 
 TerminalType State::random_rollout(float& customValueTerminal)
 {
-    TerminalType terminalType;
     int sideToMove = this->steps_from_null() % 2;
     while(true) {
         const std::vector<Action> actions = this->legal_actions();
@@ -55,7 +54,7 @@ TerminalType State::random_rollout(float& customValueTerminal)
         const Action action = actions[actionIdx];
         this->do_action(action);
     }
-    return terminalType;
+    return TERMINAL_NONE;
 }
 
 float State::random_rollout()
