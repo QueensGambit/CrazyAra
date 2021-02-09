@@ -22,7 +22,7 @@ from multiprocessing import Process, Queue
 
 sys.path.append("../../../")
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.configs.train_config import train_config
+from DeepCrazyhouse.configs.train_config import TrainConfig
 from engine.src.rl.rl_training import update_network
 
 
@@ -171,10 +171,12 @@ class RLLoop:
         check_valid_paths()
         self.model_name = ""  # will be set in initialize()
         self.nn_update_index = args.nn_update_idx
-        self.max_lr = train_config["max_lr"]
-        self.lr_reduction = lr_reduction
+        self.train_config = TrainConfig()
+        self.train_config.cwd = self.crazyara_binary_dir
 
-        self.k_steps = k_steps
+        # self.max_lr = train_config["max_lr"]
+        self.lr_reduction = lr_reduction
+        self.train_config.k_steps = k_steps
 
     def _create_directories(self):
         """
@@ -268,7 +270,6 @@ class RLLoop:
             set_uci_param(self.proc, "Use_Transposition_Table", "true")
             set_uci_param(self.proc, "Enhance_Checks", "true")
             set_uci_param(self.proc, "Centi_Q_Value_Weight", 200)
-
 
     def _read_output_arena(self):
         """
@@ -492,18 +493,19 @@ class RLLoop:
             self._prepare_data_for_training()
             # start training using a process to ensure memory clearing afterwards
             queue = Queue()  # start a subprocess to be memory efficient
-            process = Process(target=update_network, args=(queue, self.nn_update_index, self.k_steps,
-                                                           self.max_lr, self._get_current_model_arch_file(),
+            self.train_config.device_id = self.args.device_id
+            process = Process(target=update_network, args=(queue, self.nn_update_index,
+                                                           self._get_current_model_arch_file(),
                                                            self._get_current_model_weight_file(),
-                                                           self.crazyara_binary_dir, not self.args.no_onnx_export,
-                                                           main_config, train_config))
+                                                           not self.args.no_onnx_export,
+                                                           main_config, self.train_config))
             logging.info("start training")
             process.start()
-            self.k_steps = queue.get() + 1
+            self.train_config.k_steps = queue.get() + 1
             process.join()  # this blocks until the process terminates
 
-            if self.max_lr > train_config["min_lr"]:
-                self.max_lr = max(self.max_lr - self.lr_reduction, train_config["min_lr"] * 10)
+            if self.train_config.max_lr > self.train_config.min_lr:
+                self.train_config.max_lr = max(self.train_config.max_lr - self.lr_reduction, self.train_config.min_lr * 10)
 
             self.nn_update_index += 1
             self.initialize()
@@ -568,7 +570,7 @@ def parse_args(cmd_args: list):
                              " If this parameter is enabled no conversion will be done")
     parser.add_argument("--config", type=str, default="default",
                         help="config parameters for icaps paper, possible values ['default', 'all'")
- 
+
     args = parser.parse_args(cmd_args)
 
     if not os.path.exists(args.crazyara_binary_dir):
