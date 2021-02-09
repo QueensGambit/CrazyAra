@@ -9,7 +9,10 @@ Utility methods for building the Rise NN
 import mxnet
 from mxnet.gluon.nn import HybridSequential, Conv2D, BatchNorm, Dense, AvgPool2D, MaxPool2D
 from mxnet.gluon import HybridBlock
-from mxnet.gluon.contrib.nn import HybridConcurrent
+try:
+    from mxnet.gluon.contrib.nn import HybridConcurrent
+except ModuleNotFoundError:
+    from mxnet.gluon.nn import HybridConcatenate as HybridConcurrent
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util import get_act, get_pool
 
 

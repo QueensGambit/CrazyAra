@@ -97,13 +97,10 @@ def convert_mxnet_model_to_onnx(sym_file, params_file, output_names, input_shape
     Converts the given model specified by symbol and param file to ONNX format.
     For parameters see: parse_args.
     """
-    net = convert_mxnet_model_to_gluon(sym_file, params_file, output_names)
-    net.export("model")
-
     # convert the gluon mxnet model into onnx
     for batch_size in batch_sizes:
         onnx_file = params_file[:-7] + "-bsize-" + str(batch_size) + ".onnx"
-        onnx_model_path = onnx_mxnet.export_model("model-symbol.json", "model-0000.params",
+        onnx_model_path = onnx_mxnet.export_model(sym_file, params_file,
                                                   [(batch_size, input_shape[0], input_shape[1], input_shape[2])],
                                                   np.float32, onnx_file)
         logging.info("Exported model to: %s" % onnx_model_path)
@@ -117,10 +114,6 @@ def convert_mxnet_model_to_onnx(sym_file, params_file, output_names, input_shape
 
             # check if the converted ONNX-protobuf is valid
             checker.check_graph(model_proto.graph)
-
-    # delete temporary export files
-    os.remove("model-0000.params")
-    os.remove("model-symbol.json")
 
 
 def main():

@@ -31,6 +31,7 @@
 #include <iostream>
 #include <fstream>
 #include "uci.h"
+#include "state.h"
 #include "uci/variants.h"
 #include "util/blazeutil.h"
 #include "util/randomgen.h"

@@ -124,7 +124,10 @@ def get_numpy_arrays(pgn_dataset):
     start_indices = np.array(pgn_dataset["start_indices"])
     x = np.array(pgn_dataset["x"])
     y_value = np.array(pgn_dataset["y_value"])
-    y_policy = np.array(pgn_dataset["y_policy"])
+    try:
+        y_policy = np.array(pgn_dataset["y_policy_prediction_risev2_27"])
+    except Exception:
+        y_policy = np.array(pgn_dataset["y_policy"])
 
     possible_entries = ["plys_to_end", "y_best_move_q"]
     entries = [None] * 2

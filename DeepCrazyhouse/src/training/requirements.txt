@@ -12,3 +12,4 @@ onnx==1.3.0
 ipytree
 setproctitle
 rtpt
+dataclasses

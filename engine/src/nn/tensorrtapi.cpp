@@ -47,7 +47,8 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     // select the requested device
     cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
-    modelFilePath = modelDir + get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
+    modelName = get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
+    modelFilePath = modelDir + modelName;
     info_string("onnx file:", modelFilePath);
     trtFilePath = generate_trt_file_path(modelDir, batchSize, precision, deviceID);
     gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
