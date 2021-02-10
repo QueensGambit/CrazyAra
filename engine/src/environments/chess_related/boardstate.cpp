@@ -199,7 +199,7 @@ Tablebase::WDLScore BoardState::check_for_tablebase_wdl(Tablebase::ProbeState &r
     return wdlScore;
 }
 
-void BoardState::set_auxiliary_outputs(const float *auxiliaryOutputs) const
+void BoardState::set_auxiliary_outputs(const float *auxiliaryOutputs)
 {
     // do nothing
 }

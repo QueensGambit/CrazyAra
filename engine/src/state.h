@@ -384,7 +384,7 @@ public:
      * Implement this method if you set StateConstantsInterface::NB_AUXILIARY_OUTPUTS() != 0.
      * @param auxiliaryOutputs Pointer to the auxiliary outputs
      */
-    virtual void set_auxiliary_outputs(const float* auxiliaryOutputs) const = 0;
+    virtual void set_auxiliary_outputs(const float* auxiliaryOutputs) = 0;
 
     /**
      * @brief operator << Operator overload for <<

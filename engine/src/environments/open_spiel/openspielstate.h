@@ -116,7 +116,7 @@ public:
     bool gives_check(Action action) const;
     void print(std::ostream &os) const;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result);
-    void set_auxiliary_outputs(const float* auxiliaryOutputs) const;
+    void set_auxiliary_outputs(const float* auxiliaryOutputs);
     OpenSpielState *clone() const;
 };
 

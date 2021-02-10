@@ -183,7 +183,7 @@ Tablebase::WDLScore OpenSpielState::check_for_tablebase_wdl(Tablebase::ProbeStat
     return Tablebase::WDLScoreNone;
 }
 
-void OpenSpielState::set_auxiliary_outputs(const float* auxiliaryOutputs) const
+void OpenSpielState::set_auxiliary_outputs(const float* auxiliaryOutputs)
 {
     // do nothing
 }

@@ -246,7 +246,7 @@ public:
     bool gives_check(Action action) const override;
     void print(ostream& os) const override;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result) override;
-    void set_auxiliary_outputs(const float* auxiliaryOutputs) const;
+    void set_auxiliary_outputs(const float* auxiliaryOutputs);
     BoardState* clone() const override;
 };
 
