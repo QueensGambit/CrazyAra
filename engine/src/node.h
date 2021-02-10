@@ -465,6 +465,12 @@ public:
 
 #ifdef MCTS_STORE_STATES
     StateObj* get_state() const;
+
+    /**
+     * @brief set_auxiliary_outputs Sets the auxiliary outputs of the neural network to the state object
+     * @param auxiliaryOutputs Auxiliary outputs of the neural network for the corresponding state
+     */
+    void set_auxiliary_outputs(const float* auxiliaryOutputs);
 #endif
 
     uint32_t get_number_of_nodes() const;

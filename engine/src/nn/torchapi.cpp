@@ -44,7 +44,7 @@ TorchAPI::TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
     bind_executor();
 }
 
-void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutputs)
+void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutputs, float *auxiliaryOutputs)
 {
     // Create a vector of inputs.
     std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()}, device)};
@@ -56,6 +56,10 @@ void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutput
     std::copy(torchValuePt, torchValuePt+batchSize, valueOutput);
     const float* torchPolicyPt = torch::softmax(output.get(1).toTensor(), 1).data_ptr<float>();
     std::copy(torchPolicyPt, torchPolicyPt+policyOutputLength, probOutputs);
+    if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
+        const float* torchAuxiliaryPt = output.get(2).toTensor().data_ptr<float>();
+        std::copy(torchAuxiliaryPt, torchAuxiliaryPt+StateConstants::NB_AUXILIARY_OUTPUTS()*batchSize, auxiliaryOutputs);
+    }
 }
 
 void TorchAPI::load_model()

@@ -61,6 +61,9 @@ public:
     static uint NB_LABELS_POLICY_MAP() {
         return NB_CHANNELS_POLICY_MAP() * BOARD_HEIGHT() * BOARD_WIDTH();
     }
+    static uint NB_AUXILIARY_OUTPUTS() {
+        return 0U;
+    }
     static uint NB_PLAYERS() {
         return 2;
     }
@@ -243,6 +246,7 @@ public:
     bool gives_check(Action action) const override;
     void print(ostream& os) const override;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result) override;
+    void set_auxiliary_outputs(const float* auxiliaryOutputs) const;
     BoardState* clone() const override;
 };
 

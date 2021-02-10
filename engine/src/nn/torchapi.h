@@ -46,7 +46,7 @@ public:
     TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory);
 
     // NeuralNetAPI interface
-    void predict(float *inputPlanes, float *valueOutput, float *probOutputs) override;
+    void predict(float *inputPlanes, float *valueOutput, float *probOutputs, float *auxiliaryOutputs) override;
 
 protected:
     void load_model() override;

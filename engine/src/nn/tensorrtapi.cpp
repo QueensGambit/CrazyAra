@@ -42,6 +42,7 @@ using namespace sample;
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
+    idxAuxiliaryOutput(-1),
     precision(str_to_precision(strPrecision))
 {
     // select the requested device
@@ -60,8 +61,11 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
 
 TensorrtAPI::~TensorrtAPI()
 {
-    for (auto memory : deviceMemory) {
-        CHECK(cudaFree(memory));
+    CHECK(cudaFree(deviceMemory[idxInput]));
+    CHECK(cudaFree(deviceMemory[idxValueOutput]));
+    CHECK(cudaFree(deviceMemory[idxPolicyOutput]));
+    if (idxAuxiliaryOutput != -1) {
+        CHECK(cudaFree(deviceMemory[idxAuxiliaryOutput]));
     }
     CHECK(cudaStreamDestroy(stream));
 }
@@ -73,6 +77,9 @@ void TensorrtAPI::load_model()
     idxInput = 0;  // engine->getBindingIndex("data");
     idxValueOutput = 1;  // engine->getBindingIndex("value_out"); or engine->getBindingIndex("value_tanh0");
     idxPolicyOutput = 2;  // engine->getBindingIndex("policy_softmax");
+    if (engine->getNbBindings() > idxPolicyOutput + 1) {
+        idxAuxiliaryOutput = idxPolicyOutput + 1;
+    }
 }
 
 void TensorrtAPI::load_parameters()
@@ -89,6 +96,10 @@ void TensorrtAPI::bind_executor()
     memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
     memorySizes[idxPolicyOutput] = policyOutputLength * sizeof(float);
+    if (idxAuxiliaryOutput != -1) {
+        memorySizes[idxAuxiliaryOutput] = batchSize * StateConstants::NB_AUXILIARY_OUTPUTS() * sizeof (float);
+        CHECK(cudaMalloc(&deviceMemory[idxAuxiliaryOutput], memorySizes[idxAuxiliaryOutput]));
+    }
     CHECK(cudaMalloc(&deviceMemory[idxInput], memorySizes[idxInput]));
     CHECK(cudaMalloc(&deviceMemory[idxValueOutput], memorySizes[idxValueOutput]));
     CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
@@ -96,13 +107,13 @@ void TensorrtAPI::bind_executor()
 
 void TensorrtAPI::check_if_policy_map()
 {
-    if (policyOutputDims.d[1] != StateConstants::NB_LABELS()) {
+    if (unsigned(policyOutputDims.d[1]) != StateConstants::NB_LABELS()) {
         isPolicyMap = true;
         policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
     }
 }
 
-void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs)
+void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs)
 {
     // select the requested device
     cudaSetDevice(deviceID);
@@ -118,7 +129,10 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
                           memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
     CHECK(cudaMemcpyAsync(probOutputs, deviceMemory[idxPolicyOutput],
                           memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
-
+    if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
+        CHECK(cudaMemcpyAsync(auxiliaryOutputs, deviceMemory[idxAuxiliaryOutput],
+                              memorySizes[idxAuxiliaryOutput], cudaMemcpyDeviceToHost, stream));
+    }
     cudaStreamSynchronize(stream);
 }
 
@@ -218,6 +232,27 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
     }
 }
 
+bool TensorrtAPI::check_auxiliary_output()
+{
+    if (idxAuxiliaryOutput == -1 && StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
+        std::cerr << "StateConstants::NB_AUXILIARY_OUTPUTS(): " << StateConstants::NB_AUXILIARY_OUTPUTS() << endl;
+        throw "No auxiliary outputs detected but auxiliary output was expected.";
+        return false;
+    }
+    if (idxAuxiliaryOutput != -1) {
+        std::stringstream ssAuxiliaryOutputDims;
+        ssAuxiliaryOutputDims << auxiliaryOutputDims;
+        info_string("auxiliaryOutputDims:", ssAuxiliaryOutputDims.str());
+        if (unsigned(auxiliaryOutputDims.d[0]) != StateConstants::NB_AUXILIARY_OUTPUTS()) {
+            std::cerr << "auxiliaryOutputDims.d[0]) != StateConstants::NB_AUXILIARY_OUTPUTS(): " << auxiliaryOutputDims.d[0] << " != " << StateConstants::NB_AUXILIARY_OUTPUTS() << endl;
+            throw "auxiliaryOutputDims.d[0]) != StateConstants::NB_AUXILIARY_OUTPUTS()";
+        }
+        return false;
+    }
+    info_string("No auxiliary outputs detected.");
+    return true;
+}
+
 void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition> &network)
 {
     inputDims = network->getInput(0)->getDimensions();
@@ -227,6 +262,10 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
     ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(1));
     // set the softmax axis to 1
     softmaxLayer->setAxes(1 << 1);
+
+    if (idxAuxiliaryOutput != -1) {
+        auxiliaryOutputDims = network->getOutput(2)->getDimensions();
+    }
 
     // set precision of the first and last layers to float32
     // 0 is the input layer, 1 the value output and 2 the policy output layer
@@ -246,9 +285,12 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
     ssValueOutputDims << valueOutputDims;
     std::stringstream ssPolicyOutputDims;
     ssPolicyOutputDims << policyOutputDims;
+
     info_string("inputDims:", ssInputDims.str());
     info_string("valueOutputDims:", ssValueOutputDims.str());
     info_string("policyOutputDims:", ssPolicyOutputDims.str());
+
+    check_auxiliary_output();
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {

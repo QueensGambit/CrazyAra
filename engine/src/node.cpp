@@ -87,6 +87,11 @@ StateObj* Node::get_state() const
 {
     return state.get();
 }
+
+void Node::set_auxiliary_outputs(const float* auxiliaryOutputs)
+{
+    state->set_auxiliary_outputs(auxiliaryOutputs);
+}
 #endif
 
 Node::Node(StateObj* state, bool inCheck, const SearchSettings* searchSettings):

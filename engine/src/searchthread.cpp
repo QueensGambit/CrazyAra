@@ -284,11 +284,14 @@ void SearchThread::reset_stats()
     depthSum = 0;
 }
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
 {
-    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, is_policy_map), sideToMove);
-    node_post_process_policy(node, searchSettings->nodePolicyTemperature, is_policy_map, searchSettings);
+    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), sideToMove);
+    node_post_process_policy(node, searchSettings->nodePolicyTemperature, isPolicyMap, searchSettings);
     node_assign_value(node, valueOutputs, tbHits, batchIdx);
+#ifdef MCTS_STORE_STATES
+    node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
+#endif
     node->enable_has_nn_results();
 }
 
@@ -297,7 +300,7 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
+            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
         }
         ++batchIdx;
         if (searchSettings->useTranspositionTable) {
@@ -381,7 +384,7 @@ void SearchThread::thread_iteration()
     create_mini_batch();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-        net->predict(inputPlanes, valueOutputs, probOutputs);
+        net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
         set_nn_results_to_child_nodes();
     }
 #endif

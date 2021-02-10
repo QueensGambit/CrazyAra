@@ -187,7 +187,7 @@ NDArray MXNetAPI::predict(float* inputPlanes, float& value)
     return probOutputs;
 }
 
-void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutputs)
+void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs)
 {
     executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, StateConstants::NB_VALUES_TOTAL() * batchSize);
 
@@ -196,6 +196,9 @@ void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutput
 
     executor->outputs[0].SyncCopyToCPU(valueOutput, batchSize);
     executor->outputs[1].SyncCopyToCPU(probOutputs, policyOutputLength);
+    if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
+        executor->outputs[2].SyncCopyToCPU(auxiliaryOutputs, StateConstants::NB_AUXILIARY_OUTPUTS()*batchSize);
+    }
 }
 
 #endif

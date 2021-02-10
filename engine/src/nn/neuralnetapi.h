@@ -130,8 +130,9 @@ public:
      * @param inputPlanes Pointer to the input planes of a single board position
      * @param value Value prediction for the board by the neural network
      * @param probOutputs Policy array of the raw network output (including illegal moves). It's assumend that the memory has already been allocated.
+     * @param auxiliaryOutputs Array of optional auxiliary outputs
      */
-    virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs) = 0;
+    virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) = 0;
 
     unsigned int get_policy_output_length() const;
 
