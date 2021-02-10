@@ -55,7 +55,7 @@ public:
     MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT);
     ~MXNetAPI();
 
-    void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
+    void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
 
 protected:
     void load_model();

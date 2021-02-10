@@ -199,6 +199,11 @@ Tablebase::WDLScore BoardState::check_for_tablebase_wdl(Tablebase::ProbeState &r
     return wdlScore;
 }
 
+void BoardState::set_auxiliary_outputs(const float *auxiliaryOutputs)
+{
+    // do nothing
+}
+
 BoardState* BoardState::clone() const
 {
     return new BoardState(*this);

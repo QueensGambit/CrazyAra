@@ -103,37 +103,105 @@ template<typename T>
 class StateConstantsInterface
 {
 public:
+    /**
+     * @brief BOARD_WIDTH
+     * @return board width
+     */
     static uint BOARD_WIDTH() {
         return T::BOARD_WIDTH();
     }
+
+    /**
+     * @brief BOARD_HEIGHT Board height of the input representation
+     * @return board height
+     */
     static uint BOARD_HEIGHT() {
         return T::BOARD_HEIGHT();
     }
+
+    /**
+     * @brief NB_CHANNELS_TOTAL Number of channel of the input representation to the neural network
+     * @return number of channels
+     */
     static uint NB_CHANNELS_TOTAL() {
         return T::NB_CHANNELS_TOTAL();
     }
+
+    /**
+     * @brief NB_SQUARES Number of board squares
+     * @return board_width * board_height
+     */
     static uint NB_SQUARES() {
         return BOARD_WIDTH() * BOARD_HEIGHT();
     }
+
+    /**
+     * @brief NB_VALUES_TOTAL Total number of values of the neural network input representation
+     * @return Length of the flattened input representation vector
+     */
     static uint NB_VALUES_TOTAL() {
         return NB_CHANNELS_TOTAL() * NB_SQUARES();
     }
+
+    /**
+     * @brief NB_LABELS Number of policy labels (e.g. UCI-labels) in classical representation
+     * @return Number of policy labels
+     */
     static uint NB_LABELS() {
         return T::NB_LABELS();
     }
+
+    /**
+     * @brief NB_LABELS_POLICY_MAP Number of policy map labels in policy map representation.
+     * @return Number of policy map labels
+     */
     static uint NB_LABELS_POLICY_MAP() {
         return T::NB_LABELS_POLICY_MAP();
     }
+
+    /**
+     * @brief NB_AUXILIARY_OUTPUTS Number of auxiliary outputs of the neural network (default: 0).
+     * The auxiliary outputs are assumed to be a flattened vector.
+     * @return Number of auxiliary outputs
+     */
+    static uint NB_AUXILIARY_OUTPUTS() {
+        return T::NB_AUXILIARY_OUTPUTS();
+    }
+
+    /**
+     * @brief NB_PLAYERS Number of players in the environment
+     * @return Number of players
+     */
     static uint NB_PLAYERS() {
         return T::NB_PLAYERS();
     }
+
+    /**
+     * @brief action_to_uci Returns a string representation of a given move
+     * @param action Action object
+     * @param is960 Boolean indicating if the 960 format is used
+     * @return String
+     */
     static std::string action_to_uci(Action action, bool is960) {
         return T::action_to_uci(action, is960);
     }
+
+    /**
+     * @brief action_to_index Function that is used to map an Action to the corresponding neural network policy index.
+     * @param action Given action
+     * @param p Policy type, either "normal" or "classic". Normal is the active policy output (e.g. classic, or policy map), "classic" corresponds to the classic policy-output.
+     * @param m Mirror type, either "notMirrored" or "mirrored". Can be used to give a different implementation when the input representatation is flipped.
+     * @return Neural network policy index
+     */
     template<PolicyType p, MirrorType m>
     static MoveIdx action_to_index(Action action) {
         return T::action_to_index<p, m>(action);
     }
+
+    /**
+     * @brief init Init function which is called after a neural network has been loaded and can be used to initalize static variables.
+     * @param isPolicyMap Boolean indicating if the neural network uses a policy map representation
+     */
     static void init(bool isPolicyMap) {
         return T::init(isPolicyMap);
     }
@@ -310,6 +378,13 @@ public:
      * @return WDLScore
      */
     virtual Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState& result) = 0;
+
+    /**
+     * @brief set_auxiliary_outputs Sets the auxliary outputs for the state. (By default: pass)
+     * Implement this method if you set StateConstantsInterface::NB_AUXILIARY_OUTPUTS() != 0.
+     * @param auxiliaryOutputs Pointer to the auxiliary outputs
+     */
+    virtual void set_auxiliary_outputs(const float* auxiliaryOutputs) = 0;
 
     /**
      * @brief operator << Operator overload for <<

@@ -45,6 +45,7 @@ protected:
     // sufficient memory according to the batch-size will be allocated in the constructor
     float* valueOutputs;
     float* probOutputs;
+    float* auxiliaryOutputs;
 
 public:
     NeuralNetAPIUser(NeuralNetAPI* net);

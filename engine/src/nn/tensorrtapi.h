@@ -65,16 +65,18 @@ private:
     int idxInput;
     int idxValueOutput;
     int idxPolicyOutput;
+    int idxAuxiliaryOutput;
 
-    // device memory, for input, value output and policy output
-    void* deviceMemory[3];
-    size_t memorySizes[3];
+    // device memory, for input, value output and policy output, auxiliary outputs
+    void* deviceMemory[4];
+    size_t memorySizes[4];
 
     // input and output dimension of the network
     Precision precision;
     nvinfer1::Dims inputDims;
     nvinfer1::Dims valueOutputDims;
     nvinfer1::Dims policyOutputDims;
+    nvinfer1::Dims auxiliaryOutputDims;
 
     // tensorRT runtime engine
     string trtFilePath;
@@ -94,7 +96,13 @@ public:
     TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, const string& strPrecision);
     ~TensorrtAPI();
 
-    void predict(float* inputPlanes, float* valueOutput, float* probOutputs) override;
+    void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
+
+    /**
+     * @brief check_auxiliary_output Checks consistency of auxiliary output
+     * @return True if ok, else false
+     */
+    bool check_auxiliary_output();
 
 private:
     void load_model() override;

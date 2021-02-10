@@ -81,4 +81,12 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
  */
 const float*  get_policy_data_batch(const size_t batchIdx, const float* policyProb, bool isPolicyMap);
 
+/**
+ * @brief get_auxiliary_data_batch Returns the pointer of the batch for the auxliary predictions
+ * @param batchIdx Batch index for the current predicion
+ * @param auxiliaryOutputs All auxiliary predictions of the batch
+ * @return Starting pointer for predictions of the current batch
+ */
+const float*  get_auxiliary_data_batch(const size_t batchIdx, const float* auxiliaryOutputs);
+
 #endif // STATEOBJ_H

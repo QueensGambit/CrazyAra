@@ -62,3 +62,8 @@ const float* get_policy_data_batch(const size_t batchIdx, const float* probOutpu
     }
     return probOutputs + batchIdx*StateConstants::NB_LABELS();
 }
+
+const float* get_auxiliary_data_batch(const size_t batchIdx, const float* auxiliaryOutputs)
+{
+    return auxiliaryOutputs + batchIdx*StateConstants::NB_AUXILIARY_OUTPUTS();
+}
