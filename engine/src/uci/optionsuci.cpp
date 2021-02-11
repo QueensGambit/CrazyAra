@@ -111,7 +111,11 @@ void OptionsUCI::init(OptionsMap &o)
 #else
     o["Reuse_Tree"]                    << Option(true);
 #endif
+#ifdef USE_RL
+    o["Temperature_Moves"]             << Option(15, 0, 99999);
+#else
     o["Temperature_Moves"]             << Option(0, 0, 99999);
+#endif
     o["Use_Advantage"]                 << Option(false);
     o["Use_NPS_Time_Manager"]          << Option(false);
 #ifdef TENSORRT
