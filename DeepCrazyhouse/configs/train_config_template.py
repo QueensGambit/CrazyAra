@@ -105,6 +105,9 @@ class TrainConfig:
     # weight decay
     wd: float = 1e-4
 
+    # directory to write and read weight, log, onnx and other export files
+    export_dir: str = "./"
+
 
 @dataclass
 class TrainObjects:
