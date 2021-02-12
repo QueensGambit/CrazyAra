@@ -134,7 +134,7 @@ class TrainerAgent:  # Probably needs refactoring
         self._val_data = val_data
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if self.tc.log_metrics_to_tensorboard:
-            self.sum_writer = SummaryWriter(logdir="./logs", flush_secs=5, verbose=False)
+            self.sum_writer = SummaryWriter(logdir=self.tc.export_dir+"logs", flush_secs=5, verbose=False)
         # Define the two loss functions
         self._softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss(sparse_label=self.tc.sparse_policy_label)
         self._l2_loss = gluon.loss.L2Loss()

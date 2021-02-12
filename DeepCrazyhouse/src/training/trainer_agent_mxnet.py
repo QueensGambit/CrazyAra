@@ -181,7 +181,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.tc.cwd = os.getcwd()
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if self.tc.log_metrics_to_tensorboard:
-            self.sum_writer = SummaryWriter(logdir="%s/logs" % self.tc.cwd, flush_secs=5, verbose=False)
+            self.sum_writer = SummaryWriter(logdir=self.tc.export_dir+"logs", flush_secs=5, verbose=False)
         # Define the optimizer
         if self.tc.optimizer_name == "adam":
             self.optimizer = mx.optimizer.Adam(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8, lazy_update=True, rescale_grad=(1.0/batch_size))
