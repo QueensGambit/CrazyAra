@@ -126,7 +126,7 @@ def main():
 
     e.g. chess model for releases >= 0.8.0
     python3 convert_to_onnx.py --model-dir ./model --input-shape 39 8 8 --batch-sizes 1 8 16\
-    --onnx-file model-bsize-1.onnx --validate --output-names value_out policy_out
+    --onnx-file model-bsize-1.onnx --validate --output-names value_out_output policy_out_output
     :return:
     """
 
