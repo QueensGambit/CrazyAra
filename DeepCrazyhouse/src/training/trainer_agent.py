@@ -354,7 +354,7 @@ class TrainerAgent:  # Probably needs refactoring
                                                                         val_loss_best, val_p_acc_best)
 
                             logging.debug("Recover to latest checkpoint")
-                            model_path = "./weights/model-%.5f-%.3f-%04d.params" % (
+                            model_path = self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.params" % (
                                 val_loss_best,
                                 val_p_acc_best,
                                 k_steps_best,
@@ -392,7 +392,8 @@ class TrainerAgent:  # Probably needs refactoring
                                 k_steps_best = k_steps
 
                                 if self.tc.export_weights:
-                                    prefix = "./weights/model-%.5f-%.3f" % (val_loss_best, val_p_acc_best)
+                                    prefix = self.tc.export_dir + "weights/model-%.5f-%.3f" \
+                                             % (val_loss_best, val_p_acc_best)
                                     # the export function saves both the architecture and the weights
                                     self._net.export(prefix, epoch=k_steps_best)
                                     print()
