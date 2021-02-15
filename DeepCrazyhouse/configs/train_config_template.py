@@ -40,6 +40,9 @@ class TrainConfig:
 
     dropout_rate: float = 0
 
+    # directory to write and read weight, log, onnx and other export files
+    export_dir: str = "./"
+
     export_weights: bool = True
 
     export_grad_histograms: bool = True
