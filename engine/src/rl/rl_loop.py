@@ -16,6 +16,7 @@ import numpy as np
 import logging
 import datetime
 import argparse
+from rtpt import RTPT
 from numcodecs import Blosc
 from subprocess import PIPE, Popen
 from multiprocessing import Process, Queue
@@ -137,14 +138,16 @@ class RLLoop:
         if the updated NN weights are stronger than the old one and by how much.
         :param k_steps: Amount of total batch-updates for the NN so far (sets the tensorboard offset properly)
         """
-
         self.args = args
+        self.train_config = TrainConfig()
+        self.train_config.name_initials = args.name_initials
         self.crazyara_binary_dir = args.crazyara_binary_dir
-        binary_mappings = {"crazyhouse": "CrazyAra",
-                "chess": "ClassicAra"}
-        self.crazyara_binary_name = binary_mappings[self.args.uci_variant]
-        main_config["planes_train_dir"] =  args.crazyara_binary_dir + "export/train/"
-        main_config["planes_val_dir"] =  args.crazyara_binary_dir + "export/val/"
+        self.binary_mappings = {"crazyhouse": "CrazyAra",
+                                "chess": "ClassicAra"}
+        self.crazyara_binary_name = self._change_binary_name()
+
+        main_config["planes_train_dir"] = args.crazyara_binary_dir + "export/train/"
+        main_config["planes_val_dir"] = args.crazyara_binary_dir + "export/val/"
 
         self.proc = None
         self.nb_games_to_update = nb_games_to_update
@@ -171,12 +174,17 @@ class RLLoop:
         check_valid_paths()
         self.model_name = ""  # will be set in initialize()
         self.nn_update_index = args.nn_update_idx
-        self.train_config = TrainConfig()
         self.train_config.cwd = self.crazyara_binary_dir
 
         # self.max_lr = train_config["max_lr"]
         self.lr_reduction = lr_reduction
         self.train_config.k_steps = k_steps
+
+        # Continuously update the process name
+        self.rtpt = RTPT(name_initials=self.train_config.name_initials,
+                         experiment_name=self.binary_mappings[self.args.uci_variant],
+                         max_iterations=100000)
+        self.rtpt.start()
 
     def _create_directories(self):
         """
@@ -252,10 +260,8 @@ class RLLoop:
         set_uci_param(self.proc, "Selfplay_Chunk_Size", 128)
 
         if is_arena is True:
-#            set_uci_param(self.proc, "Centi_Temperature", 60) cz
             set_uci_param(self.proc, "Centi_Temperature", 60)
         else:
-#            set_uci_param(self.proc, "Centi_Temperature", 80) cz
             set_uci_param(self.proc, "Centi_Temperature", 80)
 
         if self.args.config == "default":
@@ -312,7 +318,7 @@ class RLLoop:
         # load network
         self.proc.stdin.write(b"isready\n")
         self.proc.stdin.flush()
-        read_output(self.proc, b"readyok\n")
+        read_output(self.proc, b"readyok\n", check_error=True)
 
     def generate_games(self):
         """
@@ -518,6 +524,22 @@ class RLLoop:
             self._stop_process()
             self.initialize()
 
+    def _change_binary_name(self):
+        """
+        Change the name of the binary to include initials, if a binary
+        with the name does not already exist.
+
+        :return: the new binary name
+        """
+        binary_name = self.binary_mappings[self.args.uci_variant]
+        crazyara_binary_name = f'@{self.train_config.name_initials}_{binary_name}_binary'
+
+        if not os.path.exists(self.crazyara_binary_dir + crazyara_binary_name):
+            os.rename(self.crazyara_binary_dir + binary_name,
+                      self.crazyara_binary_dir + crazyara_binary_name)
+
+        return crazyara_binary_name
+
 
 def set_uci_param(proc, name, value):
     """
@@ -540,6 +562,8 @@ def parse_args(cmd_args: list):
     """
     parser = argparse.ArgumentParser(description='Reinforcement learning loop')
 
+    parser.add_argument("--name-initials", type=str, default="XX",
+                        help="initials used to rename the process and binary")
     parser.add_argument("--crazyara-binary-dir", type=str, default="/data/RL/",
                         help="directory where the CrazyAra executable is located and where the selfplay data will be "
                              "stored")
@@ -645,6 +669,8 @@ def main():
 
         rl_loop.generate_games()
         rl_loop.compress_dataset()
+
+        rl_loop.rtpt.step()  # update the process name
 
 
 if __name__ == "__main__":
