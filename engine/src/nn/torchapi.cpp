@@ -40,7 +40,7 @@ TorchAPI::TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
         throw "unsupported context " + ctx + " given";
     }
     load_model();
-    check_if_policy_map();
+    init_nn_design();
     bind_executor();
 }
 
@@ -55,7 +55,7 @@ void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutput
     const float* torchValuePt = output.get(0).toTensor().data_ptr<float>();
     std::copy(torchValuePt, torchValuePt+batchSize, valueOutput);
     const float* torchPolicyPt = torch::softmax(output.get(1).toTensor(), 1).data_ptr<float>();
-    std::copy(torchPolicyPt, torchPolicyPt+policyOutputLength, probOutputs);
+    std::copy(torchPolicyPt, torchPolicyPt+get_policy_output_length(), probOutputs);
     if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
         const float* torchAuxiliaryPt = output.get(2).toTensor().data_ptr<float>();
         std::copy(torchAuxiliaryPt, torchAuxiliaryPt+StateConstants::NB_AUXILIARY_OUTPUTS()*batchSize, auxiliaryOutputs);
@@ -83,20 +83,41 @@ void TorchAPI::bind_executor()
     // pass
 }
 
-void TorchAPI::check_if_policy_map()
+void TorchAPI::init_nn_design()
 {
     float* inputPlanes = new float[batchSize*StateConstants::NB_VALUES_TOTAL()];
 
     // Create a vector of inputs.
-    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()}, device)};
+    const at::IntArrayRef inputShape = {batchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()};
+    std::vector<torch::jit::IValue> inputs = {torch::from_blob(inputPlanes, inputShape, device)};
 
     auto output = module.forward(inputs).toList();
-    auto probOutputs = output.get(1).toTensor();
 
-    isPolicyMap = probOutputs.size(1) != StateConstants::NB_LABELS();
-    info_string("isPolicyMap:", isPolicyMap);
-    if (isPolicyMap) {
-        policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
+    set_shape(nnDesign.inputShape, inputShape);
+    set_shape(nnDesign.valueOutputShape, output.get(nnDesign.valueOutputIdx).toTensor());
+    set_shape(nnDesign.policyOutputShape, output.get(nnDesign.policyOutputIdx).toTensor());
+    nnDesign.hasAuxiliaryOutputs = output.size() > 2;
+    if (nnDesign.hasAuxiliaryOutputs) {
+        set_shape(nnDesign.auxiliaryOutputShape, output.get(nnDesign.auxiliaryOutputIdx).toTensor());
+    }
+    nnDesign.isPolicyMap = unsigned(nnDesign.policyOutputShape.v[1]) != StateConstants::NB_LABELS();
+    info_string("isPolicyMap:", nnDesign.isPolicyMap);
+}
+
+void set_shape(nn_api::Shape &shape, const at::Tensor &tensor)
+{
+    shape.nbDims = tensor.dim();
+    for (int idx = 0; idx < tensor.dim(); ++idx) {
+        shape.v[idx] = tensor.size(idx);
     }
 }
+
+void set_shape(nn_api::Shape &shape, const c10::IntArrayRef &sizes)
+{
+    shape.nbDims = sizes.size();
+    for (uint idx = 0; idx < sizes.size(); ++idx) {
+        shape.v[idx] = sizes[idx];
+    }
+}
+
 #endif

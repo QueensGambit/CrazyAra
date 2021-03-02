@@ -73,6 +73,57 @@ bool has_suffix(const std::string &str, const std::string &suffix)
 string get_file_ending_with(const string& dir, const string& suffix);
 
 
+template <typename T>
+/**
+ * @brief assert_condition Wrapper for an assert statement that is also validate in release mode
+ * @param value Given value
+ * @param target Target value
+ * @param valueStr Value description
+ * @param targetStr Target description
+ * @return True, if the assert statement is correct, else false
+ */
+bool assert_condition(const T& value, const T& target, const string& valueStr, const string& targetStr) {
+    if (value != target) {
+        std::cerr << valueStr << " != " << targetStr << ": " << value << " != " << target << endl;
+        throw valueStr + string(" != ") + targetStr;
+        return false;
+    }
+    return true;
+}
+
+namespace nn_api {
+/**
+ * @brief The Shape struct is a basic shape container object.
+ */
+struct Shape {
+    int nbDims = -1;  // uninitialized
+    int v[8];         // shape dimensions
+
+};
+
+std::ostream& operator<<(std::ostream& os, const Shape& shape);
+
+/**
+ * @brief The NeuralNetDesign struct stores information about the neural network design.
+ * It is supposed to be loaded dynamically from a neural network architecture file via the method `NeuralNetAPI->init_nn_design()`.
+ */
+struct NeuralNetDesign {
+    bool isPolicyMap = false;
+    bool hasAuxiliaryOutputs = false;
+    const int valueOutputIdx = 0;
+    const int policyOutputIdx = 1;
+    const int auxiliaryOutputIdx = 2;
+    Shape inputShape;
+    Shape valueOutputShape;
+    Shape policyOutputShape;
+    Shape auxiliaryOutputShape;
+    /**
+     * @brief print Prints the outputs shapes using info_string(...)
+     */
+    void print() const;
+};
+}
+
 /**
  * @brief The NeuralNetAPI class is an abstract class for accessing a neural network back-end and to run inference
  */
@@ -82,9 +133,6 @@ protected:
     std::vector<std::string> outputLabels;
     int deviceID;
     unsigned int batchSize;
-    // vector length for the policy output as returned by the neural network respecting the batch size
-    unsigned int policyOutputLength;
-    bool isPolicyMap;
     bool enableTensorrt;
     // defines the name for the model based on the loaded .params file
     string modelName;
@@ -96,6 +144,7 @@ protected:
     string modelFilePath;
     string parameterFilePath;
 
+    nn_api::NeuralNetDesign nnDesign;
 public:
     /**
      * @brief NeuralNetAPI
@@ -134,6 +183,16 @@ public:
      */
     virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) = 0;
 
+    /**
+     * @brief is_neural_network_valid Runs validation checks of the neural network architecture by comparing input and output shape of the loaded graph to the pre-defined constants.
+     * @return True, if neural network is valid else false.
+     */
+    void validate_neural_network();
+
+    /**
+     * @brief get_policy_output_length Returns vector length for the policy output as returned by the neural network respecting the batch size
+     * @return Vector length
+     */
     unsigned int get_policy_output_length() const;
 
     unsigned int get_batch_size() const;
@@ -162,10 +221,11 @@ protected:
     virtual void bind_executor() = 0;
 
     /**
-     * @brief infer_select_policy_from_planes Checks if the loaded model encodes the policy as planes
+     * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and
+     * initializes the struct nnDesign.
      * and sets the selectPolicyFromPlane boolean accordingly
      */
-    virtual void check_if_policy_map() = 0;
+    virtual void init_nn_design() = 0;
 };
 
 /**

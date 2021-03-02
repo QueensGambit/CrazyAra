@@ -32,7 +32,8 @@
 #endif
 
 NeuralNetAPIUser::NeuralNetAPIUser(NeuralNetAPI *net):
-    net(net)
+    net(net),
+    auxiliaryOutputs(nullptr)
 {
     // allocate memory for all predictions and results
 #ifdef TENSORRT
@@ -46,6 +47,9 @@ NeuralNetAPIUser::NeuralNetAPIUser(NeuralNetAPI *net):
     inputPlanes = new float[net->get_batch_size() * StateConstants::NB_VALUES_TOTAL()];
     valueOutputs = new float[net->get_batch_size()];
     probOutputs = new float[net->get_policy_output_length()];
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+        auxiliaryOutputs = new float[net->get_batch_size() * StateConstants::NB_AUXILIARY_OUTPUTS()];
+    }
 #endif
 }
 
