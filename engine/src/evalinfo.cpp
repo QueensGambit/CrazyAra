@@ -164,12 +164,12 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     const size_t targetLength = rootNode->get_number_child_nodes();
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.qValues = rootNode->get_q_values();
-    size_t bestMoveIdx;
     if (targetLength == 1) {
         evalInfo.policyProbSmall = DynamicVector<float>(1);
         evalInfo.policyProbSmall[0] = 1.0f;
     }
     else {
+        size_t bestMoveIdx;
         rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, evalInfo.qValueWeight);
     }
     // ensure the policy has the correct length even if some child nodes have not been visited
