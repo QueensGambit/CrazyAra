@@ -62,10 +62,10 @@ class TensorrtAPI : public NeuralNetAPI
 {
 private:
     // binding indices for the input, value and policy data
-    int idxInput;
-    int idxValueOutput;
-    int idxPolicyOutput;
-    int idxAuxiliaryOutput;
+    const int idxInput = 0;
+    const int idxValueOutput = 1;
+    const int idxPolicyOutput = 2;
+    const int idxAuxiliaryOutput = 3;
 
     // device memory, for input, value output and policy output, auxiliary outputs
     void* deviceMemory[4];
@@ -73,10 +73,6 @@ private:
 
     // input and output dimension of the network
     Precision precision;
-    nvinfer1::Dims inputDims;
-    nvinfer1::Dims valueOutputDims;
-    nvinfer1::Dims policyOutputDims;
-    nvinfer1::Dims auxiliaryOutputDims;
 
     // tensorRT runtime engine
     string trtFilePath;
@@ -98,18 +94,12 @@ public:
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
 
-    /**
-     * @brief check_auxiliary_output Checks consistency of auxiliary output
-     * @return True if ok, else false
-     */
-    bool check_auxiliary_output();
-
 private:
     void load_model() override;
     void load_parameters() override;
     void bind_executor() override;
 
-    void check_if_policy_map() override;
+    void init_nn_design() override;
 
     /**
      * @brief createCudaEngineFromONNX Creates a new cuda engine from a onnx model architecture
@@ -192,6 +182,13 @@ Precision str_to_precision( const string& strPrecision);
  * @return trt-file-path (string)
  */
 string generate_trt_file_path(const string &modelDirectory, unsigned int batchSize, Precision precision, int deviceID);
+
+/**
+ * @brief set_shape Converter function from nvinfer1::Dims to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param dims Target object
+ */
+void set_shape(nn_api::Shape& shape, const nvinfer1::Dims& dims);
 
 #endif
 

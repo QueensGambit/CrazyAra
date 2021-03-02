@@ -394,7 +394,9 @@ bool CrazyAra::is_ready()
         init_rl_settings();
 #endif
         netSingle = create_new_net_single(Options["Model_Directory"]);
+        netSingle->validate_neural_network();
         netBatches = create_new_net_batches(Options["Model_Directory"]);
+        netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
         StateConstants::init(mctsAgent->is_policy_map());

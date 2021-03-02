@@ -52,8 +52,23 @@ protected:
     void load_model() override;
     void load_parameters() override;
     void bind_executor() override;
-    void check_if_policy_map() override;
+    void init_nn_design() override;
 };
+
+/**
+ * @brief set_shape Converter function from at::Tensor& tensor to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param tensor Target object
+ */
+void set_shape(nn_api::Shape& shape, const at::Tensor& tensor);
+
+/**
+ * @brief set_shape Converter function from at::IntArrayRef to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param sizes Target object
+ */
+void set_shape(nn_api::Shape& shape, const at::IntArrayRef& sizes);
+
 
 #endif // TORCHAPI_H
 #endif

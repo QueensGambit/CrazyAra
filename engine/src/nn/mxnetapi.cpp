@@ -52,7 +52,7 @@ MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
     load_model();
     load_parameters();
     bind_executor();
-    check_if_policy_map();
+    init_nn_design();
 }
 
 MXNetAPI::~MXNetAPI()
@@ -150,18 +150,22 @@ void MXNetAPI::bind_executor()
     info_string("Bind successfull!");
 }
 
-void MXNetAPI::check_if_policy_map()
+void MXNetAPI::init_nn_design()
 {
+    set_shape(nnDesign.inputShape, inputShape);
+    set_shape(nnDesign.policyOutputShape, executor->outputs[nnDesign.valueOutputIdx].GetShape());
+    set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.policyOutputIdx].GetShape());
+    nnDesign.hasAuxiliaryOutputs = executor->outputs.size() > 2;
+    if (nnDesign.hasAuxiliaryOutputs) {
+        set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.auxiliaryOutputIdx].GetShape());
+    }
+
     float* inputPlanes = new float[batchSize*StateConstants::NB_VALUES_TOTAL()];
     fill(inputPlanes, inputPlanes+batchSize*StateConstants::NB_VALUES_TOTAL(), 0.0f);
 
     float value;
     NDArray probOutputs = predict(inputPlanes, value);
-    isPolicyMap = probOutputs.GetShape()[1] != size_t(StateConstants::NB_LABELS());
-    info_string("isPolicyMap:", isPolicyMap);
-    if (isPolicyMap) {
-        policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
-    }
+    nnDesign.isPolicyMap = probOutputs.GetShape()[1] != size_t(StateConstants::NB_LABELS());
     delete[] inputPlanes;
 }
 
@@ -195,9 +199,25 @@ void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutput
     executor->Forward(false);
 
     executor->outputs[0].SyncCopyToCPU(valueOutput, batchSize);
-    executor->outputs[1].SyncCopyToCPU(probOutputs, policyOutputLength);
+    executor->outputs[1].SyncCopyToCPU(probOutputs, get_policy_output_length());
     if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
         executor->outputs[2].SyncCopyToCPU(auxiliaryOutputs, StateConstants::NB_AUXILIARY_OUTPUTS()*batchSize);
+    }
+}
+
+void set_shape(nn_api::Shape &shape, const std::vector<mx_uint> &mxnetShape)
+{
+    shape.nbDims = mxnetShape.size();
+    for (uint idx = 0; idx < mxnetShape.size(); ++idx) {
+        shape.v[idx] = mxnetShape[idx];
+    }
+}
+
+void set_shape(nn_api::Shape &shape, const Shape &mxnetShape)
+{
+    shape.nbDims = mxnetShape.ndim();
+    for (uint idx = 0; idx < mxnetShape.ndim(); ++idx) {
+        shape.v[idx] = mxnetShape[idx];
     }
 }
 

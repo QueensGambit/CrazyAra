@@ -62,7 +62,7 @@ protected:
     void load_parameters();
     void bind_executor();
 
-    void check_if_policy_map();
+    void init_nn_design();
 
     /**
      * @brief SplitParamMap Splits loaded param map into arg parm and aux param with target context
@@ -94,6 +94,20 @@ protected:
      */
     NDArray predict(float* inputPlanes, float& value);
 };
+
+/**
+ * @brief set_shape Converter function from std::vector<mx_uint> to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param mxnetShape Target object
+ */
+void set_shape(nn_api::Shape& shape, const std::vector<mx_uint>& mxnetShape);
+
+/**
+ * @brief set_shape Converter function from std::vector<mx_uint> to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param mxnetShape Target object
+ */
+void set_shape(nn_api::Shape& shape, const Shape& mxnetShape);
 
 #endif
 #endif // MXNETAPI_H

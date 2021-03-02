@@ -42,7 +42,6 @@ using namespace sample;
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
-    idxAuxiliaryOutput(-1),
     precision(str_to_precision(strPrecision))
 {
     // select the requested device
@@ -55,7 +54,7 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
 
     load_model();
-    check_if_policy_map();
+    init_nn_design();
     bind_executor();
 }
 
@@ -64,7 +63,7 @@ TensorrtAPI::~TensorrtAPI()
     CHECK(cudaFree(deviceMemory[idxInput]));
     CHECK(cudaFree(deviceMemory[idxValueOutput]));
     CHECK(cudaFree(deviceMemory[idxPolicyOutput]));
-    if (idxAuxiliaryOutput != -1) {
+    if (nnDesign.hasAuxiliaryOutputs) {
         CHECK(cudaFree(deviceMemory[idxAuxiliaryOutput]));
     }
     CHECK(cudaStreamDestroy(stream));
@@ -74,17 +73,23 @@ void TensorrtAPI::load_model()
 {
     // load an engine from file or build an engine from the ONNX network
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
-    idxInput = 0;  // engine->getBindingIndex("data");
-    idxValueOutput = 1;  // engine->getBindingIndex("value_out"); or engine->getBindingIndex("value_tanh0");
-    idxPolicyOutput = 2;  // engine->getBindingIndex("policy_softmax");
-    if (engine->getNbBindings() > idxPolicyOutput + 1) {
-        idxAuxiliaryOutput = idxPolicyOutput + 1;
-    }
 }
 
 void TensorrtAPI::load_parameters()
 {
     // do nothing
+}
+
+void TensorrtAPI:: init_nn_design()
+{
+    set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
+    set_shape(nnDesign.valueOutputShape, engine->getBindingDimensions(idxValueOutput));
+    set_shape(nnDesign.policyOutputShape, engine->getBindingDimensions(idxPolicyOutput));
+    nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
+    if (nnDesign.hasAuxiliaryOutputs) {
+        set_shape(nnDesign.auxiliaryOutputShape, engine->getBindingDimensions(idxAuxiliaryOutput));
+    }
+    nnDesign.isPolicyMap = unsigned(nnDesign.policyOutputShape.v[1]) != StateConstants::NB_LABELS();
 }
 
 void TensorrtAPI::bind_executor()
@@ -95,22 +100,14 @@ void TensorrtAPI::bind_executor()
     CHECK(cudaStreamCreate(&stream));
     memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
-    memorySizes[idxPolicyOutput] = policyOutputLength * sizeof(float);
-    if (idxAuxiliaryOutput != -1) {
+    memorySizes[idxPolicyOutput] = get_policy_output_length() * sizeof(float);
+    if (nnDesign.hasAuxiliaryOutputs) {
         memorySizes[idxAuxiliaryOutput] = batchSize * StateConstants::NB_AUXILIARY_OUTPUTS() * sizeof (float);
         CHECK(cudaMalloc(&deviceMemory[idxAuxiliaryOutput], memorySizes[idxAuxiliaryOutput]));
     }
     CHECK(cudaMalloc(&deviceMemory[idxInput], memorySizes[idxInput]));
     CHECK(cudaMalloc(&deviceMemory[idxValueOutput], memorySizes[idxValueOutput]));
     CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
-}
-
-void TensorrtAPI::check_if_policy_map()
-{
-    if (unsigned(policyOutputDims.d[1]) != StateConstants::NB_LABELS()) {
-        isPolicyMap = true;
-        policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
-    }
 }
 
 void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs)
@@ -232,40 +229,12 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
     }
 }
 
-bool TensorrtAPI::check_auxiliary_output()
-{
-    if (idxAuxiliaryOutput == -1 && StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
-        std::cerr << "StateConstants::NB_AUXILIARY_OUTPUTS(): " << StateConstants::NB_AUXILIARY_OUTPUTS() << endl;
-        throw "No auxiliary outputs detected but auxiliary output was expected.";
-        return false;
-    }
-    if (idxAuxiliaryOutput != -1) {
-        std::stringstream ssAuxiliaryOutputDims;
-        ssAuxiliaryOutputDims << auxiliaryOutputDims;
-        info_string("auxiliaryOutputDims:", ssAuxiliaryOutputDims.str());
-        if (unsigned(auxiliaryOutputDims.d[0]) != StateConstants::NB_AUXILIARY_OUTPUTS()) {
-            std::cerr << "auxiliaryOutputDims.d[0]) != StateConstants::NB_AUXILIARY_OUTPUTS(): " << auxiliaryOutputDims.d[0] << " != " << StateConstants::NB_AUXILIARY_OUTPUTS() << endl;
-            throw "auxiliaryOutputDims.d[0]) != StateConstants::NB_AUXILIARY_OUTPUTS()";
-        }
-        return false;
-    }
-    info_string("No auxiliary outputs detected.");
-    return true;
-}
-
 void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition> &network)
 {
-    inputDims = network->getInput(0)->getDimensions();
-    valueOutputDims = network->getOutput(0)->getDimensions();
-    policyOutputDims = network->getOutput(1)->getDimensions();
     // add a softmax layer to the ONNX model
     ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(1));
     // set the softmax axis to 1
     softmaxLayer->setAxes(1 << 1);
-
-    if (idxAuxiliaryOutput != -1) {
-        auxiliaryOutputDims = network->getOutput(2)->getDimensions();
-    }
 
     // set precision of the first and last layers to float32
     // 0 is the input layer, 1 the value output and 2 the policy output layer
@@ -275,22 +244,9 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
 //    fix_layer_precision(network->getLayer(2), nvinfer1::DataType::kFLOAT);
 
     // set the softmax layer output as the new output
-    network->unmarkOutput(*network->getOutput(1));
+    network->unmarkOutput(*network->getOutput(nnDesign.policyOutputIdx));
     network->markOutput(*softmaxLayer->getOutput(0));
     softmaxLayer->getOutput(0)->setName("policy_softmax");
-
-    std::stringstream ssInputDims;
-    ssInputDims << inputDims;
-    std::stringstream ssValueOutputDims;
-    ssValueOutputDims << valueOutputDims;
-    std::stringstream ssPolicyOutputDims;
-    ssPolicyOutputDims << policyOutputDims;
-
-    info_string("inputDims:", ssInputDims.str());
-    info_string("valueOutputDims:", ssValueOutputDims.str());
-    info_string("policyOutputDims:", ssPolicyOutputDims.str());
-
-    check_auxiliary_output();
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
@@ -365,6 +321,14 @@ string precision_to_str(Precision precision)
         return  "int8";
     }
     return "fp32";
+}
+
+void set_shape(nn_api::Shape &shape, const Dims &dims)
+{
+    shape.nbDims = dims.nbDims;
+    for (int idx = 0; idx < shape.nbDims; ++idx) {
+        shape.v[idx] = dims.d[idx];
+    }
 }
 
 #endif
