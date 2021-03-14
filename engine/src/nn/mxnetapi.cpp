@@ -153,8 +153,8 @@ void MXNetAPI::bind_executor()
 void MXNetAPI::init_nn_design()
 {
     set_shape(nnDesign.inputShape, inputShape);
-    set_shape(nnDesign.policyOutputShape, executor->outputs[nnDesign.valueOutputIdx].GetShape());
-    set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.policyOutputIdx].GetShape());
+    set_shape(nnDesign.policyOutputShape, executor->outputs[nnDesign.policyOutputIdx].GetShape());
+    set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.valueOutputIdx].GetShape());
     nnDesign.hasAuxiliaryOutputs = executor->outputs.size() > 2;
     if (nnDesign.hasAuxiliaryOutputs) {
         set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.auxiliaryOutputIdx].GetShape());
