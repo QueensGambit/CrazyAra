@@ -100,6 +100,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
 	// this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
+//        "isready",
+//        "go"
     };
 
     do {
@@ -183,7 +185,11 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
     wait_to_finish_last_search();
 
     ongoingSearch = true;
-    if (useRawNetwork) {
+    if (useAlphaBetaAgent) {
+        abAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        mainSearchThread = thread(run_agent_thread, abAgent.get());
+    }
+    else if (useRawNetwork) {
         rawAgent->set_search_settings(state, &searchLimits, &evalInfo);
         mainSearchThread = thread(run_agent_thread, rawAgent.get());
     }
@@ -399,6 +405,7 @@ bool CrazyAra::is_ready()
         netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
+        abAgent = make_unique<AlphaBetaAgent>(netSingle.get(), &playSettings, false);
         StateConstants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
     }

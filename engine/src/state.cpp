@@ -86,3 +86,17 @@ bool is_win(Result res)
         return false;
     }
 }
+
+float terminal_to_float(TerminalType terminal)
+{
+    switch (terminal) {
+    case TERMINAL_WIN:
+        return WIN_VALUE;
+    case TERMINAL_DRAW:
+        return  DRAW_VALUE;
+    case TERMINAL_LOSS:
+        return LOSS_VALUE;
+    default:
+        return 0;
+    }
+}

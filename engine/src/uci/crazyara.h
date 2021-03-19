@@ -32,6 +32,7 @@
 
 #include "agents/rawnetagent.h"
 #include "agents/mctsagent.h"
+#include "agents/alphabetaagent.h"
 #include "nn/neuralnetapi.h"
 #include "agents/config/searchsettings.h"
 #include "agents/config/searchlimits.h"
@@ -70,6 +71,7 @@ private:
                     string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
     unique_ptr<RawNetAgent> rawAgent;
     unique_ptr<MCTSAgent> mctsAgent;
+    unique_ptr<AlphaBetaAgent> abAgent;
     unique_ptr<NeuralNetAPI> netSingle;
     vector<unique_ptr<NeuralNetAPI>> netBatches;
 #ifdef USE_RL
@@ -86,6 +88,7 @@ private:
     Variant variant;
 
     bool useRawNetwork;
+    bool useAlphaBetaAgent = false;
     bool networkLoaded;
     bool ongoingSearch;
     bool is960;

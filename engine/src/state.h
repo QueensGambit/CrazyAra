@@ -68,6 +68,13 @@ enum Result {
 };
 
 /**
+ * @brief terminal_to_float Converts a given terminal type to its corresponding value evaluation
+ * @param terminal Terminal type
+ * @return evaluation value
+ */
+float terminal_to_float(TerminalType terminal);
+
+/**
  * @brief is_win Return true if the given result is a win, else false
  * @param res Result
  * @return Bool
