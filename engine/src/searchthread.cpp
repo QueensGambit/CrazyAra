@@ -475,7 +475,8 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateObj* state) {
     return  it->second->has_nn_results() &&
-            it->second->plies_from_null() == state->steps_from_null();
+            it->second->plies_from_null() == state->steps_from_null() &&
+            state->number_repetitions() == 0;
 }
 
 size_t get_random_depth()
