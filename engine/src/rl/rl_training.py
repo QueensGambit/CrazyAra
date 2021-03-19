@@ -78,13 +78,7 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, conve
     train_objects.momentum_schedule = MomentumSchedule(train_objects.lr_schedule, train_config.min_lr, train_config.max_lr,
                                          train_config.min_momentum, train_config.max_momentum)
 
-    # calculate how many iterations per epoch exist
-    nb_it_per_epoch = (len(x_val) * train_config.nb_parts) // train_config.batch_size
-    # one iteration is defined by passing 1 batch and doing backprop
-    train_config.total_it = int(nb_it_per_epoch * train_config.nb_epochs)
-
     input_shape = x_val[0].shape
-
     inputs = mx.sym.var('data', dtype='float32')
     value_out = symbol.get_internals()[main_config['value_output'] + '_output']
     policy_out = symbol.get_internals()[main_config['policy_output'] + '_output']
