@@ -81,7 +81,7 @@ private:
     bool isRunning;
 
     MapWithMutex* mapWithMutex;
-    SearchSettings* searchSettings;
+    const SearchSettings* searchSettings;
     SearchLimits* searchLimits;
     size_t tbHits;
     size_t depthSum;
@@ -94,7 +94,7 @@ public:
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(NeuralNetAPI* netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(NeuralNetAPI* netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

@@ -69,8 +69,9 @@ CrazyAra::CrazyAra():
 #ifdef SUPPORT960
     is960(true),
 #else
-    is960(false)
+    is960(false),
 #endif
+    changedUCIoption(false)
 {
 }
 
@@ -124,7 +125,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 				<< Options << endl
 				<< "uciok" << endl;
 		}
-        else if (token == "setoption")  OptionsUCI::setoption(is);
+        else if (token == "setoption")  set_uci_option(is);
         else if (token == "go")         go(state.get(), is, evalInfo);
         else if (token == "position")   position(state.get(), is);
         else if (token == "ucinewgame") ucinewgame();
@@ -159,6 +160,12 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
     searchLimits.nodes = Options["Nodes"];
     searchLimits.movetime = Options["Fixed_Movetime"];
     searchLimits.simulations = Options["Simulations"];
+
+    if (changedUCIoption) {
+        init_search_settings();
+        init_play_settings();
+        changedUCIoption = false;
+    }
 
     string token;
     bool ponderMode = false;
@@ -397,7 +404,7 @@ bool CrazyAra::is_ready()
         netSingle->validate_neural_network();
         netBatches = create_new_net_batches(Options["Model_Directory"]);
         netBatches.front()->validate_neural_network();
-        mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, searchSettings);
+        mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
         StateConstants::init(mctsAgent->is_policy_map());
         networkLoaded = true;
@@ -455,9 +462,15 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
     return netBatches;
 }
 
-unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings& searchSettings)
+void CrazyAra::set_uci_option(istringstream &is)
 {
-    return make_unique<MCTSAgent>(netSingle, netBatches, &searchSettings, &playSettings);
+    OptionsUCI::setoption(is);
+    changedUCIoption = true;
+}
+
+unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings)
+{
+    return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
 }
 
 void CrazyAra::init_search_settings()
