@@ -38,6 +38,7 @@
 #include "stateobj.h"
 #include "environments/chess_related/inputrepresentation.h"
 #include "legacyconstants.h"
+#include "util/blazeutil.h"
 using namespace Catch::literals;
 using namespace std;
 using namespace OptionsUCI;
@@ -254,5 +255,26 @@ TEST_CASE("Board representation constants"){
     REQUIRE(StateConstants::NB_CHANNELS_VARIANTS() == legacy_constants::NB_CHANNELS_VARIANTS);
     REQUIRE(StateConstants::MAX_FULL_MOVE_COUNTER() == legacy_constants::MAX_FULL_MOVE_COUNTER);
 }
+
+
+// ==========================================================================================================
+// ||                                      Blaze-Util Tests                                                ||
+// ==========================================================================================================
+
+TEST_CASE("Blaze: first_and_second_max()"){
+    DynamicVector<float> list = {3, 42, 1, 3, 99, 8, 7};
+    float firstMax;
+    float secondMax;
+    size_t firstArg;
+    size_t secondArg;
+    first_and_second_max(list, list.size(), firstMax, secondMax, firstArg, secondArg);
+
+    REQUIRE(firstMax == 99);
+    REQUIRE(secondMax == 42);
+    REQUIRE(firstArg == 4);
+    REQUIRE(secondArg == 1);
+}
+
+
 
 #endif
