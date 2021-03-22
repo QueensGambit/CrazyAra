@@ -89,6 +89,7 @@ private:
     bool networkLoaded;
     bool ongoingSearch;
     bool is960;
+    bool changedUCIoption = false;
 
 public:
     CrazyAra();
@@ -218,7 +219,7 @@ private:
      * @param searchSettings Search settings object
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings& searchSettings);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory
@@ -233,6 +234,12 @@ private:
      * @return Vector of pointers to the newly createded objects. For every thread a sepreate net.
      */
     vector<unique_ptr<NeuralNetAPI>> create_new_net_batches(const string& modelDirectory);
+
+    /**
+     * @brief set_uci_option Updates an UCI option using the given input stream and set changedUCIoption to true.
+     * @param is Input stream
+     */
+    void set_uci_option(istringstream &is);
 };
 
 /**

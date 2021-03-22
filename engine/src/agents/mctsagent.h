@@ -52,7 +52,7 @@ using namespace crazyara;
 class MCTSAgent : public Agent
 {
 private:
-    SearchSettings* searchSettings;
+    SearchSettings* searchSettings;  // TODO: add "const" to searchSetting
     vector<SearchThread*> searchThreads;
     unique_ptr<TimeManager> timeManager;
 
@@ -145,13 +145,13 @@ public:
 
     float get_q_value_weight() const;
 
-    /**
+    /** TODO: Remove this method
      * @brief update_q_value_weight Updates the Q-value weights for the search (used for quick search)
      * @param value New value to set
      */
     void update_q_value_weight(float value);
 
-    /**
+    /** TODO: Remove this method
      * @brief update_dirichlet_epsilon Updates the amount of dirichlet noise (used for quick search)
      * @param value New value to set
      */
