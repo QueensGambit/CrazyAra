@@ -137,7 +137,7 @@ vector<size_t> argsort(const DynamicVector<T>& v)
 /**
  * @brief first_and_second_max Finds the first and second max entry with their corresponding index
  * @param v Vector
- * @param endIdx End index of the vector
+ * @param endIdx End index of the vector (endIdx-1 will be the last index in the loop)
  * @param firstMax Return value for max element
  * @param secondMax Return value for 2nd max element
  * @param firstArg Index for max element
@@ -147,17 +147,17 @@ template <typename T>
 void first_and_second_max(const DynamicVector<T>& v, size_t endIdx, T& firstMax, T& secondMax, size_t& firstArg, size_t& secondArg)
 {
     firstMax = v[0];
-    secondMax = v[1];
+    secondMax = v[0];
     firstArg = 0;
     secondArg = 0;
     for (size_t idx = 1; idx < endIdx; ++idx) {
         if (v[idx] > firstMax) {
+            // save previous best result as 2nd best
+            secondMax = firstMax;
+            secondArg = firstArg;
+            // update first best result
             firstMax = v[idx];
             firstArg = idx;
-        }
-        else if (v[idx] > secondMax) {
-            secondMax = v[idx];
-            secondArg = idx;
         }
     }
 }
