@@ -1114,8 +1114,8 @@ float get_current_cput(float visits, const SearchSettings* searchSettings)
 
 void Node::print_node_statistics(const StateObj* state, const vector<size_t>& customOrdering) const
 {
-    const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
-    const string filler = "-----+-------+--------------+-----------+------------+-------+------------";
+    const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  std  |   CP    |    Type    ";
+    const string filler = "-----+-------+--------------+-----------+------------+-------+---------+------------";
     cout << header << endl
          << std::showpoint << std::fixed << std::setprecision(7)
          << filler << endl;
@@ -1123,9 +1123,11 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
         const size_t childIdx = customOrdering.size() == get_number_child_nodes() ? customOrdering[idx] : idx;
         size_t n = 0;
         float q = Q_INIT;
+        float std = 0;
         if (childIdx < d->noVisitIdx) {
             n = d->childNumberVisits[childIdx];
             q = d->qValues[childIdx];
+            std = d->stdDev[childIdx];
         }
 
         const Action move = get_legal_actions()[childIdx];
@@ -1139,6 +1141,7 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
         cout << setw(12) << n << " | "
              << setw(9) << policyProbSmall[childIdx] << " | "
              << setw(10) << q << " | "
+             << setw(5) << std << " | "
              << setw(5) << value_to_centipawn(q) << " | ";
         if (childIdx < get_no_visit_idx() && d->childNodes[childIdx] != nullptr && d->childNodes[childIdx]->d != nullptr && d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
             cout << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(d->childNodes[childIdx]->d->nodeType)))

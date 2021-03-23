@@ -176,11 +176,19 @@ public:
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
+            d->sumPowerAvg[childIdx] = value * value;
+            d->stdDev[childIdx] = 0;
         }
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
             d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+            // update std measurement using formula from:
+            // https://subluminal.wordpress.com/2008/07/31/running-standard-deviations/#more-15
+            d->sumPowerAvg[childIdx] += (value * value - d->sumPowerAvg[childIdx]) / d->childNumberVisits[childIdx];
+            if (d->childNumberVisits[childIdx] > 2) {
+                d->stdDev[childIdx] = sqrt((d->childNumberVisits[childIdx]* d->sumPowerAvg[childIdx] - d->childNumberVisits[childIdx] * d->qValues[childIdx] * d->qValues[childIdx]) / (d->childNumberVisits[childIdx] - 1));
+            }
             assert(!isnan(d->qValues[childIdx]));
         }
 
