@@ -46,7 +46,8 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
-    isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
+    isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
+    tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0)
 {
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
     trajectoryBuffer.reserve(DEPTH_INIT);

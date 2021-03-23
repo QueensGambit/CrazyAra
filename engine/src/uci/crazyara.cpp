@@ -168,8 +168,6 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
     }
 
     string token;
-    bool ponderMode = false;
-
     searchLimits.startTime = now(); // As early as possible!
 
     while (is >> token) {
@@ -184,9 +182,7 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
         else if (token == "nodes")     is >> searchLimits.nodes;
         else if (token == "movetime")  is >> searchLimits.movetime;
         else if (token == "infinite")  searchLimits.infinite = true;
-        else if (token == "ponder")    ponderMode = true;
     }
-
     wait_to_finish_last_search();
 
     ongoingSearch = true;
@@ -252,7 +248,6 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     else
         return;
 
-    auto uiThread = make_shared<Thread>(0);
     state->set(fen, is960, variant);
     Action lastMove = ACTION_NONE;
 
