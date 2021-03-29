@@ -35,7 +35,6 @@
 #include "uci/variants.h"
 #include "thread.h"
 #include "constants.h"
-#include "stateobj.h"
 #include "environments/chess_related/inputrepresentation.h"
 #include "legacyconstants.h"
 #include "util/blazeutil.h"
@@ -120,7 +119,8 @@ TEST_CASE("Anti-Chess StartFEN"){
         }
         key += i * val;
     }
-    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008);
+//    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008); // no last move planes
+    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 4032); // with last move planes
     REQUIRE(int(max_num) == 1);
     REQUIRE(int(sum) == 224);
     REQUIRE(int(key) == 417296);
@@ -275,6 +275,93 @@ TEST_CASE("Blaze: first_and_second_max()"){
     REQUIRE(secondArg == 1);
 }
 
+// ==========================================================================================================
+// ||                                   State Environment Tests                                            ||
+// ==========================================================================================================
 
+GameInfo apply_random_moves(StateObj& state, uint movesToApply) {
+    GameInfo gameInfo;
+    while (gameInfo.nbAppliedMoves < movesToApply) {
+        REQUIRE(state.steps_from_null() == gameInfo.nbAppliedMoves);
+        vector<Action> actions = state.legal_actions();
+        const Action randomAction = actions[random() % actions.size()];
+        state.do_action(actions[random() % actions.size()]);
+        ++gameInfo.nbAppliedMoves;
+        float dummy;
+        gameInfo.givesCheck = state.gives_check(randomAction);
+        if (state.is_terminal(actions.size(), gameInfo.givesCheck, dummy) != TERMINAL_NONE)  {
+            gameInfo.reachedTerminal = true;
+            return gameInfo;
+        }
+    }
+    return gameInfo;
+}
+
+TEST_CASE("State: steps_from_null()"){
+    srand(42);
+    StateObj state;
+    state.init(0, false);
+    REQUIRE(state.steps_from_null() == 0);
+    const uint movesToApply = 42;
+    apply_random_moves(state, movesToApply);
+    REQUIRE(state.steps_from_null() == movesToApply);
+}
+
+TEST_CASE("State: Reach terminal state"){
+    srand(543);
+    StateObj state;
+    state.init(0, false);
+    const uint movesToApply = 10000;
+    GameInfo gameInfo = apply_random_moves(state, movesToApply);
+    REQUIRE(gameInfo.reachedTerminal == true);
+}
+
+TEST_CASE("State: check_result()"){
+    srand(1048);
+    // check if we reach a terminal state when choosing random moves
+    StateObj state;
+    state.init(0, false);
+    const uint movesToApply = 10000;
+    GameInfo gameInfo = apply_random_moves(state, movesToApply);
+    const Result result = state.check_result(gameInfo.givesCheck);
+    REQUIRE(result != NO_RESULT);
+    float dummy;
+    const TerminalType terminalType = state.is_terminal(state.legal_actions().size(), gameInfo.givesCheck, dummy);
+    switch(terminalType) {
+    case TERMINAL_DRAW:
+        REQUIRE(result == DRAWN);
+        break;
+    case TERMINAL_WIN:
+        if (state.side_to_move() == FIRST_PLAYER_IDX) {
+            REQUIRE(result == WHITE_WIN);
+        } else {
+            REQUIRE(result == BLACK_WIN);
+        }
+        break;
+    case TERMINAL_LOSS:
+        if (state.side_to_move() == FIRST_PLAYER_IDX) {
+            REQUIRE(result == BLACK_WIN);
+        } else {
+            REQUIRE(result == WHITE_WIN);
+        }
+        break;
+    case TERMINAL_NONE:
+        REQUIRE(false);
+        break;
+    case TERMINAL_CUSTOM:
+        // Custom behaviour
+        break;
+    }
+}
+
+TEST_CASE("State: clone()"){
+    srand(543);
+    StateObj state;
+    state.init(0, false);
+    const uint movesToApply = 7;
+    apply_random_moves(state, movesToApply);
+    unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state.clone());
+    REQUIRE(state2->fen() == state.fen());
+}
 
 #endif

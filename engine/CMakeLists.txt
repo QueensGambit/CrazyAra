@@ -46,6 +46,7 @@ endif()
 if (MODE_OPEN_SPIEL)
     project(OpenSpielAra CXX)
     add_definitions(-DMODE_OPEN_SPIEL)
+    add_definitions(-DACTION_64_BIT)
 endif()
 
 if (BUILD_TESTS)

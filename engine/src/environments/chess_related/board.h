@@ -165,15 +165,6 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
 bool leads_to_terminal(const Board& pos, Move m, StateListPtr& states);
 
 /**
- * @brief get_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
- * @param pos Board position
- * @param inCheck Determines if a king in the current position is in check (needed to differ between checkmate and stalemate).
- * It can be computed by `gives_check(<last-move-before-current-position>)`.
- * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
- */
-Result get_result(const Board& pos, bool inCheck);
-
-/**
  * @brief probe_wdl Wrapper for probe_wdl(Position& pos, Tablebases::ProbeState* result)
  * @param pos Board position
  * @param result If result == FAIL then probe was unsuccessful

@@ -112,12 +112,12 @@ public:
     Action uci_to_action(std::string &uciStr) const;
     std::string action_to_san(Action action, const std::vector<Action> &legalActions, bool leadsToWin, bool bookMove) const;
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float &customTerminalValue) const;
-    Result check_result(bool inCheck) const;
     bool gives_check(Action action) const;
     void print(std::ostream &os) const;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result);
     void set_auxiliary_outputs(const float* auxiliaryOutputs);
     OpenSpielState *clone() const;
+    void init(int variant, bool isChess960);
 };
 
 #endif // OPENSPIELSTATE_H
