@@ -332,6 +332,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
 
 unique_ptr<StateObj> init_state(Variant variant, bool is960, GamePGN& gamePGN)
 {
+    // TODO: Use state->init() here
     unique_ptr<StateObj> state= make_unique<StateObj>();
 #ifdef SUPPORT960
     if (is960) {

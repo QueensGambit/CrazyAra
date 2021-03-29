@@ -343,22 +343,6 @@ bool leads_to_terminal(const Board &pos, Move m, StateListPtr& states)
     return posCheckTerminal.is_terminal();
 }
 
-Result get_result(const Board& pos, bool inCheck)
-{
-    if (pos.is_terminal()) {
-        if (!inCheck || pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition() || pos.draw_by_insufficient_material()) {
-            return DRAWN;
-        }
-        if (pos.side_to_move() == BLACK) {
-            return WHITE_WIN;
-        }
-        else {
-            return BLACK_WIN;
-        }
-    }
-    return NO_RESULT;
-}
-
 Tablebases::WDLScore probe_wdl(Board& pos, Tablebases::ProbeState* result)
 {
     return Tablebases::probe_wdl(pos, result);

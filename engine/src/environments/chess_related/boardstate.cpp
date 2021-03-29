@@ -27,7 +27,7 @@
 #include "boardstate.h"
 #include "inputrepresentation.h"
 #include "syzygy/tbprobe.h"
-
+#include "uci/variants.h"
 
 action_idx_map OutputRepresentation::MV_LOOKUP = {};
 action_idx_map OutputRepresentation::MV_LOOKUP_MIRRORED = {};
@@ -153,6 +153,46 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, floa
         }
     }
 #endif
+#ifdef HORDE
+    if (board.is_horde()) {
+        if (board.is_horde_loss()) {
+            return TERMINAL_LOSS;
+        }
+    }
+#endif
+#ifdef KOTH
+    if (board.is_koth()) {
+        if (board.is_koth_win()) {
+            return TERMINAL_WIN;
+        }
+        if (board.is_koth_loss()) {
+            return TERMINAL_LOSS;
+        }
+    }
+#endif
+#ifdef THREECHECK
+    if (board.is_three_check()) {
+        if (board.is_three_check_win()) {
+            return TERMINAL_WIN;
+        }
+        if (board.is_three_check_loss()) {
+            return TERMINAL_LOSS;
+        }
+    }
+#endif
+#ifdef RACE
+   if (board.is_race()) {
+       if (board.is_race_win()) {
+           return TERMINAL_WIN;
+       }
+       if (board.is_race_draw()) {
+           return TERMINAL_DRAW;
+       }
+       if (board.is_race_loss()) {
+           return TERMINAL_LOSS;
+       }
+   }
+#endif
     if (numberLegalMoves == 0) {
 #ifdef ANTI
         if (board.is_anti()) {
@@ -174,11 +214,6 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, floa
 
     // normal game position
     return TERMINAL_NONE;
-}
-
-Result BoardState::check_result(bool inCheck) const
-{
-    return get_result(board, inCheck);
 }
 
 bool BoardState::gives_check(Action action) const
@@ -207,6 +242,12 @@ void BoardState::set_auxiliary_outputs(const float *auxiliaryOutputs)
 BoardState* BoardState::clone() const
 {
     return new BoardState(*this);
+}
+
+void BoardState::init(int variant, bool is960)
+{
+    states = StateListPtr(new std::deque<StateInfo>(1));
+    board.set(StartFENs[variant], is960, Variant(variant), &states->back(), nullptr);
 }
 
 #endif

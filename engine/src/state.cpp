@@ -37,6 +37,30 @@ TerminalType invert_terminal_type(TerminalType terminalType) {
     return terminalType;
 }
 
+Result State::check_result(bool inCheck) const
+{
+    float customTerminalValue;
+    TerminalType terminalType = this->is_terminal(legal_actions().size(), inCheck, customTerminalValue);
+    switch(terminalType) {
+    case TERMINAL_NONE:
+        return NO_RESULT;
+    case TERMINAL_DRAW:
+        return DRAWN;
+    case TERMINAL_WIN:
+        return side_to_move() == FIRST_PLAYER_IDX ? WHITE_WIN : BLACK_WIN;
+    case TERMINAL_LOSS:
+        return side_to_move() == FIRST_PLAYER_IDX ? BLACK_WIN : WHITE_WIN;
+    case TERMINAL_CUSTOM:
+        if (customTerminalValue > 0.0) {
+            return side_to_move() == FIRST_PLAYER_IDX ? WHITE_WIN : BLACK_WIN;
+        }
+        if (customTerminalValue < 0.0) {
+            return side_to_move() == FIRST_PLAYER_IDX ? BLACK_WIN : WHITE_WIN;
+        }
+        return DRAWN;
+    }
+}
+
 TerminalType State::random_rollout(float& customValueTerminal)
 {
     int sideToMove = this->steps_from_null() % 2;

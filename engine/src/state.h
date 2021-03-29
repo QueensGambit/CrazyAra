@@ -35,7 +35,11 @@
 #include <memory>
 
 typedef uint64_t Key;
+#ifdef ACTION_64_BIT
 typedef int64_t Action;
+#else
+typedef int32_t Action;
+#endif
 typedef uint16_t MoveIdx;
 typedef unsigned int uint;
 typedef int SideToMove;
@@ -65,7 +69,7 @@ enum Result {
     WHITE_WIN,
     BLACK_WIN,
     NO_RESULT,
-};
+};  // TODO: Check if introduction of CUSTOM_RESULT is required.
 
 /**
  * @brief is_win Return true if the given result is a win, else false
@@ -226,6 +230,14 @@ public:
     }
 
     /**
+     * @brief check_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
+     * @param inCheck Determines if a king in the current position is in check (needed to differ between checkmate and stalemate).
+     * It can be computed by `gives_check(<last-move-before-current-position>)`.
+     * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
+     */
+    Result check_result(bool inCheck) const;
+
+    /**
      * @brief random_rollout Does a random rollout until it reaches a terminal node.
      * This functions modifies the current state and returns the terminal type.
      * @return Terminal type
@@ -351,14 +363,6 @@ public:
     virtual TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const = 0;
 
     /**
-     * @brief check_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
-     * @param inCheck Determines if a king in the current position is in check (needed to differ between checkmate and stalemate).
-     * It can be computed by `gives_check(<last-move-before-current-position>)`.
-     * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
-     */
-    virtual Result check_result(bool inCheck) const = 0;
-
-    /**
      * @brief gives_check Checks if the current action is a checking move
      * @param action Action
      * @return bool
@@ -405,6 +409,14 @@ public:
      * @return deep copy
      */
     virtual State* clone() const = 0;
+
+    /**
+     * @brief init Initializes the current state to the starting position.
+     * If there a multiple possible starting positions either choose a random or a fixed one.
+     * @param isChess960 If true 960 mode will be active
+     * @param variant Variant which the position corresponds to
+     */
+    virtual void init(int variant, bool isChess960) = 0;
 };
 
 #endif // GAMESTATE_H

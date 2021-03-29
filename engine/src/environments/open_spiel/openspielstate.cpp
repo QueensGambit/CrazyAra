@@ -93,7 +93,10 @@ unsigned int OpenSpielState::number_repetitions() const
 
 int OpenSpielState::side_to_move() const
 {
-    return spielState->CurrentPlayer();
+    // spielState->CurrentPlayer()) may return negative values for terminal values.
+    // This implementation assumes a two player game with ordered turns.
+    // MoveNumber() assumes to be the number of plies and not chess moves.
+    return spielState->MoveNumber() % 2;
 }
 
 Key OpenSpielState::hash_key() const
@@ -137,36 +140,6 @@ TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, bool inCheck, 
     return TERMINAL_NONE;
 }
 
-Result OpenSpielState::check_result(bool inCheck) const
-{
-    float dummy;
-    const TerminalType terminalType = is_terminal(0, 0, dummy);
-
-    switch(terminalType) {
-    case TERMINAL_WIN:
-        // spielState->CurrentPlayer()) my return negative values
-        // this implementation assumes a two player game with ordered turns
-        switch (spielState->MoveNumber() % 2) {
-        case 0:
-            return WHITE_WIN;
-        default:
-            return BLACK_WIN;
-        }
-    case TERMINAL_LOSS:
-        switch (spielState->MoveNumber() % 2) {
-        case 0:
-            return BLACK_WIN;
-        default:
-            return WHITE_WIN;
-        }
-    case TERMINAL_NONE:
-        return NO_RESULT;
-    default:
-        return DRAWN;
-    }
-    return NO_RESULT;
-}
-
 bool OpenSpielState::gives_check(Action action) const
 {
     // gives_check() is unavailable
@@ -191,4 +164,8 @@ void OpenSpielState::set_auxiliary_outputs(const float* auxiliaryOutputs)
 OpenSpielState* OpenSpielState::clone() const
 {
     return new OpenSpielState(*this);
+}
+
+void init(int variant, bool isChess960) {
+    spielState = spielGame->NewInitialState();
 }
