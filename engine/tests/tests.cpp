@@ -285,10 +285,10 @@ GameInfo apply_random_moves(StateObj& state, uint movesToApply) {
         REQUIRE(state.steps_from_null() == gameInfo.nbAppliedMoves);
         vector<Action> actions = state.legal_actions();
         const Action randomAction = actions[random() % actions.size()];
+        gameInfo.givesCheck = state.gives_check(randomAction);
         state.do_action(actions[random() % actions.size()]);
         ++gameInfo.nbAppliedMoves;
         float dummy;
-        gameInfo.givesCheck = state.gives_check(randomAction);
         if (state.is_terminal(actions.size(), gameInfo.givesCheck, dummy) != TERMINAL_NONE)  {
             gameInfo.reachedTerminal = true;
             return gameInfo;
