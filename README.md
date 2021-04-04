@@ -160,32 +160,7 @@ Please have a look at [Supervised training](https://github.com/QueensGambit/Craz
 
 ## Related
 
-Similar open source neural network chess projects are listed below:
-
-### chess-alpha-zero
-In CrazyAra v.0.1.0 the Monte-Carlo-Tree-Search (MCTS) was imported and adapted from the following project: 
-* https://github.com/Zeta36/chess-alpha-zero
-
-For CrazyAra v.0.2.0 the MCTS was rewritten from scratch adding new functionality:
-* Reusing the old search tree for future positions
-* Node and child-nodes structure using numpy-arrays
-* Always using mate-in-one connection if possible in the current search tree
-
-### SixtyFour crazyhouse engine
-* https://github.com/FTdiscovery/64CrazyhouseDeepLearning
-
-### Leela-Chess-Zero chess engine
-* http://lczero.org/
-* https://github.com/LeelaChessZero/lc0
-
-### Allie(Stein) chess engine
-* https://github.com/manyoso/allie
-
-### Scorpio chess engine 
-* https://github.com/dshawul/Scorpio
-
-### Ceres - an MCTS chess engine for research and recreation 
-* https://github.com/dje-dev/Ceres
+Similar open source neural network chess projects are listed [here](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Similar-Open-Source-Projects).
 
 ## Research
 
@@ -200,7 +175,7 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 ## Publications
 
-*   J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero using Monte-Carlo Graph Search**, [preprint](https://arxiv.org/abs/2012.11045)
+*   J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero Using Monte-Carlo Graph Search**, [preprint](https://arxiv.org/abs/2012.11045)
 
 ```latex
 @inproceedings{czech2021icaps_mcgs,
