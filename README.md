@@ -90,8 +90,9 @@ A default model is included for [**releases >= 0.8.0**](https://github.com/Queen
 More information about the different models can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Model-description).
 
 ## Variants
-The current list of available chess variants include:
+Binaries and models are available for the following chess variants:
 *   [Crazyhouse](https://lichess.org/variant/crazyhouse)
+*   [Chess](https://en.wikipedia.org/wiki/Chess)
 
 ## Documentation
 For more details about the initial python version visit the wiki pages:
@@ -188,40 +189,7 @@ For CrazyAra v.0.2.0 the MCTS was rewritten from scratch adding new functionalit
 
 ## Research
 
-The following is a collection of useful research links
-
-AlphaGo Zero paper:
-https://arxiv.org/pdf/1712.01815.pdf
-
-Journal Nature:
-https://storage.googleapis.com/deepmind-media/alphago/AlphaGoNaturePaper.pdf
-
-CrazyAra paper:
-https://arxiv.org/abs/1908.06660
-
-SixtyFour engine paper:
-https://arxiv.org/abs/1908.09296v1
-
-Hyper-Parameter Sweep on AlphaZero General:
-https://arxiv.org/abs/1903.08129
-
-DeepMind Blogpost:
-https://deepmind.com/blog/alphago-zero-learning-scratch/
-
-How AlphaGo Zero works - Google DeepMind
-https://www.youtube.com/watch?v=MgowR4pq3e8
-
-Deep Mind's AlphaGo Zero - EXPLAINED
-https://www.youtube.com/watch?v=NJBLx29JuHs
-
-A Simple Alpha(Go) Zero Tutorial
-https://web.stanford.edu/~surag/posts/alphazero.html
-
-AlphaGo Zero - How and Why it Works:
-http://tim.hibal.org/blog/alpha-zero-how-and-why-it-works/
-
-Simple Chess AI implementation
-https://github.com/mnahinkhan/Chess/blob/master/Chess/chess.py
+The [following list](https://github.com/QueensGambit/CrazyAra/wiki/Research-Links) is a collection of useful research links.
 
 ## Licence
 
@@ -232,7 +200,7 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 ## Publications
 
-J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero using Monte-Carlo Graph Search**, [preprint](https://arxiv.org/abs/2012.11045)
+*   J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero using Monte-Carlo Graph Search**, [preprint](https://arxiv.org/abs/2012.11045)
 
 ```latex
 @inproceedings{czech2021icaps_mcgs,
