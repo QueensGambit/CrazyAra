@@ -11,6 +11,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 &nbsp; 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/39c3329d0cea4186b5e4d32cfb6a4d5d)](https://www.codacy.com/manual/QueensGambit/CrazyAra?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=QueensGambit/CrazyAra&amp;utm_campaign=Badge_Grade)
+[![ArXiv Badge2](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/2012.11045)
 [![ArXiv Badge](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/1908.06660)
 [![Thesis Badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
 [![Journal Badge](https://img.shields.io/badge/Journal-Frontiers-green.svg)](https://www.frontiersin.org/articles/10.3389/frai.2020.00024/full)
@@ -27,8 +28,7 @@
 *   [Variants](#variants)
 *   [Documentation](#documentation)
 *   [Compilation](#compilation)
-*   [Rating](#rating)
-*   [Libraries](#libraries)
+*   [Acknowledgments](#acknowledgments)
 *   [Players](#players)
 *   [Related](#related)
 *   [Licence](#licence)
@@ -85,30 +85,7 @@ The current _CrazyAra_ release and all its previous versions can also be found a
 
 The extracted model should be placed in the same directory as the engine executable.
 The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
-Model-0S-96 is included in [**release 0.8.0**](https://github.com/QueensGambit/CrazyAra/releases/tag/0.8.0).
-
-The following models are available for download:
-
-#### Release 0.7.0
-
-For release 0.7.0, a pre-initialized model on human games was updated by applying reinforcement learning.
-
-The 45th model update was obtained after generating ~ 1.05 million self-play games. It was also used for the [100 evaluation games](https://github.com/QueensGambit/CrazyAra/wiki/v0.7.0) with _Multi-Variant-Stockfish_:
-*   [model-os-45-risev2.zip](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/model-os-45-risev2.zip)
-
-The reinforcement learning loop was then continued until a total of ~ 2.37 million self-play games, resulting in the 96th model update:
-*   [model-os-96-risev2.zip](https://github.com/QueensGambit/CrazyAra/releases/download/0.7.0/model-os-96-risev2.zip)
-
-#### Release 0.6.0
-
-For release 0.6.0 and all previous releases, models were solely based on supervised learning on the lichess.org data set as described in our [paper](https://arxiv.org/abs/1908.06660).
-
-*   [4-value-8-policy](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/4-value-8-policy.zip)
-*   [8-value-16-policy](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/8-value-16-policy.zip)
-*   [8-value-policy-map](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/4-value-8-policy.zip)
-*   [8-value-policy-map-mobile / RISEv2-mobile](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip)
-*   [8-value-policy-map-preAct-relu+bn](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip)
-*   [RISEv1 (CrazyAraFish weights)](https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/CrazyAraFish_RISEv1.zip)
+A default model is included for [**releases >= 0.8.0**](https://github.com/QueensGambit/CrazyAra/releases/).
 
 More information about the different models can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Model-description).
 
@@ -134,38 +111,7 @@ For more details about the initial python version visit the wiki pages:
 
 Instructions can be found in the [wiki](https://github.com/QueensGambit/CrazyAra/wiki/Build-instructions).
 
-## Rating
-
-The playing strength of _CrazyAra_ has been evaluated over the course of development.
-
-### Playing strength of CrazyAra 0.3.1
-
-_CrazyAra 0.3.1_ played multiple world champion Justin Tan (LM [JannLee](https://lichess.org/@/JannLee)) at 18:00 GMT
- on 21st December in five official matches and won 4-1.
-You can find a detailed report about the past event published by [okei](https://lichess.org/@/okei) here:
-* https://zhchess.blogspot.com/2018/12/crazyara-plays-jannlee-for-christmas.html
-
-_CrazyAra 0.3.1_ was also put to the test against known crazyhouse engines:
-* [Strength evaluation  v0.3.1](https://github.com/QueensGambit/CrazyAra/wiki/v0.3.1)
-
-### Playing strength of CrazyAra 0.5.0
-
-[Matuiss2](https://github.com/Matuiss2) generated 25 games (Intel i5 8600k, 5GHz) between _CrazyAra 0.3.1_ and _CrazyAra 0.5.0_:
-
-```python
-[TimeControl "40/300"]
-Score of CrazyAra 0.5.0 vs CrazyAra 0.3.1: 22 - 3 - 0 [0.88]
-Elo difference: 346 +/- NaN
-
-25 of 25 games finished.
-```
-
-### Playing strength of CrazyAra 0.6.0
-
-_CrazyAra 0.6.0_ is the first C++ release and has been evaluated in our [paper](https://arxiv.org/abs/1908.06660) (section **11 Experimental Evaluation**).
-
-
-## Libraries
+## Acknowledgments
 
 These libraries are used in the python version:
 
@@ -177,8 +123,10 @@ These libraries are used in the python version:
 The following libraries are used to run the C++ version of _CrazyAra_:
 
 *   [**Multi Variant Stockfish**](https://github.com/ddugovic/Stockfish): Stockfish fork specialized to play chess and some chess variants
-    *   Used for move generation and board representation as a replacement for [python-chess](https://github.com/niklasf/python-chess).
+    *   Used for move generation, board representation and syzgy parsing as a replacement for [python-chess](https://github.com/niklasf/python-chess).
 *   [**MXNet C++ Package**](https://github.com/apache/incubator-mxnet/tree/master/cpp-package): A flexible and efficient library for deep learning
+	*   Used as the deep learning backend for loading and inference of the trained neural network
+*   [**TensorRT C++ Package**](https://github.com/apache/incubator-mxnet/tree/master/cpp-package): A C++ library for high performance inference on NVIDIA GPUs and deep learning accelerators
 	*   Used as the deep learning backend for loading and inference of the trained neural network
 *   [**Blaze**](https://bitbucket.org/blaze-lib/blaze/src/master/): An open-source, high-performance C++ math library for dense and sparse arithmetic
     *   Used for arithmetic, numerical vector operation within the MCTS search as a replacement for [NumPy](https://numpy.org/)
@@ -235,6 +183,9 @@ For CrazyAra v.0.2.0 the MCTS was rewritten from scratch adding new functionalit
 ### Scorpio chess engine 
 * https://github.com/dshawul/Scorpio
 
+### Ceres - an MCTS chess engine for research and recreation 
+* https://github.com/dje-dev/Ceres
+
 ## Research
 
 The following is a collection of useful research links
@@ -280,6 +231,18 @@ The source-code including all project files is licensed under the GPLv3-License 
 For details about the GPL v3 license, refer to the file [LICENSE](https://github.com/QueensGambit/CrazyAra/blob/master/LICENSE).
 
 ## Publications
+
+J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero using Monte-Carlo Graph Search**, [preprint](https://arxiv.org/abs/2012.11045)
+
+```latex
+@inproceedings{czech2021icaps_mcgs,
+               crossref = { https://github.com/QueensGambit/CrazyAra },
+	       year = { 2021 },
+	       author = { Johannes Czech and Patrick Korus and Kristian Kersting },
+	       booktitle = { Proceedings of the 31st International Conference on Automated Planning and Scheduling (ICAPS) },
+	       title = { Improving {AlphaZero} Using {Monte-Carlo} {Graph} {Search} } }
+```
+
 *   J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [link](https://www.frontiersin.org/article/10.3389/frai.2020.00024)
 ```latex
 @ARTICLE{10.3389/frai.2020.00024,
