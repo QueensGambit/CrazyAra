@@ -17,8 +17,6 @@ import mxnet as mx
 from mxnet.contrib.quantization import *
 sys.path.insert(0,'../../../')
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.configs.train_config import train_config
-
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 
 
@@ -96,7 +94,7 @@ def main():
     # construct the model name based on the parameter file
     prefix = symbol_path.split("/")[-1].replace("-symbol.json", "")
     sym = mx.sym.load(symbol_path)
-    sym = remove_labels(sym, train_config['value_output']+'_output', train_config['policy_output']+'_output')
+    sym = remove_labels(sym, main_config['value_output']+'_output', main_config['policy_output']+'_output')
 
     # https://github.com/apache/incubator-mxnet/issues/6951
     save_dict = mx.nd.load(params_path)
@@ -122,9 +120,9 @@ def main():
                                                     label_names=label_names,
                                                     logger=logger)
 
-    sym_name = '%s-symbol.json' % (prefix + '-quantized')
+    sym_name = '%s-symbol.json' % (prefix + '-int8')
     save_symbol(sym_name, qsym, logger)
-    param_name = '%s-%04d.params' % (prefix + '-quantized', epoch)
+    param_name = '%s-%04d.params' % (prefix + '-int8', epoch)
     save_params(param_name, qarg_params, aux_params, logger)
 
 
