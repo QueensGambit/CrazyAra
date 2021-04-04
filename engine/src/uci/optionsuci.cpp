@@ -104,6 +104,8 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
 #ifdef TENSORRT
     o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
+#else
+    o["Precision"]                     << Option("int8", {"float32", "int8"});
 #endif
 #ifdef USE_RL
     o["Reuse_Tree"]                    << Option(false);

@@ -30,15 +30,11 @@
 #include "stateobj.h"
 
 
-MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT) :
+MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, const string& strPrecision, bool tensorRT) :
     NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, tensorRT),
     inputShape(Shape(miniBatchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()))
 {
-    modelFilePath = modelDir + get_file_ending_with(modelDir, ".json");
-    parameterFilePath = get_file_ending_with(modelDir, ".params");;
-    modelName = parameterFilePath.substr(0, parameterFilePath.length()-string(".params").length());
-    parameterFilePath = modelDir + parameterFilePath;
-
+    fill_model_paths(strPrecision);
     info_string("json file:", modelFilePath);
 
     if (ctx == "cpu" || ctx == "CPU") {
@@ -219,6 +215,42 @@ void set_shape(nn_api::Shape &shape, const Shape &mxnetShape)
     for (uint idx = 0; idx < mxnetShape.ndim(); ++idx) {
         shape.v[idx] = mxnetShape[idx];
     }
+}
+
+void MXNetAPI::fill_model_paths(const string& strPrecision)
+{
+    vector<string> files = get_directory_files(modelDir);
+    if (strPrecision == "int8") {
+        const vector<string>& int8Files = get_items_by_elment(files, "int8", true);
+        for (auto s : int8Files) {
+            cout << s << endl;
+        }
+        if (int8Files.size() < 2) {  // we need at least to files
+            info_string("No int8 model weights were found in directory " + modelDir);
+            info_string("Falling back to float32 weights.");
+        }
+        else {
+            files = int8Files;
+        }
+    }
+    if (strPrecision == "float32") {
+        files = get_items_by_elment(files, "int8", false);
+    }
+    const string fileSuffixModel = ".json";
+    modelFilePath = get_string_ending_with(files, fileSuffixModel);
+    if (modelFilePath == "") {
+        throw invalid_argument( "The given directory at " + modelDir + " doesn't contain a file ending with " + fileSuffixModel);
+    }
+    modelFilePath = modelDir + modelFilePath;
+
+    const string fileSuffixParams = ".params";
+    parameterFilePath = get_string_ending_with(files, fileSuffixParams);
+    if (parameterFilePath == "") {
+        throw invalid_argument( "The given directory at " + modelDir + " doesn't contain a file ending with " + fileSuffixParams);
+    }
+
+    modelName = parameterFilePath.substr(0, parameterFilePath.length()-fileSuffixParams.length());
+    parameterFilePath = modelDir + parameterFilePath;
 }
 
 #endif

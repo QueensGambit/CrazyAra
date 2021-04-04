@@ -52,7 +52,7 @@ private:
     Context globalCtx = Context::cpu();
 
 public:
-    MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT);
+    MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory,  const string& strPrecision, bool tensorRT);
     ~MXNetAPI();
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
@@ -93,6 +93,13 @@ protected:
      * @return Policy NDArray
      */
     NDArray predict(float* inputPlanes, float& value);
+
+private:
+    /**
+     * @brief fill_model_paths Fills the variables modelFilePath, parameterFilePath and modelName
+     * @param strPrecision Neural network precision
+     */
+    void fill_model_paths(const string& strPrecision);
 };
 
 /**
