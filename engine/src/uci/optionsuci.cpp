@@ -90,8 +90,10 @@ void OptionsUCI::init(OptionsMap &o)
     o["MCTS_Solver"]                   << Option(true);
 #ifdef MODE_CRAZYHOUSE
     o["Model_Directory"]               << Option("model/crazyhouse");
-#else
+#elif defined MODE_CHESS
     o["Model_Directory"]               << Option("model/chess");
+#else
+    o["Model_Directory"]               << Option("model");
 #endif
     o["Move_Overhead"]                 << Option(20, 0, 5000);
     o["MultiPV"]                       << Option(1, 1, 99999);
