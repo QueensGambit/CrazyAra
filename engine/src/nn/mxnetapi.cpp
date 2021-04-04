@@ -222,9 +222,6 @@ void MXNetAPI::fill_model_paths(const string& strPrecision)
     vector<string> files = get_directory_files(modelDir);
     if (strPrecision == "int8") {
         const vector<string>& int8Files = get_items_by_elment(files, "int8", true);
-        for (auto s : int8Files) {
-            cout << s << endl;
-        }
         if (int8Files.size() < 2) {  // we need at least to files
             info_string("No int8 model weights were found in directory " + modelDir);
             info_string("Falling back to float32 weights.");
