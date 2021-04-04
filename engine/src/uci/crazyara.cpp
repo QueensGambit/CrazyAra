@@ -344,7 +344,7 @@ void CrazyAra::arena(istringstream &is)
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings);
     netSingleContender = create_new_net_single(Options["Model_Directory_Contender"]);
     netBatchesContender = create_new_net_batches(Options["Model_Directory_Contender"]);
-    mctsAgentContender = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, searchSettings);
+    mctsAgentContender = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings);
     size_t numberOfGames;
     is >> numberOfGames;
     TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender.get(), numberOfGames, variant);
