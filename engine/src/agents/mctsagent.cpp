@@ -220,7 +220,7 @@ void MCTSAgent::update_nps_measurement(float curNPS)
 {
     if (searchSettings->useNPSTimemanager) {
         ++nbNPSentries;
-        overallNPS += 1/nbNPSentries * (curNPS - overallNPS);
+        overallNPS += 1.0f/nbNPSentries * (curNPS - overallNPS);
     }
 }
 

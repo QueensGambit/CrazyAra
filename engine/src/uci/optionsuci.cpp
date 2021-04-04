@@ -50,13 +50,13 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Dirichlet_Epsilon"]       << Option(0, 0, 99999);
 #endif
     o["Centi_Dirichlet_Alpha"]         << Option(20, 1, 99999);
+    o["Centi_Epsilon_Checks"]          << Option(1, 0, 100);
+    o["Centi_Epsilon_Greedy"]          << Option(5, 0, 100);
 //    o["Centi_U_Init"]                  << Option(100, 0, 100);         currently disabled
 //    o["Centi_U_Min"]                   << Option(100, 0, 100);         currently disabled
 //    o["U_Base"]                        << Option(1965, 0, 99999);      currently disabled
     o["Centi_Node_Temperature"]        << Option(170, 1, 99999);
-    o["Centi_Q_Value_Weight"]          << Option(0, 0, 99999);
-    o["Centi_Q_Thresh_Init"]           << Option(50, 0, 100);
-    o["Centi_Q_Thresh_Max"]            << Option(90, 0, 100);
+    o["Centi_Q_Value_Weight"]          << Option(100, 0, 99999);
 #ifdef USE_RL
     o["Centi_Quantile_Clipping"]       << Option(0, 0, 100);
 #else
@@ -81,7 +81,6 @@ void OptionsUCI::init(OptionsMap &o)
     o["Context"]                       << Option("cpu");
 #endif
     o["CPuct_Base"]                    << Option(19652, 1, 99999);
-    o["Enhance_Checks"]                << Option(false);
 //    o["Enhance_Captures"]              << Option(false);         currently disabled
     o["First_Device_ID"]               << Option(0, 0, 99999);
     o["Fixed_Movetime"]                << Option(0, 0, 99999999);
@@ -90,9 +89,9 @@ void OptionsUCI::init(OptionsMap &o)
     o["Max_Search_Depth"]              << Option(99, 1, 99999);
     o["MCTS_Solver"]                   << Option(true);
 #ifdef MODE_CRAZYHOUSE
-    o["Model_Directory"]               << Option("model");
+    o["Model_Directory"]               << Option("model/crazyhouse");
 #else
-    o["Model_Directory"]               << Option("model");
+    o["Model_Directory"]               << Option("model/chess");
 #endif
     o["Move_Overhead"]                 << Option(20, 0, 5000);
     o["MultiPV"]                       << Option(1, 1, 99999);
@@ -104,8 +103,6 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef TENSORRT
     o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
 #endif
-    o["Q_Thresh_Base"]                 << Option(1965, 0, 99999);
-    o["Random_Playout"]                << Option(false);
 #ifdef USE_RL
     o["Reuse_Tree"]                    << Option(false);
 #else
@@ -116,16 +113,14 @@ void OptionsUCI::init(OptionsMap &o)
 #else
     o["Temperature_Moves"]             << Option(0, 0, 99999);
 #endif
-    o["Use_Advantage"]                 << Option(false);
-    o["Use_NPS_Time_Manager"]          << Option(false);
+    o["Use_NPS_Time_Manager"]          << Option(true);
 #ifdef TENSORRT
     o["Use_TensorRT"]                  << Option(true);
 #endif
-    o["Use_Transposition_Table"]       << Option(true);
 #ifdef SUPPORT960
     o["UCI_Chess960"]                  << Option(true);
 #endif
-    o["Search_Type"]                   << Option("mcts", {"mcts"});
+    o["Search_Type"]                   << Option("mcgs", {"mcgs", "mcts"});
 #ifdef USE_RL
     o["Simulations"]                   << Option(3200, 0, 99999999);
 #else

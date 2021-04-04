@@ -474,12 +474,13 @@ void CrazyAra::init_search_settings()
     searchSettings.multiPV = Options["MultiPV"];
     searchSettings.threads = Options["Threads"] * get_num_gpus(Options);
     searchSettings.batchSize = Options["Batch_Size"];
-    searchSettings.useTranspositionTable = Options["Use_Transposition_Table"];
+    searchSettings.useMCGS = Options["Search_Type"] == "mcgs";
 //    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
 //    searchSettings.uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
 //    searchSettings.uBase = Options["U_Base"];                                   currently disabled
     searchSettings.qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
-    searchSettings.enhanceChecks = Options["Enhance_Checks"];
+    searchSettings.epsilonChecksCounter = round((1.0f / Options["Centi_Epsilon_Checks"]) * 100.0f);
+    searchSettings.epsilonGreedyCounter = round((1.0f / Options["Centi_Epsilon_Greedy"]) * 100.0f);
 //    searchSettings.enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
     searchSettings.cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
     searchSettings.cpuctBase = Options["CPuct_Base"];
@@ -487,9 +488,6 @@ void CrazyAra::init_search_settings()
     searchSettings.dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
     searchSettings.nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
     searchSettings.virtualLoss = Options["Centi_Virtual_Loss"] / 100.0f;
-    searchSettings.qThreshInit = Options["Centi_Q_Thresh_Init"] / 100.0f;
-    searchSettings.qThreshMax = Options["Centi_Q_Thresh_Max"] / 100.0f;
-    searchSettings.qThreshBase = Options["Q_Thresh_Base"];
     searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
@@ -497,7 +495,6 @@ void CrazyAra::init_search_settings()
     is960 = Options["UCI_Chess960"];
 #endif
     searchSettings.useNPSTimemanager = Options["Use_NPS_Time_Manager"];
-    searchSettings.useRandomPlayout = Options["Random_Playout"];
     if (string(Options["SyzygyPath"]).empty() || string(Options["SyzygyPath"]) == "<empty>") {
         searchSettings.useTablebase = false;
     }
