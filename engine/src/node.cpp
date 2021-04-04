@@ -1102,11 +1102,6 @@ float get_visits(Node* node)
     return node->get_visits();
 }
 
-float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits)
-{
-    return searchSettings->qThreshMax - exp(-numberVisits / searchSettings->qThreshBase) * (searchSettings->qThreshMax - searchSettings->qThreshInit);
-}
-
 float get_current_cput(float visits, const SearchSettings* searchSettings)
 {
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;

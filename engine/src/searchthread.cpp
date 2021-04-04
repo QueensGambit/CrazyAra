@@ -77,7 +77,7 @@ void SearchThread::set_is_running(bool value)
 
 NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx, bool inCheck)
 {
-    if(searchSettings->useTranspositionTable) {
+    if(searchSettings->useMCGS) {
         mapWithMutex->mtx.lock();
         unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
         if(it != mapWithMutex->hashTable.end() &&
@@ -149,7 +149,7 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
         currentNode->lock();
         childIdx = get_best_action_index(currentNode, true, 0);
         Node* nextNode = currentNode->get_child_node(childIdx);
-        if (nextNode == nullptr || !nextNode->is_playout_node() || nextNode->get_visits() < RANDOM_MOVE_COUNTER || nextNode->get_node_type() != UNSOLVED) {
+        if (nextNode == nullptr || !nextNode->is_playout_node() || nextNode->get_visits() < searchSettings->epsilonGreedyCounter || nextNode->get_node_type() != UNSOLVED) {
             currentNode->unlock();
             break;
         }
@@ -167,13 +167,13 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
     Node* currentNode = rootNode;
 
     childIdx = uint16_t(-1);
-    if (searchSettings->useRandomPlayout && rootNode->is_playout_node() && rand() % RANDOM_MOVE_COUNTER == 0) {
+    if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
             currentNode->lock();
             random_playout(description, currentNode, childIdx);
             currentNode->unlock();
     }
-    else if (searchSettings->enhanceChecks && rootNode->is_playout_node() && rand() % CHECK_ENHANCE_COUNTER_PERIOD == 0) {
+    else if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
             currentNode->lock();
             childIdx = select_enhanced_move(currentNode);
@@ -303,7 +303,7 @@ void SearchThread::set_nn_results_to_child_nodes()
             fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
         }
         ++batchIdx;
-        if (searchSettings->useTranspositionTable) {
+        if (searchSettings->useMCGS) {
             mapWithMutex->mtx.lock();
             mapWithMutex->hashTable.insert({node->hash_key(), node});
             mapWithMutex->mtx.unlock();

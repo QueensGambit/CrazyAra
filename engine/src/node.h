@@ -686,13 +686,6 @@ typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
 
 /**
- * @brief get_current_q_thresh Calculates the current q-thresh factor which is used to disable the effect of the q-value for low visited nodes
- * for the final move selection after the search
- * @return float
- */
-float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits);
-
-/**
  * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
  * @return float
  */

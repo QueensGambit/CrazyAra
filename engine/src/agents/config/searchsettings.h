@@ -29,6 +29,7 @@
 #define SEARCHSETTINGS_H
 
 #include <cstdlib>
+#include <cstdint>
 
 struct SearchSettings
 {
@@ -42,29 +43,17 @@ struct SearchSettings
     float qValueWeight;
     float virtualLoss;
     bool verbose;
-    bool enhanceChecks;
-    bool enhanceCaptures;
+    uint_fast8_t epsilonChecksCounter;
+//    bool enhanceCaptures;   currently not support
 //    bool useFutureQValues;  currently not supported
-    bool useTranspositionTable;
+    bool useMCGS;
     float cpuctInit;
     float cpuctBase;
     float uInit;
     float uMin;
     float uBase;
-    float qThreshInit;
-    float qThreshMax;
-    float qThreshBase;
     float randomMoveFactor;
 
-    // adaption of checking and capture moves (currently not as UCI parameters)
-    // Threshold probability for checking moves
-    float threshCheck;
-    // Factor based on the maximum probability with which checks will be increased
-    float checkFactor;
-    // Threshold probability for capture moves
-    float threshCapture;
-    // Factor based on the maximum probability with which captures will be increased
-    float captureFactor;
     // If true, the exact given node count doesn't need to reached, but search can be stopped earlier
     bool allowEarlyStopping;
     // early break out based on max node visits in tree; increases time for falling eval
@@ -72,7 +61,7 @@ struct SearchSettings
     // boolean indicator if tablebases were loaded correctly
     bool useTablebase;
     // If true random exploration is used
-    bool useRandomPlayout;
+    uint_fast8_t epsilonGreedyCounter;
     // If the tree or parts of the treee can be reused for the next search
     bool reuseTree;
     // If true, then the MCTS solver for terminals and tablebases will be active
