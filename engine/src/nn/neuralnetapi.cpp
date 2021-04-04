@@ -28,15 +28,24 @@
 #include "../stateobj.h"
 
 
-string get_file_ending_with(const string& dir, const string& suffix) {
-    const vector<string>& files = get_directory_files(dir);
-    for (const string& file : files) {
-        if (has_suffix(file, suffix)) {
-            return file;
+string get_string_ending_with(const vector<string>& stringVector, const string& suffix) {
+    for (const string& curString : stringVector) {
+        if (has_suffix(curString, suffix)) {
+            return curString;
         }
     }
-    throw invalid_argument( "The given directory at " + dir + " doesn't contain a file ending with " + suffix);
     return "";
+}
+
+vector<string> get_items_by_elment(const vector<string> &stringVector, const string &targetString, bool shouldContain)
+{
+    vector<string> returnVector;
+    for (const string& curString : stringVector) {
+        if ((curString.find(targetString) == std::string::npos) == !shouldContain) {
+            returnVector.emplace_back(curString);
+        }
+    }
+    return returnVector;
 }
 
 

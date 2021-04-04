@@ -65,12 +65,22 @@ bool has_suffix(const std::string &str, const std::string &suffix)
 }  // namespace
 
 /**
- * @brief get_file_ending_with Returns the first file of a directory ending with the given suffix
- * @param dir Directory where to look for the file
+ * @brief get_string_ending_with Returns the first string of a list of strings ending with the given suffix
+ * @param stringVector Vector of strings
  * @param suffix Suffix which must be at the end of the file
  * @return The filename of found file excluding the directory and "" and invalid_argument if no file was found
  */
-string get_file_ending_with(const string& dir, const string& suffix);
+string get_string_ending_with(const vector<string>& stringVector, const string& suffix);
+
+/**
+ * @brief get_items_with_elment Returns a vector of all elements of stringVector which contain element
+ * @param stringVector Vector of strings
+ * @param targetString String which searched for in all string vector items
+ * @param shouldContain Boolean indicating if you want to get a vector where each item contains the targetString or
+ * a vector where each item does not contain the targetString
+ * @return new vector
+ */
+vector<string> get_items_by_elment(const vector<string>& stringVector, const string& targetString, bool shouldContain);
 
 
 template <typename T>
