@@ -48,6 +48,15 @@ vector<string> get_items_by_elment(const vector<string> &stringVector, const str
     return returnVector;
 }
 
+string get_file_ending_with(const string& dir, const string& suffix) {
+    const vector<string> files = get_directory_files(dir);
+    const string retString = get_string_ending_with(files, suffix);
+    if (retString == "") {
+        throw invalid_argument( "The given directory at " + dir + " doesn't contain a file ending with " + suffix);
+    }
+    return retString;
+}
+
 
 unsigned int NeuralNetAPI::get_batch_size() const
 {

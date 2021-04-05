@@ -82,6 +82,14 @@ string get_string_ending_with(const vector<string>& stringVector, const string& 
  */
 vector<string> get_items_by_elment(const vector<string>& stringVector, const string& targetString, bool shouldContain);
 
+/**
+ * @brief get_file_ending_with Returns the first file of a directory ending with the given suffix
+ * @param dir Directory where to look for the file
+ * @param suffix Suffix which must be at the end of the file
+ * @return The filename of found file excluding the directory and "" and invalid_argument if no file was found
+ */
+string get_file_ending_with(const string& dir, const string& suffix);
+
 
 template <typename T>
 /**
