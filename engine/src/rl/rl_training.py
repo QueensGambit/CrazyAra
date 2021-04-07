@@ -50,7 +50,7 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, conve
     ctx = mx.gpu(train_config.device_id) if train_config.context == "gpu" else mx.cpu()
     # set a specific seed value for reproducibility
     train_config.nb_parts = len(glob.glob(main_config["planes_train_dir"] + '**/*.zip'))
-    logging.info("number parts: %d" % train_config.nb_parts)
+    logging.info("number parts for training: %d" % train_config.nb_parts)
     train_objects = TrainObjects()
 
     if train_config.nb_parts <= 0:
@@ -72,7 +72,7 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, conve
     # calculate how many iterations per epoch exist
     nb_it_per_epoch = (len(x_val) * train_config.nb_parts) // train_config.batch_size
     # one iteration is defined by passing 1 batch and doing backprop
-    train_config.total_it = int(nb_it_per_epoch * train_config.nb_epochs)
+    train_config.total_it = int(nb_it_per_epoch * train_config.nb_training_epochs)
 
     train_objects.lr_schedule = CosineAnnealingSchedule(train_config.min_lr, train_config.max_lr, max(train_config.total_it * .7, 1))
     train_objects.lr_schedule = LinearWarmUp(train_objects.lr_schedule, start_lr=train_config.min_lr, length=max(train_config.total_it * .25, 1))
