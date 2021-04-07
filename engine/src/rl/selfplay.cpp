@@ -240,10 +240,10 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent)
     mctsAgent->clear_game_history();
 }
 
-void SelfPlay::write_game_to_pgn(const std::string& pngFileName, bool verbose)
+void SelfPlay::write_game_to_pgn(const std::string& pgnFileName, bool verbose)
 {
     ofstream pgnFile;
-    pgnFile.open(pngFileName, std::ios_base::app);
+    pgnFile.open(pgnFileName, std::ios_base::app);
     if (verbose) {
         cout << endl << gamePGN << endl;
     }
