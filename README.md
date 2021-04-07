@@ -73,11 +73,11 @@ We provide binary releases for the following plattforms:
 
 Operating System | Backend                                                                                                                                                               | Compatible with
 ---              | ---                                                                                                                                                                   | --- 
-Linux            | [**CUDA 10.2, cuDNN 7.6.5, TensorRT-7.0.0.11**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Linux_TensorRT.zip) | NVIDIA GPUs
-Linux            | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Linux_MKL.zip)                                               | Intel CPUs
-Windows          | [**CUDA 10.2, cuDNN 7.6.5, TensorRT-7.0.0.11**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Win_TensorRT.zip)                              | NVIDIA GPUs
-Windows          | [**Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Win_MKL.zip)                                                 | Intel CPUs
-Mac              | [**Apple Accelerate**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_0.8.0_Mac_CPU.zip) | Mac-Books
+Linux            | [**CUDA 11.2, cuDNN 8.1.1.33, TensorRT-7.2.3.4**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Linux_TensorRT.zip) | NVIDIA GPUs
+Linux            | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Linux_MKL.zip)                                               | Intel CPUs
+Windows          | [**CUDA 11.2, cuDNN 8.1.1.33, TensorRT-7.2.3.4**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Win_TensorRT.zip)                              | NVIDIA GPUs
+Windows          | [**MXNet-20190919, Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_ClassicAra_0.9.0_Win_MKL.zip )                                                 | Intel CPUs
+Mac              | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.8.0/CrazyAra_ClassicAra_0.9.0_Mac_CPU.zip ) | Mac-Books
 
 The current _CrazyAra_ release and all its previous versions can also be found at [releases](https://github.com/QueensGambit/CrazyAra/releases).
 
