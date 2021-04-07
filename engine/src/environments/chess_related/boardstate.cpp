@@ -136,12 +136,14 @@ string BoardState::action_to_san(Action action, const vector<Action>& legalActio
 TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const
 {
 #ifdef ATOMIC
+    if (board.is_atomic()) {
         if (board.is_atomic_win()) {
             return TERMINAL_WIN;
         }
         if (board.is_atomic_loss()) {
             return TERMINAL_LOSS;
         }
+    }
 #endif
 #ifdef ANTI
     if (board.is_anti()) {
