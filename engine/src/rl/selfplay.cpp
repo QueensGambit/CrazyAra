@@ -48,9 +48,10 @@ void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& ga
 }
 
 
-SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings):
-    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), rlSettings(rlSettings),
-    gameIdx(0), gamesPerMin(0), samplesPerMin(0)
+SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
+    RLSettings* rlSettings, UCI::OptionsMap& options):
+    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
+    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
 {
     const bool is960 = false;
 #ifdef MODE_CRAZYHOUSE
@@ -61,6 +62,12 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     }
     else {
         gamePGN.variant = "standard";
+    }
+#elif defined MODE_LICHESS
+    if (is960) {
+        gamePGN.variant = "chess960";
+    } else {
+        gamePGN.variant = string(options["UCI_Variant"]);
     }
 #endif
     gamePGN.event = "SelfPlay";

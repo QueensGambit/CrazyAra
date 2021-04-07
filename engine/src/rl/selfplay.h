@@ -56,6 +56,7 @@ private:
     SearchLimits* searchLimits;
     PlaySettings* playSettings;
     RLSettings* rlSettings;
+    UCI::OptionsMap& options;
     GamePGN gamePGN;
     TrainDataExporter* exporter;
     string filenamePGNSelfplay;
@@ -76,8 +77,10 @@ public:
      * @param searchLimits Search limit configuration struct
      * @param playSettings Playing setting configuration struct
      * @param RLSettings Additional settings for reinforcement learning usage
+     * @param options Object holding all UCI options
      */
-    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings);
+    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings,
+        RLSettings* rlSettings, UCI::OptionsMap& options);
     ~SelfPlay();
 
     /**
