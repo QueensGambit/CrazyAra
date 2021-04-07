@@ -163,6 +163,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         val_iter,
         train_config: TrainConfig,
         train_objects: TrainObjects,
+        train_type: str,
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -199,11 +200,18 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.patience_cnt = self.batch_proc_tmp = None
         # calculate how many log states will be processed
         self.k_steps_end = round(self.tc.total_it / self.tc.batch_steps)
+        if self.k_steps_end == 0:
+            self.k_steps_end = 1
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
-        # we use k-steps instead of epochs here
-        self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
-                         max_iterations=self.k_steps_end-self.tc.k_steps_initial)
+
+        assert train_type in [f'SL', f'RL'], f'Please provide a train_type in ["SL", "RL"]'
+        self.train_type = train_type
+
+        if train_type == f'SL':
+            # we use k-steps instead of epochs here
+            self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
+                             max_iterations=self.k_steps_end-self.tc.k_steps_initial)
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -254,8 +262,9 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
-        # Start the RTPT tracking
-        self.rtpt.start()
+        if self.train_type == f'SL':
+            # Start the RTPT tracking
+            self.rtpt.start()
 
         while self.continue_training:  # Too many nested blocks (7/5)
             # reshuffle the ordering of the training game batches (shuffle works in place)
@@ -356,8 +365,9 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self._val_iter,
             self._model,
         )
-        # update process title according to loss
-        self.rtpt.step(subtitle=f"loss={self.val_metric_values['loss']:2.2f}")
+        if self.train_type == f'SL':
+            # update process title according to loss
+            self.rtpt.step(subtitle=f"loss={self.val_metric_values['loss']:2.2f}")
         if self.tc.use_spike_recovery and (
                 self.old_val_loss * self.tc.spike_thresh < self.val_metric_values["loss"]
                 or np.isnan(self.val_metric_values["loss"])
