@@ -70,9 +70,16 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
         gamePGN.variant = string(options["UCI_Variant"]);
     }
 #endif
+
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       date[80];
+    tstruct = *localtime(&now);
+    strftime(date, sizeof(date), "%Y.%m.%d %X", &tstruct);
+    gamePGN.date = date;
+
     gamePGN.event = "SelfPlay";
     gamePGN.site = "Darmstadt, GER";
-    gamePGN.date = "?";  // TODO: Change this later
     gamePGN.round = "?";
     gamePGN.is960 = false;
     this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
