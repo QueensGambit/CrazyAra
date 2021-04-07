@@ -177,9 +177,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.x_train = self.yv_train = self.yp_train = None
         self._ctx = get_context(train_config.context, train_config.device_id)
 
-        # define the current working directory
-        if self.tc.cwd is None:
-            self.tc.cwd = os.getcwd()
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if self.tc.log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir=self.tc.export_dir+"logs", flush_secs=5, verbose=False)
