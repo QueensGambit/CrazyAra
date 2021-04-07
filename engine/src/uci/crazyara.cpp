@@ -141,6 +141,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "tree")      export_search_tree(is);
         else if (token == "flip")       state->flip();
         else if (token == "d")          cout << *(state.get()) << endl;
+        else if (token == "getoptions") getoptions();
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
@@ -323,6 +324,13 @@ void CrazyAra::export_search_tree(istringstream &is)
         return;
     }
     mctsAgent->export_search_tree(std::stoi(depth), filename);
+}
+
+void CrazyAra::getoptions()
+{
+    for (const auto& it : Options)
+        cout << "option name " << it.first << " value " << string(Options[it.first]) << endl;
+    cout << "readyok" << endl;
 }
 
 #ifdef USE_RL
