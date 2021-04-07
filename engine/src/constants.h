@@ -48,7 +48,7 @@ using namespace std;
 #ifdef MODE_CRAZYHOUSE
 const string engineName = "CrazyAra";
 #elif defined MODE_LICHESS
-const string engineName = "LichessAra";
+const string engineName = "MultiAra";
 #else  // MODE_CHESS
 const string engineName = "ClassicAra";
 #endif
