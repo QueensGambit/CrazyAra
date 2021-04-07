@@ -31,7 +31,7 @@ if (MODE_CHESS)
 endif()
 
 if (MODE_LICHESS)
-    project(LichessAra CXX)
+    project(MultiAra CXX)
     add_definitions(-DMODE_LICHESS)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DKOTH)
