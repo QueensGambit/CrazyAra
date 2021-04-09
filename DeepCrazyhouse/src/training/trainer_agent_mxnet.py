@@ -165,6 +165,15 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         train_objects: TrainObjects,
         use_rtpt: bool
     ):
+        """
+        Class for training the neural network.
+        :param model: The model loaded with the MXNet Module functionalities.
+        :param symbol: The architecture of the neural network.
+        :param val_iter: Iteratable object over the validation data.
+        :param train_config: An instance of the TrainConfig data class.
+        :param train_objects: Am omstamce pf the TrainObject data class.
+        :param use_rtpt: If True, an RTPT object will be created and modified within this class.
+        """
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
         self.tc = train_config
