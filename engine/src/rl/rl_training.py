@@ -110,7 +110,7 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, conve
     train_objects.metrics = metrics_gluon
 
     train_config.export_weights = False  # don't save intermediate weights
-    train_agent = TrainerAgent(net, val_data, train_config, train_objects, train_type=f'RL')
+    train_agent = TrainerAgent(net, val_data, train_config, train_objects, use_rtpt=False)
 
     # iteration counter used for the momentum and learning rate schedule
     cur_it = train_config.k_steps_initial * train_config.batch_steps

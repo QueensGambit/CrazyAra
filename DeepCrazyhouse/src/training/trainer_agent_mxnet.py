@@ -163,7 +163,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         val_iter,
         train_config: TrainConfig,
         train_objects: TrainObjects,
-        train_type: str,
+        use_rtpt: bool
     ):
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
@@ -202,10 +202,9 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
 
-        assert train_type in [f'SL', f'RL'], f'Please provide a train_type in ["SL", "RL"]'
-        self.train_type = train_type
+        self.use_rtpt = use_rtpt
 
-        if train_type == f'SL':
+        if use_rtpt:
             # we use k-steps instead of epochs here
             self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
                              max_iterations=self.k_steps_end-self.tc.k_steps_initial)
@@ -259,7 +258,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
-        if self.train_type == f'SL':
+        if self.use_rtpt:
             # Start the RTPT tracking
             self.rtpt.start()
 
@@ -362,7 +361,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self._val_iter,
             self._model,
         )
-        if self.train_type == f'SL':
+        if self.use_rtpt:
             # update process title according to loss
             self.rtpt.step(subtitle=f"loss={self.val_metric_values['loss']:2.2f}")
         if self.tc.use_spike_recovery and (
