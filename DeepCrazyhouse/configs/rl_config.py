@@ -25,7 +25,8 @@ class RLConfig:
     # Replay Memory
     rm_nb_files: int = 5  # how many data packages/files shall be randomly taken from memory
     rm_fraction_for_selection: float = 0.05  # which percentage of the most recent memory shall be taken into account
-    # The UCI_Variant in []
+    # The UCI_Variant. Must be in ["3check", "atomic", "chess", "crazyhouse",
+    # "giveaway" (= antichess), "horde", "kingofthehill", "racingkings"]
     uci_variant: str = f'atomic'
 
 
