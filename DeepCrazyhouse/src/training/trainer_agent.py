@@ -121,7 +121,16 @@ class TrainerAgent:  # Probably needs refactoring
         val_data,
         train_config: TrainConfig,
         train_objects: TrainObjects,
+        use_rtpt: bool,
     ):
+        """
+        Class for training the neural network.
+        :param net: The NN with loaded parameters that shall be trained.
+        :param val_data: The validation data loaded with gluon DataLoader.
+        :param train_config: An instance of the TrainConfig data class.
+        :param train_objects: Am omstamce pf the TrainObject data class.
+        :param use_rtpt: If True, an RTPT object will be created and modified within this class.
+        """
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
         self.tc = train_config
@@ -154,6 +163,9 @@ class TrainerAgent:  # Probably needs refactoring
         self._params = self._net.collect_params()
         self._param_names = self._params.keys()
         self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
+
+        self.use_rtpt = use_rtpt
+        self.rtpt = None  # Set this later in training function
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -216,8 +228,12 @@ class TrainerAgent:  # Probably needs refactoring
         # calculate how many log states will be processed
         k_steps_end = round(self.tc.total_it / self.tc.batch_steps)
         # we use k-steps instead of epochs here
-        self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
-                         max_iterations=k_steps_end-self.tc.k_steps_initial)
+        if k_steps_end == 0:
+            k_steps_end = 1
+
+        if self.use_rtpt:
+            self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
+                             max_iterations=k_steps_end-self.tc.k_steps_initial)
         if cur_it is None:
             cur_it = self.tc.k_steps_initial * 1000
         nb_spikes = 0  # count the number of spikes that have been detected
@@ -228,8 +244,9 @@ class TrainerAgent:  # Probably needs refactoring
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
-        # Start the RTPT tracking
-        self.rtpt.start()
+        if self.use_rtpt:
+            # Start the RTPT tracking
+            self.rtpt.start()
 
         while True:  # Too many nested blocks (7/5)
             # reshuffle the ordering of the training game batches (shuffle works in place)
@@ -324,8 +341,9 @@ class TrainerAgent:  # Probably needs refactoring
                             sparse_policy_label=self.tc.sparse_policy_label,
                             apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data
                         )
-                        # update process title according to loss
-                        self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
+                        if self.use_rtpt:
+                            # update process title according to loss
+                            self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
                         if self.tc.use_spike_recovery and (
                             old_val_loss * self.tc.spike_thresh < val_metric_values["loss"]
                             or np.isnan(val_metric_values["loss"])

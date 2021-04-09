@@ -28,6 +28,7 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <cstring>
 
 using namespace std;
 
@@ -90,6 +91,8 @@ void OptionsUCI::init(OptionsMap &o)
     o["MCTS_Solver"]                   << Option(true);
 #ifdef MODE_CRAZYHOUSE
     o["Model_Directory"]               << Option("model/crazyhouse");
+#elif defined MODE_LICHESS
+    o["Model_Directory"]               << Option(((string) "model" + "/" + availableVariants.front()).c_str());
 #elif defined MODE_CHESS
     o["Model_Directory"]               << Option("model/chess");
 #else
@@ -151,7 +154,11 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
     o["MaxInitPly"]                    << Option(30, 0, 99999);
     o["MeanInitPly"]                   << Option(15, 0, 99999);
+#ifdef LICHESS_MODE
+    o["Model_Directory_Contender"]     << Option(((string) "model_contender/" + availableVariants.front()).c_str());
+#else
     o["Model_Directory_Contender"]     << Option("model_contender/");
+#endif
     o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
     o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
     o["Milli_Policy_Clip_Thresh"]      << Option(0, 0, 100);
@@ -180,6 +187,11 @@ void OptionsUCI::setoption(istringstream &is)
         if (name == "uci_variant") {
             Variant variant = UCI::variant_from_name(value);
             cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << endl;
+
+#ifdef MODE_LICHESS // Set model path for new variant; just in case set model_contender as well
+            Options["Model_Directory"] << ((string) "model" + "/" + string(Options["UCI_Variant"])).c_str();
+            Options["Model_Directory_Contender"] << Option(((string) "model_contender/" + string(Options["UCI_Variant"])).c_str());
+#endif
         }
     }
     else {

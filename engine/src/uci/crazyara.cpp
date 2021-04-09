@@ -141,6 +141,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "tree")      export_search_tree(is);
         else if (token == "flip")       state->flip();
         else if (token == "d")          cout << *(state.get()) << endl;
+        else if (token == "activeuci") activeuci();
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
@@ -325,12 +326,19 @@ void CrazyAra::export_search_tree(istringstream &is)
     mctsAgent->export_search_tree(std::stoi(depth), filename);
 }
 
+void CrazyAra::activeuci()
+{
+    for (const auto& it : Options)
+        cout << "option name " << it.first << " value " << string(Options[it.first]) << endl;
+    cout << "readyok" << endl;
+}
+
 #ifdef USE_RL
 void CrazyAra::selfplay(istringstream &is)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
-    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings);
+    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings, Options);
     size_t numberOfGames;
     is >> numberOfGames;
     selfPlay.go(numberOfGames, variant);
@@ -341,7 +349,7 @@ void CrazyAra::arena(istringstream &is)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
-    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings);
+    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings, Options);
     netSingleContender = create_new_net_single(Options["Model_Directory_Contender"]);
     netBatchesContender = create_new_net_batches(Options["Model_Directory_Contender"]);
     mctsAgentContender = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings);

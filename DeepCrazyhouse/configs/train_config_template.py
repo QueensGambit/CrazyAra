@@ -24,15 +24,13 @@ class TrainConfig:
     batch_size: int = int(1024 / div_factor)
 
     # batch_steps = 1000 means for example that every 1000 batches the validation set gets processed
-    batch_steps: int = 100 * div_factor  # this defines how often a new checkpoint will be saved and the metrics evaluated
+    # this defines how often a new checkpoint will be saved and the metrics evaluated
+    batch_steps: int = 100 * div_factor
 
     # set the context on CPU switch to GPU if there is one available (strongly recommended for training)
     context: str = "gpu"
 
     cpu_count: int = 4
-
-    #  Current working directory (must end with "/"). If None it calls os.getcwd()
-    cwd: str = None
 
     device_id: int = 0
 
@@ -54,7 +52,7 @@ class TrainConfig:
 
     # k_steps_initial defines how many steps have been trained before
     # (k_steps_initial != 0 if you continue training from a checkpoint)
-    k_steps_initial: int = 0  # 498
+    k_steps_initial: int = 0
     # these are the weights to continue training with
     # symbol_file = 'model_init-symbol.json' # model-1.19246-0.603-symbol.json'
     # params_file = 'model_init-0000.params' # model-1.19246-0.603-0223.params'
@@ -72,12 +70,14 @@ class TrainConfig:
 
     # name initials which are used to identify running training processes with rtpt
     # prefix for the process name in order to identify the process on a server
-    name_initials: str = "JC"
+    name_initials: str = "XX"
 
     nb_parts: int = None
 
     normalize: bool = True  # define whether to normalize input data to [01]
-    nb_epochs: str = 1  # define how many epochs the network will be trained
+
+    # how many epochs the network will be trained each time there is enough new data available
+    nb_training_epochs: int = 1
 
     policy_loss_factor: float = 1  # 0.99
 
@@ -87,7 +87,9 @@ class TrainConfig:
 
     # set a specific seed value for reproducibility
     seed: int = 42
-    select_policy_from_plane: bool = True  # Boolean if potential legal moves will be selected from final policy output
+
+    # Boolean if potential legal moves will be selected from final policy output
+    select_policy_from_plane: bool = True
 
     # define spike threshold when the detection will be triggered
     spike_thresh: float = 1.5
@@ -98,7 +100,7 @@ class TrainConfig:
     # total of training iterations
     total_it: int = None
 
-    use_mxnet_style = True  # Decide between mxnet and gluon style for training
+    use_mxnet_style: bool = True  # Decide between mxnet and gluon style for training
 
     # loads a previous checkpoint if the loss increased significantly
     use_spike_recovery: bool = True

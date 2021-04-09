@@ -48,9 +48,10 @@ void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& ga
 }
 
 
-SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings):
-    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), rlSettings(rlSettings),
-    gameIdx(0), gamesPerMin(0), samplesPerMin(0)
+SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
+    RLSettings* rlSettings, UCI::OptionsMap& options):
+    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
+    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
 {
     const bool is960 = false;
 #ifdef MODE_CRAZYHOUSE
@@ -62,10 +63,23 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     else {
         gamePGN.variant = "standard";
     }
+#elif defined MODE_LICHESS
+    if (is960) {
+        gamePGN.variant = "chess960";
+    } else {
+        gamePGN.variant = string(options["UCI_Variant"]);
+    }
 #endif
+
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       date[80];
+    tstruct = *localtime(&now);
+    strftime(date, sizeof(date), "%Y.%m.%d %X", &tstruct);
+    gamePGN.date = date;
+
     gamePGN.event = "SelfPlay";
     gamePGN.site = "Darmstadt, GER";
-    gamePGN.date = "?";  // TODO: Change this later
     gamePGN.round = "?";
     gamePGN.is960 = false;
     this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
@@ -233,10 +247,10 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent)
     mctsAgent->clear_game_history();
 }
 
-void SelfPlay::write_game_to_pgn(const std::string& pngFileName, bool verbose)
+void SelfPlay::write_game_to_pgn(const std::string& pgnFileName, bool verbose)
 {
     ofstream pgnFile;
-    pgnFile.open(pngFileName, std::ios_base::app);
+    pgnFile.open(pgnFileName, std::ios_base::app);
     if (verbose) {
         cout << endl << gamePGN << endl;
     }

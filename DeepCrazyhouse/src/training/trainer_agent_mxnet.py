@@ -163,7 +163,17 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         val_iter,
         train_config: TrainConfig,
         train_objects: TrainObjects,
+        use_rtpt: bool
     ):
+        """
+        Class for training the neural network.
+        :param model: The model loaded with the MXNet Module functionalities.
+        :param symbol: The architecture of the neural network.
+        :param val_iter: Iteratable object over the validation data.
+        :param train_config: An instance of the TrainConfig data class.
+        :param train_objects: Am omstamce pf the TrainObject data class.
+        :param use_rtpt: If True, an RTPT object will be created and modified within this class.
+        """
         # Too many instance attributes (29/7) - Too many arguments (24/5) - Too many local variables (25/15)
         # Too few public methods (1/2)
         self.tc = train_config
@@ -176,9 +186,6 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.x_train = self.yv_train = self.yp_train = None
         self._ctx = get_context(train_config.context, train_config.device_id)
 
-        # define the current working directory
-        if self.tc.cwd is None:
-            self.tc.cwd = os.getcwd()
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if self.tc.log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir=self.tc.export_dir+"logs", flush_secs=5, verbose=False)
@@ -199,11 +206,17 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.patience_cnt = self.batch_proc_tmp = None
         # calculate how many log states will be processed
         self.k_steps_end = round(self.tc.total_it / self.tc.batch_steps)
+        if self.k_steps_end == 0:
+            self.k_steps_end = 1
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
-        # we use k-steps instead of epochs here
-        self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
-                         max_iterations=self.k_steps_end-self.tc.k_steps_initial)
+
+        self.use_rtpt = use_rtpt
+
+        if use_rtpt:
+            # we use k-steps instead of epochs here
+            self.rtpt = RTPT(name_initials=self.tc.name_initials, experiment_name='crazyara',
+                             max_iterations=self.k_steps_end-self.tc.k_steps_initial)
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -254,8 +267,9 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         if not self.ordering:  # safety check to prevent eternal loop
             raise Exception("You must have at least one part file in your planes-dataset directory!")
 
-        # Start the RTPT tracking
-        self.rtpt.start()
+        if self.use_rtpt:
+            # Start the RTPT tracking
+            self.rtpt.start()
 
         while self.continue_training:  # Too many nested blocks (7/5)
             # reshuffle the ordering of the training game batches (shuffle works in place)
@@ -356,8 +370,9 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self._val_iter,
             self._model,
         )
-        # update process title according to loss
-        self.rtpt.step(subtitle=f"loss={self.val_metric_values['loss']:2.2f}")
+        if self.use_rtpt:
+            # update process title according to loss
+            self.rtpt.step(subtitle=f"loss={self.val_metric_values['loss']:2.2f}")
         if self.tc.use_spike_recovery and (
                 self.old_val_loss * self.tc.spike_thresh < self.val_metric_values["loss"]
                 or np.isnan(self.val_metric_values["loss"])
