@@ -56,14 +56,14 @@ class BinaryIO:
     def get_uci_options(self):
         """
         Requests and reads uci options from a process.
-        This is non UCI standard behavior! After sending 'getoptions' the
+        This is non UCI standard behavior! After sending 'activeuci' the
         process returns all the current options in the format
         'option name <name> value <value>' followed by 'readyok' at the end.
 
         :return: Dictionary with the option's names as keys and option's values as values
         """
         options = {}
-        self.proc.stdin.write(b'getoptions\n')  # write bytes
+        self.proc.stdin.write(b'activeuci\n')  # write bytes
         self.proc.stdin.flush()
         while True:
             line = self.proc.stdout.readline()
@@ -77,7 +77,7 @@ class BinaryIO:
                     value = float(value)
                 options[line[12:idx]] = value
             else:
-                raise ValueError(f'uci command getoptions returned wrong format')
+                raise ValueError(f'uci command activeuci returned wrong format')
         return options
 
     def load_network(self):

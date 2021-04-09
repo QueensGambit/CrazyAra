@@ -161,10 +161,10 @@ public:
     void export_search_tree(istringstream& is);
 
     /**
-     * @brief getoptions Prints the currently UCI options currently active in the binary.
+     * @brief activeuci Prints the currently UCI options currently active in the binary.
      * The output format is "name <uci-option> value <uci-option-value>" followed by "readyok" at the very end.
      */
-    void getoptions();
+    void activeuci();
 
 #ifdef USE_RL
     /**
