@@ -163,7 +163,7 @@ def parse_args(cmd_args: list):
                         help='Computational device context to use. Possible values ["cpu", "gpu"]. (default: gpu)')
     parser.add_argument("--device-id", type=int, default=0,
                         help="GPU index to use for selfplay generation and/or network training. (default: 0)")
-    parser.add_argument("--trainer", default=True, action="store_true",
+    parser.add_argument("--trainer", default=False, action="store_true",
                         help="The given GPU index is used for training the neural network."
                              " The gpu trainer will stop generating games and update the network as soon as enough"
                              " training samples have been acquired.  (default: False)")
