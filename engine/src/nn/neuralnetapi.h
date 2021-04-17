@@ -232,6 +232,12 @@ public:
      */
     uint_fast32_t get_nb_auxiliary_outputs() const;
 
+    /**
+     * @brief has_auxiliary_outputs Returns nnDesign.hasAuxiliaryOutputs
+     * @return bool
+     */
+    bool has_auxiliary_outputs() const;
+
     unsigned int get_batch_size() const;
 
 protected:

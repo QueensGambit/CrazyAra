@@ -56,9 +56,9 @@ void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutput
     std::copy(torchValuePt, torchValuePt+batchSize, valueOutput);
     const float* torchPolicyPt = torch::softmax(output.get(1).toTensor(), 1).data_ptr<float>();
     std::copy(torchPolicyPt, torchPolicyPt+get_policy_output_length(), probOutputs);
-    if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
+    if (has_auxiliary_outputs()) {
         const float* torchAuxiliaryPt = output.get(2).toTensor().data_ptr<float>();
-        std::copy(torchAuxiliaryPt, torchAuxiliaryPt+StateConstants::NB_AUXILIARY_OUTPUTS()*batchSize, auxiliaryOutputs);
+        std::copy(torchAuxiliaryPt, torchAuxiliaryPt+get_nb_auxiliary_outputs()*batchSize, auxiliaryOutputs);
     }
 }
 

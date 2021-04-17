@@ -140,6 +140,11 @@ uint_fast32_t NeuralNetAPI::get_nb_auxiliary_outputs() const
     return nnDesign.auxiliaryOutputShape.flatten() / batchSize;
 }
 
+bool NeuralNetAPI::has_auxiliary_outputs() const
+{
+    return nnDesign.hasAuxiliaryOutputs;
+}
+
 bool NeuralNetAPI::file_exists(const string& name)
 {
     struct stat buffer;
