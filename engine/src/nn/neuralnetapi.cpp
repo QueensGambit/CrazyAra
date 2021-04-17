@@ -103,25 +103,25 @@ string NeuralNetAPI::get_device_name() const
 void NeuralNetAPI::validate_neural_network()
 {
     nnDesign.print();
-    assert_condition(nnDesign.policyOutputShape.nbDims, 2, "policyOutputShape.nbDims", "2");
-    assert_condition(nnDesign.valueOutputShape.nbDims, 2, "valueOutputShape.nbDims", "2");
-    assert_condition(nnDesign.valueOutputShape.v[1], 1, "valueOutputShape.v[1]", "1");
-    assert_condition(nnDesign.inputShape.nbDims, 4, "inputShape.nbDims", "4");
-    assert_condition(unsigned(nnDesign.inputShape.v[0]), batchSize, "inputShape.v[0]", "batchSize");
-    assert_condition(unsigned(nnDesign.inputShape.v[1]), StateConstants::NB_CHANNELS_TOTAL(), "inputShape.v[1]", "StateConstants::NB_CHANNELS_TOTAL()");
-    assert_condition(unsigned(nnDesign.inputShape.v[2]), StateConstants::BOARD_HEIGHT(), "inputShape.v[2]", "StateConstants::BOARD_HEIGHT()");
-    assert_condition(unsigned(nnDesign.inputShape.v[3]), StateConstants::BOARD_WIDTH(), "inputShape.v[3]", "StateConstants::BOARD_WIDTH()");
+    check_condition(nnDesign.policyOutputShape.nbDims, 2, "policyOutputShape.nbDims", "2");
+    check_condition(nnDesign.valueOutputShape.nbDims, 2, "valueOutputShape.nbDims", "2");
+    check_condition(nnDesign.valueOutputShape.v[1], 1, "valueOutputShape.v[1]", "1");
+    check_condition(nnDesign.inputShape.nbDims, 4, "inputShape.nbDims", "4");
+    check_condition(unsigned(nnDesign.inputShape.v[0]), batchSize, "inputShape.v[0]", "batchSize");
+    check_condition(unsigned(nnDesign.inputShape.v[1]), StateConstants::NB_CHANNELS_TOTAL(), "inputShape.v[1]", "StateConstants::NB_CHANNELS_TOTAL()");
+    check_condition(unsigned(nnDesign.inputShape.v[2]), StateConstants::BOARD_HEIGHT(), "inputShape.v[2]", "StateConstants::BOARD_HEIGHT()");
+    check_condition(unsigned(nnDesign.inputShape.v[3]), StateConstants::BOARD_WIDTH(), "inputShape.v[3]", "StateConstants::BOARD_WIDTH()");
     if (nnDesign.isPolicyMap) {
-        assert_condition(unsigned(nnDesign.policyOutputShape.v[1]), StateConstants::NB_LABELS_POLICY_MAP(), "neuralNetDesign.policyOutputShape.v[1]", "StateConstants::NB_LABELS_POLICY_MAP()");
+        check_condition(unsigned(nnDesign.policyOutputShape.v[1]), StateConstants::NB_LABELS_POLICY_MAP(), "neuralNetDesign.policyOutputShape.v[1]", "StateConstants::NB_LABELS_POLICY_MAP()");
     } else {
-        assert_condition(unsigned(nnDesign.policyOutputShape.v[1]), StateConstants::NB_LABELS(), "neuralNetDesign.policyOutputShape.v[1]", "StateConstants::NB_LABELS()");
+        check_condition(unsigned(nnDesign.policyOutputShape.v[1]), StateConstants::NB_LABELS(), "neuralNetDesign.policyOutputShape.v[1]", "StateConstants::NB_LABELS()");
     }
     if (nnDesign.hasAuxiliaryOutputs) {
-        assert_condition(unsigned(nnDesign.auxiliaryOutputShape.v[1]), StateConstants::NB_AUXILIARY_OUTPUTS(), "auxiliaryOutputDims.v[1]", "StateConstants::NB_AUXILIARY_OUTPUTS()");
+        check_condition(unsigned(nnDesign.auxiliaryOutputShape.v[1]), StateConstants::NB_AUXILIARY_OUTPUTS(), "auxiliaryOutputDims.v[1]", "StateConstants::NB_AUXILIARY_OUTPUTS()");
     }
     else if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
-        std::cerr << "StateConstants::NB_AUXILIARY_OUTPUTS(): " << StateConstants::NB_AUXILIARY_OUTPUTS() << endl;
-        throw "No auxiliary outputs detected but auxiliary output was expected.";
+        info_string("No auxiliary outputs detected but auxiliary output was expected.");
+        info_string("StateConstants::NB_AUXILIARY_OUTPUTS():", StateConstants::NB_AUXILIARY_OUTPUTS());
     }
 }
 
@@ -133,6 +133,11 @@ unsigned int NeuralNetAPI::get_policy_output_length() const
 uint_fast32_t NeuralNetAPI::get_nb_input_values_total() const
 {
     return nnDesign.inputShape.flatten() / batchSize;
+}
+
+uint_fast32_t NeuralNetAPI::get_nb_auxiliary_outputs() const
+{
+    return nnDesign.auxiliaryOutputShape.flatten() / batchSize;
 }
 
 bool NeuralNetAPI::file_exists(const string& name)
