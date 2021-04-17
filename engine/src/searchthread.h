@@ -83,6 +83,7 @@ private:
     MapWithMutex* mapWithMutex;
     const SearchSettings* searchSettings;
     SearchLimits* searchLimits;
+    uint_fast32_t nbNNInputValues;
     size_t tbHits;
     size_t depthSum;
     size_t depthMax;

@@ -93,17 +93,18 @@ string get_file_ending_with(const string& dir, const string& suffix);
 
 template <typename T>
 /**
- * @brief assert_condition Wrapper for an assert statement that is also validate in release mode
+ * @brief check_condition Wrapper for a condition that is also validate in release mode
  * @param value Given value
  * @param target Target value
  * @param valueStr Value description
  * @param targetStr Target description
  * @return True, if the assert statement is correct, else false
  */
-bool assert_condition(const T& value, const T& target, const string& valueStr, const string& targetStr) {
+bool check_condition(const T& value, const T& target, const string& valueStr, const string& targetStr) {
     if (value != target) {
-        std::cerr << valueStr << " != " << targetStr << ": " << value << " != " << target << endl;
-        throw valueStr + string(" != ") + targetStr;
+        info_string(valueStr + " !=", targetStr + ":");
+        info_string("expected:", value);
+        info_string("given:", target);
         return false;
     }
     return true;
@@ -117,6 +118,11 @@ struct Shape {
     int nbDims = -1;  // uninitialized
     int v[8];         // shape dimensions
 
+    /**
+     * @brief flatten Returns the flattened shape dimension
+     * @return -1 if not initialized else product of all dimensions
+     */
+    int flatten() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Shape& shape);
@@ -141,6 +147,7 @@ struct NeuralNetDesign {
     void print() const;
 };
 }
+
 
 /**
  * @brief The NeuralNetAPI class is an abstract class for accessing a neural network back-end and to run inference
@@ -212,6 +219,24 @@ public:
      * @return Vector length
      */
     unsigned int get_policy_output_length() const;
+
+    /**
+     * @brief get_nb_input_values_total Returns the total number of input values for a single batch
+     * @return uint
+     */
+    uint_fast32_t get_nb_input_values_total() const;
+
+    /**
+     * @brief get_nb_auxiliary_outputs Returns the total number of auxiliary outputs for a single batch infered form the nnDesign
+     * @return uint
+     */
+    uint_fast32_t get_nb_auxiliary_outputs() const;
+
+    /**
+     * @brief has_auxiliary_outputs Returns nnDesign.hasAuxiliaryOutputs
+     * @return bool
+     */
+    bool has_auxiliary_outputs() const;
 
     unsigned int get_batch_size() const;
 

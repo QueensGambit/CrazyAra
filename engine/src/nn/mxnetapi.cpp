@@ -196,8 +196,8 @@ void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutput
 
     executor->outputs[0].SyncCopyToCPU(valueOutput, batchSize);
     executor->outputs[1].SyncCopyToCPU(probOutputs, get_policy_output_length());
-    if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
-        executor->outputs[2].SyncCopyToCPU(auxiliaryOutputs, StateConstants::NB_AUXILIARY_OUTPUTS()*batchSize);
+    if (has_auxiliary_outputs()) {
+        executor->outputs[2].SyncCopyToCPU(auxiliaryOutputs, get_nb_auxiliary_outputs()*batchSize);
     }
 }
 

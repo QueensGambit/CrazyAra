@@ -98,11 +98,11 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
-    memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
+    memorySizes[idxInput] = batchSize * get_nb_input_values_total() * sizeof(float);
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
     memorySizes[idxPolicyOutput] = get_policy_output_length() * sizeof(float);
     if (nnDesign.hasAuxiliaryOutputs) {
-        memorySizes[idxAuxiliaryOutput] = batchSize * StateConstants::NB_AUXILIARY_OUTPUTS() * sizeof (float);
+        memorySizes[idxAuxiliaryOutput] = batchSize * get_nb_auxiliary_outputs() * sizeof (float);
         CHECK(cudaMalloc(&deviceMemory[idxAuxiliaryOutput], memorySizes[idxAuxiliaryOutput]));
     }
     CHECK(cudaMalloc(&deviceMemory[idxInput], memorySizes[idxInput]));
@@ -126,7 +126,7 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
                           memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
     CHECK(cudaMemcpyAsync(probOutputs, deviceMemory[idxPolicyOutput],
                           memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
-    if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
+    if (has_auxiliary_outputs()) {
         CHECK(cudaMemcpyAsync(auxiliaryOutputs, deviceMemory[idxAuxiliaryOutput],
                               memorySizes[idxAuxiliaryOutput], cudaMemcpyDeviceToHost, stream));
     }
