@@ -98,7 +98,7 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
-    memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
+    memorySizes[idxInput] = batchSize * get_nb_input_values_total() * sizeof(float);
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
     memorySizes[idxPolicyOutput] = get_policy_output_length() * sizeof(float);
     if (nnDesign.hasAuxiliaryOutputs) {

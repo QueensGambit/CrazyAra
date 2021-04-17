@@ -63,6 +63,18 @@ unsigned int NeuralNetAPI::get_batch_size() const
     return batchSize;
 }
 
+int nn_api::Shape::flatten() const
+{
+    if (nbDims == -1) {
+        return -1;
+    }
+    int product = 1;
+    for (int idx = 0; idx < nbDims; ++idx) {
+        product *= v[idx];
+    }
+    return product;
+}
+
 NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
     deviceID(deviceID),
     batchSize(batchSize),
@@ -95,6 +107,7 @@ void NeuralNetAPI::validate_neural_network()
     assert_condition(nnDesign.valueOutputShape.nbDims, 2, "valueOutputShape.nbDims", "2");
     assert_condition(nnDesign.valueOutputShape.v[1], 1, "valueOutputShape.v[1]", "1");
     assert_condition(nnDesign.inputShape.nbDims, 4, "inputShape.nbDims", "4");
+    assert_condition(unsigned(nnDesign.inputShape.v[0]), batchSize, "inputShape.v[0]", "batchSize");
     assert_condition(unsigned(nnDesign.inputShape.v[1]), StateConstants::NB_CHANNELS_TOTAL(), "inputShape.v[1]", "StateConstants::NB_CHANNELS_TOTAL()");
     assert_condition(unsigned(nnDesign.inputShape.v[2]), StateConstants::BOARD_HEIGHT(), "inputShape.v[2]", "StateConstants::BOARD_HEIGHT()");
     assert_condition(unsigned(nnDesign.inputShape.v[3]), StateConstants::BOARD_WIDTH(), "inputShape.v[3]", "StateConstants::BOARD_WIDTH()");
@@ -115,6 +128,11 @@ void NeuralNetAPI::validate_neural_network()
 unsigned int NeuralNetAPI::get_policy_output_length() const
 {
     return nnDesign.policyOutputShape.v[1] * batchSize;
+}
+
+uint_fast32_t NeuralNetAPI::get_nb_input_values_total() const
+{
+    return nnDesign.inputShape.flatten() / batchSize;
 }
 
 bool NeuralNetAPI::file_exists(const string& name)

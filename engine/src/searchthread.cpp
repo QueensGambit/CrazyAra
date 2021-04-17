@@ -47,7 +47,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
     isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
-    tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0)
+    tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0), nbNNInputValues(net->get_nb_input_values_total())
 {
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
     trajectoryBuffer.reserve(DEPTH_INIT);
@@ -226,7 +226,7 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by NB_VALUES_TOTAL each time
-                newState->get_state_planes(true, inputPlanes+newNodes->size()*StateConstants::NB_VALUES_TOTAL());
+                newState->get_state_planes(true, inputPlanes + newNodes->size() * nbNNInputValues);
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());

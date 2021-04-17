@@ -117,6 +117,11 @@ struct Shape {
     int nbDims = -1;  // uninitialized
     int v[8];         // shape dimensions
 
+    /**
+     * @brief flatten Returns the flattened shape dimension
+     * @return -1 if not initialized else product of all dimensions
+     */
+    int flatten() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Shape& shape);
@@ -141,6 +146,7 @@ struct NeuralNetDesign {
     void print() const;
 };
 }
+
 
 /**
  * @brief The NeuralNetAPI class is an abstract class for accessing a neural network back-end and to run inference
@@ -212,6 +218,12 @@ public:
      * @return Vector length
      */
     unsigned int get_policy_output_length() const;
+
+    /**
+     * @brief get_nb_input_values_total Returns the total number of input values for a single batch
+     * @return uint
+     */
+    uint_fast32_t get_nb_input_values_total() const;
 
     unsigned int get_batch_size() const;
 
