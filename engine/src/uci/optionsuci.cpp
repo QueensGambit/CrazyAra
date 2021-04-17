@@ -29,12 +29,19 @@
 #include <string>
 #include <algorithm>
 #include <cstring>
+#include "syzygy/tbprobe.h"
 
 using namespace std;
 
 void on_logger(const Option& o) {
     start_logger(o);
 }
+
+// method is based on 3rdparty/Stockfish/uci.cpp
+void on_tb_path(const Option& o) {
+    Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
+}
+
 
 void OptionsUCI::init(OptionsMap &o)
 {
@@ -133,7 +140,7 @@ void OptionsUCI::init(OptionsMap &o)
 #else
     o["Simulations"]                   << Option(0, 0, 99999999);
 #endif
-    o["SyzygyPath"]                    << Option("<empty>");
+    o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
     o["Threads"]                       << Option(2, 1, 512);
 #ifdef MODE_CRAZYHOUSE
     o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
