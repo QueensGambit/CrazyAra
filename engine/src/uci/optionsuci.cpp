@@ -29,12 +29,13 @@
 #include <string>
 #include <algorithm>
 #include <cstring>
+#include "customlogger.h"
 #include "syzygy/tbprobe.h"
 
 using namespace std;
 
 void on_logger(const Option& o) {
-    start_logger(o);
+    CustomLogger::start(o, ifstream::app);
 }
 
 // method is based on 3rdparty/Stockfish/uci.cpp
