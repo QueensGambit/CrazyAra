@@ -32,6 +32,7 @@ SearchSettings::SearchSettings():
         dirichletAlpha(0.2f),
         nodePolicyTemperature(1.0f),
         qValueWeight(1.0f),
+        qVetoDelta(0.4f),
         virtualLoss(1.0f),
         verbose(true),
         epsilonChecksCounter(100),

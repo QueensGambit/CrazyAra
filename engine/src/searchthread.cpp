@@ -136,7 +136,7 @@ void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& c
         childIdx = uint16_t(-1);
     }
     else {
-        childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
+        childIdx = min(size_t(currentNode->get_no_visit_idx()), currentNode->get_number_child_nodes()-1);
         currentNode->increment_no_visit_idx();
         return;
     }
@@ -147,7 +147,7 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     size_t depth = get_random_depth();
     for (uint curDepth = 0; curDepth < depth; ++curDepth) {
         currentNode->lock();
-        childIdx = get_best_action_index(currentNode, true, 0);
+        childIdx = get_best_action_index(currentNode, true, 0, 0);
         Node* nextNode = currentNode->get_child_node(childIdx);
         if (nextNode == nullptr || !nextNode->is_playout_node() || nextNode->get_visits() < searchSettings->epsilonGreedyCounter || nextNode->get_node_type() != UNSOLVED) {
             currentNode->unlock();

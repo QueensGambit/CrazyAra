@@ -109,12 +109,12 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
 }
 
-void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices)
+void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices, const SearchSettings* searchSettings)
 {
     vector<Action> pv;
     size_t childIdx;
     if (idx == 0) {
-        childIdx = get_best_action_index(rootNode, false, evalInfo.qValueWeight);
+        childIdx = get_best_action_index(rootNode, false, searchSettings->qValueWeight, searchSettings->qVetoDelta);
     }
     else {
         childIdx = indices[idx];
@@ -124,7 +124,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     const Node* nextNode = rootNode->get_child_node(childIdx);
     // make sure the nextNode has been expanded (e.g. when inference of the NN is too slow on the given hardware to evaluate the next node in time)
     if (nextNode != nullptr) {
-        nextNode->get_principal_variation(pv, evalInfo.qValueWeight);
+        nextNode->get_principal_variation(pv, searchSettings->qValueWeight, searchSettings->qVetoDelta);
         evalInfo.pv[idx] = pv;
 
         // scores
@@ -165,9 +165,8 @@ void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
     apply_permutation_in_place(indices, p);
 }
 
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV, float qValueWeight)
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, const SearchSettings* searchSettings)
 {
-    evalInfo.qValueWeight = qValueWeight;
     const size_t targetLength = rootNode->get_number_child_nodes();
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
     evalInfo.qValues = rootNode->get_q_values();
@@ -177,7 +176,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     }
     else {
         size_t bestMoveIdx;
-        rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, evalInfo.qValueWeight);
+        rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, searchSettings->qValueWeight, searchSettings->qVetoDelta);
     }
     // ensure the policy has the correct length even if some child nodes have not been visited
     if (evalInfo.policyProbSmall.size() != targetLength) {
@@ -189,13 +188,13 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     evalInfo.legalMoves = rootNode->get_legal_actions();
 
     vector<size_t> indices;
-    size_t maxIdx = min(multiPV, rootNode->get_no_visit_idx());
+    size_t maxIdx = min(searchSettings->multiPV, rootNode->get_no_visit_idx());
 
     if (maxIdx > 1) {
         sort_eval_lists(evalInfo, indices);
     }
 
-    evalInfo.init_vectors_for_multi_pv(multiPV);
+    evalInfo.init_vectors_for_multi_pv(searchSettings->multiPV);
 
     if (targetLength == 1 && rootNode->is_blank_root_node()) {
         // single move with no tree reuse
@@ -206,7 +205,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     }
     else {
         for (size_t idx = 0; idx < maxIdx; ++idx) {
-            set_eval_for_single_pv(evalInfo, rootNode, idx, indices);
+            set_eval_for_single_pv(evalInfo, rootNode, idx, indices, searchSettings);
         }
     }
 
