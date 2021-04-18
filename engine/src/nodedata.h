@@ -51,6 +51,14 @@ enum NodeType : uint8_t {
     UNSOLVED
 };
 
+/**
+ * @brief is_unsolved_or_tablebase Checks if the given node type is a win, draw, loss or a different type.
+ * @param nodeType given node type
+ * @return bool
+ */
+bool is_unsolved_or_tablebase(NodeType nodeType);
+
+
 class Node;
 
 /**

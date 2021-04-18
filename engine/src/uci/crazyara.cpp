@@ -507,7 +507,6 @@ void CrazyAra::init_search_settings()
         searchSettings.useTablebase = false;
     }
     else {
-        Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
         searchSettings.useTablebase = true;
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];

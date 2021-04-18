@@ -85,6 +85,15 @@ int value_to_centipawn(float value);
 void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, const SearchSettings* searchSettings);
 
 /**
+ * @brief get_best_move_q Return the value evaluation for the given next node.
+ * If it is a drawn tablebase position, 0.0 is returned.
+ * @param searchSettings Search settings
+ * @param nextNode Node object
+ * @return value evaluation
+ */
+float get_best_move_q(const SearchSettings* searchSettings, const Node* nextNode);
+
+/**
  * @brief set_eval_for_single_pv Sets the eval struct pv line and score for a single pv
  * @param evalInfo struct
  * @param rootNode root node of the tree

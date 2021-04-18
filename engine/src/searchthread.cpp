@@ -129,7 +129,7 @@ void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& c
             childIdx = idx;
             return;
         }
-        if (currentNode->get_child_node(idx)->get_node_type() != WIN) {
+        if (currentNode->get_child_node(idx)->get_node_type() == UNSOLVED) {
             childIdx = idx;
             return;
         }
@@ -333,7 +333,11 @@ bool SearchThread::nodes_limits_ok()
 
 bool SearchThread::is_root_node_unsolved()
 {
+#ifdef MCTS_TB_SUPPORT
+    return is_unsolved_or_tablebase(rootNode->get_node_type());
+#else
     return rootNode->get_node_type() == UNSOLVED;
+#endif
 }
 
 size_t SearchThread::get_avg_depth()

@@ -109,6 +109,21 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
 }
 
+float get_best_move_q(const SearchSettings* searchSettings, const Node* nextNode)
+{
+#ifdef MCTS_TB_SUPPORT
+    // set eval to 0 for TB draw
+    if (searchSettings->useTablebase && nextNode->is_tablebase() && nextNode->get_node_type() == TB_DRAW) {
+        return DRAW_VALUE;
+    }
+#endif
+#ifndef MCTS_SINGLE_PLAYER
+    return -nextNode->get_value();
+#else
+    return nextNode->get_value();
+#endif
+}
+
 void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices, const SearchSettings* searchSettings)
 {
     vector<Action> pv;
@@ -141,11 +156,8 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
                 return;
             }
         }
-#ifndef MCTS_SINGLE_PLAYER
-        evalInfo.bestMoveQ[idx] = -nextNode->get_value();
-#else
-        evalInfo.bestMoveQ[idx] = nextNode->get_value();
-#endif
+
+    evalInfo.bestMoveQ[idx] = get_best_move_q(searchSettings, nextNode);
     }
     else {
         evalInfo.bestMoveQ[idx] = Q_INIT;

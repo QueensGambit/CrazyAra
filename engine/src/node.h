@@ -365,7 +365,7 @@ public:
     void enable_has_nn_results();
     uint16_t plies_from_null() const;
     bool is_tablebase() const;
-    uint8_t get_node_type() const;
+    NodeType get_node_type() const;
     uint16_t get_end_in_ply() const;
     uint32_t get_free_visits() const;
 

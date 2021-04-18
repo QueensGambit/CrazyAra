@@ -112,7 +112,7 @@ Node::Node(StateObj* state, bool inCheck, const SearchSettings* searchSettings):
 {
     // specify the number of direct child nodes of this node
     check_for_terminal(state, inCheck);
-#if MCTS_TB_SUPPORT
+#ifdef MCTS_TB_SUPPORT
     if (searchSettings->useTablebase && !isTerminal) {
         check_for_tablebase_wdl(state);
     }
@@ -731,7 +731,7 @@ bool Node::is_tablebase() const
     return isTablebase;
 }
 
-uint8_t Node::get_node_type() const
+NodeType Node::get_node_type() const
 {
     return d->nodeType;
 }
@@ -1126,7 +1126,7 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
     for (size_t idx = 0; idx < get_number_child_nodes(); ++idx) {
         const size_t childIdx = customOrdering.size() == get_number_child_nodes() ? customOrdering[idx] : idx;
         size_t n = 0;
-        float q = Q_INIT;
+        double q = Q_INIT;
         if (childIdx < d->noVisitIdx) {
             n = d->childNumberVisits[childIdx];
             q = d->qValues[childIdx];
@@ -1142,7 +1142,7 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
         }
         cout << setw(12) << n << " | "
              << setw(9) << policyProbSmall[childIdx] << " | "
-             << setw(10) << q << " | "
+             << setw(10) << max(q, -9.9999999) << " | "
              << setw(5) << value_to_centipawn(q) << " | ";
         if (childIdx < get_no_visit_idx() && d->childNodes[childIdx] != nullptr && d->childNodes[childIdx]->d != nullptr && d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
             cout << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(d->childNodes[childIdx]->d->nodeType)))
