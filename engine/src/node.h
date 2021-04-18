@@ -223,7 +223,7 @@ public:
     double get_value_sum() const;
     uint32_t get_real_visits() const;
 
-    void apply_virtual_loss_to_child(ChildIdx childIdx, float virtualLoss);
+    void apply_virtual_loss_to_child(ChildIdx childIdx, uint_fast32_t virtualLoss);
 
     void increment_no_visit_idx();
     void fully_expand_node();

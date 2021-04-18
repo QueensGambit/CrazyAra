@@ -41,7 +41,7 @@ struct SearchSettings
     // policy temperature which can be applied on the every nodes' policy
     float nodePolicyTemperature;
     float qValueWeight;
-    float virtualLoss;
+    uint_fast32_t virtualLoss;
     bool verbose;
     uint_fast8_t epsilonChecksCounter;
 //    bool enhanceCaptures;   currently not support

@@ -50,7 +50,7 @@ struct EvalInfo
     std::vector<int> centipawns;
     size_t depth;
     size_t selDepth;
-    size_t nodes;
+    uint_fast32_t nodes;
     size_t nodesPreSearch;
     bool isChess960;
     std::vector<std::vector<Action>> pv;
