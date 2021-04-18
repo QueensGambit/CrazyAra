@@ -141,9 +141,16 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
                 return;
             }
         }
+#ifndef MCTS_SINGLE_PLAYER
+        evalInfo.bestMoveQ[idx] = -nextNode->get_value();
+#else
+        evalInfo.bestMoveQ[idx] = nextNode->get_value();
+#endif
+    }
+    else {
+        evalInfo.bestMoveQ[idx] = Q_INIT;
     }
     evalInfo.movesToMate[idx] = 0;
-    evalInfo.bestMoveQ[idx] = rootNode->get_q_value(childIdx);
     evalInfo.centipawns[idx] = value_to_centipawn(evalInfo.bestMoveQ[idx]);
 }
 
