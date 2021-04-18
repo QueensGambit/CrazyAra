@@ -299,7 +299,7 @@ void MCTSAgent::evaluate_board_state()
         run_mcts_search();
         update_stats();
     }
-    update_eval_info(*evalInfo, rootNode, tbHits, maxDepth, searchSettings->multiPV, searchSettings->qValueWeight);
+    update_eval_info(*evalInfo, rootNode, tbHits, maxDepth, searchSettings);
     lastValueEval = evalInfo->bestMoveQ[0];
     update_nps_measurement(evalInfo->calculate_nps());
     tGCThread.join();

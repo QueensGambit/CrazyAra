@@ -278,7 +278,7 @@ public:
     float get_action_value() const;
     SearchSettings* get_search_settings() const;
 
-    size_t get_no_visit_idx() const;
+    uint16_t get_no_visit_idx() const;
 
     bool is_fully_expanded() const;
 
@@ -333,16 +333,18 @@ public:
      * @param mctsPolicy Output of the final mcts policy after search
      * @param bestMoveIdx Index for the best move
      * @param qValueWeight Decides if Q-values are taken into account
+     * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
      */
-     void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight) const;
+     void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
      * The moves a are pushed into the pv vector.
      * @param pv Vector in which moves will be pushed.
      * @param qValueWeight Decides if Q-values are taken into account
+     * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
      */
-     void get_principal_variation(vector<Action>& pv, bool qValueWeight) const;
+     void get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta) const;
 
     /**
      * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
@@ -662,9 +664,10 @@ private:
  * @param curNode Current node
  * @param fast If true, then the argmax(childNumberVisits) is returned for unsolved nodes
  * @param qValueWeight Decides if qValues are taken into account
+ * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
  * @return Index for best move and child node
  */
- size_t get_best_action_index(const Node* curNode, bool fast, bool qValueWeight);
+ size_t get_best_action_index(const Node* curNode, bool fast, float qValueWeight, float qVetoDelto);
 
 void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
 

@@ -47,7 +47,7 @@ ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchTh
 void ThreadManager::print_info()
 {
     evalInfo->end = chrono::steady_clock::now();
-    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), searchSettings->multiPV, searchSettings->qValueWeight);
+    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), searchSettings);
     info_msg(*evalInfo);
 }
 

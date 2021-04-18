@@ -33,7 +33,7 @@
 
 struct SearchSettings
 {
-    unsigned int multiPV;
+    uint16_t multiPV;
     size_t threads;
     unsigned int batchSize;
     float dirichletEpsilon;
@@ -41,6 +41,8 @@ struct SearchSettings
     // policy temperature which can be applied on the every nodes' policy
     float nodePolicyTemperature;
     float qValueWeight;
+    // describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
+    float qVetoDelta;
     uint_fast32_t virtualLoss;
     bool verbose;
     uint_fast8_t epsilonChecksCounter;

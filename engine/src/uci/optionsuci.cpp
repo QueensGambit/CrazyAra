@@ -65,6 +65,7 @@ void OptionsUCI::init(OptionsMap &o)
 //    o["U_Base"]                        << Option(1965, 0, 99999);      currently disabled
     o["Centi_Node_Temperature"]        << Option(170, 1, 99999);
     o["Centi_Q_Value_Weight"]          << Option(100, 0, 99999);
+    o["Centi_Q_Veto_Delta"]            << Option(40, 0, 99999);
 #ifdef USE_RL
     o["Centi_Quantile_Clipping"]       << Option(0, 0, 100);
 #else
@@ -94,7 +95,6 @@ void OptionsUCI::init(OptionsMap &o)
     o["Fixed_Movetime"]                << Option(0, 0, 99999999);
     o["Last_Device_ID"]                << Option(0, 0, 99999);
     o["Log_File"]                      << Option("", on_logger);
-    o["Max_Search_Depth"]              << Option(99, 1, 99999);
     o["MCTS_Solver"]                   << Option(true);
 #ifdef MODE_CRAZYHOUSE
     o["Model_Directory"]               << Option("model/crazyhouse");
