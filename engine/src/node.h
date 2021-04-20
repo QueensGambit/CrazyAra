@@ -335,7 +335,7 @@ public:
      * @param qValueWeight Decides if Q-values are taken into account
      * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
      */
-     void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const;
+     void get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
@@ -629,20 +629,14 @@ private:
      * remaining moves to 0. Afterwards the policy is renormalized.
      * @param mctsPolicy MCTS policy which will be set
      */
-    void mcts_policy_based_on_wins(DynamicVector<float>& mctsPolicy) const;
+    void mcts_policy_based_on_wins(DynamicVector<double>& mctsPolicy) const;
 
     /**
      * @brief prune_losses_in_mcts_policy Sets all known losing moves in a given policy to 0 in case
      * the node is not known to be losing.
      * @param mctsPolicy MCTS policy which will be set
      */
-    void prune_losses_in_mcts_policy(DynamicVector<float>& mctsPolicy) const;
-
-    /**
-     * @brief mcts_policy_based_on_q_n Creates the MCTS policy based on visits and Q-values
-     * @param mctsPolicy MCTS policy which will be set
-     */
-    void mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qValueWeight) const;
+    void prune_losses_in_mcts_policy(DynamicVector<double>& mctsPolicy) const;
 
 //    /**
 //     * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves

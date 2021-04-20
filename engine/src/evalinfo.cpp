@@ -193,8 +193,8 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
     // ensure the policy has the correct length even if some child nodes have not been visited
     if (evalInfo.policyProbSmall.size() != targetLength) {
         const size_t startIdx = evalInfo.policyProbSmall.size();
-        fill_missing_values<float>(evalInfo.policyProbSmall, startIdx, targetLength, 0.0f);
-        fill_missing_values<float>(evalInfo.childNumberVisits, startIdx, targetLength, 0.0f);
+        fill_missing_values<double>(evalInfo.policyProbSmall, startIdx, targetLength, 0.0);
+        fill_missing_values<double>(evalInfo.childNumberVisits, startIdx, targetLength, 0.0);
         fill_missing_values<float>(evalInfo.qValues, startIdx, targetLength, LOSS_VALUE);
     }
     evalInfo.legalMoves = rootNode->get_legal_actions();
