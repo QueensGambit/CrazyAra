@@ -295,7 +295,7 @@ void Node::update_solved_terminal(const Node* childNode, ChildIdx childIdx)
     }
 }
 
-void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
+void Node::mcts_policy_based_on_wins(DynamicVector<double> &mctsPolicy) const
 {
     mctsPolicy = 0;
     ChildIdx childIdx = 0;
@@ -313,7 +313,7 @@ void Node::mcts_policy_based_on_wins(DynamicVector<float> &mctsPolicy) const
     }
 }
 
-void Node::prune_losses_in_mcts_policy(DynamicVector<float> &mctsPolicy) const
+void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy) const
 {
     // check if PV line leads to a loss
     if (d->numberUnsolvedChildNodes != get_number_child_nodes() && d->nodeType != LOSS) {
@@ -325,20 +325,6 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<float> &mctsPolicy) const
             }
         }
     }
-}
-
-void Node::mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qValueWeight) const
-{
-    DynamicVector<float> qValuePruned = d->qValues;
-    qValuePruned = (qValuePruned + 1) * 0.5f;
-    const DynamicVector<float> normalizedVisits = d->childNumberVisits / get_visits();
-    const float quantile = get_quantile(normalizedVisits, 0.25f);
-    for (size_t idx = 0; idx < get_number_child_nodes(); ++idx) {
-        if (d->childNumberVisits[idx] < quantile) {
-            qValuePruned[idx] = 0;
-        }
-    }
-    mctsPolicy = (1.0f - qValueWeight) * normalizedVisits + qValueWeight * qValuePruned;
 }
 
 bool Node::solve_for_terminal(ChildIdx childIdx)
@@ -932,7 +918,7 @@ Node *Node::get_child_node(ChildIdx childIdx)
     return d->childNodes[childIdx];
 }
 
-void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const
+void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const
 {
     // fill only the winning moves in case of a known win
     if (d->nodeType == WIN) {
@@ -941,8 +927,8 @@ void Node::get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx
     }
     else if (qValueWeight > 0) {
         size_t secondArg;
-        float firstMax;
-        float secondMax;
+        double firstMax;
+        double secondMax;
         mctsPolicy = d->childNumberVisits;
         prune_losses_in_mcts_policy(mctsPolicy);
         size_t bestQIdx = argmax(d->qValues);
@@ -999,7 +985,7 @@ size_t get_best_action_index(const Node *curNode, bool fast, float qValueWeight,
     if (fast) {
         return argmax(curNode->get_child_number_visits());
     }
-    DynamicVector<float> mctsPolicy(curNode->get_number_child_nodes());
+    DynamicVector<double> mctsPolicy(curNode->get_number_child_nodes());
     size_t bestMoveIdx;
     curNode->get_mcts_policy(mctsPolicy, bestMoveIdx, qValueWeight, qVetoDelta);
     return bestMoveIdx;

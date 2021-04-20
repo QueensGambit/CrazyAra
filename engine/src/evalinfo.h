@@ -44,8 +44,8 @@ struct EvalInfo
     chrono::steady_clock::time_point end;
     std::vector<float> bestMoveQ;
     std::vector<Action> legalMoves;
-    DynamicVector<float> policyProbSmall;
-    DynamicVector<float> childNumberVisits;
+    DynamicVector<double> policyProbSmall;
+    DynamicVector<double> childNumberVisits;
     DynamicVector<float> qValues;
     std::vector<int> centipawns;
     size_t depth;

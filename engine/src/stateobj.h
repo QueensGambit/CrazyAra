@@ -70,7 +70,7 @@ using blaze::DynamicVector;
  * @return policyProbSmall - A hybrid blaze vector which stores the probabilities for the given move list
  */
 void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, SideToMove sideToMove,
-                            bool normalize, DynamicVector<float> &policyProbSmall, bool selectPolicyFromPlane);
+                            bool normalize, DynamicVector<double> &policyProbSmall, bool selectPolicyFromPlane);
 
 /**
  * @brief get_policy_data_batch Returns the pointer of the batch for the policy predictions
