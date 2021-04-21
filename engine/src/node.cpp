@@ -58,7 +58,7 @@ uint8_t Node::get_virtual_loss_counter(ChildIdx childIdx) const
 
 bool Node::has_transposition_child_node()
 {
-    for (Node* childNode : d->childNodes){
+    for (auto childNode : d->childNodes){
         if (childNode != nullptr && childNode->is_transposition()) {
             return true;
         }
@@ -145,7 +145,7 @@ bool Node::solved_draw(const Node* childNode) const
 bool Node::at_least_one_drawn_child() const
 {
     bool atLeastOneDrawnChild = false;
-    for (Node* childNode : d->childNodes) {
+    for (auto childNode : d->childNodes) {
         if (!childNode->is_playout_node() || (childNode->d->nodeType != DRAW && childNode->d->nodeType != WIN)) {
             return false;
         }
@@ -158,7 +158,7 @@ bool Node::at_least_one_drawn_child() const
 
 bool Node::only_won_child_nodes() const
 {
-    for (Node* childNode : d->childNodes) {
+    for (auto childNode : d->childNodes) {
         if (childNode->d->nodeType != WIN) {
             return false;
         }
@@ -264,7 +264,7 @@ void Node::define_end_ply_for_solved_terminal(const Node* childNode)
 {
     if (d->nodeType == LOSS) {
         // choose the longest pv line
-        for (const Node* curChildNode : d->childNodes) {
+        for (const auto curChildNode : d->childNodes) {
             if (curChildNode->d->endInPly+1 > d->endInPly) {
                 d->endInPly = curChildNode->d->endInPly+1;
             }
@@ -273,7 +273,7 @@ void Node::define_end_ply_for_solved_terminal(const Node* childNode)
     }
     if (d->nodeType == DRAW) {
         // choose the shortest pv line for draws
-        for (const Node* curChildNode : d->childNodes) {
+        for (const auto curChildNode : d->childNodes) {
             if (curChildNode->d->nodeType == DRAW && curChildNode->d->endInPly+1 < d->endInPly) {
                 d->endInPly = curChildNode->d->endInPly+1;
             }
@@ -319,7 +319,7 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy) const
     if (d->numberUnsolvedChildNodes != get_number_child_nodes() && d->nodeType != LOSS) {
         // set all entries which lead to a WIN of the opponent to zero
         for (size_t childIdx = 0; childIdx < d->noVisitIdx; ++childIdx) {
-            const Node* childNode = d->childNodes[childIdx];
+            const Node* childNode = d->childNodes[childIdx].get();
             if (childNode != nullptr && childNode->is_playout_node() && childNode->d->nodeType == WIN) {
                 mctsPolicy[childIdx] = 0;
             }
@@ -333,7 +333,7 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
         // already solved
         return false;
     }
-    const Node* childNode = d->childNodes[childIdx];
+    const Node* childNode = d->childNodes[childIdx].get();
 
     if (!childNode->is_playout_node()) {
         return false;
@@ -431,10 +431,10 @@ Action Node::get_action(ChildIdx childIdx) const
 
 Node *Node::get_child_node(ChildIdx childIdx) const
 {
-    return d->childNodes[childIdx];
+    return d->childNodes[childIdx].get();
 }
 
-vector<Node*> Node::get_child_nodes() const
+vector<shared_ptr<Node>>& Node::get_child_nodes() const
 {
     return d->childNodes;
 }
@@ -629,9 +629,14 @@ void Node::set_value(float value)
     this->valueSum = value * this->realVisitsSum;
 }
 
-void Node::add_new_child_node(Node *newNode, ChildIdx childIdx)
+void Node::add_transposition_child_node(unordered_map<Key, shared_ptr<Node>>::const_iterator& it, ChildIdx childIdx)
 {
-    d->childNodes[childIdx] = newNode;
+    d->childNodes[childIdx] = it->second;
+}
+
+void Node::add_new_child_node(StateObj *state, bool inCheck, const SearchSettings* searchSettings, ChildIdx childIdx)
+{
+    d->childNodes[childIdx] = make_shared<Node>(state, inCheck, searchSettings);
 }
 
 void Node::add_transposition_parent_node()
@@ -915,7 +920,7 @@ DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSett
 
 Node *Node::get_child_node(ChildIdx childIdx)
 {
-    return d->childNodes[childIdx];
+    return d->childNodes[childIdx].get();
 }
 
 void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const
@@ -960,7 +965,7 @@ void Node::get_principal_variation(vector<Action>& pv, float qValueWeight, float
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
         size_t childIdx = get_best_action_index(curNode, true, qValueWeight, qVetoDelta);
         pv.push_back(curNode->get_action(childIdx));
-        curNode = curNode->d->childNodes[childIdx];
+        curNode = curNode->get_child_node(childIdx);
     }
 }
 
@@ -975,8 +980,8 @@ size_t get_best_action_index(const Node *curNode, bool fast, float qValueWeight,
         size_t longestPVlength = 0;
         size_t childIdx = 0;
         for (size_t idx = 0; idx < curNode->get_number_child_nodes(); ++idx) {
-            if (curNode->get_child_nodes()[idx]->get_end_in_ply() > longestPVlength) {
-                longestPVlength = curNode->get_child_nodes()[idx]->get_end_in_ply();
+            if (curNode->get_child_node(idx)->get_end_in_ply() > longestPVlength) {
+                longestPVlength = curNode->get_child_node(idx)->get_end_in_ply();
                 childIdx = idx;
             }
         }
@@ -1049,7 +1054,7 @@ NodeType flip_node_type(const enum NodeType nodeType) {
     }
 }
 
-void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread) {
+void add_item_to_delete(Node* node, HashMap& hashTable, GCThread<Node>& gcThread) {
     // the board position is only filled if the node has been extended
     auto it = hashTable.find(node->hash_key());
     if(it != hashTable.end()) {
@@ -1058,34 +1063,34 @@ void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThre
     gcThread.add_item_to_delete(node);
 }
 
-void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
+void delete_sibling_subtrees(Node* parentNode, Node* node, HashMap& hashTable, GCThread<Node>& gcThread)
 {
     info_string("delete unused subtrees");
-    for (Node* childNode: parentNode->get_child_nodes()) {
-        if (childNode != node && childNode != nullptr) {
+    for (auto childNode: parentNode->get_child_nodes()) {
+        if (childNode.get() != node && childNode != nullptr) {
             if (childNode->is_transposition()) {
                 childNode->decrement_number_parents();
             }
             else {
-                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+                delete_subtree_and_hash_entries(childNode.get(), hashTable, gcThread);
             }
         }
     }
 }
 
-void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
+void delete_subtree_and_hash_entries(Node* node, HashMap& hashTable, GCThread<Node>& gcThread)
 {
     if (node == nullptr) {
         return;
     }
     // if the current node hasn't been expanded or is a terminal node then childNodes is empty and the recursion ends
     if (node->is_sorted()) {
-        for (Node* childNode: node->get_child_nodes()) {
+        for (auto childNode: node->get_child_nodes()) {
             if (childNode != nullptr && childNode->is_transposition()) {
                 childNode->decrement_number_parents();
             }
             else {
-                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
+                delete_subtree_and_hash_entries(childNode.get(), hashTable, gcThread);
             }
         }
     }

@@ -79,7 +79,7 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
 {
     if(searchSettings->useMCGS) {
         mapWithMutex->mtx.lock();
-        unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
+        unordered_map<Key, shared_ptr<Node>>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
         if(it != mapWithMutex->hashTable.end() &&
                 is_transposition_verified(it, newState)) {
             mapWithMutex->mtx.unlock();
@@ -94,15 +94,14 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
             }
 #endif
             transpositionValues->add_element(qValue);
-            parentNode->add_new_child_node(it->second, childIdx);
+            parentNode->add_transposition_child_node(it, childIdx);
             return NODE_TRANSPOSITION;
         }
         mapWithMutex->mtx.unlock();
     }
     assert(parentNode != nullptr);
-    Node *newNode = new Node(newState, inCheck, searchSettings);
     // connect the Node to the parent
-    parentNode->add_new_child_node(newNode, childIdx);
+    parentNode->add_new_child_node(newState, inCheck, searchSettings, childIdx);
     return NODE_NEW_NODE;
 }
 
@@ -305,7 +304,7 @@ void SearchThread::set_nn_results_to_child_nodes()
         ++batchIdx;
         if (searchSettings->useMCGS) {
             mapWithMutex->mtx.lock();
-            mapWithMutex->hashTable.insert({node->hash_key(), node});
+            mapWithMutex->hashTable.insert({node->hash_key(), shared_ptr<Node>(node)});
             mapWithMutex->mtx.unlock();
         }
     }
@@ -478,7 +477,7 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
     node->apply_temperature_to_prior_policy(temperature);
 }
 
-bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateObj* state) {
+bool is_transposition_verified(const unordered_map<Key,shared_ptr<Node>>::const_iterator& it, const StateObj* state) {
     return  it->second->has_nn_results() &&
             it->second->plies_from_null() == state->steps_from_null() &&
             state->number_repetitions() == 0;

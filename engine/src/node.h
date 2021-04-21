@@ -45,6 +45,8 @@ using blaze::DynamicVector;
 using namespace std;
 using ChildIdx = uint_fast16_t;
 
+typedef unordered_map<Key, shared_ptr<Node>> HashMap;
+
 struct ParentNode {
     Node* node;
     uint32_t visits;
@@ -216,7 +218,8 @@ public:
     Action get_action(ChildIdx childIdx) const;
     Node* get_child_node(ChildIdx childIdx) const;
 
-    vector<Node*> get_child_nodes() const;
+    vector<shared_ptr<Node>>& get_child_nodes() const;
+
     bool is_terminal() const;
     bool has_nn_results() const;
     float get_value() const;
@@ -297,7 +300,9 @@ public:
     void set_value(float valueSum);
     uint16_t main_child_idx_for_parent() const;
 
-    void add_new_child_node(Node* newNode, ChildIdx childIdx);
+    void add_transposition_child_node(unordered_map<Key, shared_ptr<Node>>::const_iterator& it, ChildIdx childIdx);
+
+    void add_new_child_node(StateObj *state, bool inCheck, const SearchSettings* searchSettings, ChildIdx childIdx);
 
     void add_transposition_parent_node();
 
@@ -663,7 +668,7 @@ private:
  */
  size_t get_best_action_index(const Node* curNode, bool fast, float qValueWeight, float qVetoDelto);
 
-void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
+void add_item_to_delete(Node* node, HashMap& hashTable, GCThread<Node>& gcThread);
 
 /**
  * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
@@ -671,13 +676,13 @@ void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThre
  * @param hashTable Pointer to the hashTable which stores a pointer to all active nodes
  * @param gcThread Reference to the garbadge collector object
  */
-void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
+void delete_subtree_and_hash_entries(Node *node, HashMap& hashTable, GCThread<Node>& gcThread);
 
 /**
  * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr
  * @param hashTable Pointer to the hashTables
  */
-void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
+void delete_sibling_subtrees(Node* parentNode, Node* node, HashMap& hashTable, GCThread<Node>& gcThread);
 
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);

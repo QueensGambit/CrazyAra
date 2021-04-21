@@ -31,7 +31,7 @@ Node* pick_next_node(Action move, const Node* parentNode)
     if (parentNode != nullptr) {
         for (size_t idx = 0; idx < parentNode->get_no_visit_idx(); ++idx) {
             if (parentNode->get_legal_actions()[idx] == move) {
-                return parentNode->get_child_nodes()[idx];
+                return parentNode->get_child_node(idx);
             }
         }
     }

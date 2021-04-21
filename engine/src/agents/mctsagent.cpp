@@ -355,7 +355,7 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
         return;
     }
     size_t childIdx = 0;
-    for (Node* node : parentNode->get_child_nodes()) {
+    for (auto node : parentNode->get_child_nodes()) {
         if (node != nullptr) {
             Action action = parentNode->get_action(childIdx);
             outFile << "N" << ++nodeId << " [label = \""
@@ -373,12 +373,12 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
         outFile << "N" << idx << " ";
     }
     outFile << "}" << endl;
-    for (Node* node : parentNode->get_child_nodes()) {
+    for (auto node : parentNode->get_child_nodes()) {
         if (node != nullptr && node->is_playout_node()) {
             unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state->clone());
             Action action = parentNode->get_action(childIdx);
             state2->do_action(action);
-            print_child_nodes_to_file(node, state2.get(), ++initialId, nodeId, outFile, depth+1, maxDepth);
+            print_child_nodes_to_file(node.get(), state2.get(), ++initialId, nodeId, outFile, depth+1, maxDepth);
         }
     }
 }
