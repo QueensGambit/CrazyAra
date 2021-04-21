@@ -209,6 +209,11 @@ public:
      */
     void stop_search();
 
+    /**
+     * @brief prepare_search_config_structs Prepare search configuration structs for new search
+     */
+    void prepare_search_config_structs();
+
 private:
     /**
      * @brief engine_info Returns a string about the engine version and authors

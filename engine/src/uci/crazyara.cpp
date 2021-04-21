@@ -99,7 +99,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     size_t it = 0;
 
-	// this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
+    // this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
     };
 
@@ -119,12 +119,12 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
         if (token == "stop" || token == "quit") {
             stop_search();
-		}
-		else if (token == "uci") {
-			cout << engine_info()
-				<< Options << endl
-				<< "uciok" << endl;
-		}
+        }
+        else if (token == "uci") {
+            cout << engine_info()
+                 << Options << endl
+                 << "uciok" << endl;
+        }
         else if (token == "setoption")  set_uci_option(is);
         else if (token == "go")         go(state.get(), is, evalInfo);
         else if (token == "position")   position(state.get(), is);
@@ -155,22 +155,22 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     wait_to_finish_last_search();
 }
 
-void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
-    searchLimits.reset();
-    searchLimits.moveOverhead = TimePoint(Options["Move_Overhead"]);
-    searchLimits.nodes = Options["Nodes"];
-    searchLimits.movetime = Options["Fixed_Movetime"];
-    searchLimits.simulations = Options["Simulations"];
+void CrazyAra::prepare_search_config_structs()
+{
+    searchLimits.init_new_search(Options);
 
     if (changedUCIoption) {
         init_search_settings();
         init_play_settings();
         changedUCIoption = false;
     }
+}
+
+void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
+
+    prepare_search_config_structs();
 
     string token;
-    searchLimits.startTime = now(); // As early as possible!
-
     while (is >> token) {
         if (token == "searchmoves")
             while (is >> token);
@@ -336,8 +336,7 @@ void CrazyAra::activeuci()
 #ifdef USE_RL
 void CrazyAra::selfplay(istringstream &is)
 {
-    SearchLimits searchLimits;
-    searchLimits.nodes = size_t(Options["Nodes"]);
+    prepare_search_config_structs();
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings, Options);
     size_t numberOfGames;
     is >> numberOfGames;
@@ -347,8 +346,7 @@ void CrazyAra::selfplay(istringstream &is)
 
 void CrazyAra::arena(istringstream &is)
 {
-    SearchLimits searchLimits;
-    searchLimits.nodes = size_t(Options["Nodes"]);
+    prepare_search_config_structs();
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings, Options);
     netSingleContender = create_new_net_single(Options["Model_Directory_Contender"]);
     netBatchesContender = create_new_net_batches(Options["Model_Directory_Contender"]);

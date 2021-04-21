@@ -27,6 +27,7 @@
 
 #include <chrono>
 #include <ostream>
+#include "uci/optionsuci.h"
 
 #ifndef SEARCHLIMITS_H
 #define SEARCHLIMITS_H
@@ -52,7 +53,16 @@ public:
 
     SearchLimits();
 
+    /**
+     * @brief reset Resets all search limits
+     */
     void reset();
+
+    /**
+     * @brief init_new_search Initializes the struct according to the given OptionsMap for a new search
+     * @param options UCI Options struct
+     */
+    void init_new_search(OptionsMap &options);
 };
 
 /**

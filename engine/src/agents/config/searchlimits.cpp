@@ -50,7 +50,7 @@ void SearchLimits::reset()
     depth = 0;
     minMovetime = 0;
     npmsec = 0;
-    startTime = 0;
+    startTime = now();
     moveOverhead = 0;
     infinite = false;
     ponder = false;
@@ -58,6 +58,15 @@ void SearchLimits::reset()
     time[FIRST_PLAYER_IDX+1] = 0;
     inc[FIRST_PLAYER_IDX] = 0;
     inc[FIRST_PLAYER_IDX+1] = 0;
+}
+
+void SearchLimits::init_new_search(OptionsMap &options)
+{
+    reset();
+    moveOverhead = TimePoint(options["Move_Overhead"]);
+    nodes = options["Nodes"];
+    movetime = options["Fixed_Movetime"];
+    simulations = options["Simulations"];
 }
 
 bool is_game_sceneario(const SearchLimits* searchLimits)
