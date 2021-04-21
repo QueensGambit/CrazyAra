@@ -927,18 +927,18 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
     }
     else if (qValueWeight > 0) {
         size_t secondArg;
-        double firstMax;
-        double secondMax;
+        double firstMaxValue;
+        double secondMaxValue;
         mctsPolicy = d->childNumberVisits;
         prune_losses_in_mcts_policy(mctsPolicy);
         size_t bestQIdx = argmax(d->qValues);
-        first_and_second_max(mctsPolicy, d->noVisitIdx, firstMax, secondMax, bestMoveIdx, secondArg);
-        if (qVetoDelta != 0 && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + qVetoDelta) {
+        first_and_second_max(mctsPolicy, d->noVisitIdx, firstMaxValue, secondMaxValue, bestMoveIdx, secondArg);
+        if (qVetoDelta != 0 && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + qVetoDelta && d->childNumberVisits[bestQIdx] > 1) {
             if (mctsPolicy[bestMoveIdx] > mctsPolicy[bestQIdx]) {
                 // swap values of highest qValues and most visits
                 const double qSavePolicy = mctsPolicy[bestQIdx];
-                mctsPolicy[bestQIdx] = mctsPolicy[firstMax];
-                mctsPolicy[firstMax] = qSavePolicy;
+                mctsPolicy[bestQIdx] = mctsPolicy[bestMoveIdx];
+                mctsPolicy[bestMoveIdx] = qSavePolicy;
             }
         }
         else if (bestMoveIdx != secondArg && d->qValues[secondArg] > d->qValues[bestMoveIdx]) {
