@@ -39,7 +39,7 @@ void Agent::set_best_move(size_t moveCounter)
 {
     if (moveCounter < playSettings->temperatureMoves && playSettings->initTemperature > 0.01) {
         info_string("Sample move");
-        DynamicVector<double> policyProbSmall = evalInfo->childNumberVisits / sum(evalInfo->childNumberVisits);
+        DynamicVector<double> policyProbSmall = evalInfo->policyProbSmall;
         apply_temperature(policyProbSmall, get_current_temperature(*playSettings, moveCounter));
         if (playSettings->quantileClipping != 0) {
             apply_quantile_clipping(playSettings->quantileClipping, policyProbSmall);
