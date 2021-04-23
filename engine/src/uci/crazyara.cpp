@@ -125,7 +125,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
                  << Options << endl
                  << "uciok" << endl;
         }
-        else if (token == "setoption")  set_uci_option(is);
+        else if (token == "setoption")  set_uci_option(is, *state.get());
         else if (token == "go")         go(state.get(), is, evalInfo);
         else if (token == "position")   position(state.get(), is);
         else if (token == "ucinewgame") ucinewgame();
@@ -201,8 +201,6 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
 {
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-
     state->set(StartFENs[variant], is960, variant);
 
     istringstream is("fen " + fen);
@@ -233,7 +231,6 @@ void CrazyAra::position(StateObj* state, istringstream& is)
 
     Action action;
     string token, fen;
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
 
     is >> token;
     if (token == "startpos")
@@ -462,9 +459,9 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
     return netBatches;
 }
 
-void CrazyAra::set_uci_option(istringstream &is)
+void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
 {
-    OptionsUCI::setoption(is);
+    OptionsUCI::setoption(is, variant, state);
     changedUCIoption = true;
 }
 

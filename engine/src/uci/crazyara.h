@@ -248,9 +248,11 @@ private:
 
     /**
      * @brief set_uci_option Updates an UCI option using the given input stream and set changedUCIoption to true.
+     * Also updates the state position to the new starting position if UCI_Variant has been changed.
      * @param is Input stream
+     * @param state State object
      */
-    void set_uci_option(istringstream &is);
+    void set_uci_option(istringstream &is, StateObj& state);
 };
 
 /**

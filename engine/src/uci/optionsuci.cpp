@@ -174,7 +174,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
 }
 
-void OptionsUCI::setoption(istringstream &is)
+void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
 {
 
     string token, name, value;
@@ -193,8 +193,9 @@ void OptionsUCI::setoption(istringstream &is)
         cout << "info string Updated option " << name << " to " << value << endl;
         std::transform(name.begin(), name.end(), name.begin(), ::tolower);
         if (name == "uci_variant") {
-            Variant variant = UCI::variant_from_name(value);
+            variant = UCI::variant_from_name(value);
             cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << endl;
+            state.set(StartFENs[variant], Options["UCI_Chess960"], variant);
 
 #ifdef MODE_LICHESS // Set model path for new variant; just in case set model_contender as well
             Options["Model_Directory"] << ((string) "model" + "/" + string(Options["UCI_Variant"])).c_str();

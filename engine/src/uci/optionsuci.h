@@ -31,6 +31,7 @@
 #include "uci.h"
 #include "misc.h"
 #include "variants.h"
+#include "stateobj.h"
 
 using namespace UCI;
 
@@ -46,8 +47,10 @@ namespace OptionsUCI {
      * @brief setoption Sets a given option value to the Options map.
      * Method is based on 3rdparty/Stockfish/uci.cpp
      * @param is Stringstream
+     * @param variant Active variant
+     * @param state Active state object
      */
-    void setoption(istringstream& is);
+    void setoption(istringstream& is, Variant& variant, StateObj& state);
 
 }
 
