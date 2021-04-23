@@ -164,20 +164,50 @@ bool Board::is_terminal() const
 
 bool Board::draw_by_insufficient_material() const
 {
+    // fast return options (insufficient material can never by reached in some variants)
 #ifdef CRAZYHOUSE
-    // fast return options (insufficient material can never by reached in crayhouse)
-    if (is_house() || this->count<ALL_PIECES>() > 4) {
+    if (is_house()) {
         return false;
     }
 #endif
+#ifdef KOTH
+    if (is_koth()) {
+        return false;
+    }
+#endif
+#ifdef THREECHECK
+    if (is_three_check()) {
+        return false;
+    }
+#endif
+#ifdef ANTI
+    if (is_anti()) {
+        return false;
+    }
+#endif
+#ifdef RACE
+    if (is_race()) {
+        return false;
+    }
+#endif
+#ifdef HORDE
+    if (is_horde()) {
+        return (this->count<ALL_PIECES>() == 2) ||                                  // 1) k vs ?
+               (this->count<ALL_PIECES>() == 3 && this->count<KNIGHT>(WHITE) == 2); // 2) k vs NN
+    }
+#endif
 
+    // default early stopping
+    if (this->count<ALL_PIECES>() > 4) {
+        return true;
+    }
+
+    // check for chess and atomic
     return (this->count<ALL_PIECES>() == 2) ||                                      // 1) KK
            (this->count<ALL_PIECES>() == 3 && this->count<BISHOP>() == 1) ||        // 2) KB vs K
            (this->count<ALL_PIECES>() == 3 && this->count<KNIGHT>() == 1) ||        // 3) KN vs K
            (this->count<ALL_PIECES>() == 4 &&
-            (this->count<KNIGHT>(WHITE) == 2 || this->count<KNIGHT>(BLACK) == 2));  // 4) KNN vs K
-
-    return false;
+           (this->count<KNIGHT>(WHITE) == 2 || this->count<KNIGHT>(BLACK) == 2));   // 4) KNN vs K
 }
 
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
