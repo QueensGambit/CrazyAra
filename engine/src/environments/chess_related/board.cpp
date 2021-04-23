@@ -199,7 +199,7 @@ bool Board::draw_by_insufficient_material() const
 
     // default early stopping
     if (this->count<ALL_PIECES>() > 4) {
-        return true;
+        return false;
     }
 
     // check for chess and atomic

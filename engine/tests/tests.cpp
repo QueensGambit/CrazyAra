@@ -158,7 +158,9 @@ TEST_CASE("Draw_by_insufficient_material"){
     auto uiThread = make_shared<Thread>(0);
     StateInfo newState;
 
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // positive cases
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 1) K v K
     pos.set("8/8/2k5/8/8/4K3/8/8 w - - 0 1", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == true);
@@ -172,11 +174,30 @@ TEST_CASE("Draw_by_insufficient_material"){
     pos.set("8/8/2k5/8/8/3NKN2/8/8 w - - 0 1", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == true);
 
+    // Horde -> Q vs K
+    pos.set("8/8/2k5/8/5Q2/8/8/8 w - - 0 1", false, HORDE_VARIANT, &newState, uiThread.get());
+    REQUIRE(pos.draw_by_insufficient_material() == true);
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // negative cases
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     pos.set("kn6/8/NK6/8/8/8/8/8 w - - 0 2", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == false);
     pos.set("rnbqkb1r/pp2pppp/3p1n2/8/3NP3/8/PPP2PPP/RNBQKB1R w KQkq - 1 5",
             false, CHESS_VARIANT, &newState, uiThread.get());
+    REQUIRE(pos.draw_by_insufficient_material() == false);
+
+    // 1) K v K
+    pos.set("8/8/2k5/8/8/4K3/8/8 w - - 0 1", false, KOTH_VARIANT, &newState, uiThread.get());
+    REQUIRE(pos.draw_by_insufficient_material() == false);
+    // 2) KB vs K
+    pos.set("8/8/2k5/8/5B2/4K3/8/8 w - - 0 1", false, RACE_VARIANT, &newState, uiThread.get());
+    REQUIRE(pos.draw_by_insufficient_material() == false);
+    // 3) KN vs K
+    pos.set("8/8/2k5/8/5N2/4K3/8/8 w - - 0 1", false, ANTI_VARIANT, &newState, uiThread.get());
+    REQUIRE(pos.draw_by_insufficient_material() == false);
+    // 4) KNN vs K
+    pos.set("8/8/2k5/8/8/3NKN2/8/8 w - - 0 1", false, HORDE_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == false);
 }
 
