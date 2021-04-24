@@ -174,11 +174,6 @@ TEST_CASE("Draw_by_insufficient_material"){
     pos.set("8/8/2k5/8/8/3NKN2/8/8 w - - 0 1", false, CHESS_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == true);
 
-#ifdef MODE_LICHESS
-    // Horde -> Q vs K
-    pos.set("8/8/2k5/8/5Q2/8/8/8 w - - 0 1", false, HORDE_VARIANT, &newState, uiThread.get());
-    REQUIRE(pos.draw_by_insufficient_material() == true);
-#endif
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // negative cases
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,6 +195,9 @@ TEST_CASE("Draw_by_insufficient_material"){
     REQUIRE(pos.draw_by_insufficient_material() == false);
     // 4) KNN vs K
     pos.set("8/8/2k5/8/8/3NKN2/8/8 w - - 0 1", false, HORDE_VARIANT, &newState, uiThread.get());
+    REQUIRE(pos.draw_by_insufficient_material() == false);
+    // 5) Horde -> P vs k
+    pos.set("8/8/3k4/8/4P3/8/8/8 w - - 0 1", false, HORDE_VARIANT, &newState, uiThread.get());
     REQUIRE(pos.draw_by_insufficient_material() == false);
 #endif
 }

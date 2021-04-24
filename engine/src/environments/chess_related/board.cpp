@@ -192,8 +192,8 @@ bool Board::draw_by_insufficient_material() const
 #endif
 #ifdef HORDE
     if (is_horde()) {
-        return (this->count<ALL_PIECES>() == 2) ||                                  // 1) k vs ?
-               (this->count<ALL_PIECES>() == 3 && this->count<KNIGHT>(WHITE) == 2); // 2) k vs NN
+        // it seems not be worth to handle all cases here
+        return false;
     }
 #endif
 
