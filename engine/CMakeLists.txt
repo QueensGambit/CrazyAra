@@ -10,18 +10,19 @@ option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OF
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
 # enable a single mode for different model input / outputs
-option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
+option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  OFF)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 option(MODE_OPEN_SPIEL           "Build with open_spiel environment support"  OFF)
+option(MODE_XIANGQI              "Build with xiangqi only support" ON)
 option(SEARCH_UCT                "Build with UCT instead of PUCT search"  OFF)
 
 add_definitions(-DIS_64BIT)
-add_definitions(-DCRAZYHOUSE)
 
 if (MODE_CRAZYHOUSE)
     project(CrazyAra CXX)
     add_definitions(-DMODE_CRAZYHOUSE)
+    add_definitions(-DCRAZYHOUSE)
 endif()
 
 if (MODE_CHESS)
@@ -48,6 +49,15 @@ if (MODE_OPEN_SPIEL)
     add_definitions(-DMODE_OPEN_SPIEL)
     add_definitions(-DACTION_64_BIT)
 endif()
+
+if (MODE_XIANGQI)
+    project(XiangqiAra CXX)
+    add_definitions(-DNO_THREADS)
+    add_definitions(-DXIANGQI)
+    add_definitions(-DMODE_XIANGQI)
+    add_definitions(-DLARGEBOARDS)
+    add_definitions(-DPRECOMPUTED_MAGICS)
+endif ()
 
 if (BUILD_TESTS)
     add_definitions(-DBUILD_TESTS)
@@ -112,7 +122,12 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
     )
 
 find_package (Threads)
-include_directories("3rdparty/Stockfish/src")
+
+if (MODE_XIANGQI)
+    include_directories("3rdparty/Fairy-Stockfish/src")
+else ()
+    include_directories("3rdparty/Stockfish/src")
+endif ()
 include_directories("src")
 
 file(GLOB sf_related_files
@@ -136,19 +151,49 @@ file(GLOB chess_related_files
     "src/environments/chess_related/*.h"
     "src/environments/chess_related/*.cpp"
     )
-
-set(source_files
-    ${source_files}
-    ${sf_related_files}
-    ${uci_files}
+file(GLOB xiangqi_related_files
+    "src/environments/fairy_state/*.h"
+    "src/environments/fairy_state/*.cpp"
     )
+file(GLOB fsf_related_files
+    "3rdparty/Fairy-Stockfish/src/*.h"
+    "3rdparty/Fairy-Stockfish/src/*.cpp"
+    "3rdparty/Fairy-Stockfish/src/syzygy/tbprobe.h"
+    "3rdparty/Fairy-Stockfish/src/syzygy/tbprobe.cpp"
+    "3rdparty/Fairy-Stockfish/src/nnue/*.h"
+    "3rdparty/Fairy-Stockfish/src/nnue/*.cpp"
+    "3rdparty/Fairy-Stockfish/src/nnue/layers/*.h"
+    "3rdparty/Fairy-Stockfish/src/nnue/layers/*.cpp"
+    "3rdparty/Fairy-Stockfish/src/nnue/features/*.h"
+    "3rdparty/Fairy-Stockfish/src/nnue/features/*.cpp"
+    "3rdparty/Fairy-Stockfish/src/nnue/architectures/*.h"
+    "3rdparty/Fairy-Stockfish/src/nnue/architectures/*.cpp"
+    )
+list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/ffishjs.cpp)
+list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/pyffish.cpp)
 
-if (NOT MODE_OPEN_SPIEL)
+if (NOT MODE_XIANGQI)
+    set(source_files
+        ${source_files}
+        ${sf_related_files}
+        ${uci_files}
+        )
+endif ()
+
+if (NOT MODE_OPEN_SPIEL AND NOT MODE_XIANGQI)
     set(source_files
         ${source_files}
         ${chess_related_files}
         )
 endif()
+
+if (MODE_XIANGQI)
+    set(source_files
+        ${source_files}
+        ${xiangqi_related_files}
+        ${fsf_related_files}
+        ${uci_files})
+endif ()
 
 if (MODE_OPEN_SPIEL)
 

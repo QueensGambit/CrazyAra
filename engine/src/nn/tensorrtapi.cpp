@@ -34,7 +34,7 @@
 #include "EntropyCalibrator.h"
 #include "stateobj.h"
 #include "../util/communication.h"
-#ifndef MODE_POMMERMAN
+#if !defined(MODE_POMMERMAN) && !defined(MODE_XIANGQI)
 #include "environments/chess_related/chessbatchstream.h"
 #endif
 
@@ -220,7 +220,7 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 #elif defined MODE_CRAZYHOUSE
         calibrationStream.reset(new ChessBatchStream(1, 232));
 #endif
-#if !defined(MODE_POMMERMAN) && !defined(MODE_OPEN_SPIEL)
+#if !defined(MODE_POMMERMAN) && !defined(MODE_OPEN_SPIEL) && !defined(MODE_XIANGQI)
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*(dynamic_cast<ChessBatchStream*>(calibrationStream.get())), 0, "model", "data"));
 #endif
         config->setInt8Calibrator(calibrator.get());
