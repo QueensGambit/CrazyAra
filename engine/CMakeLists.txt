@@ -171,6 +171,7 @@ file(GLOB fsf_related_files
     )
 list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/ffishjs.cpp)
 list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/pyffish.cpp)
+list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/main.cpp)
 
 if (NOT MODE_XIANGQI)
     set(source_files
