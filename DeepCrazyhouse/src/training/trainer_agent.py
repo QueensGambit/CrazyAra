@@ -222,7 +222,7 @@ class TrainerAgent:  # Probably needs refactoring
         # define and initialize the variables which will be used
         t_s = time()
         # predefine the local variables that will be used in the training loop
-        val_loss_best = val_p_acc_best = k_steps_best = old_label = value_out = None
+        val_loss_best = val_p_acc_best = k_steps_best = val_metric_values_best = old_label = value_out = None
         patience_cnt = epoch = batch_proc_tmp = 0  # track on how many batches have been processed in this epoch
         k_steps = self.tc.k_steps_initial  # counter for thousands steps
         # calculate how many log states will be processed
@@ -369,7 +369,7 @@ class TrainerAgent:  # Probably needs refactoring
                                 if self.tc.log_metrics_to_tensorboard:
                                     self.sum_writer.close()
                                 return return_metrics_and_stop_training(k_steps, val_metric_values, k_steps_best,
-                                                                        val_loss_best, val_p_acc_best)
+                                                                        val_metric_values_best)
 
                             logging.debug("Recover to latest checkpoint")
                             model_path = self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.params" % (
@@ -407,6 +407,7 @@ class TrainerAgent:  # Probably needs refactoring
                                 # update val_loss_best
                                 val_loss_best = val_metric_values["loss"]
                                 val_p_acc_best = val_metric_values["policy_acc"]
+                                val_metric_values_best = val_metric_values
                                 k_steps_best = k_steps
 
                                 if self.tc.export_weights:
@@ -453,4 +454,5 @@ class TrainerAgent:  # Probably needs refactoring
                                     self.sum_writer.close()
 
                                 return return_metrics_and_stop_training(k_steps, val_metric_values, k_steps_best,
-                                                                        val_loss_best, val_p_acc_best)
+                                                                        val_metric_values_best)
+

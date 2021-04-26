@@ -115,7 +115,7 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, conve
     # iteration counter used for the momentum and learning rate schedule
     cur_it = train_config.k_steps_initial * train_config.batch_steps
     (k_steps_final, val_value_loss_final, val_policy_loss_final, val_value_acc_sign_final,
-     val_policy_acc_final), _ = train_agent.train(cur_it)
+     val_policy_acc_final), (_, _) = train_agent.train(cur_it)
 
     prefix = "%smodel-%.5f-%.5f-%.3f-%.3f" % (model_contender_dir, val_value_loss_final, val_policy_loss_final,
                                                                   val_value_acc_sign_final, val_policy_acc_final)
