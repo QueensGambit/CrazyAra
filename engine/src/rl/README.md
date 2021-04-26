@@ -63,6 +63,8 @@ Alternatively, if a model file is already available on the host machine, you can
 After all premilirary action have been done, you can finally start selfplay from a given checkpoint file, which is stored in the directory `/data/RL/model/`.
 If you want to start learning from zero knowledge, you may use a set of weights which have initialized randomly.
 
+If the program cannot find a model inside `/data/RL/model/` it will look at `/data/RL/model/<variant>/`, where `<variant>` is the selected chess variant.
+
 The python script [**rl_loop.py**](https://github.com/QueensGambit/CrazyAra/blob/master/engine/src/rl/rl_loop.py) is the main script for managing the reinforcement learning loop.
 It can be started in two different modes: a generator mode, and a generator+training mode.
 
@@ -70,18 +72,20 @@ It can be started in two different modes: a generator mode, and a generator+trai
 cd /root/CrazyAra/engine/src/rl
 ```
 
-
-##### Generator
-```shell script
-python rl_loop.py --device-id 0&
-```
-
 ##### Trainer
 You need to specify at least one gpu to also update the current neural network weights.
 The gpu trainer will stop generating games and update the network as soon as enough training samples have been acquired.
 
+:warning: There can only be one trainer and it must be started before starting any generators to ensure correct indexing.
+
 ```shell script
-python rl_loop.py --device-id 1 --trainer&
+python rl_loop.py --device-id 0 --trainer &
+```
+
+##### Generator
+The other gpu's can be used to generate games.
+```shell script
+python rl_loop.py --device-id 1 &
 ```
 
 #### Configuration
