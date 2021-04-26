@@ -15,6 +15,8 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     MODE,
     MODE_LICHESS,
     MODE_CRAZYHOUSE,
+    MODE_XIANGQI,
+    LABELS_XIANGQI,
     CHANNEL_MAPPING_CONST,
     CHANNEL_MAPPING_POS,
     MAX_NB_MOVES,
@@ -25,6 +27,10 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     POCKETS_SIZE_PIECE_TYPE,
     chess,
 )
+
+
+# file lookup for vertically mirrored xiangqi boards
+mirrored_files_lookup = {'a': 'i', 'b': 'h', 'c': 'g', 'd': 'f', 'e': 'e', 'f': 'd', 'g': 'c', 'h': 'b', 'i': 'a'}
 
 
 def get_row_col(position, mirror=False):
@@ -139,6 +145,24 @@ def get_numpy_arrays(pgn_dataset):
     return start_indices, x, y_value, y_policy, entries[0], entries[1]
 
 
+def get_x_y_and_indices(dataset):
+    """
+    Loads the content of the given dataset into numpy arrays.
+
+    :param dataset: dataset file handle
+    :return: numpy-arrays:
+        starting_idx - defines the index where each game starts
+        x - the board representation for all games
+        y_value - the game outcome (-1,0,1) for each board position
+        y_policy - the movement policy for the next_move played
+    """
+    start_indices = np.array(dataset["start_indices"])
+    x = np.array(dataset["x"])
+    y_value = np.array(dataset["y_value"])
+    y_policy = np.array(dataset["y_policy"])
+    return start_indices, x, y_value, y_policy
+
+
 def normalize_input_planes(x):
     """
     Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
@@ -161,13 +185,21 @@ def normalize_input_planes(x):
             mat_pos[channel, :, :] /= MAX_NB_PRISONERS
             # the prison for black begins 5 channels later
             mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
+    # xiangqi has 7 piece types (king/general is excluded as prisoner)
+    elif MODE == MODE_XIANGQI:
+        for p_type in range(6):
+            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type
+            mat_pos[channel, :, :] /= MAX_NB_PRISONERS
+            # the prison for opponent begins 6 channels later
+            mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
 
     # Total Move Count
     # 500 was set as the max number of total moves
     mat_const[CHANNEL_MAPPING_CONST["total_mv_cnt"], :, :] /= MAX_NB_MOVES
     # No progress count
     # after 40 moves of no progress the 40 moves rule for draw applies
-    mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
+    if MODE != MODE_XIANGQI:
+        mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
 
     return x
 
@@ -175,6 +207,31 @@ def normalize_input_planes(x):
 # use a constant matrix for normalization to allow broad cast operations
 # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
 MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)))
+
+
+def augment(x, y_policy):
+    """
+    Augments a given set of planes and their corresponding policy targets.
+    The returned planes are vertically mirrored. The returned policy targets
+    are adjusted, so that they correspond to the new planes.
+    Works in-place.
+    :param x: Input planes
+    :param y_policy: Policy targets
+    """
+    for i in range(x.shape[0]):
+        for j in range(x.shape[1]):
+            x[i][j] = np.fliplr(x[i][j])
+
+        idx_mv = np.where(y_policy[i] == 1)[0][0]
+        y_policy[i][idx_mv] = 0
+        ucci = LABELS_XIANGQI[idx_mv]
+
+        from_square_aug = mirrored_files_lookup[ucci[0]] + ucci[1]
+        to_square_aug = mirrored_files_lookup[ucci[2]] + ucci[3]
+        ucci_aug = from_square_aug + to_square_aug
+
+        idx_mv_aug = LABELS_XIANGQI.index(ucci_aug)
+        y_policy[i][idx_mv_aug] = 1
 
 
 def customize_input_planes(x):

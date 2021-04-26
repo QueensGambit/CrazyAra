@@ -16,9 +16,10 @@ from mxboard import SummaryWriter
 from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
+from DeepCrazyhouse.src.domain.util import augment
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
-from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP
+from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset, load_xiangqi_dataset
+from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP, MODE, MODE_XIANGQI
 from DeepCrazyhouse.src.training.crossentropy import *
 
 
@@ -163,7 +164,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         val_iter,
         train_config: TrainConfig,
         train_objects: TrainObjects,
-        use_rtpt: bool
+        use_rtpt: bool,
+        augment = False
     ):
         """
         Class for training the neural network.
@@ -185,18 +187,22 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self._val_iter = val_iter
         self.x_train = self.yv_train = self.yp_train = None
         self._ctx = get_context(train_config.context, train_config.device_id)
+        self._augment = augment
 
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if self.tc.log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(logdir=self.tc.export_dir+"logs", flush_secs=5, verbose=False)
         # Define the optimizer
         if self.tc.optimizer_name == "adam":
-            self.optimizer = mx.optimizer.Adam(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8, lazy_update=True, rescale_grad=(1.0/batch_size))
+            self.optimizer = mx.optimizer.Adam(learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8, lazy_update=True, rescale_grad=(1.0/self.tc.batch_size))
         elif self.tc.optimizer_name == "nag":
             self.optimizer = mx.optimizer.NAG(momentum=self.to.momentum_schedule(0), wd=self.tc.wd, rescale_grad=(1.0/self.tc.batch_size))
         else:
             raise Exception("%s is currently not supported as an optimizer." % self.tc.optimizer_name)
         self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
+        # if we augment the data set each part is loaded twice
+        if self._augment:
+            self.ordering += self.ordering
         # decides if the policy indices shall be selected directly from spatial feature maps without dense layer
         self.batch_end_callbacks = [self.batch_callback]
 
@@ -281,25 +287,52 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.t_s_steps = time()
             self._model.init_optimizer(optimizer=self.optimizer)
 
+            if self._augment:
+                # stores part ids that were not augmented yet
+                parts_not_augmented = list(set(self.ordering.copy()))
+                # stores part ids that were loaded before but not augmented
+                parts_to_augment = []
+
             for part_id in tqdm_notebook(self.ordering):
 
-                # load one chunk of the dataset from memory
-                _, self.x_train, self.yv_train, self.yp_train, plys_to_end, _ = load_pgn_dataset(dataset_type="train",
-                                                                                                 part_id=part_id,
-                                                                                                 normalize=self.tc.normalize,
-                                                                                                 verbose=False,
-                                                                                                 q_value_ratio=self.tc.q_value_ratio)
+                if MODE == MODE_XIANGQI:
+                    _, self.x_train, self.yv_train, self.yp_train, _ = load_xiangqi_dataset(dataset_type="train",
+                                                                                            part_id=part_id,
+                                                                                            normalize=self.tc.normalize,
+                                                                                            verbose=False)
+                    if self._augment:
+                        # check whether the current part should be augmented
+                        if part_id in parts_to_augment:
+                            augment(self.x_train, self.yp_train)
+                            logging.debug("Using augmented part with id {}".format(part_id))
+                        elif part_id in parts_not_augmented:
+                            if random.randint(0, 1):
+                                augment(self.x_train, self.yp_train)
+                                parts_not_augmented.remove(part_id)
+                                logging.debug("Using augmented part with id {}".format(part_id))
+                            else:
+                                parts_to_augment.append(part_id)
+                                logging.debug("Using unaugmented part with id {}".format(part_id))
+                else:
+                    # load one chunk of the dataset from memory
+                    _, self.x_train, self.yv_train, self.yp_train, plys_to_end, _ = load_pgn_dataset(dataset_type="train",
+                                                                                                     part_id=part_id,
+                                                                                                     normalize=self.tc.normalize,
+                                                                                                     verbose=False,
+                                                                                                     q_value_ratio=self.tc.q_value_ratio)
                 # fill_up_batch if there aren't enough games
                 if len(self.yv_train) < self.tc.batch_size:
                     logging.info("filling up batch with too few samples %d" % len(self.yv_train))
                     self.x_train = fill_up_batch(self.x_train, self.tc.batch_size)
                     self.yv_train = fill_up_batch(self.yv_train, self.tc.batch_size)
                     self.yp_train = fill_up_batch(self.yp_train, self.tc.batch_size)
-                    if plys_to_end is not None:
-                        plys_to_end = fill_up_batch(plys_to_end, self.tc.batch_size)
+                    if MODE != MODE_XIANGQI:
+                        if plys_to_end is not None:
+                            plys_to_end = fill_up_batch(plys_to_end, self.tc.batch_size)
 
-                if self.tc.discount != 1:
-                    self.yv_train *= self.tc.discount**plys_to_end
+                if MODE != MODE_XIANGQI:
+                    if self.tc.discount != 1:
+                        self.yv_train *= self.tc.discount**plys_to_end
                 self.yp_train = prepare_policy(self.yp_train, self.tc.select_policy_from_plane,
                                                self.tc.sparse_policy_label, self.tc.is_policy_from_plane_data)
 
