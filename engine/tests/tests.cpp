@@ -27,6 +27,7 @@
 
 #ifdef BUILD_TESTS
 #include <iostream>
+#ifndef MODE_XIANGQI
 #include <string>
 #include "catch.hpp"
 #include "uci.h"
@@ -385,5 +386,211 @@ TEST_CASE("State: clone()"){
     unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state.clone());
     REQUIRE(state2->fen() == state.fen());
 }
+#else
+#include "catch.hpp"
+#include "piece.h"
+#include "thread.h"
+#include "uci.h"
+#include "uci/optionsuci.h"
+#include "variant.h"
+#include "environments/fairy_state/fairyboard.h"
+#include "environments/fairy_state/fairystate.h"
+#include "environments/fairy_state/fairyutil.h"
+#include "environments/fairy_state/fairyinputrepresentation.h"
 
+
+void init() {
+    pieceMap.init();
+    variants.init();
+    OptionsUCI::init(Options);
+    UCI::init(Options);
+    Bitboards::init();
+    Position::init();
+    Bitbases::init();
+    Search::init();
+    Tablebases::init("");
+}
+
+void get_planes_statistics(const FairyBoard* pos, bool normalize, double& sum, double& maxNum, double& key, size_t& argMax) {
+    float inputPlanes[StateConstantsFairy::NB_VALUES_TOTAL()];
+    board_to_planes(pos, normalize, inputPlanes);
+    sum = 0;
+    maxNum = 0;
+    key = 0;
+    argMax = 0;
+    for (unsigned int i = 0; i < StateConstantsFairy::NB_VALUES_TOTAL(); ++i) {
+        const float val = inputPlanes[i];
+        sum += val;
+        if (val > maxNum) {
+            maxNum = val;
+            argMax = i;
+        }
+        key += i * val;
+    }
+}
+
+void apply_moves_to_board(const vector<string>& uciMoves, FairyBoard& pos, StateListPtr& states) {
+    for (string uciMove : uciMoves) {
+        Move m = UCI::to_move(pos, uciMove);
+        states->emplace_back();
+        pos.do_move(m, states->back());
+    }
+}
+
+void apply_move_to_board(string uciMove, FairyBoard& pos, StateListPtr& states) {
+    Move m = UCI::to_move(pos, uciMove);
+    states->emplace_back();
+    pos.do_move(m, states->back());
+}
+
+TEST_CASE("Xiangqi_Input_Planes") {
+    init();
+    FairyBoard pos;
+    StateInfo newState;
+    StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
+
+    auto uiThread = make_shared<Thread>(0);
+
+    const Variant *xiangqiVariant = variants.find("xiangqi")->second;
+    string startFen = xiangqiVariant->startFen;
+    pos.set(xiangqiVariant, startFen, false, &states->back(), uiThread.get(), false);
+
+    // starting position test
+    double sum, maxNum, key;
+    size_t argMax;
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 122);
+    REQUIRE(maxNum == 1);
+    REQUIRE(key == 236909);
+    REQUIRE(argMax == 85);
+    REQUIRE(pos.fen() == startFen);
+
+    string uciMove = "c4c5";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 32);
+    REQUIRE(maxNum == 1);
+    REQUIRE(key == 22313);
+    REQUIRE(argMax == 85);
+    REQUIRE(pos.fen() == "rnbakabnr/9/1c5c1/p1p1p1p1p/9/2P6/P3P1P1P/1C5C1/9/RNBAKABNR b - - 1 1");
+
+    uciMove = "g7g6";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 212);
+    REQUIRE(maxNum == 1);
+    REQUIRE(key == 459614);
+    REQUIRE(argMax == 85);
+    REQUIRE(pos.fen() == "rnbakabnr/9/1c5c1/p1p1p3p/6p2/2P6/P3P1P1P/1C5C1/9/RNBAKABNR w - - 2 2");
+
+    uciMove = "h3g3";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 122);
+    REQUIRE(maxNum == 1);
+    REQUIRE(key == 245008);
+    REQUIRE(argMax == 85);
+    REQUIRE(pos.fen() == "rnbakabnr/9/1c5c1/p1p1p3p/6p2/2P6/P3P1P1P/1C4C2/9/RNBAKABNR b - - 3 2");
+
+    uciMove = "c10e8";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 302);
+    REQUIRE(maxNum == 2);
+    REQUIRE(key == 682338);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "rn1akabnr/9/1c2b2c1/p1p1p3p/6p2/2P6/P3P1P1P/1C4C2/9/RNBAKABNR w - - 4 3");
+
+    uciMove = "h1i3";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 212);
+    REQUIRE(maxNum == 2);
+    REQUIRE(key == 467716);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "rn1akabnr/9/1c2b2c1/p1p1p3p/6p2/2P6/P3P1P1P/1C4C1N/9/RNBAKAB1R b - - 5 3");
+
+    uciMove = "h10g8";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 392);
+    REQUIRE(maxNum == 3);
+    REQUIRE(key == 905043);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "rn1akab1r/9/1c2b1nc1/p1p1p3p/6p2/2P6/P3P1P1P/1C4C1N/9/RNBAKAB1R w - - 6 4");
+
+    uciMove = "i1h1";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 302);
+    REQUIRE(maxNum == 3);
+    REQUIRE(key == 690401);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "rn1akab1r/9/1c2b1nc1/p1p1p3p/6p2/2P6/P3P1P1P/1C4C1N/9/RNBAKABR1 b - - 7 4");
+
+    uciMove = "i10h10";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 482);
+    REQUIRE(maxNum == 4);
+    REQUIRE(key == 1127746);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "rn1akabr1/9/1c2b1nc1/p1p1p3p/6p2/2P6/P3P1P1P/1C4C1N/9/RNBAKABR1 w - - 8 5");
+
+    uciMove = "b3e3";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 392);
+    REQUIRE(maxNum == 4);
+    REQUIRE(key == 913108);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "rn1akabr1/9/1c2b1nc1/p1p1p3p/6p2/2P6/P3P1P1P/4C1C1N/9/RNBAKABR1 b - - 9 5");
+
+    uciMove = "h8h4";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 572);
+    REQUIRE(maxNum == 5);
+    REQUIRE(key == 1350490);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "rn1akabr1/9/1c2b1n2/p1p1p3p/6p2/2P6/P3P1PcP/4C1C1N/9/RNBAKABR1 w - - 10 6");
+
+    uciMove = "b1c3";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 482);
+    REQUIRE(maxNum == 5);
+    REQUIRE(key == 1135796);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "rn1akabr1/9/1c2b1n2/p1p1p3p/6p2/2P6/P3P1PcP/2N1C1C1N/9/R1BAKABR1 b - - 11 6");
+
+    uciMove = "b10d9";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 662);
+    REQUIRE(maxNum == 6);
+    REQUIRE(key == 1573189);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "r2akabr1/3n5/1c2b1n2/p1p1p3p/6p2/2P6/P3P1PcP/2N1C1C1N/9/R1BAKABR1 w - - 12 7");
+
+    uciMove = "a1a2";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 572);
+    REQUIRE(maxNum == 6);
+    REQUIRE(key == 1358503);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "r2akabr1/3n5/1c2b1n2/p1p1p3p/6p2/2P6/P3P1PcP/2N1C1C1N/R8/2BAKABR1 b - - 13 7");
+
+    uciMove = "d10e9";
+    apply_move_to_board(uciMove, pos, states);
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 752);
+    REQUIRE(maxNum == 7);
+    REQUIRE(key == 1795895);
+    REQUIRE(argMax == 2430);
+    REQUIRE(pos.fen() == "r3kabr1/3na4/1c2b1n2/p1p1p3p/6p2/2P6/P3P1PcP/2N1C1C1N/R8/2BAKABR1 w - - 14 8");
+    REQUIRE(StateConstantsFairy::NB_VALUES_TOTAL() == 28*90);
+}
+#endif // MODE_XIANGQI
 #endif
