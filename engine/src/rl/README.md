@@ -76,8 +76,7 @@ cd /root/CrazyAra/engine/src/rl
 You need to specify at least one gpu to also update the current neural network weights.
 The gpu trainer will stop generating games and update the network as soon as enough training samples have been acquired.
 
-<img class="emoji" title=":warning:" alt=":warning:" height="20" width="20" align="absmiddle" src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">
-There can only be one trainer and it must be started before starting any generators to ensure correct indexing.
+:warning: There can only be one trainer and it must be started before starting any generators to ensure correct indexing.
 
 ```shell script
 python rl_loop.py --device-id 0 --trainer &
