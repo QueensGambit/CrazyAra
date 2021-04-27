@@ -107,6 +107,8 @@ void OptionsUCI::init(OptionsMap &o)
     o["Model_Directory"]               << Option(((string) "model" + "/" + availableVariants.front()).c_str());
 #elif defined MODE_CHESS
     o["Model_Directory"]               << Option("model/chess");
+#elif defined MODE_XIANGQI
+    o["Model_Directory"]               << Option("model/xiangqi");
 #else
     o["Model_Directory"]               << Option("model");
 #endif
