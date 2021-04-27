@@ -416,7 +416,7 @@ public:
      * @param isChess960 If true 960 mode will be active
      * @param variant Variant which the position corresponds to
      */
-    //virtual void init(int variant, bool isChess960) = 0;
+    virtual void init(int variant, bool isChess960) = 0;
 };
 
 #endif // GAMESTATE_H
