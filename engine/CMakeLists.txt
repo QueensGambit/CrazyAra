@@ -57,6 +57,7 @@ if (MODE_XIANGQI)
     add_definitions(-DMODE_XIANGQI)
     add_definitions(-DLARGEBOARDS)
     add_definitions(-DPRECOMPUTED_MAGICS)
+    add_definitions(-DNNUE_EMBEDDING_OFF)
 endif ()
 
 if (BUILD_TESTS)
