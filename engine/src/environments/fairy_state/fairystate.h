@@ -140,6 +140,7 @@ public:
     string action_to_san(Action action, const std::vector<Action> &legalActions, bool leadsToWin, bool bookMove) const override;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result) override;
     void set_auxiliary_outputs(const float* auxiliaryOutputs) override;
+    void init(int variant, bool isChess960);
 };
 
 #endif // FAIRYSTATE_H
