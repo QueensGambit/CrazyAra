@@ -40,8 +40,7 @@ static vector<string> availableVariants = {
     "giveaway",  // antichess
     "horde",
     "kingofthehill",
-    "racingkings",
-    "xiangqi"
+    "racingkings"
 };
 
 // FEN strings of the initial positions

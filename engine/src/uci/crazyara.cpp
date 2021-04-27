@@ -112,9 +112,6 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     };
 
     do {
-#ifdef MODE_XIANGQI
-        state.get();
-#endif
         if (it < commands.size()) {
             cmd = commands[it];
             cout << ">>" << cmd << endl;
