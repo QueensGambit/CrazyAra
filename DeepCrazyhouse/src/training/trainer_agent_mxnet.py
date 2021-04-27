@@ -145,12 +145,11 @@ def get_context(context: str, device_id: int):
         return mx.cpu()
 
 
-def return_metrics_and_stop_training(k_steps, val_metric_values,
-                                      k_steps_best, val_loss_best, val_p_acc_best):
-    return (k_steps, val_metric_values["value_loss"],
-            val_metric_values["policy_loss"],
+def return_metrics_and_stop_training(k_steps, val_metric_values, k_steps_best, val_metric_values_best):
+    return (k_steps,
+            val_metric_values["value_loss"], val_metric_values["policy_loss"],
             val_metric_values["value_acc_sign"], val_metric_values["policy_acc"]), \
-           (k_steps_best, val_loss_best, val_p_acc_best)
+           (k_steps_best, val_metric_values_best)
 
 
 class TrainerAgentMXNET:  # Probably needs refactoring
@@ -210,6 +209,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             self.k_steps_end = 1
         self.k_steps = self.cur_it = self.nb_spikes = self.old_val_loss = self.continue_training = self.t_s_steps = None
         self._train_iter = self.graph_exported = self.val_metric_values = self.val_loss = self.val_p_acc = None
+        self.val_metric_values_best = None
 
         self.use_rtpt = use_rtpt
 
@@ -327,8 +327,8 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                             'Elapsed time for training(hh:mm:ss): ' +
                             str(datetime.timedelta(seconds=round(time() - self.t_s))))
 
-                        return return_metrics_and_stop_training(self.k_steps, self.val_metric_values, self.k_steps_best,
-                                                                self.val_loss_best, self.val_p_acc_best)
+                        return return_metrics_and_stop_training(self.k_steps, self.val_metric_values,
+                                                                self.k_steps_best, self.val_metric_values_best)
 
                 # add the graph representation of the network to the tensorboard log file
                 if not self.graph_exported and self.tc.log_metrics_to_tensorboard:
@@ -404,7 +404,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             if self.tc.log_metrics_to_tensorboard:
                 self.sum_writer.close()
             return return_metrics_and_stop_training(self.k_steps, self.val_metric_values, self.k_steps_best,
-                                                    self.val_loss_best, self.val_p_acc_best)
+                                                    self.val_metric_values_best)
 
         logging.debug("Recover to latest checkpoint")
         # Load the best model once again
@@ -436,6 +436,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
             # update val_loss_best
             self.val_loss_best = self.val_metric_values["loss"]
             self.val_p_acc_best = self.val_metric_values["policy_acc"]
+            self.val_metric_values_best = self.val_metric_values
             self.k_steps_best = self.k_steps
 
             if self.tc.export_weights:
