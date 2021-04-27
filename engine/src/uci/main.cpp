@@ -29,9 +29,13 @@
 #include "stateobj.h"
 #include <iostream>
 #include "crazyara.h"
+#include "variants.h"
 
 #ifndef BUILD_TESTS
 int main(int argc, char* argv[]) {
+#ifdef XIANGQI
+    variants.init();
+#endif
     CrazyAra crazyara;
     crazyara.init();
     crazyara.welcome();

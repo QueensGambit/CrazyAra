@@ -40,6 +40,9 @@ using blaze::DynamicVector;
 #include "pommermanstate.h"
 #elif MODE_OPEN_SPIEL
 #include "environments/open_spiel/openspielstate.h"
+#elif MODE_XIANGQI
+#include "environments/fairy_state/fairystate.h"
+#include "environments/fairy_state/fairyoutputrepresentation.h"
 #else
 #include "environments/chess_related/boardstate.h"
 #include "environments/chess_related/outputrepresentation.h"
@@ -51,6 +54,9 @@ using blaze::DynamicVector;
 #elif MODE_OPEN_SPIEL
     using StateObj = OpenSpielState;
     using StateConstants = StateConstantsOpenSpiel;
+#elif MODE_XIANGQI
+    using StateObj = FairyState;
+    using StateConstants = StateConstantsFairy;
 #else
     using StateObj = BoardState;
     using StateConstants = StateConstantsBoard;

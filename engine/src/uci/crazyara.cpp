@@ -41,6 +41,9 @@
 #include "optionsuci.h"
 #include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
+#ifdef MODE_XIANGQI
+    #include "piece.h"
+#endif
 #ifdef MXNET
 #include "nn/mxnetapi.h"
 #elif defined TENSORRT
@@ -60,6 +63,8 @@ CrazyAra::CrazyAra():
     playSettings(PlaySettings()),
 #ifdef MODE_CRAZYHOUSE
     variant(CRAZYHOUSE_VARIANT),
+#elif defined(MODE_XIANGQI)
+    variant(*variants.find("xiangqi")->second),
 #else
     variant(CHESS_VARIANT),
 #endif
@@ -89,11 +94,14 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
     EvalInfo evalInfo;
+#ifndef MODE_XIANGQI
     auto uiThread = make_shared<Thread>(0);
-
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
     state->set(StartFENs[variant], is960, variant);
-
+#endif
+#ifdef MODE_XIANGQI
+    state->set(variant.startFen, is960, 0);
+#endif
     for (int i = 1; i < argc; ++i)
         cmd += string(argv[i]) + " ";
 
@@ -104,7 +112,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     };
 
     do {
-
+#ifdef MODE_XIANGQI
+        state.get();
+#endif
         if (it < commands.size()) {
             cmd = commands[it];
             cout << ">>" << cmd << endl;
@@ -201,7 +211,13 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
 {
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
+
+#ifndef MODE_XIANGQI
+    variant = UCI::variant_from_name(Options["UCI_Variant"]);
     state->set(StartFENs[variant], is960, variant);
+#else
+    state->set(variant.startFen, is960, 0);
+#endif
 
     istringstream is("fen " + fen);
     position(state.get(), is);
@@ -231,11 +247,17 @@ void CrazyAra::position(StateObj* state, istringstream& is)
 
     Action action;
     string token, fen;
-
+#ifndef MODE_XIANGQI
+    variant = UCI::variant_from_name(Options["UCI_Variant"]);
+#endif
     is >> token;
     if (token == "startpos")
     {
+#ifndef MODE_XIANGQI
         fen = StartFENs[variant];
+#else
+        fen = variant.startFen;
+#endif
         is >> token; // Consume "moves" token if any
     }
     else if (token == "fen") {
@@ -246,7 +268,11 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     else
         return;
 
-    state->set(fen, is960, variant);
+#ifndef MODE_XIANGQI
+        state->set(fen, is960, variant);
+#else
+        state->set(fen, is960, 0);
+#endif
     Action lastMove = ACTION_NONE;
 
     // Parse move list (if any)
@@ -382,11 +408,27 @@ void CrazyAra::init_rl_settings()
 
 void CrazyAra::init()
 {
+#ifndef MODE_XIANGQI
     OptionsUCI::init(Options);
     Bitboards::init();
     Position::init();
     Bitbases::init();
     Search::init();
+#endif
+#ifdef MODE_XIANGQI
+    pieceMap.init();
+    OptionsUCI::init(Options);
+    UCI::init(Options);
+    Bitboards::init();
+    Position::init();
+    Bitbases::init();
+    Search::init();
+    Tablebases::init("");
+
+    // This is a workaround for compatibility with Fairy-Stockfish
+    // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
+    Options.erase("Hash");
+#endif
 }
 
 bool CrazyAra::is_ready()

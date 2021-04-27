@@ -24,6 +24,9 @@
  */
 
 #include "optionsuci.h"
+#ifdef MODE_XIANGQI
+    #include "variant.h"
+#endif
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -39,10 +42,11 @@ void on_logger(const Option& o) {
 }
 
 // method is based on 3rdparty/Stockfish/uci.cpp
+#ifndef MODE_XIANGQI
 void on_tb_path(const Option& o) {
     Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
 }
-
+#endif
 
 void OptionsUCI::init(OptionsMap &o)
 {
@@ -103,6 +107,8 @@ void OptionsUCI::init(OptionsMap &o)
     o["Model_Directory"]               << Option(((string) "model" + "/" + availableVariants.front()).c_str());
 #elif defined MODE_CHESS
     o["Model_Directory"]               << Option("model/chess");
+#elif defined MODE_XIANGQI
+    o["Model_Directory"]               << Option("model/xiangqi");
 #else
     o["Model_Directory"]               << Option("model");
 #endif
@@ -141,12 +147,16 @@ void OptionsUCI::init(OptionsMap &o)
 #else
     o["Simulations"]                   << Option(0, 0, 99999999);
 #endif
+#ifndef MODE_XIANGQI
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
+#endif
     o["Threads"]                       << Option(2, 1, 512);
 #ifdef MODE_CRAZYHOUSE
     o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
 #elif defined MODE_LICHESS
     o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), availableVariants);
+#elif defined MODE_XIANGQI
+    o["UCI_Variant"]                   << Option("xiangqi", {"xiangqi", "xiangqi"});
 #else  // MODE = MODE_CHESS
     o["UCI_Variant"]                   << Option("chess", {"chess", "chess"});
 #endif
@@ -193,9 +203,14 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
         cout << "info string Updated option " << name << " to " << value << endl;
         std::transform(name.begin(), name.end(), name.begin(), ::tolower);
         if (name == "uci_variant") {
+#ifdef XIANGQI
+            // Workaround. Fairy-Stockfish does not use an enum for variants
+            cout << "info string variant " << "Xiangqi" << " startpos " << "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" << endl;
+#else
             variant = UCI::variant_from_name(value);
             cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << endl;
             state.set(StartFENs[variant], Options["UCI_Chess960"], variant);
+#endif
 
 #ifdef MODE_LICHESS // Set model path for new variant; just in case set model_contender as well
             Options["Model_Directory"] << ((string) "model" + "/" + string(Options["UCI_Variant"])).c_str();
