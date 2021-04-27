@@ -10,11 +10,11 @@ option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OF
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
 # enable a single mode for different model input / outputs
-option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  OFF)
+option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 option(MODE_OPEN_SPIEL           "Build with open_spiel environment support"  OFF)
-option(MODE_XIANGQI              "Build with xiangqi only support" ON)
+option(MODE_XIANGQI              "Build with xiangqi only support" OFF)
 option(SEARCH_UCT                "Build with UCT instead of PUCT search"  OFF)
 
 add_definitions(-DIS_64BIT)
