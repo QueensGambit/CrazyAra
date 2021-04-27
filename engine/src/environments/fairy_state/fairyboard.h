@@ -25,7 +25,5 @@ public:
 Result get_result(const FairyBoard &pos, bool inCheck);
 std::string wxf_move(Move m, const FairyBoard& pos);
 std::string uci_move(Move m);
-char file_to_uci(File file);
-std::string rank_to_uci(Rank rank);
 
 #endif //FAIRYBOARD_H

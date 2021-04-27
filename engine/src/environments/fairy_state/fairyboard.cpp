@@ -118,21 +118,3 @@ std::string uci_move(Move m) {
 
     return std::string(1, fromFile) + fromRank + std::string(1, toFile) + toRank;
 }
-
-char file_to_uci(File file) {
-    for (auto it = FILE_LOOKUP.begin(); it != FILE_LOOKUP.end(); ++it) {
-        if (it->second == file) {
-            return it->first;
-        }
-    }
-    return char();
-}
-
-std::string rank_to_uci(Rank rank) {
-    for (auto it = RANK_LOOKUP.begin(); it != RANK_LOOKUP.end(); ++it) {
-        if (it->second == rank) {
-            return std::string(1, it->first);
-        }
-    }
-    return "10";
-}
