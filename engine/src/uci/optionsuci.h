@@ -32,6 +32,7 @@
 #include "misc.h"
 #include "variants.h"
 #include "stateobj.h"
+#include "agents/config/searchlimits.h"
 
 using namespace UCI;
 
@@ -52,6 +53,12 @@ namespace OptionsUCI {
      */
     void setoption(istringstream& is, Variant& variant, StateObj& state);
 
+    /**
+     * @brief init_new_search Initializes the struct according to the given OptionsMap for a new search
+     * @param searchLimit search limits struct to be changed
+     * @param options UCI Options struct (won't be changed)
+     */
+    void init_new_search(SearchLimits& searchLimits, OptionsMap &options);
 }
 
 #endif // OPTIONSUCI_H

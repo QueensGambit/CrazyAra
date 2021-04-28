@@ -222,3 +222,13 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
         cout << "info string Given option " << name << " does not exist " << endl;
     }
 }
+
+void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap &options)
+{
+    searchLimits.reset();
+    searchLimits.startTime = now();
+    searchLimits.moveOverhead = TimePoint(options["Move_Overhead"]);
+    searchLimits.nodes = options["Nodes"];
+    searchLimits.movetime = options["Fixed_Movetime"];
+    searchLimits.simulations = options["Simulations"];
+}
