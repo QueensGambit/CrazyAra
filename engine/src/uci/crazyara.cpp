@@ -164,7 +164,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
 void CrazyAra::prepare_search_config_structs()
 {
-    init_new_search(searchLimits, Options);
+    OptionsUCI::init_new_search(searchLimits, Options);
 
     if (changedUCIoption) {
         init_search_settings();
