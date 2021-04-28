@@ -196,9 +196,15 @@ void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutput
 
     executor->outputs[0].SyncCopyToCPU(valueOutput, batchSize);
     executor->outputs[1].SyncCopyToCPU(probOutputs, get_policy_output_length());
+#ifdef DYNAMIC_NN_ARCH
     if (has_auxiliary_outputs()) {
         executor->outputs[2].SyncCopyToCPU(auxiliaryOutputs, get_nb_auxiliary_outputs()*batchSize);
     }
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
+         executor->outputs[2].SyncCopyToCPU(auxiliaryOutputs, StateConstants::NB_AUXILIARY_OUTPUTS()*batchSize);
+    }
+#endif
 }
 
 void set_shape(nn_api::Shape &shape, const std::vector<mx_uint> &mxnetShape)

@@ -63,7 +63,11 @@ TensorrtAPI::~TensorrtAPI()
     CHECK(cudaFree(deviceMemory[idxInput]));
     CHECK(cudaFree(deviceMemory[idxValueOutput]));
     CHECK(cudaFree(deviceMemory[idxPolicyOutput]));
+#ifdef DYNAMIC_NN_ARCH
     if (nnDesign.hasAuxiliaryOutputs) {
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+#endif
         CHECK(cudaFree(deviceMemory[idxAuxiliaryOutput]));
     }
     CHECK(cudaStreamDestroy(stream));
@@ -98,11 +102,20 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
+#ifdef DYNAMIC_NN_ARCH
     memorySizes[idxInput] = batchSize * get_nb_input_values_total() * sizeof(float);
+#else
+    memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
+#endif
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
     memorySizes[idxPolicyOutput] = get_policy_output_length() * sizeof(float);
+#ifdef DYNAMIC_NN_ARCH
     if (nnDesign.hasAuxiliaryOutputs) {
         memorySizes[idxAuxiliaryOutput] = batchSize * get_nb_auxiliary_outputs() * sizeof (float);
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+        memorySizes[idxAuxiliaryOutput] = batchSize * StateConstants::NB_AUXILIARY_OUTPUTS() * sizeof (float);
+#endif
         CHECK(cudaMalloc(&deviceMemory[idxAuxiliaryOutput], memorySizes[idxAuxiliaryOutput]));
     }
     CHECK(cudaMalloc(&deviceMemory[idxInput], memorySizes[idxInput]));
@@ -126,7 +139,11 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
                           memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
     CHECK(cudaMemcpyAsync(probOutputs, deviceMemory[idxPolicyOutput],
                           memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
+#ifdef DYNAMIC_NN_ARCH
     if (has_auxiliary_outputs()) {
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+#endif
         CHECK(cudaMemcpyAsync(auxiliaryOutputs, deviceMemory[idxAuxiliaryOutput],
                               memorySizes[idxAuxiliaryOutput], cudaMemcpyDeviceToHost, stream));
     }

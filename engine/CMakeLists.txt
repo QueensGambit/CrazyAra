@@ -9,6 +9,7 @@ option(BACKEND_MXNET             "Build with MXNet backend (Blas/IntelMKL/CUDA/T
 option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
+option(USE_DYNAMIC_NN_ARCH       "Build with dynamic neural network architektur support"  OFF)
 # enable a single mode for different model input / outputs
 option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
@@ -62,6 +63,10 @@ endif ()
 
 if (BUILD_TESTS)
     add_definitions(-DBUILD_TESTS)
+endif()
+
+if (USE_DYNAMIC_NN_ARCH)
+    add_definitions(-DDYNAMIC_NN_ARCH)
 endif()
 
 # -pg performance profiling flags
