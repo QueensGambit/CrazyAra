@@ -37,6 +37,23 @@ def get_norm_layer(data, norm_type, name):
     raise NotImplementedError
 
 
+def get_se_layer(data, channels, se_type, name, use_hard_sigmoid):
+    """
+    Wrapper for different se layers
+    """
+    if se_type == "ca_se":
+        return ca_se(data=data, channels=channels, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    elif se_type == "ec_se":
+        return eca_se(data=data, channels=channels, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    elif se_type == "sa_se":
+        return sa_se(data=data, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    elif se_type == "sm_se":
+        return sm_se(data=data, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    elif se_type == "cm_se":
+        return cm_se(data=data, channels=channels, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    raise NotImplementedError
+
+
 def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
     """
     Squeeze excitation block - Hu et al. - https://arxiv.org/abs/1709.01507
@@ -52,15 +69,16 @@ def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", 
     return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
 
 
-def get_stem(data, channels, act_type):
+def get_stem(data, channels, act_type, kernel=3):
     """
     Creates the convolution stem before the residual head
     :param data: Input data
     :param channels: Number of channels for the stem
     :param act_type: Activation function
+    :param kernel: Kernel size
     :return: symbol
     """
-    body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(3, 3), pad=(1, 1),
+    body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
                               no_bias=True, name="stem_conv0")
     body = mx.sym.BatchNorm(data=body, name='stem_bn0')
     body = get_act(data=body, act_type=act_type, name='stem_act0')
