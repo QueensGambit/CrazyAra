@@ -77,3 +77,8 @@ auto NodeData::get_q_values()
 {
     return blaze::subvector(qValues, 0, noVisitIdx);
 }
+
+bool is_unsolved_or_tablebase(NodeType nodeType)
+{
+    return nodeType > LOSS;
+}

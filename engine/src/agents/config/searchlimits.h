@@ -52,6 +52,9 @@ public:
 
     SearchLimits();
 
+    /**
+     * @brief reset Resets all search limits
+     */
     void reset();
 };
 

@@ -27,7 +27,7 @@
 #include "constants.h"
 
 
-void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, SideToMove sideToMove, bool normalize, DynamicVector<float> &policyProbSmall, bool selectPolicyFromPlane)
+void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, SideToMove sideToMove, bool normalize, DynamicVector<double> &policyProbSmall, bool selectPolicyFromPlane)
 {
     size_t vectorIdx;
     for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
@@ -61,4 +61,9 @@ const float* get_policy_data_batch(const size_t batchIdx, const float* probOutpu
         return probOutputs + batchIdx*StateConstants::NB_LABELS_POLICY_MAP();
     }
     return probOutputs + batchIdx*StateConstants::NB_LABELS();
+}
+
+const float* get_auxiliary_data_batch(const size_t batchIdx, const float* auxiliaryOutputs)
+{
+    return auxiliaryOutputs + batchIdx*StateConstants::NB_AUXILIARY_OUTPUTS();
 }

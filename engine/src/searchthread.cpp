@@ -40,16 +40,21 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
     NeuralNetAPIUser(netBatch),
-    isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings)
+    rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
+    newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
+    newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
+    transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
+    isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
+    tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
+#ifdef DYNAMIC_NN_ARCH
+    nbNNInputValues(net->get_nb_input_values_total())
+  #else
+    nbNNInputValues(StateConstants::NB_VALUES_TOTAL())
+#endif
 {
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
-
-    newNodes = make_unique<FixedVector<Node*>>(searchSettings->batchSize);
-    newNodeSideToMove = make_unique<FixedVector<SideToMove>>(searchSettings->batchSize);
-    transpositionValues = make_unique<FixedVector<float>>(searchSettings->batchSize*2);
-
     trajectoryBuffer.reserve(DEPTH_INIT);
     actionsBuffer.reserve(DEPTH_INIT);
 }
@@ -77,7 +82,7 @@ void SearchThread::set_is_running(bool value)
 
 NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx, bool inCheck)
 {
-    if(searchSettings->useTranspositionTable) {
+    if(searchSettings->useMCGS) {
         mapWithMutex->mtx.lock();
         unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
         if(it != mapWithMutex->hashTable.end() &&
@@ -129,14 +134,14 @@ void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& c
             childIdx = idx;
             return;
         }
-        if (currentNode->get_child_node(idx)->get_node_type() != WIN) {
+        if (currentNode->get_child_node(idx)->get_node_type() == UNSOLVED) {
             childIdx = idx;
             return;
         }
         childIdx = uint16_t(-1);
     }
     else {
-        childIdx = min(currentNode->get_no_visit_idx(), currentNode->get_number_child_nodes()-1);
+        childIdx = min(size_t(currentNode->get_no_visit_idx()), currentNode->get_number_child_nodes()-1);
         currentNode->increment_no_visit_idx();
         return;
     }
@@ -147,9 +152,9 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     size_t depth = get_random_depth();
     for (uint curDepth = 0; curDepth < depth; ++curDepth) {
         currentNode->lock();
-        childIdx = get_best_action_index(currentNode, true, 0);
+        childIdx = get_best_action_index(currentNode, true, 0, 0);
         Node* nextNode = currentNode->get_child_node(childIdx);
-        if (nextNode == nullptr || !nextNode->is_playout_node() || nextNode->get_visits() < RANDOM_MOVE_COUNTER || nextNode->get_node_type() != UNSOLVED) {
+        if (nextNode == nullptr || !nextNode->is_playout_node() || nextNode->get_visits() < searchSettings->epsilonGreedyCounter || nextNode->get_node_type() != UNSOLVED) {
             currentNode->unlock();
             break;
         }
@@ -167,13 +172,13 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
     Node* currentNode = rootNode;
 
     childIdx = uint16_t(-1);
-    if (searchSettings->useRandomPlayout && rootNode->is_playout_node() && rand() % RANDOM_MOVE_COUNTER == 0) {
+    if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
             currentNode->lock();
             random_playout(description, currentNode, childIdx);
             currentNode->unlock();
     }
-    else if (searchSettings->enhanceChecks && rootNode->is_playout_node() && rand() % CHECK_ENHANCE_COUNTER_PERIOD == 0) {
+    else if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
             currentNode->lock();
             childIdx = select_enhanced_move(currentNode);
@@ -214,14 +219,24 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
             currentNode->unlock();
 
             if (description.type == NODE_NEW_NODE) {
+#ifdef SEARCH_UCT
+                Node* nextNode = currentNode->get_child_node(childIdx);
+                nextNode->set_value(newState->random_rollout());
+                nextNode->enable_has_nn_results();
+                if (searchSettings->useTranspositionTable && !nextNode->is_terminal()) {
+                    mapWithMutex->mtx.lock();
+                    mapWithMutex->hashTable.insert({nextNode->hash_key(), nextNode});
+                    mapWithMutex->mtx.unlock();
+                }
+#else
                 // fill a new board in the input_planes vector
-                // we shift the index by NB_VALUES_TOTAL each time
-                newState->get_state_planes(true, inputPlanes+newNodes->size()*StateConstants::NB_VALUES_TOTAL());
+                // we shift the index by nbNNInputValues each time
+                newState->get_state_planes(true, inputPlanes + newNodes->size() * nbNNInputValues);
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
+#endif
             }
-
             return currentNode;
         }
         if (nextNode->is_terminal()) {
@@ -274,11 +289,14 @@ void SearchThread::reset_stats()
     depthSum = 0;
 }
 
-void fill_nn_results(size_t batchIdx, bool is_policy_map, const float* valueOutputs, const float* probOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
 {
-    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, is_policy_map), sideToMove);
-    node_post_process_policy(node, searchSettings->nodePolicyTemperature, is_policy_map, searchSettings);
+    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), sideToMove);
+    node_post_process_policy(node, searchSettings->nodePolicyTemperature, isPolicyMap, searchSettings);
     node_assign_value(node, valueOutputs, tbHits, batchIdx);
+#ifdef MCTS_STORE_STATES
+    node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
+#endif
     node->enable_has_nn_results();
 }
 
@@ -287,10 +305,10 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
+            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
         }
         ++batchIdx;
-        if (searchSettings->useTranspositionTable) {
+        if (searchSettings->useMCGS) {
             mapWithMutex->mtx.lock();
             mapWithMutex->hashTable.insert({node->hash_key(), node});
             mapWithMutex->mtx.unlock();
@@ -320,7 +338,11 @@ bool SearchThread::nodes_limits_ok()
 
 bool SearchThread::is_root_node_unsolved()
 {
+#ifdef MCTS_TB_SUPPORT
+    return is_unsolved_or_tablebase(rootNode->get_node_type());
+#else
     return rootNode->get_node_type() == UNSOLVED;
+#endif
 }
 
 size_t SearchThread::get_avg_depth()
@@ -369,10 +391,12 @@ void SearchThread::create_mini_batch()
 void SearchThread::thread_iteration()
 {
     create_mini_batch();
+#ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-        net->predict(inputPlanes, valueOutputs, probOutputs);
+        net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
         set_nn_results_to_child_nodes();
     }
+#endif
     backup_value_outputs();
     backup_collisions();
 }
@@ -461,7 +485,8 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
 
 bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateObj* state) {
     return  it->second->has_nn_results() &&
-            it->second->plies_from_null() == state->steps_from_null();
+            it->second->plies_from_null() == state->steps_from_null() &&
+            state->number_repetitions() == 0;
 }
 
 size_t get_random_depth()

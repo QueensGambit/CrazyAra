@@ -31,7 +31,8 @@
 #include <iostream>
 #include <fstream>
 #include "uci.h"
-#include "chess_related/variants.h"
+#include "state.h"
+#include "uci/variants.h"
 #include "util/blazeutil.h"
 #include "util/randomgen.h"
 
@@ -39,17 +40,18 @@
 void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& gamePGN, Result& gameResult)
 {
     bool givesCheck = state->gives_check(evalInfo.bestMove);
-    state->do_action(evalInfo.bestMove);
-    gameResult = state->check_result(givesCheck);
-    state->undo_action(evalInfo.bestMove); // undo and later redo move to get PGN move with result
-    gamePGN.gameMoves.push_back(state->action_to_san(evalInfo.bestMove, evalInfo.legalMoves, is_win(gameResult)));
+    std::unique_ptr<StateObj> stateClone = std::unique_ptr<StateObj>(state->clone());
+    stateClone->do_action(evalInfo.bestMove);
+    gameResult = stateClone->check_result(givesCheck);
+    gamePGN.gameMoves.push_back(state->action_to_san(evalInfo.bestMove, evalInfo.legalMoves, is_win(gameResult), false));
     state->do_action(evalInfo.bestMove);
 }
 
 
-SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings):
-    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings), rlSettings(rlSettings),
-    gameIdx(0), gamesPerMin(0), samplesPerMin(0)
+SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
+    RLSettings* rlSettings, UCI::OptionsMap& options):
+    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
+    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
 {
     const bool is960 = false;
 #ifdef MODE_CRAZYHOUSE
@@ -61,10 +63,23 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     else {
         gamePGN.variant = "standard";
     }
+#elif defined MODE_LICHESS
+    if (is960) {
+        gamePGN.variant = "chess960";
+    } else {
+        gamePGN.variant = string(options["UCI_Variant"]);
+    }
 #endif
+
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       date[80];
+    tstruct = *localtime(&now);
+    strftime(date, sizeof(date), "%Y.%m.%d %X", &tstruct);
+    gamePGN.date = date;
+
     gamePGN.event = "SelfPlay";
     gamePGN.site = "Darmstadt, GER";
-    gamePGN.date = "?";  // TODO: Change this later
     gamePGN.round = "?";
     gamePGN.is960 = false;
     this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
@@ -137,7 +152,7 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
     ply = clip_ply(ply, playSettings->maxInitPly);
 
     srand(unsigned(int(time(nullptr))));
-    unique_ptr<StateObj> state= init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, rlSettings->rawPolicyProbabilityTemperature);
+    unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, rlSettings->rawPolicyProbabilityTemperature);
     EvalInfo evalInfo;
     Result gameResult;
     exporter->new_game();
@@ -232,10 +247,10 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent)
     mctsAgent->clear_game_history();
 }
 
-void SelfPlay::write_game_to_pgn(const std::string& pngFileName, bool verbose)
+void SelfPlay::write_game_to_pgn(const std::string& pgnFileName, bool verbose)
 {
     ofstream pgnFile;
-    pgnFile.open(pngFileName, std::ios_base::app);
+    pgnFile.open(pgnFileName, std::ios_base::app);
     if (verbose) {
         cout << endl << gamePGN << endl;
     }
@@ -331,6 +346,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
 
 unique_ptr<StateObj> init_state(Variant variant, bool is960, GamePGN& gamePGN)
 {
+    // TODO: Use state->init() here
     unique_ptr<StateObj> state= make_unique<StateObj>();
 #ifdef SUPPORT960
     if (is960) {
@@ -369,6 +385,16 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, 
             gamePGN.gameMoves.push_back(state->action_to_san(eval.legalMoves[moveIdx], eval.legalMoves, false, true));
             state->do_action(eval.bestMove);
         }
+    }
+    return state;
+}
+
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, Variant variant, const vector<Action>& actions)
+{
+    unique_ptr<StateObj> state = init_state(variant, false, gamePGN);
+    for (Action action : actions) {
+        gamePGN.gameMoves.push_back(state->action_to_san(action, {}, false, true));
+        state->do_action(action);
     }
     return state;
 }

@@ -14,6 +14,7 @@ https://mxnet.apache.org/api/python/docs/tutorials/deploy/export/onnx.html
 """
 import os
 import sys
+import shutil
 import argparse
 import mxnet as mx
 from glob import glob
@@ -53,7 +54,7 @@ def parse_args(cmd_args: list):
 
     if not os.path.isdir(args.model_dir):
         raise Exception("The given directory %s does not exist." % args.model_dir)
-        
+
     args.sym_file = glob(args.model_dir + "/*.json")[0]
     args.params_file = glob(args.model_dir + "/*.params")[0]
 
@@ -97,8 +98,16 @@ def convert_mxnet_model_to_onnx(sym_file, params_file, output_names, input_shape
     Converts the given model specified by symbol and param file to ONNX format.
     For parameters see: parse_args.
     """
-    net = convert_mxnet_model_to_gluon(sym_file, params_file, output_names)
-    net.export("model")
+    # create symbol without output layers
+    symbol = mx.sym.load(sym_file)
+    value_out = symbol.get_internals()[output_names[0]]
+    policy_out = symbol.get_internals()[output_names[1]]
+    # group value_out and policy_out together
+    symbol = mx.symbol.Group([value_out, policy_out])
+    symbol.save("model-symbol.json")
+
+    # create temporary file for parameters
+    shutil.copy(params_file, "model-0000.params")
 
     # convert the gluon mxnet model into onnx
     for batch_size in batch_sizes:

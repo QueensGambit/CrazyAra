@@ -21,7 +21,10 @@
 # Created on 08.11.2019
 # @author: queensgambit
 
-FROM nvcr.io/nvidia/mxnet:20.01-py3
+# Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
+# see release page for  all current available releases:
+# https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
+FROM nvcr.io/nvidia/mxnet:20.09-py3
 
 MAINTAINER QueensGambit
 
@@ -35,19 +38,14 @@ RUN cd /root \
     && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ \
     && make install
 
-# Clone MXNet repository
-RUN cd /root \
-    && git clone https://github.com/apache/incubator-mxnet --recursive \
-    && cd incubator-mxnet/cpp-package/include/mxnet-cpp/ \
-    && wget https://raw.githubusercontent.com/dmlc/MXNet.cpp/master/include/mxnet-cpp/op.h
-ENV MXNET_PATH /root/incubator-mxnet/
-
 # Clone TensorRT repository for TensorRT backend
+# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
 RUN cd /root \
-    && git clone https://github.com/QueensGambit/TensorRT
+    && git clone https://github.com/NVIDIA/TensorRT \
+    && cd TensorRT \
+    && git checkout f693a6d723ef2766be36deb5e7987cd50159973a
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
-
 
 # Additional dependencies for reinforcement learning
 # ---------------------------------------------------
@@ -63,6 +61,7 @@ RUN cd /root \
 RUN cd /root \
     && git clone https://github.com/xtensor-stack/xtl.git \
     && cd xtl \
+    && git checkout tags/0.6.5 \
     && cmake CMakeLists.txt \
     && make install
 
@@ -70,35 +69,42 @@ RUN cd /root \
 RUN cd /root \
     && git clone https://github.com/xtensor-stack/xtensor.git \
     && cd xtensor \
+    && git checkout tags/0.20.8 \
     && cmake CMakeLists.txt \
     && make install
 
 # Install z5-library (C++ interface for zarr data format)
 RUN cd /root \
-    && git clone https://github.com/constantinpape/z5.git
+    && git clone https://github.com/constantinpape/z5.git \
+    && cd z5 \
+    && git checkout tags/2.0.5
 ENV Z5_PATH /root/z5/
 
 # Clone the CrazyAra repository
-RUN cd /root \
-    && git clone https://github.com/QueensGambit/CrazyAra.git --recursive
-
 # Install python dependencies for training the neural network
-RUN cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
+RUN cd /root \
+    && git clone https://github.com/QueensGambit/CrazyAra.git --recursive \
+    && cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
     && pip install -r requirements.txt
 
 # Install graphviz for plotting NN architectures
-RUN apt-get update && apt-get install -y --no-install-recommends graphviz=2.40.1 \
+RUN apt-get update -y \
+    && apt-get install -y graphviz \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Build CrazyAra executable
-RUN export MXNET_PATH=/root/incubator-mxnet/ \
-    && cd /root/CrazyAra/engine \
+# Build CrazyAra executable with reinforcement learning support
+# --------------------------------------------------------------
+RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Release ..
+    && cmake -DCMAKE_BUILD_TYPE=Release -DUSE_RL=ON .. \
+    && make -j8
 
-CMD make -j8
+# Rename the config files
+RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
+    && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
 
-CMD cd /root
-CMD /bin/bash
+CMD cd /root/CrazyAra/engine/src/rl/ \
+    && /bin/bash
+

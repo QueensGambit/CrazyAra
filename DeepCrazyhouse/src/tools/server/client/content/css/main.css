@@ -163,6 +163,6 @@ body {
 }
 
 .greyed_out, .greyed_out * {
-    background-color: #5e5e5e !important;
-    box-shadow: 0 0 40px #000000 inset !important;
+    background-color: #5e5e5e;
+    box-shadow: 0 0 40px #000000 inset;
 }

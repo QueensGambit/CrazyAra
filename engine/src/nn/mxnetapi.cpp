@@ -30,15 +30,11 @@
 #include "stateobj.h"
 
 
-MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT) :
+MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, const string& strPrecision, bool tensorRT) :
     NeuralNetAPI(ctx, deviceID, miniBatchSize, modelDirectory, tensorRT),
     inputShape(Shape(miniBatchSize, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()))
 {
-    modelFilePath = modelDir + get_file_ending_with(modelDir, ".json");
-    parameterFilePath = get_file_ending_with(modelDir, ".params");;
-    modelName = parameterFilePath.substr(0, parameterFilePath.length()-string(".params").length());
-    parameterFilePath = modelDir + parameterFilePath;
-
+    fill_model_paths(strPrecision);
     info_string("json file:", modelFilePath);
 
     if (ctx == "cpu" || ctx == "CPU") {
@@ -52,7 +48,7 @@ MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
     load_model();
     load_parameters();
     bind_executor();
-    check_if_policy_map();
+    init_nn_design();
 }
 
 MXNetAPI::~MXNetAPI()
@@ -150,18 +146,22 @@ void MXNetAPI::bind_executor()
     info_string("Bind successfull!");
 }
 
-void MXNetAPI::check_if_policy_map()
+void MXNetAPI::init_nn_design()
 {
+    set_shape(nnDesign.inputShape, inputShape);
+    set_shape(nnDesign.policyOutputShape, executor->outputs[nnDesign.policyOutputIdx].GetShape());
+    set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.valueOutputIdx].GetShape());
+    nnDesign.hasAuxiliaryOutputs = executor->outputs.size() > 2;
+    if (nnDesign.hasAuxiliaryOutputs) {
+        set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.auxiliaryOutputIdx].GetShape());
+    }
+
     float* inputPlanes = new float[batchSize*StateConstants::NB_VALUES_TOTAL()];
     fill(inputPlanes, inputPlanes+batchSize*StateConstants::NB_VALUES_TOTAL(), 0.0f);
 
     float value;
     NDArray probOutputs = predict(inputPlanes, value);
-    isPolicyMap = probOutputs.GetShape()[1] != size_t(StateConstants::NB_LABELS());
-    info_string("isPolicyMap:", isPolicyMap);
-    if (isPolicyMap) {
-        policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
-    }
+    nnDesign.isPolicyMap = probOutputs.GetShape()[1] != size_t(StateConstants::NB_LABELS());
     delete[] inputPlanes;
 }
 
@@ -187,7 +187,7 @@ NDArray MXNetAPI::predict(float* inputPlanes, float& value)
     return probOutputs;
 }
 
-void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutputs)
+void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs)
 {
     executor->arg_dict()["data"].SyncCopyFromCPU(inputPlanes, StateConstants::NB_VALUES_TOTAL() * batchSize);
 
@@ -195,7 +195,65 @@ void MXNetAPI::predict(float *inputPlanes, float* valueOutput, float* probOutput
     executor->Forward(false);
 
     executor->outputs[0].SyncCopyToCPU(valueOutput, batchSize);
-    executor->outputs[1].SyncCopyToCPU(probOutputs, policyOutputLength);
+    executor->outputs[1].SyncCopyToCPU(probOutputs, get_policy_output_length());
+#ifdef DYNAMIC_NN_ARCH
+    if (has_auxiliary_outputs()) {
+        executor->outputs[2].SyncCopyToCPU(auxiliaryOutputs, get_nb_auxiliary_outputs()*batchSize);
+    }
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS() != 0) {
+         executor->outputs[2].SyncCopyToCPU(auxiliaryOutputs, StateConstants::NB_AUXILIARY_OUTPUTS()*batchSize);
+    }
+#endif
+}
+
+void set_shape(nn_api::Shape &shape, const std::vector<mx_uint> &mxnetShape)
+{
+    shape.nbDims = mxnetShape.size();
+    for (uint idx = 0; idx < mxnetShape.size(); ++idx) {
+        shape.v[idx] = mxnetShape[idx];
+    }
+}
+
+void set_shape(nn_api::Shape &shape, const Shape &mxnetShape)
+{
+    shape.nbDims = mxnetShape.ndim();
+    for (uint idx = 0; idx < mxnetShape.ndim(); ++idx) {
+        shape.v[idx] = mxnetShape[idx];
+    }
+}
+
+void MXNetAPI::fill_model_paths(const string& strPrecision)
+{
+    vector<string> files = get_directory_files(modelDir);
+    if (strPrecision == "int8") {
+        const vector<string>& int8Files = get_items_by_elment(files, "int8", true);
+        if (int8Files.size() < 2) {  // we need at least to files
+            info_string("No int8 model weights were found in directory " + modelDir);
+            info_string("Falling back to float32 weights.");
+        }
+        else {
+            files = int8Files;
+        }
+    }
+    if (strPrecision == "float32") {
+        files = get_items_by_elment(files, "int8", false);
+    }
+    const string fileSuffixModel = ".json";
+    modelFilePath = get_string_ending_with(files, fileSuffixModel);
+    if (modelFilePath == "") {
+        throw invalid_argument( "The given directory at " + modelDir + " doesn't contain a file ending with " + fileSuffixModel);
+    }
+    modelFilePath = modelDir + modelFilePath;
+
+    const string fileSuffixParams = ".params";
+    parameterFilePath = get_string_ending_with(files, fileSuffixParams);
+    if (parameterFilePath == "") {
+        throw invalid_argument( "The given directory at " + modelDir + " doesn't contain a file ending with " + fileSuffixParams);
+    }
+
+    modelName = parameterFilePath.substr(0, parameterFilePath.length()-fileSuffixParams.length());
+    parameterFilePath = modelDir + parameterFilePath;
 }
 
 #endif

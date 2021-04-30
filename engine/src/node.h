@@ -223,7 +223,7 @@ public:
     double get_value_sum() const;
     uint32_t get_real_visits() const;
 
-    void apply_virtual_loss_to_child(ChildIdx childIdx, float virtualLoss);
+    void apply_virtual_loss_to_child(ChildIdx childIdx, uint_fast32_t virtualLoss);
 
     void increment_no_visit_idx();
     void fully_expand_node();
@@ -278,7 +278,7 @@ public:
     float get_action_value() const;
     SearchSettings* get_search_settings() const;
 
-    size_t get_no_visit_idx() const;
+    uint16_t get_no_visit_idx() const;
 
     bool is_fully_expanded() const;
 
@@ -333,16 +333,18 @@ public:
      * @param mctsPolicy Output of the final mcts policy after search
      * @param bestMoveIdx Index for the best move
      * @param qValueWeight Decides if Q-values are taken into account
+     * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
      */
-     void get_mcts_policy(DynamicVector<float>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight) const;
+     void get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
      * The moves a are pushed into the pv vector.
      * @param pv Vector in which moves will be pushed.
      * @param qValueWeight Decides if Q-values are taken into account
+     * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
      */
-     void get_principal_variation(vector<Action>& pv, bool qValueWeight) const;
+     void get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta) const;
 
     /**
      * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
@@ -363,7 +365,7 @@ public:
     void enable_has_nn_results();
     uint16_t plies_from_null() const;
     bool is_tablebase() const;
-    uint8_t get_node_type() const;
+    NodeType get_node_type() const;
     uint16_t get_end_in_ply() const;
     uint32_t get_free_visits() const;
 
@@ -465,6 +467,12 @@ public:
 
 #ifdef MCTS_STORE_STATES
     StateObj* get_state() const;
+
+    /**
+     * @brief set_auxiliary_outputs Sets the auxiliary outputs of the neural network to the state object
+     * @param auxiliaryOutputs Auxiliary outputs of the neural network for the corresponding state
+     */
+    void set_auxiliary_outputs(const float* auxiliaryOutputs);
 #endif
 
     uint32_t get_number_of_nodes() const;
@@ -621,20 +629,14 @@ private:
      * remaining moves to 0. Afterwards the policy is renormalized.
      * @param mctsPolicy MCTS policy which will be set
      */
-    void mcts_policy_based_on_wins(DynamicVector<float>& mctsPolicy) const;
+    void mcts_policy_based_on_wins(DynamicVector<double>& mctsPolicy) const;
 
     /**
      * @brief prune_losses_in_mcts_policy Sets all known losing moves in a given policy to 0 in case
      * the node is not known to be losing.
      * @param mctsPolicy MCTS policy which will be set
      */
-    void prune_losses_in_mcts_policy(DynamicVector<float>& mctsPolicy) const;
-
-    /**
-     * @brief mcts_policy_based_on_q_n Creates the MCTS policy based on visits and Q-values
-     * @param mctsPolicy MCTS policy which will be set
-     */
-    void mcts_policy_based_on_q_n(DynamicVector<float>& mctsPolicy, float qValueWeight) const;
+    void prune_losses_in_mcts_policy(DynamicVector<double>& mctsPolicy) const;
 
 //    /**
 //     * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
@@ -656,9 +658,10 @@ private:
  * @param curNode Current node
  * @param fast If true, then the argmax(childNumberVisits) is returned for unsolved nodes
  * @param qValueWeight Decides if qValues are taken into account
+ * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
  * @return Index for best move and child node
  */
- size_t get_best_action_index(const Node* curNode, bool fast, bool qValueWeight);
+ size_t get_best_action_index(const Node* curNode, bool fast, float qValueWeight, float qVetoDelto);
 
 void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
 
@@ -678,13 +681,6 @@ void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, No
 
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
-
-/**
- * @brief get_current_q_thresh Calculates the current q-thresh factor which is used to disable the effect of the q-value for low visited nodes
- * for the final move selection after the search
- * @return float
- */
-float get_current_q_thresh(const SearchSettings* searchSettings, int numberVisits);
 
 /**
  * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits

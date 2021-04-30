@@ -52,17 +52,17 @@ private:
     Context globalCtx = Context::cpu();
 
 public:
-    MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory, bool tensorRT);
+    MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory,  const string& strPrecision, bool tensorRT);
     ~MXNetAPI();
 
-    void predict(float* inputPlanes, float* valueOutput, float* probOutputs);
+    void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
 
 protected:
     void load_model();
     void load_parameters();
     void bind_executor();
 
-    void check_if_policy_map();
+    void init_nn_design();
 
     /**
      * @brief SplitParamMap Splits loaded param map into arg parm and aux param with target context
@@ -93,7 +93,28 @@ protected:
      * @return Policy NDArray
      */
     NDArray predict(float* inputPlanes, float& value);
+
+private:
+    /**
+     * @brief fill_model_paths Fills the variables modelFilePath, parameterFilePath and modelName
+     * @param strPrecision Neural network precision
+     */
+    void fill_model_paths(const string& strPrecision);
 };
+
+/**
+ * @brief set_shape Converter function from std::vector<mx_uint> to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param mxnetShape Target object
+ */
+void set_shape(nn_api::Shape& shape, const std::vector<mx_uint>& mxnetShape);
+
+/**
+ * @brief set_shape Converter function from std::vector<mx_uint> to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param mxnetShape Target object
+ */
+void set_shape(nn_api::Shape& shape, const Shape& mxnetShape);
 
 #endif
 #endif // MXNETAPI_H

@@ -164,20 +164,50 @@ bool Board::is_terminal() const
 
 bool Board::draw_by_insufficient_material() const
 {
+    // fast return options (insufficient material can never by reached in some variants)
 #ifdef CRAZYHOUSE
-    // fast return options (insufficient material can never by reached in crayhouse)
-    if (is_house() || this->count<ALL_PIECES>() > 4) {
+    if (is_house()) {
+        return false;
+    }
+#endif
+#ifdef KOTH
+    if (is_koth()) {
+        return false;
+    }
+#endif
+#ifdef THREECHECK
+    if (is_three_check()) {
+        return false;
+    }
+#endif
+#ifdef ANTI
+    if (is_anti()) {
+        return false;
+    }
+#endif
+#ifdef RACE
+    if (is_race()) {
+        return false;
+    }
+#endif
+#ifdef HORDE
+    if (is_horde()) {
+        // it seems not be worth to handle all cases here
         return false;
     }
 #endif
 
+    // default early stopping
+    if (this->count<ALL_PIECES>() > 4) {
+        return false;
+    }
+
+    // check for chess and atomic
     return (this->count<ALL_PIECES>() == 2) ||                                      // 1) KK
            (this->count<ALL_PIECES>() == 3 && this->count<BISHOP>() == 1) ||        // 2) KB vs K
            (this->count<ALL_PIECES>() == 3 && this->count<KNIGHT>() == 1) ||        // 3) KN vs K
            (this->count<ALL_PIECES>() == 4 &&
-            (this->count<KNIGHT>(WHITE) == 2 || this->count<KNIGHT>(BLACK) == 2));  // 4) KNN vs K
-
-    return false;
+           (this->count<KNIGHT>(WHITE) == 2 || this->count<KNIGHT>(BLACK) == 2));   // 4) KNN vs K
 }
 
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
@@ -341,27 +371,6 @@ bool leads_to_terminal(const Board &pos, Move m, StateListPtr& states)
     states->emplace_back();
     posCheckTerminal.do_move(m, states->back());
     return posCheckTerminal.is_terminal();
-}
-
-Result get_result(const Board& pos, bool inCheck)
-{
-    if (pos.is_terminal()) {
-        if (!inCheck || pos.is_50_move_rule_draw() || pos.can_claim_3fold_repetition() || pos.draw_by_insufficient_material()) {
-            return DRAWN;
-        }
-        if (pos.side_to_move() == BLACK) {
-            return WHITE_WIN;
-        }
-        else {
-            return BLACK_WIN;
-        }
-    }
-    return NO_RESULT;
-}
-
-bool is_win(Result res)
-{
-    return res == WHITE_WIN || res == BLACK_WIN;
 }
 
 Tablebases::WDLScore probe_wdl(Board& pos, Tablebases::ProbeState* result)

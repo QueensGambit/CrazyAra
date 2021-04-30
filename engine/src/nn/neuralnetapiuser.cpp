@@ -32,17 +32,34 @@
 #endif
 
 NeuralNetAPIUser::NeuralNetAPIUser(NeuralNetAPI *net):
-    net(net)
+    net(net),
+    auxiliaryOutputs(nullptr)
 {
     // allocate memory for all predictions and results
 #ifdef TENSORRT
-    CHECK(cudaMallocHost((void**) &inputPlanes, net->get_batch_size() * StateConstants::NB_VALUES_TOTAL() * sizeof(float)));
+#ifdef DYNAMIC_NN_ARCH
+    CHECK(cudaMallocHost((void**) &inputPlanes, net->get_batch_size() * net->get_nb_input_values_total() * sizeof(float)));
+#else
+     CHECK(cudaMallocHost((void**) &inputPlanes, net->get_batch_size() * StateConstants::NB_VALUES_TOTAL() * sizeof(float)));
+#endif
     CHECK(cudaMallocHost((void**) &valueOutputs, net->get_batch_size() * sizeof(float)));
     CHECK(cudaMallocHost((void**) &probOutputs, net->get_policy_output_length() * sizeof(float)));
+    if (net->has_auxiliary_outputs()) {
+        CHECK(cudaMallocHost((void**) &auxiliaryOutputs, net->get_batch_size() * net->get_nb_auxiliary_outputs() * sizeof(float)));
+    }
 #else
-    inputPlanes = new float[net->get_batch_size() * StateConstants::NB_VALUES_TOTAL()];
+    inputPlanes = new float[net->get_batch_size() * net->get_nb_input_values_total()];
     valueOutputs = new float[net->get_batch_size()];
     probOutputs = new float[net->get_policy_output_length()];
+#ifdef DYNAMIC_NN_ARCH
+    if (net->has_auxiliary_outputs()) {
+        auxiliaryOutputs = new float[net->get_batch_size() * net->get_nb_auxiliary_outputs()];
+    }
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+         auxiliaryOutputs = new float[net->get_batch_size() * StateConstants::NB_AUXILIARY_OUTPUTS()];
+    }
+#endif
 #endif
 }
 
@@ -52,9 +69,23 @@ NeuralNetAPIUser::~NeuralNetAPIUser()
     CHECK(cudaFreeHost(inputPlanes));
     CHECK(cudaFreeHost(valueOutputs));
     CHECK(cudaFreeHost(probOutputs));
+#ifdef DYNAMIC_NN_ARCH
+    if (net->has_auxiliary_outputs()) {
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+#endif
+        CHECK(cudaFreeHost(auxiliaryOutputs));
+    }
 #else
     delete [] inputPlanes;
     delete [] valueOutputs;
     delete [] probOutputs;
+#ifdef DYNAMIC_NN_ARCH
+    if (net->has_auxiliary_outputs()) {
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+#endif
+        delete [] auxiliaryOutputs;
+    }
 #endif
 }

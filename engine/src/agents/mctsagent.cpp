@@ -179,10 +179,16 @@ void MCTSAgent::create_new_root_node(StateObj* state)
 #else
     rootNode = new Node(state, false, searchSettings);
 #endif
+#ifdef SEARCH_UCT
+    unique_ptr<StateObj> newState = unique_ptr<StateObj>(state->clone());
+    rootNode->set_value(newState->random_rollout());
+    rootNode->enable_has_nn_results();
+#else
     state->get_state_planes(true, inputPlanes);
-    net->predict(inputPlanes, valueOutputs, probOutputs);
+    net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     size_t tbHits = 0;
-    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, rootNode, tbHits, state->side_to_move(), searchSettings);
+    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode, tbHits, state->side_to_move(), searchSettings);
+#endif
     rootNode->prepare_node_for_visits();
 }
 
@@ -214,7 +220,7 @@ void MCTSAgent::update_nps_measurement(float curNPS)
 {
     if (searchSettings->useNPSTimemanager) {
         ++nbNPSentries;
-        overallNPS += 1/nbNPSentries * (curNPS - overallNPS);
+        overallNPS += 1.0f/nbNPSentries * (curNPS - overallNPS);
     }
 }
 
@@ -293,7 +299,7 @@ void MCTSAgent::evaluate_board_state()
         run_mcts_search();
         update_stats();
     }
-    update_eval_info(*evalInfo, rootNode, tbHits, maxDepth, searchSettings->multiPV, searchSettings->qValueWeight);
+    update_eval_info(*evalInfo, rootNode, tbHits, maxDepth, searchSettings);
     lastValueEval = evalInfo->bestMoveQ[0];
     update_nps_measurement(evalInfo->calculate_nps());
     tGCThread.join();
@@ -309,9 +315,9 @@ void MCTSAgent::run_mcts_search()
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootState->side_to_move(), rootNode->plies_from_null()/2);
-     threadManager = make_unique<ThreadManager>(rootNode, evalInfo, searchThreads, curMovetime, 250, searchSettings->multiPV, searchSettings->qValueWeight, overallNPS, lastValueEval,
-                                                is_game_sceneario(searchLimits),
-                                                can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
+    threadManager = make_unique<ThreadManager>(rootNode, evalInfo, searchThreads, curMovetime, 250, searchLimits->moveOverhead, searchSettings, overallNPS, lastValueEval,
+                                               is_game_sceneario(searchLimits),
+                                               can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());
     isRunning = true;
 

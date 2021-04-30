@@ -9,17 +9,21 @@ option(BACKEND_MXNET             "Build with MXNet backend (Blas/IntelMKL/CUDA/T
 option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
+option(USE_DYNAMIC_NN_ARCH       "Build with dynamic neural network architektur support"  OFF)
 # enable a single mode for different model input / outputs
 option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
+option(MODE_OPEN_SPIEL           "Build with open_spiel environment support"  OFF)
+option(MODE_XIANGQI              "Build with xiangqi only support" OFF)
+option(SEARCH_UCT                "Build with UCT instead of PUCT search"  OFF)
 
 add_definitions(-DIS_64BIT)
-add_definitions(-DCRAZYHOUSE)
 
 if (MODE_CRAZYHOUSE)
     project(CrazyAra CXX)
     add_definitions(-DMODE_CRAZYHOUSE)
+    add_definitions(-DCRAZYHOUSE)
 endif()
 
 if (MODE_CHESS)
@@ -29,7 +33,7 @@ if (MODE_CHESS)
 endif()
 
 if (MODE_LICHESS)
-    project(LichessAra CXX)
+    project(MultiAra CXX)
     add_definitions(-DMODE_LICHESS)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DKOTH)
@@ -41,8 +45,28 @@ if (MODE_LICHESS)
     add_definitions(-DMCTS_TB_SUPPORT)
 endif()
 
+if (MODE_OPEN_SPIEL)
+    project(OpenSpielAra CXX)
+    add_definitions(-DMODE_OPEN_SPIEL)
+    add_definitions(-DACTION_64_BIT)
+endif()
+
+if (MODE_XIANGQI)
+    project(XiangqiAra CXX)
+    add_definitions(-DNO_THREADS)
+    add_definitions(-DXIANGQI)
+    add_definitions(-DMODE_XIANGQI)
+    add_definitions(-DLARGEBOARDS)
+    add_definitions(-DPRECOMPUTED_MAGICS)
+    add_definitions(-DNNUE_EMBEDDING_OFF)
+endif ()
+
 if (BUILD_TESTS)
     add_definitions(-DBUILD_TESTS)
+endif()
+
+if (USE_DYNAMIC_NN_ARCH)
+    add_definitions(-DDYNAMIC_NN_ARCH)
 endif()
 
 # -pg performance profiling flags
@@ -64,6 +88,10 @@ find_package( blaze )
 if( blaze_FOUND )
      add_library( blaze_target INTERFACE )
      target_link_libraries( blaze_target INTERFACE blaze::blaze )
+endif()
+
+if (SEARCH_UCT)
+    add_definitions(-DSEARCH_UCT)
 endif()
 
 file(GLOB source_files
@@ -89,6 +117,8 @@ file(GLOB source_files
     "src/manager/*.h"
     "src/rl/*.cpp"
     "src/rl/*.h"
+    "tests/*.h"
+    "tests/*.cpp"
 )
 
 set(CPP_PACKAGE_INCLUDE_DIR $ENV{MXNET_PATH}/cpp-package/include)
@@ -98,10 +128,15 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
     )
 
 find_package (Threads)
-include_directories("3rdparty/Stockfish/src")
+
+if (MODE_XIANGQI)
+    include_directories("3rdparty/Fairy-Stockfish/src")
+else ()
+    include_directories("3rdparty/Stockfish/src")
+endif ()
 include_directories("src")
 
-file(GLOB chess_related_files
+file(GLOB sf_related_files
     "3rdparty/Stockfish/src/syzygy/tbprobe.h"
     "3rdparty/Stockfish/src/syzygy/tbprobe.cpp"
     "3rdparty/Stockfish/src/types.h"
@@ -113,14 +148,162 @@ file(GLOB chess_related_files
     "3rdparty/Stockfish/src/bitboard.h"
     "3rdparty/Stockfish/src/bitboard.cpp"
     "3rdparty/Stockfish/src/*.cpp"
-    "src/chess_related/*.h"
-    "src/chess_related/*.cpp"
-    "tests/*.h"
-    "tests/*.cpp")
-set(source_files
-    ${source_files}
-    ${chess_related_files}
     )
+file(GLOB uci_files
+    "src/uci/*.h"
+    "src/uci/*.cpp"
+    )
+file(GLOB chess_related_files
+    "src/environments/chess_related/*.h"
+    "src/environments/chess_related/*.cpp"
+    )
+file(GLOB xiangqi_related_files
+    "src/environments/fairy_state/*.h"
+    "src/environments/fairy_state/*.cpp"
+    )
+file(GLOB fsf_related_files
+    "3rdparty/Fairy-Stockfish/src/*.h"
+    "3rdparty/Fairy-Stockfish/src/*.cpp"
+    "3rdparty/Fairy-Stockfish/src/syzygy/tbprobe.h"
+    "3rdparty/Fairy-Stockfish/src/syzygy/tbprobe.cpp"
+    "3rdparty/Fairy-Stockfish/src/nnue/*.h"
+    "3rdparty/Fairy-Stockfish/src/nnue/*.cpp"
+    "3rdparty/Fairy-Stockfish/src/nnue/layers/*.h"
+    "3rdparty/Fairy-Stockfish/src/nnue/layers/*.cpp"
+    "3rdparty/Fairy-Stockfish/src/nnue/features/*.h"
+    "3rdparty/Fairy-Stockfish/src/nnue/features/*.cpp"
+    "3rdparty/Fairy-Stockfish/src/nnue/architectures/*.h"
+    "3rdparty/Fairy-Stockfish/src/nnue/architectures/*.cpp"
+    )
+list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/ffishjs.cpp)
+list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/pyffish.cpp)
+list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/main.cpp)
+
+if (NOT MODE_XIANGQI)
+    set(source_files
+        ${source_files}
+        ${sf_related_files}
+        ${uci_files}
+        )
+endif ()
+
+if (NOT MODE_OPEN_SPIEL AND NOT MODE_XIANGQI)
+    set(source_files
+        ${source_files}
+        ${chess_related_files}
+        )
+endif()
+
+if (MODE_XIANGQI)
+    set(source_files
+        ${source_files}
+        ${xiangqi_related_files}
+        ${fsf_related_files}
+        ${uci_files})
+endif ()
+
+if (MODE_OPEN_SPIEL)
+
+    set (OPEN_SPIEL_CORE_FILES
+      action_view.h
+      action_view.cc
+      canonical_game_strings.cc
+      canonical_game_strings.h
+      fog/fog_constants.h
+      fog/observation_history.cc
+      fog/observation_history.h
+      game_parameters.cc
+      game_parameters.h
+      matrix_game.cc
+      matrix_game.h
+      normal_form_game.h
+      observer.cc
+      observer.h
+      policy.cc
+      policy.h
+      simultaneous_move_game.cc
+      simultaneous_move_game.h
+      spiel.cc
+      spiel.h
+      spiel_bots.cc
+      spiel_bots.h
+      spiel_globals.h
+      spiel_utils.cc
+      spiel_utils.h
+      tensor_game.cc
+      tensor_game.h
+    )
+
+    file(GLOB open_spiel_abseil_files
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/numeric/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/numeric/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/internal/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/base/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/meta/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/random/internal/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/internal/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/internal/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/internal/str_format/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/strings/internal/str_format/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/internal/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/synchronization/internal/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/types/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/types/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/time/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/time/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/time/internal/cctz/src/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/time/internal/cctz/src/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/debugging/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/debugging/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/debugging/internal/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/debugging/internal/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/hash/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/hash/*.cc"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/hash/internal/*.h"
+        "3rdparty/open_spiel/open_spiel/abseil-cpp/absl/hash/internal/*.cc"
+        )
+
+    file(GLOB open_spiel_related_files
+        "src/environments/open_spiel/*.h"
+        "src/environments/open_spiel/*.cpp"
+        "3rdparty/open_spiel/open_spiel/games/chess.h"
+        "3rdparty/open_spiel/open_spiel/games/chess.cc"
+        "3rdparty/open_spiel/open_spiel/games/chess/*.h"
+        "3rdparty/open_spiel/open_spiel/games/chess/*.cc"
+        "3rdparty/open_spiel/open_spiel/games/hex.h"
+        "3rdparty/open_spiel/open_spiel/games/hex.cc"
+        )
+
+    list(TRANSFORM OPEN_SPIEL_CORE_FILES PREPEND "3rdparty/open_spiel/open_spiel/")
+    list(FILTER open_spiel_abseil_files EXCLUDE REGEX "^.*test.*$")
+    list(FILTER open_spiel_abseil_files EXCLUDE REGEX "^.*benchmark.*$")
+    list(FILTER open_spiel_abseil_files EXCLUDE REGEX "^.*gentables.*$")
+    list(FILTER open_spiel_abseil_files EXCLUDE REGEX "^.*mutex_nonprod.*$")
+    list(FILTER open_spiel_abseil_files EXCLUDE REGEX "^.*chi_square.*$")
+    list(FILTER open_spiel_abseil_files EXCLUDE REGEX "^.*print_hash_of.*$")
+
+    set (BUILD_TESTING OFF)
+    include_directories("3rdparty/open_spiel")
+    include_directories("3rdparty/open_spiel/open_spiel/abseil-cpp")
+    message(STATUS "MODE_OPEN_SPIEL")
+    set(source_files
+        ${source_files}
+        ${open_spiel_related_files}
+        ${open_spiel_abseil_files}
+        ${OPEN_SPIEL_CORE_FILES}
+        )
+endif()
+
 include_directories("3rdparty/catch-2.9.1")
 
 # incude dirent library seperately because it's missing in the stdlib

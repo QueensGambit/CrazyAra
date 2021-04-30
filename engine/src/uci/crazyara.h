@@ -89,6 +89,7 @@ private:
     bool networkLoaded;
     bool ongoingSearch;
     bool is960;
+    bool changedUCIoption = false;
 
 public:
     CrazyAra();
@@ -159,6 +160,12 @@ public:
      */
     void export_search_tree(istringstream& is);
 
+    /**
+     * @brief activeuci Prints the currently UCI options currently active in the binary.
+     * The output format is "name <uci-option> value <uci-option-value>" followed by "readyok" at the very end.
+     */
+    void activeuci();
+
 #ifdef USE_RL
     /**
      * @brief selfplay Starts self play for a given number of games
@@ -202,6 +209,11 @@ public:
      */
     void stop_search();
 
+    /**
+     * @brief prepare_search_config_structs Prepare search configuration structs for new search
+     */
+    void prepare_search_config_structs();
+
 private:
     /**
      * @brief engine_info Returns a string about the engine version and authors
@@ -215,9 +227,10 @@ private:
      * @param states State-Manager, needed to keep track of 3-fold-repetition
      * @param netSingle Neural net with batch-size 1. It will be loaded from file.
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
+     * @param searchSettings Search settings object
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory
@@ -232,6 +245,14 @@ private:
      * @return Vector of pointers to the newly createded objects. For every thread a sepreate net.
      */
     vector<unique_ptr<NeuralNetAPI>> create_new_net_batches(const string& modelDirectory);
+
+    /**
+     * @brief set_uci_option Updates an UCI option using the given input stream and set changedUCIoption to true.
+     * Also updates the state position to the new starting position if UCI_Variant has been changed.
+     * @param is Input stream
+     * @param state State object
+     */
+    void set_uci_option(istringstream &is, StateObj& state);
 };
 
 /**

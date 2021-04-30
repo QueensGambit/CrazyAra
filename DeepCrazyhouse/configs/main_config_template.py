@@ -47,6 +47,13 @@ main_config = {
     # the weight directory contains the of the network in mxnet .params format
     "model_weights_dir": "/home/demo_user/models/Crazyhouse/params/",
 
+    # layer name of the value output layer (e.g. value_tanh0 for legacy crazyhouse networks and value_out for newer
+    # networks)
+    "value_output": "value_out",
+    # layer name of the policy output layer without softmax applied (e.g. flatten0 for legacy crazyhouse networks
+    # policy_out for newer networks)
+    "policy_output": "policy_out",
+
     # Active mode for different input & output representations.
     # Each mode is only compatible with a certain network input-/output representation:
     # Available modes:  0: MODE_CRAZYHOUSE    (crazyhouse only mode, no 960) available versions [1]

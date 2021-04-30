@@ -54,7 +54,8 @@ void RawNetAgent::evaluate_board_state()
         return;
     }
     state->get_state_planes(true, inputPlanes);
-    net->predict(inputPlanes, valueOutputs, probOutputs);
+    net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
     get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->side_to_move(),

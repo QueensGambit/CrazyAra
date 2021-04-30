@@ -481,7 +481,7 @@ class PGN2PlanesConverter:
         :param nb_draws: Number of draws in the current part
         :return:
         """
-        if self._cur_min_elo_both is None:
+        if not self.use_all_games and self._cur_min_elo_both is None:
             raise Exception("self._cur_min_elo_both")
 
         # Refactoring is probably a good idea
@@ -623,13 +623,14 @@ class PGN2PlanesConverter:
             data=[self._max_nb_files],
             compression=compressor,
         )
-        zarr_file.create_dataset(
-            name="/parameters/min_elo_both",
-            shape=(1,),
-            dtype=np.int16,
-            data=[self._cur_min_elo_both],
-            compression=compressor,
-        )
+        if not self.use_all_games:
+            zarr_file.create_dataset(
+                name="/parameters/min_elo_both",
+                shape=(1,),
+                dtype=np.int16,
+                data=[self._cur_min_elo_both],
+                compression=compressor,
+            )
         if self._compression:
             zarr_file.create_dataset(
                 "/parameters/compression",

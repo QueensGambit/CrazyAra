@@ -35,7 +35,11 @@
 #include <memory>
 
 typedef uint64_t Key;
-typedef int Action;
+#ifdef ACTION_64_BIT
+typedef int64_t Action;
+#else
+typedef int32_t Action;
+#endif
 typedef uint16_t MoveIdx;
 typedef unsigned int uint;
 typedef int SideToMove;
@@ -65,7 +69,14 @@ enum Result {
     WHITE_WIN,
     BLACK_WIN,
     NO_RESULT,
-};
+};  // TODO: Check if introduction of CUSTOM_RESULT is required.
+
+/**
+ * @brief is_win Return true if the given result is a win, else false
+ * @param res Result
+ * @return Bool
+ */
+bool is_win(Result res);
 
 // -------------------------------------------------------------------------
 // from Stockfish/src/syzygy
@@ -96,37 +107,105 @@ template<typename T>
 class StateConstantsInterface
 {
 public:
+    /**
+     * @brief BOARD_WIDTH
+     * @return board width
+     */
     static uint BOARD_WIDTH() {
         return T::BOARD_WIDTH();
     }
+
+    /**
+     * @brief BOARD_HEIGHT Board height of the input representation
+     * @return board height
+     */
     static uint BOARD_HEIGHT() {
         return T::BOARD_HEIGHT();
     }
+
+    /**
+     * @brief NB_CHANNELS_TOTAL Number of channel of the input representation to the neural network
+     * @return number of channels
+     */
     static uint NB_CHANNELS_TOTAL() {
         return T::NB_CHANNELS_TOTAL();
     }
+
+    /**
+     * @brief NB_SQUARES Number of board squares
+     * @return board_width * board_height
+     */
     static uint NB_SQUARES() {
         return BOARD_WIDTH() * BOARD_HEIGHT();
     }
+
+    /**
+     * @brief NB_VALUES_TOTAL Total number of values of the neural network input representation
+     * @return Length of the flattened input representation vector
+     */
     static uint NB_VALUES_TOTAL() {
         return NB_CHANNELS_TOTAL() * NB_SQUARES();
     }
+
+    /**
+     * @brief NB_LABELS Number of policy labels (e.g. UCI-labels) in classical representation
+     * @return Number of policy labels
+     */
     static uint NB_LABELS() {
         return T::NB_LABELS();
     }
+
+    /**
+     * @brief NB_LABELS_POLICY_MAP Number of policy map labels in policy map representation.
+     * @return Number of policy map labels
+     */
     static uint NB_LABELS_POLICY_MAP() {
         return T::NB_LABELS_POLICY_MAP();
     }
+
+    /**
+     * @brief NB_AUXILIARY_OUTPUTS Number of auxiliary outputs of the neural network (default: 0).
+     * The auxiliary outputs are assumed to be a flattened vector.
+     * @return Number of auxiliary outputs
+     */
+    static uint NB_AUXILIARY_OUTPUTS() {
+        return T::NB_AUXILIARY_OUTPUTS();
+    }
+
+    /**
+     * @brief NB_PLAYERS Number of players in the environment
+     * @return Number of players
+     */
     static uint NB_PLAYERS() {
         return T::NB_PLAYERS();
     }
+
+    /**
+     * @brief action_to_uci Returns a string representation of a given move
+     * @param action Action object
+     * @param is960 Boolean indicating if the 960 format is used
+     * @return String
+     */
     static std::string action_to_uci(Action action, bool is960) {
         return T::action_to_uci(action, is960);
     }
+
+    /**
+     * @brief action_to_index Function that is used to map an Action to the corresponding neural network policy index.
+     * @param action Given action
+     * @param p Policy type, either "normal" or "classic". Normal is the active policy output (e.g. classic, or policy map), "classic" corresponds to the classic policy-output.
+     * @param m Mirror type, either "notMirrored" or "mirrored". Can be used to give a different implementation when the input representatation is flipped.
+     * @return Neural network policy index
+     */
     template<PolicyType p, MirrorType m>
     static MoveIdx action_to_index(Action action) {
         return T::action_to_index<p, m>(action);
     }
+
+    /**
+     * @brief init Init function which is called after a neural network has been loaded and can be used to initalize static variables.
+     * @param isPolicyMap Boolean indicating if the neural network uses a policy map representation
+     */
     static void init(bool isPolicyMap) {
         return T::init(isPolicyMap);
     }
@@ -149,6 +228,28 @@ public:
         posCheckTerminal->do_action(a);
         return posCheckTerminal->check_result(givesCheck) != NO_RESULT;
     }
+
+    /**
+     * @brief check_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
+     * @param inCheck Determines if a king in the current position is in check (needed to differ between checkmate and stalemate).
+     * It can be computed by `gives_check(<last-move-before-current-position>)`.
+     * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
+     */
+    Result check_result(bool inCheck) const;
+
+    /**
+     * @brief random_rollout Does a random rollout until it reaches a terminal node.
+     * This functions modifies the current state and returns the terminal type.
+     * @return Terminal type
+     */
+    TerminalType random_rollout(float& customValueTerminal);
+
+    /**
+     * @brief random_rollout Does a random rollout until it reaches a terminal node.
+     * This functions modifies the current state and returns the corresponding value evaluation of the terminal type.
+     * @return Terminal type
+     */
+    float random_rollout();
 
     /**
      * @brief legal_actions Returns all legal actions as a vector list
@@ -220,11 +321,11 @@ public:
      * @return int
      */
     virtual int side_to_move() const = 0;
+
     /**
      * @brief hash_key Returns a uique identifier for the current position which can be used for accessing the hash table
      * @return
      */
-
     virtual Key hash_key() const = 0;
 
     /**
@@ -234,6 +335,7 @@ public:
 
     /**
      * @brief uci_to_action Converts the given action in uci notation to an action object
+     * Note: The "const" modifier had to be dropped for "uciStr" because Stockfish's UCI::to_move() method does not allow "const".
      * @param uciStr uci specification for the action
      * @return Action
      */
@@ -261,14 +363,6 @@ public:
     virtual TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const = 0;
 
     /**
-     * @brief check_result Returns the current game result. In case a normal position is given NO_RESULT is returned.
-     * @param inCheck Determines if a king in the current position is in check (needed to differ between checkmate and stalemate).
-     * It can be computed by `gives_check(<last-move-before-current-position>)`.
-     * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
-     */
-    virtual Result check_result(bool inCheck) const = 0;
-
-    /**
      * @brief gives_check Checks if the current action is a checking move
      * @param action Action
      * @return bool
@@ -290,6 +384,13 @@ public:
     virtual Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState& result) = 0;
 
     /**
+     * @brief set_auxiliary_outputs Sets the auxliary outputs for the state. (By default: pass)
+     * Implement this method if you set StateConstantsInterface::NB_AUXILIARY_OUTPUTS() != 0.
+     * @param auxiliaryOutputs Pointer to the auxiliary outputs
+     */
+    virtual void set_auxiliary_outputs(const float* auxiliaryOutputs) = 0;
+
+    /**
      * @brief operator << Operator overload for <<
      * @param os ostream object
      * @param state state object
@@ -308,6 +409,14 @@ public:
      * @return deep copy
      */
     virtual State* clone() const = 0;
+
+    /**
+     * @brief init Initializes the current state to the starting position.
+     * If there a multiple possible starting positions either choose a random or a fixed one.
+     * @param isChess960 If true 960 mode will be active
+     * @param variant Variant which the position corresponds to
+     */
+    virtual void init(int variant, bool isChess960) = 0;
 };
 
 #endif // GAMESTATE_H

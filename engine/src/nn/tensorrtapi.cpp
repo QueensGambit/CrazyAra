@@ -34,8 +34,8 @@
 #include "EntropyCalibrator.h"
 #include "stateobj.h"
 #include "../util/communication.h"
-#ifndef MODE_POMMERMAN
-#include "chess_related/chessbatchstream.h"
+#if !defined(MODE_POMMERMAN) && !defined(MODE_XIANGQI)
+#include "environments/chess_related/chessbatchstream.h"
 #endif
 
 using namespace sample;
@@ -47,20 +47,28 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     // select the requested device
     cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
-    modelFilePath = modelDir + get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
+    modelName = get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
+    modelFilePath = modelDir + modelName;
     info_string("onnx file:", modelFilePath);
     trtFilePath = generate_trt_file_path(modelDir, batchSize, precision, deviceID);
     gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
 
     load_model();
-    check_if_policy_map();
+    init_nn_design();
     bind_executor();
 }
 
 TensorrtAPI::~TensorrtAPI()
 {
-    for (auto memory : deviceMemory) {
-        CHECK(cudaFree(memory));
+    CHECK(cudaFree(deviceMemory[idxInput]));
+    CHECK(cudaFree(deviceMemory[idxValueOutput]));
+    CHECK(cudaFree(deviceMemory[idxPolicyOutput]));
+#ifdef DYNAMIC_NN_ARCH
+    if (nnDesign.hasAuxiliaryOutputs) {
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+#endif
+        CHECK(cudaFree(deviceMemory[idxAuxiliaryOutput]));
     }
     CHECK(cudaStreamDestroy(stream));
 }
@@ -69,19 +77,23 @@ void TensorrtAPI::load_model()
 {
     // load an engine from file or build an engine from the ONNX network
     engine = shared_ptr<nvinfer1::ICudaEngine>(get_cuda_engine(), samplesCommon::InferDeleter());
-    idxInput = engine->getBindingIndex("data");
-#ifdef MODE_CRAZYHOUSE
-    idxValueOutput = engine->getBindingIndex("value_tanh0");
-    idxPolicyOutput = engine->getBindingIndex("policy_softmax");
-#else
-    idxValueOutput = engine->getBindingIndex("value_out");
-    idxPolicyOutput = engine->getBindingIndex("policy_softmax");
-#endif
 }
 
 void TensorrtAPI::load_parameters()
 {
     // do nothing
+}
+
+void TensorrtAPI:: init_nn_design()
+{
+    set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
+    set_shape(nnDesign.valueOutputShape, engine->getBindingDimensions(idxValueOutput));
+    set_shape(nnDesign.policyOutputShape, engine->getBindingDimensions(idxPolicyOutput));
+    nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
+    if (nnDesign.hasAuxiliaryOutputs) {
+        set_shape(nnDesign.auxiliaryOutputShape, engine->getBindingDimensions(idxAuxiliaryOutput));
+    }
+    nnDesign.isPolicyMap = unsigned(nnDesign.policyOutputShape.v[1]) != StateConstants::NB_LABELS();
 }
 
 void TensorrtAPI::bind_executor()
@@ -90,23 +102,28 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
+#ifdef DYNAMIC_NN_ARCH
+    memorySizes[idxInput] = batchSize * get_nb_input_values_total() * sizeof(float);
+#else
     memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
+#endif
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
-    memorySizes[idxPolicyOutput] = policyOutputLength * sizeof(float);
+    memorySizes[idxPolicyOutput] = get_policy_output_length() * sizeof(float);
+#ifdef DYNAMIC_NN_ARCH
+    if (nnDesign.hasAuxiliaryOutputs) {
+        memorySizes[idxAuxiliaryOutput] = batchSize * get_nb_auxiliary_outputs() * sizeof (float);
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+        memorySizes[idxAuxiliaryOutput] = batchSize * StateConstants::NB_AUXILIARY_OUTPUTS() * sizeof (float);
+#endif
+        CHECK(cudaMalloc(&deviceMemory[idxAuxiliaryOutput], memorySizes[idxAuxiliaryOutput]));
+    }
     CHECK(cudaMalloc(&deviceMemory[idxInput], memorySizes[idxInput]));
     CHECK(cudaMalloc(&deviceMemory[idxValueOutput], memorySizes[idxValueOutput]));
     CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
 }
 
-void TensorrtAPI::check_if_policy_map()
-{
-    if (policyOutputDims.d[1] != StateConstants::NB_LABELS()) {
-        isPolicyMap = true;
-        policyOutputLength = StateConstants::NB_LABELS_POLICY_MAP() * batchSize;
-    }
-}
-
-void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs)
+void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs)
 {
     // select the requested device
     cudaSetDevice(deviceID);
@@ -122,7 +139,14 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
                           memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
     CHECK(cudaMemcpyAsync(probOutputs, deviceMemory[idxPolicyOutput],
                           memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
-
+#ifdef DYNAMIC_NN_ARCH
+    if (has_auxiliary_outputs()) {
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+#endif
+        CHECK(cudaMemcpyAsync(auxiliaryOutputs, deviceMemory[idxAuxiliaryOutput],
+                              memorySizes[idxAuxiliaryOutput], cudaMemcpyDeviceToHost, stream));
+    }
     cudaStreamSynchronize(stream);
 }
 
@@ -213,7 +237,7 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 #elif defined MODE_CRAZYHOUSE
         calibrationStream.reset(new ChessBatchStream(1, 232));
 #endif
-#ifndef MODE_POMMERMAN
+#if !defined(MODE_POMMERMAN) && !defined(MODE_OPEN_SPIEL) && !defined(MODE_XIANGQI)
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*(dynamic_cast<ChessBatchStream*>(calibrationStream.get())), 0, "model", "data"));
 #endif
         config->setInt8Calibrator(calibrator.get());
@@ -224,9 +248,6 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 
 void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition> &network)
 {
-    inputDims = network->getInput(0)->getDimensions();
-    valueOutputDims = network->getOutput(0)->getDimensions();
-    policyOutputDims = network->getOutput(1)->getDimensions();
     // add a softmax layer to the ONNX model
     ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(1));
     // set the softmax axis to 1
@@ -240,13 +261,9 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
 //    fix_layer_precision(network->getLayer(2), nvinfer1::DataType::kFLOAT);
 
     // set the softmax layer output as the new output
-    network->unmarkOutput(*network->getOutput(1));
+    network->unmarkOutput(*network->getOutput(nnDesign.policyOutputIdx));
     network->markOutput(*softmaxLayer->getOutput(0));
     softmaxLayer->getOutput(0)->setName("policy_softmax");
-
-    info_string("inputDims:", inputDims);
-    info_string("valueOutputDims:", valueOutputDims);
-    info_string("policyOutputDims:", policyOutputDims);
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
@@ -321,6 +338,14 @@ string precision_to_str(Precision precision)
         return  "int8";
     }
     return "fp32";
+}
+
+void set_shape(nn_api::Shape &shape, const Dims &dims)
+{
+    shape.nbDims = dims.nbDims;
+    for (int idx = 0; idx < shape.nbDims; ++idx) {
+        shape.v[idx] = dims.d[idx];
+    }
 }
 
 #endif

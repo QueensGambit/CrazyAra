@@ -61,6 +61,9 @@ public:
     static uint NB_LABELS_POLICY_MAP() {
         return NB_CHANNELS_POLICY_MAP() * BOARD_HEIGHT() * BOARD_WIDTH();
     }
+    static uint NB_AUXILIARY_OUTPUTS() {
+        return 0U;
+    }
     static uint NB_PLAYERS() {
         return 2;
     }
@@ -239,11 +242,12 @@ public:
     Action uci_to_action(string& uciStr) const override;
     string action_to_san(Action action, const vector<Action>& legalActions, bool leadsToWin=false, bool bookMove=false) const override;
     TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const override;
-    Result check_result(bool inCheck) const override;
     bool gives_check(Action action) const override;
     void print(ostream& os) const override;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result) override;
+    void set_auxiliary_outputs(const float* auxiliaryOutputs) override;
     BoardState* clone() const override;
+    void init(int variant, bool isChess960) override;
 };
 
 #endif // BOARTSTATE_H

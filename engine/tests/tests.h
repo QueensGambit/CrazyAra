@@ -32,7 +32,8 @@
 #ifdef BUILD_TESTS
 #include <vector>
 #include <string>
-#include "chess_related/board.h"
+#include "stateobj.h"
+#include "environments/chess_related/board.h"
 
 using namespace std;
 
@@ -68,6 +69,29 @@ void apply_moves_to_board(const vector<string>& uciMoves, Board& pos, StateListP
  * @return boolean
  */
 bool are_all_entries_true(const vector<string>& uciMoves, bool (*foo)(Square, Square));
+
+/**
+ * @brief The GameInfo struct is a return type for apply_random_moves() which provides information about the game.
+ */
+struct GameInfo {
+    uint nbAppliedMoves;
+    bool reachedTerminal;
+    bool givesCheck;
+    GameInfo() :
+        nbAppliedMoves(0),
+        reachedTerminal(false),
+        givesCheck(false) {};
+};
+
+/**
+ * @brief apply_random_moves Applies random legal moves to the state object and returns a GameInfo struct.
+ * If a terminal state is reached the loop stops and GameInfo.givesCheck == true is returned.
+ * @param state Starting position
+ * @param movesToApply Number of moves to apply.
+ * @return GameInfo struct
+ */
+GameInfo apply_random_moves(StateObj& state, uint movesToApply);
+
 
 #endif
 

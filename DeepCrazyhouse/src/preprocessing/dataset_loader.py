@@ -11,7 +11,7 @@ import logging
 import numpy as np
 import zarr
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.util import get_numpy_arrays, MATRIX_NORMALIZER
+from DeepCrazyhouse.src.domain.util import get_numpy_arrays, get_x_y_and_indices, MATRIX_NORMALIZER
 
 
 def _load_dataset_file(dataset_filepath):
@@ -73,7 +73,7 @@ def load_pgn_dataset(
     # load the zarr-files
     pgn_datasets = zarr_filepaths
     if verbose:
-        logging.debug("loading: %s...", pgn_datasets[part_id])
+        logging.debug("loading: %s ...", pgn_datasets[part_id])
         logging.debug("")
 
     pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
@@ -105,3 +105,66 @@ def load_pgn_dataset(
         # apply rescaling using a predefined scaling constant (this makes use of vectorized operations)
         x *= MATRIX_NORMALIZER
     return start_indices, x, y_value, y_policy, plys_to_end, pgn_dataset
+
+
+def load_xiangqi_dataset(dataset_type="train", part_id=0, verbose=True, normalize=False):
+    """
+    Loads one part of the preprocessed data set of xiangqi games, originally given as csv.
+
+    :parram dataset_type: either ['train', 'test', 'val']
+    :param part_id: Decides which part of the data set will be loaded
+    :param verbose: True if the log message shall be shown
+    :param normalize: True if the inputs shall be normalized to 0-1
+    :return: numpy-arrays:
+        start_indices - defines the index where each game starts
+        x - the board representation for all games
+        y_value - the game outcome (-1,0,1) for each board position
+        y_policy - the movement policy for the next_move played
+        dataset - the dataset file handle (you can use .tree() to show the file structure)
+    """
+    if dataset_type == "train":
+        zarr_filepaths = glob.glob(main_config["planes_train_dir"] + "**/*.zip")
+    elif dataset_type == "val":
+        zarr_filepaths = glob.glob(main_config["planes_val_dir"] + "**/*.zip")
+    elif dataset_type == "test":
+        zarr_filepaths = glob.glob(main_config["planes_test_dir"] + "**/*.zip")
+    else:
+        raise Exception(
+            'Invalid dataset type "%s" given. It must be either "train", "val" or "test"' % dataset_type
+        )
+
+    if part_id >= len(zarr_filepaths):
+        raise Exception("There aren't enough parts available (%d parts) in the given directory for part_id=%d"
+                        % (len(zarr_filepaths), part_id))
+
+    # load zarr-files
+    datasets = zarr_filepaths
+    if verbose:
+        logging.debug("loading: %s...\n", datasets[part_id])
+
+    dataset = zarr.group(store=zarr.ZipStore(datasets[part_id], mode="r"))
+    start_indices, x, y_value, y_policy  = get_x_y_and_indices(dataset)
+
+    if verbose:
+        logging.info("STATISTICS:")
+        try:
+            for member in dataset["statistics"]:
+                if member in ["avg_elo", "avg_elo_red", "avg_elo_black", "num_red_wins", "num_black_wins", "num_draws"]:
+                    print(member, list(dataset["statistics"][member]))
+        except KeyError:
+            logging.warning("no statistics found")
+
+        logging.info("PARAMETERS:")
+        try:
+            for member in dataset["parameters"]:
+                print(member, list(dataset["parameters"][member]))
+        except KeyError:
+            logging.warning("no parameters found")
+
+    if normalize:
+        x = x.astype(np.float32)
+        y_value = y_value.astype(np.float32)
+        y_policy = y_policy.astype(np.float32)
+
+        x *= MATRIX_NORMALIZER
+    return start_indices, x, y_value, y_policy, dataset

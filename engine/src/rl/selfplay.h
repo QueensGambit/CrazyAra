@@ -56,6 +56,7 @@ private:
     SearchLimits* searchLimits;
     PlaySettings* playSettings;
     RLSettings* rlSettings;
+    UCI::OptionsMap& options;
     GamePGN gamePGN;
     TrainDataExporter* exporter;
     string filenamePGNSelfplay;
@@ -76,8 +77,10 @@ public:
      * @param searchLimits Search limit configuration struct
      * @param playSettings Playing setting configuration struct
      * @param RLSettings Additional settings for reinforcement learning usage
+     * @param options Object holding all UCI options
      */
-    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings, RLSettings* rlSettings);
+    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings,
+        RLSettings* rlSettings, UCI::OptionsMap& options);
     ~SelfPlay();
 
     /**
@@ -204,8 +207,18 @@ unique_ptr<StateObj> init_state(Variant variant, bool is960, GamePGN& gamePGN);
  * @param plys Number of plys to generate
  * @param gamePGN Game pgn struct where the moves will be stored
  * @param rawPolicyProbTemp Probability for which a temperature scaling > 1.0f is applied
+ * @return New state object
  */
 unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, float rawPolicyProbTemp);
+
+/**
+ * @brief init_starting_state_from_fixed_move Initializes a starting position using a vector of actions
+ * @param gamePGN Game pgn struct where the moves will be stored
+ * @param variant Game variant
+ * @param actions Vector of actions
+ * @return New state object
+ */
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN& gamePGN, Variant variant, const vector<Action>& actions);
 
 /**
  * @brief apply_raw_policy_temp Applies a temperature scaling to the policyProbSmall of the eval struct.

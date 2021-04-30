@@ -44,20 +44,19 @@ struct EvalInfo
     chrono::steady_clock::time_point end;
     std::vector<float> bestMoveQ;
     std::vector<Action> legalMoves;
-    DynamicVector<float> policyProbSmall;
-    DynamicVector<float> childNumberVisits;
+    DynamicVector<double> policyProbSmall;
+    DynamicVector<double> childNumberVisits;
     DynamicVector<float> qValues;
     std::vector<int> centipawns;
     size_t depth;
     size_t selDepth;
-    size_t nodes;
+    uint_fast32_t nodes;
     size_t nodesPreSearch;
     bool isChess960;
     std::vector<std::vector<Action>> pv;
     Action bestMove;
     std::vector<int> movesToMate;
     size_t tbHits;
-    float qValueWeight;
 
     size_t calculate_elapsed_time_ms() const;
     size_t calculate_nps(size_t elapsedTimeMS) const;
@@ -81,10 +80,18 @@ int value_to_centipawn(float value);
  * @param evalInfo Evaluation infomration struct
  * @param rootNode Root node of the search tree
  * @param selDepth Selective depth, in this case the maximum reached depth
- * @param multiPV Number of pv lines (default=1)
- * @param qValueWeight Decides if Q-values shall be used to compute the MCTS policy (e.g. qValueWeight=0, visitsOnly)
+ * @param searchSettings searchSettings struct
  */
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, size_t multiPV, float qValueWeight);
+void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, const SearchSettings* searchSettings);
+
+/**
+ * @brief get_best_move_q Return the value evaluation for the given next node.
+ * If it is a drawn tablebase position, 0.0 is returned.
+ * @param searchSettings Search settings
+ * @param nextNode Node object
+ * @return value evaluation
+ */
+float get_best_move_q(const SearchSettings* searchSettings, const Node* nextNode);
 
 /**
  * @brief set_eval_for_single_pv Sets the eval struct pv line and score for a single pv
@@ -93,7 +100,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
  * @param idx index of the pv line
  * @param indices sorted indices of each child node
  */
-void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices);
+void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices, const SearchSettings* searchSettings);
 
 /**
  * @brief operator << Returns all MultiPV as a string sperated by endl

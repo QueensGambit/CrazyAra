@@ -11,7 +11,7 @@
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License fåor more details.
+  GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -27,7 +27,7 @@
 #include "boardstate.h"
 #include "inputrepresentation.h"
 #include "syzygy/tbprobe.h"
-
+#include "uci/variants.h"
 
 action_idx_map OutputRepresentation::MV_LOOKUP = {};
 action_idx_map OutputRepresentation::MV_LOOKUP_MIRRORED = {};
@@ -55,7 +55,7 @@ vector<Action> BoardState::legal_actions() const
     vector<Action> legalMoves;
     // generate the legal moves and save them in the list
     for (const ExtMove& move : MoveList<LEGAL>(board)) {
-        legalMoves.push_back(Action(move));
+        legalMoves.push_back(Action(move.move));
     }
     return legalMoves;
 }
@@ -136,12 +136,14 @@ string BoardState::action_to_san(Action action, const vector<Action>& legalActio
 TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const
 {
 #ifdef ATOMIC
+    if (board.is_atomic()) {
         if (board.is_atomic_win()) {
             return TERMINAL_WIN;
         }
         if (board.is_atomic_loss()) {
             return TERMINAL_LOSS;
         }
+    }
 #endif
 #ifdef ANTI
     if (board.is_anti()) {
@@ -152,6 +154,46 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, floa
             return TERMINAL_LOSS;
         }
     }
+#endif
+#ifdef HORDE
+    if (board.is_horde()) {
+        if (board.is_horde_loss()) {
+            return TERMINAL_LOSS;
+        }
+    }
+#endif
+#ifdef KOTH
+    if (board.is_koth()) {
+        if (board.is_koth_win()) {
+            return TERMINAL_WIN;
+        }
+        if (board.is_koth_loss()) {
+            return TERMINAL_LOSS;
+        }
+    }
+#endif
+#ifdef THREECHECK
+    if (board.is_three_check()) {
+        if (board.is_three_check_win()) {
+            return TERMINAL_WIN;
+        }
+        if (board.is_three_check_loss()) {
+            return TERMINAL_LOSS;
+        }
+    }
+#endif
+#ifdef RACE
+   if (board.is_race()) {
+       if (board.is_race_win()) {
+           return TERMINAL_WIN;
+       }
+       if (board.is_race_draw()) {
+           return TERMINAL_DRAW;
+       }
+       if (board.is_race_loss()) {
+           return TERMINAL_LOSS;
+       }
+   }
 #endif
     if (numberLegalMoves == 0) {
 #ifdef ANTI
@@ -176,11 +218,6 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, floa
     return TERMINAL_NONE;
 }
 
-Result BoardState::check_result(bool inCheck) const
-{
-    return get_result(board, inCheck);
-}
-
 bool BoardState::gives_check(Action action) const
 {
     return board.gives_check(Move(action));
@@ -199,9 +236,20 @@ Tablebase::WDLScore BoardState::check_for_tablebase_wdl(Tablebase::ProbeState &r
     return wdlScore;
 }
 
+void BoardState::set_auxiliary_outputs(const float *auxiliaryOutputs)
+{
+    // do nothing
+}
+
 BoardState* BoardState::clone() const
 {
     return new BoardState(*this);
+}
+
+void BoardState::init(int variant, bool is960)
+{
+    states = StateListPtr(new std::deque<StateInfo>(1));
+    board.set(StartFENs[variant], is960, Variant(variant), &states->back(), nullptr);
 }
 
 #endif

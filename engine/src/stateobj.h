@@ -38,14 +38,25 @@ using blaze::DynamicVector;
 
 #ifdef MODE_POMMERMAN
 #include "pommermanstate.h"
+#elif MODE_OPEN_SPIEL
+#include "environments/open_spiel/openspielstate.h"
+#elif MODE_XIANGQI
+#include "environments/fairy_state/fairystate.h"
+#include "environments/fairy_state/fairyoutputrepresentation.h"
 #else
-#include "chess_related/boardstate.h"
-#include "chess_related/outputrepresentation.h"
+#include "environments/chess_related/boardstate.h"
+#include "environments/chess_related/outputrepresentation.h"
 #endif
 
 #ifdef MODE_POMMERMAN
     using StateObj = PommermanState;
     using StateConstants = StateConstantsPommerman;
+#elif MODE_OPEN_SPIEL
+    using StateObj = OpenSpielState;
+    using StateConstants = StateConstantsOpenSpiel;
+#elif MODE_XIANGQI
+    using StateObj = FairyState;
+    using StateConstants = StateConstantsFairy;
 #else
     using StateObj = BoardState;
     using StateConstants = StateConstantsBoard;
@@ -65,7 +76,7 @@ using blaze::DynamicVector;
  * @return policyProbSmall - A hybrid blaze vector which stores the probabilities for the given move list
  */
 void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, SideToMove sideToMove,
-                            bool normalize, DynamicVector<float> &policyProbSmall, bool selectPolicyFromPlane);
+                            bool normalize, DynamicVector<double> &policyProbSmall, bool selectPolicyFromPlane);
 
 /**
  * @brief get_policy_data_batch Returns the pointer of the batch for the policy predictions
@@ -75,5 +86,13 @@ void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, cons
  * @return Starting pointer for predictions of the current batch
  */
 const float*  get_policy_data_batch(const size_t batchIdx, const float* policyProb, bool isPolicyMap);
+
+/**
+ * @brief get_auxiliary_data_batch Returns the pointer of the batch for the auxliary predictions
+ * @param batchIdx Batch index for the current predicion
+ * @param auxiliaryOutputs All auxiliary predictions of the batch
+ * @return Starting pointer for predictions of the current batch
+ */
+const float*  get_auxiliary_data_batch(const size_t batchIdx, const float* auxiliaryOutputs);
 
 #endif // STATEOBJ_H

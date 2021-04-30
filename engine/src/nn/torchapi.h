@@ -46,14 +46,29 @@ public:
     TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, const string& modelDirectory);
 
     // NeuralNetAPI interface
-    void predict(float *inputPlanes, float *valueOutput, float *probOutputs) override;
+    void predict(float *inputPlanes, float *valueOutput, float *probOutputs, float *auxiliaryOutputs) override;
 
 protected:
     void load_model() override;
     void load_parameters() override;
     void bind_executor() override;
-    void check_if_policy_map() override;
+    void init_nn_design() override;
 };
+
+/**
+ * @brief set_shape Converter function from at::Tensor& tensor to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param tensor Target object
+ */
+void set_shape(nn_api::Shape& shape, const at::Tensor& tensor);
+
+/**
+ * @brief set_shape Converter function from at::IntArrayRef to nn_api::Shape
+ * @param shape Shape object to be set
+ * @param sizes Target object
+ */
+void set_shape(nn_api::Shape& shape, const at::IntArrayRef& sizes);
+
 
 #endif // TORCHAPI_H
 #endif
