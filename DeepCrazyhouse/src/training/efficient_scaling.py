@@ -36,7 +36,7 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS
 root = logging.getLogger()
 root.setLevel(logging.INFO)
 
-results_file = r'grid_search_results.csv'
+results_file = r'/data/RL/grid_search_results.csv'
 
 
 tc = TrainConfig()
@@ -47,7 +47,7 @@ tc.use_mxnet_style = True
 tc.val_loss_factor = 0.01
 tc.policy_loss_factor = 0.99
 tc.batch_steps = 100
-tc.nb_training_epochs = 1 #3
+tc.nb_training_epochs = 3
 tc.q_value_ratio = 0
 tc.device_id = 1
 tc.sparse_policy_label = True
