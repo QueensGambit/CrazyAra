@@ -162,6 +162,25 @@ void first_and_second_max(const DynamicVector<T>& v, size_t endIdx, T& firstMax,
     }
 }
 
+template <typename T>
+void first_and_second_arg(const DynamicVector<T>& v, size_t endIdx, size_t& firstArg, size_t& secondArg)
+{
+    T firstMax = v[0];
+    T secondMax = v[0];
+    firstArg = 0;
+    secondArg = 0;
+    for (size_t idx = 1; idx < endIdx; ++idx) {
+        if (v[idx] > firstMax) {
+            // save previous best result as 2nd best
+            secondMax = firstMax;
+            secondArg = firstArg;
+            // update first best result
+            firstMax = v[idx];
+            firstArg = idx;
+        }
+    }
+}
+
 /**
  * @brief get_quantile Returns the value+FLT_EPSILON for the given quantil.
  * @param vec Given vector which is assumed to have only positive values and to sum up to 1.

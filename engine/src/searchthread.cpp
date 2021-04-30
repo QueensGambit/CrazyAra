@@ -152,7 +152,15 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     size_t depth = get_random_depth();
     for (uint curDepth = 0; curDepth < depth; ++curDepth) {
         currentNode->lock();
+
+        if (rand() % 100 < 30) {
+        size_t firstArg;
+        first_and_second_arg(currentNode->get_child_number_visits(), currentNode->get_no_visit_idx(), firstArg, childIdx);
+        }
+        else {
         childIdx = get_best_action_index(currentNode, true, 0, 0);
+        }
+
         Node* nextNode = currentNode->get_child_node(childIdx);
         if (nextNode == nullptr || !nextNode->is_playout_node() || nextNode->get_visits() < searchSettings->epsilonGreedyCounter || nextNode->get_node_type() != UNSOLVED) {
             currentNode->unlock();
