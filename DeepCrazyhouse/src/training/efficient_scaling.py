@@ -36,7 +36,7 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS
 root = logging.getLogger()
 root.setLevel(logging.INFO)
 
-results_file = r'/data/RL/grid_search_results.csv'
+results_file = r'grid_search_results.csv'
 
 
 tc = TrainConfig()
@@ -69,33 +69,6 @@ if not os.path.exists(tc.export_dir + "logs"):
 if not os.path.exists(tc.export_dir + "weights"):
     os.mkdir(tc.export_dir + "weights")
 
-s_idcs_val, x_val, yv_val, yp_val, plys_to_end, pgn_datasets_val = load_pgn_dataset(dataset_type='val', part_id=0,
-                                                                           verbose=True, normalize=tc.normalize)
-if tc.discount != 1:
-    yv_val *= tc.discount**plys_to_end
-
-if tc.select_policy_from_plane:
-    val_iter = mx.io.NDArrayIter({'data': x_val}, {'value_label': yv_val, 'policy_label': np.array(FLAT_PLANE_IDX)[yp_val.argmax(axis=1)]}, tc.batch_size)
-else:
-    val_iter = mx.io.NDArrayIter({'data': x_val}, {'value_label': yv_val, 'policy_label': yp_val.argmax(axis=1)}, tc.batch_size)
-
-tc.nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
-
-nb_it_per_epoch = (len(x_val) * tc.nb_parts) // tc.batch_size  # calculate how many iterations per epoch exist
-# one iteration is defined by passing 1 batch and doing backprop
-tc.total_it = int(nb_it_per_epoch * tc.nb_training_epochs)
-
-### Define a Learning Rate schedule
-to.lr_schedule = OneCycleSchedule(start_lr=tc.max_lr/8, max_lr=tc.max_lr, cycle_length=tc.total_it*.3, cooldown_length=tc.total_it*.6, finish_lr=tc.min_lr)
-to.lr_schedule = LinearWarmUp(to.lr_schedule, start_lr=tc.min_lr, length=tc.total_it/30)
-
-### Momentum schedule
-to.momentum_schedule = MomentumSchedule(to.lr_schedule, tc.min_lr, tc.max_lr, tc.min_momentum, tc.max_momentum)
-plot_schedule(to.momentum_schedule, iterations=tc.total_it, ylabel='Momentum')
-
-
-input_shape = x_val[0].shape
-
 base_channels = 128
 base_depth = 10
 
@@ -112,6 +85,37 @@ print("train_config:", str(tc))
 
 
 def run_training(alpha, queue):
+    s_idcs_val, x_val, yv_val, yp_val, plys_to_end, pgn_datasets_val = load_pgn_dataset(dataset_type='val', part_id=0,
+                                                                                        verbose=True,
+                                                                                        normalize=tc.normalize)
+    if tc.discount != 1:
+        yv_val *= tc.discount ** plys_to_end
+
+    if tc.select_policy_from_plane:
+        val_iter = mx.io.NDArrayIter({'data': x_val}, {'value_label': yv_val,
+                                                       'policy_label': np.array(FLAT_PLANE_IDX)[yp_val.argmax(axis=1)]},
+                                     tc.batch_size)
+    else:
+        val_iter = mx.io.NDArrayIter({'data': x_val}, {'value_label': yv_val, 'policy_label': yp_val.argmax(axis=1)},
+                                     tc.batch_size)
+
+    tc.nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
+
+    nb_it_per_epoch = (len(x_val) * tc.nb_parts) // tc.batch_size  # calculate how many iterations per epoch exist
+    # one iteration is defined by passing 1 batch and doing backprop
+    tc.total_it = int(nb_it_per_epoch * tc.nb_training_epochs)
+
+    ### Define a Learning Rate schedule
+    to.lr_schedule = OneCycleSchedule(start_lr=tc.max_lr / 8, max_lr=tc.max_lr, cycle_length=tc.total_it * .3,
+                                      cooldown_length=tc.total_it * .6, finish_lr=tc.min_lr)
+    to.lr_schedule = LinearWarmUp(to.lr_schedule, start_lr=tc.min_lr, length=tc.total_it / 30)
+
+    ### Momentum schedule
+    to.momentum_schedule = MomentumSchedule(to.lr_schedule, tc.min_lr, tc.max_lr, tc.min_momentum, tc.max_momentum)
+    plot_schedule(to.momentum_schedule, iterations=tc.total_it, ylabel='Momentum')
+
+    input_shape = x_val[0].shape
+
     beta = np.sqrt(2 / alpha)
 
     print("alpha:", alpha)
