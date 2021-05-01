@@ -67,23 +67,25 @@ def sandglass_block(data, channels, channels_reduced, name, kernel, act_type='re
     """
     Rethinking Bottleneck Structure for EfficientMobile Network Design, D. Zhou and Q. Hou et al.
     """
-    if se_type:
-        data_input = get_se_layer(data, channels, se_type, name=name + '_se', use_hard_sigmoid=True)
-    else:
-        data_input = data
-    conv1 = mx.sym.Convolution(data=data_input, num_filter=channels,  kernel=(kernel, kernel),
-                               pad=(kernel // 2, kernel // 2), num_group=channels,
+    first_kernel = kernel
+    conv1 = mx.sym.Convolution(data=data, num_filter=channels,  kernel=(first_kernel, first_kernel),
+                               pad=(first_kernel // 2, first_kernel // 2), num_group=channels,
                                no_bias=True, name=name + '_conv1')
     bn1 = get_norm_layer(data=conv1, norm_type=norm_type, name=name + '_bn1')
     act1 = get_act(data=bn1, act_type=act_type, name=name + '_act1')
-    conv2 = mx.sym.Convolution(data=act1, num_filter=channels_reduced, kernel=(1, 1), pad=(0, 0),
+    if se_type:
+        next_input = get_se_layer(act1, channels, se_type, name=name + '_se', use_hard_sigmoid=True)
+    else:
+        next_input = act1
+    conv2 = mx.sym.Convolution(data=next_input, num_filter=channels_reduced, kernel=(1, 1), pad=(0, 0),
                                no_bias=False, name=name + '_conv2')
     conv3 = mx.sym.Convolution(data=conv2, num_filter=channels, kernel=(1, 1), pad=(0, 0),
                                no_bias=True, name=name + '_conv3')
     bn2 = get_norm_layer(data=conv3, norm_type=norm_type, name=name + '_bn2')
     act2 = get_act(data=bn2, act_type=act_type, name=name + '_act2')
-    conv4 = mx.sym.Convolution(data=act2, num_filter=channels,  kernel=(kernel, kernel),
-                               pad=(kernel // 2, kernel // 2), num_group=channels,
+    last_kernel = 3
+    conv4 = mx.sym.Convolution(data=act2, num_filter=channels,  kernel=(last_kernel, last_kernel),
+                               pad=(last_kernel // 2, last_kernel // 2), num_group=channels,
                                no_bias=False, name=name + '_conv4')
     sum = mx.sym.broadcast_add(conv4, data, name=name+'_add')
     return sum
@@ -134,41 +136,24 @@ def rise_mobile_v3_symbol(channels=256, channels_reduced=128, act_type='relu',
     # get the input data
     orig_data = mx.sym.Variable(name='data')
 
-    data = get_stem(data=orig_data, channels=channels, act_type=act_type, kernel=1)
+    data = get_stem(data=orig_data, channels=channels, act_type=act_type, kernel=3)
 
     if kernels is None:
         kernels = [3] * 13
 
     for idx, cur_kernel in enumerate(kernels):
-        #cur_channels = channels_operating
-        #if idx < len(kernels) - 5:
-        #    use_squeeze_excitation = False
-        #else:
-        #    use_squeeze_excitation = use_se
-        #if cur_kernel == 5:
-        #    cur_channels *= 0.75
-        #    cur_channels = int(cur_channels)
-
-        #if idx >= len(kernels) / 2:
-        #    cur_act_type = act_type
-        #else:
-        #    cur_act_type = "relu"
-
         data = sandglass_block(data=data, channels=channels, channels_reduced=channels_reduced, name='sandglass_%d' % idx,
                                act_type=act_type, norm_type=norm_type, se_type=se_types[idx], kernel=cur_kernel)
-        #data = bottleneck_residual_block_v2(data=data, channels=channels, channels_operating=cur_channels,
-        #                                      kernel=cur_kernel, name='dconv_%d' % idx, act_type=cur_act_type,
-        #                                      norm_type=norm_type, use_se=use_squeeze_excitation)
 
     if dropout_rate != 0:
         data = mx.sym.Dropout(data, p=dropout_rate)
 
-    channels_policy_head = channels # 256
+    channels_policy_input = 256
     value_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
                            value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value,
                            orig_data=orig_data, use_avg_features=use_avg_features)
     policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
-                             select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels_policy_head,
+                             select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels_policy_input,
                              grad_scale_policy=grad_scale_policy)
     # group value_out and policy_out together
     sym = mx.symbol.Group([value_out, policy_out])

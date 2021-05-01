@@ -43,7 +43,7 @@ def get_se_layer(data, channels, se_type, name, use_hard_sigmoid):
     """
     if se_type == "ca_se":
         return ca_se(data=data, channels=channels, name=name, use_hard_sigmoid=use_hard_sigmoid)
-    elif se_type == "ec_se":
+    elif se_type == "eca_se":
         return eca_se(data=data, channels=channels, name=name, use_hard_sigmoid=use_hard_sigmoid)
     elif se_type == "sa_se":
         return sa_se(data=data, name=name, use_hard_sigmoid=use_hard_sigmoid)
@@ -127,9 +127,11 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
         value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
 
     if orig_data is not None and use_avg_features:
-        avg_pool = mx.sym.Pooling(data=orig_data, kernel=(8, 8), pool_type='avg', name='value_pool0')
+        avg_pool = mx.sym.Pooling(data=orig_data, global_pool=True, kernel=(8, 8), pool_type='avg', name='value_pool0')
         pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
-        value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
+        value_out = mx.sym.FullyConnected(data=pool_flatten, num_hidden=value_fc_size, name='value_orig_fc0')
+        value_out = get_act(data=value_out, act_type=act_type, name='value_orig_act1')
+        value_flatten = mx.sym.Concat(*[value_flatten, value_out], name='value_concat')
 
     value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
     value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
@@ -245,7 +247,7 @@ def se_pooling(data, name, pool_type):
         max_pool = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
         merge = mx.sym.Concat(avg_pool, max_pool, dim=1, name=name + '_concat_0')
     elif pool_type == "avg":
-        merge = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
+        merge = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='avg', name=name+'_avg_pool0')
     elif pool_type == "max":
         merge = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
     else:
@@ -328,6 +330,15 @@ def convolution_block_attention_module(data, channels, name, ratio=16, act_type=
     """
     data = channel_attention_module(data, channels, name + '_channel', ratio, act_type, use_hard_sigmoid)
     return spatial_attention_module(data, name + '_spatial', use_hard_sigmoid)
+
+
+def coordinate_attention_block(data, name):
+    """
+    Coordinate Attention for Efficient Mobile Network Design - Hou et al. - https://arxiv.org/pdf/2103.02907.pdf
+    """
+    # TODO
+    # maybe not as suitable on GPU because of multiple split and concat operations
+    raise NotImplementedError
 
 
 def ca_se(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):

@@ -36,7 +36,7 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS
 root = logging.getLogger()
 root.setLevel(logging.INFO)
 
-results_file = r'data/rl/grid_search_results.csv'
+results_file = r'/data/RL/grid_search_results.csv'
 
 
 tc = TrainConfig()
