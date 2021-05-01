@@ -36,7 +36,7 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS
 root = logging.getLogger()
 root.setLevel(logging.INFO)
 
-results_file = r'grid_search_results.csv'
+results_file = r'data/rl/grid_search_results.csv'
 
 
 tc = TrainConfig()
@@ -53,8 +53,8 @@ tc.device_id = 1
 tc.sparse_policy_label = True
 tc.batch_size = int(1024 / div_factor)
 tc.batch_steps = 100 * div_factor  # this defines how often a new checkpoint will be saved and the metrics evaluated
-tc.max_lr = 0.35 / div_factor
-tc.min_lr = 0.2 / div_factor  # 0.00001
+tc.max_lr = 0.1 / div_factor
+tc.min_lr = 0.001 / div_factor  # 0.00001
 
 mode = main_config["mode"]
 ctx = get_context(tc.context, tc.device_id)
