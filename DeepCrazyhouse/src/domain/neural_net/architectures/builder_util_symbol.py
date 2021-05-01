@@ -96,7 +96,8 @@ def ic_layer(data, name, droupout_rate):
 
 
 def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu', value_fc_size=256,
-               grad_scale_value=0.01, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False):
+               grad_scale_value=0.01, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False,
+               use_raw_features=False, use_bn=False):
     """
     Value head of the network which outputs the value evaluation. A floating point number in the range [-1,+1].
     :param data: Input data
@@ -129,11 +130,20 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
     if orig_data is not None and use_avg_features:
         avg_pool = mx.sym.Pooling(data=orig_data, global_pool=True, kernel=(8, 8), pool_type='avg', name='value_pool0')
         pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
-        value_out = mx.sym.FullyConnected(data=pool_flatten, num_hidden=value_fc_size, name='value_orig_fc0')
+        if use_raw_features:
+            orig_features = mx.symbol.Flatten(data=orig_data, name='raw_flatten0')
+            next_input = mx.sym.concat(*[pool_flatten, orig_features], name='value_concat0')
+        else:
+            next_input = pool_flatten
+        value_out = mx.sym.FullyConnected(data=next_input, num_hidden=value_fc_size, name='value_orig_fc0')
+        if use_bn:
+            value_out = mx.sym.BatchNorm(data=value_out, name='value_bn1')
         value_out = get_act(data=value_out, act_type=act_type, name='value_orig_act1')
-        value_flatten = mx.sym.Concat(*[value_flatten, value_out], name='value_concat')
+        value_flatten = mx.sym.Concat(*[value_flatten, value_out], name='value_concat1')
 
     value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
+    if use_bn:
+        value_out = mx.sym.BatchNorm(data=value_out, name='value_bn2')
     value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
     value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
     value_out = get_act(data=value_out, act_type='tanh', name=main_config["value_output"])
