@@ -54,7 +54,7 @@ void ThreadManager::print_info()
 
 void ThreadManager::await_kill_signal()
 {
-    while(isRunning) {
+    while(isRunning && searchThreads.front()->is_running()) {
         if (wait_for(chrono::milliseconds(updateIntervalMS*4))){
             print_info();
         }
@@ -155,7 +155,7 @@ bool ThreadManager::early_stopping()
 
 
 bool ThreadManager::continue_search() {
-    if (!inGame || !canProlong || overallNPS == 0 || checkedContinueSearch > 1) {
+    if (!inGame || !canProlong || overallNPS == 0 || checkedContinueSearch > 1 || !searchThreads.front()->is_running()) {
         return false;
     }
     const float newEval = rootNode->updated_value_eval();

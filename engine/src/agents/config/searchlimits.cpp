@@ -45,6 +45,7 @@ void SearchLimits::reset()
 {
     movetime = 0;
     nodes = 0;
+    nodesLimit = 0;
     simulations = 0;
     movestogo = 0;
     depth = 0;

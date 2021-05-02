@@ -936,6 +936,7 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
         if (qVetoDelta != 0 && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + qVetoDelta && d->childNumberVisits[bestQIdx] > 1) {
             if (mctsPolicy[bestMoveIdx] > mctsPolicy[bestQIdx]) {
                 // swap values of highest qValues and most visits
+                info_string("veto move");
                 const double qSavePolicy = mctsPolicy[bestQIdx];
                 mctsPolicy[bestQIdx] = mctsPolicy[bestMoveIdx];
                 mctsPolicy[bestMoveIdx] = qSavePolicy;
