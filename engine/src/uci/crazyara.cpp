@@ -500,8 +500,19 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
 
 void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
 {
+    // these three UCI-Options may trigger a network reload, keep an eye on them
+    const string prevModelDir = Options["Model_Directory"];
+    const int prevThreads = Options["Threads"];
+    const string prevUciVariant = Options["UCI_Variant"];
+
     OptionsUCI::setoption(is, variant, state);
     changedUCIoption = true;
+    if (networkLoaded) {
+        if (string(Options["Model_Directory"]) != prevModelDir || int(Options["Threads"]) != prevThreads || string(Options["UCI_Variant"]) != prevUciVariant) {
+            networkLoaded = false;
+            is_ready();
+        }
+    }
 }
 
 unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings)

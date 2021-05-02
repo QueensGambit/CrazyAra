@@ -31,8 +31,8 @@
 #include "types.h"
 using namespace std;
 
-// list of all current available variants for CrazyAra
-static vector<string> availableVariants = {
+// list of all current available variants for MultiAra
+const static vector<string> availableVariants = {
     "3check",
     "atomic",
     "chess",

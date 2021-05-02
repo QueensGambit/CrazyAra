@@ -205,9 +205,18 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
         value += (value.empty() ? "" : " ") + token;
 
     if (Options.find(name) != Options.end()) {
-        Options[name] = value;
-        cout << "info string Updated option " << name << " to " << value << endl;
+        const string givenName = name;
         std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+#ifdef MODE_LICHESS
+        if (name == "model_directory") {
+            if (value.find((string)Options["UCI_Variant"]) == std::string::npos) {
+                cout << "info string The Model_Directory must have the active UCI_Variant '" << (string)Options["UCI_Variant"] << "' in its filepath" << endl;
+                return;
+            }
+        }
+#endif
+        Options[name] = value;
+        cout << "info string Updated option " << givenName << " to " << value << endl;
         if (name == "uci_variant") {
 #ifdef XIANGQI
             // Workaround. Fairy-Stockfish does not use an enum for variants
