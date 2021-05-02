@@ -46,7 +46,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
-    isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
+    isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
 #ifdef DYNAMIC_NN_ARCH
     nbNNInputValues(net->get_nb_input_values_total())
@@ -333,7 +333,8 @@ void SearchThread::backup_collisions() {
 bool SearchThread::nodes_limits_ok()
 {
     return (searchLimits->nodes == 0 || (rootNode->get_nodes() < searchLimits->nodes)) &&
-            (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations));
+           (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations)) &&
+           (searchLimits->nodesLimit == 0 || (rootNode->get_nodes() < searchLimits->nodesLimit));
 }
 
 bool SearchThread::is_root_node_unsolved()

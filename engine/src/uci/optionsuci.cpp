@@ -118,6 +118,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Nodes"]                         << Option(800, 0, 99999999);
 #else
     o["Nodes"]                         << Option(0, 0, 99999999);
+    o["Nodes_Limit"]                   << Option(0, 0, 999999999);
 #endif
 #ifdef TENSORRT
     o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
@@ -152,6 +153,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Threads"]                       << Option(2, 1, 512);
 #ifdef MODE_CRAZYHOUSE
+      // we repeat "crazyhouse" in the list because of problem in XBoard/Winboard #23
     o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
 #elif defined MODE_LICHESS
     o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), availableVariants);
@@ -174,6 +176,10 @@ void OptionsUCI::init(OptionsMap &o)
     o["MeanInitPly"]                   << Option(15, 0, 99999);
 #ifdef LICHESS_MODE
     o["Model_Directory_Contender"]     << Option(((string) "model_contender/" + availableVariants.front()).c_str());
+#elif defined MODE_CHESS
+    o["Model_Directory_Contender"]     << Option("model_contender/chess");
+#elif defined MODE_XIANGQI
+    o["Model_Directory_Contender"]     << Option("model_contender/xiangqi");
 #else
     o["Model_Directory_Contender"]     << Option("model_contender/");
 #endif
@@ -229,6 +235,7 @@ void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap &options
     searchLimits.startTime = now();
     searchLimits.moveOverhead = TimePoint(options["Move_Overhead"]);
     searchLimits.nodes = options["Nodes"];
+    searchLimits.nodesLimit = options["Nodes_Limit"];
     searchLimits.movetime = options["Fixed_Movetime"];
     searchLimits.simulations = options["Simulations"];
 }
