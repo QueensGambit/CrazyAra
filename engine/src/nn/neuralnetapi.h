@@ -103,8 +103,8 @@ template <typename T>
 bool check_condition(const T& value, const T& target, const string& valueStr, const string& targetStr) {
     if (value != target) {
         info_string(valueStr + " !=", targetStr + ":");
-        info_string("expected:", value);
-        info_string("given:", target);
+        info_string("expected:", target);
+        info_string("given:", value);
         return false;
     }
     return true;
