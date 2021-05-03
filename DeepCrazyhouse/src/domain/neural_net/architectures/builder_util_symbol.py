@@ -69,19 +69,21 @@ def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", 
     return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
 
 
-def get_stem(data, channels, act_type, kernel=3):
+def get_stem(data, channels, act_type, kernel=3, use_act=True):
     """
     Creates the convolution stem before the residual head
     :param data: Input data
     :param channels: Number of channels for the stem
     :param act_type: Activation function
     :param kernel: Kernel size
+    :param use_act: Defines if an activation should be applied
     :return: symbol
     """
     body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
                               no_bias=True, name="stem_conv0")
     body = mx.sym.BatchNorm(data=body, name='stem_bn0')
-    body = get_act(data=body, act_type=act_type, name='stem_act0')
+    if use_act:
+        body = get_act(data=body, act_type=act_type, name='stem_act0')
 
     return body
 
