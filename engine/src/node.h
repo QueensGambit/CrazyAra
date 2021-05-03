@@ -45,16 +45,6 @@ using blaze::DynamicVector;
 using namespace std;
 using ChildIdx = uint_fast16_t;
 
-struct ParentNode {
-    Node* node;
-    uint32_t visits;
-    double qSum;
-    uint16_t childIdxForParent;
-    bool isDead = false;
-    ParentNode(Node* node, uint16_t childIdxForParent) :
-        node(node), childIdxForParent(childIdxForParent) {}
-};
-
 struct NodeAndIdx {
     Node* node;
     uint16_t childIdx;
@@ -71,8 +61,6 @@ private:
 
     DynamicVector<float> policyProbSmall;
     vector<Action> legalActions;
-    //    DynamicVector<bool> isCheck;
-    //    DynamicVector<bool> isCapture;
     Key key;
 
     // singular values
@@ -476,12 +464,8 @@ public:
 #endif
 
     uint32_t get_number_of_nodes() const;
+
 private:
-
-    uint32_t get_real_visits_for_parent(const ParentNode& parent) const;
-
-    double get_q_sum_for_parent(const ParentNode& parent, float virtualLoss) const;
-
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
      */

@@ -504,11 +504,14 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
     const string prevModelDir = Options["Model_Directory"];
     const int prevThreads = Options["Threads"];
     const string prevUciVariant = Options["UCI_Variant"];
+    const int prevFirstDeviceID = Options["First_Device_ID"];
+    const int prevLastDeviceID = Options["Last_Device_ID"];
 
     OptionsUCI::setoption(is, variant, state);
     changedUCIoption = true;
     if (networkLoaded) {
-        if (string(Options["Model_Directory"]) != prevModelDir || int(Options["Threads"]) != prevThreads || string(Options["UCI_Variant"]) != prevUciVariant) {
+        if (string(Options["Model_Directory"]) != prevModelDir || int(Options["Threads"]) != prevThreads || string(Options["UCI_Variant"]) != prevUciVariant ||
+            int(Options["First_Device_ID"]) != prevFirstDeviceID || int(Options["Last_Device_ID"] != prevLastDeviceID)) {
             networkLoaded = false;
             is_ready();
         }

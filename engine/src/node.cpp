@@ -66,22 +66,6 @@ bool Node::has_transposition_child_node()
     return false;
 }
 
-uint32_t Node::get_real_visits_for_parent(const ParentNode& parent) const
-{
-    if(parent.isDead) {
-        return parent.visits;
-    }
-    return parent.node->get_real_visits(parent.childIdxForParent);
-}
-
-double Node::get_q_sum_for_parent(const ParentNode &parent, float virtualLoss) const
-{
-    if (parent.isDead) {
-        return parent.qSum;
-    }
-    return parent.node->get_q_sum(parent.childIdxForParent, virtualLoss);
-}
-
 #ifdef MCTS_STORE_STATES
 StateObj* Node::get_state() const
 {
