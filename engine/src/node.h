@@ -407,10 +407,10 @@ public:
     void print_node_statistics(const StateObj* pos, const vector<size_t>& customOrdering) const;
 
     /**
-     * @brief get_nodes Returns the number of nodes in the subtree of this node
+     * @brief get_node_count Returns the number of nodes in the subgraph of this nodes without counting terminal simulations
      * @return uint32_t
      */
-    uint32_t get_nodes();
+    uint32_t get_node_count();
 
     bool is_transposition() const;
 
@@ -698,13 +698,6 @@ NodeType flip_node_type(const enum NodeType nodeType);
  * @return bool
  */
 bool is_terminal_value(float value);
-
-/**
- * @brief get_node_count Returns the number of nodes in the tree without counting terminal simulations
- * @param node Given node
- * @return Number of subnodes for thhe given node
- */
-size_t get_node_count(const Node* node);
 
 /**
  * @brief backup_collision Iteratively removes the virtual loss of the collision event that occurred
