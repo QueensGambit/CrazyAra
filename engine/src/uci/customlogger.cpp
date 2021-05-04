@@ -38,7 +38,7 @@ CustomLogger::~CustomLogger()
 }
 
 
-void CustomLogger::start(const std::string& filePath, _Ios_Openmode writeMode)
+void CustomLogger::start(const std::string& filePath, ios_base::openmode writeMode)
 {
   static CustomLogger logger;
 
