@@ -203,8 +203,12 @@ public:
 
     Action get_action(ChildIdx childIdx) const;
     Node* get_child_node(ChildIdx childIdx) const;
+    shared_ptr<Node> get_child_node_shared(ChildIdx childIdx) const;
 
-    vector<Node*> get_child_nodes() const;
+    vector<shared_ptr<Node>>::const_iterator get_node_it_begin() const;
+    vector<shared_ptr<Node>>::const_iterator get_node_it_end() const;
+
+
     bool is_terminal() const;
     bool has_nn_results() const;
     float get_value() const;
@@ -285,7 +289,7 @@ public:
     void set_value(float valueSum);
     uint16_t main_child_idx_for_parent() const;
 
-    void add_new_child_node(Node* newNode, ChildIdx childIdx);
+    void add_new_child_node(shared_ptr<Node> newNode, ChildIdx childIdx);
 
     void add_transposition_parent_node();
 
