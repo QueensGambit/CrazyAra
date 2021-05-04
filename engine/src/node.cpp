@@ -1134,7 +1134,7 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
          << "freeVisits:\t" << get_free_visits() << "/" << get_visits() << endl;
 }
 
-uint32_t Node::get_nodes()
+uint32_t Node::get_node_count()
 {
     return get_visits() - get_free_visits();
 }
@@ -1167,11 +1167,6 @@ uint32_t Node::get_number_of_nodes() const
 bool is_terminal_value(float value)
 {
     return (value == WIN_VALUE || value == DRAW_VALUE || value == LOSS_VALUE);
-}
-
-size_t get_node_count(const Node *node)
-{
-    return node->get_visits() - node->get_free_visits();
 }
 
 float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double targetQValue)

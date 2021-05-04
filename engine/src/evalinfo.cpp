@@ -229,6 +229,6 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
         evalInfo.depth = evalInfo.pv[0].size();
     }
     evalInfo.selDepth = selDepth;
-    evalInfo.nodes = get_node_count(rootNode);
+    evalInfo.nodes = rootNode->get_node_count();
     evalInfo.tbHits = tbHits;
 }

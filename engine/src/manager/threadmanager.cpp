@@ -126,7 +126,7 @@ bool ThreadManager::early_stopping()
         return false;
     }
 
-    if (rootNode->get_visits()-rootNode->get_free_visits() > overallNPS * (movetimeMS / 1000.0f) * 2 &&
+    if (rootNode->get_node_count() > overallNPS * (movetimeMS / 1000.0f) * 2 &&
             rootNode->max_q_child() == rootNode->max_visits_child()) {
         info_string("Early stopping (max nodes), saved time:", remainingMoveTimeMS);
         return true;
