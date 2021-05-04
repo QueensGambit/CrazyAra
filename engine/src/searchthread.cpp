@@ -43,7 +43,7 @@ size_t SearchThread::get_max_depth() const
 SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
     NeuralNetAPIUser(netBatch),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
-    newNodes(make_unique<FixedVector<shared_ptr<Node>>>(searchSettings->batchSize)),
+    newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
@@ -305,23 +305,17 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
 void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
-    for (auto it = newNodes->begin(); it != newNodes->end(); ++it) {
-        Node* node = it->get();
+    for (auto node: *newNodes) {
         if (!node->is_terminal()) {
             fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
         }
         ++batchIdx;
-        if (searchSettings->useMCGS) {
-            mapWithMutex->mtx.lock();
-            mapWithMutex->hashTable.insert({node->hash_key(), *it});
-            mapWithMutex->mtx.unlock();
-        }
     }
 }
 
 void SearchThread::backup_value_outputs()
 {
-    backup_values(newNodes.get(), newTrajectories);
+    backup_values(*newNodes, newTrajectories);
     newNodeSideToMove->reset_idx();
     backup_values(transpositionValues.get(), transpositionTrajectories);
 }
@@ -370,7 +364,7 @@ void SearchThread::create_mini_batch()
         trajectoryBuffer.clear();
         actionsBuffer.clear();
         parentNode = get_new_child_to_evaluate(childIdx, description);
-        shared_ptr<Node> newNode = parentNode->get_child_node_shared(childIdx);
+        Node* newNode = parentNode->get_child_node(childIdx);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
@@ -387,6 +381,11 @@ void SearchThread::create_mini_batch()
         }
         else {  // NODE_NEW_NODE
             newNodes->add_element(newNode);
+            if (searchSettings->useMCGS) {
+                mapWithMutex->mtx.lock();
+                mapWithMutex->hashTable.insert({newNode->hash_key(), parentNode->get_child_node_shared(childIdx)});
+                mapWithMutex->mtx.unlock();
+            }
             newTrajectories.emplace_back(trajectoryBuffer);
         }
     }
@@ -415,9 +414,9 @@ void run_search_thread(SearchThread *t)
     t->set_is_running(false);
 }
 
-void SearchThread::backup_values(FixedVector<shared_ptr<Node>>* nodes, vector<Trajectory>& trajectories) {
-    for (size_t idx = 0; idx < nodes->size(); ++idx) {
-        Node* node = nodes->get_element(idx).get();
+void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories) {
+    for (size_t idx = 0; idx < nodes.size(); ++idx) {
+        Node* node = nodes.get_element(idx);
 #ifdef MCTS_TB_SUPPORT
         const bool solveForTerminal = searchSettings->mctsSolver && node->is_tablebase();
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], solveForTerminal);
@@ -425,7 +424,7 @@ void SearchThread::backup_values(FixedVector<shared_ptr<Node>>* nodes, vector<Tr
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], false);
 #endif
     }
-    nodes->reset_idx();
+    nodes.reset_idx();
     trajectories.clear();
 }
 

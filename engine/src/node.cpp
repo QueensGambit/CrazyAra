@@ -220,7 +220,8 @@ bool Node::solved_tb_loss(const Node* childNode) const
 
 bool Node::only_won_tb_child_nodes() const
 {
-    for (Node* childNode : d->childNodes) {
+    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+        const Node* childNode = it->get();
         if (childNode->d->nodeType != TB_WIN) {
             return false;
         }

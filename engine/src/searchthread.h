@@ -69,7 +69,7 @@ private:
     unique_ptr<StateObj> newState;
 
     // list of all node objects which have been selected for expansion
-    unique_ptr<FixedVector<shared_ptr<Node>>> newNodes;
+    unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<float>> transpositionValues;
 
@@ -190,7 +190,7 @@ private:
      */
     Node* get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescription& description);
 
-    void backup_values(FixedVector<shared_ptr<Node>>* nodes, vector<Trajectory>& trajectories);
+    void backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories);
     void backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories);
 
     /**
