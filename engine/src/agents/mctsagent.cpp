@@ -33,7 +33,6 @@
 #include "../manager/threadmanager.h"
 #include "../node.h"
 #include "../util/communication.h"
-#include "util/gcthread.h"
 
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches,
@@ -49,8 +48,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     isRunning(false),
     overallNPS(0.0f),
     nbNPSentries(0),
-    threadManager(nullptr),
-    gcThread()
+    threadManager(nullptr)
 {
     mapWithMutex.hashTable.reserve(1e6);
 
@@ -269,7 +267,6 @@ void MCTSAgent::evaluate_board_state()
 {
     evalInfo->nodesPreSearch = init_root_node(state);
 
-    thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();
     rootState = unique_ptr<StateObj>(state->clone());
     if (rootNode->get_number_child_nodes() == 1) {
@@ -296,7 +293,6 @@ void MCTSAgent::evaluate_board_state()
     update_eval_info(*evalInfo, rootNode.get(), tbHits, maxDepth, searchSettings);
     lastValueEval = evalInfo->bestMoveQ[0];
     update_nps_measurement(evalInfo->calculate_nps());
-    tGCThread.join();
 }
 
 void MCTSAgent::run_mcts_search()

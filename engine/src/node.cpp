@@ -1051,51 +1051,6 @@ NodeType flip_node_type(const enum NodeType nodeType) {
     }
 }
 
-void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread) {
-    // the board position is only filled if the node has been extended
-    auto it = hashTable.find(node->hash_key());
-    if(it != hashTable.end()) {
-        hashTable.erase(node->hash_key());
-    }
-    gcThread.add_item_to_delete(node);
-}
-
-void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
-{
-    info_string("delete unused subtrees");
-    for (auto it = parentNode->get_node_it_begin(); it != parentNode->get_node_it_end(); ++it) {
-        Node* childNode = it->get();
-        if (childNode != node && childNode != nullptr) {
-            if (childNode->is_transposition()) {
-                childNode->decrement_number_parents();
-            }
-            else {
-                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
-            }
-        }
-    }
-}
-
-void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
-{
-    if (node == nullptr) {
-        return;
-    }
-    // if the current node hasn't been expanded or is a terminal node then childNodes is empty and the recursion ends
-    if (node->is_sorted()) {
-        for (auto it = node->get_node_it_begin(); it != node->get_node_it_end(); ++it) {
-            Node* childNode = it->get();
-            if (childNode != nullptr && childNode->is_transposition()) {
-                childNode->decrement_number_parents();
-            }
-            else {
-                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
-            }
-        }
-    }
-    add_item_to_delete(node, hashTable, gcThread);
-}
-
 float get_visits(Node* node)
 {
     return node->get_visits();

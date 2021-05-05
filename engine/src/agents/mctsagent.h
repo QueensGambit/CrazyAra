@@ -44,7 +44,6 @@
 #include "../searchthread.h"
 #include "../manager/timemanager.h"
 #include "../manager/threadmanager.h"
-#include "util/gcthread.h"
 
 
 using namespace crazyara;
@@ -81,7 +80,6 @@ private:
     size_t nbNPSentries;
 
     unique_ptr<ThreadManager> threadManager;
-    GCThread<Node> gcThread;
 
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
