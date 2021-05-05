@@ -114,6 +114,7 @@ bool MCTSAgent::is_running() const
 size_t MCTSAgent::init_root_node(StateObj *state)
 {
     size_t nodesPreSearch;
+    gcThread.oldRootNode = rootNode;
     rootNode = get_root_node_from_tree(state);
 
     if (rootNode != nullptr) {
@@ -266,6 +267,7 @@ void MCTSAgent::update_stats()
 void MCTSAgent::evaluate_board_state()
 {
     evalInfo->nodesPreSearch = init_root_node(state);
+    thread tGCThread = thread(run_gc_thread, &gcThread);
 
     evalInfo->isChess960 = state->is_chess960();
     rootState = unique_ptr<StateObj>(state->clone());
@@ -298,6 +300,7 @@ void MCTSAgent::evaluate_board_state()
     update_eval_info(*evalInfo, rootNode.get(), tbHits, maxDepth, searchSettings);
     lastValueEval = evalInfo->bestMoveQ[0];
     update_nps_measurement(evalInfo->calculate_nps());
+    tGCThread.join();
 }
 
 void MCTSAgent::run_mcts_search()

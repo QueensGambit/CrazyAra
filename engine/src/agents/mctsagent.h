@@ -44,7 +44,7 @@
 #include "../searchthread.h"
 #include "../manager/timemanager.h"
 #include "../manager/threadmanager.h"
-
+#include "util/gcthread.h"
 
 using namespace crazyara;
 
@@ -78,6 +78,8 @@ private:
     size_t maxDepth;
     size_t tbHits;
     size_t nbNPSentries;
+
+    GCThread gcThread;
 
     unique_ptr<ThreadManager> threadManager;
 
