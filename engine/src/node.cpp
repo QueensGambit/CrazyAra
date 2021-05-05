@@ -58,7 +58,8 @@ uint8_t Node::get_virtual_loss_counter(ChildIdx childIdx) const
 
 bool Node::has_transposition_child_node()
 {
-    for (Node* childNode : d->childNodes){
+    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+        const Node* childNode = it->get();
         if (childNode != nullptr && childNode->is_transposition()) {
             return true;
         }
@@ -129,7 +130,8 @@ bool Node::solved_draw(const Node* childNode) const
 bool Node::at_least_one_drawn_child() const
 {
     bool atLeastOneDrawnChild = false;
-    for (Node* childNode : d->childNodes) {
+    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+        const Node* childNode = it->get();
         if (!childNode->is_playout_node() || (childNode->d->nodeType != DRAW && childNode->d->nodeType != WIN)) {
             return false;
         }
@@ -142,7 +144,8 @@ bool Node::at_least_one_drawn_child() const
 
 bool Node::only_won_child_nodes() const
 {
-    for (Node* childNode : d->childNodes) {
+    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+        const Node* childNode = it->get();
         if (childNode->d->nodeType != WIN) {
             return false;
         }
@@ -217,7 +220,8 @@ bool Node::solved_tb_loss(const Node* childNode) const
 
 bool Node::only_won_tb_child_nodes() const
 {
-    for (Node* childNode : d->childNodes) {
+    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+        const Node* childNode = it->get();
         if (childNode->d->nodeType != TB_WIN) {
             return false;
         }
@@ -248,7 +252,8 @@ void Node::define_end_ply_for_solved_terminal(const Node* childNode)
 {
     if (d->nodeType == LOSS) {
         // choose the longest pv line
-        for (const Node* curChildNode : d->childNodes) {
+        for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+            const Node* curChildNode = it->get();
             if (curChildNode->d->endInPly+1 > d->endInPly) {
                 d->endInPly = curChildNode->d->endInPly+1;
             }
@@ -257,7 +262,8 @@ void Node::define_end_ply_for_solved_terminal(const Node* childNode)
     }
     if (d->nodeType == DRAW) {
         // choose the shortest pv line for draws
-        for (const Node* curChildNode : d->childNodes) {
+        for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+            const Node* curChildNode = it->get();
             if (curChildNode->d->nodeType == DRAW && curChildNode->d->endInPly+1 < d->endInPly) {
                 d->endInPly = curChildNode->d->endInPly+1;
             }
@@ -283,7 +289,8 @@ void Node::mcts_policy_based_on_wins(DynamicVector<double> &mctsPolicy) const
 {
     mctsPolicy = 0;
     ChildIdx childIdx = 0;
-    for (auto childNode: get_child_nodes()) {
+    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+        const Node* childNode = it->get();
         if (childNode != nullptr && childNode->d != nullptr) {
 #ifndef MCTS_SINGLE_PLAYER
             if (childNode->d->nodeType == LOSS) {
@@ -303,7 +310,7 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy) const
     if (d->numberUnsolvedChildNodes != get_number_child_nodes() && d->nodeType != LOSS) {
         // set all entries which lead to a WIN of the opponent to zero
         for (size_t childIdx = 0; childIdx < d->noVisitIdx; ++childIdx) {
-            const Node* childNode = d->childNodes[childIdx];
+            const Node* childNode = d->childNodes[childIdx].get();
             if (childNode != nullptr && childNode->is_playout_node() && childNode->d->nodeType == WIN) {
                 mctsPolicy[childIdx] = 0;
             }
@@ -317,7 +324,7 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
         // already solved
         return false;
     }
-    const Node* childNode = d->childNodes[childIdx];
+    const Node* childNode = d->childNodes[childIdx].get();
 
     if (!childNode->is_playout_node()) {
         return false;
@@ -415,12 +422,22 @@ Action Node::get_action(ChildIdx childIdx) const
 
 Node *Node::get_child_node(ChildIdx childIdx) const
 {
+    return d->childNodes[childIdx].get();
+}
+
+shared_ptr<Node> Node::get_child_node_shared(ChildIdx childIdx) const
+{
     return d->childNodes[childIdx];
 }
 
-vector<Node*> Node::get_child_nodes() const
+vector<shared_ptr<Node>>::const_iterator Node::get_node_it_begin() const
 {
-    return d->childNodes;
+    return d->childNodes.begin();
+}
+
+vector<shared_ptr<Node>>::const_iterator Node::get_node_it_end() const
+{
+    return d->childNodes.end();
 }
 
 bool Node::is_terminal() const
@@ -613,7 +630,7 @@ void Node::set_value(float value)
     this->valueSum = value * this->realVisitsSum;
 }
 
-void Node::add_new_child_node(Node *newNode, ChildIdx childIdx)
+void Node::add_new_child_node(shared_ptr<Node> newNode, ChildIdx childIdx)
 {
     d->childNodes[childIdx] = newNode;
 }
@@ -897,9 +914,9 @@ DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSett
 #endif
 }
 
-Node *Node::get_child_node(ChildIdx childIdx)
+Node* Node::get_child_node(ChildIdx childIdx)
 {
-    return d->childNodes[childIdx];
+    return d->childNodes[childIdx].get();
 }
 
 void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const
@@ -945,7 +962,7 @@ void Node::get_principal_variation(vector<Action>& pv, float qValueWeight, float
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
         size_t childIdx = get_best_action_index(curNode, true, qValueWeight, qVetoDelta);
         pv.push_back(curNode->get_action(childIdx));
-        curNode = curNode->d->childNodes[childIdx];
+        curNode = curNode->d->childNodes[childIdx].get();
     }
 }
 
@@ -960,8 +977,8 @@ size_t get_best_action_index(const Node *curNode, bool fast, float qValueWeight,
         size_t longestPVlength = 0;
         size_t childIdx = 0;
         for (size_t idx = 0; idx < curNode->get_number_child_nodes(); ++idx) {
-            if (curNode->get_child_nodes()[idx]->get_end_in_ply() > longestPVlength) {
-                longestPVlength = curNode->get_child_nodes()[idx]->get_end_in_ply();
+            if (curNode->get_child_node(idx)->get_end_in_ply() > longestPVlength) {
+                longestPVlength = curNode->get_child_node(idx)->get_end_in_ply();
                 childIdx = idx;
             }
         }
@@ -1032,49 +1049,6 @@ NodeType flip_node_type(const enum NodeType nodeType) {
     default:
         return nodeType;
     }
-}
-
-void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread) {
-    // the board position is only filled if the node has been extended
-    auto it = hashTable.find(node->hash_key());
-    if(it != hashTable.end()) {
-        hashTable.erase(node->hash_key());
-    }
-    gcThread.add_item_to_delete(node);
-}
-
-void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
-{
-    info_string("delete unused subtrees");
-    for (Node* childNode: parentNode->get_child_nodes()) {
-        if (childNode != node && childNode != nullptr) {
-            if (childNode->is_transposition()) {
-                childNode->decrement_number_parents();
-            }
-            else {
-                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
-            }
-        }
-    }
-}
-
-void delete_subtree_and_hash_entries(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread)
-{
-    if (node == nullptr) {
-        return;
-    }
-    // if the current node hasn't been expanded or is a terminal node then childNodes is empty and the recursion ends
-    if (node->is_sorted()) {
-        for (Node* childNode: node->get_child_nodes()) {
-            if (childNode != nullptr && childNode->is_transposition()) {
-                childNode->decrement_number_parents();
-            }
-            else {
-                delete_subtree_and_hash_entries(childNode, hashTable, gcThread);
-            }
-        }
-    }
-    add_item_to_delete(node, hashTable, gcThread);
 }
 
 float get_visits(Node* node)

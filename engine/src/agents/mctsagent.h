@@ -44,7 +44,6 @@
 #include "../searchthread.h"
 #include "../manager/timemanager.h"
 #include "../manager/threadmanager.h"
-#include "util/gcthread.h"
 
 
 using namespace crazyara;
@@ -56,13 +55,13 @@ private:
     vector<SearchThread*> searchThreads;
     unique_ptr<TimeManager> timeManager;
 
-    Node* rootNode;
+    shared_ptr<Node> rootNode;
     unique_ptr<StateObj> rootState;
 
     // stores the pointer to the root node which will become the new root
-    Node* ownNextRoot;
+    shared_ptr<Node> ownNextRoot;
     // stores the pointer to the root node which will become the new root for opponents turn
-    Node* opponentsNextRoot;
+    shared_ptr<Node> opponentsNextRoot;
 
     MapWithMutex mapWithMutex;
     float lastValueEval;
@@ -81,7 +80,6 @@ private:
     size_t nbNPSentries;
 
     unique_ptr<ThreadManager> threadManager;
-    GCThread<Node> gcThread;
 
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
@@ -180,7 +178,7 @@ private:
      * @param pos Requested board position
      * @return Pointer to root node or nullptr
      */
-    inline Node* get_root_node_from_tree(StateObj* state);
+    inline shared_ptr<Node> get_root_node_from_tree(StateObj* state);
 
     /**
      * @brief create_new_root_node Creates a new root node for the given board position and requests the neural network for evaluation

@@ -66,6 +66,7 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 #define Q_INIT -1.0f
 #define DEPTH_INIT 64
 #define Q_TRANSPOS_DIFF 0.01
+#define MAX_HASH_SIZE 100000000
 
 #ifndef MODE_POMMERMAN
 #define TERMINAL_NODE_CACHE 8192

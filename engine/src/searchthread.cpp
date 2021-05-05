@@ -84,28 +84,30 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
 {
     if(searchSettings->useMCGS) {
         mapWithMutex->mtx.lock();
-        unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
-        if(it != mapWithMutex->hashTable.end() &&
-                is_transposition_verified(it, newState)) {
-            mapWithMutex->mtx.unlock();
-            it->second->lock();
-            const float qValue =  it->second->get_value();
+        HashMap::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
+        if (it != mapWithMutex->hashTable.end()  && !it->second.expired()) {
+            shared_ptr<Node> tranpositionNode = it->second.lock();
+            if(is_transposition_verified(tranpositionNode.get(), newState)) {
+                mapWithMutex->mtx.unlock();
+                tranpositionNode->lock();
+                const float qValue =  tranpositionNode->get_value();
 
-            it->second->add_transposition_parent_node();
-            it->second->unlock();
-#ifndef MODE_POMMERMAN
-            if (it->second->is_playout_node() && it->second->get_node_type() == LOSS) {
-                parentNode->set_checkmate_idx(childIdx);
+                tranpositionNode->add_transposition_parent_node();
+                tranpositionNode->unlock();
+    #ifndef MODE_POMMERMAN
+                if (tranpositionNode->is_playout_node() && tranpositionNode->get_node_type() == LOSS) {
+                    parentNode->set_checkmate_idx(childIdx);
+                }
+    #endif
+                transpositionValues->add_element(qValue);
+                parentNode->add_new_child_node(tranpositionNode, childIdx);
+                return NODE_TRANSPOSITION;
             }
-#endif
-            transpositionValues->add_element(qValue);
-            parentNode->add_new_child_node(it->second, childIdx);
-            return NODE_TRANSPOSITION;
         }
         mapWithMutex->mtx.unlock();
     }
     assert(parentNode != nullptr);
-    Node *newNode = new Node(newState, inCheck, searchSettings);
+    shared_ptr<Node> newNode = make_shared<Node>(newState, inCheck, searchSettings);
     // connect the Node to the parent
     parentNode->add_new_child_node(newNode, childIdx);
     return NODE_NEW_NODE;
@@ -308,17 +310,12 @@ void SearchThread::set_nn_results_to_child_nodes()
             fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
         }
         ++batchIdx;
-        if (searchSettings->useMCGS) {
-            mapWithMutex->mtx.lock();
-            mapWithMutex->hashTable.insert({node->hash_key(), node});
-            mapWithMutex->mtx.unlock();
-        }
     }
 }
 
 void SearchThread::backup_value_outputs()
 {
-    backup_values(newNodes.get(), newTrajectories);
+    backup_values(*newNodes, newTrajectories);
     newNodeSideToMove->reset_idx();
     backup_values(transpositionValues.get(), transpositionTrajectories);
 }
@@ -384,6 +381,11 @@ void SearchThread::create_mini_batch()
         }
         else {  // NODE_NEW_NODE
             newNodes->add_element(newNode);
+            if (searchSettings->useMCGS) {
+                mapWithMutex->mtx.lock();
+                mapWithMutex->hashTable.insert({newNode->hash_key(), parentNode->get_child_node_shared(childIdx)});
+                mapWithMutex->mtx.unlock();
+            }
             newTrajectories.emplace_back(trajectoryBuffer);
         }
     }
@@ -412,9 +414,9 @@ void run_search_thread(SearchThread *t)
     t->set_is_running(false);
 }
 
-void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories) {
-    for (size_t idx = 0; idx < nodes->size(); ++idx) {
-        Node* node = nodes->get_element(idx);
+void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories) {
+    for (size_t idx = 0; idx < nodes.size(); ++idx) {
+        Node* node = nodes.get_element(idx);
 #ifdef MCTS_TB_SUPPORT
         const bool solveForTerminal = searchSettings->mctsSolver && node->is_tablebase();
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], solveForTerminal);
@@ -422,7 +424,7 @@ void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& 
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], false);
 #endif
     }
-    nodes->reset_idx();
+    nodes.reset_idx();
     trajectories.clear();
 }
 
@@ -484,9 +486,9 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
     node->apply_temperature_to_prior_policy(temperature);
 }
 
-bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateObj* state) {
-    return  it->second->has_nn_results() &&
-            it->second->plies_from_null() == state->steps_from_null() &&
+bool is_transposition_verified(const Node* node, const StateObj* state) {
+    return  node->has_nn_results() &&
+            node->plies_from_null() == state->steps_from_null() &&
             state->number_repetitions() == 0;
 }
 

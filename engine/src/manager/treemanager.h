@@ -37,7 +37,7 @@
  * @param move Move
  * @param ownMove Boolean indicating if it was CrazyAra's move
  */
-Node* pick_next_node(Action move, const Node* parentNode);
+shared_ptr<Node> pick_next_node(Action move, const Node* parentNode);
 
 /**
  * @brief same_hash_key Checks if the given node isn't a nullptr and

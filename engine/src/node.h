@@ -37,7 +37,6 @@
 
 #include "agents/config/searchsettings.h"
 #include "nodedata.h"
-#include "agents/util/gcthread.h"
 
 
 using blaze::HybridVector;
@@ -203,8 +202,12 @@ public:
 
     Action get_action(ChildIdx childIdx) const;
     Node* get_child_node(ChildIdx childIdx) const;
+    shared_ptr<Node> get_child_node_shared(ChildIdx childIdx) const;
 
-    vector<Node*> get_child_nodes() const;
+    vector<shared_ptr<Node>>::const_iterator get_node_it_begin() const;
+    vector<shared_ptr<Node>>::const_iterator get_node_it_end() const;
+
+
     bool is_terminal() const;
     bool has_nn_results() const;
     float get_value() const;
@@ -285,7 +288,7 @@ public:
     void set_value(float valueSum);
     uint16_t main_child_idx_for_parent() const;
 
-    void add_new_child_node(Node* newNode, ChildIdx childIdx);
+    void add_new_child_node(shared_ptr<Node> newNode, ChildIdx childIdx);
 
     void add_transposition_parent_node();
 
@@ -646,22 +649,6 @@ private:
  * @return Index for best move and child node
  */
  size_t get_best_action_index(const Node* curNode, bool fast, float qValueWeight, float qVetoDelto);
-
-void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
-
-/**
- * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
- * @param node Node of the subtree to delete
- * @param hashTable Pointer to the hashTable which stores a pointer to all active nodes
- * @param gcThread Reference to the garbadge collector object
- */
-void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
-
-/**
- * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr
- * @param hashTable Pointer to the hashTables
- */
-void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
 
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
