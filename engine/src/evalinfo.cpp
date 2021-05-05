@@ -106,7 +106,7 @@ int value_to_centipawn(float value)
         return sgn(value) * 9999;
     }
     // use logarithmic scaling with basis 1.1 as a pseudo centipawn conversion
-    return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
+    return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(VALUE_TO_CENTI_PARAM)) * 100.0f);
 }
 
 float get_best_move_q(const SearchSettings* searchSettings, const Node* nextNode)
