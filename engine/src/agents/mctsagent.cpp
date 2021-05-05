@@ -286,6 +286,11 @@ void MCTSAgent::evaluate_board_state()
         if (!rootNode->is_root_node()) {
             rootNode->make_to_root();
         }
+        info_string("hash size: ", mapWithMutex.hashTable.size());
+        if (mapWithMutex.hashTable.size() > MAX_HASH_SIZE) {
+            info_string("clear hash");
+            mapWithMutex.hashTable.clear();
+        }
         info_string("run mcts search");
         run_mcts_search();
         update_stats();
