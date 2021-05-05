@@ -280,7 +280,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     }
     // inform the mcts agent of the move, so the tree can potentially be reused later
     if (lastMove != MOVE_NULL && !useRawNetwork) {
-        mctsAgent->apply_move_to_tree(lastMove, false);
+        mctsAgent->apply_move_to_tree(lastMove, false, state->hash_key());
     }
     info_string("position", state->fen());
 }

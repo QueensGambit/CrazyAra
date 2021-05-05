@@ -28,7 +28,6 @@
 #ifndef TREEMANAGER_H
 #define TREEMANAGER_H
 
-//#include "../board.h"
 #include "../stateobj.h"
 #include "../node.h"
 
@@ -46,6 +45,6 @@ shared_ptr<Node> pick_next_node(Action move, const Node* parentNode);
  * @param pos Position pointer
  * @return bool
  */
-bool same_hash_key(Node* node, StateObj* state);
+bool same_hash_key(Node* node, Key key, StateObj* state);
 
 #endif // TREEMANAGER_H

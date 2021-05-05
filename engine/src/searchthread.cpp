@@ -237,6 +237,11 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
+                if (searchSettings->useMCGS) {
+                    mapWithMutex->mtx.lock();
+                    mapWithMutex->hashTable.insert({newState->hash_key(), currentNode->get_child_node_shared(childIdx)});
+                    mapWithMutex->mtx.unlock();
+                }
 #endif
             }
             return currentNode;
@@ -381,11 +386,6 @@ void SearchThread::create_mini_batch()
         }
         else {  // NODE_NEW_NODE
             newNodes->add_element(newNode);
-            if (searchSettings->useMCGS) {
-                mapWithMutex->mtx.lock();
-                mapWithMutex->hashTable.insert({newNode->hash_key(), parentNode->get_child_node_shared(childIdx)});
-                mapWithMutex->mtx.unlock();
-            }
             newTrajectories.emplace_back(trajectoryBuffer);
         }
     }

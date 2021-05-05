@@ -30,7 +30,8 @@ shared_ptr<Node> pick_next_node(Action move, const Node* parentNode)
 {
     if (parentNode != nullptr) {
         for (size_t idx = 0; idx < parentNode->get_no_visit_idx(); ++idx) {
-            if (parentNode->get_legal_actions()[idx] == move) {
+            const Action action = parentNode->get_legal_actions()[idx];
+            if (action == move) {
                 return parentNode->get_child_node_shared(idx);
             }
         }
@@ -38,9 +39,9 @@ shared_ptr<Node> pick_next_node(Action move, const Node* parentNode)
     return nullptr;
 }
 
-bool same_hash_key(Node* node, StateObj* state)
+bool same_hash_key(Node* node, Key key, StateObj* state)
 {
     return node != nullptr &&
-            node->hash_key() == state->hash_key() &&
+            key == state->hash_key() &&
             node->plies_from_null() == state->steps_from_null();
 }

@@ -45,6 +45,7 @@ typedef unsigned int uint;
 typedef int SideToMove;
 #define FIRST_PLAYER_IDX 0
 const int ACTION_NONE = 0;
+const int KEY_NONE = 0;
 
 enum PolicyType {
     normal,
