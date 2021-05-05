@@ -25,6 +25,7 @@
 
 #include "crazyara.h"
 
+#include <thread>
 #include "bitboard.h"
 #include "position.h"
 #include "search.h"
@@ -49,6 +50,7 @@
 #elif defined TENSORRT
 #include "nn/tensorrtapi.h"
 #endif
+
 
 CrazyAra::CrazyAra():
     rawAgent(nullptr),
@@ -431,6 +433,8 @@ void CrazyAra::init()
 bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
+        TimeOutReadyThread timeoutThread(TIME_OUT_IS_READY_MS);
+        thread tTimeoutThread = thread(run_timeout_thread, &timeoutThread);
         init_search_settings();
         init_play_settings();
 #ifdef USE_RL
@@ -443,6 +447,8 @@ bool CrazyAra::is_ready()
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
         StateConstants::init(mctsAgent->is_policy_map());
+        timeoutThread.kill();
+        tTimeoutThread.join();
         networkLoaded = true;
     }
     wait_to_finish_last_search();
