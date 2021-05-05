@@ -70,6 +70,11 @@ Action Agent::get_best_action()
     return evalInfo->bestMove;
 }
 
+StateObj *Agent::get_state()
+{
+    return state;
+}
+
 void Agent::perform_action()
 {
     evalInfo->start = chrono::steady_clock::now();
@@ -84,8 +89,11 @@ void Agent::perform_action()
 void run_agent_thread(Agent* agent)
 {
     agent->perform_action();
+    StateObj* state = agent->get_state();
+    state->do_action(agent->get_best_action());
     // inform the agent of the move, so the tree can potentially be reused later
-    agent->apply_move_to_tree(agent->get_best_action(), true);
+    agent->apply_move_to_tree(agent->get_best_action(), true, state->hash_key());
+    state->undo_action(agent->get_best_action());
 }
 
 void apply_quantile_clipping(float quantile, DynamicVector<double>& policyProbSmall)

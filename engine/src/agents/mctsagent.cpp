@@ -41,9 +41,12 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     Agent(netSingle, playSettings, true),
     searchSettings(searchSettings),
     rootNode(nullptr),
+    rootNodeKey(KEY_NONE),
     rootState(nullptr),
     ownNextRoot(nullptr),
+    ownNextRootKey(KEY_NONE),
     opponentsNextRoot(nullptr),
+    opponentsNextRootKey(KEY_NONE),
     lastValueEval(-1.0f),
     reusedFullTree(false),
     isRunning(false),
@@ -146,16 +149,16 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
         return nullptr;
     }
 
-    if (same_hash_key(rootNode.get(), state)) {
+    if (same_hash_key(rootNode.get(), rootNodeKey, state)) {
         info_string("reuse the full tree");
         reusedFullTree = true;
         return rootNode;
     }
 
-    if (same_hash_key(ownNextRoot.get(), state) && ownNextRoot->is_playout_node() && ownNextRoot->get_number_of_nodes() > 0) {
+    if (same_hash_key(ownNextRoot.get(), ownNextRootKey, state) && ownNextRoot->is_playout_node() && ownNextRoot->get_number_of_nodes() > 0) {
         return ownNextRoot;
     }
-    if (same_hash_key(opponentsNextRoot.get(), state) && opponentsNextRoot->is_playout_node() && opponentsNextRoot->get_number_of_nodes() > 0) {
+    if (same_hash_key(opponentsNextRoot.get(), opponentsNextRootKey, state) && opponentsNextRoot->is_playout_node() && opponentsNextRoot->get_number_of_nodes() > 0) {
         return opponentsNextRoot;
     }
     // the node wasn't found, clear the old tree
@@ -218,17 +221,23 @@ void MCTSAgent::update_nps_measurement(float curNPS)
     }
 }
 
-void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)
+void MCTSAgent::apply_move_to_tree(Action move, bool ownMove, Key key)
 {
     if (!reusedFullTree && rootNode != nullptr && rootNode->is_playout_node()) {
         if (ownMove) {
             info_string("apply move to tree");
             opponentsNextRoot = pick_next_node(move, rootNode.get());
+            if (opponentsNextRoot != nullptr) {
+                opponentsNextRootKey = key;
+            }
             return;
         }
         else if (opponentsNextRoot != nullptr && opponentsNextRoot->is_playout_node()){
             info_string("apply move to tree");
             ownNextRoot = pick_next_node(move, opponentsNextRoot.get());
+            if (ownNextRoot != nullptr) {
+                ownNextRootKey = key;
+            }
             return;
         }
     }

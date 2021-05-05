@@ -57,12 +57,15 @@ private:
     unique_ptr<TimeManager> timeManager;
 
     shared_ptr<Node> rootNode;
+    Key rootNodeKey;
     unique_ptr<StateObj> rootState;
 
     // stores the pointer to the root node which will become the new root
     shared_ptr<Node> ownNextRoot;
+    Key ownNextRootKey;
     // stores the pointer to the root node which will become the new root for opponents turn
     shared_ptr<Node> opponentsNextRoot;
+    Key opponentsNextRootKey;
 
     MapWithMutex mapWithMutex;
     float lastValueEval;
@@ -116,7 +119,7 @@ public:
      */
     void export_search_tree(size_t maxDepth, const string& filename);
 
-    void apply_move_to_tree(Action move, bool ownMove) override;
+    void apply_move_to_tree(Action move, bool ownMove, Key key) override;
 
     /**
      * @brief clear_game_history Traverses all root positions for the game and calls clear_subtree() for each of them

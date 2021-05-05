@@ -93,13 +93,15 @@ public:
      * @param move Move which has been played
      * @param ownMove Boolean indicating if it was CrazyAra's move
      */
-    virtual void apply_move_to_tree(Action move, bool ownMove) = 0;
+    virtual void apply_move_to_tree(Action move, bool ownMove, Key key) = 0;
 
     /**
      * @brief get_best_action Returns the best action. It is assumed this function gets called after the search.
      * @return Action
      */
     Action get_best_action();
+
+    StateObj* get_state();
 };
 }
 

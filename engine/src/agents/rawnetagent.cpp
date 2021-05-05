@@ -78,7 +78,7 @@ void RawNetAgent::stop()
     // pass
 }
 
-void RawNetAgent::apply_move_to_tree(Action move, bool ownMove)
+void RawNetAgent::apply_move_to_tree(Action move, bool ownMove, Key key)
 {
     // pass
 }
