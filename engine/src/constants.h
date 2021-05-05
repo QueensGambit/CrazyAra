@@ -72,6 +72,7 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 #else
 #define VALUE_TO_CENTI_PARAM 1.2f
 #endif
+#define TIME_OUT_IS_READY_MS 13000
 
 #ifndef MODE_POMMERMAN
 #define TERMINAL_NODE_CACHE 8192
