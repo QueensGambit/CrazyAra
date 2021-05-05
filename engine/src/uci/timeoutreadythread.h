@@ -39,10 +39,8 @@ using namespace std;
  */
 class TimeOutReadyThread : public KillableThread
 {
-
 private:
     size_t timeOutMS;
-    size_t updateIntervalMS = 250;
     bool isRunning;
 public:
     TimeOutReadyThread(size_t timeOutMS) : timeOutMS(timeOutMS) {}
