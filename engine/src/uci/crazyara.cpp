@@ -433,7 +433,8 @@ void CrazyAra::init()
 bool CrazyAra::is_ready()
 {
     if (!networkLoaded) {
-        TimeOutReadyThread timeoutThread(TIME_OUT_IS_READY_MS);
+        const size_t timeoutMS = Options["Timeout_MS"];
+        TimeOutReadyThread timeoutThread(timeoutMS);
         thread tTimeoutThread = thread(run_timeout_thread, &timeoutThread);
         init_search_settings();
         init_play_settings();
