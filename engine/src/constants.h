@@ -53,7 +53,7 @@ const string engineName = "MultiAra";
 const string engineName = "ClassicAra";
 #endif
 
-const string engineVersion = "0.9.2";
+const string engineVersion = "0.9.2.post0";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
 
 #define LOSS_VALUE -1
@@ -72,7 +72,6 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 #else
 #define VALUE_TO_CENTI_PARAM 1.2f
 #endif
-#define TIME_OUT_IS_READY_MS 13000
 
 #ifndef MODE_POMMERMAN
 #define TERMINAL_NODE_CACHE 8192
