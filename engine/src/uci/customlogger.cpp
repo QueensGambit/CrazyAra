@@ -46,7 +46,7 @@ void CustomLogger::start(const std::string& filePath, ios_base::openmode writeMo
       logger.file.open(filePath, writeMode);
 
       if (!logger.file.is_open()) {
-          cerr << "Unable to open debug log file " << filePath << endl;
+          cerr << "Unable to open debug log file " << filePath.c_str() << endl;
           exit(EXIT_FAILURE);
       }
       cin.rdbuf(&logger.in);

@@ -754,7 +754,7 @@ void Node::mark_as_terminal()
 void Node::check_for_terminal(StateObj* pos, bool inCheck)
 {
     float customValue;
-    TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), inCheck, customValue);
+    TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), customValue);
 
     if (terminalType != TERMINAL_NONE) {
         mark_as_terminal();

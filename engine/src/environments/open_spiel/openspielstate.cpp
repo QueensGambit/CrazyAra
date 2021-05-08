@@ -121,7 +121,7 @@ std::string OpenSpielState::action_to_san(Action action, const std::vector<Actio
     return spielState->ActionToString(spielState->CurrentPlayer(), action);
 }
 
-TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, bool inCheck, float &customTerminalValue) const
+TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, float &customTerminalValue) const
 {
     if (spielState->IsTerminal()) {
         const double currentReturn = spielState->Returns()[spielState->MoveNumber() % 2];

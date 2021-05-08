@@ -131,8 +131,7 @@ public:
     Key hash_key() const override;
     void flip() override;
     Action uci_to_action(std::string& uciStr) const override;
-    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const override;
-    Result check_result(bool inCheck) const;
+    TerminalType is_terminal(size_t numberLegalMoves, float& customTerminalValue) const override;
     bool gives_check(Action action) const override;
     void print(std::ostream& os) const override;
     FairyState* clone() const override;
