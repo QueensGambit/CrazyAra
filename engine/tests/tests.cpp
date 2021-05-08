@@ -86,6 +86,15 @@ bool are_all_entries_true(const vector<string>& uciMoves, bool (*foo)(Square, Sq
     return true;
 }
 
+Variant get_default_variant()
+{
+#ifndef MODE_CRAZYHOUSE
+    return CHESS_VARIANT;
+#else
+    return CRAZYHOUSE_VARIANT;
+#endif
+}
+
 TEST_CASE("En-passent moves") {
     vector<string> en_passent_moves = create_en_passent_moves();
     REQUIRE(are_all_entries_true(en_passent_moves, is_en_passent_candidate) == true);
@@ -126,6 +135,13 @@ TEST_CASE("Anti-Chess StartFEN"){
     REQUIRE(int(sum) == 224);
     REQUIRE(int(key) == 417296);
 }
+
+TEST_CASE("Variant_Kingofthehill"){
+    init();
+    BoardState pos;
+    pos.set("5k2/1p5p/8/p7/2P1Kp2/5N1P/Pr3PP1/3RR3 b - - 1 29", false, KOTH_VARIANT); // bottom right
+    REQUIRE(pos.check_result(false) == WHITE_WIN);
+}
 #endif
 
 TEST_CASE("PGN_Move_Ambiguity"){
@@ -135,7 +151,7 @@ TEST_CASE("PGN_Move_Ambiguity"){
     StateInfo newState;
 
     pos.set("r1bq1rk1/ppppbppp/2n2n2/4p3/4P3/1N1P1N2/PPP2PPP/R1BQKB1R w KQ - 5 6", false,
-            CRAZYHOUSE_VARIANT, &newState, uiThread.get());
+            get_default_variant(), &newState, uiThread.get());
     string uci_move = "f3d2";
     Move move = UCI::to_move(pos, uci_move);
 
@@ -307,15 +323,14 @@ GameInfo apply_random_moves(StateObj& state, uint movesToApply) {
     while (gameInfo.nbAppliedMoves < movesToApply) {
         REQUIRE(state.steps_from_null() == gameInfo.nbAppliedMoves);
         vector<Action> actions = state.legal_actions();
-        const Action randomAction = actions[random() % actions.size()];
-        gameInfo.givesCheck = state.gives_check(randomAction);
-        state.do_action(actions[random() % actions.size()]);
-        ++gameInfo.nbAppliedMoves;
         float dummy;
-        if (state.is_terminal(actions.size(), gameInfo.givesCheck, dummy) != TERMINAL_NONE)  {
+        if (state.is_terminal(actions.size(), dummy) != TERMINAL_NONE)  {
             gameInfo.reachedTerminal = true;
             return gameInfo;
         }
+        const Action randomAction = actions[random() % actions.size()];
+        state.do_action(randomAction);
+        ++gameInfo.nbAppliedMoves;
     }
     return gameInfo;
 }
@@ -323,7 +338,7 @@ GameInfo apply_random_moves(StateObj& state, uint movesToApply) {
 TEST_CASE("State: steps_from_null()"){
     srand(42);
     StateObj state;
-    state.init(0, false);
+    state.init(get_default_variant(), false);
     REQUIRE(state.steps_from_null() == 0);
     const uint movesToApply = 42;
     apply_random_moves(state, movesToApply);
@@ -333,7 +348,7 @@ TEST_CASE("State: steps_from_null()"){
 TEST_CASE("State: Reach terminal state"){
     srand(543);
     StateObj state;
-    state.init(0, false);
+    state.init(get_default_variant(), false);
     const uint movesToApply = 10000;
     GameInfo gameInfo = apply_random_moves(state, movesToApply);
     REQUIRE(gameInfo.reachedTerminal == true);
@@ -345,11 +360,11 @@ TEST_CASE("State: check_result()"){
     StateObj state;
     state.init(0, false);
     const uint movesToApply = 10000;
-    GameInfo gameInfo = apply_random_moves(state, movesToApply);
-    const Result result = state.check_result(gameInfo.givesCheck);
+    apply_random_moves(state, movesToApply);
+    const Result result = state.check_result();
     REQUIRE(result != NO_RESULT);
     float dummy;
-    const TerminalType terminalType = state.is_terminal(state.legal_actions().size(), gameInfo.givesCheck, dummy);
+    const TerminalType terminalType = state.is_terminal(state.legal_actions().size(), dummy);
     switch(terminalType) {
     case TERMINAL_DRAW:
         REQUIRE(result == DRAWN);
@@ -594,3 +609,4 @@ TEST_CASE("Xiangqi_Input_Planes") {
 }
 #endif // MODE_XIANGQI
 #endif
+
