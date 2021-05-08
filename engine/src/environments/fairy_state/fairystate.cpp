@@ -82,18 +82,14 @@ Action FairyState::uci_to_action(string &uciStr) const {
     return Action(UCI::to_move(board, uciStr));
 }
 
-TerminalType FairyState::is_terminal(size_t numberLegalMoves, bool inCheck, float &customTerminalValue) const {
+TerminalType FairyState::is_terminal(size_t numberLegalMoves, float &customTerminalValue) const {
     if (numberLegalMoves == 0) {
-        if (inCheck) {
+        if (board.checkers()) {
             return TERMINAL_LOSS;
         }
         return TERMINAL_DRAW;
     }
     return TERMINAL_NONE;
-}
-
-Result FairyState::check_result(bool inCheck) const {
-    return get_result(board, inCheck);
 }
 
 bool FairyState::gives_check(Action action) const {

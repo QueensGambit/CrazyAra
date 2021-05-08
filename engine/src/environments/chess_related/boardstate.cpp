@@ -63,7 +63,6 @@ vector<Action> BoardState::legal_actions() const
 void BoardState::set(const string &fenStr, bool isChess960, int variant)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
     board.set(fenStr, isChess960, Variant(variant), &states->back(), nullptr);
 }
 
@@ -133,7 +132,7 @@ string BoardState::action_to_san(Action action, const vector<Action>& legalActio
     return pgn_move(Move(action), this->is_chess960(), board, legalActions, leadsToWin, bookMove);
 }
 
-TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const
+TerminalType BoardState::is_terminal(size_t numberLegalMoves, float& customTerminalValue) const
 {
 #ifdef ATOMIC
     if (board.is_atomic()) {
@@ -203,7 +202,7 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, floa
         }
 #endif
         // test if we have a check-mate
-        if (inCheck) {
+        if (board.checkers()) {
             return TERMINAL_LOSS;
         }
         // we reached a stalmate

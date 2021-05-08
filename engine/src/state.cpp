@@ -37,10 +37,10 @@ TerminalType invert_terminal_type(TerminalType terminalType) {
     return terminalType;
 }
 
-Result State::check_result(bool inCheck) const
+Result State::check_result() const
 {
     float customTerminalValue;
-    TerminalType terminalType = this->is_terminal(legal_actions().size(), inCheck, customTerminalValue);
+    TerminalType terminalType = this->is_terminal(legal_actions().size(), customTerminalValue);
     switch(terminalType) {
     case TERMINAL_NONE:
         return NO_RESULT;
@@ -67,7 +67,7 @@ TerminalType State::random_rollout(float& customValueTerminal)
     while(true) {
         const std::vector<Action> actions = this->legal_actions();
         const size_t numberActions = actions.size();
-        TerminalType terminalType = this->is_terminal(numberActions, false, customValueTerminal);
+        TerminalType terminalType = this->is_terminal(numberActions, customValueTerminal);
         if (terminalType != TERMINAL_NONE) {
             if (this->steps_from_null() % 2 == sideToMove) {
                 return terminalType;
