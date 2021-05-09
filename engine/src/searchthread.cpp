@@ -383,13 +383,15 @@ void SearchThread::create_mini_batch()
             transpositionTrajectories.emplace_back(trajectoryBuffer);
         }
         else {  // NODE_NEW_NODE
-            newNodes->add_element(newNode);
-            if (searchSettings->useMCGS) {
-                mapWithMutex->mtx.lock();
-                mapWithMutex->hashTable.insert({newNode->hash_key(), parentNode->get_child_node_shared(childIdx)});
-                mapWithMutex->mtx.unlock();
+            if (newNode != nullptr) {
+                newNodes->add_element(newNode);
+                if (searchSettings->useMCGS) {
+                    mapWithMutex->mtx.lock();
+                    mapWithMutex->hashTable.insert({newNode->hash_key(), parentNode->get_child_node_shared(childIdx)});
+                    mapWithMutex->mtx.unlock();
+                }
+                newTrajectories.emplace_back(trajectoryBuffer);
             }
-            newTrajectories.emplace_back(trajectoryBuffer);
         }
     }
 }
