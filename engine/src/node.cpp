@@ -79,7 +79,7 @@ void Node::set_auxiliary_outputs(const float* auxiliaryOutputs)
 }
 #endif
 
-Node::Node(StateObj* state, bool inCheck, const SearchSettings* searchSettings):
+Node::Node(StateObj* state, const SearchSettings* searchSettings):
     legalActions(state->legal_actions()),
     key(state->hash_key()),
     valueSum(0),
@@ -96,7 +96,7 @@ Node::Node(StateObj* state, bool inCheck, const SearchSettings* searchSettings):
     sorted(false)
 {
     // specify the number of direct child nodes of this node
-    check_for_terminal(state, inCheck);
+    check_for_terminal(state);
 #ifdef MCTS_TB_SUPPORT
     if (searchSettings->useTablebase && !isTerminal) {
         check_for_tablebase_wdl(state);
@@ -556,7 +556,9 @@ size_t Node::get_number_child_nodes() const
 void Node::prepare_node_for_visits()
 {
     sort_moves_by_probabilities();
-    init_node_data();
+    if (d == nullptr) {  // mark_tablebase() initializes the NodeData
+        init_node_data();
+    }
 #ifdef MCTS_STORE_STATES
     state->prepare_action();
 #endif
@@ -751,7 +753,7 @@ void Node::mark_as_terminal()
     d->noVisitIdx = 0;
 }
 
-void Node::check_for_terminal(StateObj* pos, bool inCheck)
+void Node::check_for_terminal(StateObj* pos)
 {
     float customValue;
     TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), customValue);
@@ -802,7 +804,6 @@ void Node::check_for_tablebase_wdl(StateObj* state)
 void Node::mark_as_tablebase()
 {
     init_node_data();
-    fully_expand_node();
     isTablebase = true;
 }
 #endif

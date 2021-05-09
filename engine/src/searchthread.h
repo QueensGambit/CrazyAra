@@ -146,7 +146,7 @@ public:
      * @param inCheck Defines if the current position sets a player in check
      * @return Returns NODE_TRANSPOSITION if a tranpsosition node was added and NODE_NEW_NODE otherwise
      */
-    NodeBackup add_new_node_to_tree(StateObj* newPos, Node* parentNode, ChildIdx childIdx, bool inCheck);
+    NodeBackup add_new_node_to_tree(StateObj* newPos, Node* parentNode, ChildIdx childIdx);
 
     /**
      * @brief reset_tb_hits Sets the number of table hits to 0
