@@ -291,11 +291,11 @@ void SearchThread::reset_stats()
     depthSum = 0;
 }
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings, bool isRootNodeTB)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), sideToMove);
     node_post_process_policy(node, searchSettings->nodePolicyTemperature, isPolicyMap, searchSettings);
-    node_assign_value(node, valueOutputs, tbHits, batchIdx);
+    node_assign_value(node, valueOutputs, tbHits, batchIdx, isRootNodeTB);
 #ifdef MCTS_STORE_STATES
     node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
 #endif
@@ -307,7 +307,7 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
+            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings, rootNode->is_tablebase());
         }
         ++batchIdx;
     }
@@ -461,13 +461,13 @@ ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
     return uint16_t(-1);
 }
 
-void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)
+void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB)
 {
 #ifdef MCTS_TB_SUPPORT
     if (node->is_tablebase()) {
         ++tbHits;
         // TODO: Improvement the value assignment for table bases
-        if (node->get_value() != 0) {
+        if (node->get_value() != 0 && isRootNodeTB) {
             // use the average of the TB entry and NN eval for non-draws
             node->set_value((valueOutputs[batchIdx] + node->get_value()) * 0.5f);
         }

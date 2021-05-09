@@ -517,7 +517,7 @@ void Node::increment_no_visit_idx()
 
 void Node::fully_expand_node()
 {
-    if (d->nodeType == UNSOLVED && !is_fully_expanded()) {
+    if (!is_fully_expanded()) {
         reserve_full_memory();
         for (size_t idx = d->noVisitIdx; idx < get_number_child_nodes(); ++idx) {
             d->add_empty_node();
@@ -802,6 +802,7 @@ void Node::check_for_tablebase_wdl(StateObj* state)
 void Node::mark_as_tablebase()
 {
     init_node_data();
+    fully_expand_node();
     isTablebase = true;
 }
 #endif
