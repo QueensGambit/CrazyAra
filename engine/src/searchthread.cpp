@@ -80,7 +80,7 @@ void SearchThread::set_is_running(bool value)
     isRunning = value;
 }
 
-NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx, bool inCheck)
+NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx)
 {
     if(searchSettings->useMCGS) {
         mapWithMutex->mtx.lock();
@@ -107,7 +107,7 @@ NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNo
         mapWithMutex->mtx.unlock();
     }
     assert(parentNode != nullptr);
-    shared_ptr<Node> newNode = make_shared<Node>(newState, inCheck, searchSettings);
+    shared_ptr<Node> newNode = make_shared<Node>(newState, searchSettings);
     // connect the Node to the parent
     parentNode->add_new_child_node(newNode, childIdx);
     return NODE_NEW_NODE;
@@ -210,13 +210,12 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
                 newState->do_action(action);
             }
 #endif
-            const bool inCheck = newState->gives_check(currentNode->get_action(childIdx));
             newState->do_action(currentNode->get_action(childIdx));
             currentNode->increment_no_visit_idx();
 #ifdef MCTS_STORE_STATES
-            description.type = add_new_node_to_tree(newState, currentNode, childIdx, inCheck);
+            description.type = add_new_node_to_tree(newState, currentNode, childIdx);
 #else
-            description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx, inCheck);
+            description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx);
 #endif
             currentNode->unlock();
 
@@ -306,6 +305,10 @@ void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
+        if (node == nullptr) {
+            info_string("nullptr newNode");
+            continue;
+        }
         if (!node->is_terminal()) {
             fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings, rootNode->is_tablebase());
         }
@@ -417,6 +420,9 @@ void run_search_thread(SearchThread *t)
 void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < nodes.size(); ++idx) {
         Node* node = nodes.get_element(idx);
+        if (node == nullptr) {
+            continue;
+        }
 #ifdef MCTS_TB_SUPPORT
         const bool solveForTerminal = searchSettings->mctsSolver && node->is_tablebase();
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], solveForTerminal);

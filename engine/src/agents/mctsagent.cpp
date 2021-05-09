@@ -166,11 +166,10 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
 void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
-    // TODO: Make sure that "inCheck=False" does not cause issues
 #ifdef MCTS_STORE_STATES
-    rootNode = make_shared<Node>(state->clone(), false, searchSettings);
+    rootNode = make_shared<Node>(state->clone(), searchSettings);
 #else
-    rootNode = make_shared<Node>(state, false, searchSettings);
+    rootNode = make_shared<Node>(state, searchSettings);
 #endif
 #ifdef SEARCH_UCT
     unique_ptr<StateObj> newState = unique_ptr<StateObj>(state->clone());

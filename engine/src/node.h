@@ -85,12 +85,10 @@ private:
 public:
     /**
      * @brief Node Primary constructor which is used when expanding a node during search
-     * @param parentNode Pointer to parent node
-     * @param move Move which led to current board state
+     * @param State Corresponding state object
      * @param searchSettings Pointer to the searchSettings
      */
     Node(StateObj *state,
-         bool inCheck,
          const SearchSettings* searchSettings);
 
     /**
@@ -477,9 +475,8 @@ private:
     /**
      * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
      * @param state Current board position for this node
-     * @param inCheck Boolean indicating if the king is in check
      */
-    void check_for_terminal(StateObj* state, bool inCheck);
+    void check_for_terminal(StateObj* state);
 
 #ifdef MCTS_TB_SUPPORT
     /**
