@@ -39,6 +39,7 @@
 #include "environments/chess_related/inputrepresentation.h"
 #include "legacyconstants.h"
 #include "util/blazeutil.h"
+#include "uci/optionsuci.h"
 using namespace Catch::literals;
 using namespace std;
 using namespace OptionsUCI;
@@ -264,6 +265,18 @@ TEST_CASE("Chess_Input_Planes"){
     REQUIRE(argMax == 1024);
     REQUIRE(sum == 816);
     REQUIRE(key == 909458);
+}
+
+TEST_CASE("6-Men WDL"){
+    init();
+    // Blunder by ClassicAra in https://tcec-chess.com/#div=q43t&game=293&season=21
+    Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
+    StateObj state;
+    state.set("8/1K2k3/8/4P3/R3r3/P7/8/8 b - - 0 55", false, get_default_variant());
+    Tablebase::ProbeState probeState;
+    Tablebase::WDLScore wdl = state.check_for_tablebase_wdl(probeState);
+    REQUIRE(probeState != Tablebase::ProbeState::FAIL);
+    REQUIRE(wdl == Tablebase::WDLScore::WDLWin);
 }
 #endif
 

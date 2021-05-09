@@ -36,6 +36,8 @@ action_idx_map OutputRepresentation::MV_LOOKUP_MIRRORED_CLASSIC = {};
 vector<std::string> OutputRepresentation::LABELS;
 vector<std::string> OutputRepresentation::LABELS_MIRRORED;
 
+constexpr int MAX_SUPPORTED_TB_PIECES = 7;
+
 BoardState::BoardState():
     State(),
     states(StateListPtr(new std::deque<StateInfo>(0)))
@@ -229,6 +231,10 @@ void BoardState::print(ostream &os) const
 
 Tablebase::WDLScore BoardState::check_for_tablebase_wdl(Tablebase::ProbeState &result)
 {
+    if (board.count<ALL_PIECES>() > MAX_SUPPORTED_TB_PIECES) {
+        result = Tablebase::FAIL;
+        return Tablebase::WDLDraw;
+    }
     Tablebases::ProbeState res;
     Tablebase::WDLScore wdlScore = Tablebase::WDLScore(Tablebases::probe_wdl(board, &res));
     result = Tablebase::ProbeState(res);
