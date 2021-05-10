@@ -435,7 +435,10 @@ bool CrazyAra::is_ready()
     if (!networkLoaded) {
         const size_t timeoutMS = Options["Timeout_MS"];
         TimeOutReadyThread timeoutThread(timeoutMS);
-        thread tTimeoutThread = thread(run_timeout_thread, &timeoutThread);
+        thread tTimeoutThread;
+        if (timeoutMS != 0) {
+            tTimeoutThread = thread(run_timeout_thread, &timeoutThread);
+        }
         init_search_settings();
         init_play_settings();
 #ifdef USE_RL
@@ -449,7 +452,9 @@ bool CrazyAra::is_ready()
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
         StateConstants::init(mctsAgent->is_policy_map());
         timeoutThread.kill();
-        tTimeoutThread.join();
+        if (timeoutMS != 0) {
+            tTimeoutThread.join();
+        }
         networkLoaded = true;
     }
     wait_to_finish_last_search();
