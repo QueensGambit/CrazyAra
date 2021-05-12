@@ -33,8 +33,14 @@ void TimeOutReadyThread::print_is_ready()
     if (wait_for(chrono::milliseconds(timeOutMS))){
         if (isRunning) {
             cout << "readyok" << endl;
+            hasReplied = true;
         }
     }
+}
+
+bool TimeOutReadyThread::has_replied()
+{
+    return hasReplied;
 }
 
 void run_timeout_thread(TimeOutReadyThread* t) {

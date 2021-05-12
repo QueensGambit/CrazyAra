@@ -138,11 +138,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "go")         go(state.get(), is, evalInfo);
         else if (token == "position")   position(state.get(), is);
         else if (token == "ucinewgame") ucinewgame();
-        else if (token == "isready") {
-            if (is_ready()) {
-                cout << "readyok" << endl;
-            }
-        }
+        else if (token == "isready")    is_ready<true>();
 
         // Additional custom non-UCI commands, mainly for debugging
         else if (token == "benchmark")  benchmark(is);
@@ -430,8 +426,10 @@ void CrazyAra::init()
 #endif
 }
 
+template<bool verbose>
 bool CrazyAra::is_ready()
 {
+    bool hasReplied = false;
     if (!networkLoaded) {
         const size_t timeoutMS = Options["Timeout_MS"];
         TimeOutReadyThread timeoutThread(timeoutMS);
@@ -455,9 +453,13 @@ bool CrazyAra::is_ready()
         if (timeoutMS != 0) {
             tTimeoutThread.join();
         }
+        hasReplied = timeoutThread.has_replied();
         networkLoaded = true;
     }
     wait_to_finish_last_search();
+    if (verbose && !hasReplied) {
+        cout << "readyok" << endl;
+    }
     return networkLoaded;
 }
 
@@ -525,7 +527,7 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
         if (string(Options["Model_Directory"]) != prevModelDir || int(Options["Threads"]) != prevThreads || string(Options["UCI_Variant"]) != prevUciVariant ||
             int(Options["First_Device_ID"]) != prevFirstDeviceID || int(Options["Last_Device_ID"] != prevLastDeviceID)) {
             networkLoaded = false;
-            is_ready();
+            is_ready<false>();
         }
     }
 }

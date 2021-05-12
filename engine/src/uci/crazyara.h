@@ -115,8 +115,10 @@ public:
 
     /**
      * @brief is_ready Loads the neural network weights and creates the agent object in case there haven't loaded already
+     * @param verbose Decides if method should print "readyok" to stdout
      * @return True, if everything isReady
      */
+    template<bool verbose>
     bool is_ready();
 
     /**

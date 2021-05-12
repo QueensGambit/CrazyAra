@@ -42,10 +42,20 @@ class TimeOutReadyThread : public KillableThread
 private:
     size_t timeOutMS;
     bool isRunning;
+    bool hasReplied;
 public:
-    TimeOutReadyThread(size_t timeOutMS) : timeOutMS(timeOutMS) {}
+    TimeOutReadyThread(size_t timeOutMS) :
+        timeOutMS(timeOutMS),
+        isRunning(false),
+        hasReplied(false) {}
 
     void print_is_ready();
+
+    /**
+     * @brief hasReplied Returns true if the timer has already replied with "readyok", else false
+     * @return
+     */
+    bool has_replied();
 };
 
 
