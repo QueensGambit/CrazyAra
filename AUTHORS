@@ -1,0 +1,56 @@
+# CrazyAra authors (including ClassicAra, XiangqiAra, MultiAra, ...)
+
+# Main author
+Johannes Czech (QueensGambit)
+
+# Founders of the CrazyAra project
+Johannes Czech (QueensGambit)
+Moritz Willig (MoritzWillig)
+Alena Beyer
+
+# Development of MultiAra (support for all lichess variants) including major refactoring
+Maximilian Alexander Gehrke (maxalexger)
+
+# Integration of Fairy-Stockfish back-end and founder of XiangqiAra (#93)
+Maximilian Langer (xsr7qsr)
+
+# Students which contributed to the development by writing a B.Sc- or M.Sc.-thesis or seminar paper on a related topic
+Patrick Korus
+Daniel Siersleben (DanielSiersleben)
+Maximilian Langer (xsr7qsr)
+Maximilian Alexander Gehrke (maxalexger)
+Jannis Blüml (BluemlJ)
+
+# All other authors of the code in alphabetical order
+Mateus (Matuiss2) - code refactoring in python, testing
+noelben - initial time management in python version
+
+# Alpha-(Go)-Zero authors for project inspiration
+David Silver, Thomas Hubert, Julian Schrittwieser, Ioannis Antonoglou, Matthew Lai, Arthur Guez, Marc Lanctot,
+ Laurent Sifre, Dharshan Kumaran, Thore Graepel, Timothy Lillicrap, Karen Simonyan, Demis Hassabis.
+
+# Honorable mentions for valuable discussions or support
+Fabian Fichter (ianfab)
+Daniel Dugovic (ddugovic)
+FTdiscovery (Gordon)
+Bajusz Tamás (gbtami)
+Justin Tan (JannLee)
+TheFinnisher
+IM gsvc
+okei
+catask
+
+# Acknowledgments for the 3rd party libraries being used
+Niklas Fiekas (niklasf) - python-chess
+Daniel Dugovic (ddugovic) - Multi-Variant Stockfish
+Fabian Fichter (ianfab) - Fairy-Stockfish
+Klaus Iglberger (eagle42) and others - Blaze
+Alistair Miles (alimanfoo) and others - Zarr
+Constantin Pape (constantinpape ) and others - z5
+Phil Nash (horenmar), Martin Hořeňovský (horenmar) and others - Catch2
+Wolf Vollprecht (wolfv) and others - xtensor
+Rajeev Rao (rajeevsrao), Kevin Chen (kevinch-nv) and others - TensorRT
+Chiyuan Zhang (pluskid), Eric Junyuan Xie (piiswrong), Sheng Zha (szha) and others - incubator-mxnet
+bddppq, Lu Fang (houseroad), Ke Zhang (linkerzhang) and others - onnx
+Adrian Alic (m2q), tomatenbrei - pomcpp
+lanctot, michalsustr, Edward Lockhart (elkhrt) and others - open_spiel
