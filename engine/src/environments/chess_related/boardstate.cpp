@@ -36,6 +36,8 @@ action_idx_map OutputRepresentation::MV_LOOKUP_MIRRORED_CLASSIC = {};
 vector<std::string> OutputRepresentation::LABELS;
 vector<std::string> OutputRepresentation::LABELS_MIRRORED;
 
+constexpr int MAX_SUPPORTED_TB_PIECES = 7;
+
 BoardState::BoardState():
     State(),
     states(StateListPtr(new std::deque<StateInfo>(0)))
@@ -63,7 +65,6 @@ vector<Action> BoardState::legal_actions() const
 void BoardState::set(const string &fenStr, bool isChess960, int variant)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
     board.set(fenStr, isChess960, Variant(variant), &states->back(), nullptr);
 }
 
@@ -133,7 +134,7 @@ string BoardState::action_to_san(Action action, const vector<Action>& legalActio
     return pgn_move(Move(action), this->is_chess960(), board, legalActions, leadsToWin, bookMove);
 }
 
-TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const
+TerminalType BoardState::is_terminal(size_t numberLegalMoves, float& customTerminalValue) const
 {
 #ifdef ATOMIC
     if (board.is_atomic()) {
@@ -203,7 +204,7 @@ TerminalType BoardState::is_terminal(size_t numberLegalMoves, bool inCheck, floa
         }
 #endif
         // test if we have a check-mate
-        if (inCheck) {
+        if (board.checkers()) {
             return TERMINAL_LOSS;
         }
         // we reached a stalmate
@@ -230,6 +231,10 @@ void BoardState::print(ostream &os) const
 
 Tablebase::WDLScore BoardState::check_for_tablebase_wdl(Tablebase::ProbeState &result)
 {
+    if (board.count<ALL_PIECES>() > MAX_SUPPORTED_TB_PIECES) {
+        result = Tablebase::FAIL;
+        return Tablebase::WDLDraw;
+    }
     Tablebases::ProbeState res;
     Tablebase::WDLScore wdlScore = Tablebase::WDLScore(Tablebases::probe_wdl(board, &res));
     result = Tablebase::ProbeState(res);

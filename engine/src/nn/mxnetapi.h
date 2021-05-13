@@ -58,11 +58,11 @@ public:
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
 
 protected:
-    void load_model();
-    void load_parameters();
-    void bind_executor();
+    void load_model() override;
+    void load_parameters() override;
+    void bind_executor() override;
 
-    void init_nn_design();
+    void init_nn_design() override;
 
     /**
      * @brief SplitParamMap Splits loaded param map into arg parm and aux param with target context

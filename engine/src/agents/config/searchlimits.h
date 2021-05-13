@@ -38,6 +38,7 @@ struct SearchLimits
 public:
     TimePoint movetime;
     size_t nodes;
+    size_t nodesLimit;  // defines a maximum number of nodes to remain in RAM limit.
     size_t simulations;
     int movestogo;
     int depth;

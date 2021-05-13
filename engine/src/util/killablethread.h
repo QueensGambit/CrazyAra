@@ -67,6 +67,12 @@ public:
         cv.notify_all();
         isRunning = false;
     }
+    /**
+     * @brief stop Stops the current thre without triggering the conditional variable
+     */
+    void stop() {
+        isRunning = false;
+    }
 
     KillableThread() = default;
     KillableThread(KillableThread&&)=delete;

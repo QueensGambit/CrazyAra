@@ -241,7 +241,7 @@ public:
     void flip() override;
     Action uci_to_action(string& uciStr) const override;
     string action_to_san(Action action, const vector<Action>& legalActions, bool leadsToWin=false, bool bookMove=false) const override;
-    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const override;
+    TerminalType is_terminal(size_t numberLegalMoves, float& customTerminalValue) const override;
     bool gives_check(Action action) const override;
     void print(ostream& os) const override;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result) override;

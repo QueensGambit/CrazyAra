@@ -25,6 +25,7 @@
 
 #include "crazyara.h"
 
+#include <thread>
 #include "bitboard.h"
 #include "position.h"
 #include "search.h"
@@ -49,6 +50,7 @@
 #elif defined TENSORRT
 #include "nn/tensorrtapi.h"
 #endif
+
 
 CrazyAra::CrazyAra():
     rawAgent(nullptr),
@@ -136,11 +138,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "go")         go(state.get(), is, evalInfo);
         else if (token == "position")   position(state.get(), is);
         else if (token == "ucinewgame") ucinewgame();
-        else if (token == "isready") {
-            if (is_ready()) {
-                cout << "readyok" << endl;
-            }
-        }
+        else if (token == "isready")    is_ready<true>();
 
         // Additional custom non-UCI commands, mainly for debugging
         else if (token == "benchmark")  benchmark(is);
@@ -428,9 +426,17 @@ void CrazyAra::init()
 #endif
 }
 
+template<bool verbose>
 bool CrazyAra::is_ready()
 {
+    bool hasReplied = false;
     if (!networkLoaded) {
+        const size_t timeoutMS = Options["Timeout_MS"];
+        TimeOutReadyThread timeoutThread(timeoutMS);
+        thread tTimeoutThread;
+        if (timeoutMS != 0) {
+            tTimeoutThread = thread(run_timeout_thread, &timeoutThread);
+        }
         init_search_settings();
         init_play_settings();
 #ifdef USE_RL
@@ -443,9 +449,17 @@ bool CrazyAra::is_ready()
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
         StateConstants::init(mctsAgent->is_policy_map());
+        timeoutThread.kill();
+        if (timeoutMS != 0) {
+            tTimeoutThread.join();
+        }
+        hasReplied = timeoutThread.has_replied();
         networkLoaded = true;
     }
     wait_to_finish_last_search();
+    if (verbose && !hasReplied) {
+        cout << "readyok" << endl;
+    }
     return networkLoaded;
 }
 
@@ -500,8 +514,22 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
 
 void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
 {
+    // these three UCI-Options may trigger a network reload, keep an eye on them
+    const string prevModelDir = Options["Model_Directory"];
+    const int prevThreads = Options["Threads"];
+    const string prevUciVariant = Options["UCI_Variant"];
+    const int prevFirstDeviceID = Options["First_Device_ID"];
+    const int prevLastDeviceID = Options["Last_Device_ID"];
+
     OptionsUCI::setoption(is, variant, state);
     changedUCIoption = true;
+    if (networkLoaded) {
+        if (string(Options["Model_Directory"]) != prevModelDir || int(Options["Threads"]) != prevThreads || string(Options["UCI_Variant"]) != prevUciVariant ||
+            int(Options["First_Device_ID"]) != prevFirstDeviceID || int(Options["Last_Device_ID"] != prevLastDeviceID)) {
+            networkLoaded = false;
+            is_ready<false>();
+        }
+    }
 }
 
 unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings)

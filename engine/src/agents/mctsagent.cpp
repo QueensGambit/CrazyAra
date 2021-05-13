@@ -33,7 +33,6 @@
 #include "../manager/threadmanager.h"
 #include "../node.h"
 #include "../util/communication.h"
-#include "util/gcthread.h"
 
 
 MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches,
@@ -49,8 +48,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     isRunning(false),
     overallNPS(0.0f),
     nbNPSentries(0),
-    threadManager(nullptr),
-    gcThread()
+    threadManager(nullptr)
 {
     mapWithMutex.hashTable.reserve(1e6);
 
@@ -70,12 +68,12 @@ MCTSAgent::~MCTSAgent()
 
 Node* MCTSAgent::get_opponents_next_root() const
 {
-    return opponentsNextRoot;
+    return opponentsNextRoot.get();
 }
 
 Node* MCTSAgent::get_root_node() const
 {
-    return rootNode;
+    return rootNode.get();
 }
 
 string MCTSAgent::get_device_name() const
@@ -116,6 +114,7 @@ bool MCTSAgent::is_running() const
 size_t MCTSAgent::init_root_node(StateObj *state)
 {
     size_t nodesPreSearch;
+    gcThread.oldRootNode = rootNode;
     rootNode = get_root_node_from_tree(state);
 
     if (rootNode != nullptr) {
@@ -134,7 +133,7 @@ size_t MCTSAgent::init_root_node(StateObj *state)
     return nodesPreSearch;
 }
 
-Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
+shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
 {
     reusedFullTree = false;
 
@@ -146,22 +145,16 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
         return nullptr;
     }
 
-    if (same_hash_key(rootNode, state)) {
+    if (same_hash_key(rootNode.get(), state)) {
         info_string("reuse the full tree");
         reusedFullTree = true;
         return rootNode;
     }
 
-    if (same_hash_key(ownNextRoot, state) && ownNextRoot->is_playout_node() && ownNextRoot->get_number_of_nodes() > 0) {
-        delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        delete_sibling_subtrees(opponentsNextRoot, ownNextRoot, mapWithMutex.hashTable, gcThread);
-        add_item_to_delete(rootNode, mapWithMutex.hashTable, gcThread);
-        add_item_to_delete(opponentsNextRoot, mapWithMutex.hashTable, gcThread);
+    if (same_hash_key(ownNextRoot.get(), state) && ownNextRoot->is_playout_node() && ownNextRoot->get_number_of_nodes() > 0) {
         return ownNextRoot;
     }
-    if (same_hash_key(opponentsNextRoot, state) && opponentsNextRoot->is_playout_node() && opponentsNextRoot->get_number_of_nodes() > 0) {
-        delete_sibling_subtrees(rootNode, opponentsNextRoot, mapWithMutex.hashTable, gcThread);
-        add_item_to_delete(rootNode, mapWithMutex.hashTable, gcThread);
+    if (same_hash_key(opponentsNextRoot.get(), state) && opponentsNextRoot->is_playout_node() && opponentsNextRoot->get_number_of_nodes() > 0) {
         return opponentsNextRoot;
     }
     // the node wasn't found, clear the old tree
@@ -173,11 +166,10 @@ Node *MCTSAgent::get_root_node_from_tree(StateObj *state)
 void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
-    // TODO: Make sure that "inCheck=False" does not cause issues
 #ifdef MCTS_STORE_STATES
-    rootNode = new Node(state->clone(), false, searchSettings);
+    rootNode = make_shared<Node>(state->clone(), searchSettings);
 #else
-    rootNode = new Node(state, false, searchSettings);
+    rootNode = make_shared<Node>(state, searchSettings);
 #endif
 #ifdef SEARCH_UCT
     unique_ptr<StateObj> newState = unique_ptr<StateObj>(state->clone());
@@ -187,7 +179,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
     state->get_state_planes(true, inputPlanes);
     net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     size_t tbHits = 0;
-    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode, tbHits, state->side_to_move(), searchSettings);
+    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits, state->side_to_move(), searchSettings, rootNode->is_tablebase());
 #endif
     rootNode->prepare_node_for_visits();
 }
@@ -195,7 +187,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
 void MCTSAgent::delete_old_tree()
 {
     // clear all remaining node of the former root node
-    delete_subtree_and_hash_entries(rootNode, mapWithMutex.hashTable, gcThread);
+    mapWithMutex.hashTable.clear();
     assert(mapWithMutex.hashTable.size() == 0);
 }
 
@@ -229,12 +221,12 @@ void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)
     if (!reusedFullTree && rootNode != nullptr && rootNode->is_playout_node()) {
         if (ownMove) {
             info_string("apply move to tree");
-            opponentsNextRoot = pick_next_node(move, rootNode);
+            opponentsNextRoot = pick_next_node(move, rootNode.get());
             return;
         }
         else if (opponentsNextRoot != nullptr && opponentsNextRoot->is_playout_node()){
             info_string("apply move to tree");
-            ownNextRoot = pick_next_node(move, opponentsNextRoot);
+            ownNextRoot = pick_next_node(move, opponentsNextRoot.get());
             return;
         }
     }
@@ -274,8 +266,8 @@ void MCTSAgent::update_stats()
 void MCTSAgent::evaluate_board_state()
 {
     evalInfo->nodesPreSearch = init_root_node(state);
+    thread tGCThread = thread(run_gc_thread, &gcThread);
 
-    thread tGCThread = thread(run_gc_thread<Node>, &gcThread);
     evalInfo->isChess960 = state->is_chess960();
     rootState = unique_ptr<StateObj>(state->clone());
     if (rootNode->get_number_child_nodes() == 1) {
@@ -295,11 +287,16 @@ void MCTSAgent::evaluate_board_state()
         if (!rootNode->is_root_node()) {
             rootNode->make_to_root();
         }
+        info_string("hash size: ", mapWithMutex.hashTable.size());
+        if (mapWithMutex.hashTable.size() > MAX_HASH_SIZE) {
+            info_string("clear hash");
+            mapWithMutex.hashTable.clear();
+        }
         info_string("run mcts search");
         run_mcts_search();
         update_stats();
     }
-    update_eval_info(*evalInfo, rootNode, tbHits, maxDepth, searchSettings);
+    update_eval_info(*evalInfo, rootNode.get(), tbHits, maxDepth, searchSettings);
     lastValueEval = evalInfo->bestMoveQ[0];
     update_nps_measurement(evalInfo->calculate_nps());
     tGCThread.join();
@@ -309,13 +306,13 @@ void MCTSAgent::run_mcts_search()
 {
     thread** threads = new thread*[searchSettings->threads];
     for (size_t i = 0; i < searchSettings->threads; ++i) {
-        searchThreads[i]->set_root_node(rootNode);
+        searchThreads[i]->set_root_node(rootNode.get());
         searchThreads[i]->set_root_state(rootState.get());
         searchThreads[i]->set_search_limits(searchLimits);
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootState->side_to_move(), rootNode->plies_from_null()/2);
-    threadManager = make_unique<ThreadManager>(rootNode, evalInfo, searchThreads, curMovetime, 250, searchLimits->moveOverhead, searchSettings, overallNPS, lastValueEval,
+    threadManager = make_unique<ThreadManager>(rootNode.get(), evalInfo, searchThreads, curMovetime, 250, searchLimits->moveOverhead, searchSettings, overallNPS, lastValueEval,
                                                is_game_sceneario(searchLimits),
                                                can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());
@@ -355,7 +352,8 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
         return;
     }
     size_t childIdx = 0;
-    for (Node* node : parentNode->get_child_nodes()) {
+    for (auto it = parentNode->get_node_it_begin(); it != parentNode->get_node_it_end(); ++it) {
+        const Node* node = it->get();
         if (node != nullptr) {
             Action action = parentNode->get_action(childIdx);
             outFile << "N" << ++nodeId << " [label = \""
@@ -373,7 +371,8 @@ void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t p
         outFile << "N" << idx << " ";
     }
     outFile << "}" << endl;
-    for (Node* node : parentNode->get_child_nodes()) {
+    for (auto it = parentNode->get_node_it_begin(); it != parentNode->get_node_it_end(); ++it) {
+        const Node* node = it->get();
         if (node != nullptr && node->is_playout_node()) {
             unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state->clone());
             Action action = parentNode->get_action(childIdx);
@@ -406,7 +405,7 @@ void MCTSAgent::export_search_tree(size_t maxDepth, const string& filename)
             << "]" << endl << endl;
 
     outFile << "N0 [label = \"root\", xlabel=\"fen: " << rootState->fen() << "\"]" << endl << endl;
-    print_child_nodes_to_file(rootNode, rootState.get(), 0, nodeId, outFile, 1, maxDepth);
+    print_child_nodes_to_file(rootNode.get(), rootState.get(), 0, nodeId, outFile, 1, maxDepth);
     outFile << "}" << endl;
     outFile.close();
 }

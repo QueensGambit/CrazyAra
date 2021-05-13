@@ -37,23 +37,12 @@
 
 #include "agents/config/searchsettings.h"
 #include "nodedata.h"
-#include "agents/util/gcthread.h"
 
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 using ChildIdx = uint_fast16_t;
-
-struct ParentNode {
-    Node* node;
-    uint32_t visits;
-    double qSum;
-    uint16_t childIdxForParent;
-    bool isDead = false;
-    ParentNode(Node* node, uint16_t childIdxForParent) :
-        node(node), childIdxForParent(childIdxForParent) {}
-};
 
 struct NodeAndIdx {
     Node* node;
@@ -71,8 +60,6 @@ private:
 
     DynamicVector<float> policyProbSmall;
     vector<Action> legalActions;
-    //    DynamicVector<bool> isCheck;
-    //    DynamicVector<bool> isCapture;
     Key key;
 
     // singular values
@@ -98,12 +85,10 @@ private:
 public:
     /**
      * @brief Node Primary constructor which is used when expanding a node during search
-     * @param parentNode Pointer to parent node
-     * @param move Move which led to current board state
+     * @param State Corresponding state object
      * @param searchSettings Pointer to the searchSettings
      */
     Node(StateObj *state,
-         bool inCheck,
          const SearchSettings* searchSettings);
 
     /**
@@ -215,8 +200,12 @@ public:
 
     Action get_action(ChildIdx childIdx) const;
     Node* get_child_node(ChildIdx childIdx) const;
+    shared_ptr<Node> get_child_node_shared(ChildIdx childIdx) const;
 
-    vector<Node*> get_child_nodes() const;
+    vector<shared_ptr<Node>>::const_iterator get_node_it_begin() const;
+    vector<shared_ptr<Node>>::const_iterator get_node_it_end() const;
+
+
     bool is_terminal() const;
     bool has_nn_results() const;
     float get_value() const;
@@ -297,7 +286,7 @@ public:
     void set_value(float valueSum);
     uint16_t main_child_idx_for_parent() const;
 
-    void add_new_child_node(Node* newNode, ChildIdx childIdx);
+    void add_new_child_node(shared_ptr<Node> newNode, ChildIdx childIdx);
 
     void add_transposition_parent_node();
 
@@ -419,10 +408,10 @@ public:
     void print_node_statistics(const StateObj* pos, const vector<size_t>& customOrdering) const;
 
     /**
-     * @brief get_nodes Returns the number of nodes in the subtree of this node
+     * @brief get_node_count Returns the number of nodes in the subgraph of this nodes without counting terminal simulations
      * @return uint32_t
      */
-    uint32_t get_nodes();
+    uint32_t get_node_count();
 
     bool is_transposition() const;
 
@@ -476,12 +465,8 @@ public:
 #endif
 
     uint32_t get_number_of_nodes() const;
+
 private:
-
-    uint32_t get_real_visits_for_parent(const ParentNode& parent) const;
-
-    double get_q_sum_for_parent(const ParentNode& parent, float virtualLoss) const;
-
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
      */
@@ -490,9 +475,8 @@ private:
     /**
      * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
      * @param state Current board position for this node
-     * @param inCheck Boolean indicating if the king is in check
      */
-    void check_for_terminal(StateObj* state, bool inCheck);
+    void check_for_terminal(StateObj* state);
 
 #ifdef MCTS_TB_SUPPORT
     /**
@@ -663,22 +647,6 @@ private:
  */
  size_t get_best_action_index(const Node* curNode, bool fast, float qValueWeight, float qVetoDelto);
 
-void add_item_to_delete(Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
-
-/**
- * @brief delete_subtree Deletes the node itself and its pointer in the hashtable as well as all existing nodes in its subtree.
- * @param node Node of the subtree to delete
- * @param hashTable Pointer to the hashTable which stores a pointer to all active nodes
- * @param gcThread Reference to the garbadge collector object
- */
-void delete_subtree_and_hash_entries(Node *node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
-
-/**
- * @brief delete_sibling_subtrees Deletes all subtrees from all simbling nodes, deletes their hash table entry and sets the visit access to nullptr
- * @param hashTable Pointer to the hashTables
- */
-void delete_sibling_subtrees(Node* parentNode, Node* node, unordered_map<Key, Node*>& hashTable, GCThread<Node>& gcThread);
-
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
 
@@ -714,13 +682,6 @@ NodeType flip_node_type(const enum NodeType nodeType);
  * @return bool
  */
 bool is_terminal_value(float value);
-
-/**
- * @brief get_node_count Returns the number of nodes in the tree without counting terminal simulations
- * @param node Given node
- * @return Number of subnodes for thhe given node
- */
-size_t get_node_count(const Node* node);
 
 /**
  * @brief backup_collision Iteratively removes the virtual loss of the collision event that occurred

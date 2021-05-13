@@ -46,7 +46,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
-    isRunning(false), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
+    isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
 #ifdef DYNAMIC_NN_ARCH
     nbNNInputValues(net->get_nb_input_values_total())
@@ -80,32 +80,34 @@ void SearchThread::set_is_running(bool value)
     isRunning = value;
 }
 
-NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx, bool inCheck)
+NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx)
 {
     if(searchSettings->useMCGS) {
         mapWithMutex->mtx.lock();
-        unordered_map<Key, Node*>::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
-        if(it != mapWithMutex->hashTable.end() &&
-                is_transposition_verified(it, newState)) {
-            mapWithMutex->mtx.unlock();
-            it->second->lock();
-            const float qValue =  it->second->get_value();
+        HashMap::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
+        if (it != mapWithMutex->hashTable.end()  && !it->second.expired()) {
+            shared_ptr<Node> tranpositionNode = it->second.lock();
+            if(is_transposition_verified(tranpositionNode.get(), newState)) {
+                mapWithMutex->mtx.unlock();
+                tranpositionNode->lock();
+                const float qValue =  tranpositionNode->get_value();
 
-            it->second->add_transposition_parent_node();
-            it->second->unlock();
-#ifndef MODE_POMMERMAN
-            if (it->second->is_playout_node() && it->second->get_node_type() == LOSS) {
-                parentNode->set_checkmate_idx(childIdx);
+                tranpositionNode->add_transposition_parent_node();
+                tranpositionNode->unlock();
+    #ifndef MODE_POMMERMAN
+                if (tranpositionNode->is_playout_node() && tranpositionNode->get_node_type() == LOSS) {
+                    parentNode->set_checkmate_idx(childIdx);
+                }
+    #endif
+                transpositionValues->add_element(qValue);
+                parentNode->add_new_child_node(tranpositionNode, childIdx);
+                return NODE_TRANSPOSITION;
             }
-#endif
-            transpositionValues->add_element(qValue);
-            parentNode->add_new_child_node(it->second, childIdx);
-            return NODE_TRANSPOSITION;
         }
         mapWithMutex->mtx.unlock();
     }
     assert(parentNode != nullptr);
-    Node *newNode = new Node(newState, inCheck, searchSettings);
+    shared_ptr<Node> newNode = make_shared<Node>(newState, searchSettings);
     // connect the Node to the parent
     parentNode->add_new_child_node(newNode, childIdx);
     return NODE_NEW_NODE;
@@ -208,13 +210,12 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
                 newState->do_action(action);
             }
 #endif
-            const bool inCheck = newState->gives_check(currentNode->get_action(childIdx));
             newState->do_action(currentNode->get_action(childIdx));
             currentNode->increment_no_visit_idx();
 #ifdef MCTS_STORE_STATES
-            description.type = add_new_node_to_tree(newState, currentNode, childIdx, inCheck);
+            description.type = add_new_node_to_tree(newState, currentNode, childIdx);
 #else
-            description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx, inCheck);
+            description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx);
 #endif
             currentNode->unlock();
 
@@ -289,11 +290,11 @@ void SearchThread::reset_stats()
     depthSum = 0;
 }
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings, bool isRootNodeTB)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), sideToMove);
     node_post_process_policy(node, searchSettings->nodePolicyTemperature, isPolicyMap, searchSettings);
-    node_assign_value(node, valueOutputs, tbHits, batchIdx);
+    node_assign_value(node, valueOutputs, tbHits, batchIdx, isRootNodeTB);
 #ifdef MCTS_STORE_STATES
     node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
 #endif
@@ -304,21 +305,20 @@ void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
+        if (node == nullptr) {
+            info_string("nullptr newNode");
+            continue;
+        }
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings);
+            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings, rootNode->is_tablebase());
         }
         ++batchIdx;
-        if (searchSettings->useMCGS) {
-            mapWithMutex->mtx.lock();
-            mapWithMutex->hashTable.insert({node->hash_key(), node});
-            mapWithMutex->mtx.unlock();
-        }
     }
 }
 
 void SearchThread::backup_value_outputs()
 {
-    backup_values(newNodes.get(), newTrajectories);
+    backup_values(*newNodes, newTrajectories);
     newNodeSideToMove->reset_idx();
     backup_values(transpositionValues.get(), transpositionTrajectories);
 }
@@ -332,8 +332,9 @@ void SearchThread::backup_collisions() {
 
 bool SearchThread::nodes_limits_ok()
 {
-    return (searchLimits->nodes == 0 || (rootNode->get_nodes() < searchLimits->nodes)) &&
-            (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations));
+    return (searchLimits->nodes == 0 || (rootNode->get_node_count() < searchLimits->nodes)) &&
+           (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations)) &&
+           (searchLimits->nodesLimit == 0 || (rootNode->get_node_count() < searchLimits->nodesLimit));
 }
 
 bool SearchThread::is_root_node_unsolved()
@@ -382,8 +383,15 @@ void SearchThread::create_mini_batch()
             transpositionTrajectories.emplace_back(trajectoryBuffer);
         }
         else {  // NODE_NEW_NODE
-            newNodes->add_element(newNode);
-            newTrajectories.emplace_back(trajectoryBuffer);
+            if (newNode != nullptr) {
+                newNodes->add_element(newNode);
+                if (searchSettings->useMCGS) {
+                    mapWithMutex->mtx.lock();
+                    mapWithMutex->hashTable.insert({newNode->hash_key(), parentNode->get_child_node_shared(childIdx)});
+                    mapWithMutex->mtx.unlock();
+                }
+                newTrajectories.emplace_back(trajectoryBuffer);
+            }
         }
     }
 }
@@ -411,9 +419,12 @@ void run_search_thread(SearchThread *t)
     t->set_is_running(false);
 }
 
-void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& trajectories) {
-    for (size_t idx = 0; idx < nodes->size(); ++idx) {
-        Node* node = nodes->get_element(idx);
+void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories) {
+    for (size_t idx = 0; idx < nodes.size(); ++idx) {
+        Node* node = nodes.get_element(idx);
+        if (node == nullptr) {
+            continue;
+        }
 #ifdef MCTS_TB_SUPPORT
         const bool solveForTerminal = searchSettings->mctsSolver && node->is_tablebase();
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], solveForTerminal);
@@ -421,7 +432,7 @@ void SearchThread::backup_values(FixedVector<Node*>* nodes, vector<Trajectory>& 
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], false);
 #endif
     }
-    nodes->reset_idx();
+    nodes.reset_idx();
     trajectories.clear();
 }
 
@@ -458,13 +469,13 @@ ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
     return uint16_t(-1);
 }
 
-void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx)
+void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB)
 {
 #ifdef MCTS_TB_SUPPORT
     if (node->is_tablebase()) {
         ++tbHits;
         // TODO: Improvement the value assignment for table bases
-        if (node->get_value() != 0) {
+        if (node->get_value() != 0 && isRootNodeTB) {
             // use the average of the TB entry and NN eval for non-draws
             node->set_value((valueOutputs[batchIdx] + node->get_value()) * 0.5f);
         }
@@ -483,9 +494,9 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
     node->apply_temperature_to_prior_policy(temperature);
 }
 
-bool is_transposition_verified(const unordered_map<Key,Node*>::const_iterator& it, const StateObj* state) {
-    return  it->second->has_nn_results() &&
-            it->second->plies_from_null() == state->steps_from_null() &&
+bool is_transposition_verified(const Node* node, const StateObj* state) {
+    return  node->has_nn_results() &&
+            node->plies_from_null() == state->steps_from_null() &&
             state->number_repetitions() == 0;
 }
 

@@ -111,7 +111,7 @@ public:
     void flip();
     Action uci_to_action(std::string &uciStr) const;
     std::string action_to_san(Action action, const std::vector<Action> &legalActions, bool leadsToWin, bool bookMove) const;
-    TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float &customTerminalValue) const;
+    TerminalType is_terminal(size_t numberLegalMoves, float &customTerminalValue) const;
     bool gives_check(Action action) const;
     void print(std::ostream &os) const;
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result);

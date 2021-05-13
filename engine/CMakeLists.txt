@@ -84,7 +84,7 @@ else()
     MESSAGE(STATUS "BLAZE_PATH not set")
 endif()
 
-find_package( blaze )
+find_package( blaze REQUIRED HINTS ${BLAZE_PATH} )
 if( blaze_FOUND )
      add_library( blaze_target INTERFACE )
      target_link_libraries( blaze_target INTERFACE blaze::blaze )

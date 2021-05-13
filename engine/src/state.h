@@ -224,9 +224,8 @@ public:
     bool leads_to_terminal(Action a)
     {
         std::unique_ptr<State> posCheckTerminal = std::unique_ptr<State>(this->clone());
-        bool givesCheck = posCheckTerminal->gives_check(a);
         posCheckTerminal->do_action(a);
-        return posCheckTerminal->check_result(givesCheck) != NO_RESULT;
+        return posCheckTerminal->check_result() != NO_RESULT;
     }
 
     /**
@@ -235,7 +234,7 @@ public:
      * It can be computed by `gives_check(<last-move-before-current-position>)`.
      * @return value in [DRAWN, WHITE_WIN, BLACK_WIN, NO_RESULT]
      */
-    Result check_result(bool inCheck) const;
+    Result check_result() const;
 
     /**
      * @brief random_rollout Does a random rollout until it reaches a terminal node.
@@ -360,7 +359,7 @@ public:
      * otherwise the value will later be overwritten. In the default case, this parameter can be ignored.
      * @return TerminalType
      */
-    virtual TerminalType is_terminal(size_t numberLegalMoves, bool inCheck, float& customTerminalValue) const = 0;
+    virtual TerminalType is_terminal(size_t numberLegalMoves, float& customTerminalValue) const = 0;
 
     /**
      * @brief gives_check Checks if the current action is a checking move

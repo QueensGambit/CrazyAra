@@ -39,10 +39,7 @@
 
 void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& gamePGN, Result& gameResult)
 {
-    bool givesCheck = state->gives_check(evalInfo.bestMove);
-    std::unique_ptr<StateObj> stateClone = std::unique_ptr<StateObj>(state->clone());
-    stateClone->do_action(evalInfo.bestMove);
-    gameResult = stateClone->check_result(givesCheck);
+    gameResult = state->check_result();
     gamePGN.gameMoves.push_back(state->action_to_san(evalInfo.bestMove, evalInfo.legalMoves, is_win(gameResult), false));
     state->do_action(evalInfo.bestMove);
 }

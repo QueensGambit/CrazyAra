@@ -85,7 +85,7 @@ public:
    * @param filePath File path where the logging will be written to
    * @param writeMode ifstream::out for write mode ("w"), ifstream::app for append mode ("a")
    */
-  static void start(const std::string& fileName, _Ios_Openmode writeMode);
+  static void start(const std::string& fileName, ios_base::openmode writeMode);
 };
 
 #endif // CUSTOMLOGGER_H

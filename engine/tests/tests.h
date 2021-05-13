@@ -76,11 +76,10 @@ bool are_all_entries_true(const vector<string>& uciMoves, bool (*foo)(Square, Sq
 struct GameInfo {
     uint nbAppliedMoves;
     bool reachedTerminal;
-    bool givesCheck;
     GameInfo() :
         nbAppliedMoves(0),
-        reachedTerminal(false),
-        givesCheck(false) {};
+        reachedTerminal(false)
+        {};
 };
 
 /**
@@ -92,6 +91,11 @@ struct GameInfo {
  */
 GameInfo apply_random_moves(StateObj& state, uint movesToApply);
 
+/**
+ * @brief get_default_variant Returns the default variant for the used build mode
+ * @return Variant
+ */
+Variant get_default_variant();
 
 #endif
 

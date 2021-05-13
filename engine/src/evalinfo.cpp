@@ -106,7 +106,7 @@ int value_to_centipawn(float value)
         return sgn(value) * 9999;
     }
     // use logarithmic scaling with basis 1.1 as a pseudo centipawn conversion
-    return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(1.2f)) * 100.0f);
+    return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(VALUE_TO_CENTI_PARAM)) * 100.0f);
 }
 
 float get_best_move_q(const SearchSettings* searchSettings, const Node* nextNode)
@@ -229,6 +229,6 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
         evalInfo.depth = evalInfo.pv[0].size();
     }
     evalInfo.selDepth = selDepth;
-    evalInfo.nodes = get_node_count(rootNode);
+    evalInfo.nodes = rootNode->get_node_count();
     evalInfo.tbHits = tbHits;
 }
