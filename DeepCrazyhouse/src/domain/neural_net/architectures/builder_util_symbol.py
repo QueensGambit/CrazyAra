@@ -7,6 +7,7 @@ Created on 06.12.19
 Utility methods for building the neural network using MXNet symbol API
 """
 
+import math
 import mxnet as mx
 from DeepCrazyhouse.configs.main_config import main_config
 
@@ -18,10 +19,38 @@ def get_act(data, act_type, name):
     if act_type == "lrelu":
         return mx.sym.LeakyReLU(data=data, slope=0.2, act_type='leaky', name=name)
     if act_type == "hard_sigmoid":
-        return mx.sym.clip(data=data + 3.0, a_min=0.0, a_max=6.0, name=name) / 6.0
+        return mx.sym.hard_sigmoid(data=data)
     if act_type == "hard_swish":
-        return data * (mx.sym.clip(data + 3, 0, 6, name=name) / 6.0)
+        return data * mx.sym.hard_sigmoid(data=data)
 
+    raise NotImplementedError
+
+
+def get_norm_layer(data, norm_type, name):
+    """
+    Wrapper method for different normalization layers
+    """
+    if norm_type == "bn":
+        return mx.sym.BatchNorm(data=data, name=name + '_bn1')
+    if norm_type == "ic":
+        return ic_layer(data=data, name=name, droupout_rate=0.03)
+    raise NotImplementedError
+
+
+def get_se_layer(data, channels, se_type, name, use_hard_sigmoid):
+    """
+    Wrapper for different se layers
+    """
+    if se_type == "ca_se":
+        return ca_se(data=data, channels=channels, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    elif se_type == "eca_se":
+        return eca_se(data=data, channels=channels, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    elif se_type == "sa_se":
+        return sa_se(data=data, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    elif se_type == "sm_se":
+        return sm_se(data=data, name=name, use_hard_sigmoid=use_hard_sigmoid)
+    elif se_type == "cm_se":
+        return cm_se(data=data, channels=channels, name=name, use_hard_sigmoid=use_hard_sigmoid)
     raise NotImplementedError
 
 
@@ -40,24 +69,37 @@ def channel_squeeze_excitation(data, channels, name, ratio=16, act_type="relu", 
     return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
 
 
-def get_stem(data, channels, act_type):
+def get_stem(data, channels, act_type, kernel=3, use_act=True):
     """
     Creates the convolution stem before the residual head
     :param data: Input data
     :param channels: Number of channels for the stem
     :param act_type: Activation function
+    :param kernel: Kernel size
+    :param use_act: Defines if an activation should be applied
     :return: symbol
     """
-    body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(3, 3), pad=(1, 1),
+    body = mx.sym.Convolution(data=data, num_filter=channels, kernel=(kernel, kernel), pad=(kernel//2, kernel//2),
                               no_bias=True, name="stem_conv0")
     body = mx.sym.BatchNorm(data=body, name='stem_bn0')
-    body = get_act(data=body, act_type=act_type, name='stem_act0')
+    if use_act:
+        body = get_act(data=body, act_type=act_type, name='stem_act0')
 
     return body
 
 
+def ic_layer(data, name, droupout_rate):
+    """
+    https://arxiv.org/pdf/1905.05928.pdf
+    """
+    out = mx.sym.BatchNorm(data=data, name=name)
+    out = mx.sym.Dropout(data=out, name=name+"_dropout", p=droupout_rate)
+    return out
+
+
 def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu', value_fc_size=256,
-               grad_scale_value=0.01, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False):
+               grad_scale_value=0.01, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False,
+               use_raw_features=False, use_bn=False):
     """
     Value head of the network which outputs the value evaluation. A floating point number in the range [-1,+1].
     :param data: Input data
@@ -88,11 +130,22 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
         value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
 
     if orig_data is not None and use_avg_features:
-        avg_pool = mx.sym.Pooling(data=orig_data, kernel=(8, 8), pool_type='avg', name='value_pool0')
+        avg_pool = mx.sym.Pooling(data=orig_data, global_pool=True, kernel=(8, 8), pool_type='avg', name='value_pool0')
         pool_flatten = mx.symbol.Flatten(data=avg_pool, name='value_flatten0')
-        value_flatten = mx.sym.Concat(*[value_flatten, pool_flatten], name='value_concat')
+        if use_raw_features:
+            orig_features = mx.symbol.Flatten(data=orig_data, name='raw_flatten0')
+            next_input = mx.sym.concat(*[pool_flatten, orig_features], name='value_concat0')
+        else:
+            next_input = pool_flatten
+        value_out = mx.sym.FullyConnected(data=next_input, num_hidden=value_fc_size, name='value_orig_fc0')
+        if use_bn:
+            value_out = mx.sym.BatchNorm(data=value_out, name='value_bn1')
+        value_out = get_act(data=value_out, act_type=act_type, name='value_orig_act1')
+        value_flatten = mx.sym.Concat(*[value_flatten, value_out], name='value_concat1')
 
     value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
+    if use_bn:
+        value_out = mx.sym.BatchNorm(data=value_out, name='value_bn2')
     value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
     value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
     value_out = get_act(data=value_out, act_type='tanh', name=main_config["value_output"])
@@ -200,6 +253,49 @@ def channel_attention_module(data, channels, name, ratio=16, act_type="relu", us
     return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
 
 
+def se_pooling(data, name, pool_type):
+    if pool_type == "both":
+        avg_pool = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='avg', name=name + '_avg_pool0')
+        max_pool = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
+        merge = mx.sym.Concat(avg_pool, max_pool, dim=1, name=name + '_concat_0')
+    elif pool_type == "avg":
+        merge = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='avg', name=name+'_avg_pool0')
+    elif pool_type == "max":
+        merge = mx.sym.Pooling(data=data, global_pool=True, kernel=(8, 8), pool_type='max', name=name + '_max_pool0')
+    else:
+        raise Exception(f"Invalid value for pool_type given: {pool_type}")
+    return merge
+
+
+def efficient_channel_attention_module(data, channels, name, gamma=2, b=1, use_hard_sigmoid=False, pool_type="avg"):
+    """
+    ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks - Wang et al. - https://arxiv.org/pdf/1910.03151.pdf
+    :param data: Input data
+    :param channels: Number of input channels
+    :param name: Layer name
+    :param ratio: Reduction ratio
+    :param act_type: Activation type for hidden layer in MLP
+    :param use_hard_sigmoid: Whether to use the linearized form of sigmoid:
+     MobileNetv3: https://arxiv.org/pdf/1905.02244.pdf
+    :param pool_type: Pooling type to use. If "both" are used, then the features will be concatenated.
+    Available options are: ["both", "avg", "max"]
+     """
+    merge = se_pooling(data, name, pool_type)
+
+    t = int(abs((math.log(channels, 2) + b) / gamma))
+    kernel = t if t % 2 else t + 1
+
+    conv = mx.sym.Convolution(data=mx.symbol.reshape(data=merge, shape=(-1, 1, channels)), num_filter=1, kernel=(kernel,), pad=(kernel//2,), no_bias=False)
+
+    if use_hard_sigmoid:
+        act_type = 'hard_sigmoid'
+    else:
+        act_type = 'sigmoid'
+    act2 = get_act(data=conv, act_type=act_type, name=name + '_act1')
+
+    return mx.symbol.broadcast_mul(data, mx.symbol.reshape(data=act2, shape=(-1, channels, 1, 1)))
+
+
 def spatial_attention_module(data, name, use_hard_sigmoid=False, pool_type="both"):
     """
     Spatial Attention Modul of (CBA) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf
@@ -248,12 +344,30 @@ def convolution_block_attention_module(data, channels, name, ratio=16, act_type=
     return spatial_attention_module(data, name + '_spatial', use_hard_sigmoid)
 
 
+def coordinate_attention_block(data, name):
+    """
+    Coordinate Attention for Efficient Mobile Network Design - Hou et al. - https://arxiv.org/pdf/2103.02907.pdf
+    """
+    # TODO
+    # maybe not as suitable on GPU because of multiple split and concat operations
+    raise NotImplementedError
+
+
 def ca_se(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
     """
     Channel-Average-Squeeze-Excitation (caSE)
     Alias function for channel_attention_module() with average pooling
     """
     return channel_attention_module(data, channels, name, ratio, act_type, use_hard_sigmoid, pool_type="avg")
+
+
+def eca_se(data, channels, name, use_hard_sigmoid=False):
+    """
+    ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks (ecaSE) - Wang et al. - https://arxiv.org/abs/1910.03151
+    Alias function for efficient_channel_attention_module() with average pooling
+    """
+    return efficient_channel_attention_module(data, channels, name, gamma=2, b=1, use_hard_sigmoid=use_hard_sigmoid,
+                                              pool_type="avg")
 
 
 def cm_se(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=False):
