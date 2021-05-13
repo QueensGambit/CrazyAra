@@ -4,7 +4,8 @@ Created on 30.04.21
 @project: CrazyAra
 @author: queensgambit
 
-Please describe what the content of this file is about
+Grid search for evaluating different depth and channel ratios, as recommended in
+EfficientNet by Tan et al. - https://arxiv.org/abs/1905.11946v5
 """
 
 from __future__ import print_function

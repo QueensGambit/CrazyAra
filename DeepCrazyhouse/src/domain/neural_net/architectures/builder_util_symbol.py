@@ -363,7 +363,7 @@ def ca_se(data, channels, name, ratio=16, act_type="relu", use_hard_sigmoid=Fals
 
 def eca_se(data, channels, name, use_hard_sigmoid=False):
     """
-    ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks (ecaSE)
+    ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks (ecaSE) - Wang et al. - https://arxiv.org/abs/1910.03151
     Alias function for efficient_channel_attention_module() with average pooling
     """
     return efficient_channel_attention_module(data, channels, name, gamma=2, b=1, use_hard_sigmoid=use_hard_sigmoid,

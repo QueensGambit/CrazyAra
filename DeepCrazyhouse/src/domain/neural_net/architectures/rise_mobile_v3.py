@@ -23,10 +23,12 @@ Influenced by the following papers:
     * Convolutional Block Attention Module (CBAM),
     Sanghyun Woo, Jongchan Park, Joon-Young Lee, In So Kweon
     https://arxiv.org/pdf/1807.06521.pdf
+    * ECA-Net: Efficient Channel Attention for Deep Convolutional Neural Networks (ecaSE) - Wang et al.
+     https://arxiv.org/abs/1910.03151
 """
 import mxnet as mx
-from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, channel_squeeze_excitation, \
-    mix_conv, get_stem, value_head, policy_head, convolution_block_attention_module, ca_se, sa_se, cm_se, sm_se, eca_se, get_norm_layer, get_se_layer
+from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, \
+    get_stem, value_head, policy_head, get_norm_layer, get_se_layer
 
 
 def bottleneck_residual_block_v2(data, channels, channels_operating, name, kernel, act_type='relu', norm_type="bn", se_type=None):
@@ -89,7 +91,7 @@ def sandglass_block(data, channels, channels_reduced, name, kernel, act_type='re
     return sum
 
 
-def rise_mobile_v3_symbol(channels=256, channels_operating_init=128, channel_expansion=64, act_type='relu',
+def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                           grad_scale_value=0.01, grad_scale_policy=0.99,
                           select_policy_from_plane=True, kernels=None, n_labels=4992,
