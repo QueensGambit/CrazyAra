@@ -33,15 +33,15 @@ def preact_residual_block(data, channels, name, act_type='relu', se_type="eca_se
     conv2 = mx.sym.Convolution(data=act1, num_filter=channels, kernel=(last_kernel,last_kernel), pad=(last_kernel//2,last_kernel//2),
                                no_bias=False, name=name + '_conv2')
     shortcut = data
-    sum = mx.sym.broadcast_add(conv2, shortcut, name=name+'_add')
+    sum_out = mx.sym.broadcast_add(conv2, shortcut, name=name+'_add')
 
-    return sum
+    return sum_out
 
 
 def preact_resnet_se(channels=256, act_type='relu',
                      channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                      grad_scale_value=0.01, grad_scale_policy=0.99,
-                     select_policy_from_plane=True, kernels=None, n_labels=4992, norm_type="bn",
+                     select_policy_from_plane=True, kernels=None, n_labels=4992,
                      se_types=None, use_avg_features=False, use_raw_features=True):
     """
     RISEv3 architecture

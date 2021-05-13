@@ -86,7 +86,7 @@ print("train_config:", str(tc))
 
 
 def run_training(alpha, queue):
-    s_idcs_val, x_val, yv_val, yp_val, plys_to_end, pgn_datasets_val = load_pgn_dataset(dataset_type='val', part_id=0,
+    _, x_val, yv_val, yp_val, plys_to_end, _ = load_pgn_dataset(dataset_type='val', part_id=0,
                                                                                         verbose=True,
                                                                                         normalize=tc.normalize)
     if tc.discount != 1:
@@ -129,7 +129,7 @@ def run_training(alpha, queue):
     se_types = [None] * len(kernels)
     channels_reduced = int(round(channels / 4))
 
-    symbol = rise_mobile_v3_symbol(channels=channels, channels_reduced=channels_reduced, act_type='relu',
+    symbol = rise_mobile_v3_symbol(channels=channels, channels_operating_init=channels_reduced, act_type='relu',
                                    channels_value_head=8, value_fc_size=256,
                                    channels_policy_head=NB_POLICY_MAP_CHANNELS,
                                    grad_scale_value=tc.val_loss_factor, grad_scale_policy=tc.policy_loss_factor,
@@ -158,8 +158,7 @@ def run_training(alpha, queue):
     print("model.score(val_iter, to.metrics:", model.score(val_iter, to.metrics))
 
     # Start the training process
-    (k_steps_final, value_loss_final, policy_loss_final, value_acc_sign_final, val_p_acc_final), \
-    (k_steps_best, val_metric_values_best) = train_agent.train(cur_it)
+    _, (k_steps_best, val_metric_values_best) = train_agent.train(cur_it)
 
     new_row = {'alpha': alpha, 'beta': beta, 'depth': depth, 'channels': channels, 'k_steps_best': k_steps_best,
                'val_loss': val_metric_values_best['loss'], 'val_value_loss': val_metric_values_best['value_loss'],

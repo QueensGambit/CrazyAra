@@ -59,8 +59,8 @@ def bottleneck_residual_block_v2(data, channels, channels_operating, name, kerne
     conv3 = mx.sym.Convolution(data=act2, num_filter=channels, kernel=(1, 1), pad=(0, 0),
                                no_bias=True, name=name + '_conv3')
     bn3 = get_norm_layer(data=conv3, norm_type=norm_type, name=name + '_bn3')
-    sum = mx.sym.broadcast_add(bn3, data, name=name+'_add')
-    return sum
+    sum_out = mx.sym.broadcast_add(bn3, data, name=name+'_add')
+    return sum_out
 
 
 def sandglass_block(data, channels, channels_reduced, name, kernel, act_type='relu', norm_type="bn", se_type="eca_se"):
@@ -87,8 +87,8 @@ def sandglass_block(data, channels, channels_reduced, name, kernel, act_type='re
     conv4 = mx.sym.Convolution(data=act2, num_filter=channels,  kernel=(last_kernel, last_kernel),
                                pad=(last_kernel // 2, last_kernel // 2), num_group=channels,
                                no_bias=False, name=name + '_conv4')
-    sum = mx.sym.broadcast_add(conv4, data, name=name+'_add')
-    return sum
+    sum_out = mx.sym.broadcast_add(conv4, data, name=name+'_add')
+    return sum_out
 
 
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
