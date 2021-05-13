@@ -33,9 +33,9 @@ def preact_residual_block(data, channels, name, act_type='relu', se_type="eca_se
     conv2 = mx.sym.Convolution(data=act1, num_filter=channels, kernel=(last_kernel,last_kernel), pad=(last_kernel//2,last_kernel//2),
                                no_bias=False, name=name + '_conv2')
     shortcut = data
-    sum = mx.sym.broadcast_add(conv2, shortcut, name=name+'_add')
+    sum_out = mx.sym.broadcast_add(conv2, shortcut, name=name+'_add')
 
-    return sum
+    return sum_out
 
 
 def preact_resnet_se(channels=256, act_type='relu',
