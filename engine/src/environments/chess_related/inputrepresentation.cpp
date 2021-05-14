@@ -50,13 +50,13 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
 }
 
 
-bool flip_board(const Board *pos, Color sideToMove) {
+bool flip_board(const Board *pos) {
 #ifdef MODE_LICHESS
     if (pos->is_race()) {
         return false;
     }
 #endif
-    return sideToMove == BLACK;
+    return pos->side_to_move() == BLACK;
 }
 
 void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes)
@@ -68,9 +68,9 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // Fill in the piece positions
     // Iterate over both color starting with WHITE
     size_t current_channel = 0;
-    Color me = pos->side_to_move();
-    Color you = ~me;
-    const bool flipBoard = flip_board(pos, me);
+    const Color me = pos->side_to_move();
+    const Color you = ~me;
+    const bool flipBoard = flip_board(pos);
 
     // (I) Set the pieces for both players
     for (Color color : {me, you}) {

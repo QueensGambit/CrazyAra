@@ -50,4 +50,13 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
  */
 inline void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color);
 
+/**
+ * @brief flip_board Decides whether to flip the board based on the side to move.
+    If the board is the racing variant, flipping the board is disabled
+ * @param pos Board object
+ * @return bool
+ */
+bool flip_board(const Board *pos);
+
+
 #endif // INPUTREPRESENTATION_H
