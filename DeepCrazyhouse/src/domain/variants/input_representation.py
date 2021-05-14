@@ -166,6 +166,19 @@ def _fill_variants_plane(board, planes_variants):
             break
 
 
+def flip_board(board, mode,) -> bool:
+    """
+    Decides whether to flip the board based on the side to move.
+    If the board is the racing variant, flipping the board is disabled
+    :param board: Board object
+    ;param mode: Active config mode
+    :return: bool
+    """
+    if mode == MODE_LICHESS and board.uci_variant == "racingkings":
+        return False
+    return board.turn == chess.BLACK
+
+
 def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, last_moves=None):
     """
     Gets the plane representation of a given board state.
@@ -199,16 +212,14 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
         # chess doesn't contain pocket pieces and remaining checks
         planes_variants = np.zeros((NB_CHANNELS_VARIANTS, BOARD_HEIGHT, BOARD_WIDTH))
 
-    # save whose turn it is
-    board_turn = chess.WHITE
+    # check who's player turn it is and flip the board if it's black turn (except for racing kings)
+    mirror_board = flip_board(board, mode)
 
-    # check who's player turn it is and flip the board if it's black turn
-    if board.turn == chess.BLACK:
-        board_turn = chess.BLACK
+    if mirror_board:
         board = board.mirror()
 
     _fill_position_planes(planes_pos, board, board_occ, mode)
-    _fill_constant_planes(planes_const, board, board_turn)
+    _fill_constant_planes(planes_const, board, board.turn)
     if mode == MODE_LICHESS:
         _fill_variants_plane(board, planes_variants)
     elif mode == MODE_CHESS:
@@ -220,8 +231,8 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
     if last_moves:
          for i, move in enumerate(last_moves):
              if move:
-                 from_row, from_col = get_row_col(move.from_square, mirror=board_turn == chess.BLACK)
-                 to_row, to_col = get_row_col(move.to_square, mirror=board_turn == chess.BLACK)
+                 from_row, from_col = get_row_col(move.from_square, mirror=mirror_board)
+                 to_row, to_col = get_row_col(move.to_square, mirror=mirror_board)
                  planes_moves[i*2, from_row, from_col] = 1
                  planes_moves[i*2+1, to_row, to_col] = 1
 
@@ -233,7 +244,7 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
 
     # revert the board if the players turn was black
     # ! DO NOT DELETE OR UNCOMMENT THIS BLOCK BECAUSE THE PARAMETER board IS CHANGED IN PLACE !
-    if board_turn == chess.BLACK:
+    if mirror_board:
         board = board.mirror()
 
     if normalize is True:
