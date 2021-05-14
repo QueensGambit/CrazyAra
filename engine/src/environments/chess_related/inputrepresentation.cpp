@@ -30,18 +30,18 @@
 #include "sfutil.h"
 using namespace std;
 
-void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color) {
+void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, bool flipBoard) {
     size_t p = 0;
     // set the individual bits for the pieces
     // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
     while (bitboard != 0) {
         if (bitboard & 0x1) {
-            if (color == WHITE) {
-                inputPlanes[channel * StateConstants::NB_SQUARES() + p] = 1;
+            if (flipBoard) {
+                //                                                         row            col
+                inputPlanes[channel * StateConstants::NB_SQUARES() + (7 - (p / 8)) * 8 + (p % 8)] = 1;
             }
             else {
-                //                                         row            col
-                inputPlanes[channel * StateConstants::NB_SQUARES() + (7 - (p / 8)) * 8 + (p % 8)] = 1;
+                inputPlanes[channel * StateConstants::NB_SQUARES() + p] = 1;
             }
         }
         bitboard >>= 1;
@@ -49,6 +49,15 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
     }
 }
 
+
+bool flip_board(const Board *pos) {
+#ifdef MODE_LICHESS
+    if (pos->is_race()) {
+        return false;
+    }
+#endif
+    return pos->side_to_move() == BLACK;
+}
 
 void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes)
 {
@@ -59,8 +68,9 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // Fill in the piece positions
     // Iterate over both color starting with WHITE
     size_t current_channel = 0;
-    Color me = pos->side_to_move();
-    Color you = ~me;
+    const Color me = pos->side_to_move();
+    const Color you = ~me;
+    const bool flipBoard = flip_board(pos);
 
     // (I) Set the pieces for both players
     for (Color color : {me, you}) {
@@ -68,7 +78,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
             const Bitboard pieces = pos->pieces(color, piece);
             // set the individual bits for the pieces
             // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
-            set_bits_from_bitmap(pieces, current_channel, inputPlanes, me);
+            set_bits_from_bitmap(pieces, current_channel, inputPlanes, flipBoard);
             current_channel += 1;
         }
     }
@@ -102,9 +112,9 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
 
     // (IV) Fill in the promoted pieces
     // iterate over all promoted pieces according to the mask and set the according bit
-    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(me), current_channel, inputPlanes, me);
+    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(me), current_channel, inputPlanes, flipBoard);
     current_channel++;
-    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(you), current_channel, inputPlanes, me);
+    set_bits_from_bitmap(pos->promoted_pieces() & pos->pieces(you), current_channel, inputPlanes, flipBoard);
     current_channel++;
 #endif
 
@@ -224,13 +234,13 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     current_channel = StateConstants::NB_CHANNELS_TOTAL() - StateConstants::NB_CHANNELS_HISTORY();
     // (VI) Fill the bits of the last move planes
     for (const Move move : pos->get_last_moves()) {
-        if (me == WHITE) {
-            inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + from_sq(move)] = 1.0f;
-            inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + to_sq(move)] = 1.0f;
-        }
-        else {
+        if (flipBoard) {
             inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + int(vertical_flip(from_sq(move)))] = 1.0f;
             inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + int(vertical_flip(to_sq(move)))] = 1.0f;
+        }
+        else {
+            inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + from_sq(move)] = 1.0f;
+            inputPlanes[current_channel++ * StateConstants::NB_SQUARES() + to_sq(move)] = 1.0f;
         }
     }
 #endif
