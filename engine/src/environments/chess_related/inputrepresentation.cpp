@@ -50,6 +50,15 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
 }
 
 
+bool flip_board(const Board *pos, Color sideToMove) {
+#ifdef MODE_LICHESS
+    if (pos->is_race()) {
+        return false;
+    }
+#endif
+    return sideToMove == BLACK;
+}
+
 void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes)
 {
 
