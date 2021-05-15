@@ -48,6 +48,7 @@ class BinaryIO:
         folder with the compressed games, as well as 'games.pgn' and 'gameIdx.txt'.
         :return:
         """
+        logging.info(f'Generating games ...')
         # if 0, binary plays Selfplay_Number_Chunks * Selfplay_Chunk_Size games
         self.proc.stdin.write(b"selfplay 0\n")
         self.proc.stdin.flush()
@@ -85,6 +86,7 @@ class BinaryIO:
         Tells the binary to load the network and waits until it's finished.
         :return:
         """
+        logging.info(f'Loading network & creating backend files ...', )
         self.proc.stdin.write(b"isready\n")
         self.proc.stdin.flush()
         self.read_output(b"readyok\n", check_error=True)
