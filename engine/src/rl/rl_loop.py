@@ -82,7 +82,8 @@ class RLLoop:
         self.model_name = self.file_io.get_current_model_weight_file()
         self.binary_io = BinaryIO(binary_path=self.file_io.binary_dir+self.current_binary_name)
         self.binary_io.set_uci_options(self.rl_config.uci_variant, self.args.context, self.args.device_id,
-                                       self.rl_config.precision, self.file_io.model_dir, is_arena)
+                                       self.rl_config.precision, self.file_io.model_dir,
+                                       self.file_io.model_contender_dir, is_arena)
         self.binary_io.load_network()
 
     def check_for_new_model(self):

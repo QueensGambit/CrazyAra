@@ -126,7 +126,7 @@ class BinaryIO:
                 return True
 
     def set_uci_options(self, uci_variant: str, context: str, device_id: str, precision: str,
-                        model_dir: str, is_arena: bool = False):
+                        model_dir: str, model_contender_dir: str, is_arena: bool = False):
         """
         Sets UCI options of the binary.
         :param uci_variant: The UCI variant that shall be trained.
@@ -134,10 +134,12 @@ class BinaryIO:
         :param device_id: The id of the device we are using.
         :param precision: The precision of calculations.
         :param model_dir: The path to the model.
+        :param model_contender_dir: Directory where the model contender dir will be saved.
         :param is_arena: Applies setting for the arena comparison
         :return:
         """
         self._set_uci_param(f'Model_Directory', model_dir)
+        self._set_uci_param(f'Model_Contender_Directory', model_contender_dir)
         self._set_uci_param(f'UCI_Variant', uci_variant)
         self._set_uci_param(f'Context', context)
         self._set_uci_param(f'First_Device_ID', device_id)
