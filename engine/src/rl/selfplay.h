@@ -68,6 +68,7 @@ private:
     size_t backupNodes;
     float backupDirichletEpsilon;
     float backupQValueWeight;
+    bool is960;
 
 public:
     /**
@@ -192,33 +193,27 @@ private:
 void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent);
 
 /**
- * @brief init_board Initialies a new board with the starting position of the variant
- * @param variant Variant to be played
- * @param is960 If it is a 960 variant
- * @param gamePGN Struct which stores the pgn information
- * @return New state object
- */
-unique_ptr<StateObj> init_state(Variant variant, bool is960, GamePGN& gamePGN);
-
-/**
  * @brief init_games_from_raw_policy Inits a new starting position by sampling from the raw policy with temperature 1.
  * The iteration stops either when the number of plys is reached or when the next move would lead to a terminal state.
  * @param rawAgent Handle to the raw agent
  * @param plys Number of plys to generate
  * @param gamePGN Game pgn struct where the moves will be stored
+ * @param variant Game variant
+ * @param is960 If we are in a 960 game or not
  * @param rawPolicyProbTemp Probability for which a temperature scaling > 1.0f is applied
  * @return New state object
  */
-unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, float rawPolicyProbTemp);
+unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, bool is960, float rawPolicyProbTemp);
 
 /**
  * @brief init_starting_state_from_fixed_move Initializes a starting position using a vector of actions
  * @param gamePGN Game pgn struct where the moves will be stored
  * @param variant Game variant
+ * @param is960 If we are in a 960 game or not
  * @param actions Vector of actions
  * @return New state object
  */
-unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN& gamePGN, Variant variant, const vector<Action>& actions);
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN& gamePGN, Variant variant, bool is960, const vector<Action>& actions);
 
 /**
  * @brief apply_raw_policy_temp Applies a temperature scaling to the policyProbSmall of the eval struct.

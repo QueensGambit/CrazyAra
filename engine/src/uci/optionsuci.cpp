@@ -34,6 +34,7 @@
 #include <cstring>
 #include "customlogger.h"
 #include "syzygy/tbprobe.h"
+#include "../util/communication.h"
 
 using namespace std;
 
@@ -140,7 +141,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Use_TensorRT"]                  << Option(true);
 #endif
 #ifdef SUPPORT960
-    o["UCI_Chess960"]                  << Option(true);
+    o["UCI_Chess960"]                  << Option(false);
 #endif
     o["Search_Type"]                   << Option("mcgs", {"mcgs", "mcts"});
 #ifdef USE_RL
@@ -224,32 +225,36 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
             // Workaround. Fairy-Stockfish does not use an enum for variants
             cout << "info string variant " << "Xiangqi" << " startpos " << "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" << endl;
 #else
-            string variant_str = value;
-            if (variant_str == "standard") {
+            if (value == "standard") {
                 Options["UCI_Variant"] << Option("chess");
             }
 #ifdef MODE_LICHESS
-            if (variant_str == "antichess" || variant_str == "losers") {
+            if (value == "antichess" || value == "losers") {
                 Options["UCI_Variant"] << Option("giveaway");
             }
 #endif // MODE_LICHESS
-            if (variant_str == "fischerandom" || variant_str == "chess960"
-                || ((variant_str == "chess") && Options["UCI_Chess960"])) {
+            string suffix_960 = "";
+#ifdef SUPPORT960
+            if (value == "fischerandom" || value == "chess960"
+                || ((value == "chess") && Options["UCI_Chess960"])) {
                 Options["UCI_Variant"] << Option("chess");
-                Options["Model_Directory"] << Option("model/chess960");
-                Options["Model_Directory_Contender"] << Option("model_contender/chess960");
                 Options["UCI_Chess960"] << Option(true);
                 cout << "info string Updated option " << givenName << " to chess" << endl;
                 cout << "info string Updated option uci_chess960 to true" << endl;
+                suffix_960 = "960";
             } else {
-                Options["Model_Directory"] << ((string) "model" + "/" + string(Options["UCI_Variant"])).c_str();
-                Options["Model_Directory_Contender"] << Option(((string) "model_contender/" + string(Options["UCI_Variant"])).c_str());
-                Options["UCI_Chess960"] << Option(false); // We only want 960 support for chess at the moment
+                Options["UCI_Chess960"] << Option(false); // We only want 960 for chess at the moment
+            }
+#endif // SUPPORT960
+            if(suffix_960 == "") {
                 cout << "info string Updated option " << givenName << " to " << value << endl;
             }
+            Options["Model_Directory"] << Option(((string) "model/" + string(Options["UCI_Variant"]) + suffix_960).c_str());
+            Options["Model_Directory_Contender"] << Option(((string) "model_contender/" + string(Options["UCI_Variant"]) + suffix_960).c_str());
             variant = UCI::variant_from_name(value);
-            cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << endl;
-            state.set(StartFENs[variant], Options["UCI_Chess960"], variant);
+            state.init(variant, Options["UCI_Chess960"]);
+
+            info_string("info string variant " + (string)Options["UCI_Variant"] + suffix_960 + " startpos " + state.fen());
 #endif
         }
     }

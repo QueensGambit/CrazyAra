@@ -42,6 +42,7 @@ if (MODE_LICHESS)
     add_definitions(-DATOMIC)
     add_definitions(-DHORDE)
     add_definitions(-DRACE)
+    add_definitions(-DSUPPORT960)
     add_definitions(-DMCTS_TB_SUPPORT)
 endif()
 

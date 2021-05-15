@@ -36,7 +36,11 @@ const static vector<string> availableVariants = {
 #if defined(MODE_CHESS) && defined(MODE_LICHESS)
     "chess",
     "standard",
-#endif
+#if defined(SUPPORT960)
+    "fischerandom",
+    "chess960",
+#endif // SUPPORT960
+#endif // MODE_CHESS && MODE_LICHESS
 #if defined(MODE_CRAZYHOUSE) && defined(MODE_LICHESS)
     "crazyhouse",
 #endif
@@ -47,10 +51,8 @@ const static vector<string> availableVariants = {
     "horde",
     "racingkings",
     "3check",
-    "fischerandom"
-    "chess960",
     "antichess", // giveaway
-    "losers" // giveaway
+    "losers", // giveaway
 #endif
 };
 

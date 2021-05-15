@@ -28,6 +28,8 @@
 #include "inputrepresentation.h"
 #include "syzygy/tbprobe.h"
 #include "uci/variants.h"
+#include "chess960position.h"
+#include "../util/communication.h"
 
 action_idx_map OutputRepresentation::MV_LOOKUP = {};
 action_idx_map OutputRepresentation::MV_LOOKUP_MIRRORED = {};
@@ -259,7 +261,14 @@ BoardState* BoardState::clone() const
 void BoardState::init(int variant, bool is960)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-    board.set(StartFENs[variant], is960, Variant(variant), &states->back(), nullptr);
+    string start_fen = StartFENs[variant];
+    if(is960 && variant == CHESS_VARIANT) {
+        start_fen = chess960fen();
+    } else if (is960) {
+        info_string("960 has not yet been implemented for" + variants[variant]);
+        info_string("Using standard starting position instead.");
+    }
+    board.set(start_fen, is960, Variant(variant), &states->back(), nullptr);
 }
 
 #endif
