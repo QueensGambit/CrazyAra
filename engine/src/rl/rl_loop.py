@@ -18,7 +18,7 @@ assert os.getcwd().endswith(f'engine/src/rl'), f'Please change working directory
 sys.path.append("../../../")
 
 from engine.src.rl.rl_utils import enable_logging, get_log_filename, get_current_binary_name, \
-    extract_nn_update_from_binary_name, change_binary_name
+    extract_nn_update_idx_from_binary_name, change_binary_name
 from engine.src.rl.binaryio import BinaryIO
 from engine.src.rl.fileio import FileIO
 from DeepCrazyhouse.configs.main_config import main_config
@@ -57,15 +57,18 @@ class RLLoop:
         self.tc.k_steps = k_steps
         self.device_name = f'{args.context}_{args.device_id}'
         self.model_name = ""  # will be set in initialize()
-        self.nn_update_index = args.nn_update_idx
-        self.nn_update = 0
 
-        # change working directory (otherwise binary would generated .zip files at .py location)
+        # change working directory (otherwise binary would generate .zip files at .py location)
         os.chdir(self.file_io.binary_dir)
         self.tc.cwd = self.file_io.binary_dir
 
         # The original binary name in TrainConfig will always stay the same & be a substring of the updated name
         self.current_binary_name = get_current_binary_name(self.file_io.binary_dir, self.rl_config.binary_name)
+
+        self.nn_update_index = args.nn_update_idx
+        if not args.trainer:  # only trainer gpu needs the update index as cmd line argument
+            self.nn_update_index = extract_nn_update_idx_from_binary_name(self.current_binary_name)
+        self.last_nn_update_index = self.nn_update_index + self.rl_config.nb_nn_updates
 
         # Continuously update the process name
         self.rtpt = RTPT(name_initials=self.tc.name_initials,
@@ -96,7 +99,7 @@ class RLLoop:
         if new_binary_name != self.current_binary_name:
             self.current_binary_name = new_binary_name
             # when binary name changes, also epoch changes
-            self.nn_update = extract_nn_update_from_binary_name(self.current_binary_name)
+            self.nn_update_index = extract_nn_update_idx_from_binary_name(self.current_binary_name)
 
             # If a new model is available, the binary name has also changed
             model_name = self.file_io.get_current_model_weight_file()
@@ -145,10 +148,9 @@ class RLLoop:
                 logging.info("KEEPING current generator")
 
             self.binary_io.stop_process()
-            self.nn_update += 1
             self.rtpt.step()  # BUG: process changes it's name 1 iteration too late, fix?
             self.current_binary_name = change_binary_name(self.file_io.binary_dir, self.current_binary_name,
-                                                          self.rtpt._get_title(), self.nn_update)
+                                                          self.rtpt._get_title(), self.nn_update_index)
             self.initialize()
 
 
@@ -206,7 +208,7 @@ def main():
     rl_loop = RLLoop(args, rl_config, nb_arena_games=rl_config.arena_games, lr_reduction=0)
     if args.trainer:
         rl_loop.current_binary_name = change_binary_name(rl_loop.file_io.binary_dir, rl_loop.current_binary_name,
-                                                         rl_loop.rtpt._get_title(), rl_loop.nn_update)
+                                                         rl_loop.rtpt._get_title(), rl_loop.nn_update_index)
     rl_loop.initialize()
 
     logging.info(f'Command line parameters: {str(args)}')
@@ -222,8 +224,8 @@ def main():
         else:
             rl_loop.check_for_new_model()
 
-        if rl_loop.nn_update >= rl_loop.rl_config.nb_nn_updates:
-            logging.info(f'{rl_loop.nn_update} NN updates reached, shutting down')
+        if rl_loop.nn_update_index >= rl_loop.last_nn_update_index:
+            logging.info(f'{rl_loop.rl_config.nb_nn_updates} NN updates reached, shutting down')
             break
 
         rl_loop.binary_io.generate_games()
