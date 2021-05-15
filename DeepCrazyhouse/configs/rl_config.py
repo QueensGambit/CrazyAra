@@ -59,6 +59,7 @@ class UCIConfig:
     Simulations: int = 3200
     SyzygyPath: str = f''
     Temperature_Moves: int = 15  # CZ: 500
+    Timeout_MS: int = 0
 
 
 @dataclass
