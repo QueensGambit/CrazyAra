@@ -136,18 +136,18 @@ class RLLoop:
             if self.tc.max_lr > self.tc.min_lr:
                 self.tc.max_lr = max(self.tc.max_lr - self.lr_reduction, self.tc.min_lr * 10)
 
+            self.file_io.move_training_logs(self.nn_update_index)
+
             self.nn_update_index += 1
 
-            logging.info(f'Start arena tournament ({self.nb_arena_games} rounds)')
             self.initialize()
+            logging.info(f'Start arena tournament ({self.nb_arena_games} rounds)')
             did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
             if did_contender_win is True:
                 logging.info("REPLACING current generator with contender")
                 self.file_io.replace_current_model_with_contender()
             else:
                 logging.info("KEEPING current generator")
-
-            self.file_io.move_training_logs(self.nn_update_index)
 
             self.binary_io.stop_process()
             self.rtpt.step()  # BUG: process changes it's name 1 iteration too late, fix?

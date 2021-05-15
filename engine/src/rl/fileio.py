@@ -256,11 +256,12 @@ class FileIO:
 
     def move_training_logs(self, nn_update_index):
         """
-        Rename logs with variant and update index and move it from /logs to /export/logs/
+        Rename logs and move it from /logs to /export/logs/
         """
         time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M-%S")
         dir_name = f'logs-{self.uci_variant}-update{nn_update_index}-{time_stamp}'
         os.rename(self.logs_dir, os.path.join(self.logs_dir_archive, dir_name))
+        create_dir(self.logs_dir)
 
     def prepare_data_for_training(self, rm_nb_files, rm_fraction_for_selection):
         """
