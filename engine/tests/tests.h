@@ -97,6 +97,24 @@ GameInfo apply_random_moves(StateObj& state, uint movesToApply);
  */
 Variant get_default_variant();
 
+/**
+ * @brief is_uci_move_legal Check if a uci move, given as a string, is legal at a specific position
+ * @return bool True, if the engine thinks the move is legal
+ */
+bool is_uci_move_legal(const BoardState& pos, const string& move);
+
+/**
+ * @brief are_uci_moves_legal_bool Checks if all uci moves are either legal or not
+ * @param equals Specifies if the moves have to be legal (true) or not (false) to return true.
+ * @return bool True, if all moves equal the parameter 'equals', else false.
+ */
+bool are_uci_moves_legal_bool(BoardState& pos, vector<string> uciMoves, bool equals);
+
+/**
+ * @brief legal_actions_equal_ucimoves Checks if the given uci moves is a permutation of the legal actions
+ */
+bool legal_actions_equal_ucimoves(BoardState& pos, vector<string>& uciMoves);
+
 #endif
 
 #endif // TESTS_H

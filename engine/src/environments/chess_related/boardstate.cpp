@@ -134,6 +134,11 @@ string BoardState::action_to_san(Action action, const vector<Action>& legalActio
     return pgn_move(Move(action), this->is_chess960(), board, legalActions, leadsToWin, bookMove);
 }
 
+string BoardState::action_to_uci(Action action) const
+{
+    return UCI::move(Move(action), this->is_chess960());
+}
+
 TerminalType BoardState::is_terminal(size_t numberLegalMoves, float& customTerminalValue) const
 {
 #ifdef ATOMIC
