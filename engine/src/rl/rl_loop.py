@@ -12,6 +12,7 @@ import sys
 import logging
 import argparse
 from rtpt import RTPT
+from multiprocessing import Process, Queue
 
 assert os.getcwd().endswith(f'engine/src/rl'), f'Please change working directory'
 sys.path.append("../../../")
