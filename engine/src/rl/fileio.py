@@ -95,6 +95,8 @@ class FileIO:
         self.val_dir_archive = binary_dir + "export/archive/val/" + variant_suffix
         self.model_contender_dir = binary_dir + "model_contender/" + variant_suffix
         self.model_dir_archive = binary_dir + "export/archive/model/" + variant_suffix
+        self.logs_dir_archive = binary_dir + "export/logs/" + variant_suffix
+        self.logs_dir = binary_dir + "logs"
 
         self._create_directories()
 
@@ -109,7 +111,7 @@ class FileIO:
         Creates directories in the binary folder which will be used during RL
         :return:
         """
-        create_dir(self.binary_dir+"logs")
+        create_dir(self.logs_dir)
         create_dir(self.weight_dir)
         create_dir(self.export_dir_gen_data)
         create_dir(self.train_dir)
@@ -118,6 +120,7 @@ class FileIO:
         create_dir(self.val_dir_archive)
         create_dir(self.model_contender_dir)
         create_dir(self.model_dir_archive)
+        create_dir(self.logs_dir_archive)
 
     def _include_data_from_replay_memory(self, nb_files: int, fraction_for_selection: float):
         """
@@ -250,6 +253,14 @@ class FileIO:
                       "gameIdx_" + device_name + ".txt"]
         for file_name in file_names:
             os.rename(self.binary_dir + file_name, export_dir + file_name)
+
+    def move_training_logs(self, nn_update_index):
+        """
+        Rename logs with variant and update index and move it from /logs to /export/logs/
+        """
+        time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M-%S")
+        dir_name = f'logs-{self.uci_variant}-update{nn_update_index}-{time_stamp}'
+        os.rename(self.logs_dir, os.path.join(self.logs_dir_archive, dir_name))
 
     def prepare_data_for_training(self, rm_nb_files, rm_fraction_for_selection):
         """
