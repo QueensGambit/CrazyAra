@@ -240,7 +240,7 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
             }
             return currentNode;
         }
-        if (nextNode->is_terminal()) {
+        if (nextNode->is_terminal() || nextNode->is_tablebase()) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
             return currentNode;
