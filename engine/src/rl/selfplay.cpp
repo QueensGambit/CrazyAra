@@ -39,14 +39,26 @@
 
 void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& gamePGN, Result& gameResult)
 {
-    gameResult = state->check_result();
-    gamePGN.gameMoves.push_back(state->action_to_san(evalInfo.bestMove, evalInfo.legalMoves, is_win(gameResult), false));
+    string sanMove = state->action_to_san(evalInfo.bestMove, evalInfo.legalMoves, false, false);
     state->do_action(evalInfo.bestMove);
+    gameResult = state->check_result();
+
+    if (is_win(gameResult)) {
+        // replace '+' by '#'
+        if (sanMove[sanMove.size()-1] == '+') {
+            sanMove[sanMove.size()-1] = '#';
+        }
+        // add '#'
+        else {
+            sanMove += "#";
+        }
+    }
+    gamePGN.gameMoves.emplace_back(sanMove);
 }
 
 
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
-    RLSettings* rlSettings, UCI::OptionsMap& options):
+                   RLSettings* rlSettings, UCI::OptionsMap& options):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
     rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
 {
