@@ -936,7 +936,7 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
         prune_losses_in_mcts_policy(mctsPolicy);
         size_t bestQIdx = argmax(d->qValues);
         first_and_second_max(mctsPolicy, d->noVisitIdx, firstMaxValue, secondMaxValue, bestMoveIdx, secondArg);
-        if (qVetoDelta != 0 && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + qVetoDelta && d->childNumberVisits[bestQIdx] > 1) {
+        if (qVetoDelta != 0 && bestQIdx != bestMoveIdx && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + qVetoDelta && d->childNumberVisits[bestQIdx] > 1) {
             if (mctsPolicy[bestMoveIdx] > mctsPolicy[bestQIdx]) {
                 // swap values of highest qValues and most visits
                 info_string("veto move");
