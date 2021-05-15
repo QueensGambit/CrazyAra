@@ -33,14 +33,25 @@ using namespace std;
 
 // list of all current available variants for MultiAra
 const static vector<string> availableVariants = {
-    "3check",
-    "atomic",
+#if defined(MODE_CHESS) && defined(MODE_LICHESS)
     "chess",
+    "standard",
+#endif
+#if defined(MODE_CRAZYHOUSE) && defined(MODE_LICHESS)
     "crazyhouse",
-    "giveaway",  // antichess
-    "horde",
+#endif
+#ifdef MODE_LICHESS
     "kingofthehill",
-    "racingkings"
+    "atomic",
+    "giveaway",
+    "horde",
+    "racingkings",
+    "3check",
+    "fischerandom"
+    "chess960",
+    "antichess", // giveaway
+    "losers" // giveaway
+#endif
 };
 
 // FEN strings of the initial positions

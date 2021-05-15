@@ -217,20 +217,39 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
         }
 #endif
         Options[name] = value;
-        cout << "info string Updated option " << givenName << " to " << value << endl;
-        if (name == "uci_variant") {
+        if (name != "uci_variant") {
+            cout << "info string Updated option " << givenName << " to " << value << endl;
+        } else {
 #ifdef XIANGQI
             // Workaround. Fairy-Stockfish does not use an enum for variants
             cout << "info string variant " << "Xiangqi" << " startpos " << "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" << endl;
 #else
+            string variant_str = value;
+            if (variant_str == "standard") {
+                Options["UCI_Variant"] << Option("chess");
+            }
+#ifdef MODE_LICHESS
+            if (variant_str == "antichess" || variant_str == "losers") {
+                Options["UCI_Variant"] << Option("giveaway");
+            }
+#endif // MODE_LICHESS
+            if (variant_str == "fischerandom" || variant_str == "chess960"
+                || ((variant_str == "chess") && Options["UCI_Chess960"])) {
+                Options["UCI_Variant"] << Option("chess");
+                Options["Model_Directory"] << Option("model/chess960");
+                Options["Model_Directory_Contender"] << Option("model_contender/chess960");
+                Options["UCI_Chess960"] << Option(true);
+                cout << "info string Updated option " << givenName << " to chess" << endl;
+                cout << "info string Updated option uci_chess960 to true" << endl;
+            } else {
+                Options["Model_Directory"] << ((string) "model" + "/" + string(Options["UCI_Variant"])).c_str();
+                Options["Model_Directory_Contender"] << Option(((string) "model_contender/" + string(Options["UCI_Variant"])).c_str());
+                Options["UCI_Chess960"] << Option(false); // We only want 960 support for chess at the moment
+                cout << "info string Updated option " << givenName << " to " << value << endl;
+            }
             variant = UCI::variant_from_name(value);
             cout << "info string variant " << (string)Options["UCI_Variant"] << " startpos " << StartFENs[variant] << endl;
             state.set(StartFENs[variant], Options["UCI_Chess960"], variant);
-#endif
-
-#ifdef MODE_LICHESS // Set model path for new variant; just in case set model_contender as well
-            Options["Model_Directory"] << ((string) "model" + "/" + string(Options["UCI_Variant"])).c_str();
-            Options["Model_Directory_Contender"] << Option(((string) "model_contender/" + string(Options["UCI_Variant"])).c_str());
 #endif
         }
     }
