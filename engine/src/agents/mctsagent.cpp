@@ -267,7 +267,9 @@ void MCTSAgent::evaluate_board_state()
 {
     evalInfo->nodesPreSearch = init_root_node(state);
     thread tGCThread = thread(run_gc_thread, &gcThread);
-
+#ifdef USE_RL
+    tGCThread.join();
+#endif
     evalInfo->isChess960 = state->is_chess960();
     rootState = unique_ptr<StateObj>(state->clone());
     if (rootNode->get_number_child_nodes() == 1) {
@@ -299,7 +301,9 @@ void MCTSAgent::evaluate_board_state()
     update_eval_info(*evalInfo, rootNode.get(), tbHits, maxDepth, searchSettings);
     lastValueEval = evalInfo->bestMoveQ[0];
     update_nps_measurement(evalInfo->calculate_nps());
+#ifndef USE_RL
     tGCThread.join();
+#endif
 }
 
 void MCTSAgent::run_mcts_search()
