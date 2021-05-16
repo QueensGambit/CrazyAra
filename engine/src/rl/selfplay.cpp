@@ -91,26 +91,13 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");
     fileNameGameIdx = string("gameIdx_") + mctsAgent->get_device_name() + string(".txt");
 
-    // TODO: Faster and shorter. Boost.
-    ifstream f(filenamePGNSelfplay.c_str());
-    bool exist1 = f.good();
-    f.close();
-    if (exist1) {
-        const int delete1 = std::remove(filenamePGNSelfplay.c_str());
-        if (delete1 != 0) {
-            throw std::runtime_error("Could not delete " + filenamePGNSelfplay + " although it exists.");
-        }
-    }
-
-    ifstream f2(fileNameGameIdx.c_str());
-    bool exist2 = f2.good();
-    f2.close();
-    if (exist2) {
-        const int delete2 = std::remove(fileNameGameIdx.c_str());
-        if (delete2 != 0) {
-            throw std::runtime_error("Could not delete " + fileNameGameIdx + " although it exists.");
-        }
-    }
+    // delete content of files
+    ofstream pgnFile;
+    pgnFile.open(filenamePGNSelfplay, std::ios_base::trunc);
+    pgnFile.close();
+    ofstream idxFile;
+    idxFile.open(fileNameGameIdx, std::ios_base::trunc);
+    idxFile.close();
 
     backupNodes = searchLimits->nodes;
     backupQValueWeight = mctsAgent->get_q_value_weight();
