@@ -39,6 +39,7 @@
 #include "environments/chess_related/inputrepresentation.h"
 #include "legacyconstants.h"
 #include "util/blazeutil.h"
+#include "environments/chess_related/boardstate.h"
 using namespace Catch::literals;
 using namespace std;
 using namespace OptionsUCI;
@@ -87,26 +88,28 @@ bool are_all_entries_true(const vector<string>& uciMoves, bool (*foo)(Square, Sq
 }
 
 
-bool is_uci_move_legal(const BoardState& pos, const string& move) {
+bool is_uci_move_legal(const BoardState& pos, const string& move, bool is960) {
+    StateConstantsBoard scb;
     for (Action action : pos.legal_actions()) {
-        if (pos.action_to_uci(action) == move) {
+        if (scb.action_to_uci(action, is960) == move) {
             return true;
         }
     }
     return false;
 }
 
-bool legal_actions_equal_ucimoves(BoardState& pos, vector<string>& uciMoves) {
+bool legal_actions_equal_ucimoves(const BoardState& pos, const vector<string>& uciMoves, bool is960) {
     vector<string> compareMoves;
+    StateConstantsBoard scb;
     for (Action action : pos.legal_actions()) {
-        compareMoves.push_back(pos.action_to_uci(action));
+        compareMoves.push_back(scb.action_to_uci(action, is960));
     }
     return std::is_permutation(uciMoves.begin(), uciMoves.end(), compareMoves.begin());
 }
 
-bool are_uci_moves_legal_bool(BoardState& pos, vector<string> uciMoves, bool equals) {
+bool are_uci_moves_legal_bool(const BoardState& pos, const vector<string> uciMoves, bool equals, bool is960) {
     for (string move : uciMoves) {
-        if (is_uci_move_legal(pos, move) != equals) {
+        if (is_uci_move_legal(pos, move, is960) != equals) {
             return false;
         }
     }
@@ -861,11 +864,11 @@ TEST_CASE("Racing_Kings") {
     // Checks are forbidden
     pos.set("8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1", false, RACE_VARIANT);
     vector<string> uciMoves = {"e2c3", "e2a3"};
-    REQUIRE(are_uci_moves_legal_bool(pos, uciMoves, false));
+    REQUIRE(are_uci_moves_legal_bool(pos, uciMoves, false, false));
     pos.set("R2R4/4Q3/8/2r5/1q6/bk3N1K/2b5/8 b - - 6 13", false, RACE_VARIANT);
-    REQUIRE(are_uci_moves_legal_bool(pos, {"c2f5", "b4g4", "b4h4", "c5h5"}, false));
+    REQUIRE(are_uci_moves_legal_bool(pos, {"c2f5", "b4g4", "b4h4", "c5h5"}, false, false));
     pos.set("R2R4/4Q3/8/2r5/1q6/1k3N1K/2b5/2b5 w - - 7 14", false, RACE_VARIANT);
-    REQUIRE(are_uci_moves_legal_bool(pos, {"f3d2", "f3d4", "e7e6", "e7f7", "e7e3", "d8d3", "a8a3"}, false));
+    REQUIRE(are_uci_moves_legal_bool(pos, {"f3d2", "f3d4", "e7e6", "e7f7", "e7e3", "d8d3", "a8a3"}, false, false));
 
     // Win if a king reaches the 8th row
     pos.set("1bk1q3/8/8/6K1/8/8/8/R7 w - - 2 47", false, RACE_VARIANT);
@@ -934,14 +937,14 @@ TEST_CASE("Atomic") {
     // ... overriding checks ...
     pos.set("8/1q6/8/8/8/5k2/1R4n1/1K6 w - - 0 1", false, ATOMIC_VARIANT);
     move = "b2g2";
-    REQUIRE(is_uci_move_legal(pos, move));
+    REQUIRE(is_uci_move_legal(pos, move, false));
     pos.do_action(pos.uci_to_action(move));
     REQUIRE(pos.check_result() == WHITE_WIN);
 
     // ... and checkmates
     pos.set("8/1q6/r7/8/8/5k2/R5n1/K7 w - - 0 1", false, ATOMIC_VARIANT);
     move = "a2g2";
-    REQUIRE(is_uci_move_legal(pos, move));
+    REQUIRE(is_uci_move_legal(pos, move, false));
     pos.do_action(pos.uci_to_action(move));
     REQUIRE(pos.check_result() == WHITE_WIN);
 
@@ -955,10 +958,10 @@ TEST_CASE("Atomic") {
     // Kings are not allowed to attack each other
     pos.set("6k1/6p1/4K1Pp/5n2/5P2/7P/1n6/3q4 w - - 0 37", false, ATOMIC_VARIANT);
     move = "e6f7";
-    REQUIRE(is_uci_move_legal(pos, move));
+    REQUIRE(is_uci_move_legal(pos, move, false));
     pos.set("5Kk1/6p1/2q3Pp/5n2/5P1P/8/1n6/8 b - - 2 39", false, ATOMIC_VARIANT);
     move = "g8f8";
-    REQUIRE(is_uci_move_legal(pos, move) == false);
+    REQUIRE(is_uci_move_legal(pos, move, false) == false);
 }
 
 TEST_CASE("Chess960") {
@@ -998,40 +1001,40 @@ TEST_CASE("Chess960") {
     // Are castling moves legal
     pos.set("bnnrkbrq/pppppppp/8/8/8/8/PPPPPPPP/BN1RK1RQ w GDgd - 0 1", true, CHESS_VARIANT);
     vector<string> moves = {"e1d1", "e1g1"};
-    REQUIRE(are_uci_moves_legal_bool(pos, moves, true));
+    REQUIRE(are_uci_moves_legal_bool(pos, moves, true, true));
 
     // Not legal, if squares between king and rook aren't empty
     pos.set("bnnrkbrq/pppppppp/8/8/8/8/PPPPPPPP/BNNRKBRQ w GDgd - 0 4", true, CHESS_VARIANT);
     string move = "e1g1";
-    REQUIRE(is_uci_move_legal(pos, move) == false);
+    REQUIRE(is_uci_move_legal(pos, move, true) == false);
 
     // Not legal through check
     pos.set("1nnrkbrq/p1pppppp/1p6/1b6/4P3/8/PPPP1PPP/BN1RK1RQ w GDgd - 0 4", true, CHESS_VARIANT);
     move = "e1g1";
-    REQUIRE(is_uci_move_legal(pos, move) == false);
+    REQUIRE(is_uci_move_legal(pos, move, true) == false);
 
     // Not legal if rook is in check
     pos.set("bnnrk1rq/p1pp1ppp/1p2p3/2b5/4P3/5P2/PPPP2PP/BN1RK1RQ w GDgd - 0 4", true, CHESS_VARIANT);
     move = "e1g1";
-    REQUIRE(is_uci_move_legal(pos, move) == false);
+    REQUIRE(is_uci_move_legal(pos, move, true) == false);
 
     // Not legal if king is in check
     pos.set("bnnrkbr1/ppppppp1/8/4q2p/8/5P2/PPPP2PP/BN1RK1RQ w GDgd - 0 4", true, CHESS_VARIANT);
     moves = {"e1d1", "e1g1"};
-    REQUIRE(are_uci_moves_legal_bool(pos, moves, false));
+    REQUIRE(are_uci_moves_legal_bool(pos, moves, false, true));
 
     // Not legal, if the destination squares aren't empty
     pos.set("nrbbqnkr/pppppppp/8/8/8/8/PPPPPPPP/NRBBQNKR w HBhb - 0 4", true, CHESS_VARIANT);
     move = "g1h1";
-    REQUIRE(is_uci_move_legal(pos, move) == false);
+    REQUIRE(is_uci_move_legal(pos, move, true) == false);
     pos.set("bnnrkbrq/pppppppp/8/8/8/4P3/PPPP1PPP/BNNRK1RQ w GDgd - 0 4", true, CHESS_VARIANT);
     move = "e1d1";
-    REQUIRE(is_uci_move_legal(pos, move) == false);
+    REQUIRE(is_uci_move_legal(pos, move, true) == false);
 
     // We can only castle, if fen says yes
     pos.set("bnnrkbrq/pppppppp/8/8/8/8/PPPPPPPP/BN1RK1RQ w gd - 0 1", true, CHESS_VARIANT);
     moves = {"e1d1", "e1g1"};
-    REQUIRE(are_uci_moves_legal_bool(pos, moves, false));
+    REQUIRE(are_uci_moves_legal_bool(pos, moves, false, true));
 
     // If we move a rook, the fen castling should get removed
     pos.set("bnnrkbrq/pppppppp/8/8/8/8/PPPPPPPP/BN1RK1RQ w GDgd - 0 1", true, CHESS_VARIANT);
@@ -1083,16 +1086,16 @@ TEST_CASE("Antichess") {
     // If we can, we must capture. If there are multiple captures, we may choose
     pos.set("rnb1kbnr/pp1ppppp/8/q1p5/8/2P1P3/PP1PNPPP/RNBQKB1R b - - 0 3", false, ANTI_VARIANT);
     vector<string> moves = {"a5a2", "a5c3"};
-    REQUIRE(legal_actions_equal_ucimoves(pos, moves));
+    REQUIRE(legal_actions_equal_ucimoves(pos, moves, false));
 
     // Figures can be moved, even if the king is in check, even checkmate:
     pos.set("2Q1kb1r/3ppp1p/r4np1/p7/8/P1P1P1P1/4NP1P/RNB1KB1R b - - 0 11", false, ANTI_VARIANT);
     REQUIRE(pos.check_result() == NO_RESULT);
-    REQUIRE(is_uci_move_legal(pos, "a6a8"));
+    REQUIRE(is_uci_move_legal(pos, "a6a8", false));
 
     // The king can be captured
     pos.set("r1Q1kb1r/3ppp1p/5np1/p7/8/P1P1P1P1/4NP1P/RNB1KB1R w - - 1 12", false, ANTI_VARIANT);
-    REQUIRE(is_uci_move_legal(pos, "c8e8"));
+    REQUIRE(is_uci_move_legal(pos, "c8e8", false));
     string move = "c8e8";
     pos.do_action(pos.uci_to_action(move));
     REQUIRE(pos.check_result() == NO_RESULT);
@@ -1107,11 +1110,11 @@ TEST_CASE("Antichess") {
 
     // King promotion is legal
     pos.set("2Q5/8/8/8/R6P/2B5/2pP4/8 b - - 1 35", false, ANTI_VARIANT);
-    REQUIRE(is_uci_move_legal(pos, "c2c1k"));
+    REQUIRE(is_uci_move_legal(pos, "c2c1k", false));
 
     // Castling is not permitted
     pos.set("r3kbnr/p2pp1pp/bp3p2/8/3P4/P1P5/1B1P1PPP/RN1QK2R b - - 0 9", false, ANTI_VARIANT);
-    REQUIRE(is_uci_move_legal(pos, "e8c8") == false);
+    REQUIRE(is_uci_move_legal(pos, "e8c8", false) == false);
 }
 
 TEST_CASE("Lichess Crazyhouse") {
@@ -1124,19 +1127,19 @@ TEST_CASE("Lichess Crazyhouse") {
 
     // Captured pieces can be dropped
     pos.set("1k1r3r/pppb1p2/2nbqn1p/3p2p1/3PP1P1/3Q1PP1/PPN2NBP/R1B2RK1[p] b - - 0 12", false, CRAZYHOUSE_VARIANT);
-    REQUIRE(is_uci_move_legal(pos, "P@c4"));
+    REQUIRE(is_uci_move_legal(pos, "P@c4", false));
 
     // Pieces cannot be dropped on other pieces
     vector<string> moves = {"P@d5", "P@d4", "P@e4"};
-    REQUIRE(are_uci_moves_legal_bool(pos, moves, false));
+    REQUIRE(are_uci_moves_legal_bool(pos, moves, false, false));
 
     // Dropping pawns on the 1. and 8. rank is prohibited
     moves = {"P@b1", "P@d1", "P@e1", "P@e8", "P@f8", "P@g8"};
-    REQUIRE(are_uci_moves_legal_bool(pos, moves, false));
+    REQUIRE(are_uci_moves_legal_bool(pos, moves, false, false));
 
     // Checkmating with a drop is allowed
     pos.set("4R2b/1N3rkb/1p2P1pp/p2P4/2P1P3/8/PP4Q1/3R3K[QRBBNNNPPPPpp] w - - 2 53", false, CRAZYHOUSE_VARIANT);
-    REQUIRE(is_uci_move_legal(pos, "N@h5"));
+    REQUIRE(is_uci_move_legal(pos, "N@h5", false));
     string move = "N@h5";
     pos.do_action(pos.uci_to_action(move));
     REQUIRE(pos.check_result() == WHITE_WIN);
@@ -1144,7 +1147,7 @@ TEST_CASE("Lichess Crazyhouse") {
     // If you have pieces in the pocket, you can prevent certain checks/checkmates by dropping pieces between
     pos.set("r2qk3/1pP2r1n/p1nP4/8/3P1Bb1/2Pp1PP1/PPp2PP1/3q1K1R[Bbnnppr] w - - 2 29", false, CRAZYHOUSE_VARIANT);
     REQUIRE(pos.check_result() == NO_RESULT);
-    REQUIRE(is_uci_move_legal(pos, "B@e1"));
+    REQUIRE(is_uci_move_legal(pos, "B@e1", false));
 }
 
 

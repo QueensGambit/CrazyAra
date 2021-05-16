@@ -248,12 +248,6 @@ public:
     void set_auxiliary_outputs(const float* auxiliaryOutputs) override;
     BoardState* clone() const override;
     void init(int variant, bool isChess960) override;
-
-    /**
-     * @brief action_to_uci Convert an action to uci notation
-     * @return string of the action in uci notation
-     */
-    string action_to_uci(Action action) const;
 };
 
 #endif // BOARTSTATE_H
