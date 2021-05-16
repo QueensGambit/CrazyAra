@@ -53,6 +53,16 @@ namespace OptionsUCI {
      */
     void setoption(istringstream& is, Variant& variant, StateObj& state);
 
+
+    /**
+     * @brief check_uci_variant_input Gets a uci variant and translates it if necessary.
+     * This way we can support multiple names for the same variants.
+     * @param value UCI Variant name
+     * @param is960 Bool pointer, which shall be false when passed
+     * @return string The uci variant string that we use internally to represent the variant.
+     */
+    string check_uci_variant_input(const string &value, bool *is960);
+
     /**
      * @brief init_new_search Initializes the struct according to the given OptionsMap for a new search
      * @param searchLimit search limits struct to be changed
