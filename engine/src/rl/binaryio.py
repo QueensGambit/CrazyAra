@@ -48,6 +48,7 @@ class BinaryIO:
         folder with the compressed games, as well as 'games.pgn' and 'gameIdx.txt'.
         :return:
         """
+        logging.info(f'Generating games ...')
         # if 0, binary plays Selfplay_Number_Chunks * Selfplay_Chunk_Size games
         self.proc.stdin.write(b"selfplay 0\n")
         self.proc.stdin.flush()
@@ -85,6 +86,7 @@ class BinaryIO:
         Tells the binary to load the network and waits until it's finished.
         :return:
         """
+        logging.info(f'Loading network & creating backend files ...', )
         self.proc.stdin.write(b"isready\n")
         self.proc.stdin.flush()
         self.read_output(b"readyok\n", check_error=True)
@@ -124,7 +126,7 @@ class BinaryIO:
                 return True
 
     def set_uci_options(self, uci_variant: str, context: str, device_id: str, precision: str,
-                        model_dir: str, is_arena: bool = False):
+                        model_dir: str, model_contender_dir: str, is_arena: bool = False):
         """
         Sets UCI options of the binary.
         :param uci_variant: The UCI variant that shall be trained.
@@ -132,10 +134,12 @@ class BinaryIO:
         :param device_id: The id of the device we are using.
         :param precision: The precision of calculations.
         :param model_dir: The path to the model.
+        :param model_contender_dir: Directory where the model contender dir will be saved.
         :param is_arena: Applies setting for the arena comparison
         :return:
         """
         self._set_uci_param(f'Model_Directory', model_dir)
+        self._set_uci_param(f'Model_Contender_Directory', model_contender_dir)
         self._set_uci_param(f'UCI_Variant', uci_variant)
         self._set_uci_param(f'Context', context)
         self._set_uci_param(f'First_Device_ID', device_id)

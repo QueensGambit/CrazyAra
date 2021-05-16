@@ -100,7 +100,9 @@ class TrainConfig:
     # total of training iterations
     total_it: int = None
 
-    use_mxnet_style: bool = True  # Decide between mxnet and gluon style for training
+    # Decide between mxnet and gluon style for training
+    # Reinforcement Learning only works with gluon (== False) atm
+    use_mxnet_style: bool = True
 
     # loads a previous checkpoint if the loss increased significantly
     use_spike_recovery: bool = True

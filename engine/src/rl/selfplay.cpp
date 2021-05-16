@@ -62,23 +62,17 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
     rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
 {
-    const bool is960 = false;
-#ifdef MODE_CRAZYHOUSE
-    gamePGN.variant = "crazyhouse";
-#elif defined MODE_CHESS
+    is960 = options["UCI_Chess960"];
+    string suffix960 = "";
     if (is960) {
-        gamePGN.variant = "chess960";
+        suffix960 = "960";
     }
-    else {
+    if (not is960 && string(options["UCI_Variant"]) == "chess") {
+        // TODO: do we want standard instead of chess ?
         gamePGN.variant = "standard";
-    }
-#elif defined MODE_LICHESS
-    if (is960) {
-        gamePGN.variant = "chess960";
     } else {
-        gamePGN.variant = string(options["UCI_Variant"]);
+        gamePGN.variant = string(options["UCI_Variant"]) + suffix960;
     }
-#endif
 
     time_t     now = time(0);
     struct tm  tstruct;
@@ -90,12 +84,20 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     gamePGN.event = "SelfPlay";
     gamePGN.site = "Darmstadt, GER";
     gamePGN.round = "?";
-    gamePGN.is960 = false;
+    gamePGN.is960 = is960;
     this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
                                            rlSettings->numberChunks, rlSettings->chunkSize);
     filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");
     filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");
     fileNameGameIdx = string("gameIdx_") + mctsAgent->get_device_name() + string(".txt");
+
+    // delete content of files
+    ofstream pgnFile;
+    pgnFile.open(filenamePGNSelfplay, std::ios_base::trunc);
+    pgnFile.close();
+    ofstream idxFile;
+    idxFile.open(fileNameGameIdx, std::ios_base::trunc);
+    idxFile.close();
 
     backupNodes = searchLimits->nodes;
     backupQValueWeight = mctsAgent->get_q_value_weight();
@@ -161,7 +163,7 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
     ply = clip_ply(ply, playSettings->maxInitPly);
 
     srand(unsigned(int(time(nullptr))));
-    unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, rlSettings->rawPolicyProbabilityTemperature);
+    unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature);
     EvalInfo evalInfo;
     Result gameResult;
     exporter->new_game();
@@ -217,7 +219,8 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
-    unique_ptr<StateObj> state = init_state(variant, true, gamePGN);
+    unique_ptr<StateObj> state= make_unique<StateObj>();
+    state->init(variant, is960);
     EvalInfo evalInfo;
 
     MCTSAgent* activePlayer;
@@ -353,31 +356,11 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     return tournamentResult;
 }
 
-unique_ptr<StateObj> init_state(Variant variant, bool is960, GamePGN& gamePGN)
+unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, bool is960, float rawPolicyProbTemp)
 {
-    // TODO: Use state->init() here
     unique_ptr<StateObj> state= make_unique<StateObj>();
-#ifdef SUPPORT960
-    if (is960) {
-        string firstRank = startPos();
-        string lastRank = string(firstRank);
-        std::transform(firstRank.begin(), firstRank.end(), firstRank.begin(), ::tolower);
-        const string fen = firstRank + "/pppppppp/8/8/8/8/PPPPPPPP/" + lastRank +  " w KQkq - 0 1";
-        gamePGN.fen = fen;
-        position->set(fen, true, variant);
-    }
-    else {
-        position->set(StartFENs[variant], false, variant);
-    }
-#else
-    state->set(StartFENs[variant], false, variant);
-#endif
-    return state;
-}
-
-unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, float rawPolicyProbTemp)
-{
-    unique_ptr<StateObj> state = init_state(variant, false, gamePGN);
+    state->init(variant, is960);
+    gamePGN.fen = state->fen();
 
     for (size_t ply = 0; ply < plys; ++ply) {
         EvalInfo eval;
@@ -398,9 +381,11 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, 
     return state;
 }
 
-unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, Variant variant, const vector<Action>& actions)
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, Variant variant, bool is960, const vector<Action>& actions)
 {
-    unique_ptr<StateObj> state = init_state(variant, false, gamePGN);
+    unique_ptr<StateObj> state= make_unique<StateObj>();
+    state->init(variant, is960);
+    gamePGN.fen = state->fen();
     for (Action action : actions) {
         gamePGN.gameMoves.push_back(state->action_to_san(action, {}, false, true));
         state->do_action(action);

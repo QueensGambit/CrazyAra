@@ -15,7 +15,7 @@ import ntpath
 import logging
 
 
-def change_binary_name(binary_dir: str, current_binary_name: str, process_name: str, current_epoch: int):
+def change_binary_name(binary_dir: str, current_binary_name: str, process_name: str, nn_update_idx: int):
     """
     Change the name of the binary to the process' name (which includes initials,
     binary name and remaining time) & additionally add the current epoch.
@@ -23,7 +23,7 @@ def change_binary_name(binary_dir: str, current_binary_name: str, process_name: 
     :return: the new binary name
     """
     idx = process_name.find(f'#')
-    new_binary_name = f'{process_name[:idx]}_up={current_epoch}{process_name[idx:]}'
+    new_binary_name = f'{process_name[:idx]}_UP={nn_update_idx}{process_name[idx:]}'
 
     if not os.path.exists(binary_dir + new_binary_name):
         os.rename(binary_dir + current_binary_name, binary_dir + new_binary_name)
@@ -67,13 +67,13 @@ def enable_logging(logging_lvl=logging.DEBUG, log_filename=None):
         root.addHandler(fh)
 
 
-def extract_nn_update_from_binary_name(current_binary_name: str) -> int:
+def extract_nn_update_idx_from_binary_name(current_binary_name: str) -> int:
     """
     Extract the epoch from our custom build binary name.
     :param current_binary_name: The current name of the binary
     :return: The epoch. If we could not find a match or an error occurred, return 0.
     """
-    match = re.search(f'_up=[0-9]+#', current_binary_name)
+    match = re.search(f'_UP=[0-9]+#', current_binary_name)
     if match:
         try:
             return int(match.group(0)[4:-1])
