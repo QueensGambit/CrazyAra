@@ -632,9 +632,35 @@ void Node::set_value(float value)
     this->valueSum = value * this->realVisitsSum;
 }
 
-void Node::add_new_child_node(shared_ptr<Node> newNode, ChildIdx childIdx)
+bool Node::add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, ChildIdx childIdx, const SearchSettings* searchSettings)
 {
-    d->childNodes[childIdx] = newNode;
+    if(searchSettings->useMCGS) {
+        mapWithMutex->mtx.lock();
+        HashMap::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
+        if (it != mapWithMutex->hashTable.end()) {
+            d->childNodes[childIdx] = it->second.lock();
+        }
+        Node* tranpositionNode = get_child_node(childIdx);
+        if (tranpositionNode != nullptr) {
+            if(is_transposition_verified(tranpositionNode, newState)) {
+                mapWithMutex->mtx.unlock();
+                tranpositionNode->lock();
+                tranpositionNode->add_transposition_parent_node();
+                tranpositionNode->unlock();
+#ifndef MCTS_SINGLE_PLAYER
+                if (tranpositionNode->is_playout_node() && tranpositionNode->get_node_type() == LOSS) {
+                    set_checkmate_idx(childIdx);
+                }
+#endif
+                return true;
+            }
+        }
+        mapWithMutex->mtx.unlock();
+    }
+    assert(parentNode != nullptr);
+    // connect the Node to the parent
+    d->childNodes[childIdx] = make_shared<Node>(newState, searchSettings);
+    return false;
 }
 
 void Node::add_transposition_parent_node()
@@ -1150,3 +1176,8 @@ float get_transposition_q_value(uint_fast32_t transposVisits, double transposQVa
     return std::clamp(transposVisits * (targetQValue - transposQValue) + targetQValue, double(LOSS_VALUE), double(WIN_VALUE));
 }
 
+bool is_transposition_verified(const Node* node, const StateObj* state) {
+    return  node->has_nn_results() &&
+            node->plies_from_null() == state->steps_from_null() &&
+            state->number_repetitions() == 0;
+}

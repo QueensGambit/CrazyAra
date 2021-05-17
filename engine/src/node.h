@@ -51,6 +51,14 @@ struct NodeAndIdx {
         node(node), childIdx(childIdx) {}
 };
 using Trajectory = vector<NodeAndIdx>;
+using HashMap = unordered_map<Key, weak_ptr<Node>> ;
+// wrapper for unordered_map with a mutex for thread safe access
+struct MapWithMutex {
+    mutex mtx;
+    HashMap hashTable;
+    ~MapWithMutex() {
+    }
+};
 
 
 class Node
@@ -286,7 +294,16 @@ public:
     void set_value(float valueSum);
     uint16_t main_child_idx_for_parent() const;
 
-    void add_new_child_node(shared_ptr<Node> newNode, ChildIdx childIdx);
+    /**
+     * @brief add_new_node_to_tree Checks if the given position already exists in the Hash map.
+     * If so, connect the parent to this node. Otherwise create a new node.
+     * @param mapWithMutex Hash map with mutex
+     * @param newState Corresponding state
+     * @param childIdx Child index
+     * @param searchSettings Search Settings struct
+     * @return True, if the transposition request was successfull, else false, i.e. a new node was added
+     */
+    bool add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, ChildIdx childIdx, const SearchSettings* searchSettings);
 
     void add_transposition_parent_node();
 
@@ -727,6 +744,14 @@ void backup_value(float value, float virtualLoss, const Trajectory& trajectory, 
         }
     }
 }
+
+/**
+ * @brief is_transposition_verified Checks if the node and state object are a verified position, i.e. same move counter and node has nn results
+ * @param node Node object
+ * @param state State object
+ * @return True, for verification, else false
+ */
+bool is_transposition_verified(const Node* node, const StateObj* state);
 
 
 #endif // NODE_H

@@ -50,7 +50,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
 #ifdef DYNAMIC_NN_ARCH
     nbNNInputValues(net->get_nb_input_values_total())
-  #else
+#else
     nbNNInputValues(StateConstants::NB_VALUES_TOTAL())
 #endif
 {
@@ -82,34 +82,11 @@ void SearchThread::set_is_running(bool value)
 
 NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx)
 {
-    if(searchSettings->useMCGS) {
-        mapWithMutex->mtx.lock();
-        HashMap::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
-        if (it != mapWithMutex->hashTable.end()  && !it->second.expired()) {
-            shared_ptr<Node> tranpositionNode = it->second.lock();
-            if(is_transposition_verified(tranpositionNode.get(), newState)) {
-                mapWithMutex->mtx.unlock();
-                tranpositionNode->lock();
-                const float qValue =  tranpositionNode->get_value();
-
-                tranpositionNode->add_transposition_parent_node();
-                tranpositionNode->unlock();
-    #ifndef MODE_POMMERMAN
-                if (tranpositionNode->is_playout_node() && tranpositionNode->get_node_type() == LOSS) {
-                    parentNode->set_checkmate_idx(childIdx);
-                }
-    #endif
-                transpositionValues->add_element(qValue);
-                parentNode->add_new_child_node(tranpositionNode, childIdx);
-                return NODE_TRANSPOSITION;
-            }
-        }
-        mapWithMutex->mtx.unlock();
+    if (parentNode->add_new_node_to_tree(mapWithMutex, newState, childIdx, searchSettings)) {
+        const float qValue =  parentNode->get_child_node(childIdx)->get_value();
+        transpositionValues->add_element(qValue);
+        return NODE_TRANSPOSITION;
     }
-    assert(parentNode != nullptr);
-    shared_ptr<Node> newNode = make_shared<Node>(newState, searchSettings);
-    // connect the Node to the parent
-    parentNode->add_new_child_node(newNode, childIdx);
     return NODE_NEW_NODE;
 }
 
@@ -176,18 +153,18 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
     childIdx = uint16_t(-1);
     if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
-            currentNode->lock();
-            random_playout(description, currentNode, childIdx);
-            currentNode->unlock();
+        currentNode->lock();
+        random_playout(description, currentNode, childIdx);
+        currentNode->unlock();
     }
     else if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
-            currentNode->lock();
-            childIdx = select_enhanced_move(currentNode);
-            if (childIdx ==  uint16_t(-1)) {
-                random_playout(description, currentNode, childIdx);
-            }
-            currentNode->unlock();
+        currentNode->lock();
+        childIdx = select_enhanced_move(currentNode);
+        if (childIdx ==  uint16_t(-1)) {
+            random_playout(description, currentNode, childIdx);
+        }
+        currentNode->unlock();
     }
 
     while (true) {
@@ -333,8 +310,8 @@ void SearchThread::backup_collisions() {
 bool SearchThread::nodes_limits_ok()
 {
     return (searchLimits->nodes == 0 || (rootNode->get_node_count() < searchLimits->nodes)) &&
-           (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations)) &&
-           (searchLimits->nodesLimit == 0 || (rootNode->get_node_count() < searchLimits->nodesLimit));
+            (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations)) &&
+            (searchLimits->nodesLimit == 0 || (rootNode->get_node_count() < searchLimits->nodesLimit));
 }
 
 bool SearchThread::is_root_node_unsolved()
@@ -492,12 +469,6 @@ void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, c
     }
     node->enhance_moves(searchSettings);
     node->apply_temperature_to_prior_policy(temperature);
-}
-
-bool is_transposition_verified(const Node* node, const StateObj* state) {
-    return  node->has_nn_results() &&
-            node->plies_from_null() == state->steps_from_null() &&
-            state->number_repetitions() == 0;
 }
 
 size_t get_random_depth()

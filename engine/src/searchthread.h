@@ -36,16 +36,6 @@
 #include "nn/neuralnetapiuser.h"
 
 
-using HashMap = unordered_map<Key, weak_ptr<Node>> ;
-
-// wrapper for unordered_map with a mutex for thread safe access
-struct MapWithMutex {
-    mutex mtx;
-    HashMap hashTable;
-    ~MapWithMutex() {
-    }
-};
-
 enum NodeBackup : uint8_t {
     NODE_COLLISION,
     NODE_TERMINAL,
@@ -206,8 +196,6 @@ void run_search_thread(SearchThread *t);
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings, bool isRootNodeTB);
 void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB);
-
-bool is_transposition_verified(const Node* node, const StateObj* state);
 
 /**
  * @brief random_root_playout Uses random move exploration (epsilon greedy) from the given position. The probability for doing a random move decays by depth.
