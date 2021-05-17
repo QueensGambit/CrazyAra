@@ -33,7 +33,7 @@ using namespace std;
 
 // list of all current available variants for MultiAra
 const static vector<string> availableVariants = {
-#if defined(MODE_CHESS) && defined(MODE_LICHESS)
+#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     "chess",
     "standard",
 #if defined(SUPPORT960)
@@ -41,7 +41,7 @@ const static vector<string> availableVariants = {
     "chess960",
 #endif // SUPPORT960
 #endif // MODE_CHESS && MODE_LICHESS
-#if defined(MODE_CRAZYHOUSE) && defined(MODE_LICHESS)
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_LICHESS)
     "crazyhouse",
 #endif
 #ifdef MODE_LICHESS
