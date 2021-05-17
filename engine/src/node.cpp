@@ -657,7 +657,6 @@ bool Node::add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, 
         }
         mapWithMutex->mtx.unlock();
     }
-    assert(parentNode != nullptr);
     // connect the Node to the parent
     d->childNodes[childIdx] = make_shared<Node>(newState, searchSettings);
     return false;
