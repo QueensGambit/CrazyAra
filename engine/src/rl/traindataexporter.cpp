@@ -108,7 +108,7 @@ TrainDataExporter::TrainDataExporter(const string& fileName, size_t numberChunks
     z5::filesystem::handle::File file(fileName);
 
     if (file.exists()) {
-        cout << "Warning: Export file already exists. It will be overwritten" << endl;
+        info_string_important("Warning: Export file already exists. It will be overwritten");
         open_dataset_from_file(file);
     }
     else {

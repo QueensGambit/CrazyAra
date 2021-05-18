@@ -55,6 +55,28 @@ void info_string(const T &messageA, const U &messageB) {
 #endif
 }
 
+/**
+ * @brief info_string Prints a given string message to std-out in accordance with the UCI-protocol.
+ * This info message can not be supressed by DISABLE_UCI_INFO
+ * @param message String message to print
+ */
+template<typename T>
+void info_string_important(const T &message) {
+    cout << "info string " << message << endl;
+}
+template<typename T, typename U>
+void info_string_important(const T &messageA, const U &messageB) {
+    cout << "info string " << messageA << ' ' << messageB << endl;
+}
+template<typename T, typename U, typename V>
+void info_string_important(const T &messageA, const U &messageB, const V &messageC) {
+    cout << "info string " << messageA << ' ' << messageB << ' ' << messageC << endl;
+}
+template<typename T, typename U, typename V, typename W>
+void info_string_important(const T &messageA, const U &messageB, const V &messageC, const W &messageD) {
+    cout << "info string " << messageA << ' ' << messageB << ' ' << messageC << ' ' << messageD << endl;
+}
+
 template<typename T>
 void info_msg(const T &message, bool endl=false) {
 #ifndef DISABLE_UCI_INFO
