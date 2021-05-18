@@ -212,43 +212,41 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
 #ifdef MODE_LICHESS
         if (name == "model_directory") {
             if (value.find((string)Options["UCI_Variant"]) == std::string::npos) {
-                cout << "info string The Model_Directory must have the active UCI_Variant '" << (string)Options["UCI_Variant"] << "' in its filepath" << endl;
+                info_string_important("The Model_Directory must have the active UCI_Variant", string("'")+(string)Options["UCI_Variant"]+string("'"), "in its filepath");
                 return;
             }
         }
 #endif
         Options[name] = value;
         if (name != "uci_variant") {
-            cout << "info string Updated option " << givenName << " to " << value << endl;
+            info_string_important("Updated option", givenName, "to", value);
         } else {
 #ifdef XIANGQI
             // Workaround. Fairy-Stockfish does not use an enum for variants
-            cout << "info string variant " << "Xiangqi" << " startpos " << "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1" << endl;
+            info_string_important("variant Xiangqi startpos rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1");
 #else
             bool is960 = false;
             string uci_variant = check_uci_variant_input(value, &is960);
             Options["UCI_Variant"] << Option(uci_variant.c_str());
-            info_string("Updated option " + givenName + " to " + uci_variant);
+            info_string_important("Updated option", givenName, "to", uci_variant);
 #ifdef SUPPORT960
             if (Options["UCI_Chess960"] != is960) {
                 Options["UCI_Chess960"] << Option(is960);
-                info_string("Updated option UCI_Chess960 to " + (string) Options["UCI_Chess960"]);
+                info_string("Updated option UCI_Chess960 to", (string)Options["UCI_Chess960"]);
             }
 #endif // SUPPORT960
             variant = UCI::variant_from_name(uci_variant);
             state.init(variant, is960);
 
-            cout << is960 << endl;
-
             string suffix_960 = (is960) ? "960" : "";
             Options["Model_Directory"] << Option(("model/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             Options["Model_Directory_Contender"] << Option(("model_contender/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
-            info_string("info string variant " + (string)Options["UCI_Variant"] + suffix_960 + " startpos " + state.fen());
+            info_string_important("variant", (string)Options["UCI_Variant"] + suffix_960, "startpos", state.fen());
 #endif
         }
     }
     else {
-        cout << "info string Given option " << name << " does not exist " << endl;
+        info_string_important("Given option", name, "does not exist");
     }
 }
 
