@@ -217,7 +217,7 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
             }
             return currentNode;
         }
-        if (nextNode->is_terminal() || nextNode->is_tablebase()) {
+        if (nextNode->is_playout_node() && nextNode->is_solved()) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
             return currentNode;
