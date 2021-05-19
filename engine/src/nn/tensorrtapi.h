@@ -62,10 +62,10 @@ class TensorrtAPI : public NeuralNetAPI
 {
 private:
     // binding indices for the input, value and policy data
-    const int idxInput = 0;
-    const int idxValueOutput = 1;
-    const int idxPolicyOutput = 2;
-    const int idxAuxiliaryOutput = 3;
+    int idxInput;
+    int idxValueOutput;
+    int idxPolicyOutput;
+    int idxAuxiliaryOutput;
 
     // device memory, for input, value output and policy output, auxiliary outputs
     void* deviceMemory[4];
@@ -93,6 +93,12 @@ public:
     ~TensorrtAPI();
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
+
+    /**
+     * @brief retrieve_indices_by_name Sets the layer name indices by names.
+     * @return True if all layer names were found, else false
+     */
+    bool retrieve_indices_by_name();
 
 private:
     void load_model() override;

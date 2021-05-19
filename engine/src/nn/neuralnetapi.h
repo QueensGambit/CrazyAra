@@ -134,6 +134,13 @@ std::ostream& operator<<(std::ostream& os, const Shape& shape);
 struct NeuralNetDesign {
     bool isPolicyMap = false;
     bool hasAuxiliaryOutputs = false;
+    const int nbInputs = 1;
+    const string inputLayerName = "data";
+    const string policyOutputName = "policy_out";
+    const string policySoftmaxOutputName = "policy_softmax";
+    const string valueOutputName = "value_out";
+    const string auxiliaryOutputName = "auxiliary_out";
+    const int inputIdx = 0;
     const int valueOutputIdx = 0;
     const int policyOutputIdx = 1;
     const int auxiliaryOutputIdx = 2;
@@ -141,6 +148,7 @@ struct NeuralNetDesign {
     Shape valueOutputShape;
     Shape policyOutputShape;
     Shape auxiliaryOutputShape;
+
     /**
      * @brief print Prints the outputs shapes using info_string(...)
      */
