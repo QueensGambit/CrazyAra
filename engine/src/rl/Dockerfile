@@ -105,10 +105,12 @@ RUN cd /root/CrazyAra/engine \
 RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
     && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
 
-CMD cd /root/CrazyAra/engine/src/rl/ \
-    && /bin/bash
-
 # Install debugging utilities for "coredumpctl gdb"
 RUN apt-get update -y \
-    && apt install coredumpctl \
-    && apt install gdb
+     && apt-get install -y coredumpctl \
+     && apt-get install -y gdb \
+     && apt-get clean \
+     && rm -rf /var/lib/apt/lists/*
+
+CMD cd /root/CrazyAra/engine/src/rl/ \
+    && /bin/bash
