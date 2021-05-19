@@ -98,8 +98,13 @@ RUN apt-get update -y \
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Release -DUSE_RL=ON .. \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON .. \
     && make -j8
+
+# Install debugging utilities for "coredumpctl gdb"
+apt-get update
+apt install coredumpctl
+apt install gdb
 
 # Rename the config files
 RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
@@ -107,4 +112,3 @@ RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/Crazy
 
 CMD cd /root/CrazyAra/engine/src/rl/ \
     && /bin/bash
-
