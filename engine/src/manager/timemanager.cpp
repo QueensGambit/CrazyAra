@@ -47,7 +47,10 @@ TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int thr
 
 int TimeManager::get_time_for_move(const SearchLimits* searchLimits, SideToMove me, int moveNumber)
 {
-    if (searchLimits->infinite || searchLimits->nodes != 0 || searchLimits->simulations != 0 || searchLimits->depth != 0) {
+    if (searchLimits->infinite) {
+        return 0;
+    }
+    if (searchLimits->nodes != 0 || searchLimits->simulations != 0 || searchLimits->depth != 0) {
         if (searchLimits->movetime == 0) {
             return 0;
         }

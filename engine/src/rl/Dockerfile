@@ -107,10 +107,11 @@ RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/Crazy
 
 # Install debugging utilities for "coredumpctl gdb"
 RUN apt-get update -y \
-     && apt-get install -y coredumpctl \
+     && apt-get install -y systemd-coredump \
      && apt-get install -y gdb \
      && apt-get clean \
      && rm -rf /var/lib/apt/lists/*
 
 CMD cd /root/CrazyAra/engine/src/rl/ \
     && /bin/bash
+
