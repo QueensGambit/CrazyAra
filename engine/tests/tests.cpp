@@ -107,7 +107,7 @@ bool legal_actions_equal_ucimoves(const BoardState& pos, const vector<string>& u
     return std::is_permutation(uciMoves.begin(), uciMoves.end(), compareMoves.begin());
 }
 
-bool are_uci_moves_legal_bool(const BoardState& pos, const vector<string> uciMoves, bool equals, bool is960) {
+bool are_uci_moves_legal_bool(const BoardState& pos, const vector<string>& uciMoves, bool equals, bool is960) {
     for (string move : uciMoves) {
         if (is_uci_move_legal(pos, move, is960) != equals) {
             return false;
@@ -719,7 +719,7 @@ TEST_CASE("Variants_Horde"){
     Action action = pos.uci_to_action(mov);
     pos.do_action(action);
     legalActions = pos.legal_actions();
-    legalActionsSan;
+    legalActionsSan.clear();
     for (Action action : legalActions) {
         legalActionsSan.push_back(pos.action_to_san(action, legalActions));
     }
@@ -735,7 +735,7 @@ TEST_CASE("Variants_Horde"){
     action = pos.uci_to_action(mov);
     pos.do_action(action);
     legalActions = pos.legal_actions();
-    legalActionsSan;
+    legalActionsSan.clear();
     for (Action action : legalActions) {
         legalActionsSan.push_back(pos.action_to_san(action, legalActions));
     }
@@ -747,14 +747,14 @@ TEST_CASE("Variants_Horde"){
     // A pawn that moved from first row to second row can now move 2 squares
 
     pos.set("1kb3nr/8/8/8/3p1pP1/8/1P2P3/P6P w - - 0 1", false, HORDE_VARIANT);
-    mov = "b1b2";
+    mov = "a1a3";
     action = pos.uci_to_action(mov);
     pos.do_action(action);
     mov = "h8h1";
     action = pos.uci_to_action(mov);
     pos.do_action(action);
     legalActions = pos.legal_actions();
-    legalActionsSan;
+    legalActionsSan.clear();
     for (Action action : legalActions) {
         legalActionsSan.push_back(pos.action_to_san(action, legalActions));
     }
@@ -969,7 +969,7 @@ TEST_CASE("Chess960") {
     BoardState pos;
 
     // Check chess960 start pos
-    for(int i; i < 20; ++i) {
+    for(int i = 0; i < 20; ++i) {
         pos.init(CHESS_VARIANT, true);
         std::istringstream ss(pos.fen());
         string token;

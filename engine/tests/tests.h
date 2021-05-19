@@ -108,7 +108,7 @@ bool is_uci_move_legal(const BoardState& pos, const string& move, bool is960);
  * @param equals Specifies if the moves have to be legal (true) or not (false) to return true.
  * @return bool True, if all moves equal the parameter 'equals', else false.
  */
-bool are_uci_moves_legal_bool(const BoardState& pos, const vector<string> uciMoves, bool equals, bool is960);
+bool are_uci_moves_legal_bool(const BoardState& pos, const vector<string>& uciMoves, bool equals, bool is960);
 
 /**
  * @brief legal_actions_equal_ucimoves Checks if the given uci moves is a permutation of the legal actions
