@@ -101,14 +101,14 @@ RUN cd /root/CrazyAra/engine \
     && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON .. \
     && make -j8
 
-# Install debugging utilities for "coredumpctl gdb"
-apt-get update
-apt install coredumpctl
-apt install gdb
-
 # Rename the config files
 RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
     && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
 
 CMD cd /root/CrazyAra/engine/src/rl/ \
     && /bin/bash
+
+# Install debugging utilities for "coredumpctl gdb"
+RUN apt-get update -y \
+    && apt install coredumpctl \
+    && apt install gdb
