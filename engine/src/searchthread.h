@@ -133,10 +133,10 @@ public:
      * @param newPos Board position of the new node
      * @param parentNode Parent node for the now
      * @param childIdx Respective index for the new node
-     * @param inCheck Defines if the current position sets a player in check
-     * @return Returns NODE_TRANSPOSITION if a tranpsosition node was added and NODE_NEW_NODE otherwise
+     * @param nodeBackup Returns NODE_TRANSPOSITION if a tranpsosition node was added and NODE_NEW_NODE otherwise
+     * @return The newly added node
      */
-    NodeBackup add_new_node_to_tree(StateObj* newPos, Node* parentNode, ChildIdx childIdx);
+    Node* add_new_node_to_tree(StateObj* newPos, Node* parentNode, ChildIdx childIdx, NodeBackup& nodeBackup);
 
     /**
      * @brief reset_tb_hits Sets the number of table hits to 0
@@ -170,15 +170,10 @@ private:
 
     /**
      * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
-     * @param pos Temporary position which is initialized as the root position and will result in the final new node position when the function returns
-     * @param rootNode Root node where all simulations start
-     * @param useTranspositionTable Flag if the transposition table shall be used
-     * @param hashTable Pointer to the hashTable
      * @param description Output struct which holds information what type of node it is
-     * @param states States list which is used for 3-fold-repetition detection
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescription& description);
+    Node* get_new_child_to_evaluate(NodeDescription& description);
 
     void backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories);
     void backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories);
@@ -199,11 +194,10 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
 
 /**
  * @brief random_root_playout Uses random move exploration (epsilon greedy) from the given position. The probability for doing a random move decays by depth.
- * @param description Serach description struct
  * @param currentNode Current node during trajectory
  * @param childIdx Return child index (maybe unchanged)
  */
-inline void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& childIdx);
+inline void random_playout(Node* currentNode, ChildIdx& childIdx);
 
 /**
  * @brief get_random_depth
