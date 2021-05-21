@@ -80,14 +80,18 @@ void SearchThread::set_is_running(bool value)
     isRunning = value;
 }
 
-NodeBackup SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx)
+Node* SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx, NodeBackup& nodeBackup)
 {
-    if (parentNode->add_new_node_to_tree(mapWithMutex, newState, childIdx, searchSettings)) {
+    bool transposition;
+    Node* newNode = parentNode->add_new_node_to_tree(mapWithMutex, newState, childIdx, searchSettings, transposition);
+    if (transposition) {
         const float qValue =  parentNode->get_child_node(childIdx)->get_value();
         transpositionValues->add_element(qValue);
-        return NODE_TRANSPOSITION;
+        nodeBackup = NODE_TRANSPOSITION;
+        return newNode;
     }
-    return NODE_NEW_NODE;
+    nodeBackup = NODE_NEW_NODE;
+    return newNode;
 }
 
 void SearchThread::stop()
@@ -105,7 +109,7 @@ SearchLimits *SearchThread::get_search_limits() const
     return searchLimits;
 }
 
-void random_playout(NodeDescription& description, Node* currentNode, ChildIdx& childIdx)
+void random_playout(Node* currentNode, ChildIdx& childIdx)
 {
     if (currentNode->is_fully_expanded()) {
         const size_t idx = rand() % currentNode->get_number_child_nodes();
@@ -145,16 +149,17 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     return currentNode;
 }
 
-Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescription& description)
+Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 {
     description.depth = 0;
     Node* currentNode = rootNode;
+    Node* nextNode;
 
-    childIdx = uint16_t(-1);
+    ChildIdx childIdx = uint16_t(-1);
     if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
         currentNode->lock();
-        random_playout(description, currentNode, childIdx);
+        random_playout(currentNode, childIdx);
         currentNode->unlock();
     }
     else if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
@@ -162,7 +167,7 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
         currentNode->lock();
         childIdx = select_enhanced_move(currentNode);
         if (childIdx ==  uint16_t(-1)) {
-            random_playout(description, currentNode, childIdx);
+            random_playout(currentNode, childIdx);
         }
         currentNode->unlock();
     }
@@ -175,7 +180,7 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
         trajectoryBuffer.emplace_back(NodeAndIdx(currentNode, childIdx));
 
-        Node* nextNode = currentNode->get_child_node(childIdx);
+        nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
         if (nextNode == nullptr) {
 #ifdef MCTS_STORE_STATES
@@ -190,9 +195,9 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
             newState->do_action(currentNode->get_action(childIdx));
             currentNode->increment_no_visit_idx();
 #ifdef MCTS_STORE_STATES
-            description.type = add_new_node_to_tree(newState, currentNode, childIdx);
+            nextNode = add_new_node_to_tree(newState, currentNode, childIdx, description.type);
 #else
-            description.type = add_new_node_to_tree(newState.get(), currentNode, childIdx);
+            nextNode = add_new_node_to_tree(newState.get(), currentNode, childIdx, description.type);
 #endif
             currentNode->unlock();
 
@@ -215,17 +220,17 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
                 newNodeSideToMove->add_element(newState->side_to_move());
 #endif
             }
-            return currentNode;
+            return nextNode;
         }
         if (nextNode->is_playout_node() && nextNode->is_solved()) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
-            return currentNode;
+            return nextNode;
         }
         if (!nextNode->has_nn_results()) {
             description.type = NODE_COLLISION;
             currentNode->unlock();
-            return currentNode;
+            return nextNode;
         }
         if (nextNode->is_transposition()) {
             nextNode->lock();
@@ -237,7 +242,7 @@ Node* SearchThread::get_new_child_to_evaluate(ChildIdx& childIdx, NodeDescriptio
                 description.type = NODE_TRANSPOSITION;
                 transpositionValues->add_element(qValue);
                 currentNode->unlock();
-                return currentNode;
+                return nextNode;
             }
             nextNode->unlock();
         }
@@ -282,10 +287,6 @@ void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
-        if (node == nullptr) {
-            info_string("nullptr newNode");
-            continue;
-        }
         if (!node->is_terminal()) {
             fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings, rootNode->is_tablebase());
         }
@@ -331,9 +332,7 @@ size_t SearchThread::get_avg_depth()
 void SearchThread::create_mini_batch()
 {
     // select nodes to add to the mini-batch
-    Node *parentNode;
     NodeDescription description;
-    ChildIdx childIdx;
     size_t numTerminalNodes = 0;
 
     while (!newNodes->is_full() &&
@@ -343,8 +342,7 @@ void SearchThread::create_mini_batch()
 
         trajectoryBuffer.clear();
         actionsBuffer.clear();
-        parentNode = get_new_child_to_evaluate(childIdx, description);
-        Node* newNode = parentNode->get_child_node(childIdx);
+        Node* newNode = get_new_child_to_evaluate(description);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
@@ -360,15 +358,8 @@ void SearchThread::create_mini_batch()
             transpositionTrajectories.emplace_back(trajectoryBuffer);
         }
         else {  // NODE_NEW_NODE
-            if (newNode != nullptr) {
-                newNodes->add_element(newNode);
-                if (searchSettings->useMCGS) {
-                    mapWithMutex->mtx.lock();
-                    mapWithMutex->hashTable.insert({newNode->hash_key(), parentNode->get_child_node_shared(childIdx)});
-                    mapWithMutex->mtx.unlock();
-                }
-                newTrajectories.emplace_back(trajectoryBuffer);
-            }
+            newNodes->add_element(newNode);
+            newTrajectories.emplace_back(trajectoryBuffer);
         }
     }
 }
@@ -399,9 +390,6 @@ void run_search_thread(SearchThread *t)
 void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < nodes.size(); ++idx) {
         Node* node = nodes.get_element(idx);
-        if (node == nullptr) {
-            continue;
-        }
 #ifdef MCTS_TB_SUPPORT
         const bool solveForTerminal = searchSettings->mctsSolver && node->is_tablebase();
         backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], solveForTerminal);

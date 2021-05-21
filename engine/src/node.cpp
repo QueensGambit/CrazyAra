@@ -632,7 +632,7 @@ void Node::set_value(float value)
     this->valueSum = value * this->realVisitsSum;
 }
 
-bool Node::add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, ChildIdx childIdx, const SearchSettings* searchSettings)
+Node* Node::add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, ChildIdx childIdx, const SearchSettings* searchSettings, bool& transposition)
 {
     if(searchSettings->useMCGS) {
         mapWithMutex->mtx.lock();
@@ -652,14 +652,21 @@ bool Node::add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, 
                     set_checkmate_idx(childIdx);
                 }
 #endif
-                return true;
+                transposition = true;
+                return tranpositionNode;
             }
         }
         mapWithMutex->mtx.unlock();
     }
     // connect the Node to the parent
     d->childNodes[childIdx] = make_shared<Node>(newState, searchSettings);
-    return false;
+    if (searchSettings->useMCGS) {
+        mapWithMutex->mtx.lock();
+        mapWithMutex->hashTable.insert({d->childNodes[childIdx]->hash_key(), d->childNodes[childIdx]});
+        mapWithMutex->mtx.unlock();
+    }
+    transposition = false;
+    return d->childNodes[childIdx].get();
 }
 
 void Node::add_transposition_parent_node()

@@ -301,9 +301,10 @@ public:
      * @param newState Corresponding state
      * @param childIdx Child index
      * @param searchSettings Search Settings struct
-     * @return True, if the transposition request was successfull, else false, i.e. a new node was added
+     * @param transposition Return true, if the transposition request was successfull, else false, i.e. a new node was added
+     * @return the newly added node
      */
-    bool add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, ChildIdx childIdx, const SearchSettings* searchSettings);
+    Node* add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, ChildIdx childIdx, const SearchSettings* searchSettings, bool& transposition);
 
     void add_transposition_parent_node();
 
