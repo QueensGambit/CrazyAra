@@ -403,13 +403,6 @@ public:
     void set_q_value(ChildIdx childIdx, float value);
 
     /**
-     * @brief set_visit
-     * @param childIdx
-     * @param value
-     */
-    void set_visit(ChildIdx childIdx, uint32_t value);
-
-    /**
      * @brief get_best_q_idx Return the child index with the highest Q-value
      * @return Index of child with maximum Q-value
      */

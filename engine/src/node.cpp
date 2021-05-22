@@ -520,11 +520,6 @@ void Node::set_q_value(ChildIdx childIdx, float value)
     d->qValues[childIdx] = value;
 }
 
-void Node::set_visit(ChildIdx childIdx, uint32_t value)
-{
-    d->childNumberVisits[childIdx] = value;
-}
-
 ChildIdx Node::get_best_q_idx() const
 {
     return argmax(d->qValues);
