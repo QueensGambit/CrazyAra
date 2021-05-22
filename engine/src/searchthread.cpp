@@ -46,6 +46,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
+    nodeIdxList(make_unique<FixedVector<NodeIdxChild>>(searchSettings->batchSize*3)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
 #ifdef DYNAMIC_NN_ARCH
@@ -84,6 +85,7 @@ Node* SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, C
 {
     bool transposition;
     Node* newNode = parentNode->add_new_node_to_tree(mapWithMutex, newState, childIdx, searchSettings, transposition);
+    nodeIdxList->add_element(NodeIdxChild(parentNode, childIdx, newNode));
     if (transposition) {
         const float qValue =  parentNode->get_child_node(childIdx)->get_value();
         transpositionValues->add_element(qValue);
@@ -294,6 +296,17 @@ void SearchThread::set_nn_results_to_child_nodes()
     }
 }
 
+void SearchThread::set_values_to_edges()
+{
+    for (size_t idx = 0; idx < nodeIdxList->size(); ++idx) {
+        const NodeIdxChild nodeIdxValue = nodeIdxList->get_element(idx);
+        nodeIdxValue.node->lock();
+        nodeIdxValue.node->set_q_value(nodeIdxValue.childIdx, -nodeIdxValue.childNode->get_value());
+        nodeIdxValue.node->unlock();
+    }
+    nodeIdxList->reset_idx();
+}
+
 void SearchThread::backup_value_outputs()
 {
     backup_values(*newNodes, newTrajectories);
@@ -375,6 +388,7 @@ void SearchThread::thread_iteration()
 #endif
     backup_value_outputs();
     backup_collisions();
+    set_values_to_edges();
 }
 
 void run_search_thread(SearchThread *t)

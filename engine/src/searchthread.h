@@ -62,6 +62,7 @@ private:
     unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<float>> transpositionValues;
+    unique_ptr<FixedVector<NodeIdxChild>> nodeIdxList;
 
     vector<Trajectory> newTrajectories;
     vector<Trajectory> transpositionTrajectories;
@@ -157,6 +158,8 @@ private:
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
      */
     void set_nn_results_to_child_nodes();
+
+    void set_values_to_edges();
 
     /**
      * @brief backup_value_outputs Backpropagates all newly received value evaluations from the neural network accross the visited search paths

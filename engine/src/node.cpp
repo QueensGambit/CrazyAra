@@ -132,12 +132,52 @@ bool Node::at_least_one_drawn_child() const
     bool atLeastOneDrawnChild = false;
     for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
         const Node* childNode = it->get();
-        if (!childNode->is_playout_node() || (childNode->d->nodeType != DRAW && childNode->d->nodeType != WIN)) {
+        if (!childNode->is_playout_node()) {
             return false;
         }
-        if (childNode->d->nodeType == DRAW) {
+#ifndef MCTS_SINGLE_PLAYER
+        switch(childNode->d->nodeType) {
+        case WIN:
+            break;
+        case DRAW:
             atLeastOneDrawnChild = true;
+            break;
+        case LOSS:
+            return false;
+#ifdef MCTS_TB_SUPPORT
+        case TB_WIN:
+            break;
+        case TB_DRAW:
+            atLeastOneDrawnChild = true;
+            break;
+        case TB_LOSS:
+            return false;
+#endif
+        case UNSOLVED:
+            return false;
         }
+#else
+        switch(childNode->d->nodeType) {
+        case LOSS:
+            break;
+        case DRAW:
+            atLeastOneDrawnChild = true;
+            break;
+        case WIN:
+            return false;
+#ifdef MCTS_TB_SUPPORT
+        case TB_LOSS:
+            break;
+        case TB_DRAW:
+            atLeastOneDrawnChild = true;
+            break;
+        case TB_WIN:
+            return false;
+#endif
+        case UNSOLVED:
+            return false;
+        }
+#endif
     }
     return atLeastOneDrawnChild;
 }
@@ -222,7 +262,11 @@ bool Node::only_won_tb_child_nodes() const
 {
     for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
         const Node* childNode = it->get();
+#ifndef MCTS_SINGLE_PLAYER
         if (childNode->d->nodeType != TB_WIN) {
+#else
+        if (childNode->d->nodeType != TB_LOSS) {
+#endif
             return false;
         }
     }
@@ -370,9 +414,6 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
         return true;
     }
 #ifdef MCTS_TB_SUPPORT
-    if (isTablebase) {
-        return false;
-    }
     if (solve_tb_win(childNode)) {
         d->nodeType = TB_WIN;
         update_solved_terminal<WIN_VALUE>(childNode, childIdx);
@@ -479,6 +520,11 @@ void Node::set_q_value(ChildIdx childIdx, float value)
     d->qValues[childIdx] = value;
 }
 
+void Node::set_visit(ChildIdx childIdx, uint32_t value)
+{
+    d->childNumberVisits[childIdx] = value;
+}
+
 ChildIdx Node::get_best_q_idx() const
 {
     return argmax(d->qValues);
@@ -575,15 +621,21 @@ uint32_t Node::get_real_visits(ChildIdx childIdx) const
 }
 
 void backup_collision(float virtualLoss, const Trajectory& trajectory) {
-    for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
-        it->node->revert_virtual_loss(it->childIdx, virtualLoss);
+    if (!trajectory.empty()) {
+        trajectory.back().node->revert_virtual_loss<false>(trajectory.back().childIdx, virtualLoss);
+        for (auto it = trajectory.rbegin()+1; it != trajectory.rend(); ++it) {
+            it->node->revert_virtual_loss<true>(it->childIdx, virtualLoss);
+        }
     }
 }
 
+template<bool updateQ>
 void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
 {
     lock();
-    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
+    if (updateQ) {
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
+    }
     d->childNumberVisits[childIdx] -= virtualLoss;
     d->visitSum -= virtualLoss;
     // decrement virtual loss counter
@@ -993,7 +1045,7 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
 void Node::get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta) const
 {
     const Node* curNode = this;
-    while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
+    while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal() && !curNode->is_tablebase()) {
         size_t childIdx = get_best_action_index(curNode, true, qValueWeight, qVetoDelta);
         pv.push_back(curNode->get_action(childIdx));
         curNode = curNode->d->childNodes[childIdx].get();
