@@ -60,16 +60,6 @@ struct MapWithMutex {
     }
 };
 
-struct NodeIdxChild {
-    Node* node;
-    ChildIdx childIdx;
-    Node* childNode;
-    NodeIdxChild() :
-        node(nullptr), childIdx(0), childNode(nullptr) {}
-    NodeIdxChild(Node* node, ChildIdx childIdx, Node* childNode) :
-        node(node), childIdx(childIdx), childNode(childNode) {}
-};
-
 class Node
 {
 private:
@@ -174,10 +164,17 @@ public:
         valueSum += value;
         ++realVisitsSum;
 
-        // revert virtual loss and update the Q-value
-        assert(d->childNumberVisits[childIdx] != 0);
-        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
-        assert(!isnan(d->qValues[childIdx]));
+        if (d->childNumberVisits[childIdx] == virtualLoss) {
+            // set new Q-value based on return
+            // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
+            d->qValues[childIdx] = value;
+        }
+        else {
+            // revert virtual loss and update the Q-value
+            assert(d->childNumberVisits[childIdx] != 0);
+            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+            assert(!isnan(d->qValues[childIdx]));
+        }
 
         if (virtualLoss != 1) {
             d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
@@ -196,7 +193,6 @@ public:
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
      * @param childIdx Index to the child node to update
      */
-    template<bool updateQ>
     void revert_virtual_loss(ChildIdx childIdx, float virtualLoss);
 
     bool is_playout_node() const;

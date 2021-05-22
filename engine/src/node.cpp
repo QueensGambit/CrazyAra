@@ -621,21 +621,15 @@ uint32_t Node::get_real_visits(ChildIdx childIdx) const
 }
 
 void backup_collision(float virtualLoss, const Trajectory& trajectory) {
-    if (!trajectory.empty()) {
-        trajectory.back().node->revert_virtual_loss<false>(trajectory.back().childIdx, virtualLoss);
-        for (auto it = trajectory.rbegin()+1; it != trajectory.rend(); ++it) {
-            it->node->revert_virtual_loss<true>(it->childIdx, virtualLoss);
-        }
+    for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
+        it->node->revert_virtual_loss(it->childIdx, virtualLoss);
     }
 }
 
-template<bool updateQ>
 void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
 {
     lock();
-    if (updateQ) {
-        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
-    }
+    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
     d->childNumberVisits[childIdx] -= virtualLoss;
     d->visitSum -= virtualLoss;
     // decrement virtual loss counter
