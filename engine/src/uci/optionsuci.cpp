@@ -153,7 +153,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
 #endif
     o["Threads"]                       << Option(2, 1, 512);
-    o["Timeout_MS"]                    << Option(13000, 0, 99999999);
+    o["Timeout_MS"]                    << Option(0, 0, 99999999);
 #ifdef MODE_CRAZYHOUSE
       // we repeat "crazyhouse" in the list because of problem in XBoard/Winboard #23
     o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
