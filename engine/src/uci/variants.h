@@ -47,12 +47,12 @@ const static vector<string> availableVariants = {
 #ifdef MODE_LICHESS
     "kingofthehill",
     "atomic",
-    "giveaway",
+    "antichess",
     "horde",
     "racingkings",
     "3check",
-    "antichess", // giveaway
-    "losers", // giveaway
+    "giveaway", // antichess
+    "losers", // antichess
 #endif
 };
 
