@@ -217,6 +217,14 @@ public:
     bool is_terminal() const;
     bool has_nn_results() const;
     float get_value() const;
+
+    /**
+     * @brief get_value_display Return value evaluation which can be used for logging
+     * Warning: Must be called with d != nullptr
+     * @return value() or pre-defined constant
+     */
+    float get_value_display() const;
+
     double get_value_sum() const;
     uint32_t get_real_visits() const;
 
@@ -351,7 +359,7 @@ public:
      * @param qValueWeight Decides if Q-values are taken into account
      * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
      */
-     void get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta) const;
+     void get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta);
 
     /**
      * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
@@ -628,10 +636,16 @@ private:
 
     /**
      * @brief mcts_policy_based_on_wins Sets all known winning moves in a given policy to 1 and all
-     * remaining moves to 0. Afterwards the policy is renormalized.
+     * remaining moves to 0.
      * @param mctsPolicy MCTS policy which will be set
      */
     void mcts_policy_based_on_wins(DynamicVector<double>& mctsPolicy) const;
+
+    /**
+     * @brief mcts_policy_based_on_losses Sets the policy entry which delays the mate the longest to 1 and remaining values to 0.
+     * @param mctsPolicy MCTS policy which will be set
+     */
+    void mcts_policy_based_on_losses(DynamicVector<double>& mctsPolicy) const;
 
     /**
      * @brief prune_losses_in_mcts_policy Sets all known losing moves in a given policy to 0 in case

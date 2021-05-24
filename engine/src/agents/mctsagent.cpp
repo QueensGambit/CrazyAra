@@ -48,7 +48,8 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     isRunning(false),
     overallNPS(0.0f),
     nbNPSentries(0),
-    threadManager(nullptr)
+    threadManager(nullptr),
+    reachedTablebases(false)
 {
     mapWithMutex.hashTable.reserve(1e6);
 
@@ -130,6 +131,7 @@ size_t MCTSAgent::init_root_node(StateObj *state)
         create_new_root_node(state);
         nodesPreSearch = 0;
     }
+    reachedTablebases = rootNode->is_tablebase() || reachedTablebases;
     return nodesPreSearch;
 }
 
@@ -244,6 +246,7 @@ void MCTSAgent::clear_game_history()
     lastValueEval = -1.0f;
     nbNPSentries = 0;
     overallNPS = 0;
+    reachedTablebases = false;
 }
 
 bool MCTSAgent::is_policy_map()
@@ -313,6 +316,7 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_root_node(rootNode.get());
         searchThreads[i]->set_root_state(rootState.get());
         searchThreads[i]->set_search_limits(searchLimits);
+        searchThreads[i]->set_reached_tablebases(reachedTablebases);
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootState->side_to_move(), rootNode->plies_from_null()/2);

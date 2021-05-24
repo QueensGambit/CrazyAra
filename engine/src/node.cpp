@@ -304,14 +304,37 @@ void Node::mcts_policy_based_on_wins(DynamicVector<double> &mctsPolicy) const
     }
 }
 
+void Node::mcts_policy_based_on_losses(DynamicVector<double> &mctsPolicy) const
+{
+    mctsPolicy = 0;
+    ChildIdx childIdx = 0;
+    ChildIdx longestChildIdx = 0;
+    size_t endInPly = 0;
+    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+        const Node* childNode = it->get();
+        if (childNode != nullptr && childNode->d != nullptr) {
+            if (childNode->d->endInPly > endInPly) {
+                endInPly = childNode->d->endInPly;
+                longestChildIdx = childIdx;
+            }
+        }
+        ++childIdx;
+    }
+    mctsPolicy[longestChildIdx] = 1.0f;
+}
+
 void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy) const
 {
     // check if PV line leads to a loss
-    if (d->numberUnsolvedChildNodes != get_number_child_nodes() && d->nodeType != LOSS) {
+    if (d->numberUnsolvedChildNodes != get_number_child_nodes() && !is_loss_node_type(d->nodeType)) {
         // set all entries which lead to a WIN of the opponent to zero
         for (size_t childIdx = 0; childIdx < d->noVisitIdx; ++childIdx) {
             const Node* childNode = d->childNodes[childIdx].get();
-            if (childNode != nullptr && childNode->is_playout_node() && childNode->d->nodeType == WIN) {
+#ifndef MCTS_SINGLE_PLAYER
+            if (childNode != nullptr && childNode->is_playout_node() && is_win_node_type(childNode->d->nodeType)) {
+#else
+            if (childNode != nullptr && childNode->is_playout_node() && is_loss_node_type(childNode->d->nodeType) {
+#endif
                 mctsPolicy[childIdx] = 0;
             }
         }
@@ -352,6 +375,12 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
             break;
         default: ; // pass
         }
+    #ifdef MCTS_TB_SUPPORT
+        // disable draws for winning tb positions
+        if (d->nodeType == TB_WIN && d->nodeTypes[childIdx] == TB_DRAW) {
+            disable_action(childIdx);
+        }
+    #endif
     }
 
     if (solved_win(childNode)) {
@@ -530,6 +559,20 @@ void Node::fully_expand_node()
 
 float Node::get_value() const
 {
+    return valueSum / realVisitsSum;
+}
+
+float Node::get_value_display() const
+{
+    if (is_win_node_type(d->nodeType)) {
+        return WIN_VALUE;
+    }
+    if (is_loss_node_type(d->nodeType)) {
+        return LOSS_VALUE;
+    }
+    if (is_draw_node_type(d->nodeType)) {
+        return DRAW_VALUE;
+    }
     return valueSum / realVisitsSum;
 }
 
@@ -960,6 +1003,10 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
         mcts_policy_based_on_wins(mctsPolicy);
     }
+    else if (is_loss_node_type(d->nodeType)) {
+        mctsPolicy = DynamicVector<float>(d->noVisitIdx);
+        mcts_policy_based_on_losses(mctsPolicy);
+    }
     else if (qValueWeight > 0) {
         size_t secondArg;
         double firstMaxValue;
@@ -990,12 +1037,14 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
     bestMoveIdx = argmax(mctsPolicy);
 }
 
-void Node::get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta) const
+void Node::get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta)
 {
-    const Node* curNode = this;
+    Node* curNode = this;
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
+        curNode->lock();
         size_t childIdx = get_best_action_index(curNode, true, qValueWeight, qVetoDelta);
         pv.push_back(curNode->get_action(childIdx));
+        curNode->unlock();
         curNode = curNode->d->childNodes[childIdx].get();
     }
 }

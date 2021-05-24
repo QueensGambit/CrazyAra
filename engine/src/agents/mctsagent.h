@@ -82,7 +82,7 @@ private:
     GCThread gcThread;
 
     unique_ptr<ThreadManager> threadManager;
-
+    bool reachedTablebases;
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
               vector<unique_ptr<NeuralNetAPI>>& netBatches,

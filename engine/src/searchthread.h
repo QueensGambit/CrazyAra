@@ -80,6 +80,7 @@ private:
     size_t depthSum;
     size_t depthMax;
     size_t visitsPreSearch;
+    bool reachedTablebases;
 public:
     /**
      * @brief SearchThread
@@ -127,6 +128,7 @@ public:
     void set_root_node(Node *value);
     bool is_running() const;
     void set_is_running(bool value);
+    void set_reached_tablebases(bool value);
 
     /**
      * @brief add_new_node_to_tree Adds a new node to the search by either creating a new node or duplicating an exisiting node in case of transposition usage
