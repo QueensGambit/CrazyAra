@@ -228,7 +228,11 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
             }
             return nextNode;
         }
+#ifdef MCTS_TB_SUPPORT
         if (nextNode->is_terminal() || (!reachedTablebases && nextNode->is_playout_node() && nextNode->is_solved())) {
+#else
+        if (nextNode->is_playout_node() && nextNode->is_solved()) {
+#endif
             description.type = NODE_TERMINAL;
             currentNode->unlock();
             return nextNode;
@@ -344,7 +348,7 @@ void SearchThread::create_mini_batch()
     while (!newNodes->is_full() &&
            collisionTrajectories.size() != searchSettings->batchSize &&
            !transpositionValues->is_full() &&
-           numTerminalNodes < TERMINAL_NODE_CACHE) {
+           numTerminalNodes < searchSettings->batchSize*2) {
 
         trajectoryBuffer.clear();
         actionsBuffer.clear();
