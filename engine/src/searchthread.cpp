@@ -51,8 +51,9 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
 #ifdef DYNAMIC_NN_ARCH
     nbNNInputValues(net->get_nb_input_values_total())
 #else
-    nbNNInputValues(StateConstants::NB_VALUES_TOTAL())
+    nbNNInputValues(StateConstants::NB_VALUES_TOTAL()),
 #endif
+    reachedTablebases(false)
 {
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
     trajectoryBuffer.reserve(DEPTH_INIT);
@@ -78,6 +79,11 @@ bool SearchThread::is_running() const
 void SearchThread::set_is_running(bool value)
 {
     isRunning = value;
+}
+
+void SearchThread::set_reached_tablebases(bool value)
+{
+    reachedTablebases = value;
 }
 
 Node* SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx, NodeBackup& nodeBackup)
@@ -222,7 +228,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
             }
             return nextNode;
         }
-        if (nextNode->is_playout_node() && nextNode->is_solved()) {
+        if (nextNode->is_terminal() || (!reachedTablebases && nextNode->is_playout_node() && nextNode->is_solved())) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
             return nextNode;

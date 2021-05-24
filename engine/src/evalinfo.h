@@ -91,7 +91,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
  * @param nextNode Node object
  * @return value evaluation
  */
-float get_best_move_q(const SearchSettings* searchSettings, const Node* nextNode);
+float get_best_move_q(const Node* nextNode);
 
 /**
  * @brief set_eval_for_single_pv Sets the eval struct pv line and score for a single pv

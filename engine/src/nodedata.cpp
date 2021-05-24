@@ -82,3 +82,30 @@ bool is_unsolved_or_tablebase(NodeType nodeType)
 {
     return nodeType > LOSS;
 }
+
+bool is_loss_node_type(NodeType nodeType)
+{
+#ifdef MCTS_TB_SUPPORT
+    return nodeType == LOSS || nodeType == TB_LOSS;
+#else
+    return nodeType == LOSS;
+#endif
+}
+
+bool is_win_node_type(NodeType nodeType)
+{
+#ifdef MCTS_TB_SUPPORT
+    return nodeType == WIN || nodeType == TB_WIN;
+#else
+    return nodeType == WIN;
+#endif
+}
+
+bool is_draw_node_type(NodeType nodeType)
+{
+#ifdef MCTS_TB_SUPPORT
+    return nodeType == DRAW || nodeType == TB_DRAW;
+#else
+    return nodeType == DRAW;
+#endif
+}
