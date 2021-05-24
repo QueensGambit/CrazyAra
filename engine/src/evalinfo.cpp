@@ -130,9 +130,11 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     }
     pv.push_back(rootNode->get_action(childIdx));
 
-    const Node* nextNode = rootNode->get_child_node(childIdx);
+    rootNode->lock();
+    Node* nextNode = rootNode->get_child_node(childIdx);
     // make sure the nextNode has been expanded (e.g. when inference of the NN is too slow on the given hardware to evaluate the next node in time)
     if (nextNode != nullptr) {
+        rootNode->unlock();
         nextNode->get_principal_variation(pv, searchSettings->qValueWeight, searchSettings->qVetoDelta);
         evalInfo.pv[idx] = pv;
 
@@ -158,6 +160,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     else {
         evalInfo.bestMoveQ[idx] = Q_INIT;
     }
+    rootNode->unlock();
     evalInfo.movesToMate[idx] = 0;
     evalInfo.centipawns[idx] = value_to_centipawn(evalInfo.bestMoveQ[idx]);
 }

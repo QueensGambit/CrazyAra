@@ -359,7 +359,7 @@ public:
      * @param qValueWeight Decides if Q-values are taken into account
      * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
      */
-     void get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta) const;
+     void get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta);
 
     /**
      * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.

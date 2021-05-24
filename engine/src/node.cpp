@@ -1037,12 +1037,14 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
     bestMoveIdx = argmax(mctsPolicy);
 }
 
-void Node::get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta) const
+void Node::get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta)
 {
-    const Node* curNode = this;
+    Node* curNode = this;
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
+        curNode->lock();
         size_t childIdx = get_best_action_index(curNode, true, qValueWeight, qVetoDelta);
         pv.push_back(curNode->get_action(childIdx));
+        curNode->unlock();
         curNode = curNode->d->childNodes[childIdx].get();
     }
 }
