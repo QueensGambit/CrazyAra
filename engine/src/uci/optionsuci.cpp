@@ -226,16 +226,16 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
             info_string_important("variant Xiangqi startpos rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1");
 #else
             bool is960 = false;
-            string uci_variant = check_uci_variant_input(value, &is960);
-            Options["UCI_Variant"] << Option(uci_variant.c_str());
-            info_string_important("Updated option", givenName, "to", uci_variant);
+            string uciVariant = check_uci_variant_input(value, &is960);
+            Options["UCI_Variant"] << Option(uciVariant.c_str());
+            info_string_important("Updated option", givenName, "to", uciVariant);
 #ifdef SUPPORT960
             if (Options["UCI_Chess960"] != is960) {
                 Options["UCI_Chess960"] << Option(is960);
                 info_string("Updated option UCI_Chess960 to", (string)Options["UCI_Chess960"]);
             }
 #endif // SUPPORT960
-            variant = UCI::variant_from_name(uci_variant);
+            variant = UCI::variant_from_name(uciVariant);
             state.init(variant, is960);
 
             string suffix_960 = (is960) ? "960" : "";
@@ -269,6 +269,8 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
     }
     return value;
 #endif // MODE_LICHESS
+    // MODE_CRAZYHOUSE or others (keep value as is)
+    return value;
 }
 
 void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap &options)
