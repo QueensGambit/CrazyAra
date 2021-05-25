@@ -746,8 +746,8 @@ TEST_CASE("Variants_Horde"){
 
     // A pawn that moved from first row to second row can now move 2 squares
 
-    pos.set("1kb3nr/8/8/8/3p1pP1/8/1P2P3/P6P w - - 0 1", false, HORDE_VARIANT);
-    mov = "a1a3";
+    pos.set("1kb3nr/8/8/8/3p1pP1/8/4P3/PP5P w - - 0 1", false, HORDE_VARIANT);
+    mov = "b1b2";
     action = pos.uci_to_action(mov);
     pos.do_action(action);
     mov = "h8h1";
