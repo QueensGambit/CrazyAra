@@ -31,6 +31,7 @@
 
 #include "../agents/config/searchlimits.h"
 #include "state.h"
+#include "constants.h"
 
 class TimeManager
 {
@@ -69,7 +70,8 @@ public:
      * @param moveFactor Portion of the current move time which will be used in the proportional movetime regime
      * @param timeBufferFactor Factor which is applied on the moveOverhead to calculate a time buffer for avoiding losing on time
      */
-    TimeManager(float randomMoveFactor=0, int expectedGameLength=40, int threshMove=30, float moveFactor=0.05f, float incrementFactor=0.7f, int timeBufferFactor=30.0f);
+    TimeManager(float randomMoveFactor=0, int expectedGameLength=TIME_EXPECT_GAME_LENGTH, int threshMove=TIME_THRESH_MOVE_PROP_SYSTEM,
+                float moveFactor=TIME_PROP_MOVE_FACTOR, float incrementFactor=TIME_INCREMENT_FACTOR, int timeBufferFactor=TIME_BUFFER_FACTOR);
 
     /**
      * @brief get_time_for_move Calculates the movetime based on the searchSettigs
