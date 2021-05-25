@@ -64,6 +64,13 @@ namespace OptionsUCI {
     string check_uci_variant_input(const string &value, bool *is960);
 
     /**
+     * @brief get_first_variant_with_model Return the name of the first variant in the vector
+     * of available variants that has a model saved in 'model/<variant_name>'.
+     * @return string UCI variant name.
+     */
+    const string get_first_variant_with_model();
+
+    /**
      * @brief init_new_search Initializes the struct according to the given OptionsMap for a new search
      * @param searchLimit search limits struct to be changed
      * @param options UCI Options struct (won't be changed)
