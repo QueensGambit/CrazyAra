@@ -72,9 +72,9 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 #else
 #define VALUE_TO_CENTI_PARAM 1.2f
 #endif
-#define TIME_EXPECT_GAME_LENGTH 60
-#define TIME_THRESH_MOVE_PROP_SYSTEM 50
-#define TIME_PROP_MOVE_FACTOR 0.05f
+#define TIME_EXPECT_GAME_LENGTH 38
+#define TIME_THRESH_MOVE_PROP_SYSTEM 35
+#define TIME_PROP_MOVE_FACTOR 0.07f
 #define TIME_INCREMENT_FACTOR 0.7f
 #define TIME_BUFFER_FACTOR 30.0f
 
