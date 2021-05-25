@@ -267,7 +267,6 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
     if (value == "giveaway" || value == "losers") {
         return "antichess";
     }
-    return value;
 #endif // MODE_LICHESS
     // MODE_CRAZYHOUSE or others (keep value as is)
     return value;
