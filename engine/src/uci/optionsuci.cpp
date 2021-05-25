@@ -35,6 +35,7 @@
 #include "customlogger.h"
 #include "syzygy/tbprobe.h"
 #include "../util/communication.h"
+#include "../nn/neuralnetapi.h"
 
 using namespace std;
 
@@ -105,7 +106,7 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef MODE_CRAZYHOUSE
     o["Model_Directory"]               << Option("model/crazyhouse");
 #elif defined MODE_LICHESS
-    o["Model_Directory"]               << Option(((string) "model" + "/" + availableVariants.front()).c_str());
+    o["Model_Directory"]               << Option((string("model/") + get_first_variant_with_model()).c_str());
 #elif defined MODE_CHESS
     o["Model_Directory"]               << Option("model/chess");
 #elif defined MODE_XIANGQI
@@ -158,7 +159,7 @@ void OptionsUCI::init(OptionsMap &o)
       // we repeat "crazyhouse" in the list because of problem in XBoard/Winboard #23
     o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
 #elif defined MODE_LICHESS
-    o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), availableVariants);
+    o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), availableVariants);
 #elif defined MODE_XIANGQI
     o["UCI_Variant"]                   << Option("xiangqi", {"xiangqi", "xiangqi"});
 #else  // MODE = MODE_CHESS
@@ -177,7 +178,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["MaxInitPly"]                    << Option(30, 0, 99999);
     o["MeanInitPly"]                   << Option(15, 0, 99999);
 #ifdef LICHESS_MODE
-    o["Model_Directory_Contender"]     << Option(((string) "model_contender/" + availableVariants.front()).c_str());
+    o["Model_Directory_Contender"]     << Option((string("model_contender/") + get_first_variant_with_model()).c_str());
 #elif defined MODE_CHESS
     o["Model_Directory_Contender"]     << Option("model_contender/chess");
 #elif defined MODE_XIANGQI
@@ -271,6 +272,20 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
 #endif // MODE_LICHESS
     // MODE_CRAZYHOUSE or others (keep value as is)
     return value;
+}
+
+const string OptionsUCI::get_first_variant_with_model()
+{
+    vector<string> dirs = get_directory_files("model/");
+    for(string dir : dirs) {
+        if (std::find(availableVariants.begin(), availableVariants.end(), dir) != availableVariants.end()) {
+            const vector <string> files = get_directory_files("model/" + dir);
+            if ("" != get_string_ending_with(files, "-bsize-1.onnx")) {
+                return dir;
+            }
+        }
+    }
+    return availableVariants.front();
 }
 
 void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap &options)
