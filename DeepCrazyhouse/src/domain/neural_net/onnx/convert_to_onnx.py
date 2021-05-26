@@ -13,7 +13,6 @@ Reference:
 https://mxnet.apache.org/api/python/docs/tutorials/deploy/export/onnx.html
 """
 import os
-import sys
 import shutil
 import argparse
 import mxnet as mx
@@ -21,6 +20,9 @@ from glob import glob
 import numpy as np
 from mxnet.contrib import onnx as onnx_mxnet
 import logging
+import sys
+sys.path.insert(0,'../../../../../')
+from DeepCrazyhouse.configs.main_config import main_config
 
 
 def parse_args(cmd_args: list):
@@ -100,8 +102,8 @@ def convert_mxnet_model_to_onnx(sym_file, params_file, output_names, input_shape
     """
     # create symbol without output layers
     symbol = mx.sym.load(sym_file)
-    value_out = symbol.get_internals()[output_names[0]]
-    policy_out = symbol.get_internals()[output_names[1]]
+    value_out = symbol.get_internals()[main_config['value_output'] + '_output']
+    policy_out = symbol.get_internals()[main_config['policy_output'] + '_output']
     # group value_out and policy_out together
     symbol = mx.symbol.Group([value_out, policy_out])
     symbol.save("model-symbol.json")
