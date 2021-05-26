@@ -299,11 +299,10 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
         ambiguous = "";
     }
 
-    if (type_of(m) == CASTLING && !chess960) {
-        if (file_of(to) == FILE_G || file_of(to) == FILE_H) {
+    if (type_of(m) == CASTLING) {
+        if (file_of(from) < file_of(to)) {
             move = "O-O";
-        }
-        else {
+        } else {
             move = "O-O-O";
         }
     }
