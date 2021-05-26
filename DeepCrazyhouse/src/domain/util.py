@@ -26,7 +26,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
 mirrored_files_lookup = {'a': 'i', 'b': 'h', 'c': 'g', 'd': 'f', 'e': 'e', 'f': 'd', 'g': 'c', 'h': 'b', 'i': 'a'}
 
 
-def checkerboard(shape=(8,8)):
+def checkerboard(shape=(8, 8)):
     """
     Generates a checkerboard, by Eelco Hoogendoorn
     https://stackoverflow.com/questions/2169478/how-to-make-a-checkerboard-in-numpy
@@ -44,7 +44,7 @@ def opposite_colors(square1, square2):
     :param square2: Second square
     :return: True if on opposite squares, else false
     """
-    return square1 + chess.square_rank(square1) + square2 + chess.square_rank(square2) and 1
+    return square1 + chess.square_rank(square1) + square2 + chess.square_rank(square2) & 1
 
 
 def opposite_colored_bishops(board: chess.Board):
@@ -54,9 +54,10 @@ def opposite_colored_bishops(board: chess.Board):
     :return: True if on opposite colors else false
     """
     white_bishops = list(board.pieces(chess.BISHOP, chess.WHITE))
-    black_bishops = list(board.pieces(chess.BISHOP, chess.WHITE))
+    black_bishops = list(board.pieces(chess.BISHOP, chess.BLACK))
     if len(white_bishops) == 1 and len(black_bishops) == 1:
         return opposite_colors(white_bishops[0], black_bishops[0])
+    return False
 
 
 def get_row_col(position, mirror=False):
@@ -313,3 +314,19 @@ def get_check_move_indices(board, legal_moves):
             check_move_indices.append(idx)
             nb_checks += 1
     return check_move_indices, nb_checks
+
+
+if __name__ == '__main__':
+    print("Unit-Test: opposite_colored_bishops() & opposite_colors()")
+    b = chess.Board()
+    assert(not opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1pp2p2/3pq1np/pP2p1p1/P3Pn2/2PPPNB1/2Q3PP/3R1RK1 b - - 0 23')
+    assert(not opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1pp1bp2/3pq1np/pP2p1p1/P3Pn2/2PPPNB1/2Q3PP/3R1RK1 b - - 0 1')
+    assert(not opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1ppbbp2/3pq1np/pP2p1p1/P3Pn2/1BPPPN2/2Q3PP/3R1RK1 b - - 0 1')
+    assert(not opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1ppb1p2/3pq1np/pP2p1p1/P3Pn2/2PPPNB1/2Q3PP/3R1RK1 b - - 0 1')
+    assert(opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1pp2pb1/3pq1np/pP2p1p1/P3Pn2/2PPPN2/B1Q3PP/3R1RK1 b - - 0 1')
+    assert(opposite_colored_bishops(b))

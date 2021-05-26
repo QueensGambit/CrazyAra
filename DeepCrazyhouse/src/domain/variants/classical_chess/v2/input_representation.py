@@ -14,7 +14,7 @@ from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIG
 from DeepCrazyhouse.src.domain.util import opposite_colored_bishops, get_row_col, np, checkerboard,\
     get_board_position_index
 
-NORMALIZE_NB_LEGAL_MOVES = 200
+NORMALIZE_NB_LEGAL_MOVES = 100
 NORMALIZE_PIECE_NUMBER = 8
 # These constant describe the starting channel for the corresponding info
 CHANNEL_PIECES = 0
