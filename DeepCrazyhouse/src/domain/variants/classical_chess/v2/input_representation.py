@@ -22,6 +22,7 @@ CHANNEL_EN_PASSANT = 12
 CHANNEL_CASTLING = 13
 CHANNEL_LAST_MOVES = 17
 CHANNEL_IS_960 = 33
+CHANNEL_PIECE_MASK = 34
 CHANNEL_CHECKERBOARD = 36
 CHANNEL_MATERIAL = 37
 CHANNEL_NB_LEGAL_MOVES = 42
@@ -145,16 +146,20 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     # Channel: 17 - 32
     assert(channel == CHANNEL_LAST_MOVES)
     # Last 8 moves
-    for move in last_moves:
-        if move:
-            from_row, from_col = get_row_col(move.from_square, mirror=mirror)
-            to_row, to_col = get_row_col(move.to_square, mirror=mirror)
-            planes[channel, from_row, from_col] = 1
-            channel += 1
-            planes[channel, to_row, to_col] = 1
-            channel += 1
-        else:
-            channel += 2
+    if last_moves:
+        assert(len(last_moves) == 8)
+        for move in last_moves:
+            if move:
+                from_row, from_col = get_row_col(move.from_square, mirror=mirror)
+                to_row, to_col = get_row_col(move.to_square, mirror=mirror)
+                planes[channel, from_row, from_col] = 1
+                channel += 1
+                planes[channel, to_row, to_col] = 1
+                channel += 1
+            else:
+                channel += 2
+    else:
+        channel += 16
 
     # Channel: 33
     # Chess960
@@ -165,6 +170,7 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
 
     # Channel: 34 - 35
     # All white pieces and black pieces in a single map
+    assert(channel == CHANNEL_PIECE_MASK)
     for color in colors:
         # the PIECE_TYPE is an integer list in python-chess
         for piece_type in chess.PIECE_TYPES:
@@ -298,3 +304,4 @@ def normalize_input_planes(planes):
     channel = CHANNEL_MATERIAL - 1
     for _ in chess.PIECE_TYPES[:-1]:
         planes[++channel, :, :] /= CHANNEL_MATERIAL
+    return planes

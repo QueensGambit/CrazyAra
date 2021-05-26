@@ -475,8 +475,7 @@ def normalize_input_planes(x):
         x = x.astype(np.float32)
 
     if MODE == MODE_CHESS and VERSION == 2:
-        chess_v2.normalize_input_planes(x)
-        return
+        return chess_v2.normalize_input_planes(x)
 
     mat_pos = x[:NB_CHANNELS_POS, :, :]
     mat_const = x[NB_CHANNELS_POS:, :, :]
