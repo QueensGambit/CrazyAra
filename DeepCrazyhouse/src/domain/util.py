@@ -9,10 +9,13 @@ Utility functions which are use by the converter scripts
 
 import copy
 import numpy as np
+import variants.classical_chess.v2.input_representation as chess_v2
 from DeepCrazyhouse.src.domain.variants.constants import (
     BOARD_HEIGHT,
     BOARD_WIDTH,
     MODE,
+    VERSION,
+    MODE_CHESS,
     MODE_LICHESS,
     MODE_CRAZYHOUSE,
     MODE_XIANGQI,
@@ -31,6 +34,39 @@ from DeepCrazyhouse.src.domain.variants.constants import (
 
 # file lookup for vertically mirrored xiangqi boards
 mirrored_files_lookup = {'a': 'i', 'b': 'h', 'c': 'g', 'd': 'f', 'e': 'e', 'f': 'd', 'g': 'c', 'h': 'b', 'i': 'a'}
+
+
+def checkerboard(shape=(8,8)):
+    """
+    Generates a checkerboard, by Eelco Hoogendoorn
+    https://stackoverflow.com/questions/2169478/how-to-make-a-checkerboard-in-numpy
+    The top corner entry, [0,0] will be a 0.
+    :param shape: Shape of the checkerboard
+    :return: Checkerboard
+    """
+    return np.indices(shape).sum(axis=0) % 2
+
+
+def opposite_colors(square1, square2):
+    """
+    Checks if squares are on opposite colors, analog to SF implementation
+    :param square1: First square
+    :param square2: Second square
+    :return: True if on opposite squares, else false
+    """
+    return square1 + chess.square_rank(square1) + square2 + chess.square_rank(square2) and 1
+
+
+def opposite_colored_bishops(board: chess.Board):
+    """
+    Checks if bishops are on opposite colors
+    :param board: board object
+    :return: True if on opposite colors else false
+    """
+    white_bishops = board.pieces(chess.BISHOP, chess.WHITE)
+    black_bishops = board.pieces(chess.BISHOP, chess.WHITE)
+    if len(white_bishops) == 1 and len(black_bishops) == 1:
+        return opposite_colors(white_bishops[0], black_bishops[0])
 
 
 def get_row_col(position, mirror=False):
@@ -174,6 +210,10 @@ def normalize_input_planes(x):
     if x.dtype != np.float32:
         x = x.astype(np.float32)
 
+    if MODE == MODE_CHESS and VERSION == 2:
+        chess_v2.normalize_input_planes(x)
+        return
+
     mat_pos = x[:NB_CHANNELS_POS, :, :]
     mat_const = x[NB_CHANNELS_POS:, :, :]
 
@@ -289,7 +329,6 @@ def get_check_move_mask(board, legal_moves):
     :return: check_mask: np-boolean array marking the checking moves
             nb_checks: Number of possible checks
     """
-
     check_move_mask = np.zeros(len(legal_moves))
     nb_checks = 0
 
@@ -325,13 +364,12 @@ def get_check_move_indices(board, legal_moves):
     :return: check_move_idces: np-boolean array marking the checking moves
             nb_checks: Number of possible checks
     """
-
-    check_move_idces = []
+    check_move_indices = []
     nb_checks = 0
     for idx, move in enumerate(legal_moves):
         board_tmp = copy.deepcopy(board)
         board_tmp.push(move)
         if board_tmp.is_check():
-            check_move_idces.append(idx)
+            check_move_indices.append(idx)
             nb_checks += 1
-    return check_move_idces, nb_checks
+    return check_move_indices, nb_checks

@@ -136,8 +136,14 @@ elif MODE == MODE_XIANGQI:
     NB_LAST_MOVES = 0
     NB_CHANNELS_PER_HISTORY_ITEM = 0
 else:  # MODE = MODE_CHESS
-    NB_CHANNELS_POS = 15
-    NB_CHANNELS_CONST = 7
+    if VERSION == 1:
+        NB_CHANNELS_POS = 15
+    else:  # VERSION == 2
+        NB_CHANNELS_POS = 13 + 10  # 12 pieces + 1 en-passant and 10 auxiliary
+    if VERSION == 1:
+        NB_CHANNELS_CONST = 7
+    else:  # VERSION == 2
+        NB_CHANNELS_CONST = 4  # only castling info
     NB_CHANNELS_VARIANTS = 1  # is960
     # No dropping moves, king promotion moves
     NB_POLICY_MAP_CHANNELS = 76
