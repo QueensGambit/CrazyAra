@@ -301,7 +301,8 @@ def normalize_input_planes(planes):
     :return: The normalized planes
     """
     planes[CHANNEL_NB_LEGAL_MOVES, :, :] /= NORMALIZE_NB_LEGAL_MOVES
-    channel = CHANNEL_MATERIAL - 1
+    channel = CHANNEL_MATERIAL
     for _ in chess.PIECE_TYPES[:-1]:
-        planes[++channel, :, :] /= CHANNEL_MATERIAL
+        planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER
+        channel += 1
     return planes
