@@ -4,7 +4,7 @@ Created on 26.05.21
 @project: CrazyAra
 @author: queensgambit
 
-Input representation for chess v2.0.
+Input representation for chess v2.1.
 This presentation avoids potential overfitting and bias, e.g. no color information, no move counter, no progress counter
 and adds features which are hard for the CNN to extract, e.g. material info, number legal moves, checkerboard,
 opposite color bishops.
