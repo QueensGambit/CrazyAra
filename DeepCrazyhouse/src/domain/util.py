@@ -10,19 +10,12 @@ Utility functions which are use by the converter scripts
 import copy
 import numpy as np
 from DeepCrazyhouse.src.domain.variants.constants import (
-    BOARD_HEIGHT,
-    BOARD_WIDTH,
-    MODE,
-    MODE_LICHESS,
-    MODE_CRAZYHOUSE,
-    MODE_XIANGQI,
     LABELS_XIANGQI,
     CHANNEL_MAPPING_CONST,
     CHANNEL_MAPPING_POS,
     MAX_NB_MOVES,
     MAX_NB_NO_PROGRESS,
     MAX_NB_PRISONERS,
-    NB_CHANNELS_TOTAL,
     NB_CHANNELS_POS,
     POCKETS_SIZE_PIECE_TYPE,
     chess,
@@ -31,6 +24,40 @@ from DeepCrazyhouse.src.domain.variants.constants import (
 
 # file lookup for vertically mirrored xiangqi boards
 mirrored_files_lookup = {'a': 'i', 'b': 'h', 'c': 'g', 'd': 'f', 'e': 'e', 'f': 'd', 'g': 'c', 'h': 'b', 'i': 'a'}
+
+
+def checkerboard(shape=(8, 8)):
+    """
+    Generates a checkerboard, by Eelco Hoogendoorn
+    https://stackoverflow.com/questions/2169478/how-to-make-a-checkerboard-in-numpy
+    The top corner entry, [0,0] will be a 0.
+    :param shape: Shape of the checkerboard
+    :return: Checkerboard
+    """
+    return np.indices(shape).sum(axis=0) % 2
+
+
+def opposite_colors(square1, square2):
+    """
+    Checks if squares are on opposite colors, analog to SF implementation
+    :param square1: First square
+    :param square2: Second square
+    :return: True if on opposite squares, else false
+    """
+    return square1 + chess.square_rank(square1) + square2 + chess.square_rank(square2) & 1
+
+
+def opposite_colored_bishops(board: chess.Board):
+    """
+    Checks if bishops are on opposite colors
+    :param board: board object
+    :return: True if on opposite colors else false
+    """
+    white_bishops = list(board.pieces(chess.BISHOP, chess.WHITE))
+    black_bishops = list(board.pieces(chess.BISHOP, chess.BLACK))
+    if len(white_bishops) == 1 and len(black_bishops) == 1:
+        return opposite_colors(white_bishops[0], black_bishops[0])
+    return False
 
 
 def get_row_col(position, mirror=False):
@@ -163,52 +190,6 @@ def get_x_y_and_indices(dataset):
     return start_indices, x, y_value, y_policy
 
 
-def normalize_input_planes(x):
-    """
-    Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
-    :param x: Input planes representation
-    :return: The normalized planes
-    """
-
-    # convert the input planes to float32 assuming that the datatype is int
-    if x.dtype != np.float32:
-        x = x.astype(np.float32)
-
-    mat_pos = x[:NB_CHANNELS_POS, :, :]
-    mat_const = x[NB_CHANNELS_POS:, :, :]
-
-    # iterate over all pieces except the king, (because the king can't be in a pocket)
-    if MODE == MODE_CRAZYHOUSE or MODE == MODE_LICHESS:
-        for p_type in chess.PIECE_TYPES[:-1]:
-            # p_type -1 because p_type starts with 1
-            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
-            mat_pos[channel, :, :] /= MAX_NB_PRISONERS
-            # the prison for black begins 5 channels later
-            mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
-    # xiangqi has 7 piece types (king/general is excluded as prisoner)
-    elif MODE == MODE_XIANGQI:
-        for p_type in range(6):
-            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type
-            mat_pos[channel, :, :] /= MAX_NB_PRISONERS
-            # the prison for opponent begins 6 channels later
-            mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
-
-    # Total Move Count
-    # 500 was set as the max number of total moves
-    mat_const[CHANNEL_MAPPING_CONST["total_mv_cnt"], :, :] /= MAX_NB_MOVES
-    # No progress count
-    # after 40 moves of no progress the 40 moves rule for draw applies
-    if MODE != MODE_XIANGQI:
-        mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
-
-    return x
-
-
-# use a constant matrix for normalization to allow broad cast operations
-# in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)))
-
-
 def augment(x, y_policy):
     """
     Augments a given set of planes and their corresponding policy targets.
@@ -289,7 +270,6 @@ def get_check_move_mask(board, legal_moves):
     :return: check_mask: np-boolean array marking the checking moves
             nb_checks: Number of possible checks
     """
-
     check_move_mask = np.zeros(len(legal_moves))
     nb_checks = 0
 
@@ -325,13 +305,28 @@ def get_check_move_indices(board, legal_moves):
     :return: check_move_idces: np-boolean array marking the checking moves
             nb_checks: Number of possible checks
     """
-
-    check_move_idces = []
+    check_move_indices = []
     nb_checks = 0
     for idx, move in enumerate(legal_moves):
         board_tmp = copy.deepcopy(board)
         board_tmp.push(move)
         if board_tmp.is_check():
-            check_move_idces.append(idx)
+            check_move_indices.append(idx)
             nb_checks += 1
-    return check_move_idces, nb_checks
+    return check_move_indices, nb_checks
+
+
+if __name__ == '__main__':
+    print("Unit-Test: opposite_colored_bishops() & opposite_colors()")
+    b = chess.Board()
+    assert(not opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1pp2p2/3pq1np/pP2p1p1/P3Pn2/2PPPNB1/2Q3PP/3R1RK1 b - - 0 23')
+    assert(not opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1pp1bp2/3pq1np/pP2p1p1/P3Pn2/2PPPNB1/2Q3PP/3R1RK1 b - - 0 1')
+    assert(not opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1ppbbp2/3pq1np/pP2p1p1/P3Pn2/1BPPPN2/2Q3PP/3R1RK1 b - - 0 1')
+    assert(not opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1ppb1p2/3pq1np/pP2p1p1/P3Pn2/2PPPNB1/2Q3PP/3R1RK1 b - - 0 1')
+    assert(opposite_colored_bishops(b))
+    b = chess.Board(fen='r4rk1/1pp2pb1/3pq1np/pP2p1p1/P3Pn2/2PPPN2/B1Q3PP/3R1RK1 b - - 0 1')
+    assert(opposite_colored_bishops(b))

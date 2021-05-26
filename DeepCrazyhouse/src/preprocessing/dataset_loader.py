@@ -11,7 +11,8 @@ import logging
 import numpy as np
 import zarr
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.util import get_numpy_arrays, get_x_y_and_indices, MATRIX_NORMALIZER
+from DeepCrazyhouse.src.domain.util import get_numpy_arrays, get_x_y_and_indices
+from DeepCrazyhouse.src.domain.variants.input_representation import MATRIX_NORMALIZER
 
 
 def _load_dataset_file(dataset_filepath):

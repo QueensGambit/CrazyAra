@@ -164,3 +164,30 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     sym = mx.symbol.Group([value_out, policy_out])
 
     return sym
+
+
+def get_rise_v33_symbol(channels_policy_head, val_loss_factor, policy_loss_factor, select_policy_from_plane):
+    """
+    Wrapper definition for RISEv3.3.
+    :return: symbol
+    """
+    kernels = [3] * 15
+    kernels[7] = 5
+    kernels[11] = 5
+    kernels[12] = 5
+    kernels[13] = 5
+
+    se_types = [None] * len(kernels)
+    se_types[5] = "eca_se"
+    se_types[8] = "eca_se"
+    se_types[12] = "eca_se"
+    se_types[13] = "eca_se"
+    se_types[14] = "eca_se"
+
+    symbol = rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
+                                   channels_value_head=8, value_fc_size=256,
+                                   channels_policy_head=channels_policy_head,
+                                   grad_scale_value=val_loss_factor, grad_scale_policy=policy_loss_factor,
+                                   dropout_rate=0, select_policy_from_plane=select_policy_from_plane,
+                                   kernels=kernels, se_types=se_types, use_avg_features=False)
+    return symbol
