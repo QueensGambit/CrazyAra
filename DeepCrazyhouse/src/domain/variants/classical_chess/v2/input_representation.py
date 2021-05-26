@@ -11,7 +11,7 @@ opposite color bishops.
 """
 import chess
 from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, NB_CHANNELS_TOTAL, PIECES
-from DeepCrazyhouse.src.domain.util import MATRIX_NORMALIZER, opposite_colored_bishops, get_row_col, np, checkerboard,\
+from DeepCrazyhouse.src.domain.util import opposite_colored_bishops, get_row_col, np, checkerboard,\
     get_board_position_index
 
 NORMALIZE_NB_LEGAL_MOVES = 200
@@ -22,8 +22,10 @@ CHANNEL_EN_PASSANT = 12
 CHANNEL_CASTLING = 13
 CHANNEL_LAST_MOVES = 17
 CHANNEL_IS_960 = 33
-CHANNELS_MATERIAL = 37
-CHANNELS_NB_LEGAL_MOVES = 42
+CHANNEL_CHECKERBOARD = 36
+CHANNEL_MATERIAL = 37
+CHANNEL_NB_LEGAL_MOVES = 42
+CHANNEL_OPP_BISHOPS = 43
 
 
 def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
@@ -98,7 +100,7 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     planes = np.zeros((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH))
 
     # channel will be incremented by 1 at first plane
-    channel = -1
+    channel = 0
     me = board.turn
     you = not board.turn
     colors = [me, you]
@@ -106,7 +108,7 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     # mirror all bitboard entries for the black player
     mirror = board.turn == chess.BLACK
 
-    assert (channel + 1 == CHANNEL_PIECES)
+    assert (channel == CHANNEL_PIECES)
     # Fill in the piece positions
     # Channel: 0 - 11
     # Iterate over both color starting with WHITE
@@ -117,51 +119,53 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
             for pos in board.pieces(piece_type, color):
                 row, col = get_row_col(pos, mirror=mirror)
                 # set the bit at the right position
-                planes[++channel, row, col] = 1
+                planes[channel, row, col] = 1
+            channel += 1
 
     # Channel: 12
     # En Passant Square
-    channel += 1
     assert(channel == CHANNEL_EN_PASSANT)
     if board.ep_square is not None:
         row, col = get_row_col(board.ep_square, mirror=mirror)
         planes[channel, row, col] = 1
+    channel += 1
 
     # Channel: 13 - 16
-    assert (channel+1 == CHANNEL_CASTLING)
+    assert (channel == CHANNEL_CASTLING)
     for color in colors:
         # check for King Side Castling
-        channel += 1
         if board.has_kingside_castling_rights(color):
             planes[channel, :, :] = 1
-        # check for Queen Side Castling
         channel += 1
+        # check for Queen Side Castling
         if board.has_queenside_castling_rights(color):
             planes[channel, :, :] = 1
+        channel += 1
 
     # Channel: 17 - 32
-    assert(channel+1 == CHANNEL_LAST_MOVES)
+    assert(channel == CHANNEL_LAST_MOVES)
     # Last 8 moves
     for move in last_moves:
         if move:
             from_row, from_col = get_row_col(move.from_square, mirror=mirror)
             to_row, to_col = get_row_col(move.to_square, mirror=mirror)
-            planes[++channel, from_row, from_col] = 1
-            planes[++channel, to_row, to_col] = 1
+            planes[channel, from_row, from_col] = 1
+            channel += 1
+            planes[channel, to_row, to_col] = 1
+            channel += 1
         else:
             channel += 2
 
     # Channel: 33
     # Chess960
-    channel += 1
     assert (channel == CHANNEL_IS_960)
     if board.chess960:
         planes[channel + 1, :, :] = 1
+    channel += 1
 
     # Channel: 34 - 35
     # All white pieces and black pieces in a single map
     for color in colors:
-        channel += 1
         # the PIECE_TYPE is an integer list in python-chess
         for piece_type in chess.PIECE_TYPES:
             # iterate over the piece mask and receive every position square of it
@@ -169,31 +173,34 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
                 row, col = get_row_col(pos, mirror=mirror)
                 # set the bit at the right position
                 planes[channel, row, col] = 1
+        channel += 1
 
     # Channel: 36
     # Checkerboard
-    planes[++channel, :, :] = checkerboard()
+    assert(channel == CHANNEL_CHECKERBOARD)
+    planes[channel, :, :] = checkerboard()
+    channel += 1
 
     # Channel: 37 - 41
     # Relative material difference (negative if less pieces than opponent and positive if more)
     # iterate over all pieces except the king
-    assert(channel + 1 == CHANNELS_MATERIAL)
+    assert(channel == CHANNEL_MATERIAL)
     for piece_type in chess.PIECE_TYPES[:-1]:
         matt_diff = len(board.pieces(piece_type, me)) - len(board.pieces(piece_type, you))
-        planes[++channel, :, :] = matt_diff / NORMALIZE_PIECE_NUMBER if normalize else matt_diff
+        planes[channel, :, :] = matt_diff / NORMALIZE_PIECE_NUMBER if normalize else matt_diff
+        channel += 1
 
     # Channel: 42
     # Number legal moves
-    assert (channel+1 == CHANNELS_NB_LEGAL_MOVES)
-    planes[++channel, :, :] = len(board.legal_moves) / NORMALIZE_NB_LEGAL_MOVES if normalize else len(board.legal_moves)
-
-    # Opposite color bishops
+    assert (channel == CHANNEL_NB_LEGAL_MOVES)
+    planes[channel, :, :] = len(list(board.legal_moves)) / NORMALIZE_NB_LEGAL_MOVES if normalize else len(list(board.legal_moves))
     channel += 1
+
+    # Channel: 43
+    # Opposite color bishops
+    assert (channel == CHANNEL_OPP_BISHOPS)
     if opposite_colored_bishops(board):
         planes[channel, :, :] = 1
-
-    if normalize is True:
-        planes *= MATRIX_NORMALIZER
 
     return planes
 
@@ -287,7 +294,7 @@ def normalize_input_planes(planes):
     :param planes: Input planes representation
     :return: The normalized planes
     """
-    planes[CHANNELS_NB_LEGAL_MOVES, :, :] /= NORMALIZE_NB_LEGAL_MOVES
-    channel = CHANNELS_MATERIAL - 1
+    planes[CHANNEL_NB_LEGAL_MOVES, :, :] /= NORMALIZE_NB_LEGAL_MOVES
+    channel = CHANNEL_MATERIAL - 1
     for _ in chess.PIECE_TYPES[:-1]:
-        planes[++channel, :, :] /= CHANNELS_MATERIAL
+        planes[++channel, :, :] /= CHANNEL_MATERIAL

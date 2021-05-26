@@ -19,7 +19,7 @@ from DeepCrazyhouse.src.domain.variants.output_representation import policy_to_m
 from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesConverter
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.configs.main_config import main_config
-
+from DeepCrazyhouse.src.domain.variants.constants import MODE, VERSION, MODE_CHESS
 
 # import the Colorer to have a nicer logging printout
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
@@ -50,6 +50,13 @@ def board_single_game(params_inp):
         x_test_single_img = np.expand_dims(x_test[i], axis=0)
         mat_board = planes_to_board(x_test_single_img[0], mode=main_config["mode"])
 
+        # add missing information
+        if MODE == MODE_CHESS and VERSION == 2:
+            if board.turn == chess.BLACK:
+                mat_board = mat_board.mirror()
+            mat_board.halfmove_clock = board.halfmove_clock
+            mat_board.fullmove_number = board.fullmove_number
+
         cur_ok = board == mat_board
         all_ok = all_ok and cur_ok
 
@@ -57,6 +64,7 @@ def board_single_game(params_inp):
             logging.error("mat_board != board: - idx: %d", i)
             logging.error("%s -> mat_board.fen", mat_board.fen)
             logging.error("%s -> board.fen", board.fen)
+            assert False
 
         board.push(move)
 
@@ -130,6 +138,7 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
         }
         self._start_indices = self._pgn_datasets_test["start_indices"]
 
+        use_all_games = True if MODE == MODE_CHESS and VERSION == 2 else False
         converter = PGN2PlanesConverter(
             limit_nb_games_to_analyze=0,
             nb_games_per_file=self._batch_size,
@@ -140,7 +149,8 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
             compression="lz4",
             clevel=5,
             dataset_type="test",
-            first_pgn_to_analyze=self._pgn_filename
+            first_pgn_to_analyze=self._pgn_filename,
+            use_all_games=use_all_games
         )
         self._all_pgn_sel, _, _, _, _ = converter.filter_pgn()
         print(len(self._all_pgn_sel))
@@ -153,10 +163,10 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
         for i in range(self._batch_size):
             if i < self._batch_size - 1:
                 # select all board positions given by the start index to the start index of the next game
-                x_test = self._x_test[self._start_indices[i] : self._start_indices[i + 1], :, :, :]
+                x_test = self._x_test[self._start_indices[i]: self._start_indices[i + 1], :, :, :]
             else:
                 # for the last batch only take the remaining items in the vector
-                x_test = self._x_test[self._start_indices[i] :, :, :, :]
+                x_test = self._x_test[self._start_indices[i]:, :, :, :]
 
             params_inp.append((self._all_pgn_sel[i], x_test, self._start_indices[i]))
 
@@ -182,9 +192,9 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
         params_inp = []  # create a param input list which will concatenate the pgn with it's corresponding game index
         for i in range(self._batch_size):
             if i < self._batch_size - 1:
-                yp_test = self._yp_test[self._start_indices[i] : self._start_indices[i + 1], :]
+                yp_test = self._yp_test[self._start_indices[i]: self._start_indices[i + 1], :]
             else:
-                yp_test = self._yp_test[self._start_indices[i] :, :]
+                yp_test = self._yp_test[self._start_indices[i]:, :]
 
             params_inp.append((self._all_pgn_sel[i], yp_test, self._start_indices[i]))
 

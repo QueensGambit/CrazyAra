@@ -9,13 +9,17 @@ which is passed to the neural network
 """
 
 from chess.variant import CrazyhouseBoard
-import classical_chess.v2.input_representation as chess_v2
+import DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation as chess_v2
 from DeepCrazyhouse.src.domain.variants.constants import (
+    MODE,
+    NB_CHANNELS_TOTAL,
     MODES,
     VERSION,
     MODE_CRAZYHOUSE,
     MODE_LICHESS,
     MODE_CHESS,
+    MODE_XIANGQI,
+    POCKETS_SIZE_PIECE_TYPE,
     BOARD_HEIGHT,
     BOARD_WIDTH,
     CHANNEL_MAPPING_CONST,
@@ -31,7 +35,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     PIECES,
     chess,
     VARIANT_MAPPING_BOARDS)
-from DeepCrazyhouse.src.domain.util import MATRIX_NORMALIZER, get_board_position_index, get_row_col, np
+from DeepCrazyhouse.src.domain.util import get_board_position_index, get_row_col, np
 
 
 def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
@@ -457,3 +461,53 @@ def planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
         board.board_turn = chess.BLACK
 
     return board
+
+
+def normalize_input_planes(x):
+    """
+    Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
+    :param x: Input planes representation
+    :return: The normalized planes
+    """
+
+    # convert the input planes to float32 assuming that the datatype is int
+    if x.dtype != np.float32:
+        x = x.astype(np.float32)
+
+    if MODE == MODE_CHESS and VERSION == 2:
+        chess_v2.normalize_input_planes(x)
+        return
+
+    mat_pos = x[:NB_CHANNELS_POS, :, :]
+    mat_const = x[NB_CHANNELS_POS:, :, :]
+
+    # iterate over all pieces except the king, (because the king can't be in a pocket)
+    if MODE == MODE_CRAZYHOUSE or MODE == MODE_LICHESS:
+        for p_type in chess.PIECE_TYPES[:-1]:
+            # p_type -1 because p_type starts with 1
+            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+            mat_pos[channel, :, :] /= MAX_NB_PRISONERS
+            # the prison for black begins 5 channels later
+            mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
+    # xiangqi has 7 piece types (king/general is excluded as prisoner)
+    elif MODE == MODE_XIANGQI:
+        for p_type in range(6):
+            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type
+            mat_pos[channel, :, :] /= MAX_NB_PRISONERS
+            # the prison for opponent begins 6 channels later
+            mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
+
+    # Total Move Count
+    # 500 was set as the max number of total moves
+    mat_const[CHANNEL_MAPPING_CONST["total_mv_cnt"], :, :] /= MAX_NB_MOVES
+    # No progress count
+    # after 40 moves of no progress the 40 moves rule for draw applies
+    if MODE != MODE_XIANGQI:
+        mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
+
+    return x
+
+
+# use a constant matrix for normalization to allow broad cast operations
+# in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
+MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)))

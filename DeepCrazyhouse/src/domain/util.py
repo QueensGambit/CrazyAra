@@ -9,23 +9,13 @@ Utility functions which are use by the converter scripts
 
 import copy
 import numpy as np
-import variants.classical_chess.v2.input_representation as chess_v2
 from DeepCrazyhouse.src.domain.variants.constants import (
-    BOARD_HEIGHT,
-    BOARD_WIDTH,
-    MODE,
-    VERSION,
-    MODE_CHESS,
-    MODE_LICHESS,
-    MODE_CRAZYHOUSE,
-    MODE_XIANGQI,
     LABELS_XIANGQI,
     CHANNEL_MAPPING_CONST,
     CHANNEL_MAPPING_POS,
     MAX_NB_MOVES,
     MAX_NB_NO_PROGRESS,
     MAX_NB_PRISONERS,
-    NB_CHANNELS_TOTAL,
     NB_CHANNELS_POS,
     POCKETS_SIZE_PIECE_TYPE,
     chess,
@@ -63,8 +53,8 @@ def opposite_colored_bishops(board: chess.Board):
     :param board: board object
     :return: True if on opposite colors else false
     """
-    white_bishops = board.pieces(chess.BISHOP, chess.WHITE)
-    black_bishops = board.pieces(chess.BISHOP, chess.WHITE)
+    white_bishops = list(board.pieces(chess.BISHOP, chess.WHITE))
+    black_bishops = list(board.pieces(chess.BISHOP, chess.WHITE))
     if len(white_bishops) == 1 and len(black_bishops) == 1:
         return opposite_colors(white_bishops[0], black_bishops[0])
 
@@ -197,56 +187,6 @@ def get_x_y_and_indices(dataset):
     y_value = np.array(dataset["y_value"])
     y_policy = np.array(dataset["y_policy"])
     return start_indices, x, y_value, y_policy
-
-
-def normalize_input_planes(x):
-    """
-    Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
-    :param x: Input planes representation
-    :return: The normalized planes
-    """
-
-    # convert the input planes to float32 assuming that the datatype is int
-    if x.dtype != np.float32:
-        x = x.astype(np.float32)
-
-    if MODE == MODE_CHESS and VERSION == 2:
-        chess_v2.normalize_input_planes(x)
-        return
-
-    mat_pos = x[:NB_CHANNELS_POS, :, :]
-    mat_const = x[NB_CHANNELS_POS:, :, :]
-
-    # iterate over all pieces except the king, (because the king can't be in a pocket)
-    if MODE == MODE_CRAZYHOUSE or MODE == MODE_LICHESS:
-        for p_type in chess.PIECE_TYPES[:-1]:
-            # p_type -1 because p_type starts with 1
-            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
-            mat_pos[channel, :, :] /= MAX_NB_PRISONERS
-            # the prison for black begins 5 channels later
-            mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
-    # xiangqi has 7 piece types (king/general is excluded as prisoner)
-    elif MODE == MODE_XIANGQI:
-        for p_type in range(6):
-            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type
-            mat_pos[channel, :, :] /= MAX_NB_PRISONERS
-            # the prison for opponent begins 6 channels later
-            mat_pos[channel + POCKETS_SIZE_PIECE_TYPE, :, :] /= MAX_NB_PRISONERS
-
-    # Total Move Count
-    # 500 was set as the max number of total moves
-    mat_const[CHANNEL_MAPPING_CONST["total_mv_cnt"], :, :] /= MAX_NB_MOVES
-    # No progress count
-    # after 40 moves of no progress the 40 moves rule for draw applies
-    if MODE != MODE_XIANGQI:
-        mat_const[CHANNEL_MAPPING_CONST["no_progress_cnt"], :, :] /= MAX_NB_NO_PROGRESS
-
-    return x
-
-
-# use a constant matrix for normalization to allow broad cast operations
-# in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)))
 
 
 def augment(x, y_policy):
