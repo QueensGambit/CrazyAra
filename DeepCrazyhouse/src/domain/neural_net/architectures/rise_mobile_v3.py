@@ -166,7 +166,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     return sym
 
 
-def get_rise_v33_symbol(channels_policy_head, val_loss_factor, policy_loss_factor, select_policy_from_plane):
+def get_rise_v33_symbol(args):
     """
     Wrapper definition for RISEv3.3.
     :return: symbol
@@ -186,8 +186,8 @@ def get_rise_v33_symbol(channels_policy_head, val_loss_factor, policy_loss_facto
 
     symbol = rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
                                    channels_value_head=8, value_fc_size=256,
-                                   channels_policy_head=channels_policy_head,
-                                   grad_scale_value=val_loss_factor, grad_scale_policy=policy_loss_factor,
-                                   dropout_rate=0, select_policy_from_plane=select_policy_from_plane,
-                                   kernels=kernels, se_types=se_types, use_avg_features=False)
+                                   channels_policy_head=args.channels_policy_head,
+                                   grad_scale_value=args.val_loss_factor, grad_scale_policy=args.policy_loss_factor,
+                                   dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
+                                   kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels)
     return symbol
