@@ -224,6 +224,24 @@ def rise_mobile_v2_symbol(channels=256, channels_operating_init=128, channel_exp
     return sym
 
 
+def get_rise_v2_symbol(channels_policy_head, n_labels, select_policy_from_plane, val_loss_factor, policy_loss_factor):
+    """
+    Wrapper definition for RISEv2.0.
+    :return: symbol
+    """
+    bc_res_blocks = [3] * 13
+    symbol = rise_mobile_v2_symbol(channels=256, channels_operating_init=128, channel_expansion=64,
+                                   channels_value_head=8,
+                                   channels_policy_head=channels_policy_head, value_fc_size=256,
+                                   bc_res_blocks=bc_res_blocks, res_blocks=[], act_type='relu',
+                                   n_labels=n_labels, grad_scale_value=val_loss_factor,
+                                   grad_scale_policy=policy_loss_factor,
+                                   select_policy_from_plane=select_policy_from_plane,
+                                   use_se=True, dropout_rate=0,
+                                   use_extra_variant_input=False)
+    return symbol
+
+
 def preact_resnet_symbol(channels=256, channels_value_head=8,
                    channels_policy_head=81, value_fc_size=256, value_kernelsize=7, res_blocks=19, act_type='relu',
                    n_labels=4992, grad_scale_value=0.01, grad_scale_policy=0.99, select_policy_from_plane=True):
