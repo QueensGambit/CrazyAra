@@ -177,13 +177,14 @@ def alpha_zero_resnet(n_labels=4992, channels=256,  channels_value_head=1, chann
     return net
 
 
-def get_alpha_zero_symbol(channels_policy_head, n_labels, select_policy_from_plane, val_loss_factor, policy_loss_factor):
+def get_alpha_zero_symbol(args):
     """
     Wrapper definition for AlphaZero's ResNet
     :return: symbol
     """
-    symbol = alpha_zero_symbol(num_filter=256, channels_value_head=4, channels_policy_head=channels_policy_head,
+    symbol = alpha_zero_symbol(num_filter=256, channels_value_head=4, channels_policy_head=args.channels_policy_head,
                                workspace=1024, value_fc_size=256, num_res_blocks=19, bn_mom=0.9, act_type='relu',
-                               n_labels=n_labels, grad_scale_value=val_loss_factor, grad_scale_policy=policy_loss_factor,
-                               select_policy_from_plane=select_policy_from_plane)
+                               n_labels=args.n_labels, grad_scale_value=args.val_loss_factor,
+                               grad_scale_policy=args.policy_loss_factor,
+                               select_policy_from_plane=args.select_policy_from_plane)
     return symbol
