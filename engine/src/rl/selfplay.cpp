@@ -221,6 +221,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     gamePGN.black = blackPlayer->get_name();
     unique_ptr<StateObj> state= make_unique<StateObj>();
     state->init(variant, is960);
+    gamePGN.fen = state->fen();
     EvalInfo evalInfo;
 
     MCTSAgent* activePlayer;
