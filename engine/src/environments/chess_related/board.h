@@ -67,6 +67,12 @@ public:
     int plies_from_null() const;
 
     /**
+     * @brief legal_moves Return all legal moves
+     * @return  Legal moves
+     */
+    vector<Action> legal_actions() const;
+
+    /**
      * @brief total_move_cout Returns the current full move counter.
      * In the initial starting position and after first half move of whites, it returns 0
      * @return Total move number

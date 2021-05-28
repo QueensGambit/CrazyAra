@@ -220,7 +220,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * nbNNInputValues);
+                newState->get_state_planes(true, inputPlanes + newNodes->size() * nbNNInputValues, nextNode->get_legal_actions());
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());

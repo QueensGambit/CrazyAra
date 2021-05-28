@@ -114,6 +114,16 @@ int Board::plies_from_null() const
     return st->pliesFromNull;
 }
 
+vector<Action> Board::legal_actions() const
+{
+    vector<Action> legalMoves;
+    // generate the legal moves and save them in the list
+    for (const ExtMove& move : MoveList<LEGAL>(*this)) {
+        legalMoves.push_back(move.move);
+    }
+    return legalMoves;
+}
+
 size_t Board::total_move_cout() const
 {
     return size_t(gamePly / 2);
