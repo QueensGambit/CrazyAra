@@ -129,7 +129,7 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     # Channel: 12
     # En Passant Square
     assert(channel == CHANNEL_EN_PASSANT)
-    if board.ep_square is not None:
+    if board.ep_square and board.has_legal_en_passant(): # is not None:
         row, col = get_row_col(board.ep_square, mirror=mirror)
         planes[channel, row, col] = 1
     channel += 1
@@ -225,9 +225,9 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     for move in my_legal_moves:
         if gives_check(board, move):
             row, col = get_row_col(move.from_square, mirror=mirror)
-            planes[channel, row, col] = planes[channel, row, col] = 1
+            planes[channel, row, col] = 1
             row, col = get_row_col(move.to_square, mirror=mirror)
-            planes[channel, row, col] = planes[channel+1, row, col] = 1
+            planes[channel+1, row, col] = 1
     channel += 2
 
     # Channel: 32
