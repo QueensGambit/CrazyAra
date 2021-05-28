@@ -36,6 +36,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     chess,
     VARIANT_MAPPING_BOARDS)
 from DeepCrazyhouse.src.domain.util import get_board_position_index, get_row_col, np
+from DeepCrazyhouse.configs.main_config import main_config
 
 
 def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
@@ -506,6 +507,23 @@ def normalize_input_planes(x):
 
     return x
 
+
+def get_planes_statistics(board: chess.Board, normalize: bool, last_moves, board_occ=0):
+    """
+    Returns a dictionary for statistics of the plane which can be used for Unit-Testing.
+    e.g get_planes_statistics(board, False, last_moves=[chess.Move.from_uci("d7d5")])
+    """
+    planes = board_to_planes(board, board_occ=board_occ, normalize=normalize, mode=main_config['mode'], last_moves=last_moves)
+
+    planes = planes.flatten()
+    stats = {}
+    stats['sum'] = planes.sum()
+    stats['argMax'] = planes.argmax()
+    stats['maxNum'] = planes.max()
+    stats['key'] = 0
+    for i in range(len(planes)):
+        stats['key'] += i * planes[i]
+    return stats
 
 # use a constant matrix for normalization to allow broad cast operations
 # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets

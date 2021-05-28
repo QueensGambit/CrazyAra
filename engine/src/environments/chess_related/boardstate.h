@@ -46,7 +46,7 @@ public:
         return 8;
     }
     static uint NB_CHANNELS_TOTAL() {
-        return NB_CHANNELS_POS() + NB_CHANNELS_CONST() + NB_CHANNELS_VARIANTS() + NB_CHANNELS_HISTORY();
+        return NB_CHANNELS_POS() + NB_CHANNELS_CONST() + NB_CHANNELS_VARIANTS() + NB_CHANNELS_HISTORY() + NB_CHANNELS_AUXILIARY();
     }
     static uint NB_LABELS() {
         // legal moves total which are represented in the NN
@@ -118,6 +118,9 @@ public:
     static uint NB_CHANNELS_PER_HISTORY() {
         return 0;
     }
+    static uint NB_CHANNELS_AUXILIARY() {
+        return 0;
+    }
 #elif defined MODE_LICHESS
     static uint NB_CHANNELS_POS() {
         return 27;
@@ -134,22 +137,52 @@ public:
     static uint NB_CHANNELS_PER_HISTORY() {
         return 2;
     }
+    static uint NB_CHANNELS_AUXILIARY() {
+        return 0;
+    }
 #elif defined MODE_CHESS
+#if VERSION == 1
     static uint NB_CHANNELS_POS() {
         return 15;
     }
+#else  // VERSION 2
+    static uint NB_CHANNELS_POS() {
+        return 13;
+    }
+#endif
+#if VERSION == 1
     static uint NB_CHANNELS_CONST() {
         return 7;
     }
+#else  // VERSION 2
+    static uint NB_CHANNELS_CONST() {
+        return 4;
+    }
+#endif
     static uint NB_CHANNELS_VARIANTS() {
         return 1;
     }
+#if VERSION == 1
     static uint NB_LAST_MOVES() {
         return 8;
     }
+#else  // VERSION 2
+    static uint NB_LAST_MOVES() {
+        return 1;
+    }
+#endif
     static uint NB_CHANNELS_PER_HISTORY() {
         return 2;
     }
+#if VERSION == 1
+    static uint NB_CHANNELS_AUXILIARY() {
+        return 0;
+    }
+#else  // VERSION 2
+    static uint NB_CHANNELS_AUXILIARY() {
+        return 13;
+    }
+#endif
 #endif
     static uint NB_CHANNELS_HISTORY() {
         return NB_LAST_MOVES() * NB_CHANNELS_PER_HISTORY();
@@ -190,6 +223,18 @@ public:
     static float MAX_NB_NO_PROGRESS() {
         return 50;
     }
+    // normalize the relative material by 8
+    static float NORMALIZE_PIECE_NUMBER() {
+        return 8;
+    }
+    // normalize the nubmer of attackers by 4
+    static float NORMALIZE_ATTACKERS() {
+        return 4;
+    }
+    // normalize the number of legal moves
+    static float NORMALIZE_MOBILITY() {
+        return 64;
+    }
 #endif
     static uint NB_CHANNELS_POLICY_MAP() {
 #ifdef MODE_CRAZYHOUSE
@@ -220,7 +265,6 @@ class BoardState : public State
 private:
     Board board;
     StateListPtr states;
-
 public:
     BoardState();
     BoardState(const BoardState& b);
@@ -228,7 +272,7 @@ public:
     // State interface
     vector<Action> legal_actions() const override;
     void set(const string &fenStr, bool isChess960, int variant) override;
-    void get_state_planes(bool normalize, float *inputPlanes) const override;
+    void get_state_planes(bool normalize, float *inputPlanes, const vector<Action>& legalActions) const override;
     unsigned int steps_from_null() const override;
     bool is_chess960() const override;
     string fen() const override;

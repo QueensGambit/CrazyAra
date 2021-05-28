@@ -139,7 +139,7 @@ else:  # MODE = MODE_CHESS
     if VERSION == 1:
         NB_CHANNELS_POS = 15
     else:  # VERSION == 2
-        NB_CHANNELS_POS = 13 + 10  # 12 pieces + 1 en-passant and 10 auxiliary
+        NB_CHANNELS_POS = 12 + 1 + 13  # 12 pieces + 1 en-passant and 13 auxiliary
     if VERSION == 1:
         NB_CHANNELS_CONST = 7
     else:  # VERSION == 2
@@ -147,7 +147,10 @@ else:  # MODE = MODE_CHESS
     NB_CHANNELS_VARIANTS = 1  # is960
     # No dropping moves, king promotion moves
     NB_POLICY_MAP_CHANNELS = 76
-    NB_LAST_MOVES = 8
+    if VERSION == 1:
+        NB_LAST_MOVES = 8
+    else:
+        NB_LAST_MOVES = 1
     NB_CHANNELS_PER_HISTORY_ITEM = 2
 
 # number of labels of the corresponding flattened policy map. Most of these entries are unreachable (always 0)

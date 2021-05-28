@@ -10,23 +10,26 @@ and adds features which are hard for the CNN to extract, e.g. material info, num
 opposite color bishops.
 """
 import chess
-from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, NB_CHANNELS_TOTAL, PIECES
+from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, NB_CHANNELS_TOTAL, PIECES,\
+    NB_LAST_MOVES, NB_CHANNELS_PER_HISTORY_ITEM
 from DeepCrazyhouse.src.domain.util import opposite_colored_bishops, get_row_col, np, checkerboard,\
-    get_board_position_index
+    get_board_position_index, checkers, gives_check
 
-NORMALIZE_NB_LEGAL_MOVES = 100
+NORMALIZE_MOBILITY = 64
 NORMALIZE_PIECE_NUMBER = 8
 # These constant describe the starting channel for the corresponding info
 CHANNEL_PIECES = 0
 CHANNEL_EN_PASSANT = 12
 CHANNEL_CASTLING = 13
 CHANNEL_LAST_MOVES = 17
-CHANNEL_IS_960 = 33
-CHANNEL_PIECE_MASK = 34
-CHANNEL_CHECKERBOARD = 36
-CHANNEL_MATERIAL = 37
-CHANNEL_NB_LEGAL_MOVES = 42
-CHANNEL_OPP_BISHOPS = 43
+CHANNEL_IS_960 = 19
+CHANNEL_PIECE_MASK = 20
+CHANNEL_CHECKERBOARD = 22
+CHANNEL_MATERIAL = 23
+CHANNEL_OPP_BISHOPS = 28
+CHANNEL_CHECKERS = 29
+CHANNEL_CHECK_MOVES = 30
+CHANNEL_MOBILITY = 32
 
 
 def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
@@ -75,21 +78,21 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
 
     P1 pieces | 1 | A grouped mask of all WHITE pieces |
     P2 pieces | 1 | A grouped mask of all BLACK pieces |
-    Chessboard | 1 | A chess board pattern |
+    Checkerboard | 1 | A chess board pattern |
     P1 Material Diff | 5 | (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN), normalized with 8, + means positive, - means negative |
-    P1 Number legal moves | 1 | Gives the number of legal moves for the active player |
     Opposite Color Bishops | 1 | Indicates if they are only two bishops and the bishops are opposite color |
-
+    Checkers | 1 | Indicates all pieces giving check |
+    Checking Moves | 2 | Indicates all checking moves (from sq, to sq) |
+    Mobility | 1 | Indicates the number of legal moves
     ---
-    10 planes
+    13 planes
 
     The total number of planes is calculated as follows:
     # --------------
-    13 + 4 + 16 + 1 + 10
-    Total: 44 planes
+    13 + 4 + 2 + 1 + 13
+    Total: 33 planes
 
     :param board: Board handle (Python-chess object)
-    :param board_occ: Sets how often the board state has occurred before (by default 0)
     :param normalize: True if the inputs shall be normalized to the range [0.-1.]
     :param last_moves: List of last last moves. The most recent move is the first entry.
     :return: planes - the plane representation of the current board state
@@ -126,7 +129,7 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     # Channel: 12
     # En Passant Square
     assert(channel == CHANNEL_EN_PASSANT)
-    if board.ep_square is not None:
+    if board.ep_square and board.has_legal_en_passant(): # is not None:
         row, col = get_row_col(board.ep_square, mirror=mirror)
         planes[channel, row, col] = 1
     channel += 1
@@ -143,11 +146,11 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
             planes[channel, :, :] = 1
         channel += 1
 
-    # Channel: 17 - 32
+    # Channel: 17 - 18
     assert(channel == CHANNEL_LAST_MOVES)
     # Last 8 moves
     if last_moves:
-        assert(len(last_moves) == 8)
+        assert(len(last_moves) == NB_LAST_MOVES)
         for move in last_moves:
             if move:
                 from_row, from_col = get_row_col(move.from_square, mirror=mirror)
@@ -159,16 +162,16 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
             else:
                 channel += 2
     else:
-        channel += 16
+        channel += NB_LAST_MOVES * NB_CHANNELS_PER_HISTORY_ITEM
 
-    # Channel: 33
+    # Channel: 19
     # Chess960
     assert (channel == CHANNEL_IS_960)
     if board.chess960:
         planes[channel + 1, :, :] = 1
     channel += 1
 
-    # Channel: 34 - 35
+    # Channel: 20 - 21
     # All white pieces and black pieces in a single map
     assert(channel == CHANNEL_PIECE_MASK)
     for color in colors:
@@ -181,13 +184,13 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
                 planes[channel, row, col] = 1
         channel += 1
 
-    # Channel: 36
+    # Channel: 22
     # Checkerboard
     assert(channel == CHANNEL_CHECKERBOARD)
     planes[channel, :, :] = checkerboard()
     channel += 1
 
-    # Channel: 37 - 41
+    # Channel: 23 - 27
     # Relative material difference (negative if less pieces than opponent and positive if more)
     # iterate over all pieces except the king
     assert(channel == CHANNEL_MATERIAL)
@@ -196,18 +199,44 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
         planes[channel, :, :] = matt_diff / NORMALIZE_PIECE_NUMBER if normalize else matt_diff
         channel += 1
 
-    # Channel: 42
-    # Number legal moves
-    assert (channel == CHANNEL_NB_LEGAL_MOVES)
-    planes[channel, :, :] = len(list(board.legal_moves)) / NORMALIZE_NB_LEGAL_MOVES if normalize else len(list(board.legal_moves))
-    channel += 1
-
-    # Channel: 43
+    # Channel: 28
     # Opposite color bishops
     assert (channel == CHANNEL_OPP_BISHOPS)
     if opposite_colored_bishops(board):
         planes[channel, :, :] = 1
+    channel += 1
 
+    # Channel: 29
+    # Checkers
+    assert channel == CHANNEL_CHECKERS
+    board_checkers = checkers(board)
+    if board_checkers:
+        # iterate over the piece mask and receive every position square of it
+        for pos in chess.SquareSet(board_checkers):
+            row, col = get_row_col(pos, mirror=mirror)
+            # set the bit at the right position
+            planes[channel, row, col] = 1
+    channel += 1
+
+    my_legal_moves = list(board.legal_moves)
+
+    # Channel: 30 - 31
+    assert channel == CHANNEL_CHECK_MOVES
+    for move in my_legal_moves:
+        if gives_check(board, move):
+            row, col = get_row_col(move.from_square, mirror=mirror)
+            planes[channel, row, col] = 1
+            row, col = get_row_col(move.to_square, mirror=mirror)
+            planes[channel+1, row, col] = 1
+    channel += 2
+
+    # Channel: 32
+    # Mobility
+    assert (channel == CHANNEL_MOBILITY)
+    planes[channel, :, :] = len(my_legal_moves) / NORMALIZE_MOBILITY if normalize else len(my_legal_moves)
+    channel += 1
+
+    assert channel == NB_CHANNELS_TOTAL
     return planes
 
 
@@ -300,9 +329,10 @@ def normalize_input_planes(planes):
     :param planes: Input planes representation
     :return: The normalized planes
     """
-    planes[CHANNEL_NB_LEGAL_MOVES, :, :] /= NORMALIZE_NB_LEGAL_MOVES
     channel = CHANNEL_MATERIAL
     for _ in chess.PIECE_TYPES[:-1]:
         planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER
         channel += 1
+    planes[CHANNEL_MOBILITY, :, :] /= NORMALIZE_MOBILITY
+
     return planes

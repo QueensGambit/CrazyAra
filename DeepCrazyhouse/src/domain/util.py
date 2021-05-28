@@ -60,6 +60,28 @@ def opposite_colored_bishops(board: chess.Board):
     return False
 
 
+def checkers(board: chess.Board):
+    """
+    Generates a bitmap of all checking pieces
+    """
+    king = board.king(board.turn)
+    if king is None:
+        return False
+    return board.attackers_mask(not board.turn, king)
+
+
+def gives_check(board: chess.Board, move: chess.Move) -> bool:
+    """
+    Probes if the given move would put the opponent in check. The move
+    must be at least pseudo-legal.
+    """
+    board.push(move)
+    try:
+        return board.is_check()
+    finally:
+        board.pop()
+
+
 def get_row_col(position, mirror=False):
     """
     Maps a value [0,63] to its row and column index

@@ -70,9 +70,9 @@ void BoardState::set(const string &fenStr, bool isChess960, int variant)
     board.set(fenStr, isChess960, Variant(variant), &states->back(), nullptr);
 }
 
-void BoardState::get_state_planes(bool normalize, float *inputPlanes) const
+void BoardState::get_state_planes(bool normalize, float *inputPlanes, const vector<Action>& legalActions) const
 {
-    board_to_planes(&board, board.number_repetitions(), normalize, inputPlanes);
+    board_to_planes(&board, board.number_repetitions(), normalize, inputPlanes, legalActions);
 }
 
 unsigned int BoardState::steps_from_null() const
