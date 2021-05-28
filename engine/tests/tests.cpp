@@ -51,22 +51,48 @@ void init() {
     Bitbases::init();
 }
 
-void get_planes_statistics(const Board* pos, bool normalize, double& sum, double& maxNum, double& key, size_t& argMax) {
-    float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
-    board_to_planes(pos, pos->number_repetitions(), normalize, inputPlanes);
-    sum = 0;
-    maxNum = 0;
-    key = 0;
-    argMax = 0;
-    for (int i = 0; i < StateConstants::NB_VALUES_TOTAL(); ++i) {
+struct PlaneStatistics {
+    double sum;
+    double maxNum;
+    double key;
+    size_t argMax;
+    PlaneStatistics() :
+        sum(0), maxNum(0), key(0), argMax(0) {}
+};
+
+PlaneStatistics get_stats_from_input_planes(const float* inputPlanes)
+{
+    PlaneStatistics stats;
+    for (uint i = 0; i < StateConstants::NB_VALUES_TOTAL(); ++i) {
         const float val = inputPlanes[i];
-        sum += val;
-        if (inputPlanes[i] > maxNum) {
-            maxNum = val;
-            argMax = i;
+        stats.sum += val;
+        if (inputPlanes[i] > stats.maxNum) {
+            stats.maxNum = val;
+            stats.argMax = i;
         }
-        key += i * val;
+        stats.key += i * val;
     }
+    return stats;
+}
+
+PlaneStatistics get_planes_statistics(const StateObj& state, bool normalize) {
+    float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
+    state.get_state_planes(normalize, inputPlanes, state.legal_actions());
+    return get_stats_from_input_planes(inputPlanes);
+}
+
+PlaneStatistics get_planes_statistics(const Board& pos, bool normalize) {
+    float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
+    board_to_planes(&pos, pos.number_repetitions(), normalize, inputPlanes, pos.legal_actions());
+    return get_stats_from_input_planes(inputPlanes);
+}
+
+void get_planes_statistics(const Board* pos, bool normalize, double& sum, double& maxNum, double& key, size_t& argMax) {
+    PlaneStatistics stats = get_planes_statistics(*pos, normalize);
+    sum = stats.sum;
+    maxNum = stats.maxNum;
+    key = stats.key;
+    argMax = stats.argMax;
 }
 
 void apply_moves_to_board(const vector<string>& uciMoves, Board& pos, StateListPtr& states) {
@@ -240,7 +266,8 @@ TEST_CASE("Draw_by_insufficient_material"){
 
 
 #ifdef MODE_CHESS
-TEST_CASE("Chess_Input_Planes"){
+#if VERSION == 1
+TEST_CASE("Chess_Input_Planes Version 1"){
     init();
     Board pos;
     auto uiThread = make_shared<Thread>(0);
@@ -285,17 +312,105 @@ TEST_CASE("Chess_Input_Planes"){
     REQUIRE(sum == 816);
     REQUIRE(key == 909458);
 }
+#else  // Version == 2
+TEST_CASE("Chess_Input_Planes Version 2.7"){
+    init();
+    BoardState state;
+    PlaneStatistics stats;
+
+    // Start Pos: normalize=false
+    state.init(get_default_variant(), false);
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 1632);
+    REQUIRE(stats.argMax == 2048);
+    REQUIRE(stats.maxNum == 20);
+    REQUIRE(stats.key == 3006288);
+
+    // Start Pos: normalize=true
+    state.init(get_default_variant(), false);
+    stats = get_planes_statistics(state, true);
+    REQUIRE(stats.sum == 372);
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 386118);
+
+    // Checking test: normalize=false
+    state.set("rnbqk1nr/pppp1ppp/8/4p3/1b1PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3", false, get_default_variant());
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 737);
+    REQUIRE(stats.argMax == 2048);
+    REQUIRE(stats.maxNum == 6);
+    REQUIRE(stats.key == 1144897);
+
+    // last moves
+    state.init(get_default_variant(), false);
+    apply_given_moves(state, {"e2e4", "c7c5"});
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 2274);
+    REQUIRE(stats.argMax == 2048);
+    REQUIRE(stats.maxNum == 30);
+    REQUIRE(stats.key == 4339492.0);
+
+    // Checking move test: normalize=true
+    state.set("r1br2k1/p4ppp/2p2n2/Q1b1p3/8/NP3N1P/P1P1BPP1/R1B1K2R b KQ - 0 12", false, get_default_variant());
+    stats = get_planes_statistics(state, true);
+    REQUIRE(stats.sum == 241);
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 287212);
+
+    // en-passant test: normalize=false
+    state.init(get_default_variant(), false);
+    apply_given_moves(state, {"e2e4", "c7c5", "d2d3", "a7a6", "e4e5", "d7d5"});
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 2531);
+    REQUIRE(stats.argMax == 2048);
+    REQUIRE(stats.maxNum == 34);
+    REQUIRE(stats.key == 4872641.0);
+
+    // en-passant test + check moves test: normalize=true
+    state.init(get_default_variant(), false);
+    string uciMove;
+    apply_given_moves(state, {"e2e4", "c7c5", "e4e5", "d7d5"});
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 2341);
+    REQUIRE(stats.argMax == 2048);
+    REQUIRE(stats.maxNum == 31);
+    REQUIRE(stats.key == 4477319.0);
+
+    // material difference
+    state.set("r3k1nr/pbp4p/p2p2pb/4P3/3P4/N2q1n2/PPP2PPP/5K1R w kq - 0 14", false, get_default_variant());
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 83);
+    REQUIRE(stats.argMax == 1472);
+    REQUIRE(stats.maxNum == 2);
+    REQUIRE(stats.key == 16041.0);
+
+    // castle-rights
+    state.set("2kr3r/pbqp1ppp/2n2n2/4b3/4P3/2NPB3/PPP1QPPP/R4RK1 b - - 4 11", false, get_default_variant());
+    stats = get_planes_statistics(state, true);
+    REQUIRE(stats.sum == 118);
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 163636.0);
+}
+#endif
 
 TEST_CASE("6-Men WDL"){
     init();
-    // Blunder by ClassicAra in https://tcec-chess.com/#div=q43t&game=293&season=21
-    Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
-    StateObj state;
-    state.set("8/1K2k3/8/4P3/R3r3/P7/8/8 b - - 0 55", false, get_default_variant());
-    Tablebase::ProbeState probeState;
-    Tablebase::WDLScore wdl = state.check_for_tablebase_wdl(probeState);
-    REQUIRE(probeState != Tablebase::ProbeState::FAIL);
-    REQUIRE(wdl == Tablebase::WDLScore::WDLWin);
+    if (string(Options["SyzygyPath"]).empty() || string(Options["SyzygyPath"]) == "<empty>") {
+        cout << "warning: No tablebases found -> skipped test for 6-Men WDL" << endl;
+    }
+    else {
+        // Blunder by ClassicAra in https://tcec-chess.com/#div=q43t&game=293&season=21
+        Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
+        StateObj state;
+        state.set("8/1K2k3/8/4P3/R3r3/P7/8/8 b - - 0 55", false, get_default_variant());
+        Tablebase::ProbeState probeState;
+        Tablebase::WDLScore wdl = state.check_for_tablebase_wdl(probeState);
+        REQUIRE(probeState != Tablebase::ProbeState::FAIL);
+        REQUIRE(wdl == Tablebase::WDLScore::WDLWin);
+    }
 }
 #endif
 
@@ -311,6 +426,7 @@ TEST_CASE("LABELS equality"){
     }
 }
 
+#if VERSION == 1
 TEST_CASE("Board representation constants"){
     REQUIRE(StateConstants::BOARD_WIDTH() == legacy_constants::BOARD_WIDTH);
     REQUIRE(StateConstants::BOARD_HEIGHT() == legacy_constants::BOARD_HEIGHT);
@@ -326,6 +442,7 @@ TEST_CASE("Board representation constants"){
     REQUIRE(StateConstants::NB_CHANNELS_VARIANTS() == legacy_constants::NB_CHANNELS_VARIANTS);
     REQUIRE(StateConstants::MAX_FULL_MOVE_COUNTER() == legacy_constants::MAX_FULL_MOVE_COUNTER);
 }
+#endif
 
 
 // ==========================================================================================================
@@ -365,6 +482,12 @@ GameInfo apply_random_moves(StateObj& state, uint movesToApply) {
         ++gameInfo.nbAppliedMoves;
     }
     return gameInfo;
+}
+
+void apply_given_moves(StateObj& state, const std::vector<string>& uciMoves) {
+    for (string uciMove: uciMoves) {
+        state.do_action(state.uci_to_action(uciMove));
+    }
 }
 
 TEST_CASE("State: steps_from_null()"){

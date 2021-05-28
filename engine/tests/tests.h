@@ -92,6 +92,13 @@ struct GameInfo {
 GameInfo apply_random_moves(StateObj& state, uint movesToApply);
 
 /**
+ * @brief apply_given_moves Applies a given set of uci-moves to the states
+ * @param state State object
+ * @param uciMoves Move to apply
+ */
+void apply_given_moves(StateObj& state, const std::vector<string>& uciMoves);
+
+/**
  * @brief get_default_variant Returns the default variant for the used build mode
  * @return Variant
  */
