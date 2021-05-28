@@ -53,7 +53,7 @@ void RawNetAgent::evaluate_board_state()
         evalInfo->pv[0] = {evalInfo->legalMoves[0]};
         return;
     }
-    state->get_state_planes(true, inputPlanes);
+    state->get_state_planes(true, inputPlanes, state->legal_actions());
     net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
