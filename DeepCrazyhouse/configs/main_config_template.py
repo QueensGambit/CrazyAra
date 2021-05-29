@@ -9,6 +9,14 @@ Copy and rename this file to main_config.py and adjust the paths accordingly.
 """
 
 
+# define the default dir where the training data in plane representation is located
+# e.g. for supervised learning default_dir = "/data/planes/"
+default_dir = "/data/RL/export/"
+
+if default_dir[-1] != "/":
+    default_dir = default_dir + "/"
+
+
 main_config = {
     # Copy and rename this file to main_config.py
 
@@ -31,10 +39,11 @@ main_config = {
     "pgn_mate_in_one_dir": "/home/demo_user/datasets/lichess/Crazyhouse/pgn/mate_in_one/",
     # The plane directories contain the plane representation of the converted board state
     #  (.zip files which have been compressed by  the python zarr library)
-    "planes_train_dir": "/data/RL/export/train/",
-    "planes_val_dir": "/data/RL/export/val/",
-    "planes_test_dir": "/home/demo_user/datasets/lichess/Crazyhouse/planes/test/",
-    "planes_mate_in_one_dir": "/home/demo_user/datasets/lichess/Crazyhouse/planes/mate_in_one/",
+    "planes_train_dir": default_dir + "train/",
+    "planes_val_dir": default_dir + "val/",
+    "planes_test_dir": default_dir + "test/",
+    "planes_mate_in_one_dir": default_dir + "mate_in_one/",
+
     # The rec directory contains the plane representation which are used in the training loop of the network
     # use the the notebook create_rec_dataset to generate the .rec files:
     # (Unfortunately when trying to start training with the big dataset a memory overflow occured.
@@ -53,6 +62,9 @@ main_config = {
     # layer name of the policy output layer without softmax applied (e.g. flatten0 for legacy crazyhouse networks
     # policy_out for newer networks)
     "policy_output": "policy_out",
+    "auxiliary_output": "auxiliary_out",
+    "wdl_output": "wdl_out",
+    "plys_to_end_output": "plys_to_end_out",
 
     # Active mode for different input & output representations.
     # Each mode is only compatible with a certain network input-/output representation:
