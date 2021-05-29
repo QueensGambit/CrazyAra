@@ -223,6 +223,7 @@ public:
     static float MAX_NB_NO_PROGRESS() {
         return 50;
     }
+#endif
     // normalize the relative material by 8
     static float NORMALIZE_PIECE_NUMBER() {
         return 8;
@@ -235,7 +236,6 @@ public:
     static float NORMALIZE_MOBILITY() {
         return 64;
     }
-#endif
     static uint NB_CHANNELS_POLICY_MAP() {
 #ifdef MODE_CRAZYHOUSE
         return 81;
