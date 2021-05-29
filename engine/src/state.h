@@ -427,6 +427,13 @@ public:
     virtual State* clone() const = 0;
 
     /**
+     * @brief is_two_fold_repetition Return if the current state is a two fold repetition.
+     * This method is only used if two fold repetitions should be treated as draws during the search.
+     * @return bool
+     */
+    virtual bool is_two_fold_repetition() const = 0;
+
+    /**
      * @brief init Initializes the current state to the starting position.
      * If there a multiple possible starting positions either choose a random or a fixed one.
      * @param isChess960 If true 960 mode will be active

@@ -523,6 +523,7 @@ public:
 
     uint32_t get_number_of_nodes() const;
 
+    bool is_two_fold_repetition();
 private:
     /**
      * @brief reserve_full_memory Reserves memory for all available child nodes
@@ -533,7 +534,14 @@ private:
      * @brief check_for_terminal Checks if the given board position is a terminal node and updates isTerminal
      * @param state Current board position for this node
      */
-    void check_for_terminal(StateObj* state);
+    void check_for_terminal(const StateObj* state);
+
+    /**
+     * @brief check_for_two_fold_repeition Checks if the given state has already been repeated.
+     * This is onyl done if two fold repetitions are treated as terminals during the search.
+     */
+    void check_for_two_fold_repeition(const StateObj* state);
+
 
 #ifdef MCTS_TB_SUPPORT
     /**

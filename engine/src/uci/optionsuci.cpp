@@ -159,6 +159,11 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Timeout_MS"]                    << Option(0, 0, 99999999);
 #ifdef MODE_LICHESS
+    o["Use_Two_Fold_Repetition"]       << Option(false);
+#ifdef MODE_CRAZYHOUSE
+      // we repeat "crazyhouse" in the list because of problem in XBoard/Winboard #23
+    o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
+#elif defined MODE_LICHESS
     o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), availableVariants);
 #else
     // we repeat e.g. "crazyhouse" in the list because of problem in XBoard/Winboard CrazyAra#23

@@ -575,6 +575,9 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
         return;
     }
 #endif
+    if (node->is_two_fold_repetition()) {
+        return;
+    }
     node->set_value(valueOutputs[batchIdx]);
 }
 
