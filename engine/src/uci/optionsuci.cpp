@@ -155,6 +155,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Threads"]                       << Option(2, 1, 512);
     o["Timeout_MS"]                    << Option(0, 0, 99999999);
+    o["Use_Two_Fold_Repetition"]       << Option(false);
 #ifdef MODE_CRAZYHOUSE
       // we repeat "crazyhouse" in the list because of problem in XBoard/Winboard #23
     o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});

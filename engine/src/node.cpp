@@ -102,6 +102,10 @@ Node::Node(StateObj* state, const SearchSettings* searchSettings):
         check_for_tablebase_wdl(state);
     }
 #endif
+    if (searchSettings->useTwoFoldRepetition && !isTerminal) {
+        check_for_two_fold_repeition(state);
+    }
+
     policyProbSmall.resize(legalActions.size());
 }
 
@@ -828,7 +832,7 @@ void Node::mark_as_terminal()
     d->noVisitIdx = 0;
 }
 
-void Node::check_for_terminal(StateObj* pos)
+void Node::check_for_terminal(const StateObj* pos)
 {
     float customValue;
     TerminalType terminalType = pos->is_terminal(get_number_child_nodes(), customValue);
@@ -852,6 +856,20 @@ void Node::check_for_terminal(StateObj* pos)
             ;  // pass
         }
     }
+}
+
+void Node::check_for_two_fold_repeition(const StateObj* state)
+{
+    if (state->is_two_fold_repetition()) {
+        init_node_data();
+        d->nodeType = TWO_FOLD;
+        set_value(DRAW_VALUE);
+    }
+}
+
+bool Node::is_two_fold_repetition()
+{
+    return d != nullptr && d->nodeType == TWO_FOLD;
 }
 
 #ifdef MCTS_TB_SUPPORT

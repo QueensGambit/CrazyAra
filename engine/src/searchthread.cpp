@@ -229,7 +229,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
             return nextNode;
         }
 #ifdef MCTS_TB_SUPPORT
-        if (nextNode->is_terminal() || (!reachedTablebases && nextNode->is_playout_node() && nextNode->is_solved())) {
+        if (nextNode->is_terminal() || (nextNode->is_playout_node() && nextNode->is_two_fold_repetition()) || (!reachedTablebases && nextNode->is_playout_node() && nextNode->is_solved())) {
 #else
         if (nextNode->is_playout_node() && nextNode->is_solved()) {
 #endif
@@ -457,6 +457,9 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
         return;
     }
 #endif
+    if (node->is_two_fold_repetition()) {
+        return;
+    }
     node->set_value(valueOutputs[batchIdx]);
 }
 

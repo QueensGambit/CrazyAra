@@ -48,6 +48,7 @@ enum NodeType : uint8_t {
     TB_DRAW,
     TB_LOSS,
 #endif
+    TWO_FOLD,
     UNSOLVED
 };
 

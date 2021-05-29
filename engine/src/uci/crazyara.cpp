@@ -561,6 +561,7 @@ void CrazyAra::init_search_settings()
     searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
+    searchSettings.useTwoFoldRepetition = Options["Use_Two_Fold_Repetition"];
 #ifdef SUPPORT960
     is960 = Options["UCI_Chess960"];
 #endif
