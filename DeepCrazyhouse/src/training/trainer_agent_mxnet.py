@@ -153,6 +153,14 @@ def return_metrics_and_stop_training(k_steps, val_metric_values, k_steps_best, v
            (k_steps_best, val_metric_values_best)
 
 
+def value_to_wdl_label(y_value):
+    return y_value + 1
+
+
+def prepare_plys_label(plys_to_end_label):
+    return np.clip(plys_to_end_label, 0, 100) / 100
+
+
 class TrainerAgentMXNET:  # Probably needs refactoring
     """Main training loop"""
 
@@ -336,10 +344,18 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                 self.yp_train = prepare_policy(self.yp_train, self.tc.select_policy_from_plane,
                                                self.tc.sparse_policy_label, self.tc.is_policy_from_plane_data)
 
-                self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
-                                                     {'value_label': self.yv_train, 'policy_label': self.yp_train},
-                                                     self.tc.batch_size,
-                                                     shuffle=True)
+                if self.tc.use_wdl and self.tc.use_plys_to_end:
+                    self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
+                                                         {'value_label': self.yv_train, 'policy_label': self.yp_train,
+                                                         'wdl_label': value_to_wdl_label(self.yv_train),
+                                                          'plys_to_end_label': prepare_plys_label(plys_to_end)},
+                                                         self.tc.batch_size,
+                                                         shuffle=True)
+                else:
+                    self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
+                                                         {'value_label': self.yv_train, 'policy_label': self.yp_train},
+                                                         self.tc.batch_size,
+                                                         shuffle=True)
 
                 # avoid memory leaks by adding synchronization
                 mx.nd.waitall()

@@ -98,8 +98,8 @@ def ic_layer(data, name, droupout_rate):
 
 
 def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu', value_fc_size=256,
-               grad_scale_value=0.01, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False,
-               use_raw_features=False, use_bn=False):
+               grad_scale_value=0.01, grad_scale_wdl=None, grad_scale_ply=None, use_se=False, use_mix_conv=False, orig_data=None, use_avg_features=False,
+               use_raw_features=False, use_bn=False, use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False):
     """
     Value head of the network which outputs the value evaluation. A floating point number in the range [-1,+1].
     :param data: Input data
@@ -146,11 +146,38 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
     value_out = mx.sym.FullyConnected(data=value_flatten, num_hidden=value_fc_size, name='value_fc0')
     if use_bn:
         value_out = mx.sym.BatchNorm(data=value_out, name='value_bn2')
-    value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
-    value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
-    value_out = get_act(data=value_out, act_type='tanh', name=main_config["value_output"])
-    value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
-    return value_out
+
+    value_main_features = get_act(data=value_out, act_type=act_type, name='value_act1')
+
+    wdl_out = None
+    plys_to_end_out = None
+    wdl_softmax = None
+    if use_wdl:
+        wdl_out = mx.sym.FullyConnected(data=value_main_features, num_hidden=3, name=main_config["wdl_output"])
+        wdl_out = mx.sym.SoftmaxOutput(data=wdl_out, name='wdl', grad_scale=grad_scale_wdl)
+        wdl_softmax = mx.sym.SoftmaxActivation(data=wdl_out, name='wdl_softmax')
+    if use_plys_to_end:
+        plys_to_end_out = mx.sym.FullyConnected(data=value_main_features, num_hidden=1, name='value_plys_to_end_fc')
+        plys_to_end_out = get_act(data=plys_to_end_out, act_type='sigmoid', name=main_config["plys_to_end_output"])
+        plys_to_end_out = mx.sym.LinearRegressionOutput(data=plys_to_end_out, name='plys_to_end', grad_scale=grad_scale_ply)
+
+    if use_wdl and use_plys_to_end:
+        if use_mlp_wdl_ply:
+            value_out = mx.sym.Concat(wdl_softmax, plys_to_end_out, dim=1, name='value_concat_0')
+            value_out = mx.sym.FullyConnected(data=value_out, num_hidden=8, name='value_wdl_ply_fc')
+            value_out = get_act(data=value_out, act_type=act_type, name='value_wdl_ply_act')
+            value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
+            value_out = get_act(data=value_out, act_type='tanh', name=main_config["value_output"])
+            value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=1)
+        else:  # hard-coded
+            (loss_out, _, win_out) = mx.sym.split(wdl_softmax, axis=1, num_outputs=3, name='win_loss_split')
+            value_out = mx.sym.broadcast_add(-loss_out, win_out, name=main_config["value_output"])
+            value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=0)
+    else:
+        value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
+        value_out = get_act(data=value_out, act_type='tanh', name=main_config["value_output"])
+        value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
+    return value_out, wdl_out, wdl_softmax, plys_to_end_out
 
 
 def policy_head(data, channels, act_type, channels_policy_head, select_policy_from_plane, n_labels,

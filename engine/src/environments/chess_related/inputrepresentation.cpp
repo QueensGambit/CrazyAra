@@ -382,6 +382,7 @@ inline void set_opposite_bishops(PlaneData& p) {
     ++p.currentChannel;
 }
 
+#ifdef MODE_CHESS
 void board_to_planes_v_2_7(const Board *pos, bool normalize, float *inputPlanes, const vector<Action>& legalMoves)
 {
     // Fill in the piece positions
@@ -404,6 +405,7 @@ void board_to_planes_v_2_7(const Board *pos, bool normalize, float *inputPlanes,
     set_mobility(planeData, legalMoves);
     assert(planeData.currentChannel == StateConstants::NB_CHANNELS_TOTAL());
 }
+#endif
 
 void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes, const vector<Action>& legalMoves)
 {
