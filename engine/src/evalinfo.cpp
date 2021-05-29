@@ -130,9 +130,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vect
     }
     pv.push_back(rootNode->get_action(childIdx));
 
-    rootNode->lock();
     Node* nextNode = rootNode->get_child_node(childIdx);
-    rootNode->unlock();
     // make sure the nextNode has been expanded (e.g. when inference of the NN is too slow on the given hardware to evaluate the next node in time)
     if (nextNode != nullptr) {
         nextNode->get_principal_variation(pv, searchSettings->qValueWeight, searchSettings->qVetoDelta);
