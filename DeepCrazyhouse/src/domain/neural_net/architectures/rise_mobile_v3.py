@@ -29,6 +29,7 @@ Influenced by the following papers:
 import mxnet as mx
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, \
     get_stem, value_head, policy_head, get_norm_layer, get_se_layer
+from DeepCrazyhouse.configs.main_config import main_config
 
 
 def bottleneck_residual_block_v2(data, channels, channels_operating, name, kernel, act_type='relu', norm_type="bn", se_type=None):
@@ -93,9 +94,11 @@ def sandglass_block(data, channels, channels_reduced, name, kernel, act_type='re
 
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
-                          grad_scale_value=0.01, grad_scale_policy=0.99,
+                          grad_scale_value=0.01, grad_scale_policy=0.99, grad_scale_wdl=None, grad_scale_ply=None,
                           select_policy_from_plane=True, kernels=None, n_labels=4992,
-                          se_types=None, use_avg_features=False):
+                          se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
+                          use_mlp_wdl_ply=False,
+                          ):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -154,14 +157,21 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     if dropout_rate != 0:
         data = mx.sym.Dropout(data, p=dropout_rate)
 
-    value_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
-                           value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value,
-                           orig_data=orig_data, use_avg_features=use_avg_features)
+    value_out, wdl_out, wdl_softmax, plys_to_end_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
+                                                     value_fc_size=value_fc_size, use_mix_conv=False,
+                                                     grad_scale_value=grad_scale_value,
+                                                     grad_scale_ply=grad_scale_ply, grad_scale_wdl=grad_scale_wdl,
+                                                     orig_data=orig_data, use_avg_features=use_avg_features, use_wdl=use_wdl,
+                                                     use_plys_to_end=use_plys_to_end, use_mlp_wdl_ply=use_mlp_wdl_ply)
     policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
                              select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels,
                              grad_scale_policy=grad_scale_policy)
     # group value_out and policy_out together
-    sym = mx.symbol.Group([value_out, policy_out])
+    if use_plys_to_end and use_wdl:
+        auxiliary_out = mx.sym.Concat(wdl_softmax, plys_to_end_out, dim=1, name=main_config["auxiliary_output"])
+        sym = mx.symbol.Group([value_out, policy_out, auxiliary_out, wdl_out, plys_to_end_out])
+    else:
+        sym = mx.symbol.Group([value_out, policy_out])
 
     return sym
 
