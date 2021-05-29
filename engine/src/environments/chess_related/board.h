@@ -92,6 +92,8 @@ public:
      */
     bool can_claim_3fold_repetition() const;
 
+    bool is_two_fold_repetition() const;
+
     /**
      * @brief is_50_move_rule_draw Returns true, if the positions is a draw due to 50 move rule.
      * Method is based on Position::is_draw(int ply).

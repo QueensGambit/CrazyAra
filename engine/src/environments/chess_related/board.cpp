@@ -134,7 +134,7 @@ size_t Board::number_repetitions() const
     if (st->repetition == 0) {
         return 0;
     }
-    else if (st->repetition) {
+    if (st->repetition) {
         return 1;
     }
     return 2;
@@ -146,6 +146,11 @@ bool Board::can_claim_3fold_repetition() const
     // occurrence of the same position.
     // It is negative in the 3-fold case, or zero if the position was not repeated.
     return st->repetition < 0;
+}
+
+bool Board::is_two_fold_repetition() const
+{
+    return st->repetition;
 }
 
 bool Board::is_50_move_rule_draw() const

@@ -304,6 +304,7 @@ public:
     void set_auxiliary_outputs(const float* auxiliaryOutputs) override;
     BoardState* clone() const override;
     void init(int variant, bool isChess960) override;
+    bool is_two_fold_repetition() const override;
 };
 
 #endif // BOARTSTATE_H

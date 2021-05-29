@@ -271,4 +271,9 @@ void BoardState::init(int variant, bool is960)
     board.set(start_fen, is960, Variant(variant), &states->back(), nullptr);
 }
 
+bool BoardState::is_two_fold_repetition() const
+{
+    return board.is_two_fold_repetition();
+}
+
 #endif
