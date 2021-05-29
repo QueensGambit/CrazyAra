@@ -171,7 +171,7 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
             value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=1)
         else:  # hard-coded
             (loss_out, _, win_out) = mx.sym.split(wdl_softmax, axis=1, num_outputs=3, name='win_loss_split')
-            value_out = mx.sym.broadcast_add(1/3 * loss_out, 1/3 * win_out, name=main_config["value_output"])
+            value_out = mx.sym.broadcast_add(-loss_out, win_out, name=main_config["value_output"])
             value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=0)
     else:
         value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
