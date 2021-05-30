@@ -93,7 +93,8 @@ Node::Node(StateObj* state, const SearchSettings* searchSettings):
     isTerminal(false),
     isTablebase(false),
     hasNNResults(false),
-    sorted(false)
+    sorted(false),
+    atLeastDraw(false)
 {
     // specify the number of direct child nodes of this node
     check_for_terminal(state);
@@ -373,6 +374,17 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
 #endif
             disable_action(childIdx);
             break;
+        case DRAW:
+            atLeastDraw = true;
+            disable_action(childIdx);
+            break;
+#ifdef MCTS_TB_SUPPORT
+        case TB_DRAW:
+            atLeastDraw = true;
+            if (!isTablebase) {
+                disable_action(childIdx);
+            }
+#endif
         default: ; // pass
         }
     #ifdef MCTS_TB_SUPPORT
@@ -652,6 +664,11 @@ bool Node::is_solved() const
 bool Node::has_forced_win() const
 {
     return get_checkmate_idx() != NO_CHECKMATE;
+}
+
+bool Node::is_at_least_draw() const
+{
+    return atLeastDraw;
 }
 
 uint16_t Node::get_no_visit_idx() const

@@ -89,6 +89,7 @@ private:
     bool isTablebase;
     bool hasNNResults;
     bool sorted;
+    bool atLeastDraw;
 
 public:
     /**
@@ -205,6 +206,8 @@ public:
     bool is_blank_root_node() const;
     bool is_solved() const;
     bool has_forced_win() const;
+
+    bool is_at_least_draw() const;
 
     Action get_action(ChildIdx childIdx) const;
     Node* get_child_node(ChildIdx childIdx) const;
@@ -748,6 +751,9 @@ void backup_value(float value, float virtualLoss, const Trajectory& trajectory, 
 #ifndef MCTS_SINGLE_PLAYER
         value = -value;
 #endif
+        if (it->node->is_at_least_draw()) {
+            value = max(value, float(DRAW_VALUE));
+        }
         freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, virtualLoss, solveForTerminal) :
                    it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, virtualLoss, solveForTerminal);
 
