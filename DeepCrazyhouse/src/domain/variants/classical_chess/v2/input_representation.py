@@ -4,7 +4,7 @@ Created on 26.05.21
 @project: CrazyAra
 @author: queensgambit
 
-Input representation for chess v2.1.
+Input representation for chess v2.8.
 This presentation avoids potential overfitting and bias, e.g. no color information, no move counter, no progress counter
 and adds features which are hard for the CNN to extract, e.g. material info, number legal moves, checkerboard,
 opposite color bishops.
@@ -25,11 +25,12 @@ CHANNEL_LAST_MOVES = 17
 CHANNEL_IS_960 = 19
 CHANNEL_PIECE_MASK = 20
 CHANNEL_CHECKERBOARD = 22
-CHANNEL_MATERIAL = 23
+CHANNEL_MATERIAL_DIFF = 23
 CHANNEL_OPP_BISHOPS = 28
 CHANNEL_CHECKERS = 29
 CHANNEL_CHECK_MOVES = 30
 CHANNEL_MOBILITY = 32
+CHANNEL_MATERIAL_COUNT = 33
 
 
 def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
@@ -84,13 +85,14 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     Checkers | 1 | Indicates all pieces giving check |
     Checking Moves | 2 | Indicates all checking moves (from sq, to sq) |
     Mobility | 1 | Indicates the number of legal moves
+    P1 Material Count | 5 | (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN), normalized with 8 |
     ---
-    13 planes
+    18 planes
 
     The total number of planes is calculated as follows:
     # --------------
-    13 + 4 + 2 + 1 + 13
-    Total: 33 planes
+    13 + 4 + 2 + 1 + 18
+    Total: 38 planes
 
     :param board: Board handle (Python-chess object)
     :param normalize: True if the inputs shall be normalized to the range [0.-1.]
@@ -193,10 +195,10 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     # Channel: 23 - 27
     # Relative material difference (negative if less pieces than opponent and positive if more)
     # iterate over all pieces except the king
-    assert(channel == CHANNEL_MATERIAL)
+    assert(channel == CHANNEL_MATERIAL_DIFF)
     for piece_type in chess.PIECE_TYPES[:-1]:
-        matt_diff = len(board.pieces(piece_type, me)) - len(board.pieces(piece_type, you))
-        planes[channel, :, :] = matt_diff / NORMALIZE_PIECE_NUMBER if normalize else matt_diff
+        material_count = len(board.pieces(piece_type, me)) - len(board.pieces(piece_type, you))
+        planes[channel, :, :] = material_count / NORMALIZE_PIECE_NUMBER if normalize else material_count
         channel += 1
 
     # Channel: 28
@@ -235,6 +237,14 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     assert (channel == CHANNEL_MOBILITY)
     planes[channel, :, :] = len(my_legal_moves) / NORMALIZE_MOBILITY if normalize else len(my_legal_moves)
     channel += 1
+
+    # Channel: 33
+    # Material
+    assert(channel == CHANNEL_MATERIAL_COUNT)
+    for piece_type in chess.PIECE_TYPES[:-1]:
+        material_count = len(board.pieces(piece_type, me))
+        planes[channel, :, :] = material_count / NORMALIZE_PIECE_NUMBER if normalize else material_count
+        channel += 1
 
     assert channel == NB_CHANNELS_TOTAL
     return planes
@@ -329,10 +339,14 @@ def normalize_input_planes(planes):
     :param planes: Input planes representation
     :return: The normalized planes
     """
-    channel = CHANNEL_MATERIAL
+    channel = CHANNEL_MATERIAL_DIFF
     for _ in chess.PIECE_TYPES[:-1]:
         planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER
         channel += 1
     planes[CHANNEL_MOBILITY, :, :] /= NORMALIZE_MOBILITY
+    channel = CHANNEL_MATERIAL_COUNT
+    for _ in chess.PIECE_TYPES[:-1]:
+        planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER
+        channel += 1
 
     return planes

@@ -139,7 +139,7 @@ else:  # MODE = MODE_CHESS
     if VERSION == 1:
         NB_CHANNELS_POS = 15
     else:  # VERSION == 2
-        NB_CHANNELS_POS = 12 + 1 + 13  # 12 pieces + 1 en-passant and 13 auxiliary
+        NB_CHANNELS_POS = 12 + 1 + 18  # 13  # 12 pieces + 1 en-passant and 13 auxiliary
     if VERSION == 1:
         NB_CHANNELS_CONST = 7
     else:  # VERSION == 2
