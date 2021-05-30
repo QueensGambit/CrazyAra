@@ -375,18 +375,31 @@ inline void set_mobility(PlaneData& p, const vector<Action>& legalMoves)
     p.set_plane_to_value<true>(p.normalize ? legalMoves.size() / StateConstants::NORMALIZE_MOBILITY() : legalMoves.size());
 }
 
-inline void set_opposite_bishops(PlaneData& p) {
+inline void set_opposite_bishops(PlaneData& p)
+{
     if (p.pos->opposite_bishops()) {
         p.set_plane_to_one<false>();
     }
     ++p.currentChannel;
 }
 
-#ifdef MODE_CHESS
-void board_to_planes_v_2_7(const Board *pos, bool normalize, float *inputPlanes, const vector<Action>& legalMoves)
+inline void set_material_count(PlaneData& p)
 {
-    // Fill in the piece positions
-    PlaneData planeData(pos, inputPlanes, normalize);
+    float relativeCount = p.pos->count<PAWN>(p.me());
+    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+    relativeCount = p.pos->count<KNIGHT>(p.me());
+    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+    relativeCount = p.pos->count<BISHOP>(p.me());
+    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+    relativeCount = p.pos->count<ROOK>(p.me());
+    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+    relativeCount = p.pos->count<QUEEN>(p.me());
+    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+}
+
+#ifdef MODE_CHESS
+inline void board_to_planes_v_2_7(PlaneData& planeData, const vector<Action>& legalMoves)
+{
     set_plane_pieces(planeData);
     set_plane_ep_square(planeData);
     assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS());
@@ -403,19 +416,31 @@ void board_to_planes_v_2_7(const Board *pos, bool normalize, float *inputPlanes,
     set_checkers(planeData);
     set_check_moves(planeData, legalMoves);
     set_mobility(planeData, legalMoves);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_TOTAL());
 }
+
+inline void board_to_planes_v_2_8(PlaneData& planeData, const vector<Action>& legalMoves)
+{
+    board_to_planes_v_2_7(planeData, legalMoves);
+    set_material_count(planeData);
+}
+
 #endif
 
 void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes, const vector<Action>& legalMoves)
 {
-#if VERSION == 2
-    board_to_planes_v_2_7(pos, normalize, inputPlanes, legalMoves);
-    return;
-#endif
     // Fill in the piece positions
     // Iterate over both color starting with WHITE
     PlaneData planeData(pos, inputPlanes, normalize);
+
+#if VERSION == 2
+#if SUB_VERSION == 7
+    board_to_planes_v_2_7(planeData, legalMoves);
+#elif SUB_VERSION == 8
+    board_to_planes_v_2_8(planeData, legalMoves);
+#endif
+    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_TOTAL());
+    return;
+#endif
 
     // (I) Set the pieces for both players
     set_plane_pieces(planeData);
