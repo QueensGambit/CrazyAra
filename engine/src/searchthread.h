@@ -57,6 +57,7 @@ private:
     Node* rootNode;
     StateObj* rootState;
     unique_ptr<StateObj> newState;
+    DynamicVector<float> rootSelectionDistribution;
 
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;

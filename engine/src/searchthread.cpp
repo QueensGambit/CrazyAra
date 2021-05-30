@@ -181,7 +181,14 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
     while (true) {
         currentNode->lock();
         if (childIdx == uint16_t(-1)) {
-            childIdx = currentNode->select_child_node(searchSettings);
+            if (description.depth == 0) {
+                childIdx = random_choice(rootSelectionDistribution);
+//                childIdx = currentNode->select_child_node<true>(searchSettings);
+            }
+            else {
+                childIdx = currentNode->select_child_node(searchSettings);
+//                childIdx = currentNode->select_child_node<false>(searchSettings);
+            }
         }
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
         trajectoryBuffer.emplace_back(NodeAndIdx(currentNode, childIdx));
@@ -344,6 +351,10 @@ void SearchThread::create_mini_batch()
     // select nodes to add to the mini-batch
     NodeDescription description;
     size_t numTerminalNodes = 0;
+    rootNode->lock();
+    rootSelectionDistribution = rootNode->get_selection_distribution(searchSettings);
+    rootNode->unlock();
+    apply_temperature(rootSelectionDistribution, 0.5);
 
     while (!newNodes->is_full() &&
            collisionTrajectories.size() != searchSettings->batchSize &&
