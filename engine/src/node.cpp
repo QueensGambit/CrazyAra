@@ -25,7 +25,6 @@
 
 #include "node.h"
 #include <limits.h>
-#include "util/blazeutil.h" // get_dirichlet_noise()
 #include "constants.h"
 #include "../util/communication.h"
 #include "evalinfo.h"
@@ -999,6 +998,11 @@ Node* Node::get_child_node(ChildIdx childIdx)
     return d->childNodes[childIdx].get();
 }
 
+DynamicVector<float> Node::get_selection_distribution(const SearchSettings *searchSettings)
+{
+    return (d->qValues + get_current_u_values(searchSettings) + 1.0f) / 2.0f;
+}
+
 void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const
 {
     // fill only the winning moves in case of a known win
@@ -1095,6 +1099,12 @@ ChildIdx Node::select_child_node(const SearchSettings* searchSettings)
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
+
+//    if (useSampling) {
+////        random_choice(d->qValues);
+//        DynamicVector<float> probs = (d->qValues + get_current_u_values(searchSettings) + 1.0f) / 2.0f;
+//        return random_choice(probs);
+//    }
     return argmax(d->qValues + get_current_u_values(searchSettings));
 }
 
