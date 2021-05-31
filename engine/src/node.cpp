@@ -347,16 +347,30 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy) const
 
 bool Node::solve_for_terminal(ChildIdx childIdx)
 {
-    if (d->nodeType != UNSOLVED) {
-        // already solved
-        return false;
-    }
     const Node* childNode = d->childNodes[childIdx].get();
 
     if (!childNode->is_playout_node()) {
         return false;
     }
     if (childNode->d->nodeType == UNSOLVED) {
+        return false;
+    }
+
+#ifdef MCTS_TB_SUPPORT
+    // disable draws for winning tb positions
+    if (d->nodeType == TB_WIN) {
+#ifndef MCTS_SINGLE_PLAYER
+        if (is_win_node_type(childNode->d->nodeType) || is_draw_node_type(childNode->d->nodeType)) {
+#else
+        if (is_loss_node_type(childNode->d->nodeType) || is_draw_node_type(childNode->d->nodeType)) {
+#endif
+        disable_action(childIdx);
+        }
+    }
+#endif
+
+    if (d->nodeType != UNSOLVED) {
+        // already solved
         return false;
     }
 
@@ -379,12 +393,6 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
             break;
         default: ; // pass
         }
-    #ifdef MCTS_TB_SUPPORT
-        // disable draws for winning tb positions
-        if (d->nodeType == TB_WIN && d->nodeTypes[childIdx] == TB_DRAW) {
-            disable_action(childIdx);
-        }
-    #endif
     }
 
     if (solved_win(childNode)) {
@@ -685,28 +693,31 @@ Node* Node::add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState,
         mapWithMutex->mtx.lock();
         HashMap::const_iterator it = mapWithMutex->hashTable.find(newState->hash_key());
         if (it != mapWithMutex->hashTable.end()) {
-            d->childNodes[childIdx] = it->second.lock();
-        }
-        Node* tranpositionNode = get_child_node(childIdx);
-        if (tranpositionNode != nullptr) {
-            if(is_transposition_verified(tranpositionNode, newState)) {
-                mapWithMutex->mtx.unlock();
-                tranpositionNode->lock();
-                tranpositionNode->add_transposition_parent_node();
-                tranpositionNode->unlock();
-#ifndef MCTS_SINGLE_PLAYER
-                if (tranpositionNode->is_playout_node() && tranpositionNode->get_node_type() == LOSS) {
-                    set_checkmate_idx(childIdx);
+            shared_ptr<Node> transpositionNode = it->second.lock();
+            Node* tranpositionNode = get_child_node(childIdx);
+            if (tranpositionNode != nullptr) {
+                if(is_transposition_verified(tranpositionNode, newState)) {
+                    d->childNodes[childIdx] = atomic_load(&transpositionNode);
+                    mapWithMutex->mtx.unlock();
+                    tranpositionNode->lock();
+                    tranpositionNode->add_transposition_parent_node();
+                    tranpositionNode->unlock();
+    #ifndef MCTS_SINGLE_PLAYER
+                    if (tranpositionNode->is_playout_node() && tranpositionNode->get_node_type() == LOSS) {
+                        set_checkmate_idx(childIdx);
+                    }
+    #endif
+                    transposition = true;
+                    return tranpositionNode;
                 }
-#endif
-                transposition = true;
-                return tranpositionNode;
             }
         }
         mapWithMutex->mtx.unlock();
     }
+
     // connect the Node to the parent
-    d->childNodes[childIdx] = make_shared<Node>(newState, searchSettings);
+    shared_ptr<Node> newNode = make_shared<Node>(newState, searchSettings);
+    atomic_store(&d->childNodes[childIdx], newNode);
     if (searchSettings->useMCGS) {
         mapWithMutex->mtx.lock();
         mapWithMutex->hashTable.insert({d->childNodes[childIdx]->hash_key(), d->childNodes[childIdx]});
