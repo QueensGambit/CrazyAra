@@ -1023,6 +1023,17 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
         mcts_policy_based_on_wins(mctsPolicy);
     }
+    else if (atLeastDraw && max(d->qValues) < DRAW_VALUE) {
+        mctsPolicy = DynamicVector<float>(d->noVisitIdx);
+        mctsPolicy = 0;
+        for (size_t idx = 0; idx < d->noVisitIdx; ++idx) {
+            const Node* childNode = get_child_node(idx);
+            if (childNode->is_playout_node() && is_draw_node_type(childNode->get_node_type())) {
+                mctsPolicy[idx] = 1.0f;
+                break;
+            }
+        }
+    }
     else if (is_loss_node_type(d->nodeType)) {
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
         mcts_policy_based_on_losses(mctsPolicy);
