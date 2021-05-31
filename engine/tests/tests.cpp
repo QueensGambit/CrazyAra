@@ -526,6 +526,32 @@ TEST_CASE("Blaze: first_and_second_max()"){
     REQUIRE(secondArg == 1);
 }
 
+TEST_CASE("Blaze: random_choice()"){
+    DynamicVector<float> distribution = {0.0, 0.7, 0.3};
+    size_t numIdZero = 0;
+    size_t numIdOne = 0;
+    size_t numIdThree = 0;
+    size_t numSamples = 1000;
+    for (int i = 0; i < numSamples; ++i) {
+        const size_t selectedId = random_choice(distribution);
+        switch (selectedId) {
+        case 0:
+            ++numIdZero;
+            break;
+        case 1:
+            ++numIdOne;
+            break;
+        case 2:
+            ++numIdThree;
+        }
+    }
+
+    REQUIRE(numIdZero == 0);
+    REQUIRE(numIdOne > numSamples * 0.6);
+    REQUIRE(numIdThree > numSamples * 0.15);
+}
+
+
 // ==========================================================================================================
 // ||                                   State Environment Tests                                            ||
 // ==========================================================================================================

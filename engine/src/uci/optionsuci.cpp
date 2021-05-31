@@ -66,12 +66,12 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Centi_Dirichlet_Alpha"]         << Option(20, 1, 99999);
     o["Centi_Epsilon_Checks"]          << Option(1, 0, 100);
-    o["Centi_Epsilon_Greedy"]          << Option(5, 0, 100);
+    o["Centi_Epsilon_Greedy"]          << Option(3, 0, 100);
 //    o["Centi_U_Init"]                  << Option(100, 0, 100);         currently disabled
 //    o["Centi_U_Min"]                   << Option(100, 0, 100);         currently disabled
 //    o["U_Base"]                        << Option(1965, 0, 99999);      currently disabled
     o["Centi_Node_Temperature"]        << Option(170, 1, 99999);
-    o["Centi_Q_Value_Weight"]          << Option(100, 0, 99999);
+    o["Centi_Q_Value_Weight"]          << Option(200, 0, 99999);
     o["Centi_Q_Veto_Delta"]            << Option(40, 0, 99999);
 #ifdef USE_RL
     o["Centi_Quantile_Clipping"]       << Option(0, 0, 100);

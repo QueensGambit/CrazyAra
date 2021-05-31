@@ -181,13 +181,11 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
     while (true) {
         currentNode->lock();
         if (childIdx == uint16_t(-1)) {
-            if (description.depth == 0) {
+            if (description.depth == 0 && rand() % 10 == 0 && rootNode->get_real_visits() > 1000) {
                 childIdx = random_choice(rootSelectionDistribution);
-//                childIdx = currentNode->select_child_node<true>(searchSettings);
             }
             else {
                 childIdx = currentNode->select_child_node(searchSettings);
-//                childIdx = currentNode->select_child_node<false>(searchSettings);
             }
         }
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
@@ -354,7 +352,8 @@ void SearchThread::create_mini_batch()
     rootNode->lock();
     rootSelectionDistribution = rootNode->get_selection_distribution(searchSettings);
     rootNode->unlock();
-    apply_temperature(rootSelectionDistribution, 0.5);
+    rootSelectionDistribution -= min(rootSelectionDistribution);
+    rootSelectionDistribution /= sum(rootSelectionDistribution);
 
     while (!newNodes->is_full() &&
            collisionTrajectories.size() != searchSettings->batchSize &&

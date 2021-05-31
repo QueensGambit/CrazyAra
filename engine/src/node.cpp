@@ -1000,7 +1000,7 @@ Node* Node::get_child_node(ChildIdx childIdx)
 
 DynamicVector<float> Node::get_selection_distribution(const SearchSettings *searchSettings)
 {
-    return (d->qValues + get_current_u_values(searchSettings) + 1.0f) / 2.0f;
+    return d->qValues + get_current_u_values(searchSettings);
 }
 
 void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const
