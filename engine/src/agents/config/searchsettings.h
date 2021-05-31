@@ -69,6 +69,8 @@ struct SearchSettings
     bool reuseTree;
     // If true, then the MCTS solver for terminals and tablebases will be active
     bool mctsSolver;
+    // If true, then a two fold repetition will be seen as a draw during search
+    bool useTwoFoldRepetition;
     SearchSettings();
 
 };
