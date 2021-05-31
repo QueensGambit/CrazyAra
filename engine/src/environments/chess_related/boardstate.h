@@ -180,7 +180,13 @@ public:
     }
 #else  // VERSION 2
     static uint NB_CHANNELS_AUXILIARY() {
-        return 13;
+#if VERSION == 2
+#if SUB_VERSION == 7
+    return 13;
+#elif SUB_VERSION == 8
+    return 18;
+#endif
+#endif
     }
 #endif
 #endif

@@ -33,6 +33,7 @@ if (MODE_CHESS)
     add_definitions(-DMCTS_TB_SUPPORT)
     add_definitions(-DVERSION=1)
 #    add_definitions(-DVERSION=2)
+#    add_definitions(-DSUB_VERSION=8)
 endif()
 
 if (MODE_LICHESS)

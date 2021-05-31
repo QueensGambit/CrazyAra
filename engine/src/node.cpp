@@ -344,16 +344,30 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy) const
 
 bool Node::solve_for_terminal(ChildIdx childIdx)
 {
-    if (d->nodeType != UNSOLVED) {
-        // already solved
-        return false;
-    }
     const Node* childNode = d->childNodes[childIdx].get();
 
     if (!childNode->is_playout_node()) {
         return false;
     }
     if (childNode->d->nodeType == UNSOLVED) {
+        return false;
+    }
+
+#ifdef MCTS_TB_SUPPORT
+    // disable draws for winning tb positions
+    if (d->nodeType == TB_WIN) {
+#ifndef MCTS_SINGLE_PLAYER
+        if (is_win_node_type(childNode->d->nodeType) || is_draw_node_type(childNode->d->nodeType)) {
+#else
+        if (is_loss_node_type(childNode->d->nodeType) || is_draw_node_type(childNode->d->nodeType)) {
+#endif
+        disable_action(childIdx);
+        }
+    }
+#endif
+
+    if (d->nodeType != UNSOLVED) {
+        // already solved
         return false;
     }
 
@@ -387,12 +401,6 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
 #endif
         default: ; // pass
         }
-    #ifdef MCTS_TB_SUPPORT
-        // disable draws for winning tb positions
-        if (d->nodeType == TB_WIN && d->nodeTypes[childIdx] == TB_DRAW) {
-            disable_action(childIdx);
-        }
-    #endif
     }
 
     if (solved_win(childNode)) {
