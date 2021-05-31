@@ -154,8 +154,7 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
     wdl_softmax = None
     if use_wdl:
         wdl_out = mx.sym.FullyConnected(data=value_main_features, num_hidden=3, name=main_config["wdl_output"])
-        wdl_out = mx.sym.SoftmaxOutput(data=wdl_out, name='wdl', grad_scale=grad_scale_wdl)
-        wdl_softmax = mx.sym.SoftmaxActivation(data=wdl_out, name='wdl_softmax')
+        wdl_softmax = mx.sym.SoftmaxOutput(data=wdl_out, name='wdl', grad_scale=grad_scale_wdl)
     if use_plys_to_end:
         plys_to_end_out = mx.sym.FullyConnected(data=value_main_features, num_hidden=1, name='value_plys_to_end_fc')
         plys_to_end_out = get_act(data=plys_to_end_out, act_type='sigmoid', name=main_config["plys_to_end_output"])
