@@ -1031,7 +1031,7 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
         mcts_policy_based_on_wins(mctsPolicy);
     }
-    else if (atLeastDraw && max(d->qValues) < DRAW_VALUE) {
+    else if (atLeastDraw && get_q_value(argmax(d->childNumberVisits)) < DRAW_VALUE) {
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
         mctsPolicy = 0;
         for (size_t idx = 0; idx < d->noVisitIdx; ++idx) {

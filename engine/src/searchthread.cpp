@@ -348,7 +348,7 @@ void SearchThread::create_mini_batch()
     while (!newNodes->is_full() &&
            collisionTrajectories.size() != searchSettings->batchSize &&
            !transpositionValues->is_full() &&
-           numTerminalNodes < TERMINAL_NODE_CACHE) {
+           numTerminalNodes < searchSettings->batchSize*2) {
 
         trajectoryBuffer.clear();
         actionsBuffer.clear();
