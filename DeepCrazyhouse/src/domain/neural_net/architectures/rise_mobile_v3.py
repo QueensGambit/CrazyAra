@@ -157,7 +157,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     if dropout_rate != 0:
         data = mx.sym.Dropout(data, p=dropout_rate)
 
-    value_out, wdl_out, wdl_softmax, plys_to_end_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
+    value_out, wdl_out, plys_to_end_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
                                                      value_fc_size=value_fc_size, use_mix_conv=False,
                                                      grad_scale_value=grad_scale_value,
                                                      grad_scale_ply=grad_scale_ply, grad_scale_wdl=grad_scale_wdl,
@@ -168,7 +168,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
                              grad_scale_policy=grad_scale_policy)
     # group value_out and policy_out together
     if use_plys_to_end and use_wdl:
-        auxiliary_out = mx.sym.Concat(wdl_softmax, plys_to_end_out, dim=1, name=main_config["auxiliary_output"])
+        auxiliary_out = mx.sym.Concat(wdl_out, plys_to_end_out, dim=1, name=main_config["auxiliary_output"])
         sym = mx.symbol.Group([value_out, policy_out, auxiliary_out, wdl_out, plys_to_end_out])
     else:
         sym = mx.symbol.Group([value_out, policy_out])
