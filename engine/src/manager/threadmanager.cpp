@@ -126,17 +126,18 @@ bool ThreadManager::early_stopping()
         return false;
     }
 
-    if (rootNode->get_node_count() > overallNPS * (movetimeMS / 1000.0f) * 2 &&
-            rootNode->max_q_child() == rootNode->max_visits_child()) {
-        info_string("Early stopping (max nodes), saved time:", remainingMoveTimeMS);
-        return true;
-    }
-
     uint32_t firstMax;
     uint32_t secondMax;
     size_t firstArg;
     size_t secondArg;
     first_and_second_max(rootNode->get_child_number_visits(), rootNode->get_no_visit_idx(), firstMax, secondMax, firstArg, secondArg);
+
+    if (rootNode->get_node_count() > overallNPS * (movetimeMS / 1000.0f) * 2 &&
+            rootNode->get_q_value(firstArg) > rootNode->get_q_value(secondArg) + TIME_SAFE_INSTA_MOVE_Q_ADVANTAGE) {
+        info_string("Early stopping (max nodes), saved time:", remainingMoveTimeMS);
+        return true;
+    }
+
     const Node* firstNode = rootNode->get_child_node(firstArg);
     const Node* secondNode = rootNode->get_child_node(secondArg);
     if (firstNode != nullptr && firstNode->is_playout_node()) {
@@ -146,7 +147,7 @@ bool ThreadManager::early_stopping()
         secondMax -= secondNode->get_free_visits();
     }
     if (secondMax + remainingMoveTimeMS * (overallNPS / 1000) < firstMax * 2 &&
-            rootNode->get_q_value(firstArg) > rootNode->get_q_value(secondArg)) {
+            rootNode->get_q_value(firstArg) > rootNode->get_q_value(secondArg) + TIME_SAFE_INSTA_MOVE_Q_ADVANTAGE) {
         info_string("Early stopping, saved time:", remainingMoveTimeMS);
         return true;
     }
