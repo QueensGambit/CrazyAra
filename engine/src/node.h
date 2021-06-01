@@ -89,7 +89,7 @@ private:
     bool isTablebase;
     bool hasNNResults;
     bool sorted;
-
+    float maxQValue;
 public:
     /**
      * @brief Node Primary constructor which is used when expanding a node during search
@@ -174,6 +174,8 @@ public:
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
             d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+            max(maxQValue, d->qValues[childIdx]);
+            d->maxQValues[childIdx] = -d->childNodes[childIdx]->maxQValue;
             assert(!isnan(d->qValues[childIdx]));
         }
 

@@ -93,7 +93,8 @@ Node::Node(StateObj* state, const SearchSettings* searchSettings):
     isTerminal(false),
     isTablebase(false),
     hasNNResults(false),
-    sorted(false)
+    sorted(false),
+    maxQValue(Q_INIT)
 {
     // specify the number of direct child nodes of this node
     check_for_terminal(state);
@@ -1103,7 +1104,7 @@ ChildIdx Node::select_child_node(const SearchSettings* searchSettings)
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    return argmax(d->qValues + get_current_u_values(searchSettings));
+    return argmax((d->qValues+d->maxQValues)*0.5f + get_current_u_values(searchSettings));
 }
 
 const char* node_type_to_string(enum NodeType nodeType)
