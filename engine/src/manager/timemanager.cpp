@@ -45,6 +45,18 @@ TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int thr
     assert(threshMove < expectedGameLength);
 }
 
+
+int TimeManager::estimate_movetime(const SearchLimits* searchLimits,  SideToMove me, int moveNumber)
+{
+    const int movesLeft = expectedGameLength - moveNumber;
+    const int fullmovtimeMS = expectedGameLength * searchLimits->inc[me] + (searchLimits->time[me]/movesLeft) * expectedGameLength;
+    double perc = 0;
+    for (size_t i = 0; i < TIME_NB_COEFFICIENTS; ++i) {
+        perc += TIME_COEFF[i] * pow(moveNumber, i);
+    }
+    return min(fullmovtimeMS * perc, searchLimits->time[me]+searchLimits->inc[me]* 0.9);
+}
+
 int TimeManager::get_time_for_move(const SearchLimits* searchLimits, SideToMove me, int moveNumber)
 {
     if (searchLimits->infinite) {
@@ -71,8 +83,7 @@ int TimeManager::get_time_for_move(const SearchLimits* searchLimits, SideToMove 
     else if (searchLimits->time[me] != 0) {
         // calculate a movetime in sudden death mode
         if (moveNumber < threshMove) {
-            curMovetime = int((searchLimits->time[me] - timeBuffer) / float(expectedGameLength-moveNumber) + 0.5f)
-                    + int(searchLimits->inc[me] * incrementFactor) - searchLimits->moveOverhead;
+            curMovetime = estimate_movetime(searchLimits, me, moveNumber) - searchLimits->moveOverhead;
         }
         else {
             curMovetime = int((searchLimits->time[me] - timeBuffer) * moveFactor + 0.5f)

@@ -84,6 +84,7 @@ public:
      */
     int get_time_for_move(const SearchLimits* searchLimits, SideToMove me, int moveNumber);
     int get_thresh_move() const;
+    int estimate_movetime(const SearchLimits* searchLimits,  SideToMove me, int moveNumber);
 };
 
 
