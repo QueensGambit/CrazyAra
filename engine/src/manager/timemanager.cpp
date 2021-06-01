@@ -26,6 +26,7 @@
 #include "timemanager.h"
 #include "../util/communication.h"
 #include <cassert>
+#include <cmath>
 
 using namespace std;
 
