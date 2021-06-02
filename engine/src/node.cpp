@@ -333,7 +333,7 @@ void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy) const
 #ifndef MCTS_SINGLE_PLAYER
             if (childNode != nullptr && childNode->is_playout_node() && is_win_node_type(childNode->d->nodeType)) {
 #else
-            if (childNode != nullptr && childNode->is_playout_node() && is_loss_node_type(childNode->d->nodeType) {
+            if (childNode != nullptr && childNode->is_playout_node() && is_loss_node_type(childNode->d->nodeType)) {
 #endif
                 mctsPolicy[childIdx] = 0;
             }
