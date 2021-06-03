@@ -42,6 +42,10 @@ using namespace sample;
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
+    idxInput(nnDesign.inputIdx),
+    idxValueOutput(nnDesign.valueOutputIdx-nnDesign.nbInputs),
+    idxPolicyOutput(nnDesign.policyOutputIdx-nnDesign.nbInputs),
+    idxAuxiliaryOutput(nnDesign.auxiliaryOutputIdx-nnDesign.nbInputs),
     precision(str_to_precision(strPrecision))
 {
     // select the requested device
@@ -84,12 +88,48 @@ void TensorrtAPI::load_parameters()
     // do nothing
 }
 
+bool TensorrtAPI::retrieve_indices_by_name()
+{
+    idxInput = engine->getBindingIndex(nnDesign.inputLayerName.c_str());
+    if (idxInput == -1) {
+        info_string_important("Layer name '" + nnDesign.inputLayerName + "' not found.");
+        return false;
+    }
+    idxValueOutput = engine->getBindingIndex(nnDesign.valueOutputName.c_str());
+    if (idxValueOutput == -1) {
+        info_string_important("Layer name '" + nnDesign.valueOutputName + "' not found.");
+        return false;
+    }
+    idxPolicyOutput = engine->getBindingIndex(nnDesign.policySoftmaxOutputName.c_str());
+    if (idxPolicyOutput == -1) {
+        info_string_important("Layer name '" + nnDesign.policySoftmaxOutputName + "' not found.");
+        return false;
+    }
+    if (nnDesign.hasAuxiliaryOutputs) {
+        idxAuxiliaryOutput = engine->getBindingIndex(nnDesign.auxiliaryOutputName.c_str());
+        if (idxAuxiliaryOutput == -1) {
+            info_string_important("Layer name '" + nnDesign.auxiliaryOutputName + "' not found.");
+            return false;
+        }
+    }
+    return true;
+}
+
 void TensorrtAPI:: init_nn_design()
 {
+    nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
+
+    if (!retrieve_indices_by_name()) {
+        info_string_important("Fallback to default indices.");
+        idxInput = nnDesign.inputIdx;
+        idxValueOutput = nnDesign.valueOutputIdx-nnDesign.nbInputs;
+        idxPolicyOutput = nnDesign.policyOutputIdx-nnDesign.nbInputs;
+        idxAuxiliaryOutput = nnDesign.auxiliaryOutputIdx-nnDesign.nbInputs;
+    }
+
     set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
     set_shape(nnDesign.valueOutputShape, engine->getBindingDimensions(idxValueOutput));
     set_shape(nnDesign.policyOutputShape, engine->getBindingDimensions(idxPolicyOutput));
-    nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
     if (nnDesign.hasAuxiliaryOutputs) {
         set_shape(nnDesign.auxiliaryOutputShape, engine->getBindingDimensions(idxAuxiliaryOutput));
     }
@@ -249,7 +289,21 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition> &network)
 {
     // add a softmax layer to the ONNX model
-    ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(1));
+    int policyOutputIdx = -1;
+    for (int idx = 0; idx < network->getNbOutputs(); ++idx) {
+        if (string(network->getOutput(idx)->getName()) == nnDesign.policyOutputName) {
+            info_string("Found policy output at index", idx);
+            policyOutputIdx = idx;
+            break;
+        }
+    }
+    if (policyOutputIdx == -1) {
+        info_string("Did not find policy output with name '", nnDesign.policyOutputName, "'");
+        info_string("Setting policyOutputIdx to:", nnDesign.policyOutputIdx);
+        policyOutputIdx = nnDesign.policyOutputIdx;
+    }
+
+    ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(policyOutputIdx));
     // set the softmax axis to 1
     softmaxLayer->setAxes(1 << 1);
 
@@ -261,9 +315,9 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
 //    fix_layer_precision(network->getLayer(2), nvinfer1::DataType::kFLOAT);
 
     // set the softmax layer output as the new output
-    network->unmarkOutput(*network->getOutput(nnDesign.policyOutputIdx));
+    network->unmarkOutput(*network->getOutput(policyOutputIdx));
     network->markOutput(*softmaxLayer->getOutput(0));
-    softmaxLayer->getOutput(0)->setName("policy_softmax");
+    softmaxLayer->getOutput(0)->setName(nnDesign.policySoftmaxOutputName.c_str());
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
