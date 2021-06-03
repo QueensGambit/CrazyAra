@@ -220,7 +220,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * nbNNInputValues, nextNode->get_legal_actions());
+                newState->get_state_planes(true, inputPlanes + newNodes->size() * nbNNInputValues);
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
@@ -231,7 +231,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #ifdef MCTS_TB_SUPPORT
         if (nextNode->is_terminal() || (!reachedTablebases && nextNode->is_playout_node() && nextNode->is_solved())) {
 #else
-        if (nextNode->is_playout_node() && nextNode->is_solved()) {
+        if (nextNode->is_terminal() || (nextNode->is_playout_node() && nextNode->is_solved())) {
 #endif
             description.type = NODE_TERMINAL;
             currentNode->unlock();

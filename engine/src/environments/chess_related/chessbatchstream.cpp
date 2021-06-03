@@ -100,7 +100,7 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
 
     for (size_t idx = 0; idx < size_t(batchSize * maxBatches); ++idx) {
         states->emplace_back();
-        board_to_planes(&pos, pos.number_repetitions(), true, mData.data() + StateConstants::NB_VALUES_TOTAL() * idx, pos.legal_actions());
+        board_to_planes(&pos, pos.number_repetitions(), true, mData.data() + StateConstants::NB_VALUES_TOTAL() * idx);
         if (idx == curUciMoves.size()) {
             reset_to_startpos(pos, uiThread.get(), states);
             offset = curUciMoves.size();

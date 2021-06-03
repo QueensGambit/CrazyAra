@@ -270,7 +270,7 @@ public:
      * @param normalize If true thw normalized represnetation should be returned, otherwise the raw representation
      * @param inputPlanes Pointer to the memory array where to set the state plane representation. It is assumed that the memory has already been allocated
      */
-    virtual void get_state_planes(bool normalize, float* inputPlanes, const std::vector<Action>& legalActions) const = 0;
+    virtual void get_state_planes(bool normalize, float* inputPlanes) const = 0;
 
     /**
      * @brief steps_from_null Number of steps form the initial position (e.g. starting position)

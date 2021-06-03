@@ -426,7 +426,7 @@ inline void board_to_planes_v_2_8(PlaneData& planeData, const vector<Action>& le
 
 #endif
 
-void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes, const vector<Action>& legalMoves)
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes)
 {
     // Fill in the piece positions
     // Iterate over both color starting with WHITE
@@ -434,9 +434,9 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
 
 #if VERSION == 2
 #if SUB_VERSION == 7
-    board_to_planes_v_2_7(planeData, legalMoves);
+    board_to_planes_v_2_7(planeData, pos->legal_actions());
 #elif SUB_VERSION == 8
-    board_to_planes_v_2_8(planeData, legalMoves);
+    board_to_planes_v_2_8(planeData, pos->legal_actions());
 #endif
     assert(planeData.currentChannel == StateConstants::NB_CHANNELS_TOTAL());
     return;
