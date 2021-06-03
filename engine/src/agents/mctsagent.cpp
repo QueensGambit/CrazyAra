@@ -178,7 +178,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
     rootNode->set_value(newState->random_rollout());
     rootNode->enable_has_nn_results();
 #else
-    state->get_state_planes(true, inputPlanes, rootNode->get_legal_actions());
+    state->get_state_planes(true, inputPlanes);
     net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     size_t tbHits = 0;
     fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits, state->side_to_move(), searchSettings, rootNode->is_tablebase());

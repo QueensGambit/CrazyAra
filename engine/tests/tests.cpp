@@ -77,13 +77,13 @@ PlaneStatistics get_stats_from_input_planes(const float* inputPlanes)
 
 PlaneStatistics get_planes_statistics(const StateObj& state, bool normalize) {
     float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
-    state.get_state_planes(normalize, inputPlanes, state.legal_actions());
+    state.get_state_planes(normalize, inputPlanes);
     return get_stats_from_input_planes(inputPlanes);
 }
 
 PlaneStatistics get_planes_statistics(const Board& pos, bool normalize) {
     float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
-    board_to_planes(&pos, pos.number_repetitions(), normalize, inputPlanes, pos.legal_actions());
+    board_to_planes(&pos, pos.number_repetitions(), normalize, inputPlanes);
     return get_stats_from_input_planes(inputPlanes);
 }
 

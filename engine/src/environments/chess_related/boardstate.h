@@ -278,7 +278,7 @@ public:
     // State interface
     vector<Action> legal_actions() const override;
     void set(const string &fenStr, bool isChess960, int variant) override;
-    void get_state_planes(bool normalize, float *inputPlanes, const vector<Action>& legalActions) const override;
+    void get_state_planes(bool normalize, float *inputPlanes) const override;
     unsigned int steps_from_null() const override;
     bool is_chess960() const override;
     string fen() const override;
