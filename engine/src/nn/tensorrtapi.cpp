@@ -46,7 +46,8 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     idxValueOutput(nnDesign.valueOutputIdx-nnDesign.nbInputs),
     idxPolicyOutput(nnDesign.policyOutputIdx-nnDesign.nbInputs),
     idxAuxiliaryOutput(nnDesign.auxiliaryOutputIdx-nnDesign.nbInputs),
-    precision(str_to_precision(strPrecision))
+    precision(str_to_precision(strPrecision)),
+    generatedTrtFromONNX(false)
 {
     // select the requested device
     cudaSetDevice(deviceID);
@@ -88,7 +89,7 @@ void TensorrtAPI::load_parameters()
     // do nothing
 }
 
-bool TensorrtAPI::retrieve_indices_by_name()
+bool TensorrtAPI::retrieve_indices_by_name(bool verbose)
 {
     idxInput = engine->getBindingIndex(nnDesign.inputLayerName.c_str());
     if (idxInput == -1) {
@@ -112,6 +113,14 @@ bool TensorrtAPI::retrieve_indices_by_name()
             return false;
         }
     }
+    if (verbose) {
+        info_string("Found 'idxInput' at index", idxInput);
+        info_string("Found 'idxValueOutput' at index", idxValueOutput);
+        info_string("Found 'idxPolicyOutput' at index", idxPolicyOutput);
+        if (nnDesign.hasAuxiliaryOutputs) {
+            info_string("Found 'idxAuxiliaryOutput' at index", idxAuxiliaryOutput);
+        }
+    }
     return true;
 }
 
@@ -119,7 +128,7 @@ void TensorrtAPI:: init_nn_design()
 {
     nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
 
-    if (!retrieve_indices_by_name()) {
+    if (!retrieve_indices_by_name(generatedTrtFromONNX)) {
         info_string_important("Fallback to default indices.");
         idxInput = nnDesign.inputIdx;
         idxValueOutput = nnDesign.valueOutputIdx-nnDesign.nbInputs;
@@ -240,6 +249,7 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
         engine = create_cuda_engine_from_onnx();
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         info_elapsed_time("Elapsed time for building TensorRT engine:", begin, end);
+        generatedTrtFromONNX = true;
 
         if (engine) {
             info_string("serialize engine:", trtFilePath);
@@ -292,7 +302,6 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
     int policyOutputIdx = -1;
     for (int idx = 0; idx < network->getNbOutputs(); ++idx) {
         if (string(network->getOutput(idx)->getName()) == nnDesign.policyOutputName) {
-            info_string("Found policy output at index", idx);
             policyOutputIdx = idx;
             break;
         }

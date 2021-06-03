@@ -79,7 +79,7 @@ private:
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
     SampleUniquePtr<nvinfer1::IExecutionContext> context;
     cudaStream_t stream;
-
+    bool generatedTrtFromONNX;
 public:
     /**
      * @brief TensorrtAPI
@@ -96,9 +96,10 @@ public:
 
     /**
      * @brief retrieve_indices_by_name Sets the layer name indices by names.
+     * @param verbose If true debug info will be shown
      * @return True if all layer names were found, else false
      */
-    bool retrieve_indices_by_name();
+    bool retrieve_indices_by_name(bool verbose);
 
 private:
     void load_model() override;
