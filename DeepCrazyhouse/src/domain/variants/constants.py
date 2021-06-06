@@ -138,19 +138,25 @@ elif MODE == MODE_XIANGQI:
 else:  # MODE = MODE_CHESS
     if VERSION == 1:
         NB_CHANNELS_POS = 15
-    else:  # VERSION == 2
-        NB_CHANNELS_POS = 12 + 1 + 18  # 13  # 12 pieces + 1 en-passant and 13 auxiliary
+    elif VERSION == 2:
+        NB_CHANNELS_POS = 12 + 1 + 18  # 12 pieces + 1 en-passant and 18 auxiliary
+    else:  # VERSION == 3
+        NB_CHANNELS_POS = 15 + 15  # 12 pieces + 2 repetition + 1 en-passent + 15 auxiliary
     if VERSION == 1:
         NB_CHANNELS_CONST = 7
-    else:  # VERSION == 2
+    elif VERSION == 2:
         NB_CHANNELS_CONST = 4  # only castling info
+    else:  # VERSION == 3
+        NB_CHANNELS_CONST = 5
     NB_CHANNELS_VARIANTS = 1  # is960
     # No dropping moves, king promotion moves
     NB_POLICY_MAP_CHANNELS = 76
     if VERSION == 1:
         NB_LAST_MOVES = 8
-    else:
+    elif VERSION == 2:
         NB_LAST_MOVES = 1
+    else:  # VERSION == 3
+        NB_LAST_MOVES = 8
     NB_CHANNELS_PER_HISTORY_ITEM = 2
 
 # number of labels of the corresponding flattened policy map. Most of these entries are unreachable (always 0)

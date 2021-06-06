@@ -264,6 +264,28 @@ def planes_to_board(planes):
     # clear the full board (the pieces will be set later)
     board.clear()
 
+    set_pieces(board, planes)
+
+    # (I.5) En Passant Square
+    # mark the square where an en-passant capture is possible
+    channel = CHANNEL_EN_PASSANT
+    set_ep_square(board, channel, planes)
+
+    # (II.2) Castling Rights
+    channel = CHANNEL_CASTLING
+    set_castling_rights(board, channel, planes, is960)
+
+    return board
+
+
+def set_ep_square(board, channel, planes):
+    ep_square = np.argmax(planes[channel])
+    if ep_square != 0:
+        # if no entry 'one' exists, index 0 will be returned
+        board.ep_square = ep_square
+
+
+def set_pieces(board, planes):
     # iterate over all piece types
     for idx, piece in enumerate(PIECES):
         # iterate over all fields and set the current piece type
@@ -278,20 +300,6 @@ def planes_to_board(planes):
                         piece=chess.Piece.from_symbol(piece),
                         promoted=promoted,
                     )
-
-    # (I.5) En Passant Square
-    # mark the square where an en-passant capture is possible
-    channel = CHANNEL_EN_PASSANT
-    ep_square = np.argmax(planes[channel])
-    if ep_square != 0:
-        # if no entry 'one' exists, index 0 will be returned
-        board.ep_square = ep_square
-
-    # (II.2) Castling Rights
-    channel = CHANNEL_CASTLING
-    set_castling_rights(board, channel, planes, is960)
-
-    return board
 
 
 def set_castling_rights(board, channel, planes, is960):

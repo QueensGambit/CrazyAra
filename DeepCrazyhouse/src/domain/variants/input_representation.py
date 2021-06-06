@@ -10,6 +10,7 @@ which is passed to the neural network
 
 from chess.variant import CrazyhouseBoard
 import DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation as chess_v2
+import DeepCrazyhouse.src.domain.variants.classical_chess.v3.input_representation as chess_v3
 from DeepCrazyhouse.src.domain.variants.constants import (
     MODE,
     NB_CHANNELS_TOTAL,
@@ -208,6 +209,8 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
 
     if mode == MODE_CHESS and VERSION == 2:
         return chess_v2.board_to_planes(board, normalize, last_moves)
+    if mode == MODE_CHESS and VERSION == 3:
+        return chess_v3.board_to_planes(board, board_occ, normalize, last_moves)
 
     # (I) Define the Input Representation for one position
     planes_pos = np.zeros((NB_CHANNELS_POS, BOARD_HEIGHT, BOARD_WIDTH))
@@ -285,6 +288,8 @@ def planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
 
     if mode == MODE_CHESS and VERSION == 2:
         return chess_v2.planes_to_board(planes)
+    if mode == MODE_CHESS and VERSION == 3:
+        return chess_v3.planes_to_board(planes)
 
     # extract the maps for the board position
     planes_pos = planes[:NB_CHANNELS_POS]
@@ -477,6 +482,8 @@ def normalize_input_planes(x):
 
     if MODE == MODE_CHESS and VERSION == 2:
         return chess_v2.normalize_input_planes(x)
+    if MODE == MODE_CHESS and VERSION == 3:
+        return chess_v3.normalize_input_planes(x)
 
     mat_pos = x[:NB_CHANNELS_POS, :, :]
     mat_const = x[NB_CHANNELS_POS:, :, :]
