@@ -115,9 +115,10 @@ private:
      * @param blackPlayer MCTSAgent which will play with the black pieces
      * @param variant Current chess variant
      * @param fen Starting position. If empty, the standard starting or a random position (for 960 games) will be used.
+     * The fen will be stored in gamePGN.fen.
      * @param verbose If true the games will printed to stdout
      */
-    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, bool verbose, string* fen);
+    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, bool verbose, const string& fen);
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
