@@ -312,8 +312,8 @@ TEST_CASE("Chess_Input_Planes Version 1"){
     REQUIRE(sum == 816);
     REQUIRE(key == 909458);
 }
-#else  // Version == 2
-TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
+#else  // Version == 2 || Version == 3.0
+TEST_CASE("Chess_Input_Planes Version 2.7, 2.8, 3.0"){
     init();
     BoardState state;
     PlaneStatistics stats;
@@ -321,6 +321,7 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     // Start Pos: normalize=false
     state.init(get_default_variant(), false);
     stats = get_planes_statistics(state, false);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 2592);
     REQUIRE(stats.argMax == 2048);
@@ -332,10 +333,18 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.maxNum == 20);
     REQUIRE(stats.key == 3006288);
 #endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == 1312);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3430384);
+#endif
 
     // Start Pos: normalize=true
     state.init(get_default_variant(), false);
     stats = get_planes_statistics(state, true);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 492);
     REQUIRE(stats.argMax == 8);
@@ -347,10 +356,18 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.maxNum == 1);
     REQUIRE(stats.key == 386118);
 #endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == 472);
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 819860);
+#endif
 
     // Checking test: normalize=false
     state.set("rnbqk1nr/pppp1ppp/8/4p3/1b1PP3/8/PPP2PPP/RNBQKBNR w KQkq - 1 3", false, get_default_variant());
     stats = get_planes_statistics(state, false);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 1697);
     REQUIRE(stats.argMax == 2112);
@@ -362,11 +379,19 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.maxNum == 6);
     REQUIRE(stats.key == 1144897);
 #endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == 1377);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3513153);
+#endif
 
     // last moves
     state.init(get_default_variant(), false);
     apply_given_moves(state, {"e2e4", "c7c5"});
     stats = get_planes_statistics(state, false);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 3234);
     REQUIRE(stats.argMax == 2048);
@@ -378,10 +403,18 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.maxNum == 30);
     REQUIRE(stats.key == 4339492.0);
 #endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == 1316);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3436012);
+#endif
 
     // Checking move test: normalize=true
     state.set("r1br2k1/p4ppp/2p2n2/Q1b1p3/8/NP3N1P/P1P1BPP1/R1B1K2R b KQ - 0 12", false, get_default_variant());
     stats = get_planes_statistics(state, true);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 329);
     REQUIRE(stats.argMax == 8);
@@ -393,11 +426,19 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.maxNum == 1);
     REQUIRE(stats.key == 287212);
 #endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == 284);
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 529254);
+#endif
 
     // en-passant test: normalize=false
     state.init(get_default_variant(), false);
     apply_given_moves(state, {"e2e4", "c7c5", "d2d3", "a7a6", "e4e5", "d7d5"});
     stats = get_planes_statistics(state, false);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 3491);
     REQUIRE(stats.argMax == 2048);
@@ -409,12 +450,20 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.maxNum == 34);
     REQUIRE(stats.key == 4872641.0);
 #endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == 1325);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3451283);
+#endif
 
     // en-passant test + check moves test: normalize=true
     state.init(get_default_variant(), false);
     string uciMove;
     apply_given_moves(state, {"e2e4", "c7c5", "e4e5", "d7d5"});
     stats = get_planes_statistics(state, false);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 3301);
     REQUIRE(stats.argMax == 2048);
@@ -426,10 +475,18 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.maxNum == 31);
     REQUIRE(stats.key == 4477319.0);
 #endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == 1321);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3443613);
+#endif
 
     // material difference
     state.set("r3k1nr/pbp4p/p2p2pb/4P3/3P4/N2q1n2/PPP2PPP/5K1R w kq - 0 14", false, get_default_variant());
     stats = get_planes_statistics(state, false);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 723);
     REQUIRE(stats.argMax == 2112);
@@ -441,10 +498,18 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.maxNum == 2);
     REQUIRE(stats.key == 16041.0);
 #endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == 659);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 1715209);
+#endif
 
-    // castle-rights
+    // castle-rights & no-progress counter
     state.set("2kr3r/pbqp1ppp/2n2n2/4b3/4P3/2NPB3/PPP1QPPP/R4RK1 b - - 4 11", false, get_default_variant());
     stats = get_planes_statistics(state, true);
+#if VERSION == 2
 #if SUB_VERSION == 8
     REQUIRE(stats.sum == 214);
     REQUIRE(stats.argMax == 8);
@@ -455,6 +520,13 @@ TEST_CASE("Chess_Input_Planes Version 2.7 & 2.8"){
     REQUIRE(stats.argMax == 8);
     REQUIRE(stats.maxNum == 1);
     REQUIRE(stats.key == 163636.0);
+#endif
+#endif
+#if VERSION == 3
+    REQUIRE(stats.sum == Approx(179.12));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == Approx(442487.2));
 #endif
 }
 #endif
