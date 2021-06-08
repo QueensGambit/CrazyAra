@@ -173,7 +173,7 @@ class BinaryIO:
 
         # Log how many tablebases could be found
         if name == f'SyzygyPath' and value != '' and value != '<empty>':
-            for i in range(200):
+            for _ in range(200):
                 line = self.proc.stdout.readline().decode().rstrip('\n')
                 if line.startswith('info string Found') and line.endswith('tablebases'):
                     logging.info(line[12:])
