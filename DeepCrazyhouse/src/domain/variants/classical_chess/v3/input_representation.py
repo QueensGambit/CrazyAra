@@ -168,7 +168,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     #  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
     # check how often the position has already occurred in the game
     assert channel == CHANNEL_NO_PROGRESS
-    planes[channel, :, :] = board.halfmove_clock
+    planes[channel, :, :] = board.halfmove_clock / NORMALIZE_50_MOVE_RULE if normalize else board.halfmove_clock
     channel += 1
 
     # Channel: 20 - 35

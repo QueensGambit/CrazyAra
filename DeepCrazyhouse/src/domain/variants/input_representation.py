@@ -32,6 +32,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     NB_CHANNELS_CONST,
     NB_CHANNELS_POS,
     NB_CHANNELS_VARIANTS,
+    NB_LAST_MOVES,
     NB_CHANNELS_HISTORY,
     PIECES,
     chess,
@@ -515,11 +516,24 @@ def normalize_input_planes(x):
     return x
 
 
-def get_planes_statistics(board: chess.Board, normalize: bool, last_moves, board_occ=0):
+def get_planes_statistics(board: chess.Board, normalize: bool, last_moves_uci: list, board_occ=0):
     """
     Returns a dictionary for statistics of the plane which can be used for Unit-Testing.
     e.g get_planes_statistics(board, False, last_moves=[chess.Move.from_uci("d7d5")])
+    :param board: Chess board object
+    :param normalize: Decides if the planes should be normalized
+    :param last_moves_uci: Last moves in UCI notation. Chronoligically ordered, meaning first move is first entry and
+    most recent move is last entry.
+    :param board_occ: Gives information on how often this position has occured already.
     """
+    last_moves = []
+    for uci_move in last_moves_uci[::-1]:
+        last_moves.append(chess.Move.from_uci(uci_move))
+    if len(last_moves) < NB_LAST_MOVES:
+        for _ in range(NB_LAST_MOVES-len(last_moves)):
+            last_moves.append(None)
+    last_moves = last_moves[:NB_LAST_MOVES]
+
     planes = board_to_planes(board, board_occ=board_occ, normalize=normalize, mode=main_config['mode'], last_moves=last_moves)
 
     planes = planes.flatten()
