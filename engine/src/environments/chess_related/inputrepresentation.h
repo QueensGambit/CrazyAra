@@ -44,11 +44,10 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
 /**
  * @brief set_bits_from_bitmap Sets the individual bits from a given bitboard on the given channel for the inputPlanes
  * @param bitboard Bitboard of a single 8x8 plane
- * @param channel Channel index on where to set the bits
- * @param input_planes Input planes encoded as flat vector
- * @param color Color of the side to move
+ * @param curIt Current iterator on the input planes encoded as flat vector
+ * @param flipBoard Decides if bitboard should be flipped
  */
-inline void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color);
+inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard);
 
 /**
  * @brief flip_board Decides whether to flip the board based on the side to move.
