@@ -215,12 +215,19 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
     ++gameIdx;
 }
 
-Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, bool verbose)
+Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, bool verbose, string* fen)
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
     unique_ptr<StateObj> state= make_unique<StateObj>();
-    state->init(variant, is960);
+    if (*fen != "") {
+        // set starting fen
+        state->set(*fen, is960, variant);
+    } else {
+        // create new starting fen and return it
+        state->init(variant, is960);
+        *fen = state->fen();
+    }
     gamePGN.fen = state->fen();
     EvalInfo evalInfo;
 
@@ -331,9 +338,11 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     tournamentResult.playerA = mctsContender->get_name();
     tournamentResult.playerB = mctsAgent->get_name();
     Result gameResult;
+    string fen;
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
-            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true);
+            fen = "";
+            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true, &fen);
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
@@ -342,7 +351,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
             }
         }
         else {
-            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true);
+            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, &fen);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }
