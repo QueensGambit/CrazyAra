@@ -30,25 +30,20 @@
 #include "sfutil.h"
 using namespace std;
 
-void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, bool flipBoard) {
-    size_t p = 0;
+inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard) {
+    if (flipBoard) {
+        bitboard = flip_vertical(bitboard);
+    }
     // set the individual bits for the pieces
     // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/
     while (bitboard != 0) {
         if (bitboard & 0x1) {
-            if (flipBoard) {
-                //                                                         row            col
-                inputPlanes[channel * StateConstants::NB_SQUARES() + (7 - (p / 8)) * 8 + (p % 8)] = 1;
-            }
-            else {
-                inputPlanes[channel * StateConstants::NB_SQUARES() + p] = 1;
-            }
+            *curIt = 1;
         }
         bitboard >>= 1;
-        p++;
+        ++curIt;
     }
 }
-
 
 inline bool flip_board(const Board *pos) {
 #ifdef MODE_LICHESS
@@ -63,13 +58,13 @@ struct PlaneData {
     const Board* pos;
     bool flipBoard;
     float* inputPlanes;
-    size_t currentChannel;
+    float* curIt;
     bool normalize;
     PlaneData(const Board* pos, float* inputPlanes, bool normalize):
-        pos(pos), flipBoard(flip_board(pos)), inputPlanes(inputPlanes), currentChannel(0), normalize(normalize)
+        pos(pos), flipBoard(flip_board(pos)), inputPlanes(inputPlanes), curIt(inputPlanes), normalize(normalize)
     {
         // intialize the input_planes with 0
-        std::fill(inputPlanes, inputPlanes+StateConstants::NB_VALUES_TOTAL(), 0.0f);
+        std::fill_n(curIt, StateConstants::NB_VALUES_TOTAL(), 0.0f);
     }
     inline Color me() {
         return pos->side_to_move();
@@ -77,31 +72,46 @@ struct PlaneData {
     inline Color you() {
         return ~pos->side_to_move();
     }
+    inline void increment_channel() {
+        curIt += StateConstants::NB_SQUARES();
+    }
+    inline void double_increment_channel() {
+        curIt += 2 * StateConstants::NB_SQUARES();
+    }
+    inline void increment_channel_by_x(uint nbTimesToIncrement) {
+        curIt += nbTimesToIncrement * StateConstants::NB_SQUARES();
+    }
+    inline void decrement_channel() {
+        curIt -= StateConstants::NB_SQUARES();
+    }
+    inline size_t current_channel() {
+        return (curIt - inputPlanes) / StateConstants::NB_SQUARES();
+    }
     template<bool increment>
     inline void set_plane_to_one() {
         set_plane_to_value<increment>(1.0f);
     }
     template<bool increment>
     inline void set_plane_to_value(float value) {
-        std::fill(inputPlanes + currentChannel * StateConstants::NB_SQUARES(), inputPlanes + (currentChannel+1) * StateConstants::NB_SQUARES(), value);
+        std::fill_n(curIt, StateConstants::NB_SQUARES(), value);
         if (increment) {
-            ++currentChannel;
+            increment_channel();
         }
     }
     inline void set_plane_to_bitboard(Bitboard bitboard) {
-        set_bits_from_bitmap(bitboard, currentChannel, inputPlanes, flipBoard);
-        ++currentChannel;
+        set_bits_from_bitmap(bitboard, curIt, flipBoard);
+        increment_channel();
     }
     template<bool increment>
-    inline void set_single_square_to_one(Square sq, size_t channelOffset=0) {
-        set_single_square_to_value<increment>(sq, 1.0f, channelOffset);
+    inline void set_single_square_to_one(Square sq) {
+        set_single_square_to_value<increment>(sq, 1.0f);
     }
     template<bool increment>
-    inline void set_single_square_to_value(Square sq, float value, size_t channelOffset=0) {
-        Square squareToSet = flipBoard ? vertical_flip(sq) : sq;
-        inputPlanes[(currentChannel+channelOffset) * StateConstants::NB_SQUARES() + squareToSet] = value;
+    inline void set_single_square_to_value(Square sq, float value) {
+        const Square squareToSet = flipBoard ? vertical_flip(sq) : sq;
+        *(curIt + squareToSet) = value;
         if (increment) {
-            ++currentChannel;
+            increment_channel();
         }
     }
 };
@@ -127,10 +137,10 @@ inline void set_plane_repetition(PlaneData& p, size_t boardRepetition)
             p.set_plane_to_one<true>();
             return;
         }
-        ++p.currentChannel;
+        p.increment_channel();
         return;
     }
-    p.currentChannel+= 2;
+    p.double_increment_channel();
 }
 
 #ifdef CRAZYHOUSE
@@ -143,7 +153,7 @@ inline void set_plane_pockets(PlaneData& p)
             if (pocket_cnt > 0) {
                 p.set_plane_to_value<false>(p.normalize ? pocket_cnt / StateConstants::MAX_NB_PRISONERS() : pocket_cnt);
             }
-            p.currentChannel++;
+            p.increment_channel();
         }
     }
 }
@@ -160,7 +170,7 @@ inline void set_plane_ep_square(PlaneData& p)
     if (p.pos->ep_square() != SQ_NONE) {
         p.set_single_square_to_one<false>(p.pos->ep_square());
     }
-    p.currentChannel++;
+    p.increment_channel();
 }
 
 inline void set_plane_color_info(PlaneData(& p))
@@ -169,7 +179,7 @@ inline void set_plane_color_info(PlaneData(& p))
         p.set_plane_to_one<true>();
         return;
     }
-    p.currentChannel++;
+    p.increment_channel();
 }
 
 inline void set_plane_total_move_count(PlaneData& p)
@@ -184,38 +194,38 @@ inline void set_plane_castling_rights(PlaneData& p)
         if (p.pos->can_castle(WHITE_OO)) {
             p.set_plane_to_one<false>();
         }
-        p.currentChannel++;
+        p.increment_channel();
         if (p.pos->can_castle(WHITE_OOO)) {
             p.set_plane_to_one<false>();
         }
-        p.currentChannel++;
+        p.increment_channel();
         if (p.pos->can_castle(BLACK_OO)) {
             p.set_plane_to_one<false>();
         }
-        p.currentChannel++;
+        p.increment_channel();
         if (p.pos->can_castle(BLACK_OOO)) {
             p.set_plane_to_one<false>();
         }
-        p.currentChannel++;
+        p.increment_channel();
         return;
     }
     // second player to move
     if (p.pos->can_castle(BLACK_OO)) {
         p.set_plane_to_one<false>();
     }
-    p.currentChannel++;
+    p.increment_channel();
     if (p.pos->can_castle(BLACK_OOO)) {
         p.set_plane_to_one<false>();
     }
-    p.currentChannel++;
+    p.increment_channel();
     if (p.pos->can_castle(WHITE_OO)) {
         p.set_plane_to_one<false>();
     }
-    p.currentChannel++;
+    p.increment_channel();
     if (p.pos->can_castle(WHITE_OOO)) {
         p.set_plane_to_one<false>();
     }
-    p.currentChannel++;
+    p.increment_channel();
 }
 
 void set_no_progress_counter(PlaneData& p)
@@ -233,15 +243,15 @@ void set_remaining_checks(PlaneData& p)
                 if (p.pos->checks_given(color) >= 2) {
                     p.set_plane_to_one<false>();
                 }
-                p.currentChannel++;
+                p.increment_channel();
             }
             else {
-                p.currentChannel += 2;
+                p.double_increment_channel();
             }
         }
         return;
     }
-    p.currentChannel += 4;
+    p.increment_channel_by_x(4);
 }
 #endif
 
@@ -252,25 +262,26 @@ inline void set_variant_and_960(PlaneData& p)
     if (p.pos->is_chess960()) {
         p.set_plane_to_one<false>();
     }
-
-    const size_t preCurrentChannel = p.currentChannel;
+    float* preIt = p.curIt;
     // set the current active variant as a one-hot encoded entry
-    p.currentChannel += StateConstants::CHANNEL_MAPPING_VARIANTS().at(p.pos->variant());
+    p.increment_channel_by_x(StateConstants::CHANNEL_MAPPING_VARIANTS().at(p.pos->variant()));
     p.set_plane_to_one<false>();
-    p.currentChannel = preCurrentChannel + StateConstants::NB_CHANNELS_VARIANTS();
+    p.curIt = preIt;
+    p.increment_channel_by_x(StateConstants::NB_CHANNELS_VARIANTS());
 }
 #endif
 
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
 inline void set_last_moves(PlaneData& p)
 {
-    const size_t preCurrentChannel = p.currentChannel;
+    float* preIt = p.curIt;
     // (VI) Fill the bits of the last move planes
     for (const Move move : p.pos->get_last_moves()) {
         p.set_single_square_to_one<true>(from_sq(move));
         p.set_single_square_to_one<true>(to_sq(move));
     }
-    p.currentChannel = preCurrentChannel + StateConstants::NB_CHANNELS_HISTORY();
+    p.curIt = preIt;
+    p.increment_channel_by_x(StateConstants::NB_CHANNELS_HISTORY());
 }
 #endif
 
@@ -279,7 +290,7 @@ inline void set_960(PlaneData& p)
     if (p.pos->is_chess960()) {
         p.set_plane_to_one<false>();
     }
-    ++p.currentChannel;
+    p.increment_channel();
 }
 
 inline void set_piece_masks(PlaneData& p)
@@ -298,12 +309,12 @@ inline void set_checkerboard(PlaneData& p)
     for (uint row = 0; row < StateConstants::BOARD_HEIGHT(); ++row) {
         for (uint col = 0; col < StateConstants::BOARD_WIDTH(); ++col) {
             if (col % 2 == targetModulo) {
-                p.inputPlanes[p.currentChannel * StateConstants::NB_SQUARES() + row * StateConstants::BOARD_WIDTH() + col] = 1.0f;
+                *p.curIt = 1.0f;
             }
+            ++p.curIt;
         }
         targetModulo = !targetModulo;
     }
-    ++p.currentChannel;
 }
 
 inline void set_material_diff(PlaneData& p)
@@ -342,7 +353,7 @@ inline void set_attack_planes(PlaneData& p)
             const float nbAttackers = p.normalize ? float(count_bits_in_bitboard(myAttackers)) / StateConstants::NORMALIZE_ATTACKERS() : count_bits_in_bitboard(myAttackers);
             p.set_single_square_to_value<false>(sq, nbAttackers);
         }
-        ++p.currentChannel;
+        p.increment_channel();
     }
 }
 
@@ -363,11 +374,12 @@ inline void set_check_moves(PlaneData& p, const vector<Action>& legalMoves)
     for (auto it = legalMoves.begin(); it != legalMoves.end(); ++it) {
         const Move move = Move(*it);
         if (p.pos->gives_check(move)) {
-            p.set_single_square_to_one<false>(from_sq(move));
-            p.set_single_square_to_one<false>(to_sq(move), 1);
+            p.set_single_square_to_one<true>(from_sq(move));
+            p.set_single_square_to_one<false>(to_sq(move));
+            p.decrement_channel();
         }
     }
-    p.currentChannel += 2;
+    p.double_increment_channel();
 }
 
 inline void set_mobility(PlaneData& p, const vector<Action>& legalMoves)
@@ -380,7 +392,7 @@ inline void set_opposite_bishops(PlaneData& p)
     if (p.pos->opposite_bishops()) {
         p.set_plane_to_one<false>();
     }
-    ++p.currentChannel;
+    p.increment_channel();
 }
 
 inline void set_material_count(PlaneData& p)
@@ -402,13 +414,13 @@ inline void board_to_planes_v_2_7(PlaneData& planeData, const vector<Action>& le
 {
     set_plane_pieces(planeData);
     set_plane_ep_square(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
     set_plane_castling_rights(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
     set_last_moves(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
     set_960(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
     set_piece_masks(planeData);
     set_checkerboard(planeData);
     set_material_diff(planeData);
@@ -459,7 +471,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
 #elif SUB_VERSION == 8
     board_to_planes_v_2_8(planeData, pos->legal_actions());
 #endif
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_TOTAL());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
     return;
 #endif
 
@@ -490,7 +502,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // (V) En Passant Square
     // mark the square where an en-passant capture is possible
     set_plane_ep_square(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
 
     // (VI) Constant Value Inputs
     // (VI.1) Color
@@ -515,7 +527,7 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // set the remaining checks (only needed for "3check")
     set_remaining_checks(planeData);
 #endif
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
 
 #ifdef MODE_LICHESS
     // (V) Variants specification
@@ -526,11 +538,11 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     // set the is960 boolean flag when active
     set_960(planeData);
 #endif
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_CHANNELS_VARIANTS());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_CHANNELS_VARIANTS());
 
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
     set_last_moves(planeData);
 #endif
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_TOTAL());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
 }
 

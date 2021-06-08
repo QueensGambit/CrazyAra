@@ -83,9 +83,9 @@ vector<string> create_en_passent_moves();
 
 /**
  * https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#FlipVertically
- * ! NOT USED ATM BECAUSE INDIVIDUAL BIT FLIPPING WAS SLIGHTLY FASTER !
+ * "Using the x86-64 _byteswap_uint64 or bswap64 intrinsics only takes one processor instruction in 64-bit mode.
  * Flip a bitboard vertically about the centre ranks.
- * Rank 1 is mapped to rank 8 and vice versa.
+ * Rank 1 is mapped to rank 8 and vice versa."
  * @param x any bitboard
  * @return bitboard x flipped vertically
  */
