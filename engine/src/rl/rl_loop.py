@@ -12,7 +12,6 @@ import sys
 import logging
 import argparse
 from rtpt import RTPT
-import dataclasses
 from multiprocessing import Process, Queue
 
 assert os.getcwd().endswith(f'engine/src/rl'), f'Please change working directory'
@@ -214,18 +213,11 @@ def main():
                                                          rl_loop.rtpt._get_title(), rl_loop.nn_update_index)
     rl_loop.initialize()
 
-    logging.info(f'--------------- CONFIG SETTINGS ---------------')
-    for key, value in sorted(vars(args).items()):
-        logging.info(f'CMD line args:      {key} = {value}')
-    for key, value in sorted(dataclasses.asdict(rl_loop.tc).items()):
-        logging.info(f'Train Config:       {key} = {value}')
-    for key, value in sorted(dataclasses.asdict(rl_config).items()):
-        logging.info(f'RL Options:         {key} = {value}')
-    for key, value in rl_loop.binary_io.get_uci_options().items():
-        logging.info(f'UCI Options:        {key} = {value}')
-    for key, value in sorted(dataclasses.asdict(UCIConfigArena()).items()):
-        logging.info(f'UCI Options Arena:  {key} = {value}')
-    logging.info(f'-----------------------------------------------')
+    logging.info(f'Command line parameters: {str(args)}')
+    logging.info(f'RL Options: {rl_config}')
+    logging.info(f'UCI Options: {rl_loop.binary_io.get_uci_options()}')
+    logging.info(f'UCI changes for arena: {UCIConfigArena()}')
+    logging.info(rl_loop.tc)
 
     while True:
         if args.trainer:
