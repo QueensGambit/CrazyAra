@@ -1,39 +1,38 @@
 """
 @file: input_representation.py
-Created on 26.05.21
+Created on 05.06.21
 @project: CrazyAra
 @author: queensgambit
 
-Input representation for chess v2.8.
-This presentation avoids potential overfitting and bias, e.g. no color information, no move counter, no progress counter
-and adds features which are hard for the CNN to extract, e.g. material info, number legal moves, checkerboard,
-opposite color bishops.
+Input representation 3.0 - No legal move information, but with history again and 50 move rule information.
 """
 import chess
-from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, NB_CHANNELS_TOTAL, PIECES,\
+from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, NB_CHANNELS_TOTAL,\
     NB_LAST_MOVES, NB_CHANNELS_PER_HISTORY_ITEM
-from DeepCrazyhouse.src.domain.util import opposite_colored_bishops, get_row_col, np, checkerboard,\
-    get_board_position_index, checkers, gives_check
+from DeepCrazyhouse.src.domain.util import opposite_colored_bishops, get_row_col, np, checkerboard, checkers
+from DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation import set_pieces, set_castling_rights,\
+    set_ep_square
 
 NORMALIZE_MOBILITY = 64
 NORMALIZE_PIECE_NUMBER = 8
+NORMALIZE_50_MOVE_RULE = 50
 # These constant describe the starting channel for the corresponding info
 CHANNEL_PIECES = 0
-CHANNEL_EN_PASSANT = 12
-CHANNEL_CASTLING = 13
-CHANNEL_LAST_MOVES = 17
-CHANNEL_IS_960 = 19
-CHANNEL_PIECE_MASK = 20
-CHANNEL_CHECKERBOARD = 22
-CHANNEL_MATERIAL_DIFF = 23
-CHANNEL_OPP_BISHOPS = 28
-CHANNEL_CHECKERS = 29
-CHANNEL_CHECK_MOVES = 30
-CHANNEL_MOBILITY = 32
-CHANNEL_MATERIAL_COUNT = 33
+CHANNEL_REPETITION = 12
+CHANNEL_EN_PASSANT = 14
+CHANNEL_CASTLING = 15
+CHANNEL_NO_PROGRESS = 19
+CHANNEL_LAST_MOVES = 20
+CHANNEL_IS_960 = 36
+CHANNEL_PIECE_MASK = 37
+CHANNEL_CHECKERBOARD = 39
+CHANNEL_MATERIAL_DIFF = 40
+CHANNEL_OPP_BISHOPS = 45
+CHANNEL_CHECKERS = 46
+CHANNEL_MATERIAL_COUNT = 47
 
 
-def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
+def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=None):
     """
     Gets the plane representation of a given board state.
 
@@ -47,10 +46,12 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
 
     P2 piece | 6 (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING)
 
+    Repetitions | 2 (two planes (full zeros/ones) indicating how often the board positions has occurred)
+
     En-passant square | 1 (Binary map indicating the square where en-passant capture is possible)
 
     ---
-    13 planes
+    15 planes
 
     * * *
 
@@ -58,8 +59,10 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
 
     P2 castling | 2 (One if castling is possible, else zero)
 
+    No-progress count | 1 (Setting the no progress counter as integer values, (described by uci halfmoves format)
+
     ---
-    4 planes
+    5 planes
 
     * * *
 
@@ -83,18 +86,17 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     P1 Material Diff | 5 | (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN), normalized with 8, + means positive, - means negative |
     Opposite Color Bishops | 1 | Indicates if they are only two bishops and the bishops are opposite color |
     Checkers | 1 | Indicates all pieces giving check |
-    Checking Moves | 2 | Indicates all checking moves (from sq, to sq) |
-    Mobility | 1 | Indicates the number of legal moves
     P1 Material Count | 5 | (pieces are ordered: PAWN, KNIGHT, BISHOP, ROOK, QUEEN), normalized with 8 |
     ---
-    18 planes
+    15 planes
 
     The total number of planes is calculated as follows:
     # --------------
-    13 + 4 + 2 + 1 + 18
-    Total: 38 planes
+    15 + 5 + 16 + 1 + 15
+    Total: 52 planes
 
     :param board: Board handle (Python-chess object)
+    :param board_occ: Number of board occurences
     :param normalize: True if the inputs shall be normalized to the range [0.-1.]
     :param last_moves: List of last last moves. The most recent move is the first entry.
     :return: planes - the plane representation of the current board state
@@ -102,7 +104,6 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
 
     # return the plane representation of the given board
     # return variants.board_to_planes(board, board_occ, normalize, mode=MODE_CHESS)
-
     planes = np.zeros((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH))
 
     # channel will be incremented by 1 at first plane
@@ -114,7 +115,7 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     # mirror all bitboard entries for the black player
     mirror = board.turn == chess.BLACK
 
-    assert (channel == CHANNEL_PIECES)
+    assert channel == CHANNEL_PIECES
     # Fill in the piece positions
     # Channel: 0 - 11
     # Iterate over both color starting with WHITE
@@ -128,16 +129,26 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
                 planes[channel, row, col] = 1
             channel += 1
 
-    # Channel: 12
+    assert channel == CHANNEL_REPETITION
+    # Channel: 12 - 13
+    # set how often the position has already occurred in the game (default 0 times)
+    # this is used to check for claiming the 3 fold repetition rule
+    if board_occ >= 1:
+        planes[channel, :, :] = 1
+        if board_occ >= 2:
+            planes[channel + 1, :, :] = 1
+    channel += 2
+
+    # Channel: 14
     # En Passant Square
-    assert(channel == CHANNEL_EN_PASSANT)
+    assert channel == CHANNEL_EN_PASSANT
     if board.ep_square and board.has_legal_en_passant(): # is not None:
         row, col = get_row_col(board.ep_square, mirror=mirror)
         planes[channel, row, col] = 1
     channel += 1
 
-    # Channel: 13 - 16
-    assert (channel == CHANNEL_CASTLING)
+    # Channel: 15 - 18
+    assert channel == CHANNEL_CASTLING
     for color in colors:
         # check for King Side Castling
         if board.has_kingside_castling_rights(color):
@@ -148,8 +159,20 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
             planes[channel, :, :] = 1
         channel += 1
 
-    # Channel: 17 - 18
-    assert(channel == CHANNEL_LAST_MOVES)
+    # Channel: 19
+    # (IV.4) No Progress Count
+    # define a no 'progress' counter
+    # it gets incremented by 1 each move
+    # however, whenever a piece gets dropped, a piece is captured or a pawn is moved, it is reset to 0
+    # halfmove_clock is an official metric in fen notation
+    #  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+    # check how often the position has already occurred in the game
+    assert channel == CHANNEL_NO_PROGRESS
+    planes[channel, :, :] = board.halfmove_clock / NORMALIZE_50_MOVE_RULE if normalize else board.halfmove_clock
+    channel += 1
+
+    # Channel: 20 - 35
+    assert channel == CHANNEL_LAST_MOVES
     # Last 8 moves
     if last_moves:
         assert(len(last_moves) == NB_LAST_MOVES)
@@ -166,16 +189,16 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
     else:
         channel += NB_LAST_MOVES * NB_CHANNELS_PER_HISTORY_ITEM
 
-    # Channel: 19
+    # Channel: 36
     # Chess960
-    assert (channel == CHANNEL_IS_960)
+    assert channel == CHANNEL_IS_960
     if board.chess960:
         planes[channel + 1, :, :] = 1
     channel += 1
 
-    # Channel: 20 - 21
+    # Channel: 37 - 38
     # All white pieces and black pieces in a single map
-    assert(channel == CHANNEL_PIECE_MASK)
+    assert channel == CHANNEL_PIECE_MASK
     for color in colors:
         # the PIECE_TYPE is an integer list in python-chess
         for piece_type in chess.PIECE_TYPES:
@@ -186,29 +209,29 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
                 planes[channel, row, col] = 1
         channel += 1
 
-    # Channel: 22
+    # Channel: 39
     # Checkerboard
     assert(channel == CHANNEL_CHECKERBOARD)
     planes[channel, :, :] = checkerboard()
     channel += 1
 
-    # Channel: 23 - 27
+    # Channel: 40 - 44
     # Relative material difference (negative if less pieces than opponent and positive if more)
     # iterate over all pieces except the king
-    assert(channel == CHANNEL_MATERIAL_DIFF)
+    assert channel == CHANNEL_MATERIAL_DIFF
     for piece_type in chess.PIECE_TYPES[:-1]:
         material_count = len(board.pieces(piece_type, me)) - len(board.pieces(piece_type, you))
         planes[channel, :, :] = material_count / NORMALIZE_PIECE_NUMBER if normalize else material_count
         channel += 1
 
-    # Channel: 28
+    # Channel: 45
     # Opposite color bishops
     assert (channel == CHANNEL_OPP_BISHOPS)
     if opposite_colored_bishops(board):
         planes[channel, :, :] = 1
     channel += 1
 
-    # Channel: 29
+    # Channel: 46
     # Checkers
     assert channel == CHANNEL_CHECKERS
     board_checkers = checkers(board)
@@ -220,33 +243,16 @@ def board_to_planes(board: chess.Board, normalize=True, last_moves=None):
             planes[channel, row, col] = 1
     channel += 1
 
-    my_legal_moves = list(board.legal_moves)
-
-    # Channel: 30 - 31
-    assert channel == CHANNEL_CHECK_MOVES
-    for move in my_legal_moves:
-        if gives_check(board, move):
-            row, col = get_row_col(move.from_square, mirror=mirror)
-            planes[channel, row, col] = 1
-            row, col = get_row_col(move.to_square, mirror=mirror)
-            planes[channel+1, row, col] = 1
-    channel += 2
-
-    # Channel: 32
-    # Mobility
-    assert (channel == CHANNEL_MOBILITY)
-    planes[channel, :, :] = len(my_legal_moves) / NORMALIZE_MOBILITY if normalize else len(my_legal_moves)
-    channel += 1
-
-    # Channel: 33
+    # Channel: 47 - 51
     # Material
-    assert(channel == CHANNEL_MATERIAL_COUNT)
+    assert channel == CHANNEL_MATERIAL_COUNT
     for piece_type in chess.PIECE_TYPES[:-1]:
         material_count = len(board.pieces(piece_type, me))
         planes[channel, :, :] = material_count / NORMALIZE_PIECE_NUMBER if normalize else material_count
         channel += 1
 
     assert channel == NB_CHANNELS_TOTAL
+
     return planes
 
 
@@ -268,77 +274,12 @@ def planes_to_board(planes):
 
     # (I.5) En Passant Square
     # mark the square where an en-passant capture is possible
-    channel = CHANNEL_EN_PASSANT
-    set_ep_square(board, channel, planes)
+    set_ep_square(board, CHANNEL_EN_PASSANT, planes)
 
     # (II.2) Castling Rights
-    channel = CHANNEL_CASTLING
-    set_castling_rights(board, channel, planes, is960)
+    set_castling_rights(board, CHANNEL_CASTLING, planes, is960)
 
     return board
-
-
-def set_ep_square(board, channel, planes):
-    ep_square = np.argmax(planes[channel])
-    if ep_square != 0:
-        # if no entry 'one' exists, index 0 will be returned
-        board.ep_square = ep_square
-
-
-def set_pieces(board, planes):
-    # iterate over all piece types
-    for idx, piece in enumerate(PIECES):
-        # iterate over all fields and set the current piece type
-        for row in range(BOARD_HEIGHT):
-            for col in range(BOARD_WIDTH):
-                # check if there's a piece at the current position
-                if planes[idx, row, col] == 1:
-                    # check if the piece was promoted
-                    promoted = False
-                    board.set_piece_at(
-                        square=get_board_position_index(row, col),
-                        piece=chess.Piece.from_symbol(piece),
-                        promoted=promoted,
-                    )
-
-
-def set_castling_rights(board, channel, planes, is960):
-    # reset the castling_rights for initialization
-    # set to 0, previously called chess.BB_VOID for chess version of 0.23.X and chess.BB_EMPTY for versions > 0.27.X
-    board.castling_rights = 0
-    # WHITE
-    # check for King Side Castling
-    # White can castle with the h1 rook
-    # add castling option by modifying the castling fen
-    castling_fen = ""
-    # check for King Side Castling
-    if planes[channel, 0, 0] == 1:
-        if is960:
-            castling_fen += "K"
-        else:
-            board.castling_rights |= chess.BB_H1
-    # check for Queen Side Castling
-    if planes[channel + 1, 0, 0] == 1:
-        if is960:
-            castling_fen += "Q"
-        else:
-            board.castling_rights |= chess.BB_A1
-    # BLACK
-    # check for King Side Castling
-    if planes[channel + 2, 0, 0] == 1:
-        if is960:
-            castling_fen += "k"
-        else:
-            board.castling_rights |= chess.BB_H8
-    # check for Queen Side Castling
-    if planes[channel + 3, 0, 0] == 1:
-        if is960:
-            castling_fen += "q"
-        else:
-            board.castling_rights |= chess.BB_A8
-    # configure the castling rights
-    if castling_fen:
-        board.set_castling_fen(castling_fen)
 
 
 def normalize_input_planes(planes):
@@ -351,7 +292,7 @@ def normalize_input_planes(planes):
     for _ in chess.PIECE_TYPES[:-1]:
         planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER
         channel += 1
-    planes[CHANNEL_MOBILITY, :, :] /= NORMALIZE_MOBILITY
+    planes[CHANNEL_NO_PROGRESS, :, :] /= NORMALIZE_50_MOVE_RULE
     channel = CHANNEL_MATERIAL_COUNT
     for _ in chess.PIECE_TYPES[:-1]:
         planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER

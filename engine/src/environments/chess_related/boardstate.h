@@ -141,45 +141,37 @@ public:
         return 0;
     }
 #elif defined MODE_CHESS
-#if VERSION == 1
     static uint NB_CHANNELS_POS() {
-        return 15;
-    }
-#else  // VERSION 2
-    static uint NB_CHANNELS_POS() {
+#if VERSION == 2
         return 13;
-    }
 #endif
+        return 15;  // VERSION == 1 || VERSION == 3
+    }
+    static uint NB_CHANNELS_CONST() {
 #if VERSION == 1
-    static uint NB_CHANNELS_CONST() {
         return 7;
-    }
-#else  // VERSION 2
-    static uint NB_CHANNELS_CONST() {
-        return 4;
-    }
 #endif
+#if VERSION == 2
+        return 4;
+#endif
+        return 5;  // VERSION == 3
+    }
     static uint NB_CHANNELS_VARIANTS() {
         return 1;
     }
-#if VERSION == 1
     static uint NB_LAST_MOVES() {
-        return 8;
-    }
-#else  // VERSION 2
-    static uint NB_LAST_MOVES() {
+#if VERSION == 2
         return 1;
-    }
 #endif
+        return 8;  // VERSION == 1 or VERSION == 3
+    }
     static uint NB_CHANNELS_PER_HISTORY() {
         return 2;
     }
+    static uint NB_CHANNELS_AUXILIARY() {
 #if VERSION == 1
-    static uint NB_CHANNELS_AUXILIARY() {
         return 0;
-    }
-#else  // VERSION 2
-    static uint NB_CHANNELS_AUXILIARY() {
+#endif
 #if VERSION == 2
 #if SUB_VERSION == 7
     return 13;
@@ -187,8 +179,8 @@ public:
     return 18;
 #endif
 #endif
+    return 15;  // VERSION == 3
     }
-#endif
 #endif
     static uint NB_CHANNELS_HISTORY() {
         return NB_LAST_MOVES() * NB_CHANNELS_PER_HISTORY();
