@@ -326,13 +326,13 @@ public:
      * @brief max_q_child Returns the child index with the highest Q-value
      * @return size_t
      */
-    ChildIdx max_q_child();
+    ChildIdx max_q_child() const;
 
     /**
      * @brief max_visits_child Returns the child index with the most visits
      * @return size_t
      */
-    ChildIdx max_visits_child();
+    ChildIdx max_visits_child() const;
 
     /**
      * @brief update_value_eval Returns the updated state evaluation based on the Q-value of the most visited child node
@@ -402,7 +402,7 @@ public:
      * @brief get_q_values Returns the Q-values for all child nodes
      * @return Q-values
      */
-    DynamicVector<float> get_q_values();
+    DynamicVector<float> get_q_values() const;
 
     /**
      * @brief set_q_value Sets a Q-value for a given child index
@@ -437,7 +437,7 @@ public:
      * @brief get_node_count Returns the number of nodes in the subgraph of this nodes without counting terminal simulations
      * @return uint32_t
      */
-    uint32_t get_node_count();
+    uint32_t get_node_count() const;
 
     bool is_transposition() const;
 

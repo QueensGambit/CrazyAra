@@ -25,6 +25,7 @@
 
 #include "searchlimits.h"
 #include "state.h"
+#include "constants.h"
 
 std::ostream &operator<<(std::ostream &os, const SearchLimits &searchLimits)
 {
@@ -59,6 +60,11 @@ void SearchLimits::reset()
     time[FIRST_PLAYER_IDX+1] = 0;
     inc[FIRST_PLAYER_IDX] = 0;
     inc[FIRST_PLAYER_IDX+1] = 0;
+}
+
+int SearchLimits::get_safe_remaining_time(SideToMove sideToMove) const
+{
+    return max(time[sideToMove] - moveOverhead * TIME_BUFFER_FACTOR, 1);
 }
 
 bool is_game_sceneario(const SearchLimits* searchLimits)

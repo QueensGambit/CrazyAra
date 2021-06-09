@@ -37,6 +37,41 @@
 
 using namespace std;
 
+
+struct ThreadManagerData {
+    const Node* rootNode;
+    vector<SearchThread*> searchThreads;
+    EvalInfo* evalInfo;
+    int remainingMoveTimeMS;
+    float lastValueEval;
+
+    ThreadManagerData(const Node* rootNode, vector<SearchThread*> searchThreads, EvalInfo* evalInfo, float lastValueEval) :
+        rootNode(rootNode), searchThreads(searchThreads), evalInfo(evalInfo), remainingMoveTimeMS(0), lastValueEval(lastValueEval)
+    {}
+};
+
+struct ThreadManagerInfo {
+    const SearchSettings* searchSettings;
+    const SearchLimits* searchLimits;
+    const float overallNPS;
+    const SideToMove sideToMove;
+
+    ThreadManagerInfo(const SearchSettings* searchSettings, const SearchLimits* searchLimits, const float overallNPS, const SideToMove sideToMove) :
+        searchSettings(searchSettings), searchLimits(searchLimits), overallNPS(overallNPS), sideToMove(sideToMove)
+    {}
+};
+
+struct ThreadManagerParams {
+    const int moveTimeMS;
+    const int updateIntervalMS;
+    const bool inGame;
+    const bool canProlong;
+
+    ThreadManagerParams(const int moveTimeMS, const int updateIntervalMS, const bool inGame, const bool canProlong) :
+        moveTimeMS(moveTimeMS), updateIntervalMS(updateIntervalMS), inGame(inGame), canProlong(canProlong)
+    {}
+};
+
 /**
  * @brief The ThreadManager class contains a reference to all search threads and can trigger early stopping
  * or a stop when the given search time has been reached. It also logs intermdediate search results.
@@ -44,20 +79,10 @@ using namespace std;
 class ThreadManager : public KillableThread
 {
 private:
-    Node* rootNode;
-    EvalInfo* evalInfo;
-    vector<SearchThread*> searchThreads;
-    size_t movetimeMS;
-    size_t remainingMoveTimeMS;
-    size_t updateIntervalMS;
-    size_t moveOverhead;
-    const SearchSettings* searchSettings;
-    float overallNPS;
-    float lastValueEval;
-
+    ThreadManagerData* tData;
+    ThreadManagerInfo* tInfo;
+    ThreadManagerParams* tParams;
     int checkedContinueSearch = 0;
-    bool inGame;
-    bool canProlong;
     bool isRunning;
     /**
      * @brief check_early_stopping Checks if the search can be ended prematurely based on the current tree statistics (visits & Q-values)
@@ -77,7 +102,7 @@ private:
     void print_info();
 
 public:
-     ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, size_t moveOverhead, const SearchSettings* searchSettings, float overallNPS, float lastValueEval, bool inGame, bool canProlong);
+    ThreadManager(ThreadManagerData* tData, ThreadManagerInfo* tInfo, ThreadManagerParams* tParams);
 
     /**
     * @brief stop_search_based_on_limits Checks for the search limit condition and possible early break-ups
