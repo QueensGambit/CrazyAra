@@ -118,7 +118,7 @@ float get_best_move_q(const Node* nextNode)
 #endif
 }
 
-void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices, const SearchSettings* searchSettings)
+void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx, vector<size_t>& indices, const SearchSettings* searchSettings)
 {
     vector<Action> pv;
     size_t childIdx;
@@ -173,7 +173,7 @@ void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
     apply_permutation_in_place(indices, p);
 }
 
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, const SearchSettings* searchSettings)
+void update_eval_info(EvalInfo& evalInfo, const Node* rootNode, size_t tbHits, size_t selDepth, const SearchSettings* searchSettings)
 {
     const size_t targetLength = rootNode->get_number_child_nodes();
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();

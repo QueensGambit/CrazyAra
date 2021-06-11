@@ -27,35 +27,26 @@
 #include "../util/blazeutil.h"
 #include <chrono>
 
-ThreadManager::ThreadManager(Node* rootNode, EvalInfo* evalInfo, vector<SearchThread*>& searchThreads, size_t movetimeMS, size_t updateIntervalMS, size_t moveOverhead, const SearchSettings* searchSettings, float overallNPS, float lastValueEval, bool inGame, bool canProlong):
-    rootNode(rootNode),
-    evalInfo(evalInfo),
-    searchThreads(searchThreads),
-    movetimeMS(movetimeMS),
-    remainingMoveTimeMS(movetimeMS),
-    updateIntervalMS(updateIntervalMS),
-    moveOverhead(moveOverhead),
-    searchSettings(searchSettings),
-    overallNPS(overallNPS),
-    lastValueEval(lastValueEval),
+ThreadManager::ThreadManager(ThreadManagerData* tData, ThreadManagerInfo* tInfo, ThreadManagerParams* tParams):
+    tData(tData),
+    tInfo(tInfo),
+    tParams(tParams),
     checkedContinueSearch(0),
-    inGame(inGame),
-    canProlong(canProlong),
     isRunning(true)
 {
 }
 
 void ThreadManager::print_info()
 {
-    evalInfo->end = chrono::steady_clock::now();
-    update_eval_info(*evalInfo, rootNode, get_tb_hits(searchThreads), get_max_depth(searchThreads), searchSettings);
-    info_msg(*evalInfo);
+    tData->evalInfo->end = chrono::steady_clock::now();
+    update_eval_info(*tData->evalInfo, tData->rootNode, get_tb_hits(tData->searchThreads), get_max_depth(tData->searchThreads), tInfo->searchSettings);
+    info_msg(*tData->evalInfo);
 }
 
 void ThreadManager::await_kill_signal()
 {
-    while(isRunning && searchThreads.front()->is_running()) {
-        if (wait_for(chrono::milliseconds(updateIntervalMS*4))){
+    while(isRunning && tData->searchThreads.front()->is_running()) {
+        if (wait_for(chrono::milliseconds(tParams->updateIntervalMS*4))){
             print_info();
         }
         else {
@@ -78,10 +69,10 @@ void run_thread_manager(ThreadManager* t)
 void ThreadManager::stop_search_based_on_limits()
 {
     do {
-        remainingMoveTimeMS = movetimeMS;
-        for (size_t var = 0; var < movetimeMS / updateIntervalMS && isRunning; ++var) {
-            if (wait_for(chrono::milliseconds(updateIntervalMS))){
-                remainingMoveTimeMS -= updateIntervalMS;
+        tData->remainingMoveTimeMS = tParams->moveTimeMS;
+        for (int var = 0; var < tParams->moveTimeMS / tParams->updateIntervalMS && isRunning; ++var) {
+            if (wait_for(chrono::milliseconds(tParams->updateIntervalMS))){
+                tData->remainingMoveTimeMS -= tParams->updateIntervalMS;
                 if (checkedContinueSearch == 0 && early_stopping() && !continue_search()) {
                     stop_search();
                 }
@@ -96,7 +87,7 @@ void ThreadManager::stop_search_based_on_limits()
         }
     } while(continue_search());
 
-    if (!wait_for(chrono::milliseconds(movetimeMS % updateIntervalMS))){
+    if (!wait_for(chrono::milliseconds(tParams->moveTimeMS % tParams->updateIntervalMS))){
         return;
     }
 }
@@ -108,27 +99,27 @@ void ThreadManager::stop()
 
 size_t ThreadManager::get_movetime_ms() const
 {
-    return movetimeMS;
+    return tParams->moveTimeMS;
 }
 
 bool ThreadManager::isInGame() const
 {
-    return inGame;
+    return tParams->inGame;
 }
 
 bool ThreadManager::early_stopping()
 {
-    if (!inGame) {
+    if (!tParams->inGame) {
         return false;
     }
 
-    if (overallNPS == 0) {
+    if (tInfo->overallNPS == 0) {
         return false;
     }
 
-    if (rootNode->get_node_count() > overallNPS * (movetimeMS / 1000.0f) * 2 &&
-            rootNode->max_q_child() == rootNode->max_visits_child()) {
-        info_string("Early stopping (max nodes), saved time:", remainingMoveTimeMS);
+    if (tData->rootNode->get_node_count() > tInfo->overallNPS * (tParams->moveTimeMS / 1000.0f) * 2 &&
+            tData->rootNode->max_q_child() == tData->rootNode->max_visits_child()) {
+        info_string("Early stopping (max nodes), saved time:", tData->remainingMoveTimeMS);
         return true;
     }
 
@@ -136,18 +127,18 @@ bool ThreadManager::early_stopping()
     uint32_t secondMax;
     size_t firstArg;
     size_t secondArg;
-    first_and_second_max(rootNode->get_child_number_visits(), rootNode->get_no_visit_idx(), firstMax, secondMax, firstArg, secondArg);
-    const Node* firstNode = rootNode->get_child_node(firstArg);
-    const Node* secondNode = rootNode->get_child_node(secondArg);
+    first_and_second_max(tData->rootNode->get_child_number_visits(), tData->rootNode->get_no_visit_idx(), firstMax, secondMax, firstArg, secondArg);
+    const Node* firstNode = tData->rootNode->get_child_node(firstArg);
+    const Node* secondNode = tData->rootNode->get_child_node(secondArg);
     if (firstNode != nullptr && firstNode->is_playout_node()) {
         firstMax -= firstNode->get_free_visits();
     }
     if (secondNode != nullptr && secondNode->is_playout_node()) {
         secondMax -= secondNode->get_free_visits();
     }
-    if (secondMax + remainingMoveTimeMS * (overallNPS / 1000) < firstMax * 2 &&
-            rootNode->get_q_value(firstArg) > rootNode->get_q_value(secondArg)) {
-        info_string("Early stopping, saved time:", remainingMoveTimeMS);
+    if (secondMax + tData->remainingMoveTimeMS * (tInfo->overallNPS / 1000) < firstMax * 2 &&
+            tData->rootNode->get_q_value(firstArg) > tData->rootNode->get_q_value(secondArg)) {
+        info_string("Early stopping, saved time:", tData->remainingMoveTimeMS);
         return true;
     }
     return false;
@@ -155,16 +146,20 @@ bool ThreadManager::early_stopping()
 
 
 bool ThreadManager::continue_search() {
-    if (!inGame || !canProlong || overallNPS == 0 || checkedContinueSearch > 1 || !searchThreads.front()->is_running()) {
+    if (!tParams->inGame || !tParams->canProlong || tInfo->overallNPS == 0 || checkedContinueSearch > 1 || !tData->searchThreads.front()->is_running()) {
         return false;
     }
-    const float newEval = rootNode->updated_value_eval();
-    if (newEval < lastValueEval) {
-        if (remainingMoveTimeMS < updateIntervalMS + moveOverhead) {
+    // make sure not to flag when continuing search
+    if (tParams->moveTimeMS * 2 > tInfo->searchLimits->get_safe_remaining_time(tInfo->sideToMove)) {
+        return false;
+    }
+    const float newEval = tData->rootNode->updated_value_eval();
+    if (newEval < tData->lastValueEval) {
+        if (tData->remainingMoveTimeMS < tParams->updateIntervalMS + tInfo->searchLimits->moveOverhead) {
             return false;
         }
         info_string("Increase search time");
-        lastValueEval = newEval;
+        tData->lastValueEval = newEval;
         ++checkedContinueSearch;
         return true;
     }
@@ -173,7 +168,7 @@ bool ThreadManager::continue_search() {
 
 void ThreadManager::stop_search()
 {
-    stop_search_threads(searchThreads);
+    stop_search_threads(tData->searchThreads);
 }
 
 void stop_search_threads(vector<SearchThread*>& searchThreads)

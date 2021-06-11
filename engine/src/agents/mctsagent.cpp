@@ -320,9 +320,10 @@ void MCTSAgent::run_mcts_search()
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootState->side_to_move(), rootNode->plies_from_null()/2);
-    threadManager = make_unique<ThreadManager>(rootNode.get(), evalInfo, searchThreads, curMovetime, 250, searchLimits->moveOverhead, searchSettings, overallNPS, lastValueEval,
-                                               is_game_sceneario(searchLimits),
-                                               can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
+    ThreadManagerData tData(rootNode.get(), searchThreads, evalInfo, lastValueEval);
+    ThreadManagerInfo tInfo(searchSettings, searchLimits, overallNPS, rootState->side_to_move());
+    ThreadManagerParams tParams(curMovetime, 250, is_game_sceneario(searchLimits), can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
+    threadManager = make_unique<ThreadManager>(&tData, &tInfo, &tParams);
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());
     isRunning = true;
 

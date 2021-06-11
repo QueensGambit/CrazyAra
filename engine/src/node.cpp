@@ -506,7 +506,7 @@ float Node::get_q_value(ChildIdx childIdx) const
     return d->qValues[childIdx];
 }
 
-DynamicVector<float> Node::get_q_values()
+DynamicVector<float> Node::get_q_values() const
 {
     return d->qValues;
 }
@@ -733,12 +733,12 @@ float Node::max_policy_prob()
     return max(policyProbSmall);
 }
 
-ChildIdx Node::max_q_child()
+ChildIdx Node::max_q_child() const
 {
     return argmax(d->qValues);
 }
 
-ChildIdx Node::max_visits_child()
+ChildIdx Node::max_visits_child() const
 {
     return argmax(d->childNumberVisits);
 }
@@ -1202,7 +1202,7 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
          << "freeVisits:\t" << get_free_visits() << "/" << get_visits() << endl;
 }
 
-uint32_t Node::get_node_count()
+uint32_t Node::get_node_count() const
 {
     return get_visits() - get_free_visits();
 }
