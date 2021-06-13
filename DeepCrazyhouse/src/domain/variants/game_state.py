@@ -34,6 +34,13 @@ import chess
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.src.domain.variants.constants import MODE, MODE_LICHESS
+
+
+def mirror_policy(board: chess.Board):
+    if MODE == MODE_LICHESS and board.uci_variant == "racingkings":
+        return False
+    return board.turn == chess.BLACK
 
 
 class GameState(AbsGameState):
@@ -95,6 +102,10 @@ class GameState(AbsGameState):
     def is_white_to_move(self):
         """ Returns true if its whites turn"""
         return self.board.turn
+
+    def mirror_policy(self) -> bool:
+        """Decides if the policy should be mirrored."""
+        return mirror_policy(self.board)
 
     def __str__(self):
         return self.board.fen()
