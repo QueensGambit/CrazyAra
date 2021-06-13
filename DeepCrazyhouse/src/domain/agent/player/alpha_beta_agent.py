@@ -72,7 +72,7 @@ class AlphaBetaAgent(AbsAgent):
         best_value = -math.inf  # initialization
 
         legal_moves = state.get_legal_moves()
-        p_vec_small = get_probs_of_move_list(policy_vec, state.get_legal_moves(), state.is_white_to_move())
+        p_vec_small = get_probs_of_move_list(policy_vec, state.get_legal_moves(), state.mirror_policy())
 
         if all_moves > 0:
             mv_idces = list(np.argsort(p_vec_small)[::-1])

@@ -20,6 +20,7 @@ from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesC
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.domain.variants.constants import MODE, VERSION, MODE_CHESS
+from DeepCrazyhouse.src.domain.variants.game_state import mirror_policy
 
 # import the Colorer to have a nicer logging printout
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
@@ -92,7 +93,7 @@ def moves_single_game(params_inp):
     for i, move in enumerate(cur_game.main_line()):
 
         # get the move in python chess format based on the policy representation
-        converted_move = policy_to_move(yp_test[i], is_white_to_move=board.turn)
+        converted_move = policy_to_move(yp_test[i], mirror_policy=mirror_policy(board))
 
         cur_ok = converted_move == move
         all_ok = all_ok and cur_ok

@@ -53,6 +53,10 @@ class AbsGameState(ABC):
     def is_white_to_move(self):
         """Force the child to implement is_white_to_move method"""
 
+    @abstractmethod
+    def mirror_policy(self) -> bool:
+        """Force the child to implement mirror_policy method"""
+
     def __str__(self):
         return self.board.fen()
 

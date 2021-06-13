@@ -54,6 +54,16 @@ BoardState::BoardState(const BoardState &b) :
     states->emplace_back(b.states->back());
 }
 
+bool BoardState::mirror_policy(SideToMove sideToMove) const
+{
+#ifdef MODE_LICHESS
+    if (board.variant() == RACE_VARIANT) {
+        return false;
+    }
+#endif
+    return sideToMove != FIRST_PLAYER_IDX;
+}
+
 vector<Action> BoardState::legal_actions() const
 {
     vector<Action> legalMoves;

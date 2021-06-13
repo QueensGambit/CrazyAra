@@ -100,6 +100,11 @@ float State::random_rollout()
     return customEval;
 }
 
+bool State::mirror_policy(SideToMove sideToMove) const
+{
+    return sideToMove != FIRST_PLAYER_IDX;
+}
+
 bool is_win(Result res)
 {
     switch (res) {

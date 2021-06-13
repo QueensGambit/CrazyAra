@@ -407,7 +407,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         is_leaf = False  # initialize is_leaf by default to false
         [value, policy_vec] = self.nets[0].predict_single(state.get_state_planes())  # start a brand new tree
         # extract a sparse policy vector with normalized probabilities
-        p_vec_small = get_probs_of_move_list(policy_vec, legal_moves, state.is_white_to_move())
+        p_vec_small = get_probs_of_move_list(policy_vec, legal_moves, state.mirror_policy())
         chess_board = state.get_pythonchess_board()
         if self.enhance_captures:
             self._enhance_captures(chess_board, legal_moves, p_vec_small)
@@ -464,7 +464,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 [value, policy_vec] = self.nets[0].predict_single(state_child.get_state_planes())
                 # extract a sparse policy vector with normalized probabilities
                 p_vec_small_child = get_probs_of_move_list(
-                    policy_vec, legal_moves_child, state_child.is_white_to_move()
+                    policy_vec, legal_moves_child, state_child.mirror_policy()
                 )
 
             # create a new child node
@@ -716,7 +716,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     else:
                         try:  # extract a sparse policy vector with normalized probabilities
                             p_vec_small = get_probs_of_move_list(
-                                policy_vec, legal_moves, is_white_to_move=state.is_white_to_move(), normalize=True
+                                policy_vec, legal_moves, mirror_policy=state.mirror_policy(), normalize=True
                             )
                         except KeyError:
                             raise Exception("Key Error for state: %s" % state)

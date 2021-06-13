@@ -14,6 +14,8 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_LAST_MOVES
 from DeepCrazyhouse.src.domain.variants.output_representation import move_to_policy
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.src.domain.variants.game_state import mirror_policy
+
 
 NB_ITEMS_METADATA = 18  # constant which defines how many meta data items will be stored in a matrix
 # 2019-09-28: Increased NB_ITEMS_METADATA from 17 to 18 for chess 960
@@ -138,7 +140,7 @@ def get_planes_from_game(game, mate_in_one=False):
             y_value.append(y_init)
             # add the next move defined in policy vector notation to the policy list
             # the network always sees the board as if he's the white player, that's the move is mirrored fro black
-            y_policy.append(move_to_policy(next_move, is_white_to_move=board.turn))
+            y_policy.append(move_to_policy(next_move, mirror_policy=mirror_policy(board)))
 
         y_init *= -1  # flip the y_init value after each move
         board.push(move)  # push the next move on the board

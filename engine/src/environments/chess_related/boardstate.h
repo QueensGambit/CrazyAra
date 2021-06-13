@@ -268,6 +268,7 @@ public:
     BoardState(const BoardState& b);
 
     // State interface
+    bool mirror_policy(SideToMove sideToMove) const;
     vector<Action> legal_actions() const override;
     void set(const string &fenStr, bool isChess960, int variant) override;
     void get_state_planes(bool normalize, float *inputPlanes) const override;

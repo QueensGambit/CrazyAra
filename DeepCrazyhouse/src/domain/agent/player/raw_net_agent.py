@@ -42,7 +42,7 @@ class RawNetAgent(AbsAgent):
         t_start_eval = time()
         pred_value, pred_policy = self._net.predict_single(state.get_state_planes())
         legal_moves = list(state.get_legal_moves())
-        p_vec_small = get_probs_of_move_list(pred_policy, legal_moves, state.is_white_to_move())
+        p_vec_small = get_probs_of_move_list(pred_policy, legal_moves, state.mirror_policy())
         # define the remaining return variables
         time_e = time() - t_start_eval
         centipawn = value_to_centipawn(pred_value)

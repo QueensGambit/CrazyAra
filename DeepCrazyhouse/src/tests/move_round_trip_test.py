@@ -29,8 +29,8 @@ class MoveRoundTripTest(unittest.TestCase):
         """ TODO: docstring"""
         move = chess.Move.from_uci("e2e4")
 
-        policy_vec = move_to_policy(move, is_white_to_move=True)
-        mv_converted = policy_to_move(policy_vec, is_white_to_move=True)
+        policy_vec = move_to_policy(move, mirror_policy=False)
+        mv_converted = policy_to_move(policy_vec, mirror_policy=False)
 
         self.assertTrue(LABELS[policy_vec.argmax()] == move.uci())
         self.assertTrue(move == mv_converted)
@@ -39,8 +39,9 @@ class MoveRoundTripTest(unittest.TestCase):
         """ TODO: docstring"""
         move = chess.Move.from_uci("e7e5")
 
-        policy_vec = move_to_policy(move, is_white_to_move=False)
-        mv_conv = policy_to_move(policy_vec, is_white_to_move=False)
+        # TODO: This does not work for racing kings
+        policy_vec = move_to_policy(move, mirror_policy=True)
+        mv_conv = policy_to_move(policy_vec, mirror_policy=True)
 
         self.assertTrue(LABELS_MIRRORED[policy_vec.argmax()] == move.uci())
         self.assertTrue(move == mv_conv)
@@ -51,7 +52,7 @@ class MoveRoundTripTest(unittest.TestCase):
         :return:
         """
         _, _, _, yp_val, _ = load_pgn_dataset(
-            dataset_type="test", part_id=0, print_statistics=True, print_parameters=True, normalize=True
+            dataset_type="test", part_id=0, verbose=True, normalize=True
         )
 
         board = chess.variant.CrazyhouseBoard()
@@ -90,7 +91,7 @@ class MoveRoundTripTest(unittest.TestCase):
         :return:
         """
         _, _, _, yp_val, _ = load_pgn_dataset(
-            dataset_type="test", part_id=0, print_statistics=True, print_parameters=True, normalize=True
+            dataset_type="test", part_id=0, verbose=True, normalize=True
         )
 
         board = chess.variant.CrazyhouseBoard()
