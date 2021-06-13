@@ -251,6 +251,13 @@ public:
     float random_rollout();
 
     /**
+     * @brief mirror_policy Decides if the policy should be mirrored given the current side to move.
+     * @param sideToMove Current side to move
+     * @return bool
+     */
+    bool mirror_policy(SideToMove sideToMove) const;
+
+    /**
      * @brief legal_actions Returns all legal actions as a vector list
      * @return vector of legal actions
      */

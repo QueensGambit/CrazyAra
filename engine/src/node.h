@@ -289,7 +289,7 @@ public:
 
     DynamicVector<float>& get_policy_prob_small();
 
-    void set_probabilities_for_moves(const float *data, SideToMove sideToMove);
+    void set_probabilities_for_moves(const float *data, bool mirrorPolicy);
 
     void apply_softmax_to_policy();
 

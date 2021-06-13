@@ -920,7 +920,7 @@ void Node::apply_temperature_to_prior_policy(float temperature)
     apply_temperature(policyProbSmall, temperature);
 }
 
-void Node::set_probabilities_for_moves(const float *data, SideToMove sideToMove)
+void Node::set_probabilities_for_moves(const float *data, bool mirrorPolicy)
 {
     // allocate sufficient memory -> is assumed that it has already been done
     assert(legalActions.size() == policyProbSmall.size());
@@ -929,12 +929,13 @@ void Node::set_probabilities_for_moves(const float *data, SideToMove sideToMove)
         // set the right prob value
         // accessing the data on the raw floating point vector is faster
         // than calling policyProb.At(batchIdx, vectorIdx)
-        if (sideToMove == FIRST_PLAYER_IDX) {
-            // use the look-up table for the first player
-            policyProbSmall[mvIdx] = data[StateConstants::action_to_index<normal,notMirrored>(legalActions[mvIdx])];
+        if (mirrorPolicy) {
+            // use mirrored action_to_index
+            policyProbSmall[mvIdx] = data[StateConstants::action_to_index<normal,mirrored>(legalActions[mvIdx])];
         }
         else {
-            policyProbSmall[mvIdx] = data[StateConstants::action_to_index<normal,mirrored>(legalActions[mvIdx])];
+            // use non-mirrored action_to_index
+            policyProbSmall[mvIdx] = data[StateConstants::action_to_index<normal,notMirrored>(legalActions[mvIdx])];
         }
     }
 }

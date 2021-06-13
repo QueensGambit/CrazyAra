@@ -58,7 +58,7 @@ void RawNetAgent::evaluate_board_state()
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
-    get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->side_to_move(),
+    get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->mirror_policy(state->side_to_move()),
                            !net->is_policy_map(), evalInfo->policyProbSmall, net->is_policy_map());
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];
