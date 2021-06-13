@@ -79,9 +79,9 @@ private:
      * @brief save_policy Saves the policy (e.g. mctsPolicy) to the matrix
      * @param legalMoves List of legal moves
      * @param policyProbSmall Probability for each move
-     * @param sideToMove Current side to move
+     * @param mirrorPolicy Decides if the policy should be mirrored
      */
-    void save_policy(const vector<Action>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove);
+    void save_policy(const vector<Action>& legalMoves, const DynamicVector<float>& policyProbSmall, bool mirrorPolicy);
 
     /**
      * @brief save_best_move_q Saves the Q-value of the move which was selected after MCTS search(Optional training sample feature)

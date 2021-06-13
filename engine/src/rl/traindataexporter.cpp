@@ -36,7 +36,7 @@ void TrainDataExporter::save_sample(const StateObj* pos, const EvalInfo& eval)
         return;
     }
     save_planes(pos);
-    save_policy(eval.legalMoves, eval.policyProbSmall, Color(pos->side_to_move()));
+    save_policy(eval.legalMoves, eval.policyProbSmall, pos->mirror_policy(pos->side_to_move()));
     save_best_move_q(eval);
     save_side_to_move(Color(pos->side_to_move()));
     ++curSampleIdx;
@@ -153,7 +153,7 @@ void TrainDataExporter::save_planes(const StateObj *pos)
     }
 }
 
-void TrainDataExporter::save_policy(const vector<Action>& legalMoves, const DynamicVector<float>& policyProbSmall, Color sideToMove)
+void TrainDataExporter::save_policy(const vector<Action>& legalMoves, const DynamicVector<float>& policyProbSmall, bool mirrorPolicy)
 {
     assert(legalMoves.size() == policyProbSmall.size());
 
@@ -162,11 +162,11 @@ void TrainDataExporter::save_policy(const vector<Action>& legalMoves, const Dyna
 
     for (size_t idx = 0; idx < legalMoves.size(); ++idx) {
         size_t policyIdx;
-        if (sideToMove == WHITE) {
-            policyIdx = StateConstants::action_to_index<classic, notMirrored>(legalMoves[idx]);
+        if (mirrorPolicy) {
+            policyIdx = StateConstants::action_to_index<classic, mirrored>(legalMoves[idx]);
         }
         else {
-            policyIdx = StateConstants::action_to_index<classic, mirrored>(legalMoves[idx]);
+            policyIdx = StateConstants::action_to_index<classic, notMirrored>(legalMoves[idx]);
         }
         policy[policyIdx] = policyProbSmall[idx];
     }

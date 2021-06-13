@@ -27,16 +27,16 @@
 #include "constants.h"
 
 
-void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, SideToMove sideToMove, bool normalize, DynamicVector<double> &policyProbSmall, bool selectPolicyFromPlane)
+void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, bool mirrorPolicy, bool normalize, DynamicVector<double> &policyProbSmall, bool selectPolicyFromPlane)
 {
     size_t vectorIdx;
     for (size_t mvIdx = 0; mvIdx < legalMoves.size(); ++mvIdx) {
-        if (sideToMove == FIRST_PLAYER_IDX) {
+        if (mirrorPolicy) {
             // find the according index in the vector
-            vectorIdx = StateConstants::action_to_index<normal,notMirrored>(legalMoves[mvIdx]);
-        } else {
-            // use the mirrored look-up table instead
             vectorIdx = StateConstants::action_to_index<normal,mirrored>(legalMoves[mvIdx]);
+        } else {
+            // use the non-mirrored look-up table instead
+            vectorIdx = StateConstants::action_to_index<normal,notMirrored>(legalMoves[mvIdx]);
         }
         assert(vectorIdx < StateConstants::NB_LABELS());
 
