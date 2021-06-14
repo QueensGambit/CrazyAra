@@ -11,11 +11,11 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 &nbsp; 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/39c3329d0cea4186b5e4d32cfb6a4d5d)](https://www.codacy.com/manual/QueensGambit/CrazyAra?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=QueensGambit/CrazyAra&amp;utm_campaign=Badge_Grade)
+[![ICAPS Badge](https://img.shields.io/badge/Conference-ICAPS_2021-green.svg)](https://ojs.aaai.org/index.php/ICAPS/article/view/15952)
+[![Journal Badge](https://img.shields.io/badge/Journal-Frontiers-green.svg)](https://www.frontiersin.org/articles/10.3389/frai.2020.00024/full)
+[![Thesis Badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
 [![ArXiv Badge2](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/2012.11045)
 [![ArXiv Badge](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/1908.06660)
-[![Thesis Badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
-[![Journal Badge](https://img.shields.io/badge/Journal-Frontiers-green.svg)](https://www.frontiersin.org/articles/10.3389/frai.2020.00024/full)
-
 
 </div>
 
@@ -175,15 +175,15 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 ## Publications
 
-*   J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero Using Monte-Carlo Graph Search**, [preprint](https://arxiv.org/abs/2012.11045)
+*   J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero Using Monte-Carlo Graph Search**, [link](https://ojs.aaai.org/index.php/ICAPS/article/view/15952)
 
 ```latex
 @inproceedings{czech2021icaps_mcgs,
-               crossref = { https://github.com/QueensGambit/CrazyAra },
-	       year = { 2021 },
-	       author = { Johannes Czech and Patrick Korus and Kristian Kersting },
-	       booktitle = { Proceedings of the 31st International Conference on Automated Planning and Scheduling (ICAPS) },
-	       title = { Improving {AlphaZero} Using {Monte-Carlo} {Graph} {Search} } }
+               title={Improving AlphaZero Using Monte-Carlo Graph Search}, volume={31},
+	       url={https://ojs.aaai.org/index.php/ICAPS/article/view/15952}, number={1},
+	       journal={Proceedings of the International Conference on Automated Planning and Scheduling},
+	       author={Czech, Johannes and Korus, Patrick and Kersting, Kristian},
+	       year={2021}, month={May}, pages={103-111} }
 ```
 
 *   J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [link](https://www.frontiersin.org/article/10.3389/frai.2020.00024)
@@ -197,8 +197,7 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 	 YEAR={2020},      
 	 URL={https://www.frontiersin.org/article/10.3389/frai.2020.00024},       
 	 DOI={10.3389/frai.2020.00024},      
-	 ISSN={2624-8212},   
-	 ABSTRACT={Deep neural networks have been successfully applied in learning the board games Go, chess, and shogi without prior knowledge by making use of reinforcement learning. Although starting from zero knowledge has been shown to yield impressive results, it is associated with high computationally costs especially for complex games. With this paper, we present CrazyAra which is a neural network based engine solely trained in supervised manner for the chess variant crazyhouse. Crazyhouse is a game with a higher branching factor than chess and there is only limited data of lower quality available compared to AlphaGo. Therefore, we focus on improving efficiency in multiple aspects while relying on low computational resources. These improvements include modifications in the neural network design and training configuration, the introduction of a data normalization step and a more sample efficient Monte-Carlo tree search which has a lower chance to blunder. After training on 569537 human games for 1.5 days we achieve a move prediction accuracy of 60.4%. During development, versions of CrazyAra played professional human players. Most notably, CrazyAra achieved a four to one win over 2017 crazyhouse world champion Justin Tan (aka LM Jann Lee) who is more than 400 Elo higher rated compared to the average player in our training set. Furthermore, we test the playing strength of CrazyAra on CPU against all participants of the second Crazyhouse Computer Championships 2017, winning against twelve of the thirteen participants. Finally, for CrazyAraFish we continue training our model on generated engine games. In 10 long-time control matches playing Stockfish 10, CrazyAraFish wins three games and draws one out of 10 matches.}
+	 ISSN={2624-8212}
 }
 ```
 
