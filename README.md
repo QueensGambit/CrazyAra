@@ -11,7 +11,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 &nbsp; 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/39c3329d0cea4186b5e4d32cfb6a4d5d)](https://www.codacy.com/manual/QueensGambit/CrazyAra?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=QueensGambit/CrazyAra&amp;utm_campaign=Badge_Grade)
-[![ICAPS Badge](https://img.shields.io/badge/Conference-ICAPS_2021-green.svg)](https://ojs.aaai.org/index.php/ICAPS/article/view/15952)
+[![ICAPS Badge](https://img.shields.io/badge/Conference-ICAPS-green.svg)](https://ojs.aaai.org/index.php/ICAPS/article/view/15952)
 [![Journal Badge](https://img.shields.io/badge/Journal-Frontiers-green.svg)](https://www.frontiersin.org/articles/10.3389/frai.2020.00024/full)
 [![Thesis Badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
 [![ArXiv Badge2](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/2012.11045)
@@ -179,11 +179,16 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 ```latex
 @inproceedings{czech2021icaps_mcgs,
-               title={Improving AlphaZero Using Monte-Carlo Graph Search}, volume={31},
-	       url={https://ojs.aaai.org/index.php/ICAPS/article/view/15952}, number={1},
+               title={Improving AlphaZero Using Monte-Carlo Graph Search},
+	       volume={31},
+	       url={https://ojs.aaai.org/index.php/ICAPS/article/view/15952},
+	       number={1},
 	       journal={Proceedings of the International Conference on Automated Planning and Scheduling},
 	       author={Czech, Johannes and Korus, Patrick and Kersting, Kristian},
-	       year={2021}, month={May}, pages={103-111} }
+	       year={2021},
+	       month={May},
+	       pages={103-111}
+	       }
 ```
 
 *   J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [link](https://www.frontiersin.org/article/10.3389/frai.2020.00024)
@@ -192,13 +197,13 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 	 AUTHOR={Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and Fürnkranz, Johannes},   
 	 TITLE={Learning to Play the Chess Variant Crazyhouse Above World Champion Level With Deep Neural Networks and Human Data},      
 	 JOURNAL={Frontiers in Artificial Intelligence},      
-	 VOLUME={3},      
-	 PAGES={24},     
-	 YEAR={2020},      
+	 VOLUME={3},
+	 PAGES={24},
+	 YEAR={2020},
 	 URL={https://www.frontiersin.org/article/10.3389/frai.2020.00024},       
 	 DOI={10.3389/frai.2020.00024},      
 	 ISSN={2624-8212}
-}
+	 }
 ```
 
 * J. Czech: **Deep Reinforcement Learning for Crazyhouse**, [pdf](https://ml-research.github.io/papers/czech2019deep.pdf)
