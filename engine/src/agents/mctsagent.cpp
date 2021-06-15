@@ -269,13 +269,13 @@ void MCTSAgent::update_stats()
 
 void MCTSAgent::evaluate_board_state()
 {
+    rootState = unique_ptr<StateObj>(state->clone());
     evalInfo->nodesPreSearch = init_root_node(state);
     thread tGCThread = thread(run_gc_thread, &gcThread);
 #ifdef USE_RL
     tGCThread.join();
 #endif
     evalInfo->isChess960 = state->is_chess960();
-    rootState = unique_ptr<StateObj>(state->clone());
     if (rootNode->get_number_child_nodes() == 1) {
         info_string("Only single move available -> early stopping");
     }
