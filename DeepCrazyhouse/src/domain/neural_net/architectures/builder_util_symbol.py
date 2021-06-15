@@ -147,6 +147,14 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
     if use_bn:
         value_out = mx.sym.BatchNorm(data=value_out, name='value_bn2')
 
+    # early return for simple value heads
+    if not (use_wdl and use_plys_to_end):
+        value_out = get_act(data=value_out, act_type=act_type, name='value_act1')
+        value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
+        value_out = get_act(data=value_out, act_type='tanh', name=main_config["value_output"])
+        value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
+        return value_out
+
     value_main_features = get_act(data=value_out, act_type=act_type, name='value_act1')
 
     plys_to_end_out = None
@@ -171,10 +179,7 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
             (loss_out, _, win_out) = mx.sym.split(wdl_out, axis=1, num_outputs=3, name='win_loss_split')
             value_out = mx.sym.broadcast_add(-loss_out, win_out, name=main_config["value_output"])
             value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=0)
-    else:
-        value_out = mx.sym.FullyConnected(data=value_out, num_hidden=1, name='value_fc1')
-        value_out = get_act(data=value_out, act_type='tanh', name=main_config["value_output"])
-        value_out = mx.sym.LinearRegressionOutput(data=value_out, name='value', grad_scale=grad_scale_value)
+
     return value_out, wdl_out, plys_to_end_out
 
 

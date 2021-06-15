@@ -157,12 +157,19 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     if dropout_rate != 0:
         data = mx.sym.Dropout(data, p=dropout_rate)
 
-    value_out, wdl_out, plys_to_end_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
-                                                     value_fc_size=value_fc_size, use_mix_conv=False,
-                                                     grad_scale_value=grad_scale_value,
-                                                     grad_scale_ply=grad_scale_ply, grad_scale_wdl=grad_scale_wdl,
-                                                     orig_data=orig_data, use_avg_features=use_avg_features, use_wdl=use_wdl,
-                                                     use_plys_to_end=use_plys_to_end, use_mlp_wdl_ply=use_mlp_wdl_ply)
+    value_head_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
+                                value_fc_size=value_fc_size, use_mix_conv=False,
+                                grad_scale_value=grad_scale_value,
+                                grad_scale_ply=grad_scale_ply, grad_scale_wdl=grad_scale_wdl,
+                                orig_data=orig_data, use_avg_features=use_avg_features, use_wdl=use_wdl,
+                                use_plys_to_end=use_plys_to_end, use_mlp_wdl_ply=use_mlp_wdl_ply)
+    if use_plys_to_end and use_wdl:
+        value_out, wdl_out, plys_to_end_out = value_head_out
+    else:
+        value_out = value_head_out
+        wdl_out = None
+        plys_to_end_out = None
+
     policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
                              select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels,
                              grad_scale_policy=grad_scale_policy)
