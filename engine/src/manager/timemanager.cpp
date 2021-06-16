@@ -89,8 +89,11 @@ int TimeManager::get_time_for_move(const SearchLimits* searchLimits, SideToMove 
 
     curMovetime = apply_random_factor(curMovetime);
 
-    // make sure the returned movetime is within bounds
-    return min(searchLimits->get_safe_remaining_time(me), curMovetime);
+    if (searchLimits->time[me] != 0) {
+        // make sure the returned movetime is within bounds
+        return min(searchLimits->get_safe_remaining_time(me), curMovetime);
+    }
+    return curMovetime;
 }
 
 int TimeManager::get_thresh_move() const
