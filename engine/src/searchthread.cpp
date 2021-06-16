@@ -53,6 +53,11 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
 #else
     nbNNInputValues(StateConstants::NB_VALUES_TOTAL()),
 #endif
+#ifdef MCTS_SINGLE_PLAYER
+    terminalNodeCache(1),
+#else
+    terminalNodeCache(searchSettings->batchSize*2),
+#endif
     reachedTablebases(false)
 {
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
@@ -350,7 +355,7 @@ void SearchThread::create_mini_batch()
     while (!newNodes->is_full() &&
            collisionTrajectories.size() != searchSettings->batchSize &&
            !transpositionValues->is_full() &&
-           numTerminalNodes < searchSettings->batchSize*2) {
+           numTerminalNodes < terminalNodeCache) {
 
         trajectoryBuffer.clear();
         actionsBuffer.clear();

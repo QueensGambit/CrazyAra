@@ -75,11 +75,12 @@ private:
     MapWithMutex* mapWithMutex;
     const SearchSettings* searchSettings;
     SearchLimits* searchLimits;
-    uint_fast32_t nbNNInputValues;
     size_t tbHits;
     size_t depthSum;
     size_t depthMax;
     size_t visitsPreSearch;
+    const uint_fast32_t nbNNInputValues;
+    const uint_fast32_t terminalNodeCache;
     bool reachedTablebases;
 public:
     /**
