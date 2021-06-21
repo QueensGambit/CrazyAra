@@ -90,7 +90,7 @@ class FileIO:
         self.export_dir_gen_data = binary_dir + "export/new_data/" + variant_suffix
         self.train_dir = binary_dir + "export/train/" + variant_suffix
         self.val_dir = binary_dir + "export/val/" + variant_suffix
-        self.weight_dir = binary_dir+"weights/" + variant_suffix
+        self.weight_dir = binary_dir + "weights/" + variant_suffix
         self.train_dir_archive = binary_dir + "export/archive/train/" + variant_suffix
         self.val_dir_archive = binary_dir + "export/archive/val/" + variant_suffix
         self.model_contender_dir = binary_dir + "model_contender/" + variant_suffix
@@ -277,10 +277,19 @@ class FileIO:
         self._remove_files_in_weight_dir()
         self._include_data_from_replay_memory(rm_nb_files, rm_fraction_for_selection)
 
+    def remove_intermediate_weight_files(self):
+        """
+        Deletes all files (excluding folders) inside the weight directory
+        """
+        # Replace _weight_dir with self.weight_dir, if the trainer can save weights dynamically
+        _weight_dir = self.binary_dir + 'weights/'
+        files = glob.glob(_weight_dir + 'model-*')
+        for f in files:
+            os.remove(f)
+
     def replace_current_model_with_contender(self):
         """
         Moves the previous model into archive directory and the model-contender into the model directory
-        :return:
         """
         move_all_files(self.model_dir, self.model_dir_archive)
         move_all_files(self.model_contender_dir, self.model_dir)
