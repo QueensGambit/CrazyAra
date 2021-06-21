@@ -150,6 +150,8 @@ class RLLoop:
             else:
                 logging.info("KEEPING current generator")
 
+            self.file_io.remove_intermediate_weight_files()
+
             self.binary_io.stop_process()
             self.rtpt.step()  # BUG: process changes it's name 1 iteration too late, fix?
             self.current_binary_name = change_binary_name(self.file_io.binary_dir, self.current_binary_name,
