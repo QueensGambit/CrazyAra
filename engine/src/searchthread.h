@@ -79,7 +79,6 @@ private:
     size_t depthSum;
     size_t depthMax;
     size_t visitsPreSearch;
-    const uint_fast32_t nbNNInputValues;
     const uint_fast32_t terminalNodeCache;
     bool reachedTablebases;
 public:

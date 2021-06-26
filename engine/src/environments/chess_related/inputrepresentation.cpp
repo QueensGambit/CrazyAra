@@ -56,12 +56,13 @@ inline bool flip_board(const Board *pos) {
 
 struct PlaneData {
     const Board* pos;
-    bool flipBoard;
     float* inputPlanes;
     float* curIt;
+    uint_fast32_t size;
+    bool flipBoard;
     bool normalize;
-    PlaneData(const Board* pos, float* inputPlanes, bool normalize):
-        pos(pos), flipBoard(flip_board(pos)), inputPlanes(inputPlanes), curIt(inputPlanes), normalize(normalize)
+    PlaneData(const Board* pos, float* inputPlanes, uint_fast32_t size, bool normalize):
+        pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes), size(size), flipBoard(flip_board(pos)), normalize(normalize)
     {
         // intialize the input_planes with 0
         std::fill_n(curIt, StateConstants::NB_VALUES_TOTAL(), 0.0f);
@@ -459,25 +460,33 @@ inline void board_to_planes_v3(PlaneData& planeData, size_t boardRepetition)
 }
 #endif
 
-void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes)
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float* inputPlanes, uint_fast32_t size)
 {
     // Fill in the piece positions
     // Iterate over both color starting with WHITE
-    PlaneData planeData(pos, inputPlanes, normalize);
+    PlaneData planeData(pos, inputPlanes, size, normalize);
 
-#if VERSION == 2
-#if SUB_VERSION == 7
-    board_to_planes_v_2_7(planeData, pos->legal_actions());
-#elif SUB_VERSION == 8
-    board_to_planes_v_2_8(planeData, pos->legal_actions());
-#endif
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
-    return;
-#endif
-
-#if VERSION == 3
-    board_to_planes_v3(planeData, boardRepetition);
-    return;
+#ifdef MODE_CHESS
+    const uint_fast32_t nbChannels = size / (StateConstants::BOARD_WIDTH() * StateConstants::BOARD_HEIGHT());
+    switch (nbChannels) {
+        case StateConstants::NB_CHANNELS_TOTAL_V1():
+            break;
+        case StateConstants::NB_CHANNELS_TOTAL_V2_7():
+            board_to_planes_v_2_7(planeData, pos->legal_actions());
+            assert(planeData.current_channel() == nbChannels);
+            return;
+        case StateConstants::NB_CHANNELS_TOTAL_V2_8():
+            board_to_planes_v_2_8(planeData, pos->legal_actions());
+            assert(planeData.current_channel() == nbChannels);
+            return;
+        case StateConstants::NB_CHANNELS_TOTAL_V3():
+            board_to_planes_v3(planeData, boardRepetition);
+            assert(planeData.current_channel() == nbChannels);
+            return;
+        default:
+            std::cerr << "The given input plane size of '" << size << "' was unexpected and could not be handled" << endl;
+            throw false;
+    }
 #endif
 
     // (I) Set the pieces for both players

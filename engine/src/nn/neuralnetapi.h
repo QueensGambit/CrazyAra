@@ -36,7 +36,7 @@
 #include <dirent.h>
 #include <cstring>
 #include "../util/communication.h"
-
+#include "neuralnetdesign.h"
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
@@ -110,52 +110,6 @@ bool check_condition(const T& value, const T& target, const string& valueStr, co
     return true;
 }
 
-namespace nn_api {
-/**
- * @brief The Shape struct is a basic shape container object.
- */
-struct Shape {
-    int nbDims = -1;  // uninitialized
-    int v[8];         // shape dimensions
-
-    /**
-     * @brief flatten Returns the flattened shape dimension
-     * @return -1 if not initialized else product of all dimensions
-     */
-    int flatten() const;
-};
-
-std::ostream& operator<<(std::ostream& os, const Shape& shape);
-
-/**
- * @brief The NeuralNetDesign struct stores information about the neural network design.
- * It is supposed to be loaded dynamically from a neural network architecture file via the method `NeuralNetAPI->init_nn_design()`.
- */
-struct NeuralNetDesign {
-    bool isPolicyMap = false;
-    bool hasAuxiliaryOutputs = false;
-    const int nbInputs = 1;
-    const string inputLayerName = "data";
-    const string policyOutputName = "policy_out";
-    const string policySoftmaxOutputName = "policy_softmax";
-    const string valueOutputName = "value_out";
-    const string auxiliaryOutputName = "auxiliary_out";
-    const int inputIdx = 0;
-    const int valueOutputIdx = 0;
-    const int policyOutputIdx = 1;
-    const int auxiliaryOutputIdx = 2;
-    Shape inputShape;
-    Shape valueOutputShape;
-    Shape policyOutputShape;
-    Shape auxiliaryOutputShape;
-
-    /**
-     * @brief print Prints the outputs shapes using info_string(...)
-     */
-    void print() const;
-};
-}
-
 
 /**
  * @brief The NeuralNetAPI class is an abstract class for accessing a neural network back-end and to run inference
@@ -178,6 +132,36 @@ protected:
     string parameterFilePath;
 
     nn_api::NeuralNetDesign nnDesign;
+    uint_fast32_t nbNNInputValues;
+    uint_fast32_t nbNNAuxiliaryOutputs;
+    uint_fast32_t policyOutputLength;
+private:
+    /**
+     * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and
+     * initializes the struct nnDesign.
+     * and sets the selectPolicyFromPlane boolean accordingly
+     */
+    virtual void init_nn_design() = 0;
+
+    /**
+     * @brief load_model Loads the model architecture definition from a json file
+     */
+    virtual void load_model() = 0;
+
+    /**
+     * @brief load_parameters Loads the parameters a.k.a weights of the model given a parameter path
+     */
+    virtual void load_parameters() = 0;
+
+    /**
+     * @brief bind_executor Binds the executor object to the neural network
+     */
+    virtual void bind_executor() = 0;
+
+    /**
+     * @brief initialize_nn_design Template method pattern which calls init_nn_design() and does post processing
+     */
+    void initialize_nn_design();
 public:
     /**
      * @brief NeuralNetAPI
@@ -226,28 +210,40 @@ public:
      * @brief get_policy_output_length Returns vector length for the policy output as returned by the neural network respecting the batch size
      * @return Vector length
      */
-    unsigned int get_policy_output_length() const;
+    inline uint_fast32_t get_policy_output_length() const {
+        return policyOutputLength;
+    }
 
     /**
      * @brief get_nb_input_values_total Returns the total number of input values for a single batch
      * @return uint
      */
-    uint_fast32_t get_nb_input_values_total() const;
+    inline uint_fast32_t get_nb_input_values_total() const {
+        return nbNNInputValues;
+    }
 
     /**
      * @brief get_nb_auxiliary_outputs Returns the total number of auxiliary outputs for a single batch infered form the nnDesign
      * @return uint
      */
-    uint_fast32_t get_nb_auxiliary_outputs() const;
+    inline uint_fast32_t get_nb_auxiliary_outputs() const {
+        return nbNNAuxiliaryOutputs;
+    }
 
     /**
      * @brief has_auxiliary_outputs Returns nnDesign.hasAuxiliaryOutputs
      * @return bool
      */
-    bool has_auxiliary_outputs() const;
+    inline bool has_auxiliary_outputs() const {
+        return nnDesign.hasAuxiliaryOutputs;
+    }
 
     unsigned int get_batch_size() const;
 
+    /**
+     * @brief initialize Initializes the neural net api using the template method pattern
+     */
+    void initialize();
 protected:
     /**
      * @brief FileExists Function to check if a file exists in a given path
@@ -255,28 +251,6 @@ protected:
      * @return True if exists else false
      */
     bool file_exists(const std::string& name);
-
-    /**
-     * @brief load_model Loads the model architecture definition from a json file
-     */
-    virtual void load_model() = 0;
-
-    /**
-     * @brief load_parameters Loads the parameters a.k.a weights of the model given a parameter path
-     */
-    virtual void load_parameters() = 0;
-
-    /**
-     * @brief bind_executor Binds the executor object to the neural network
-     */
-    virtual void bind_executor() = 0;
-
-    /**
-     * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and
-     * initializes the struct nnDesign.
-     * and sets the selectPolicyFromPlane boolean accordingly
-     */
-    virtual void init_nn_design() = 0;
 };
 
 /**

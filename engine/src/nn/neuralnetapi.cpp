@@ -63,23 +63,30 @@ unsigned int NeuralNetAPI::get_batch_size() const
     return batchSize;
 }
 
-int nn_api::Shape::flatten() const
+void NeuralNetAPI::initialize_nn_design()
 {
-    if (nbDims == -1) {
-        return -1;
-    }
-    int product = 1;
-    for (int idx = 0; idx < nbDims; ++idx) {
-        product *= v[idx];
-    }
-    return product;
+    init_nn_design();
+    nbNNInputValues = nnDesign.inputShape.flatten() / batchSize;
+    nbNNAuxiliaryOutputs = nnDesign.auxiliaryOutputShape.flatten() / batchSize;
+    policyOutputLength = nnDesign.policyOutputShape.v[1] * batchSize;
+}
+
+void NeuralNetAPI::initialize()
+{
+    load_model();
+    initialize_nn_design();
+    load_parameters();
+    bind_executor();
 }
 
 NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
     deviceID(deviceID),
     batchSize(batchSize),
     enableTensorrt(enableTensorrt),
-    modelName("")
+    modelName(""),
+    nbNNInputValues(0),  // will be set dynamically in init_nn_design()
+    nbNNAuxiliaryOutputs(0),  // will be set dynamically in init_nn_design()
+    policyOutputLength(0)  // will be set dynamically in init_nn_design()
 {
     modelDir = parse_directory(modelDirectory);
     deviceName = ctx + string("_") + to_string(deviceID);
@@ -125,26 +132,6 @@ void NeuralNetAPI::validate_neural_network()
     }
 }
 
-unsigned int NeuralNetAPI::get_policy_output_length() const
-{
-    return nnDesign.policyOutputShape.v[1] * batchSize;
-}
-
-uint_fast32_t NeuralNetAPI::get_nb_input_values_total() const
-{
-    return nnDesign.inputShape.flatten() / batchSize;
-}
-
-uint_fast32_t NeuralNetAPI::get_nb_auxiliary_outputs() const
-{
-    return nnDesign.auxiliaryOutputShape.flatten() / batchSize;
-}
-
-bool NeuralNetAPI::has_auxiliary_outputs() const
-{
-    return nnDesign.hasAuxiliaryOutputs;
-}
-
 bool NeuralNetAPI::file_exists(const string& name)
 {
     struct stat buffer;
@@ -173,25 +160,4 @@ ostream& nn_api::operator<<(ostream &os, const nn_api::Shape &shape)
     }
     os << ")";
     return os;
-}
-
-void nn_api::NeuralNetDesign::print() const
-{
-   std::stringstream ssInputDims;
-   ssInputDims << inputShape;
-   std::stringstream ssValueOutputDims;
-   ssValueOutputDims << valueOutputShape;
-   std::stringstream ssPolicyOutputDims;
-   ssPolicyOutputDims << policyOutputShape;
-
-   info_string("inputDims:", ssInputDims.str());
-   info_string("valueOutputDims:", ssValueOutputDims.str());
-   info_string("policyOutputDims:", ssPolicyOutputDims.str());
-   if (hasAuxiliaryOutputs) {
-       std::stringstream ssAuxiliaryOutputDims;
-       ssAuxiliaryOutputDims << auxiliaryOutputShape;
-       info_string("auxiliaryOutputDims:", ssAuxiliaryOutputDims.str());
-       return;
-   }
-   info_string("No auxiliary outputs detected.");
 }

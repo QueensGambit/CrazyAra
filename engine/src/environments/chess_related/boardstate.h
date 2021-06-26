@@ -243,6 +243,20 @@ public:
         return 76;
 #endif
     }
+#ifdef MODE_CHESS
+    inline static constexpr uint NB_CHANNELS_TOTAL_V1() {
+        return 39;
+    }
+    inline static constexpr uint NB_CHANNELS_TOTAL_V2_7() {
+        return 33;
+    }
+    inline static constexpr uint NB_CHANNELS_TOTAL_V2_8() {
+        return 38;
+    }
+    inline static constexpr uint NB_CHANNELS_TOTAL_V3() {
+        return 52;
+    }
+#endif
 #ifdef MODE_LICHESS
     static std::unordered_map<Variant, int> CHANNEL_MAPPING_VARIANTS() {
         return {{CHESS_VARIANT, 1},
@@ -271,7 +285,7 @@ public:
     bool mirror_policy(SideToMove sideToMove) const;
     vector<Action> legal_actions() const override;
     void set(const string &fenStr, bool isChess960, int variant) override;
-    void get_state_planes(bool normalize, float *inputPlanes) const override;
+    void get_state_planes(bool normalize, float *inputPlanes, uint_fast32_t size) const override;
     unsigned int steps_from_null() const override;
     bool is_chess960() const override;
     string fen() const override;

@@ -276,8 +276,9 @@ public:
      * @brief get_state_planes Returns the state plane representation of the current state which can be used for NN inference.
      * @param normalize If true thw normalized represnetation should be returned, otherwise the raw representation
      * @param inputPlanes Pointer to the memory array where to set the state plane representation. It is assumed that the memory has already been allocated
+     * @param size Number of total expected input values. This can be used to decide between different neural network input shape designs.
      */
-    virtual void get_state_planes(bool normalize, float* inputPlanes) const = 0;
+    virtual void get_state_planes(bool normalize, float* inputPlanes, uint_fast32_t size) const = 0;
 
     /**
      * @brief steps_from_null Number of steps form the initial position (e.g. starting position)

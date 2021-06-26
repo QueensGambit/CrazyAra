@@ -39,9 +39,7 @@ TorchAPI::TorchAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
     } else {
         throw "unsupported context " + ctx + " given";
     }
-    load_model();
-    init_nn_design();
-    bind_executor();
+    initialize();
 }
 
 void TorchAPI::predict(float *inputPlanes, float *valueOutput, float *probOutputs, float *auxiliaryOutputs)

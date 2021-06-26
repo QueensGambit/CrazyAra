@@ -48,11 +48,6 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
-#ifdef DYNAMIC_NN_ARCH
-    nbNNInputValues(net->get_nb_input_values_total())
-#else
-    nbNNInputValues(StateConstants::NB_VALUES_TOTAL()),
-#endif
 #ifdef MCTS_SINGLE_PLAYER
     terminalNodeCache(1),
 #else
@@ -225,7 +220,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * nbNNInputValues);
+                newState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_nb_input_values_total());
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
