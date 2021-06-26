@@ -43,9 +43,9 @@ using namespace sample;
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
     idxInput(nnDesign.inputIdx),
-    idxValueOutput(nnDesign.valueOutputIdx-nnDesign.nbInputs),
-    idxPolicyOutput(nnDesign.policyOutputIdx-nnDesign.nbInputs),
-    idxAuxiliaryOutput(nnDesign.auxiliaryOutputIdx-nnDesign.nbInputs),
+    idxValueOutput(nnDesign.valueOutputIdx + nnDesign.nbInputs),
+    idxPolicyOutput(nnDesign.policyOutputIdx + nnDesign.nbInputs),
+    idxAuxiliaryOutput(nnDesign.auxiliaryOutputIdx + nnDesign.nbInputs),
     precision(str_to_precision(strPrecision)),
     generatedTrtFromONNX(false)
 {
