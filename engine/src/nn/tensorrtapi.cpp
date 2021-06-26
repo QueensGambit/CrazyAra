@@ -131,9 +131,9 @@ void TensorrtAPI:: init_nn_design()
     if (!retrieve_indices_by_name(generatedTrtFromONNX)) {
         info_string_important("Fallback to default indices.");
         idxInput = nnDesign.inputIdx;
-        idxValueOutput = nnDesign.valueOutputIdx-nnDesign.nbInputs;
-        idxPolicyOutput = nnDesign.policyOutputIdx-nnDesign.nbInputs;
-        idxAuxiliaryOutput = nnDesign.auxiliaryOutputIdx-nnDesign.nbInputs;
+        idxValueOutput = nnDesign.valueOutputIdx + nnDesign.nbInputs;
+        idxPolicyOutput = nnDesign.policyOutputIdx + nnDesign.nbInputs;
+        idxAuxiliaryOutput = nnDesign.auxiliaryOutputIdx + nnDesign.nbInputs;
     }
 
     set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
