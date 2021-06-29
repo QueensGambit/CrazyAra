@@ -44,9 +44,11 @@ from DeepCrazyhouse.configs.main_config import main_config
 def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
 
     # Fill in the piece positions
+    me = board.turn
+    you = ~board.turn
 
     # Iterate over both color starting with WHITE
-    for idx, color in enumerate(chess.COLORS):
+    for idx, color in enumerate([me, you]):
         # the PIECE_TYPE is an integer list in python-chess
         for piece_type in chess.PIECE_TYPES:
             # define the channel by the piece_type (the input representation uses the same ordering as python-chess)
@@ -77,9 +79,9 @@ def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
             # p_type -1 because p_type starts with 1
             channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
 
-            planes_pos[channel, :, :] = board.pockets[chess.WHITE].count(p_type)
+            planes_pos[channel, :, :] = board.pockets[me].count(p_type)
             # the prison for black begins 5 channels later
-            planes_pos[channel + 5, :, :] = board.pockets[chess.BLACK].count(p_type)
+            planes_pos[channel + 5, :, :] = board.pockets[you].count(p_type)
 
     # (III) Fill in the promoted pieces
     # iterate over all promoted pieces according to the mask and set the according bit
@@ -119,20 +121,22 @@ def _fill_constant_planes(planes_const, board, board_turn):
     # has_kingside_castling_rights() and has_queenside_castling_rights() support chess960, too
     channel = CHANNEL_MAPPING_CONST["castling"]
 
+    me = board.turn
+    you = ~board.turn
     # WHITE
     # check for King Side Castling
-    if board.has_kingside_castling_rights(chess.WHITE):
+    if board.has_kingside_castling_rights(me):
         planes_const[channel, :, :] = 1
     # check for Queen Side Castling
-    if board.has_queenside_castling_rights(chess.WHITE):
+    if board.has_queenside_castling_rights(me):
         planes_const[channel + 1, :, :] = 1
 
     # BLACK
     # check for King Side Castling
-    if board.has_kingside_castling_rights(chess.BLACK):
+    if board.has_kingside_castling_rights(you):
         planes_const[channel + 2, :, :] = 1
     # check for Queen Side Castling
-    if board.has_queenside_castling_rights(chess.BLACK):
+    if board.has_queenside_castling_rights(you):
         planes_const[channel + 3, :, :] = 1
 
     # (IV.4) No Progress Count
@@ -149,13 +153,13 @@ def _fill_constant_planes(planes_const, board, board_turn):
     # set the remaining checks (only needed for "3check")
     if board.uci_variant == "3check":
         channel = CHANNEL_MAPPING_CONST["remaining_checks"]
-        if board.remaining_checks[chess.WHITE] <= 2:
+        if board.remaining_checks[me] <= 2:
             planes_const[channel, :, :] = 1
-            if board.remaining_checks[chess.WHITE] == 1:
+            if board.remaining_checks[me] == 1:
                 planes_const[channel+1, :, :] = 1
-        if board.remaining_checks[chess.BLACK] <= 2:
+        if board.remaining_checks[you] <= 2:
             planes_const[channel+2, :, :] = 1
-            if board.remaining_checks[chess.BLACK] == 1:
+            if board.remaining_checks[you] == 1:
                 planes_const[channel+3, :, :] = 1
 
     return planes_const
