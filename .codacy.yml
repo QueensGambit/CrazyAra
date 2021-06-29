@@ -1,0 +1,3 @@
+exclude_paths:
+  - '*.md'
+  - 'engine/3rdparty/*'
