@@ -263,7 +263,37 @@ TEST_CASE("Draw_by_insufficient_material"){
 #endif
 }
 
+#ifdef MODE_LICHESS
+TEST_CASE("Racing Kings No Mirror Test, Input Representation Version 2"){
 
+    // initial position
+    BoardState state;
+    state.init(RACE_VARIANT, false);
+    PlaneStatistics stats;
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 208);
+    REQUIRE(stats.argMax == 68);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 425624);
+
+    // black to move
+    state.set("8/8/8/8/8/6K1/krbnNBR1/qrbnNBRQ b - - 1 1", false, RACE_VARIANT);
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 208);
+    REQUIRE(stats.argMax == 67);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 450207);
+
+    // last moves
+    state.init(RACE_VARIANT, false);
+    apply_given_moves(state, {"h2g3"});
+    stats = get_planes_statistics(state, false);
+    REQUIRE(stats.sum == 210);
+    REQUIRE(stats.argMax == 67);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 456324);
+}
+#endif
 
 #ifdef MODE_CHESS
 #if VERSION == 1
