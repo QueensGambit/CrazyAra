@@ -59,6 +59,7 @@ Result State::check_result() const
         }
         return DRAWN;
     }
+    return NO_RESULT;
 }
 
 TerminalType State::random_rollout(float& customValueTerminal)
