@@ -55,7 +55,7 @@ inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard
  * @param pos Board object
  * @return bool
  */
-inline bool flip_board(const Board *pos);
+inline bool flip_board(const Board& pos, SideToMove sideToMove);
 
 
 #endif // INPUTREPRESENTATION_H
