@@ -39,6 +39,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     VARIANT_MAPPING_BOARDS)
 from DeepCrazyhouse.src.domain.util import get_board_position_index, get_row_col, np
 from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.src.domain.variants.constants import MODE, MODE_LICHESS
 
 
 def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
@@ -179,15 +180,14 @@ def _fill_variants_plane(board, planes_variants):
             break
 
 
-def flip_board(board, mode,) -> bool:
+def flip_board(board) -> bool:
     """
     Decides whether to flip the board based on the side to move.
     If the board is the racing variant, flipping the board is disabled
     :param board: Board object
-    ;param mode: Active config mode
     :return: bool
     """
-    if mode == MODE_LICHESS and board.uci_variant == "racingkings":
+    if MODE == MODE_LICHESS and board.uci_variant == "racingkings":
         return False
     return board.turn == chess.BLACK
 
@@ -231,7 +231,7 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
         planes_variants = np.zeros((NB_CHANNELS_VARIANTS, BOARD_HEIGHT, BOARD_WIDTH))
 
     # check who's player turn it is and flip the board if it's black turn (except for racing kings)
-    mirror_board = flip_board(board, mode)
+    mirror_board = flip_board(board)
 
     if mirror_board:
         board = board.mirror()

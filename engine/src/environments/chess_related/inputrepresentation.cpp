@@ -45,13 +45,13 @@ inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard
     }
 }
 
-inline bool flip_board(const Board *pos) {
+inline bool flip_board(const Board& pos, SideToMove sideToMove) {
 #ifdef MODE_LICHESS
-    if (pos->is_race()) {
+    if (pos.is_race()) {
         return false;
     }
 #endif
-    return pos->side_to_move() == BLACK;
+    return sideToMove != FIRST_PLAYER_IDX;
 }
 
 struct PlaneData {
@@ -61,7 +61,7 @@ struct PlaneData {
     float* curIt;
     bool normalize;
     PlaneData(const Board* pos, float* inputPlanes, bool normalize):
-        pos(pos), flipBoard(flip_board(pos)), inputPlanes(inputPlanes), curIt(inputPlanes), normalize(normalize)
+        pos(pos), flipBoard(flip_board(*pos, pos->side_to_move())), inputPlanes(inputPlanes), curIt(inputPlanes), normalize(normalize)
     {
         // intialize the input_planes with 0
         std::fill_n(curIt, StateConstants::NB_VALUES_TOTAL(), 0.0f);
