@@ -6,4 +6,4 @@
 	url = https://github.com/xsr7qsr/Fairy-Stockfish.git
 [submodule "engine/3rdparty/blaze"]
 	path = engine/3rdparty/blaze
-	url = git clone https://bitbucket.org/blaze-lib/blaze.git
+	url = https://bitbucket.org/blaze-lib/blaze.git
