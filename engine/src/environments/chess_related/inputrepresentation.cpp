@@ -45,15 +45,6 @@ inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard
     }
 }
 
-inline bool flip_board(const Board *pos) {
-#ifdef MODE_LICHESS
-    if (pos->is_race()) {
-        return false;
-    }
-#endif
-    return pos->side_to_move() == BLACK;
-}
-
 struct PlaneData {
     const Board* pos;
     float* inputPlanes;
@@ -61,8 +52,9 @@ struct PlaneData {
     uint_fast32_t size;
     bool flipBoard;
     bool normalize;
-    PlaneData(const Board* pos, float* inputPlanes, uint_fast32_t size, bool normalize):
-        pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes), size(size), flipBoard(flip_board(pos)), normalize(normalize)
+    PlaneData(const Board* pos, float* inputPlanes, bool normalize):
+        pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes),
+        flipBoard(flip_board(*pos, pos->side_to_move())), normalize(normalize)
     {
         // intialize the input_planes with 0
         std::fill_n(curIt, StateConstants::NB_VALUES_TOTAL(), 0.0f);
@@ -442,21 +434,21 @@ inline void board_to_planes_v3(PlaneData& planeData, size_t boardRepetition)
     set_plane_pieces(planeData);
     set_plane_repetition(planeData, boardRepetition);
     set_plane_ep_square(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
     set_plane_castling_rights(planeData);
     set_no_progress_counter(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
     set_last_moves(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
     set_960(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
     set_piece_masks(planeData);
     set_checkerboard(planeData);
     set_material_diff(planeData);
     set_opposite_bishops(planeData);
     set_checkers(planeData);
     set_material_count(planeData);
-    assert(planeData.currentChannel == StateConstants::NB_CHANNELS_TOTAL());
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
 }
 #endif
 
