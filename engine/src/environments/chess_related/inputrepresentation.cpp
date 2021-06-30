@@ -52,8 +52,8 @@ struct PlaneData {
     uint_fast32_t size;
     bool flipBoard;
     bool normalize;
-    PlaneData(const Board* pos, float* inputPlanes, bool normalize):
-        pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes),
+    PlaneData(const Board* pos, float* inputPlanes, uint_fast32_t size, bool normalize):
+        pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes), size(size),
         flipBoard(flip_board(*pos, pos->side_to_move())), normalize(normalize)
     {
         // intialize the input_planes with 0

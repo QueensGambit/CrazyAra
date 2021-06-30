@@ -77,13 +77,13 @@ PlaneStatistics get_stats_from_input_planes(const float* inputPlanes)
 
 PlaneStatistics get_planes_statistics(const StateObj& state, bool normalize) {
     float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
-    state.get_state_planes(normalize, inputPlanes);
+    state.get_state_planes(normalize, inputPlanes, StateConstants::NB_VALUES_TOTAL());
     return get_stats_from_input_planes(inputPlanes);
 }
 
 PlaneStatistics get_planes_statistics(const Board& pos, bool normalize) {
     float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
-    board_to_planes(&pos, pos.number_repetitions(), normalize, inputPlanes);
+    board_to_planes(&pos, pos.number_repetitions(), normalize, inputPlanes, StateConstants::NB_VALUES_TOTAL());
     return get_stats_from_input_planes(inputPlanes);
 }
 
@@ -159,32 +159,15 @@ TEST_CASE("En-passent moves") {
 #ifdef MODE_LICHESS
 TEST_CASE("Anti-Chess StartFEN"){
     init();
+    StateObj state;
+    state.set(StartFENs[ANTI_VARIANT], false, ANTI_VARIANT);
+    PlaneStatistics stats = get_planes_statistics(state, false);
 
-    Board pos;
-    string token, cmd;
-    auto uiThread = make_shared<Thread>(0);
-
-    float *inputPlanes = new float[StateConstants::NB_VALUES_TOTAL()];
-
-    StateInfo newState;
-    pos.set(StartFENs[ANTI_VARIANT], false, ANTI_VARIANT, &newState, uiThread.get());
-    board_to_planes(&pos, pos.number_repetitions(), false, inputPlanes);
-    size_t sum = 0;
-    float max_num = 0;
-    int key = 0;
-    for (size_t i = 0; i < 3000; ++i) {
-        const float val = inputPlanes[i];
-        sum += val;
-        if (inputPlanes[i] > max_num) {
-            max_num = val;
-        }
-        key += i * val;
-    }
 //    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008); // no last move planes
     REQUIRE(StateConstants::NB_VALUES_TOTAL() == 4032); // with last move planes
-    REQUIRE(int(max_num) == 1);
-    REQUIRE(int(sum) == 224);
-    REQUIRE(int(key) == 417296);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.sum == 224);
+    REQUIRE(stats.key == 417296);
 }
 #endif
 
