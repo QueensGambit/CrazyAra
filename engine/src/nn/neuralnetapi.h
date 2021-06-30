@@ -37,6 +37,7 @@
 #include <cstring>
 #include "../util/communication.h"
 #include "neuralnetdesign.h"
+#include "version.h"
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
@@ -135,6 +136,8 @@ protected:
     uint_fast32_t nbNNInputValues;
     uint_fast32_t nbNNAuxiliaryOutputs;
     uint_fast32_t policyOutputLength;
+
+    Version version;
 private:
     /**
      * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and
@@ -236,6 +239,14 @@ public:
      */
     inline bool has_auxiliary_outputs() const {
         return nnDesign.hasAuxiliaryOutputs;
+    }
+
+    /**
+     * @brief get_version Returns the loaded version of the neural network.
+     * @return Version
+     */
+    inline Version get_version() const {
+        return version;
     }
 
     unsigned int get_batch_size() const;

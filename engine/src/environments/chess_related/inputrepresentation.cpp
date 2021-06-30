@@ -49,11 +49,10 @@ struct PlaneData {
     const Board* pos;
     float* inputPlanes;
     float* curIt;
-    uint_fast32_t size;
     bool flipBoard;
     bool normalize;
-    PlaneData(const Board* pos, float* inputPlanes, uint_fast32_t size, bool normalize):
-        pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes), size(size),
+    PlaneData(const Board* pos, float* inputPlanes, bool normalize):
+        pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes),
         flipBoard(flip_board(*pos, pos->side_to_move())), normalize(normalize)
     {
         // intialize the input_planes with 0
@@ -421,12 +420,14 @@ inline void board_to_planes_v_2_7(PlaneData& planeData, const vector<Action>& le
     set_checkers(planeData);
     set_check_moves(planeData, legalMoves);
     set_mobility(planeData, legalMoves);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
 }
 
 inline void board_to_planes_v_2_8(PlaneData& planeData, const vector<Action>& legalMoves)
 {
     board_to_planes_v_2_7(planeData, legalMoves);
     set_material_count(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
 }
 
 inline void board_to_planes_v3(PlaneData& planeData, size_t boardRepetition)
@@ -452,31 +453,28 @@ inline void board_to_planes_v3(PlaneData& planeData, size_t boardRepetition)
 }
 #endif
 
-void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float* inputPlanes, uint_fast32_t size)
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float* inputPlanes, Version version)
 {
     // Fill in the piece positions
     // Iterate over both color starting with WHITE
-    PlaneData planeData(pos, inputPlanes, size, normalize);
+    PlaneData planeData(pos, inputPlanes, normalize);
 
 #ifdef MODE_CHESS
-    const uint_fast32_t nbChannels = size / (StateConstants::BOARD_WIDTH() * StateConstants::BOARD_HEIGHT());
-    switch (nbChannels) {
-        case StateConstants::NB_CHANNELS_TOTAL_V1():
+    switch (version) {
+        case make_version<0,0,0>():
+        case make_version<1,0,0>():
             break;
-        case StateConstants::NB_CHANNELS_TOTAL_V2_7():
+        case make_version<2,7,0>():
             board_to_planes_v_2_7(planeData, pos->legal_actions());
-            assert(planeData.current_channel() == nbChannels);
             return;
-        case StateConstants::NB_CHANNELS_TOTAL_V2_8():
+        case make_version<2,8,0>():
             board_to_planes_v_2_8(planeData, pos->legal_actions());
-            assert(planeData.current_channel() == nbChannels);
             return;
-        case StateConstants::NB_CHANNELS_TOTAL_V3():
+        case  make_version<3,0,0>():
             board_to_planes_v3(planeData, boardRepetition);
-            assert(planeData.current_channel() == nbChannels);
             return;
         default:
-            std::cerr << "The given input plane size of '" << size << "' was unexpected and could not be handled" << endl;
+            std::cerr << "The given version '" << version_to_string(version) << "' was unexpected and could not be handled" << endl;
             throw false;
     }
 #endif

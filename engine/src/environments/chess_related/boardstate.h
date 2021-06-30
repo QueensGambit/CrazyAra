@@ -243,20 +243,19 @@ public:
         return 76;
 #endif
     }
-#ifdef MODE_CHESS
-    inline static constexpr uint NB_CHANNELS_TOTAL_V1() {
-        return 39;
-    }
-    inline static constexpr uint NB_CHANNELS_TOTAL_V2_7() {
-        return 33;
-    }
-    inline static constexpr uint NB_CHANNELS_TOTAL_V2_8() {
-        return 38;
-    }
-    inline static constexpr uint NB_CHANNELS_TOTAL_V3() {
-        return 52;
-    }
+inline static constexpr Version CURRENT_VERSION() {
+#if VERSION == 2
+#if SUBVERSION == 7
+    return make_version<2,7,0>();
+#elif SUB_VERSION == 8
+    return make_version<2,8,0>();
 #endif
+#endif
+#if VERSION == 3
+    return make_version<3,0,0>();
+#endif
+    return make_version<0,0,0>();
+    }
 #ifdef MODE_LICHESS
     static std::unordered_map<Variant, int> CHANNEL_MAPPING_VARIANTS() {
         return {{CHESS_VARIANT, 1},

@@ -136,7 +136,7 @@ void TrainDataExporter::save_planes(const StateObj *pos)
 {
     // x / plane representation
     float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
-    pos->get_state_planes(false, inputPlanes);
+    pos->get_state_planes(false, inputPlanes, StateConstants::CURRENT_VERSION());
     // write array to roi
     xt::xarray<int16_t>::shape_type planesShape = { 1, StateConstants::NB_CHANNELS_TOTAL(), StateConstants::BOARD_HEIGHT(), StateConstants::BOARD_WIDTH()};
     xt::xarray<int16_t> planes(planesShape);

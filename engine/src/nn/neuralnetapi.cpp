@@ -86,7 +86,8 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
     modelName(""),
     nbNNInputValues(0),  // will be set dynamically in initialize_nn_design()
     nbNNAuxiliaryOutputs(0),  // will be set dynamically in initialize_nn_design()
-    policyOutputLength(0)  // will be set dynamically in initialize_nn_design()
+    policyOutputLength(0),  // will be set dynamically in initialize_nn_design()
+    version(make_version<0,0,0>())
 {
     modelDir = parse_directory(modelDirectory);
     deviceName = ctx + string("_") + to_string(deviceID);
