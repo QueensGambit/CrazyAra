@@ -49,7 +49,7 @@ void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant
     spielState = spielGame->NewInitialState(fenStr);
 }
 
-void OpenSpielState::get_state_planes(bool normalize, float *inputPlanes) const
+void OpenSpielState::get_state_planes(bool normalize, float *inputPlanes, Version version) const
 {
     std::fill(inputPlanes, inputPlanes+StateConstantsOpenSpiel::NB_VALUES_TOTAL(), 0.0f);
     // TODO

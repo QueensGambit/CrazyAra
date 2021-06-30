@@ -37,7 +37,7 @@ void FairyState::set(const string &fenStr, bool isChess960, int variant) {
     board.set(variants.find("xiangqi")->second, fenStr, isChess960, &states->back(), thread, false);
 }
 
-void FairyState::get_state_planes(bool normalize, float *inputPlanes) const {
+void FairyState::get_state_planes(bool normalize, float *inputPlanes, Version version) const {
     board_to_planes(&board, normalize, inputPlanes);
 }
 

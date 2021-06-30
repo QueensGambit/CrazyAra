@@ -104,6 +104,7 @@ void apply_given_moves(StateObj& state, const std::vector<string>& uciMoves);
  */
 Variant get_default_variant();
 
+#ifndef MODE_XIANGQI
 /**
  * @brief is_uci_move_legal Check if a uci move, given as a string, is legal at a specific position
  * @return bool True, if the engine thinks the move is legal
@@ -121,6 +122,7 @@ bool are_uci_moves_legal_bool(const BoardState& pos, const vector<string>& uciMo
  * @brief legal_actions_equal_ucimoves Checks if the given uci moves is a permutation of the legal actions
  */
 bool legal_actions_equal_ucimoves(const BoardState& pos, const vector<string>& uciMoves, bool is960);
+#endif
 
 #endif
 

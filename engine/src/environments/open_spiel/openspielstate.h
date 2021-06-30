@@ -98,7 +98,7 @@ public:
 public:
     std::vector<Action> legal_actions() const;
     void set(const std::string &fenStr, bool isChess960, int variant);
-    void get_state_planes(bool normalize, float *inputPlanes) const;
+    void get_state_planes(bool normalize, float *inputPlanes, Version version) const;
     unsigned int steps_from_null() const;
     bool is_chess960() const;
     std::string fen() const;
