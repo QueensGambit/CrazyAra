@@ -243,6 +243,19 @@ public:
         return 76;
 #endif
     }
+inline static constexpr Version CURRENT_VERSION() {
+#if VERSION == 2
+#if SUBVERSION == 7
+    return make_version<2,7,0>();
+#elif SUB_VERSION == 8
+    return make_version<2,8,0>();
+#endif
+#endif
+#if VERSION == 3
+    return make_version<3,0,0>();
+#endif
+    return make_version<0,0,0>();
+    }
 #ifdef MODE_LICHESS
     static std::unordered_map<Variant, int> CHANNEL_MAPPING_VARIANTS() {
         return {{CHESS_VARIANT, 1},
@@ -271,7 +284,7 @@ public:
     bool mirror_policy(SideToMove sideToMove) const;
     vector<Action> legal_actions() const override;
     void set(const string &fenStr, bool isChess960, int variant) override;
-    void get_state_planes(bool normalize, float *inputPlanes) const override;
+    void get_state_planes(bool normalize, float *inputPlanes, uint_fast32_t size) const override;
     unsigned int steps_from_null() const override;
     bool is_chess960() const override;
     string fen() const override;

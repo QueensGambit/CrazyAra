@@ -43,9 +43,9 @@ using namespace sample;
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
     idxInput(nnDesign.inputIdx),
-    idxValueOutput(nnDesign.valueOutputIdx-nnDesign.nbInputs),
-    idxPolicyOutput(nnDesign.policyOutputIdx-nnDesign.nbInputs),
-    idxAuxiliaryOutput(nnDesign.auxiliaryOutputIdx-nnDesign.nbInputs),
+    idxValueOutput(nnDesign.valueOutputIdx + nnDesign.nbInputs),
+    idxPolicyOutput(nnDesign.policyOutputIdx + nnDesign.nbInputs),
+    idxAuxiliaryOutput(nnDesign.auxiliaryOutputIdx + nnDesign.nbInputs),
     precision(str_to_precision(strPrecision)),
     generatedTrtFromONNX(false)
 {
@@ -58,9 +58,7 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     trtFilePath = generate_trt_file_path(modelDir, batchSize, precision, deviceID);
     gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
 
-    load_model();
-    init_nn_design();
-    bind_executor();
+    initialize();
 }
 
 TensorrtAPI::~TensorrtAPI()
@@ -124,7 +122,7 @@ bool TensorrtAPI::retrieve_indices_by_name(bool verbose)
     return true;
 }
 
-void TensorrtAPI:: init_nn_design()
+void TensorrtAPI::init_nn_design()
 {
     nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
 

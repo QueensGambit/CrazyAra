@@ -33,6 +33,7 @@
 #include <string>
 #include <cstdint>
 #include <memory>
+#include "version.h"
 
 typedef uint64_t Key;
 #ifdef ACTION_64_BIT
@@ -209,6 +210,14 @@ public:
     static void init(bool isPolicyMap) {
         return T::init(isPolicyMap);
     }
+
+    /**
+     * @brief CURRENT_VERSION Defines the current version. This can be changed depending on the input representation used.
+     * @return current version
+     */
+    inline static constexpr Version CURRENT_VERSION() {
+        return make_version<0,0,0>();
+    }
 };
 
 class State
@@ -276,8 +285,9 @@ public:
      * @brief get_state_planes Returns the state plane representation of the current state which can be used for NN inference.
      * @param normalize If true thw normalized represnetation should be returned, otherwise the raw representation
      * @param inputPlanes Pointer to the memory array where to set the state plane representation. It is assumed that the memory has already been allocated
+     * @param version This can be used to decide between different neural network input shape designs.
      */
-    virtual void get_state_planes(bool normalize, float* inputPlanes) const = 0;
+    virtual void get_state_planes(bool normalize, float* inputPlanes, Version version) const = 0;
 
     /**
      * @brief steps_from_null Number of steps form the initial position (e.g. starting position)

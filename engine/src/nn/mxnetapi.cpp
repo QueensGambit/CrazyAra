@@ -45,10 +45,7 @@ MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
         throw "unsupported context " + ctx + " given";
     }
 
-    load_model();
-    load_parameters();
-    bind_executor();
-    init_nn_design();
+    initialize();
 }
 
 MXNetAPI::~MXNetAPI()

@@ -47,12 +47,13 @@ inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard
 
 struct PlaneData {
     const Board* pos;
-    bool flipBoard;
     float* inputPlanes;
     float* curIt;
+    bool flipBoard;
     bool normalize;
     PlaneData(const Board* pos, float* inputPlanes, bool normalize):
-        pos(pos), flipBoard(flip_board(*pos, pos->side_to_move())), inputPlanes(inputPlanes), curIt(inputPlanes), normalize(normalize)
+        pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes),
+        flipBoard(flip_board(*pos, pos->side_to_move())), normalize(normalize)
     {
         // intialize the input_planes with 0
         std::fill_n(curIt, StateConstants::NB_VALUES_TOTAL(), 0.0f);
@@ -419,12 +420,14 @@ inline void board_to_planes_v_2_7(PlaneData& planeData, const vector<Action>& le
     set_checkers(planeData);
     set_check_moves(planeData, legalMoves);
     set_mobility(planeData, legalMoves);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
 }
 
 inline void board_to_planes_v_2_8(PlaneData& planeData, const vector<Action>& legalMoves)
 {
     board_to_planes_v_2_7(planeData, legalMoves);
     set_material_count(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
 }
 
 inline void board_to_planes_v3(PlaneData& planeData, size_t boardRepetition)
@@ -450,25 +453,30 @@ inline void board_to_planes_v3(PlaneData& planeData, size_t boardRepetition)
 }
 #endif
 
-void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes)
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float* inputPlanes, Version version)
 {
     // Fill in the piece positions
     // Iterate over both color starting with WHITE
     PlaneData planeData(pos, inputPlanes, normalize);
 
-#if VERSION == 2
-#if SUB_VERSION == 7
-    board_to_planes_v_2_7(planeData, pos->legal_actions());
-#elif SUB_VERSION == 8
-    board_to_planes_v_2_8(planeData, pos->legal_actions());
-#endif
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
-    return;
-#endif
-
-#if VERSION == 3
-    board_to_planes_v3(planeData, boardRepetition);
-    return;
+#ifdef MODE_CHESS
+    switch (version) {
+        case make_version<0,0,0>():
+        case make_version<1,0,0>():
+            break;
+        case make_version<2,7,0>():
+            board_to_planes_v_2_7(planeData, pos->legal_actions());
+            return;
+        case make_version<2,8,0>():
+            board_to_planes_v_2_8(planeData, pos->legal_actions());
+            return;
+        case  make_version<3,0,0>():
+            board_to_planes_v3(planeData, boardRepetition);
+            return;
+        default:
+            std::cerr << "The given version '" << version_to_string(version) << "' was unexpected and could not be handled" << endl;
+            throw false;
+    }
 #endif
 
     // (I) Set the pieces for both players
