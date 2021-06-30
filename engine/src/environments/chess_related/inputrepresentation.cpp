@@ -45,15 +45,6 @@ inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard
     }
 }
 
-inline bool flip_board(const Board& pos, SideToMove sideToMove) {
-#ifdef MODE_LICHESS
-    if (pos.is_race()) {
-        return false;
-    }
-#endif
-    return sideToMove != FIRST_PLAYER_IDX;
-}
-
 struct PlaneData {
     const Board* pos;
     bool flipBoard;

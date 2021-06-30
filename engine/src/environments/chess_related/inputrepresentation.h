@@ -55,7 +55,15 @@ inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard
  * @param pos Board object
  * @return bool
  */
-inline bool flip_board(const Board& pos, SideToMove sideToMove);
+inline bool flip_board(const Board& pos, SideToMove sideToMove)
+{
+#ifdef MODE_LICHESS
+    if (pos.is_race()) {
+        return false;
+    }
+#endif
+    return sideToMove != FIRST_PLAYER_IDX;
+}
 
 
 #endif // INPUTREPRESENTATION_H
