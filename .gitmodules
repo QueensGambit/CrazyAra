@@ -4,3 +4,6 @@
 [submodule "engine/3rdparty/Fairy-Stockfish"]
 	path = engine/3rdparty/Fairy-Stockfish
 	url = https://github.com/xsr7qsr/Fairy-Stockfish.git
+[submodule "engine/3rdparty/blaze"]
+	path = engine/3rdparty/blaze
+	url = https://bitbucket.org/blaze-lib/blaze.git
