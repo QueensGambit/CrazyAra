@@ -37,14 +37,9 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
+      working-directory: ${{github.workspace}}/engine/3rdparty/blaze
       run: |
-        sudo apt update
-        # install blaze dependencies
-        sudo apt-get install libblas-dev liblapack-dev
         # install blaze
-        wget https://bitbucket.org/blaze-lib/blaze/downloads/blaze-3.6.tar.gz
-        tar -xvzf blaze-3.6.tar.gz
-        cd blaze-3.6
         cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
         sudo make install
       
