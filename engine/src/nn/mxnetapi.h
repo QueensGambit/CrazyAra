@@ -100,6 +100,12 @@ private:
      * @param strPrecision Neural network precision
      */
     void fill_model_paths(const string& strPrecision);
+
+    /**
+     * @brief custom_initialize Use custom ordering here, because initialize() calls initialize_nn_design()
+     * after load_model() which would result in a seg-fault
+     */
+    void custom_initialize();
 };
 
 /**

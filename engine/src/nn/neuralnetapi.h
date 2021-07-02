@@ -160,11 +160,6 @@ private:
      * @brief bind_executor Binds the executor object to the neural network
      */
     virtual void bind_executor() = 0;
-
-    /**
-     * @brief initialize_nn_design Template method pattern which calls init_nn_design() and does post processing
-     */
-    void initialize_nn_design();
 public:
     /**
      * @brief NeuralNetAPI
@@ -262,6 +257,11 @@ protected:
      * @return True if exists else false
      */
     bool file_exists(const std::string& name);
+
+    /**
+     * @brief initialize_nn_design Template method pattern which calls init_nn_design() and does post processing
+     */
+    void initialize_nn_design();
 };
 
 /**
