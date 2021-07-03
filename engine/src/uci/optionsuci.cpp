@@ -219,23 +219,32 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
         }
 #endif
         Options[name] = value;
-        if (name != "uci_variant") {
+        if (name != "uci_variant" && name != "uci_chess960") {
             info_string_important("Updated option", givenName, "to", value);
         } else {
 #ifdef XIANGQI
-            // Workaround. Fairy-Stockfish does not use an enum for variants
-            info_string_important("variant Xiangqi startpos rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1");
+            if (name == "uci_variant") {
+                // Workaround. Fairy-Stockfish does not use an enum for variants
+                info_string_important("variant Xiangqi startpos rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1");
+            }
 #else
             bool is960 = false;
-            string uciVariant = check_uci_variant_input(value, &is960);
-            Options["UCI_Variant"] << Option(uciVariant.c_str());
-            info_string_important("Updated option", givenName, "to", uciVariant);
+            string uciVariant = Options["UCI_Variant"];
+            if (name == "uci_variant") {
+                std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+                uciVariant = check_uci_variant_input(value, &is960);
+                Options["UCI_Variant"] << Option(uciVariant.c_str());
+                info_string_important("Updated option", givenName, "to", uciVariant);
 #ifdef SUPPORT960
-            if (Options["UCI_Chess960"] != is960) {
-                Options["UCI_Chess960"] << Option(is960);
-                info_string("Updated option UCI_Chess960 to", (string)Options["UCI_Chess960"]);
-            }
+                if (Options["UCI_Chess960"] != is960) {
+                    Options["UCI_Chess960"] << Option(is960);
+                    info_string("Updated option UCI_Chess960 to", (string)Options["UCI_Chess960"]);
+                }
 #endif // SUPPORT960
+            } else { // name == "uci_chess960"
+                info_string_important("Updated option", givenName, "to", value);
+                is960 = Options["UCI_Chess960"];
+            }
             variant = UCI::variant_from_name(uciVariant);
             state.init(variant, is960);
 
@@ -243,7 +252,7 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
             Options["Model_Directory"] << Option(("model/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             Options["Model_Directory_Contender"] << Option(("model_contender/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             info_string_important("variant", (string)Options["UCI_Variant"] + suffix_960, "startpos", state.fen());
-#endif
+#endif // not XIANGQI
         }
     }
     else {
@@ -267,6 +276,8 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
 #ifdef MODE_LICHESS
     if (value == "giveaway" || value == "losers") {
         return "antichess";
+    } else if (value == "threecheck") {
+        return "3check";
     }
 #endif // MODE_LICHESS
     // MODE_CRAZYHOUSE or others (keep value as is)
