@@ -228,6 +228,7 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
 #else
             bool is960 = false;
             string uciVariant = check_uci_variant_input(value, &is960);
+            std::transform(uciVariant.begin(), uciVariant.end(), uciVariant.begin(), ::tolower);
             Options["UCI_Variant"] << Option(uciVariant.c_str());
             info_string_important("Updated option", givenName, "to", uciVariant);
 #ifdef SUPPORT960
