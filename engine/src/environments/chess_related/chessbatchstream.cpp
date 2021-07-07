@@ -153,7 +153,13 @@ int ChessBatchStream::getBatchSize() const
 
 nvinfer1::Dims ChessBatchStream::getDims() const
 {
-    return Dims{4, {mBatchSize, mDims.d[0], mDims.d[1], mDims.d[2]}, {}};
+    Dims dims;
+    dims.nbDims = 4;
+    dims.d[0] = mBatchSize;
+    dims.d[1] = mDims.d[0];
+    dims.d[2] = mDims.d[1];
+    dims.d[3] = mDims.d[2];
+    return dims;
 }
 
 void reset_to_startpos(Board& pos, Thread* uiThread, StateListPtr& states)
