@@ -26,12 +26,6 @@ jobs:
         cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
         sudo make install
 
-    - name: Install OpenSpiel
-      working-directory: ${{github.workspace}}/engine/3rdparty/open_spiel/
-      run: |
-        chmod +x install.sh
-        ./install.sh
-
     - name: Configure CMake
       working-directory: ${{github.workspace}}/engine
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
