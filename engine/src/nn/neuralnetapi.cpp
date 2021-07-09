@@ -111,6 +111,7 @@ string NeuralNetAPI::get_device_name() const
 void NeuralNetAPI::validate_neural_network()
 {
     nnDesign.print();
+    /*
     check_condition(nnDesign.policyOutputShape.nbDims, 2, "policyOutputShape.nbDims", "2");
     check_condition(nnDesign.valueOutputShape.nbDims, 2, "valueOutputShape.nbDims", "2");
     check_condition(nnDesign.valueOutputShape.v[1], 1, "valueOutputShape.v[1]", "1");
@@ -131,6 +132,7 @@ void NeuralNetAPI::validate_neural_network()
         info_string("No auxiliary outputs detected but auxiliary output was expected.");
         info_string("StateConstants::NB_AUXILIARY_OUTPUTS():", StateConstants::NB_AUXILIARY_OUTPUTS());
     }
+    */
 }
 
 bool NeuralNetAPI::file_exists(const string& name)

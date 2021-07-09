@@ -43,6 +43,8 @@ using blaze::DynamicVector;
 #elif MODE_XIANGQI
 #include "environments/fairy_state/fairystate.h"
 #include "environments/fairy_state/fairyoutputrepresentation.h"
+#elif MODE_STRATEGO
+#include "environments/stratego_related/strategostate.h"
 #else
 #include "environments/chess_related/boardstate.h"
 #include "environments/chess_related/outputrepresentation.h"
@@ -57,6 +59,9 @@ using blaze::DynamicVector;
 #elif MODE_XIANGQI
     using StateObj = FairyState;
     using StateConstants = StateConstantsFairy;
+#elif MODE_STRATEGO
+    using StateObj = StrategoState;
+    using StateConstants = StateConstantsStratego;
 #else
     using StateObj = BoardState;
     using StateConstants = StateConstantsBoard;

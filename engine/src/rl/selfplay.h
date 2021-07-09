@@ -29,11 +29,13 @@
 #define SELFPLAY_H
 
 #include "../agents/mctsagent.h"
+
 #include "../agents/rawnetagent.h"
 #include "gamepgn.h"
 #include "tournamentresult.h"
 #include "../agents/config/rlsettings.h"
 #include "../stateobj.h"
+#include "uci.h"
 
 
 #ifdef USE_RL

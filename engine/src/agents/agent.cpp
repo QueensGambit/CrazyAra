@@ -79,6 +79,10 @@ void Agent::perform_action()
     info_msg(*evalInfo);
     info_string(state->fen());
     info_bestmove(StateConstants::action_to_uci(evalInfo->bestMove, state->is_chess960()));
+    #ifdef MODE_STRATEGO
+    // Maybe use action_to_string because it is more general
+    info_bestmove(" equals " + state->action_to_string(evalInfo->bestMove));
+    #endif
 }
 
 void run_agent_thread(Agent* agent)

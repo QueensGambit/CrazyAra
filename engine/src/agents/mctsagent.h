@@ -50,7 +50,7 @@ using namespace crazyara;
 
 class MCTSAgent : public Agent
 {
-private:
+public:
     SearchSettings* searchSettings;  // TODO: add "const" to searchSetting
     vector<SearchThread*> searchThreads;
     unique_ptr<TimeManager> timeManager;
@@ -133,7 +133,7 @@ public:
      * @brief get_name Returns the name specification of the MCTSAgent using the CrazyAra version ID and loaded neural net
      * @return
      */
-    string get_name() const;
+    virtual string get_name() const;
 
     Node *get_opponents_next_root() const;
 
@@ -164,14 +164,14 @@ public:
      */
     void update_stats();
 
-private:
+public:
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
      * The old tree or former subtrees will be freed from memory.
      * @param pos Requested board position
      * @return Number of nodes that have already been explored before the serach
      */
-    inline size_t init_root_node(StateObj* state);
+    size_t init_root_node(StateObj* state);
 
     /**
      * @brief get_new_root_node Returns the pointer of the new root node for the given position in the case
@@ -180,7 +180,7 @@ private:
      * @param pos Requested board position
      * @return Pointer to root node or nullptr
      */
-    inline shared_ptr<Node> get_root_node_from_tree(StateObj* state);
+    shared_ptr<Node> get_root_node_from_tree(StateObj* state);
 
     /**
      * @brief create_new_root_node Creates a new root node for the given board position and requests the neural network for evaluation

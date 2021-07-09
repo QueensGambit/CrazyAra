@@ -73,6 +73,10 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     } else {
         gamePGN.variant = string(options["UCI_Variant"]) + suffix960;
     }
+    
+    #ifdef MODE_STRATEGO
+            gamePGN.variant = "stratego";
+    #endif
 
     time_t     now = time(0);
     struct tm  tstruct;
@@ -337,29 +341,61 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     tournamentResult.playerA = mctsContender->get_name();
     tournamentResult.playerB = mctsAgent->get_name();
     Result gameResult;
-    for (size_t idx = 0; idx < numberOfGames; ++idx) {
-        if (idx % 2 == 0) {
-            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true, "");
+    #ifdef MODE_STRATEGO
+    // Due to the not symmetrical/mirrored starting position it is necessary to play two games
+    // per starting position with alternating colors. 
+
+        for (size_t idx = 0; idx < numberOfGames; ++idx) {
+            unique_ptr<StateObj> state= make_unique<StateObj>();
+            state->init(variant, is960);
+            auto fen = state->fen();
+            gamePGN.fen = state->fen();
+            
+            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, fen);
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
-            else {
+            else if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberLosses;
+            }else{
+            ++tournamentResult.numberDraws;
             }
-        }
-        else {
-            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, gamePGN.fen);
+        
+            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, fen);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }
-            else {
+            else if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberLosses;
+            }else{
+            ++tournamentResult.numberDraws;
             }
         }
-        if (gameResult == DRAWN) {
-            ++tournamentResult.numberDraws;
+    #else
+        for (size_t idx = 0; idx < numberOfGames; ++idx) {
+            if (idx % 2 == 0) {
+                gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true, "");
+                if (gameResult == WHITE_WIN) {
+                    ++tournamentResult.numberWins;
+                }
+                else {
+                    ++tournamentResult.numberLosses;
+                }
+            }
+            else {
+                gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, gamePGN.fen);
+                if (gameResult == BLACK_WIN) {
+                    ++tournamentResult.numberWins;
+                }
+                else {
+                    ++tournamentResult.numberLosses;
+                }
+            }
+            if (gameResult == DRAWN) {
+                ++tournamentResult.numberDraws;
+            }
         }
-    }
+    #endif
     return tournamentResult;
 }
 
@@ -368,7 +404,7 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, 
     unique_ptr<StateObj> state= make_unique<StateObj>();
     state->init(variant, is960);
     gamePGN.fen = state->fen();
-
+    
     for (size_t ply = 0; ply < plys; ++ply) {
         EvalInfo eval;
         rawAgent.set_search_settings(state.get(), nullptr, &eval);

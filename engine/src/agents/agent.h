@@ -66,7 +66,7 @@ public:
     /**
      * @brief perform_action Selects an action based on the evaluation result
      */
-    void perform_action();
+    virtual void perform_action();
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents

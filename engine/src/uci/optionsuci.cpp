@@ -150,6 +150,11 @@ void OptionsUCI::init(OptionsMap &o)
 #else
     o["Simulations"]                   << Option(0, 0, 99999999);
 #endif
+#ifdef MODE_STRATEGO
+   o["Centi_Temperature"]              << Option(99999, 0, 99999);
+   o["Centi_Temperature_Decay"]        << Option(100, 0, 100);
+   o["Temperature_Moves"]              << Option(0, 0, 99999);
+#endif
 #ifndef MODE_XIANGQI
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
 #endif
@@ -162,6 +167,8 @@ void OptionsUCI::init(OptionsMap &o)
     o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), availableVariants);
 #elif defined MODE_XIANGQI
     o["UCI_Variant"]                   << Option("xiangqi", {"xiangqi", "xiangqi"});
+#elif defined MODE_STRATEGP
+    o["UCI_Variant"]                   << Option("stratego", {"stratego", "stratego"});
 #else  // MODE = MODE_CHESS
     o["UCI_Variant"]                   << Option("chess", {"chess", "chess"});
 #endif

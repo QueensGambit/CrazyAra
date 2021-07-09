@@ -32,6 +32,9 @@
 
 #include "agents/rawnetagent.h"
 #include "agents/mctsagent.h"
+#include "agents/mctsagentbatch.h"
+#include "agents/randomagent.h"
+#include "agents/mctsagenttruesight.h"
 #include "nn/neuralnetapi.h"
 #include "agents/config/searchsettings.h"
 #include "agents/config/searchlimits.h"
@@ -187,6 +190,19 @@ public:
     void arena(istringstream &is);
 
     /**
+    *
+    */
+    void mctsarena(istringstream &is, string modeldirectory1 = "", string modeldirectory2 = "");
+    /**
+    *
+    */
+    void mctstournament(istringstream &is, int numberofgames);
+    /**
+    *
+    */
+    void evaltournament(istringstream &is, int numberofgames);
+
+    /**
      * @brief init_rl_settings Initializes the rl settings used for the mcts agent with the current UCI parameters
      */
     void init_rl_settings();
@@ -224,6 +240,18 @@ private:
      */
     string engine_info();
 
+    // All possible MCTS Agenttypes
+    enum class MCTSAgentType : int8_t {
+    kDefault = 0,               // Default agent, used within CrazyAra
+    kBatch1 = 1,                // The reimplementation of the default agent (batch size = 1)
+    kBatch3 = 2,                // 3 MCTS agents with majority vote at the end
+    kBatch5 = 3,                // 5 MCTS agents with majority vote at the end
+    kBatch3_reducedNodes = 4,   // 3 MCTS agents with majority vote at the end. The amount of nodes are splitted between all agents
+    kBatch5_reducedNodes = 5,   // 5 MCTS agents with majority vote at the end. The amount of nodes are splitted between all agents
+    kTrueSight = 6,             // True Sight Agent, which uses the perfect information state instead of the imperfect information state
+    kRandom = 7,                // plays random legal moves
+};
+
     /**
      * @brief create_new_mcts_agent Factory method to create a new MCTSAgent when loading new neural network weights
      * @param modelDirectory Directory where the .params and .json files are stored
@@ -231,9 +259,10 @@ private:
      * @param netSingle Neural net with batch-size 1. It will be loaded from file.
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
      * @param searchSettings Search settings object
+     * @param type Which type of agent should be used, default is 0. 
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type = MCTSAgentType::kDefault);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory
@@ -269,5 +298,12 @@ size_t get_num_gpus(UCI::OptionsMap& option);
  * @param option
  */
 void validate_device_indices(UCI::OptionsMap& option);
+
+/**
+* @brief Calculates all combinations of size K out of set N
+* @param N a set of numbers
+* @param K the size of the combination tuples (2 results in all possible number combinations)
+*/
+std::vector<std::string> comb(std::vector<int> N, int K);
 
 #endif // CRAZYARA_H
