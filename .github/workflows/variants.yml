@@ -40,17 +40,17 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: |
         mkdir build
-        #cmake -B ./build/chess -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_PROFILING=0 -DUSE_RL=0 -DBACKEND_TENSORRT=0 -DBACKEND_MXNET=0 -DBACKEND_TORCH=0 -DUSE_960=0 -DBUILD_TESTS=1 -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 -DMODE_XIANGQI=0 -DMODE_STRATEGO=0 .
-        #cmake -B ./build/lichess -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_PROFILING=0 -DUSE_RL=0 -DBACKEND_TENSORRT=0 -DBACKEND_MXNET=0 -DBACKEND_TORCH=0 -DUSE_960=0 -DBUILD_TESTS=1 -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=0 -DMODE_LICHESS=1 -DMODE_XIANGQI=0 -DMODE_STRATEGO=0  .
-        #cmake -B ./build/xiangqi -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_PROFILING=0 -DUSE_RL=0 -DBACKEND_TENSORRT=0 -DBACKEND_MXNET=0 -DBACKEND_TORCH=0 -DUSE_960=0 -DBUILD_TESTS=1 -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=0 -DMODE_LICHESS=0 -DMODE_XIANGQI=1 -DMODE_STRATEGO=0 .
+        cmake -B ./build/chess -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_PROFILING=0 -DUSE_RL=0 -DBACKEND_TENSORRT=0 -DBACKEND_MXNET=0 -DBACKEND_TORCH=0 -DUSE_960=0 -DBUILD_TESTS=1 -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 -DMODE_XIANGQI=0 -DMODE_STRATEGO=0 .
+        cmake -B ./build/lichess -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_PROFILING=0 -DUSE_RL=0 -DBACKEND_TENSORRT=0 -DBACKEND_MXNET=0 -DBACKEND_TORCH=0 -DUSE_960=0 -DBUILD_TESTS=1 -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=0 -DMODE_LICHESS=1 -DMODE_XIANGQI=0 -DMODE_STRATEGO=0  .
+        cmake -B ./build/xiangqi -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_PROFILING=0 -DUSE_RL=0 -DBACKEND_TENSORRT=0 -DBACKEND_MXNET=0 -DBACKEND_TORCH=0 -DUSE_960=0 -DBUILD_TESTS=1 -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=0 -DMODE_LICHESS=0 -DMODE_XIANGQI=1 -DMODE_STRATEGO=0 .
         cmake -B ./build/stratego -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_PROFILING=0 -DUSE_RL=0 -DBACKEND_TENSORRT=0 -DBACKEND_MXNET=0 -DBACKEND_TORCH=0 -DUSE_960=0 -DBUILD_TESTS=0 -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=0 -DMODE_LICHESS=0 -DMODE_XIANGQI=0 -DMODE_STRATEGO=1 .
 
     - name: Build
       # Build your program with the given configuration
       run: |
-        #cmake --build ${{github.workspace}}/engine/build/chess --config ${{env.BUILD_TYPE}}
-        #cmake --build ${{github.workspace}}/engine/build/lichess --config ${{env.BUILD_TYPE}}
-        #cmake --build ${{github.workspace}}/engine/build/xiangqi --config ${{env.BUILD_TYPE}}
+        cmake --build ${{github.workspace}}/engine/build/chess --config ${{env.BUILD_TYPE}}
+        cmake --build ${{github.workspace}}/engine/build/lichess --config ${{env.BUILD_TYPE}}
+        cmake --build ${{github.workspace}}/engine/build/xiangqi --config ${{env.BUILD_TYPE}}
         cmake --build ${{github.workspace}}/engine/build/stratego --config ${{env.BUILD_TYPE}}
 
     - name: Test
@@ -58,7 +58,7 @@ jobs:
       # Execute tests defined by the CMake configuration.
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: |
-        #./build/chess/ClassicAra
-        #./build/lichess/MultiAra
-        #./build/xiangqi/XiangqiAra
+        ./build/chess/ClassicAra
+        ./build/lichess/MultiAra
+        ./build/xiangqi/XiangqiAra
         ./build/stratego/StrategoAra
