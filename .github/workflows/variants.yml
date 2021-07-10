@@ -30,7 +30,9 @@ jobs:
       working-directory: ${{github.workspace}}/engine/3rdparty/open_spiel
       run: |
         # install blaze
-        # ./install.sh
+        pwd
+        chmod +x install.sh
+        ./install.sh
 
     - name: Configure CMake
       working-directory: ${{github.workspace}}/engine
