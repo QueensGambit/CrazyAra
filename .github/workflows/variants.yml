@@ -32,7 +32,7 @@ jobs:
         # install blaze
         pwd
         chmod +x install.sh
-        ./install.sh
+        sudo ./install.sh
 
     - name: Configure CMake
       working-directory: ${{github.workspace}}/engine
