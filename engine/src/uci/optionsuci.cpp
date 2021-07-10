@@ -167,7 +167,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), availableVariants);
 #elif defined MODE_XIANGQI
     o["UCI_Variant"]                   << Option("xiangqi", {"xiangqi", "xiangqi"});
-#elif defined MODE_STRATEGP
+#elif defined MODE_STRATEGO
     o["UCI_Variant"]                   << Option("stratego", {"stratego", "stratego"});
 #else  // MODE = MODE_CHESS
     o["UCI_Variant"]                   << Option("chess", {"chess", "chess"});
