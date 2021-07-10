@@ -151,7 +151,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
-    #ifdef MODE_STRATEGO)
+    #ifdef MODE_STRATEGO
         // Test if the new modes are also usable for chess and others
         else if (token == "mctsmatch")   mctsarena(is);
         else if (token == "mctstournament")   mctstournament(is, 100);
