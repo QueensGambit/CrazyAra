@@ -195,7 +195,7 @@ public:
      * @param modeldirectory1 name of the model directory of agent 1
      * @param modeldirectory2 name of the model directory of agent 2
     */
-    void mctsarena(istringstream &is, string modeldirectory1 = "", string modeldirectory2 = "");
+    void mctsarena(istringstream &is, const string& modeldirectory1, const string& modeldirectory2);
     /**
     * @brief mctstournament extension to the mctsarena method, 
     * enabling the user to play round-robin tournaments with more then 2 agents.
