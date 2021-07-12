@@ -54,7 +54,6 @@ void StrategoState::set(const std::string &fenStr, bool isChess960, int variant)
 
 void StrategoState::get_state_planes(bool normalize, float *inputPlanes, Version version) const
 {
-    bool output = false;
     
     auto shape = spielGame->InformationStateTensorShape();
     std::vector<float> v(spielGame->InformationStateTensorSize());
@@ -62,18 +61,6 @@ void StrategoState::get_state_planes(bool normalize, float *inputPlanes, Version
 
     inputPlanes = std::copy( v.begin(), v.end(), inputPlanes);
 
-    if(output){
-        for(auto k = 0; k < shape[0]; ++k){
-            std::cout << "---> " << k << std::endl;
-            for(auto i = 0; i < shape[1];++i){
-                for(auto j = 0; j < shape[2];++j){
-                std::cout << v[k*100+i*10+j] << " ";
-                }
-            std::cout << "" << std::endl;
-            }
-            std::cout << "" << std::endl;
-            }
-    }
 }
 
 unsigned int StrategoState::steps_from_null() const
