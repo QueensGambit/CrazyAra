@@ -18,7 +18,7 @@
 */
 
 /*
- * @file: strategostate.h
+ * @file: strategostate.cpp
  * Created on 05.2021
  * @author: BluemlJ
  */
