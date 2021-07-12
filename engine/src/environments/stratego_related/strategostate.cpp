@@ -54,13 +54,9 @@ void StrategoState::set(const std::string &fenStr, bool isChess960, int variant)
 
 void StrategoState::get_state_planes(bool normalize, float *inputPlanes, Version version) const
 {
-    
-    auto shape = spielGame->InformationStateTensorShape();
     std::vector<float> v(spielGame->InformationStateTensorSize());
     spielState->InformationStateTensor(spielState->CurrentPlayer(), absl::MakeSpan(v));
-
-    inputPlanes = std::copy( v.begin(), v.end(), inputPlanes);
-
+    std::copy( v.begin(), v.end(), inputPlanes);
 }
 
 unsigned int StrategoState::steps_from_null() const
