@@ -231,13 +231,6 @@ void StrategoState::init(int variant, bool isChess960) {
     }
     std::string fen = lines[rand() % lines.size()];  
     std::string fen2 = fen + "\n";
-    // Code to print the board as 10x10 board in the pgn file
-    //for(auto i = 0; i < 10;++i){
-    //    for(auto j = 0; j < 10;++j){
-    //        fen2 = fen2 + fen[i*10+j];
-    //    }
-    //fen2 = fen2 + "\n";
-    //}
     fen.erase(fen.length()-1);
 
     
