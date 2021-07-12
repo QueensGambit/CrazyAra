@@ -29,7 +29,6 @@
 #define SELFPLAY_H
 
 #include "../agents/mctsagent.h"
-
 #include "../agents/rawnetagent.h"
 #include "gamepgn.h"
 #include "tournamentresult.h"
