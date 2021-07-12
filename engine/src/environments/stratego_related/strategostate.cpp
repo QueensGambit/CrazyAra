@@ -213,9 +213,7 @@ void StrategoState::init(int variant, bool isChess960) {
         spielState = spielGame->NewInitialState(".");
     }
     std::string fen = lines[rand() % lines.size()];  
-    std::string fen2 = fen + "\n";
     fen.erase(fen.length()-1);
 
-    
     spielState = spielGame->NewInitialState(fen);
 }
