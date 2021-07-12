@@ -22,13 +22,6 @@
  * Created on 05.2021
  * @author: BluemlJ
  *
- * The MCTSAgent runs playouts/simulations in the search tree and updates the node statistics.
- * The final move is chosen according to the visit count of each direct child node and optionally taken Q-values into account.
- * One playout is defined as expanding one new node in the tree.
- * In the case of chess this means evaluating a new board position.
- * For more details and the mathematical equations please refer to our Journal Paper:
- * https://arxiv.org/abs/1908.06660 as well as the official DeepMind-papers.
-
  * This MCTSAgent starts several MCTSAgents after another and calculates the best move based on all of the MCTSAgents. 
  */
 
