@@ -67,15 +67,16 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     if (is960) {
         suffix960 = "960";
     }
+      
+    #ifndef MODE_STRATEGO
     if (not is960 && string(options["UCI_Variant"]) == "chess") {
         // TODO: do we want standard instead of chess ?
         gamePGN.variant = "standard";
     } else {
         gamePGN.variant = string(options["UCI_Variant"]) + suffix960;
     }
-    
-    #ifdef MODE_STRATEGO
-            gamePGN.variant = "stratego";
+    #else
+        gamePGN.variant = "stratego";
     #endif
 
     time_t     now = time(0);
