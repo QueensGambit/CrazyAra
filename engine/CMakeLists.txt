@@ -393,7 +393,7 @@ if (USE_RL)
     include_directories($ENV{XTL_PATH}/include)
     include_directories($ENV{XTENSOR_PATH}/include)
     add_definitions(-DUSE_RL)
-    #add_definitions(-DDISABLE_UCI_INFO)
+    add_definitions(-DDISABLE_UCI_INFO)
 endif()
 
 if (BACKEND_TENSORRT)
