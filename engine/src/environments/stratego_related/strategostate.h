@@ -36,25 +36,25 @@
 class StateConstantsStratego : public StateConstantsInterface<StateConstantsStratego>
 {
 public:
-    static int BOARD_WIDTH() {
+    static uint BOARD_WIDTH() {
         return open_spiel::yorktown::BoardSize();
     }
-    static int BOARD_HEIGHT() {
+    static uint BOARD_HEIGHT() {
         return  open_spiel::yorktown::BoardSize();
     }
-    static int NB_CHANNELS_TOTAL() {
+    static uint NB_CHANNELS_TOTAL() {
         return open_spiel::yorktown::InformationStateTensorShape().front(); 
     }
-     static int NB_VALUES_TOTAL() {
+     static uint NB_VALUES_TOTAL() {
         return NB_CHANNELS_TOTAL()*open_spiel::yorktown::BoardSize()*open_spiel::yorktown::BoardSize();  // TODO
     }
-    static int NB_LABELS() {
+    static uint NB_LABELS() {
         return open_spiel::yorktown::kNumActionDestinations*open_spiel::yorktown::BoardSize()*open_spiel::yorktown::BoardSize();  // TODO
     }
-    static int NB_LABELS_POLICY_MAP() {
+    static uint NB_LABELS_POLICY_MAP() {
         return NB_LABELS();  // TODO
     }
-    static int NB_PLAYERS() {
+    static uint NB_PLAYERS() {
         return  open_spiel::yorktown::NumPlayers();
     }
      static uint NB_AUXILIARY_OUTPUTS() {
