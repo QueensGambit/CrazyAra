@@ -43,7 +43,7 @@ public:
         return  open_spiel::yorktown::BoardSize();
     }
     static int NB_CHANNELS_TOTAL() {
-        return open_spiel::yorktown::InformationStateTensorShape().front();  // TODO
+        return open_spiel::yorktown::InformationStateTensorShape().front(); 
     }
      static int NB_VALUES_TOTAL() {
         return NB_CHANNELS_TOTAL()*open_spiel::yorktown::BoardSize()*open_spiel::yorktown::BoardSize();  // TODO
