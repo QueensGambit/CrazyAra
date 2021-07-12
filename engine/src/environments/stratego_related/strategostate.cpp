@@ -147,7 +147,6 @@ std::string StrategoState::action_to_string(Action action) const
 }
 TerminalType StrategoState::is_terminal(size_t numberLegalMoves, float &customTerminalValue) const
 {
-
     if (spielState->IsTerminal()) {
         const double currentReturn = spielState->Returns()[spielState->CurrentPlayer()];
         std::cout << "MNNNN   " << spielState->CurrentPlayer() << std::endl;
