@@ -190,17 +190,27 @@ public:
     void arena(istringstream &is);
 
     /**
-    *
+    * @brief mctsarena Alternative to the arena method which enables us to define two different models to use in the match and also define the mctsagent types to use.
+     * @param is Input string representing both agent types and the number of games to play
+     * @param modeldirectory1 name of the model directory of agent 1
+     * @param modeldirectory2 name of the model directory of agent 2
     */
     void mctsarena(istringstream &is, string modeldirectory1 = "", string modeldirectory2 = "");
     /**
-    *
+    * @brief mctstournament extension to the mctsarena method, 
+    * enabling the user to play round-robin tournaments with more then 2 agents.
+    * @param is Input string representing the number of games played between each agent pair
+    * as well as the agent type of all agents as a list.
     */
-    void mctstournament(istringstream &is, int numberofgames);
+    void mctstournament(istringstream &is);
     /**
-    *
+    * @brief evaltournament is an extension to the mctstournament method, 
+    * enabling the user to additionally define a model directory for each agent.
+    * @param is Input string with the information about the number of games per match as well as tuples of agent types
+    * and model directories. To increase usability the model directories are represented by numbers. 
+    * The folders with the models should be named m1,m2,...
     */
-    void evaltournament(istringstream &is, int numberofgames);
+    void evaltournament(istringstream &is);
 
     /**
      * @brief init_rl_settings Initializes the rl settings used for the mcts agent with the current UCI parameters
