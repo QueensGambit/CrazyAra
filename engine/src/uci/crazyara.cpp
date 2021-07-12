@@ -154,8 +154,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     #ifdef MODE_STRATEGO
         // Test if the new modes are also usable for chess and others
         else if (token == "mctsmatch")   mctsarena(is);
-        else if (token == "mctstournament")   mctstournament(is, 100);
-        else if (token == "tournament")   evaltournament(is, 100);
+        else if (token == "mctstournament")   mctstournament(is);
+        else if (token == "tournament")   evaltournament(is);
     #endif
 #endif   
         else
@@ -428,9 +428,11 @@ void CrazyAra::mctsarena(istringstream &is, string modeldirectory1, string model
     write_tournament_result_to_csv(tournamentResult, "mcts_arena_results.csv");
 }
 
-void CrazyAra::mctstournament(istringstream &is, int numberofgames)
+void CrazyAra::mctstournament(istringstream &is)
 {
     int type;
+    int numberofgames;
+    is >> numberofgames;
     std::vector<int> numbers;
     while(!is.eof()){
         is >> type;
@@ -449,9 +451,11 @@ void CrazyAra::mctstournament(istringstream &is, int numberofgames)
 
 }
 
-void CrazyAra::evaltournament(istringstream &is, int numberofgames)
+void CrazyAra::evaltournament(istringstream &is)
 {
     int type;
+    int numberofgames;
+    is >> numberofgames;
     struct modelstring{
         int number_of_mcts_agent;
         int number_of_model_folder;
