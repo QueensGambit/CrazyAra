@@ -111,20 +111,17 @@ void MCTSAgentBatch::evaluate_board_state()
         const size_t targetLength = rootNode->get_number_child_nodes();
         eval.childNumberVisits = rootNode->get_child_number_visits();
         eval.qValues = rootNode->get_q_values();
-        size_t bestMoveIdx;
         if (targetLength == 1) {
             eval.policyProbSmall = DynamicVector<float>(1);
             eval.policyProbSmall[0] = 1.0f;
         }
         else {
+            size_t bestMoveIdx;
             rootNode->get_mcts_policy(eval.policyProbSmall, bestMoveIdx, searchSettings->qValueWeight, searchSettings->qVetoDelta);
         }
        
-
-        
         eval.legalMoves = rootNode->get_legal_actions();
 
-       
         vector<size_t> indices;
         uint16_t maxIdx = min(searchSettings->multiPV, rootNode->get_no_visit_idx());
 
