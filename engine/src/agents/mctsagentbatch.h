@@ -64,7 +64,6 @@ public:
     MCTSAgentBatch(const MCTSAgentBatch&) = delete;
     MCTSAgentBatch& operator=(MCTSAgentBatch const&) = delete;
 
-    // overrides the name of the agent
     string get_name() const override;
     // overrides the evaluation method to combine the results of multiple MCTS agents
     void evaluate_board_state() override;
