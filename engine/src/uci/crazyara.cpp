@@ -27,6 +27,7 @@
 
 #include <thread>
 #include "bitboard.h"
+#include "mctsagent.h"
 #include "position.h"
 #include "search.h"
 #include "thread.h"
@@ -150,7 +151,13 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
-#endif
+    #ifdef MODE_STRATEGO
+        // Test if the new modes are also usable for chess and others
+        else if (token == "mctsmatch")   mctsarena(is);
+        else if (token == "mctstournament")   mctstournament(is);
+        else if (token == "tournament")   evaltournament(is);
+    #endif
+#endif   
         else
             cout << "Unknown command: " << cmd << endl;
 
@@ -384,6 +391,112 @@ void CrazyAra::arena(istringstream &is)
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 
+void CrazyAra::mctsarena(istringstream &is, const string& modeldirectory1, const string& modeldirectory2)
+{
+    SearchLimits searchLimits;
+    searchLimits.nodes = size_t(Options["Nodes"]);
+
+    // create two MCTS agents
+    int type;
+    is >> type;
+    auto mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+    if(modeldirectory1 != ""){
+        netSingle = create_new_net_single(modeldirectory1);
+        netBatches = create_new_net_batches(modeldirectory1);
+        mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+
+    }
+
+
+    is >> type;
+    auto mcts2 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+    if(modeldirectory2 != ""){
+        netSingleContender = create_new_net_single(modeldirectory2);
+        netBatchesContender = create_new_net_batches(modeldirectory2);
+        mcts2 = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings, static_cast<MCTSAgentType>(type));
+
+    }
+
+
+    SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchLimits, &playSettings, &rlSettings, Options);
+    size_t numberOfGames;
+    is >> numberOfGames;
+    TournamentResult tournamentResult = selfPlay.go_arena(mcts2.get(), numberOfGames, variant);
+
+    cout << "MCTSArena summary" << endl;
+    cout << "Score of Contender vs Producer: " << tournamentResult << endl;
+    write_tournament_result_to_csv(tournamentResult, "mcts_arena_results.csv");
+}
+
+void CrazyAra::mctstournament(istringstream &is)
+{
+    int type;
+    int numberofgames;
+    is >> numberofgames;
+    std::vector<int> numbers;
+    while(!is.eof()){
+        is >> type;
+        numbers.push_back(type);
+        is >> type;
+
+    }
+
+    std::vector<std::string> combinations = comb(numbers, 2);
+    for(int i = 0;i<combinations.size();i++){
+        std::istringstream iss (combinations[i] + std::to_string(numberofgames));
+        mctsarena(iss);
+    }
+
+    exit(0);
+
+}
+
+void CrazyAra::evaltournament(istringstream &is)
+{
+    int type;
+    int numberofgames;
+    is >> numberofgames;
+    struct modelstring{
+        int number_of_mcts_agent;
+        int number_of_model_folder;
+    };
+
+    int i = 0;
+    std::vector<modelstring> agents;
+    std::vector<int> numbers;
+    while(!is.eof()){
+        is >> type;
+        int tmp1 = type;
+        is >> type;
+
+        modelstring tmp;
+        tmp.number_of_mcts_agent = tmp1;
+        tmp.number_of_model_folder = type;
+        std::cout << "ini " << tmp1 << " " << type << std::endl;
+        agents.push_back(tmp);
+        numbers.push_back(i);
+        i++;
+    }
+
+    std::vector<std::string> combinations = comb(numbers, 2);
+    std::string delimiter = " ";
+    for(int i = 0;i<combinations.size();i++){
+        std::string s = combinations[i];
+
+        int token1 = std::stoi(s.substr(0, s.find(delimiter)));
+        int token2 = std::stoi(s.substr(2, s.find(delimiter)));
+        std::string comb = std::to_string(agents[token1].number_of_mcts_agent) + " " + std::to_string(agents[token2].number_of_mcts_agent);
+        std::string m1 = "m" + std::to_string(agents[token1].number_of_model_folder) + "/";
+        std::string m2 = "m" + std::to_string(agents[token2].number_of_model_folder) + "/";
+        std::istringstream iss (comb + " " + std::to_string(numberofgames));
+        mctsarena(iss, m1, m2);
+    }
+
+    exit(0);
+
+}
+
+
 void CrazyAra::init_rl_settings()
 {
     rlSettings.numberChunks = Options["Selfplay_Number_Chunks"];
@@ -532,9 +645,37 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
     }
 }
 
-unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings)
-{
-    return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
+unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type)
+{   
+    switch (type) {
+    case MCTSAgentType::kDefault:
+        info_string("TYP 0 -> Default");
+        return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
+    case MCTSAgentType::kBatch1:
+        info_string("TYP 1 -> Batch 1");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 1, false);
+    case MCTSAgentType::kBatch3:
+        info_string("TYP 2 -> Batch 3");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 3, false);
+    case MCTSAgentType::kBatch5:
+        info_string("TYP 3 -> Batch 5");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 5, false);
+    case MCTSAgentType::kBatch3_reducedNodes:
+        info_string("TYP 4 -> Batch 3 Split");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 3, true);
+    case MCTSAgentType::kBatch5_reducedNodes:
+        info_string("TYP 5 -> Batch 5 Split");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 5, true);
+    case MCTSAgentType::kTrueSight:
+        info_string("TYP 6 -> TrueSight");
+        return make_unique<MCTSAgentTrueSight>(netSingle, netBatches, searchSettings, &playSettings);
+    case MCTSAgentType::kRandom:
+        info_string("TYP 7 -> Random");
+        return make_unique<MCTSAgentRandom>(netSingle, netBatches, searchSettings, &playSettings);
+    default:
+      info_string("Unknown MCTSAgentType");
+      return nullptr;
+  }
 }
 
 void CrazyAra::init_search_settings()
@@ -601,4 +742,25 @@ void validate_device_indices(OptionsMap& option)
         info_string("Last_Device_ID will be set to ", option["First_Device_ID"]);
         option["Last_Device_ID"] = option["First_Device_ID"];
     }
+}
+
+std::vector<std::string> comb(std::vector<int> N, int K)
+{
+    std::string bitmask(K, 1); // K leading 1's
+    bitmask.resize(N.size(), 0); // N-K trailing 0's
+    std::vector<std::string> p ;
+    // print integers and permute bitmask
+
+    do {
+        std::string c = "";
+        for (int i = 0; i < N.size(); ++i) // [0..N-1] integers
+        {
+            if (bitmask[i]){
+                c.append(std::to_string(N[i])+ " ");
+            } 
+        }
+        p.push_back(c);
+    } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+
+    return p;
 }

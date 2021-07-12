@@ -34,6 +34,7 @@
 #include "tournamentresult.h"
 #include "../agents/config/rlsettings.h"
 #include "../stateobj.h"
+#include "uci.h"
 
 
 #ifdef USE_RL

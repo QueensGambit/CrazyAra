@@ -32,6 +32,9 @@
 
 #include "agents/rawnetagent.h"
 #include "agents/mctsagent.h"
+#include "agents/mctsagentbatch.h"
+#include "agents/randomagent.h"
+#include "agents/mctsagenttruesight.h"
 #include "nn/neuralnetapi.h"
 #include "agents/config/searchsettings.h"
 #include "agents/config/searchlimits.h"
@@ -187,6 +190,29 @@ public:
     void arena(istringstream &is);
 
     /**
+    * @brief mctsarena Alternative to the arena method which enables us to define two different models to use in the match and also define the mctsagent types to use.
+     * @param is Input string representing both agent types and the number of games to play
+     * @param modeldirectory1 name of the model directory of agent 1
+     * @param modeldirectory2 name of the model directory of agent 2
+    */
+    void mctsarena(istringstream &is, const string& modeldirectory1, const string& modeldirectory2);
+    /**
+    * @brief mctstournament extension to the mctsarena method, 
+    * enabling the user to play round-robin tournaments with more then 2 agents.
+    * @param is Input string representing the number of games played between each agent pair
+    * as well as the agent type of all agents as a list.
+    */
+    void mctstournament(istringstream &is);
+    /**
+    * @brief evaltournament is an extension to the mctstournament method, 
+    * enabling the user to additionally define a model directory for each agent.
+    * @param is Input string with the information about the number of games per match as well as tuples of agent types
+    * and model directories. To increase usability the model directories are represented by numbers. 
+    * The folders with the models should be named m1,m2,...
+    */
+    void evaltournament(istringstream &is);
+
+    /**
      * @brief init_rl_settings Initializes the rl settings used for the mcts agent with the current UCI parameters
      */
     void init_rl_settings();
@@ -224,6 +250,18 @@ private:
      */
     string engine_info();
 
+    // All possible MCTS Agenttypes
+    enum class MCTSAgentType : int8_t {
+    kDefault = 0,               // Default agent, used within CrazyAra
+    kBatch1 = 1,                // The reimplementation of the default agent (batch size = 1)
+    kBatch3 = 2,                // 3 MCTS agents with majority vote at the end
+    kBatch5 = 3,                // 5 MCTS agents with majority vote at the end
+    kBatch3_reducedNodes = 4,   // 3 MCTS agents with majority vote at the end. The amount of nodes are splitted between all agents
+    kBatch5_reducedNodes = 5,   // 5 MCTS agents with majority vote at the end. The amount of nodes are splitted between all agents
+    kTrueSight = 6,             // True Sight Agent, which uses the perfect information state instead of the imperfect information state
+    kRandom = 7,                // plays random legal moves
+};
+
     /**
      * @brief create_new_mcts_agent Factory method to create a new MCTSAgent when loading new neural network weights
      * @param modelDirectory Directory where the .params and .json files are stored
@@ -231,9 +269,10 @@ private:
      * @param netSingle Neural net with batch-size 1. It will be loaded from file.
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
      * @param searchSettings Search settings object
+     * @param type Which type of agent should be used, default is 0. 
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type = MCTSAgentType::kDefault);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory
@@ -269,5 +308,12 @@ size_t get_num_gpus(UCI::OptionsMap& option);
  * @param option
  */
 void validate_device_indices(UCI::OptionsMap& option);
+
+/**
+* @brief Calculates all combinations of size K out of set N
+* @param N a set of numbers
+* @param K the size of the combination tuples (2 results in all possible number combinations)
+*/
+std::vector<std::string> comb(std::vector<int> N, int K);
 
 #endif // CRAZYARA_H
