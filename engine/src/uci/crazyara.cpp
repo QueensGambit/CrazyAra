@@ -391,7 +391,7 @@ void CrazyAra::arena(istringstream &is)
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 
-void CrazyAra::mctsarena(istringstream &is, string modeldirectory1, string modeldirectory2)
+void CrazyAra::mctsarena(istringstream &is, const string& modeldirectory1, const string& modeldirectory2)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
