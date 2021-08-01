@@ -411,11 +411,6 @@ if (BACKEND_TENSORRT)
     link_directories("$ENV{CUDA_PATH}/lib64")
     link_directories("$ENV{CUDA_PATH}/lib/x64")
     link_directories("$ENV{TENSORRT_PATH}/lib")
-if(WIN32)
-  find_library(TENSORRT_LIBRARY_MYELIN myelin64_1
-    HINTS  ${TENSORRT_PATH}
-    PATH_SUFFIXES lib lib64 lib/x64)
-endif()
     include_directories("$ENV{TENSORRT_PATH}/include")
     include_directories("$ENV{TENSORRT_PATH}/samples/common/")
     add_definitions(-DTENSORRT)
@@ -428,7 +423,7 @@ endif()
 add_executable(${PROJECT_NAME} ${source_files})
 
 if (BACKEND_TENSORRT)
-    target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart myelin ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
+    target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
 endif()
 
 if (USE_RL)
