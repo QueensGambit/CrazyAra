@@ -281,9 +281,7 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
        return "chess";
     }
 #ifdef MODE_LICHESS
-    if (value == "giveaway" || value == "losers") {
-        return "antichess";
-    } else if (value == "threecheck") {
+    if (value == "threecheck") {
         return "3check";
     }
 #endif // MODE_LICHESS

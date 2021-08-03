@@ -52,8 +52,6 @@ const static vector<string> availableVariants = {
     "racingkings",
     "3check",
     "threecheck", // 3check
-    "giveaway", // antichess
-    "losers", // antichess
 #endif
 };
 
