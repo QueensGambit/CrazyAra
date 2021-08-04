@@ -33,7 +33,7 @@ def parse_args(cmd_args: list):
     parser = argparse.ArgumentParser(description='Command-line tool to generate a random initialized neural network'
                                                  ' and export MXNet and ONNX weights.')
     parser.add_argument("--model-type", type=str, default="risev2",
-                        help="available model types [alphazero, risev2, risev33] (default: risev2)")
+                        help="available model types [alphazero, risev2, risev3.3] (default: risev2)")
     parser.add_argument("--channels-policy-head", type=int, default=None,
                         help=" (default: None)")
     parser.add_argument("--n-labels", type=int, default=None,
@@ -66,6 +66,9 @@ def parse_args(cmd_args: list):
         raise Exception("The given directory %s does not exist." % args.model_dir)
     if args.export_dir[-1] != '/':
         args.export_dir += '/'
+    if args.channels_policy_head is None:
+        args.channels_policy_head = NB_POLICY_MAP_CHANNELS
+        logging.info(f"Given 'channels_policy_head' is 'None'. It was set to {args.channels_policy_head}.")
 
     # convert list to tuple
     args.input_shape = tuple(args.input_shape)
@@ -120,6 +123,8 @@ def main():
      python generate_random_nn.py --model-type risev2 --channels-policy-head 81 --input-shape 34 8 8 --select-policy-from-plane
      e.g. call for MultiAra model
      python generate_random_nn.py --model-type risev2 --channels-policy-head 84 --input-shape 63 8 8 --select-policy-from-plane
+     e.g. call for AtariAra model (flat output)
+     python3 generate_random_nn.py --model-type risev3.3 --n-labels 43 --channels-policy-head 1 --input-shape 3 160 210
     :return:
     """
     args = parse_args(sys.argv[1:])
