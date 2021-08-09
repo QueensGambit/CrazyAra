@@ -256,8 +256,10 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
             state.init(variant, is960);
 
             string suffix_960 = (is960) ? "960" : "";
-            Options["Model_Directory"] << Option(("model/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
-            Options["Model_Directory_Contender"] << Option(("model_contender/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
+            #ifndef MODE_STRATEGO
+                Options["Model_Directory"] << Option(("model/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
+                Options["Model_Directory_Contender"] << Option(("model_contender/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
+            #endif
             info_string_important("variant", (string)Options["UCI_Variant"] + suffix_960, "startpos", state.fen());
 #endif // not XIANGQI
         }
