@@ -91,6 +91,17 @@ vector<string> get_items_by_elment(const vector<string>& stringVector, const str
  */
 string get_file_ending_with(const string& dir, const string& suffix);
 
+/**
+ * @brief read_version_from_string Returns the corresponding version for a given model file name.
+ * The version identifier is expected to come after the substring "-v-" in the format "-v-<Major>.<Minor>", e.g. "-v-1.2.onnx".
+ * If the information is missing or parsing failed, make_version<0,0,0>() will be returned.
+ * Versioning patch information is always set to 0.
+ * The version information is used to decide between different input representations for the neural network.
+ * @param modelFileName
+ * @return Version information
+ */
+Version read_version_from_string(const string& modelFileName);
+
 
 template <typename T>
 /**
