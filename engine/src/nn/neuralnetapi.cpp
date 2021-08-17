@@ -192,7 +192,7 @@ Version read_version_from_string(const string &modelFileName)
                 const string versionMajor = content.substr(prefix.size(), pointPos-prefix.size());  // skip "-v"
                 const string versionMinor = content.substr(pointPos+1);     // skip "."
                     return make_version(std::stoi(versionMajor), std::stoi(versionMinor), 0);
-                } catch (exception e) {
+                } catch (const exception& e) {
                     info_string(e.what());
                     break;
                 }
