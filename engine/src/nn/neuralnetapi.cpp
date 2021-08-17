@@ -170,8 +170,9 @@ ostream& nn_api::operator<<(ostream &os, const nn_api::Shape &shape)
 
 Version read_version_from_string(const string &modelFileName)
 {
-    // pattern to detect "-v-<major>.<minor>"
-    const string pattern = "(-v-)[0-9]+.[0-9]+";
+    // pattern to detect "-v<major>.<minor>"
+    const string prefix = "-v";
+    const string pattern = "(" + prefix + ")[0-9]+.[0-9]+";
 
     // regex expression for pattern to be searched
     regex regexp(pattern);
@@ -187,9 +188,14 @@ Version read_version_from_string(const string &modelFileName)
             if (match.length() > 3) {
                 const string content = match;
                 const size_t pointPos = content.find(".");
-                const string versionMajor = content.substr(3, pointPos-3);  // skip "-v-"
+                try {
+                const string versionMajor = content.substr(prefix.size(), pointPos-prefix.size());  // skip "-v"
                 const string versionMinor = content.substr(pointPos+1);     // skip "."
-                return make_version(std::stoi(versionMajor), std::stoi(versionMinor), 0);
+                    return make_version(std::stoi(versionMajor), std::stoi(versionMinor), 0);
+                } catch (exception e) {
+                    info_string(e.what());
+                    break;
+                }
             }
         }
     }
