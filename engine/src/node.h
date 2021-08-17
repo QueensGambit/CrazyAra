@@ -299,7 +299,7 @@ public:
      */
     void enhance_moves(const SearchSettings* searchSettings);
 
-    void set_value(float valueSum);
+    void set_value(float value);
     uint16_t main_child_idx_for_parent() const;
 
     /**
@@ -409,7 +409,7 @@ public:
      * @param idx Child index
      * @param value value to set
      */
-    void set_q_value(ChildIdx idx, float valueSum);
+    void set_q_value(ChildIdx idx, float value);
 
     /**
      * @brief get_best_q_idx Return the child index with the highest Q-value
