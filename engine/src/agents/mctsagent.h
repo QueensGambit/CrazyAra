@@ -65,6 +65,7 @@ public:
 
     MapWithMutex mapWithMutex;
     float lastValueEval;
+    SideToMove lastSideToMove;
 
     // boolean which indicates if the same node was requested twice for analysis
     bool reusedFullTree;
@@ -164,7 +165,12 @@ public:
      */
     void update_stats();
 
-public:
+    /**
+     * @brief handle_single_move Sets the value evaluation for a single move based on the last value evaluation.
+     * This is needed in cases the the tree is not reused for the next search to avoid artificats for the "bestQValue" feature.
+     */
+    void handle_single_move();
+
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
      * The old tree or former subtrees will be freed from memory.
