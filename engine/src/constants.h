@@ -49,12 +49,30 @@ using namespace std;
 const string engineName = "CrazyAra";
 #elif defined MODE_LICHESS
 const string engineName = "MultiAra";
+#elif defined MODE_XIANGQI
+const string engineName = "XiangqiAra";
+#elif defined MODE_STRATEGO
+const string engineName = "StrategoAra";
+#elif defined MODE_OPEN_SPIEL
+const string engineName = "OpenSpielAra";
 #else  // MODE_CHESS
 const string engineName = "ClassicAra";
 #endif
 
 const string engineVersion = "0.9.5";
-const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
+#ifdef MODE_CRAZYHOUSE
+const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_LICHESS
+const string engineAuthors = "Johannes Czech, Maximilian Alexander Gehrke and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_XIANGQI
+const string engineAuthors = "Johannes Czech, Maximilian Langer and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_STRATEGO
+const string engineAuthors = "Johannes Czech, Jannis Blüml and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_OPEN_SPIEL
+const string engineAuthors = "Johannes Czech and CrazyAra developers (see AUTHORS file)";
+#else  // MODE_CHESS
+const string engineAuthors = "Johannes Czech and CrazyAra developers (see AUTHORS file)";
+#endif
 
 #define LOSS_VALUE -1
 #define DRAW_VALUE 0

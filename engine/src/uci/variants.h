@@ -53,6 +53,15 @@ const static vector<string> availableVariants = {
     "3check",
     "threecheck", // 3check
 #endif
+#ifdef MODE_XIANGQI
+    "xiangqi",
+#endif
+#ifdef MODE_STRATEGO
+    "stratego",
+#endif
+#ifdef MODE_OPEN_SPIEL
+    "hex",
+#endif
 };
 
 // FEN strings of the initial positions

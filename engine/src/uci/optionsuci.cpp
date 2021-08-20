@@ -154,17 +154,11 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Threads"]                       << Option(2, 1, 512);
     o["Timeout_MS"]                    << Option(0, 0, 99999999);
-#ifdef MODE_CRAZYHOUSE
-      // we repeat "crazyhouse" in the list because of problem in XBoard/Winboard #23
-    o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
-#elif defined MODE_LICHESS
+#ifdef MODE_LICHESS
     o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), availableVariants);
-#elif defined MODE_XIANGQI
-    o["UCI_Variant"]                   << Option("xiangqi", {"xiangqi", "xiangqi"});
-#elif defined MODE_STRATEGO
-    o["UCI_Variant"]                   << Option("stratego", {"stratego", "stratego"});
-#else  // MODE = MODE_CHESS
-    o["UCI_Variant"]                   << Option("chess", {"chess", "chess"});
+#else
+    // we repeat e.g. "crazyhouse" in the list because of problem in XBoard/Winboard CrazyAra#23
+    o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), {availableVariants.front().c_str(), availableVariants.front().c_str()});
 #endif
     o["Use_Raw_Network"]               << Option(false);
     // additional UCI-Options for RL only
