@@ -178,7 +178,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
     o["MaxInitPly"]                    << Option(30, 0, 99999);
     o["MeanInitPly"]                   << Option(15, 0, 99999);
-#ifdef LICHESS_MODE
+#ifdef MODE_LICHESS
     o["Model_Directory_Contender"]     << Option((string("model_contender/" + engineName + "/") + get_first_variant_with_model()).c_str());
 #else
     o["Model_Directory_Contender"]     << Option(string("model_contender/" + engineName + "/" + availableVariants.front()).c_str());
@@ -246,7 +246,7 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
             state.init(variant, is960);
 
             string suffix_960 = (is960) ? "960" : "";
-#ifdef LICHESS_MODE
+#ifdef MODE_LICHESS
             Options["Model_Directory"] << Option(("model/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             Options["Model_Directory_Contender"] << Option(("model_contender/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
 #endif
