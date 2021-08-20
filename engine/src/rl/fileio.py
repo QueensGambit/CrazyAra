@@ -70,7 +70,7 @@ class FileIO:
     Class to facilitate creation of directories, reading of file
     names and moving of files during Reinforcement Learning.
     """
-    def __init__(self, binary_dir: str, uci_variant: str):
+    def __init__(self, orig_binary_name: str, binary_dir: str, uci_variant: str):
         """
         Creates all necessary directories and sets all path variables.
         If no '*.param' file can be found in the 'binary-dir/model/' directory,
@@ -86,14 +86,14 @@ class FileIO:
             variant_suffix = f'{uci_variant}/'
 
         # Hard coded directory paths
-        self.model_dir = binary_dir + "model/" + variant_suffix
+        self.model_dir = binary_dir + "model/" + orig_binary_name + "/" + variant_suffix
         self.export_dir_gen_data = binary_dir + "export/new_data/" + variant_suffix
         self.train_dir = binary_dir + "export/train/" + variant_suffix
         self.val_dir = binary_dir + "export/val/" + variant_suffix
         self.weight_dir = binary_dir + "weights/" + variant_suffix
         self.train_dir_archive = binary_dir + "export/archive/train/" + variant_suffix
         self.val_dir_archive = binary_dir + "export/archive/val/" + variant_suffix
-        self.model_contender_dir = binary_dir + "model_contender/" + variant_suffix
+        self.model_contender_dir = binary_dir + "model_contender/" + orig_binary_name + "/" + variant_suffix
         self.model_dir_archive = binary_dir + "export/archive/model/" + variant_suffix
         self.logs_dir_archive = binary_dir + "export/logs/" + variant_suffix
         self.logs_dir = binary_dir + "logs"

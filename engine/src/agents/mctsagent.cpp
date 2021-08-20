@@ -353,10 +353,13 @@ void MCTSAgent::run_mcts_search()
 
 void MCTSAgent::stop()
 {
-    isRunning = false;
+    if (!isRunning) {
+        return;
+    }
     if (threadManager != nullptr) {
         threadManager->stop_search();
     }
+    isRunning = false;
 }
 
 void MCTSAgent::print_root_node()

@@ -48,7 +48,8 @@ class RLLoop:
         self.tc = TrainConfig()
         self.rl_config = rl_config
 
-        self.file_io = FileIO(binary_dir=self.rl_config.binary_dir, uci_variant=self.rl_config.uci_variant)
+        self.file_io = FileIO(orig_binary_name=self.rl_config.binary_name, binary_dir=self.rl_config.binary_dir,
+                              uci_variant=self.rl_config.uci_variant)
         self.binary_io = None
 
         if nb_arena_games % 2 == 1:

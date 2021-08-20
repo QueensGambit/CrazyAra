@@ -103,16 +103,10 @@ void OptionsUCI::init(OptionsMap &o)
     o["Last_Device_ID"]                << Option(0, 0, 99999);
     o["Log_File"]                      << Option("", on_logger);
     o["MCTS_Solver"]                   << Option(true);
-#ifdef MODE_CRAZYHOUSE
-    o["Model_Directory"]               << Option("model/crazyhouse");
-#elif defined MODE_LICHESS
-    o["Model_Directory"]               << Option((string("model/") + get_first_variant_with_model()).c_str());
-#elif defined MODE_CHESS
-    o["Model_Directory"]               << Option("model/chess");
-#elif defined MODE_XIANGQI
-    o["Model_Directory"]               << Option("model/xiangqi");
+#ifdef MODE_LICHESS
+    o["Model_Directory"]               << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
 #else
-    o["Model_Directory"]               << Option("model");
+    o["Model_Directory"]               << Option(string("model/" + engineName + "/" + availableVariants.front()).c_str());
 #endif
     o["Move_Overhead"]                 << Option(20, 0, 5000);
     o["MultiPV"]                       << Option(1, 1, 99999);
@@ -125,7 +119,7 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef TENSORRT
     o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
 #else
-    o["Precision"]                     << Option("int8", {"float32", "int8"});
+    o["Precision"]                     << Option("float32", {"float32", "int8"});
 #endif
 #ifdef USE_RL
     o["Reuse_Tree"]                    << Option(false);
@@ -160,17 +154,11 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Threads"]                       << Option(2, 1, 512);
     o["Timeout_MS"]                    << Option(0, 0, 99999999);
-#ifdef MODE_CRAZYHOUSE
-      // we repeat "crazyhouse" in the list because of problem in XBoard/Winboard #23
-    o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
-#elif defined MODE_LICHESS
+#ifdef MODE_LICHESS
     o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), availableVariants);
-#elif defined MODE_XIANGQI
-    o["UCI_Variant"]                   << Option("xiangqi", {"xiangqi", "xiangqi"});
-#elif defined MODE_STRATEGO
-    o["UCI_Variant"]                   << Option("stratego", {"stratego", "stratego"});
-#else  // MODE = MODE_CHESS
-    o["UCI_Variant"]                   << Option("chess", {"chess", "chess"});
+#else
+    // we repeat e.g. "crazyhouse" in the list because of problem in XBoard/Winboard CrazyAra#23
+    o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), {availableVariants.front().c_str(), availableVariants.front().c_str()});
 #endif
     o["Use_Raw_Network"]               << Option(false);
     // additional UCI-Options for RL only
@@ -184,14 +172,10 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
     o["MaxInitPly"]                    << Option(30, 0, 99999);
     o["MeanInitPly"]                   << Option(15, 0, 99999);
-#ifdef LICHESS_MODE
-    o["Model_Directory_Contender"]     << Option((string("model_contender/") + get_first_variant_with_model()).c_str());
-#elif defined MODE_CHESS
-    o["Model_Directory_Contender"]     << Option("model_contender/chess");
-#elif defined MODE_XIANGQI
-    o["Model_Directory_Contender"]     << Option("model_contender/xiangqi");
+#ifdef MODE_LICHESS
+    o["Model_Directory_Contender"]     << Option((string("model_contender/" + engineName + "/") + get_first_variant_with_model()).c_str());
 #else
-    o["Model_Directory_Contender"]     << Option("model_contender/");
+    o["Model_Directory_Contender"]     << Option(string("model_contender/" + engineName + "/" + availableVariants.front()).c_str());
 #endif
     o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
     o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
@@ -256,8 +240,10 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
             state.init(variant, is960);
 
             string suffix_960 = (is960) ? "960" : "";
-            Options["Model_Directory"] << Option(("model/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
-            Options["Model_Directory_Contender"] << Option(("model_contender/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
+#ifdef MODE_LICHESS
+            Options["Model_Directory"] << Option(("model/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
+            Options["Model_Directory_Contender"] << Option(("model_contender/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
+#endif
             info_string_important("variant", (string)Options["UCI_Variant"] + suffix_960, "startpos", state.fen());
 #endif // not XIANGQI
         }
@@ -291,11 +277,11 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
 
 const string OptionsUCI::get_first_variant_with_model()
 {
-    vector<string> dirs = get_directory_files("model/");
+    vector<string> dirs = get_directory_files("model/" + engineName + "/");
     for(string dir : dirs) {
         if (std::find(availableVariants.begin(), availableVariants.end(), dir) != availableVariants.end()) {
-            const vector <string> files = get_directory_files("model/" + dir);
-            if ("" != get_string_ending_with(files, "-bsize-1.onnx")) {
+            const vector <string> files = get_directory_files("model/" + engineName + "/" + dir);
+            if ("" != get_string_ending_with(files, ".onnx")) {
                 return dir;
             }
         }
