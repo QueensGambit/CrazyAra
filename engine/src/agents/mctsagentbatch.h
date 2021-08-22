@@ -47,7 +47,6 @@ using namespace crazyara;
 class MCTSAgentBatch : public MCTSAgent
 {
 public:
-
   // how many trees should be generated
   int numberOfAgents;
   // boolean, deciding if the given nodes are player per tree or are split between the trees
@@ -66,8 +65,6 @@ public:
 
     string get_name() const override;
     void evaluate_board_state() override;
-
-
 };
 
 

@@ -24,7 +24,6 @@
  * 
  */
 
-#include <bits/stdint-uintn.h>
 #include <string>
 #include <thread>
 #include <fstream>
@@ -60,13 +59,11 @@ string MCTSAgentBatch::get_name() const
     if(splitNodes){
         ret = "MCTSBatch-Split-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + net->get_model_name();
     }
-    
     return ret;
 }
 
 void MCTSAgentBatch::evaluate_board_state()
 {
-    
     vector<EvalInfo> evals;
     evalInfo->isChess960 = state->is_chess960();
 
@@ -154,8 +151,6 @@ void MCTSAgentBatch::evaluate_board_state()
         eval.nodes = rootNode->get_node_count();
         eval.tbHits = tbHits;
 
- 
-
         evals.push_back(eval);
         tGCThread.join();
     }
@@ -163,31 +158,30 @@ void MCTSAgentBatch::evaluate_board_state()
     evalInfo->nodesPreSearch = init_root_node(state);
     evalInfo->legalMoves = rootNode->get_legal_actions();
     
-
     auto combinedPolicy = evals[0].policyProbSmall;
     auto combinedChildVisits = evals[0].childNumberVisits;
     auto combinedQValues = evals[0].qValues;
 
     for (size_t i = 1; i < numberOfAgents; i++)
     {
-        for(auto j = 0; j< combinedPolicy.size();++j){
+        for(auto j = 0; j < combinedPolicy.size(); ++j){
             combinedPolicy[j] += evals[i].policyProbSmall[j];
         }
-        for(auto j = 0; j< combinedChildVisits.size();++j){
+        for(auto j = 0; j < combinedChildVisits.size(); ++j){
             combinedChildVisits[j] += evals[i].childNumberVisits[j];
         }
-        for(auto j = 0; j< combinedQValues.size();++j){
+        for(auto j = 0; j < combinedQValues.size(); ++j){
             combinedQValues[j] += evals[i].qValues[j];
         }
     }
 
-    for(auto j = 0; j< combinedPolicy.size();++j){
+    for(auto j = 0; j < combinedPolicy.size(); ++j){
         combinedPolicy[j] += combinedPolicy[j]/numberOfAgents;
     }
-    for(auto j = 0; j< combinedChildVisits.size();++j){
+    for(auto j = 0; j < combinedChildVisits.size(); ++j){
         combinedChildVisits[j] += combinedChildVisits[j]/numberOfAgents;
     }
-    for(auto j = 0; j< combinedQValues.size();++j){
+    for(auto j = 0; j < combinedQValues.size(); ++j){
         combinedQValues[j] += combinedQValues[j]/numberOfAgents;
     }
 
@@ -195,19 +189,15 @@ void MCTSAgentBatch::evaluate_board_state()
     for (size_t i = 0; i < numberOfAgents; i++)
     {   
         diffs.push_back(0.0);
-        for(auto j = 0; j< combinedPolicy.size();++j){
+        for(auto j = 0; j< combinedPolicy.size(); ++j){
             diffs[i] += std::sqrt(std::pow(evals[i].policyProbSmall[j] - combinedPolicy[j],2));
         }
-       
     }
     std::vector<float>::iterator result = std::min_element(diffs.begin(), diffs.end()); 
-    int a = std::distance(diffs.begin(), result);
-    
+    int stateIdx = std::distance(diffs.begin(), result);
 
-    *evalInfo = evals[a];
+    *evalInfo = evals[stateIdx];
     update_nps_measurement(evalInfo->calculate_nps());
     
-    info_string("Selected State: " + std::to_string(a));
-   
-   
+    info_string("Selected State: " + std::to_string(stateIdx));
 }
