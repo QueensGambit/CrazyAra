@@ -74,19 +74,18 @@ We provide binary releases for the following plattforms:
 
 Operating System | Backend                                                                                                                                                               | Compatible with
 ---              | ---                                                                                                                                                                   | --- 
-Linux            | [**CUDA 11.2, cuDNN 8.1.1.33, TensorRT-7.2.3.4**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Linux_TensorRT.zip) | NVIDIA GPUs
-Linux            | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Linux_MKL.zip)                                               | Intel CPUs
-Windows          | [**CUDA 11.2, cuDNN 8.1.1.33, TensorRT-7.2.3.4**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Win_TensorRT.zip)                              | NVIDIA GPUs
-Windows          | [**MXNet-20190919, Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Win_MKL.zip )                                                 | Intel CPUs
-Mac              | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Mac_MKL_post1.zip) | Mac-Books
+Linux            | [**CUDA 11.3, cuDNN 8.2.1, TensorRT-8.0.1**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Linux_TensorRT.zip) | NVIDIA GPUs
+Linux            | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Linux_MKL.zip)                                               | Intel CPUs
+Windows          | [**CUDA 11.3, cuDNN 8.2.1, TensorRT-8.0.1**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Win_TensorRT.zip)                              | NVIDIA GPUs
+Windows          | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Win_MKL.zip )                                                 | Intel CPUs
+Mac              | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Mac_MKL_post1.zip) | Mac-Books
 
 The current _CrazyAra_ release and all its previous versions can also be found at [releases](https://github.com/QueensGambit/CrazyAra/releases).
 
 ### Models
 
-The extracted model should be placed in the same directory as the engine executable.
-The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
-A default model is included for [**releases >= 0.8.0**](https://github.com/QueensGambit/CrazyAra/releases/).
+The extracted model should be placed in the directory reltative to the engine executable.
+The default directory is indicated and can be changed by adjusting the UCI-parameter `Model_Directory`.
 
 More information about the different models can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Model-description).
 
@@ -207,6 +206,22 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 	 }
 ```
 
+## M.Sc. Thesis
+
+* M. Gehrke: **Assessing Popular Chess Variants Using Deep Reinforcement Learning**, [pdf](https://ml-research.github.io/papers/gehrke2021assessing.pdf)
+```latex
+@mastersthesis{gehrke2021assessing,
+	       title = { Assessing Popular Chess Variants Using Deep Reinforcement Learning },
+	       author = { Maximilian Alexander Gehrke },
+               year = { 2021 },
+               type = { M.Sc. },
+	       crossref = { https://github.com/QueensGambit/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 94 },
+	       month = { jul }
+	       }
+```
+
 * J. Czech: **Deep Reinforcement Learning for Crazyhouse**, [pdf](https://ml-research.github.io/papers/czech2019deep.pdf)
 ```latex
 @mastersthesis{czech2019deep,
@@ -218,5 +233,23 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 	       school = { TU Darmstadt },
 	       pages = { 54 },
 	       month = { dec }
+	       }
+```
+
+
+
+## B.Sc. Thesis
+
+* M. Langer: **Evaluation of Monte-Carlo Tree Search for Xiangqi**, [pdf](https://ml-research.github.io/papers/langer2021xiangqi.pdf)
+```latex
+@bachelorthesis{langer2021eval,
+	       title = { Evaluation of Monte-Carlo Tree Search for Xiangqi },
+	       author = { Maximilian Langer },
+               year = { 2021 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/QueensGambit/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 45 },
+	       month = { apr }
 	       }
 ```
