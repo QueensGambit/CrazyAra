@@ -267,6 +267,18 @@ void MCTSAgent::update_stats()
     tbHits = get_tb_hits(searchThreads);
 }
 
+void MCTSAgent::handle_single_move()
+{
+    float targetEval = lastValueEval;
+#ifndef MCTS_SINGLE_PLAYER
+    if (lastSideToMove != state->side_to_move()) {
+        targetEval = -lastValueEval;
+    }
+#endif
+    rootNode->set_value(targetEval);
+    rootNode->set_q_value(0, targetEval);
+}
+
 void MCTSAgent::evaluate_board_state()
 {
     rootState = unique_ptr<StateObj>(state->clone());
@@ -278,6 +290,7 @@ void MCTSAgent::evaluate_board_state()
     evalInfo->isChess960 = state->is_chess960();
     if (rootNode->get_number_child_nodes() == 1) {
         info_string("Only single move available -> early stopping");
+        handle_single_move();
     }
     else if (rootNode->get_number_child_nodes() == 0) {
         info_string("The given position has no legal moves");
@@ -304,6 +317,7 @@ void MCTSAgent::evaluate_board_state()
     }
     update_eval_info(*evalInfo, rootNode.get(), tbHits, maxDepth, searchSettings);
     lastValueEval = evalInfo->bestMoveQ[0];
+    lastSideToMove = state->side_to_move();
     update_nps_measurement(evalInfo->calculate_nps());
 #ifndef USE_RL
     tGCThread.join();
@@ -339,10 +353,13 @@ void MCTSAgent::run_mcts_search()
 
 void MCTSAgent::stop()
 {
-    isRunning = false;
+    if (!isRunning) {
+        return;
+    }
     if (threadManager != nullptr) {
         threadManager->stop_search();
     }
+    isRunning = false;
 }
 
 void MCTSAgent::print_root_node()

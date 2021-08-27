@@ -27,7 +27,7 @@
 
 SearchSettings::SearchSettings():
         threads(2),
-        batchSize(2),
+        batchSize(8),
         dirichletEpsilon(0.25f),
         dirichletAlpha(0.2f),
         nodePolicyTemperature(1.0f),

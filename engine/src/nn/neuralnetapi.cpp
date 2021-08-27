@@ -25,6 +25,7 @@
 
 #include "neuralnetapi.h"
 #include <string>
+#include <regex>
 #include "../stateobj.h"
 
 
@@ -69,6 +70,8 @@ void NeuralNetAPI::initialize_nn_design()
     nbNNInputValues = nnDesign.inputShape.flatten() / batchSize;
     nbNNAuxiliaryOutputs = nnDesign.auxiliaryOutputShape.flatten() / batchSize;
     policyOutputLength = nnDesign.policyOutputShape.v[1] * batchSize;
+    version = read_version_from_string(modelName);
+    info_string("Input representation: ", version_to_string(version));
 }
 
 void NeuralNetAPI::initialize()
@@ -163,4 +166,39 @@ ostream& nn_api::operator<<(ostream &os, const nn_api::Shape &shape)
     }
     os << ")";
     return os;
+}
+
+Version read_version_from_string(const string &modelFileName)
+{
+    // pattern to detect "-v<major>.<minor>"
+    const string prefix = "-v";
+    const string pattern = "(" + prefix + ")[0-9]+.[0-9]+";
+
+    // regex expression for pattern to be searched
+    regex regexp(pattern);
+
+    // flag type for determining the matching behavior (in this case on string objects)
+    smatch matches;
+
+    // regex_search that searches pattern regexp in the string
+    regex_search(modelFileName, matches, regexp);
+
+    if (matches.size() > 0) {
+        for (auto match : matches) {
+            if (match.length() > 3) {
+                const string content = match;
+                const size_t pointPos = content.find(".");
+                try {
+                const string versionMajor = content.substr(prefix.size(), pointPos-prefix.size());  // skip "-v"
+                const string versionMinor = content.substr(pointPos+1);     // skip "."
+                    return make_version(std::stoi(versionMajor), std::stoi(versionMinor), 0);
+                } catch (const exception& e) {
+                    info_string(e.what());
+                    break;
+                }
+            }
+        }
+    }
+    // unsuccessfull
+    return make_version<0,0,0>();
 }

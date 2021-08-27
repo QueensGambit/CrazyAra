@@ -649,7 +649,6 @@ unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, v
 {   
     switch (type) {
     case MCTSAgentType::kDefault:
-        info_string("TYP 0 -> Default");
         return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
     case MCTSAgentType::kBatch1:
         info_string("TYP 1 -> Batch 1");
