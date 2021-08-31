@@ -42,9 +42,6 @@ void OpenVinoAPI::set_nn_value_policy_shape()
         nnDesign.valueOutputName = outputInfo.begin()->first;
         nnDesign.policyOutputName = outputInfo.rbegin()->first;
     }
-    set_shape(nnDesign.valueOutputShape, outputInfo.begin()->second.get()->getDims());
-    set_shape(nnDesign.policyOutputShape, outputInfo.rbegin()->second.get()->getDims());
-
     set_shape(nnDesign.policyOutputShape, outputInfo.at(nnDesign.policyOutputName).get()->getDims());
     set_shape(nnDesign.valueOutputShape, outputInfo.at(nnDesign.valueOutputName).get()->getDims());
 }
