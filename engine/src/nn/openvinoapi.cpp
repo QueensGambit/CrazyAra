@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#ifdef OPENVINO
 #include "openvinoapi.h"
 #include "stateobj.h"
 
@@ -134,3 +135,4 @@ void set_shape(nn_api::Shape& shape, const InferenceEngine::SizeVector& sizeVect
         shape.v[idx] = sizeVector[idx];
     }
 }
+#endif

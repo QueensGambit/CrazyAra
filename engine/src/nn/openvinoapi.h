@@ -31,6 +31,7 @@
 #ifndef OPENVINOAPI_H
 #define OPENVINOAPI_H
 
+#ifdef OPENVINO
 #include "neuralnetapi.h"
 
 #include <ie_core.hpp>
@@ -75,5 +76,7 @@ public:
  * @param dims Target object
  */
 void set_shape(nn_api::Shape& shape, const InferenceEngine::SizeVector& sizeVector);
+
+#endif
 
 #endif // OPENVINOAPI_H
