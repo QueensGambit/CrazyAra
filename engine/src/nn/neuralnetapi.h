@@ -46,8 +46,7 @@ vector<string> get_directory_files(const string& dir) {
     shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
     struct dirent *dirent_ptr;
     if (!directory_ptr) {
-        info_string("Error opening :", strerror(errno));
-        info_string(dir);
+        info_string_important("Error opening :", dir, "(" + string(strerror(errno)) + ")");
         return files;
     }
 
@@ -187,6 +186,12 @@ public:
      * @return bool
      */
     bool is_policy_map() const;
+
+    /**
+     * @brief apply_softmax Decides if the softmax activation function should be applied to the policy output.
+     * @return bool
+     */
+    bool apply_softmax() const;
 
     /**
      * @brief get_model_name Returns the name of the model based on the loaded parameter/weight file

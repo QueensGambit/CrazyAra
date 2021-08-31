@@ -101,6 +101,11 @@ bool NeuralNetAPI::is_policy_map() const
     return nnDesign.isPolicyMap;
 }
 
+bool NeuralNetAPI::apply_softmax() const
+{
+    return nnDesign.applySoftmax;
+}
+
 string NeuralNetAPI::get_model_name() const
 {
     return modelName;

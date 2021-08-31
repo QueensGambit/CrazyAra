@@ -282,10 +282,10 @@ void SearchThread::reset_stats()
     depthSum = 0;
 }
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, bool applySoftmax, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), mirrorPolicy);
-    node_post_process_policy(node, searchSettings->nodePolicyTemperature, isPolicyMap, searchSettings);
+    node_post_process_policy(node, searchSettings->nodePolicyTemperature, applySoftmax, searchSettings);
     node_assign_value(node, valueOutputs, tbHits, batchIdx, isRootNodeTB);
 #ifdef MCTS_STORE_STATES
     node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
@@ -298,7 +298,7 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
+            fill_nn_results(batchIdx, net->is_policy_map(), net->apply_softmax(), valueOutputs, probOutputs, auxiliaryOutputs, node,
                             tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
                             searchSettings, rootNode->is_tablebase());
         }
@@ -462,9 +462,9 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
     node->set_value(valueOutputs[batchIdx]);
 }
 
-void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings)
+void node_post_process_policy(Node *node, float temperature, bool applySoftmax, const SearchSettings* searchSettings)
 {
-    if (!isPolicyMap) {
+    if (applySoftmax) {
         node->apply_softmax_to_policy();
     }
     node->enhance_moves(searchSettings);
