@@ -7,6 +7,7 @@ option(USE_RL                    "Build with reinforcement learning support"  OF
 option(BACKEND_TENSORRT          "Build with TensorRT support"  ON)
 option(BACKEND_MXNET             "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OFF)
+option(BACKEND_OPENVINO          "Build with OpenVino backend (CPU/GPU) support" OFF)
 option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
 option(USE_DYNAMIC_NN_ARCH       "Build with dynamic neural network architektur support"  ON)
@@ -381,6 +382,12 @@ if (BACKEND_TORCH)
     add_definitions(-DTORCH)
 endif()
 
+if (BACKEND_OPENVINO)
+    add_definitions(-DOPENVINO)
+    find_package(ngraph REQUIRED OPTIONAL_COMPONENTS onnx_importer)
+    find_package(InferenceEngine REQUIRED)
+endif()
+
 if (USE_RL)
     message(STATUS "Enabled Reinforcement Learning functionality")
     if(DEFINED ENV{Z5_PATH})
@@ -424,6 +431,16 @@ add_executable(${PROJECT_NAME} ${source_files})
 
 if (BACKEND_TENSORRT)
     target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
+endif()
+
+if (BACKEND_OPENVINO)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE IMPLEMENT_INFERENCE_EXTENSION_API)
+    target_link_libraries(${PROJECT_NAME} PRIVATE IE::inference_engine
+                                                 ${${OPEN_VINO_PATH}/deployment_tools/inference_engine/shareNGRAPH_LIBRARIES})
+    if (ngraph_onnx_importer_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${ONNX_IMPORTER_LIBRARIES})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE NGRAPH_ONNX_IMPORT_ENABLED)
+    endif()
 endif()
 
 if (USE_RL)
