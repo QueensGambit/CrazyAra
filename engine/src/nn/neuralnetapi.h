@@ -188,12 +188,6 @@ public:
     bool is_policy_map() const;
 
     /**
-     * @brief apply_softmax Decides if the softmax activation function should be applied to the policy output.
-     * @return bool
-     */
-    bool apply_softmax() const;
-
-    /**
      * @brief get_model_name Returns the name of the model based on the loaded parameter/weight file
      * @return string
      */
@@ -288,13 +282,13 @@ protected:
 string parse_directory(const string& directory);
 
 /**
- * @brief softmax Applies the softmax activation on a given data array.
+ * @brief apply_softmax Applies the softmax activation on a given data array.
  * This method is based on an implementation by "SlayStudy":
  * https://slaystudy.com/implementation-of-softmax-activation-function-in-c-c/
  * @param input Data array
  * @param size Length on how many values to apply softmax
  */
-void softmax(float* input, size_t size);
+void apply_softmax(float* input, size_t size);
 
 
 #endif // NEURALNETAPI_H

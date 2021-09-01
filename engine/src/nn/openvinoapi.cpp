@@ -122,7 +122,7 @@ void OpenVinoAPI::predict(float *inputPlanes, float *valueOutput, float *probOut
     std::copy(outputBufferPolicy, outputBufferPolicy + get_policy_output_length(), probOutputs);
 
     for (unsigned int batchIdx = 0; batchIdx < batchSize; ++batchIdx) {
-        softmax(probOutputs + batchIdx * nnDesign.policyOutputShape.v[1], nnDesign.policyOutputShape.v[1]);
+        apply_softmax(probOutputs + batchIdx * nnDesign.policyOutputShape.v[1], nnDesign.policyOutputShape.v[1]);
     }
 }
 

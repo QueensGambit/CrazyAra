@@ -101,11 +101,6 @@ bool NeuralNetAPI::is_policy_map() const
     return nnDesign.isPolicyMap;
 }
 
-bool NeuralNetAPI::apply_softmax() const
-{
-    return nnDesign.applySoftmax;
-}
-
 string NeuralNetAPI::get_model_name() const
 {
     return modelName;
@@ -208,7 +203,7 @@ Version read_version_from_string(const string &modelFileName)
     return make_version<0,0,0>();
 }
 
-void softmax(float* input, size_t size) {
+void apply_softmax(float* input, size_t size) {
 
     assert(0 <= size <= sizeof(input) / sizeof(double));
 
