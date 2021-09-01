@@ -56,7 +56,6 @@ std::ostream& operator<<(std::ostream& os, const Shape& shape);
  */
 struct NeuralNetDesign {
     bool isPolicyMap = false;
-    bool applySoftmax = false;
     bool hasAuxiliaryOutputs = false;
     const int nbInputs = 1;
     const string inputLayerName = "data";

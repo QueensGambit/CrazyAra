@@ -207,3 +207,26 @@ Version read_version_from_string(const string &modelFileName)
     // unsuccessfull
     return make_version<0,0,0>();
 }
+
+void softmax(float* input, size_t size) {
+
+    assert(0 <= size <= sizeof(input) / sizeof(double));
+
+    size_t idx;
+    double maximum = -INFINITY;
+    for (idx = 0; idx < size; ++idx) {
+        if (maximum < input[idx]) {
+            maximum = input[idx];
+        }
+    }
+
+    double sum = 0.0;
+    for (idx = 0; idx < size; ++idx) {
+        sum += exp(input[idx] - maximum);
+    }
+
+    double constant = maximum + log(sum);
+    for (idx = 0; idx < size; ++idx) {
+        input[idx] = exp(input[idx] - constant);
+    }
+}

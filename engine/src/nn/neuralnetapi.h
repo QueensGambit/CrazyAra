@@ -287,4 +287,14 @@ protected:
  */
 string parse_directory(const string& directory);
 
+/**
+ * @brief softmax Applies the softmax activation on a given data array.
+ * This method is based on an implementation by "SlayStudy":
+ * https://slaystudy.com/implementation-of-softmax-activation-function-in-c-c/
+ * @param input Data array
+ * @param size Length on how many values to apply softmax
+ */
+void softmax(float* input, size_t size);
+
+
 #endif // NEURALNETAPI_H

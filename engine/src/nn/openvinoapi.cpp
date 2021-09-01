@@ -39,8 +39,8 @@ void OpenVinoAPI::set_nn_value_policy_shape()
 {
     if (outputInfo.find(nnDesign.policyOutputName) == outputInfo.end() || outputInfo.find(nnDesign.valueOutputName) == outputInfo.end()) {
         info_string_important(nnDesign.policyOutputName, " or ", nnDesign.valueOutputName, "not found. Fallback to default indices.");
-        nnDesign.valueOutputName = outputInfo.begin()->first;
-        nnDesign.policyOutputName = outputInfo.rbegin()->first;
+        nnDesign.valueOutputName = outputInfo.rbegin()->first;
+        nnDesign.policyOutputName = outputInfo.begin()->first;
     }
     set_shape(nnDesign.policyOutputShape, outputInfo.at(nnDesign.policyOutputName).get()->getDims());
     set_shape(nnDesign.valueOutputShape, outputInfo.at(nnDesign.valueOutputName).get()->getDims());
@@ -57,8 +57,6 @@ void OpenVinoAPI::init_nn_design()
     }
     nnDesign.isPolicyMap = uint(nnDesign.policyOutputShape.v[1]) != (StateConstants::NB_LABELS());
     policyOutputLength = nnDesign.policyOutputShape.v[1] * batchSize;
-    nnDesign.applySoftmax = true;
-
     nbNNInputValues = nnDesign.inputShape.flatten();
 }
 
@@ -101,7 +99,6 @@ void OpenVinoAPI::bind_executor()
     inferRequest.SetBlob(nnDesign.inputLayerName, inputBlob);
 }
 
-
 void OpenVinoAPI::predict(float *inputPlanes, float *valueOutput, float *probOutputs, float *auxiliaryOutputs)
 {
     // copy over the input planes into the raw data cotainer
@@ -123,6 +120,10 @@ void OpenVinoAPI::predict(float *inputPlanes, float *valueOutput, float *probOut
     // copy the outputs to the given pointers
     std::copy(outputBufferValue, outputBufferValue + batchSize, valueOutput);
     std::copy(outputBufferPolicy, outputBufferPolicy + get_policy_output_length(), probOutputs);
+
+    for (unsigned int batchIdx = 0; batchIdx < batchSize; ++batchIdx) {
+        softmax(probOutputs + batchIdx * nnDesign.policyOutputShape.v[1], nnDesign.policyOutputShape.v[1]);
+    }
 }
 
 void set_shape(nn_api::Shape& shape, const InferenceEngine::SizeVector& sizeVector)

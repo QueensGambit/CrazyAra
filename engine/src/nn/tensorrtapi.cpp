@@ -125,7 +125,6 @@ bool TensorrtAPI::retrieve_indices_by_name(bool verbose)
 void TensorrtAPI::init_nn_design()
 {
     nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
-
     if (!retrieve_indices_by_name(generatedTrtFromONNX)) {
         info_string_important("Fallback to default indices.");
         idxInput = nnDesign.inputIdx;
@@ -305,7 +304,7 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
         }
     }
     if (policyOutputIdx == -1) {
-        info_string("Did not find policy output with name '", nnDesign.policyOutputName, "'");
+        info_string("Did not find policy output with name '" + nnDesign.policyOutputName + "'");
         info_string("Setting policyOutputIdx to:", nnDesign.policyOutputIdx);
         policyOutputIdx = nnDesign.policyOutputIdx;
     }
