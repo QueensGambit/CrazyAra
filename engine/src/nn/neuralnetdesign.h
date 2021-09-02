@@ -59,9 +59,9 @@ struct NeuralNetDesign {
     bool hasAuxiliaryOutputs = false;
     const int nbInputs = 1;
     const string inputLayerName = "data";
-    const string policyOutputName = "policy_out";
+    string policyOutputName = "policy_out";  // may be adjusted using "policyOutputIdx" if not found
     const string policySoftmaxOutputName = "policy_softmax";
-    const string valueOutputName = "value_out";
+    string valueOutputName = "value_out";  // may be adjusted using "valueOutputIdx" if not found
     const string auxiliaryOutputName = "auxiliary_out";
     const int inputIdx = 0;
     const int valueOutputIdx = 0;

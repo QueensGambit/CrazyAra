@@ -285,7 +285,7 @@ void SearchThread::reset_stats()
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB)
 {
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), mirrorPolicy);
-    node_post_process_policy(node, searchSettings->nodePolicyTemperature, isPolicyMap, searchSettings);
+    node_post_process_policy(node, searchSettings->nodePolicyTemperature, searchSettings);
     node_assign_value(node, valueOutputs, tbHits, batchIdx, isRootNodeTB);
 #ifdef MCTS_STORE_STATES
     node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
@@ -462,11 +462,8 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
     node->set_value(valueOutputs[batchIdx]);
 }
 
-void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings)
+void node_post_process_policy(Node *node, float temperature, const SearchSettings* searchSettings)
 {
-    if (!isPolicyMap) {
-        node->apply_softmax_to_policy();
-    }
     node->enhance_moves(searchSettings);
     node->apply_temperature_to_prior_policy(temperature);
 }

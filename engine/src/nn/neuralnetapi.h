@@ -46,8 +46,7 @@ vector<string> get_directory_files(const string& dir) {
     shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
     struct dirent *dirent_ptr;
     if (!directory_ptr) {
-        info_string("Error opening :", strerror(errno));
-        info_string(dir);
+        info_string_important("Error opening :", dir, "(" + string(strerror(errno)) + ")");
         return files;
     }
 
@@ -281,5 +280,15 @@ protected:
  * @return string with "/" as suffix
  */
 string parse_directory(const string& directory);
+
+/**
+ * @brief apply_softmax Applies the softmax activation on a given data array.
+ * This method is based on an implementation by "SlayStudy":
+ * https://slaystudy.com/implementation-of-softmax-activation-function-in-c-c/
+ * @param input Data array
+ * @param size Length on how many values to apply softmax
+ */
+void apply_softmax(float* input, size_t size);
+
 
 #endif // NEURALNETAPI_H

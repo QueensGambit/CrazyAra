@@ -191,7 +191,7 @@ private:
 void run_search_thread(SearchThread *t);
 
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB);
-void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
+void node_post_process_policy(Node *node, float temperature, const SearchSettings* searchSettings);
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB);
 
 /**
