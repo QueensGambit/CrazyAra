@@ -602,7 +602,7 @@ unique_ptr<NeuralNetAPI> CrazyAra::create_new_net_single(const string& modelDire
 #elif defined TENSORRT
     return make_unique<TensorrtAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
 #elif defined OPENVINO
-    return make_unique<OpenVinoAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
+    return make_unique<OpenVinoAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Threads_NN_Inference"]);
 #endif
     return nullptr;
 }
@@ -624,7 +624,7 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
     #elif defined TENSORRT
             netBatches.push_back(make_unique<TensorrtAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"]));
     #elif defined OPENVINO
-            netBatches.push_back(make_unique<OpenVinoAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"]));
+            netBatches.push_back(make_unique<OpenVinoAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Threads_NN_Inference"]));
     #endif
         }
     }

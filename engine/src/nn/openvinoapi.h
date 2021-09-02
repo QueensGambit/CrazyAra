@@ -54,8 +54,9 @@ private:
 
     InferenceEngine::Blob::Ptr outputBlobValue;
     InferenceEngine::Blob::Ptr outputBlobPolicy;
+    size_t threadsNNInference;
 public:
-    OpenVinoAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision);
+    OpenVinoAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, size_t threadsNNInference);
 
     // NeuralNetAPI interface
 private:

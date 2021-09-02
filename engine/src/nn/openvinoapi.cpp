@@ -27,8 +27,10 @@
 #include "openvinoapi.h"
 #include "stateobj.h"
 
-OpenVinoAPI::OpenVinoAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
-    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true)
+OpenVinoAPI::OpenVinoAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, size_t threadsNNInference):
+    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
+    rawInputData(nullptr),
+    threadsNNInference(threadsNNInference)
 {
     modelName = get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
     modelFilePath = modelDir + "/" + modelName;
@@ -83,7 +85,10 @@ void OpenVinoAPI::load_model()
 void OpenVinoAPI::load_parameters()
 {
     // load the model to the device
-    executableNetwork = core.LoadNetwork(network, "CPU");
+    std::map<std::string, std::string> config = {
+        { InferenceEngine::PluginConfigParams::KEY_CPU_THREADS_NUM, std::to_string(threadsNNInference).c_str() }
+    };
+    executableNetwork = core.LoadNetwork(network, "CPU", config);
 }
 
 void OpenVinoAPI::bind_executor()
