@@ -153,6 +153,9 @@ void OptionsUCI::init(OptionsMap &o)
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
 #endif
     o["Threads"]                       << Option(2, 1, 512);
+#ifdef OPENVINO
+    o["Threads_NN_Inference"]          << Option(8, 1, 512);
+#endif
     o["Timeout_MS"]                    << Option(0, 0, 99999999);
 #ifdef MODE_LICHESS
     o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), availableVariants);
