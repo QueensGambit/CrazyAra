@@ -207,13 +207,15 @@ void StrategoState::init(int variant, bool isChess960) {
           lines.push_back(str);
         }
         file.close();
+
+        std::string fen = lines[rand() % lines.size()];  
+        fen.erase(fen.length()-1);
+
+        spielState = spielGame->NewInitialState(fen);
+
     }
     else{
-        std::cout << "Unable to open file"; 
-        spielState = spielGame->NewInitialState(".");
+        //std::cout << "Unable to open position file"; 
+        spielState = spielGame->NewInitialState();
     }
-    std::string fen = lines[rand() % lines.size()];  
-    fen.erase(fen.length()-1);
-
-    spielState = spielGame->NewInitialState(fen);
 }
