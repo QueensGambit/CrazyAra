@@ -61,6 +61,28 @@ struct MapWithMutex {
 };
 
 
+struct NodeSplit {
+    ChildIdx firstArg;
+    ChildIdx secondArg;
+    uint_fast16_t firstBudget;
+    uint_fast16_t secondBudget;
+
+    inline void only_first(ChildIdx firstArg, uint_fast16_t budget) {
+        this->firstArg = firstArg;
+        firstBudget = budget;
+        secondBudget = 0;
+    }
+};
+
+struct NodeAndBudget {
+    Node* node;
+    uint_fast16_t budget;
+    unique_ptr<StateObj> curState;
+    Trajectory curTrajectory;
+    NodeAndBudget(Node* node, uint_fast16_t budget, StateObj* state) :
+        node(node), budget(budget), curState(unique_ptr<StateObj>(state)) {}
+};
+
 class Node
 {
 private:
@@ -119,6 +141,14 @@ public:
     Node* get_child_node(ChildIdx childIdx);
 
     ChildIdx select_child_node(const SearchSettings* searchSettings);
+
+    /**
+     * @brief select_child_nodes Selects multiple nodes at once
+     * @param searchSettings Search settings struct
+     * @param budget How many simulations are still available
+     * @return Struct on how the selection was split
+     */
+    NodeSplit select_child_nodes(const SearchSettings* searchSettings, uint_fast16_t budget);
 
     /**
      * @brief revert_virtual_loss_and_update Reverts the virtual loss and updates the Q-value and visits

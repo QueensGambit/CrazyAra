@@ -1107,6 +1107,38 @@ ChildIdx Node::select_child_node(const SearchSettings* searchSettings)
     return argmax(d->qValues + get_current_u_values(searchSettings));
 }
 
+NodeSplit Node::select_child_nodes(const SearchSettings* searchSettings, uint_fast16_t budget)
+{
+    NodeSplit nodeSplit;
+
+    if (!sorted) {
+        prepare_node_for_visits();
+    }
+    if (d->noVisitIdx == 1) {
+        nodeSplit.only_first(0, budget);
+        return nodeSplit;
+    }
+    if (has_forced_win()) {
+        nodeSplit.only_first(d->checkmateIdx, budget);
+        return nodeSplit;
+    }
+    DynamicVector<float> q_u_sum = d->qValues + get_current_u_values(searchSettings);
+//    DynamicVector<float> q_u_sum = get_current_u_values(searchSettings);
+    float firstMax;
+    float secondMax;
+//    ChildIdx firstArg;
+//    ChildIdx secondArg;
+//    cout << "q_u_sum: " << d->qValues + get_current_u_values(searchSettings) << endl;
+    first_and_second_max(q_u_sum, d->noVisitIdx, firstMax, secondMax, nodeSplit.firstArg, nodeSplit.secondArg);
+
+//    cout << "firstMax: " << firstMax << " secondMax: " << secondMax << " diff: " << firstMax - secondMax << endl;
+    float firstShare = 0.5 + std::min(float(firstMax - secondMax), 0.5f);
+    nodeSplit.firstBudget = firstShare * budget + 0.5;
+    nodeSplit.secondBudget = budget - nodeSplit.firstBudget;
+    cout << "firstShare: " << firstShare << " split: " << nodeSplit.firstBudget << " | " << nodeSplit.secondBudget << endl;
+    return nodeSplit;
+}
+
 const char* node_type_to_string(enum NodeType nodeType)
 {
     switch(nodeType) {

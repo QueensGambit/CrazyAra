@@ -63,6 +63,11 @@ private:
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<float>> transpositionValues;
 
+//    unique_ptr<FixedVector<Node*>> entryNodes;
+//    unique_ptr<FixedVector<size_t>> budget;
+    vector<NodeAndBudget> entryNodes;
+//    vector<size_t> budget;
+
     vector<Trajectory> newTrajectories;
     vector<Trajectory> transpositionTrajectories;
     vector<Trajectory> collisionTrajectories;
@@ -171,11 +176,35 @@ private:
     void backup_collisions();
 
     /**
+     * @brief split_budget_across_nodes Splits a budget of evaluations across different child nodes.
+     */
+    void split_budget_across_nodes();
+
+    /**
      * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
      * @param description Output struct which holds information what type of node it is
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
     Node* get_new_child_to_evaluate(NodeDescription& description);
+
+    /**
+     * @brief create_new_node Creates a new node and sets it corresponding inputPlanes and sideToMove
+     * @param currentNode Current Node
+     * @param childIdx Child index for node to select next
+     * @param description Pseudo return, either NODE_NEW_NODE or NODE_TRANSPOSITION
+     * @return Newly created node
+     */
+    Node* create_new_node(Node* currentNode, ChildIdx childIdx, NodeDescription& description);
+
+    /**
+     * @brief handle_returns Checks for possible node return types given nextNode != nullptr.
+     * If there is no return NODE_UNKNOWN will be returned.
+     * @param currentNode Current node (parent node of next node)
+     * @param nextNode Next node to select
+     * @param childIdx Child index
+     * @return NODE_TERMINAL, NODE_COLLISION, NODE_TRANSPOSITION or NODE_UNKNOWN
+     */
+    NodeBackup handle_returns(Node* currentNode, Node* nextNode, ChildIdx childIdx);
 
     void backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories);
     void backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories);

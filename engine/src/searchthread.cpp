@@ -48,11 +48,11 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
-#ifdef MCTS_SINGLE_PLAYER
+    #ifdef MCTS_SINGLE_PLAYER
     terminalNodeCache(1),
-#else
+    #else
     terminalNodeCache(searchSettings->batchSize*2),
-#endif
+    #endif
     reachedTablebases(false)
 {
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
@@ -155,6 +155,109 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     return currentNode;
 }
 
+void SearchThread::split_budget_across_nodes()
+{
+    Node* currentNode = rootNode;
+    entryNodes.emplace_back(NodeAndBudget(rootNode, net->get_batch_size(), rootState->clone()));
+
+    while(true) {
+        NodeAndBudget* curNodeAndBudget = &entryNodes.back();
+        if (curNodeAndBudget->node == nullptr) {
+            // handle collision and evaluate new node
+        }
+        if (curNodeAndBudget->budget == 1) {
+            // extend single trajectory as used to
+            NodeDescription description;
+            get_new_child_to_evaluate(description);
+        }
+
+        // branch and split
+        NodeSplit nodeSplit = curNodeAndBudget->node->select_child_nodes(searchSettings, net->get_batch_size() - newNodes->size());
+        StateObj* stateFirst = curNodeAndBudget->curState->clone();
+        stateFirst->do_action(curNodeAndBudget->node->get_action(nodeSplit.firstArg));
+
+        if (nodeSplit.secondBudget > 0) {
+            StateObj* stateSecond = curNodeAndBudget->curState->clone();
+            stateSecond->do_action(curNodeAndBudget->node->get_action(nodeSplit.firstArg));
+            entryNodes.emplace_back(NodeAndBudget(currentNode->get_child_node(nodeSplit.firstArg), nodeSplit.firstBudget, stateSecond));
+            entryNodes.back().curTrajectory = curNodeAndBudget->curTrajectory;
+            entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(curNodeAndBudget->node, nodeSplit.secondArg));
+        }
+        entryNodes.emplace_back(NodeAndBudget(currentNode->get_child_node(nodeSplit.firstArg), nodeSplit.firstBudget, stateFirst));
+        entryNodes.back().curTrajectory = curNodeAndBudget->curTrajectory;
+        entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(curNodeAndBudget->node, nodeSplit.firstArg));
+    }
+
+}
+
+NodeBackup SearchThread::handle_returns(Node* currentNode, Node* nextNode, ChildIdx childIdx) {
+
+#ifdef MCTS_TB_SUPPORT
+    if (nextNode->is_terminal() || (!reachedTablebases && nextNode->is_playout_node() && nextNode->is_solved())) {
+#else
+    if (nextNode->is_terminal() || (nextNode->is_playout_node() && nextNode->is_solved())) {
+#endif
+        return NODE_TERMINAL;
+    }
+    if (!nextNode->has_nn_results()) {
+        return NODE_COLLISION;
+    }
+    if (nextNode->is_transposition()) {
+        nextNode->lock();
+        const uint_fast32_t transposVisits = currentNode->get_real_visits(childIdx);
+        const double transposQValue = -currentNode->get_q_sum(childIdx, searchSettings->virtualLoss) / transposVisits;
+        if (nextNode->is_transposition_return(transposQValue)) {
+            const float qValue = get_transposition_q_value(transposVisits, transposQValue, nextNode->get_value());
+            nextNode->unlock();
+            transpositionValues->add_element(qValue);
+            return NODE_TRANSPOSITION;
+        }
+        nextNode->unlock();
+    }
+    return NODE_UNKNOWN;
+}
+
+Node* SearchThread::create_new_node(Node* currentNode, ChildIdx childIdx, NodeDescription& description) {
+#ifdef MCTS_STORE_STATES
+    StateObj* newState = currentNode->get_state()->clone();
+#else
+    newState = unique_ptr<StateObj>(rootState->clone());
+    assert(actionsBuffer.size() == description.depth-1);
+    for (Action action : actionsBuffer) {
+        newState->do_action(action);
+    }
+#endif
+    newState->do_action(currentNode->get_action(childIdx));
+    currentNode->increment_no_visit_idx();
+#ifdef MCTS_STORE_STATES
+    Node* nextNode = add_new_node_to_tree(newState, currentNode, childIdx, description.type);
+#else
+    Node* nextNode = add_new_node_to_tree(newState.get(), currentNode, childIdx, description.type);
+#endif
+    currentNode->unlock();
+
+    if (description.type == NODE_NEW_NODE) {
+#ifdef SEARCH_UCT
+        Node* nextNode = currentNode->get_child_node(childIdx);
+        nextNode->set_value(newState->random_rollout());
+        nextNode->enable_has_nn_results();
+        if (searchSettings->useTranspositionTable && !nextNode->is_terminal()) {
+            mapWithMutex->mtx.lock();
+            mapWithMutex->hashTable.insert({nextNode->hash_key(), nextNode});
+            mapWithMutex->mtx.unlock();
+        }
+#else
+        // fill a new board in the input_planes vector
+        // we shift the index by nbNNInputValues each time
+        newState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_version());
+        // save a reference newly created list in the temporary list for node creation
+        // it will later be updated with the evaluation of the NN
+        newNodeSideToMove->add_element(newState->side_to_move());
+#endif
+    }
+    return nextNode;
+}
+
 Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 {
     description.depth = 0;
@@ -188,74 +291,18 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 
         nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
-        if (nextNode == nullptr) {
-#ifdef MCTS_STORE_STATES
-            StateObj* newState = currentNode->get_state()->clone();
-#else
-            newState = unique_ptr<StateObj>(rootState->clone());
-            assert(actionsBuffer.size() == description.depth-1);
-            for (Action action : actionsBuffer) {
-                newState->do_action(action);
-            }
-#endif
-            newState->do_action(currentNode->get_action(childIdx));
-            currentNode->increment_no_visit_idx();
-#ifdef MCTS_STORE_STATES
-            nextNode = add_new_node_to_tree(newState, currentNode, childIdx, description.type);
-#else
-            nextNode = add_new_node_to_tree(newState.get(), currentNode, childIdx, description.type);
-#endif
-            currentNode->unlock();
 
-            if (description.type == NODE_NEW_NODE) {
-#ifdef SEARCH_UCT
-                Node* nextNode = currentNode->get_child_node(childIdx);
-                nextNode->set_value(newState->random_rollout());
-                nextNode->enable_has_nn_results();
-                if (searchSettings->useTranspositionTable && !nextNode->is_terminal()) {
-                    mapWithMutex->mtx.lock();
-                    mapWithMutex->hashTable.insert({nextNode->hash_key(), nextNode});
-                    mapWithMutex->mtx.unlock();
-                }
-#else
-                // fill a new board in the input_planes vector
-                // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_version());
-                // save a reference newly created list in the temporary list for node creation
-                // it will later be updated with the evaluation of the NN
-                newNodeSideToMove->add_element(newState->side_to_move());
-#endif
-            }
+        if (nextNode == nullptr) {
+            nextNode = create_new_node(currentNode, childIdx, description);
             return nextNode;
         }
-#ifdef MCTS_TB_SUPPORT
-        if (nextNode->is_terminal() || (!reachedTablebases && nextNode->is_playout_node() && nextNode->is_solved())) {
-#else
-        if (nextNode->is_terminal() || (nextNode->is_playout_node() && nextNode->is_solved())) {
-#endif
-            description.type = NODE_TERMINAL;
+
+        description.type = handle_returns(currentNode, nextNode, childIdx);
+        if (description.type != NODE_UNKNOWN) {
             currentNode->unlock();
             return nextNode;
         }
-        if (!nextNode->has_nn_results()) {
-            description.type = NODE_COLLISION;
-            currentNode->unlock();
-            return nextNode;
-        }
-        if (nextNode->is_transposition()) {
-            nextNode->lock();
-            const uint_fast32_t transposVisits = currentNode->get_real_visits(childIdx);
-            const double transposQValue = -currentNode->get_q_sum(childIdx, searchSettings->virtualLoss) / transposVisits;
-            if (nextNode->is_transposition_return(transposQValue)) {
-                const float qValue = get_transposition_q_value(transposVisits, transposQValue, nextNode->get_value());
-                nextNode->unlock();
-                description.type = NODE_TRANSPOSITION;
-                transpositionValues->add_element(qValue);
-                currentNode->unlock();
-                return nextNode;
-            }
-            nextNode->unlock();
-        }
+
         currentNode->unlock();
 #ifndef MCTS_STORE_STATES
         actionsBuffer.emplace_back(currentNode->get_action(childIdx));
