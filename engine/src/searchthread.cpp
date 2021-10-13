@@ -156,53 +156,73 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     return currentNode;
 }
 
-NodeBackup SearchThread::handle_single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget)
+Node* SearchThread::handle_single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description)
 {
     Node* currentNode = curNodeAndBudget->node;
+    StateObj* curState = curNodeAndBudget->curState.get();
+
     currentNode->apply_virtual_loss_to_child(childIdx, budget);
-    StateObj* newState = curNodeAndBudget->curState->clone();
-    newState->do_action(currentNode->get_action(childIdx));
     Node* nextNode = currentNode->get_child_node(childIdx);
 
-    NodeDescription description;
+    Node* returnNode = check_next_node(currentNode, curState, nextNode, childIdx, description);
 
-    if (nextNode == nullptr) {
+    if (returnNode != nullptr) {
         currentNode->unlock();
-        return NODE_NEW_NODE;
+        return returnNode;
     }
 
-    description.type = handle_returns(currentNode, nextNode, childIdx);
-    if (description.type != NODE_UNKNOWN) {
-        // handle early break off
-        currentNode->unlock();
-        return description.type;
-    }
+    StateObj* newState = curState->clone();
+    newState->do_action(currentNode->get_action(childIdx));
 
     // extend trajectory
     entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
     entryNodes.back().curTrajectory = curNodeAndBudget->curTrajectory;
     entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
 
-    return description.type;
+    return nullptr;
+}
+
+bool pop_back_and_check(vector<NodeAndBudget>& entryNodes)
+{
+    // drop last item
+    entryNodes.pop_back();
+    return entryNodes.empty();
+}
+
+bool SearchThread::single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description)
+{
+    Node* returnNode = handle_single_split(curNodeAndBudget, childIdx, budget, description);
+
+    if (returnNode != nullptr) {
+        handle_simulation_return(returnNode, description.type);
+
+        // issue "budget-1" collision trajectories
+        for (Budget idx = 0; idx < budget-1; ++idx) {
+            collisionTrajectories.emplace_back(trajectoryBuffer);
+        }
+
+        if (pop_back_and_check(entryNodes)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void SearchThread::split_budget_across_nodes()
 {
     // initialize node budget
     entryNodes.emplace_back(NodeAndBudget(rootNode, net->get_batch_size(), rootState->clone()));
+    NodeDescription description;
 
     while(!entryNodes.empty()) {
         NodeAndBudget* curNodeAndBudget = &entryNodes.back();
 
         if (curNodeAndBudget->budget == 1) {
             // extend single trajectory as used to
-            NodeDescription description;
-            Node* nextNode = get_new_child_to_evaluate(description, curNodeAndBudget->node);
+            Node* newNode = get_new_child_to_evaluate(description, curNodeAndBudget->node, curNodeAndBudget->curState.get());
+            handle_simulation_return(newNode, description.type);
 
-            // drop last item
-            entryNodes.pop_back();
-
-            if (entryNodes.empty()) {
+            if (pop_back_and_check(entryNodes)) {
                 return;
             }
         }
@@ -212,11 +232,15 @@ void SearchThread::split_budget_across_nodes()
 
         if (nodeSplit.secondBudget > 0) {
             // 2nd branch
-            handle_single_split(curNodeAndBudget, nodeSplit.secondArg, nodeSplit.secondBudget);
+            if (single_split(curNodeAndBudget, nodeSplit.secondArg, nodeSplit.secondBudget, description)) {
+                return;
+            }
         }
 
         // 1st branch
-        handle_single_split(curNodeAndBudget, nodeSplit.firstArg, nodeSplit.firstBudget);
+        if (single_split(curNodeAndBudget, nodeSplit.secondArg, nodeSplit.secondBudget, description)) {
+            return;
+        }
     }
 }
 
@@ -247,11 +271,11 @@ NodeBackup SearchThread::handle_returns(Node* currentNode, Node* nextNode, Child
     return NODE_UNKNOWN;
 }
 
-Node* SearchThread::create_new_node(Node* currentNode, ChildIdx childIdx, NodeDescription& description) {
+Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description) {
 #ifdef MCTS_STORE_STATES
     StateObj* newState = currentNode->get_state()->clone();
 #else
-    newState = unique_ptr<StateObj>(rootState->clone());
+    newState = unique_ptr<StateObj>(currentState->clone());
     assert(actionsBuffer.size() == description.depth-1);
     for (Action action : actionsBuffer) {
         newState->do_action(action);
@@ -288,7 +312,22 @@ Node* SearchThread::create_new_node(Node* currentNode, ChildIdx childIdx, NodeDe
     return nextNode;
 }
 
-Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode)
+Node* SearchThread::check_next_node(Node* currentNode, StateObj* currentState, Node* nextNode, ChildIdx childIdx, NodeDescription& description)
+{
+    if (nextNode == nullptr) {
+        nextNode = create_new_node(currentNode, currentState, childIdx, description);
+        return nextNode;
+    }
+
+    description.type = handle_returns(currentNode, nextNode, childIdx);
+    if (description.type != NODE_UNKNOWN) {
+        currentNode->unlock();
+        return nextNode;
+    }
+    return nullptr;
+}
+
+Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState)
 {
     description.depth = 0;
     Node* nextNode;
@@ -321,15 +360,10 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node
         nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
 
-        if (nextNode == nullptr) {
-            nextNode = create_new_node(currentNode, childIdx, description);
-            return nextNode;
-        }
+        Node* returnNode = check_next_node(currentNode, currentState, nextNode, childIdx, description);
 
-        description.type = handle_returns(currentNode, nextNode, childIdx);
-        if (description.type != NODE_UNKNOWN) {
-            currentNode->unlock();
-            return nextNode;
+        if (returnNode != nullptr) {
+            return returnNode;
         }
 
         currentNode->unlock();
@@ -453,7 +487,7 @@ void SearchThread::create_mini_batch()
 
         trajectoryBuffer.clear();
         actionsBuffer.clear();
-        Node* newNode = get_new_child_to_evaluate(description, rootNode);
+        Node* newNode = get_new_child_to_evaluate(description, rootNode, rootState);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 

@@ -162,6 +162,8 @@ public:
 
     void handle_simulation_return(Node* newNode, NodeBackup nodeBackup);
 
+    Node* check_next_node(Node* currentNode, StateObj* currentState, Node* nextNode, ChildIdx childIdx, NodeDescription& description);
+
 private:
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
@@ -184,7 +186,9 @@ private:
     void split_budget_across_nodes();
 
 
-    NodeBackup handle_single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget);
+    bool single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
+
+    Node* handle_single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
 
     /**
      * @brief get_new_child_to_evaluate Traverses the search tree beginning from the given starting node and returns the parent node and child index for the next node to expand.
@@ -192,7 +196,7 @@ private:
      * @param CurrentNode Node where to start the trajectory
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(NodeDescription& description, Node* currentNode);
+    Node* get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState);
 
     /**
      * @brief create_new_node Creates a new node and sets it corresponding inputPlanes and sideToMove
@@ -201,7 +205,7 @@ private:
      * @param description Pseudo return, either NODE_NEW_NODE or NODE_TRANSPOSITION
      * @return Newly created node
      */
-    Node* create_new_node(Node* currentNode, ChildIdx childIdx, NodeDescription& description);
+    Node* create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description);
 
     /**
      * @brief handle_returns Checks for possible node return types given nextNode != nullptr.
