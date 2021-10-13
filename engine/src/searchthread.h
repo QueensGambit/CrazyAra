@@ -181,9 +181,9 @@ private:
     void distribute_mini_batch_across_nodes();
 
 
-    bool single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
+    bool single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
 
-    Node* handle_single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
+    Node* handle_single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
 
     /**
      * @brief get_new_child_to_evaluate Traverses the search tree beginning from the given starting node and returns the parent node and child index for the next node to expand.
@@ -191,7 +191,7 @@ private:
      * @param CurrentNode Node where to start the trajectory
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState);
+    Node* get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState, Trajectory& trajectoryBuffer);
 
     /**
      * @brief create_new_node Creates a new node and sets it corresponding inputPlanes and sideToMove

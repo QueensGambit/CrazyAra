@@ -155,28 +155,29 @@ Node* SearchThread::get_starting_node(Node* currentNode, StateObj* currentState,
     return currentNode;
 }
 
-Node* SearchThread::handle_single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description)
+Node* SearchThread::handle_single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description)
 {
-    Node* currentNode = curNodeAndBudget->node;
-    StateObj* curState = curNodeAndBudget->curState.get();
+    Node* currentNode = curNodeAndBudget.node;
+    assert(currentNode != nullptr);
+    StateObj* curState = curNodeAndBudget.curState.get();
+    entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
 
     currentNode->apply_virtual_loss_to_child(childIdx, budget);
     Node* nextNode = currentNode->get_child_node(childIdx);
-
-    Node* returnNode = check_next_node(currentNode, curState, nextNode, childIdx, description);
+    StateObj* newState = curState->clone();
+    Node* returnNode = check_next_node(currentNode, newState, nextNode, childIdx, description);
 
     if (returnNode != nullptr) {
 //        currentNode->unlock();
+        delete newState;  // a bit ugly :/
         return returnNode;
     }
 
-    StateObj* newState = curState->clone();
-    newState->do_action(currentNode->get_action(childIdx));
-
     // extend trajectory
+    assert(nextNode != nullptr);
+    newState->do_action(currentNode->get_action(childIdx));  // necessary?
     entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
-    entryNodes.back().curTrajectory = curNodeAndBudget->curTrajectory;
-    entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
+    entryNodes.back().curTrajectory = curNodeAndBudget.curTrajectory;
 
     return nullptr;
 }
@@ -188,12 +189,13 @@ bool pop_back_and_check(vector<NodeAndBudget>& entryNodes)
     return entryNodes.empty();
 }
 
-bool SearchThread::single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description)
+bool SearchThread::single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description)
 {
+    assert(budget > 0);
     Node* returnNode = handle_single_split(curNodeAndBudget, childIdx, budget, description);
 
     if (returnNode != nullptr) {
-        handle_simulation_return(returnNode, description.type, curNodeAndBudget->curTrajectory);
+        handle_simulation_return(returnNode, description.type, curNodeAndBudget.curTrajectory);
 
         // issue "budget-1" collision trajectories
         for (Budget idx = 0; idx < budget-1; ++idx) {
@@ -214,12 +216,13 @@ void SearchThread::distribute_mini_batch_across_nodes()
     NodeDescription description;
 
     while(!entryNodes.empty()) {
-        NodeAndBudget* curNodeAndBudget = &entryNodes.back();
+        cout << "Iteration start" << endl;
+        size_t mainIdx = entryNodes.size() - 1;
 
-        if (curNodeAndBudget->budget == 1) {
+        if (entryNodes[mainIdx].budget == 1) {
             // extend single trajectory as used to
-            Node* newNode = get_new_child_to_evaluate(description, curNodeAndBudget->node, curNodeAndBudget->curState.get());
-            handle_simulation_return(newNode, description.type, curNodeAndBudget->curTrajectory);
+            Node* newNode = get_new_child_to_evaluate(description, entryNodes[mainIdx].node, entryNodes[mainIdx].curState.get(), entryNodes[mainIdx].curTrajectory);
+            handle_simulation_return(newNode, description.type, entryNodes[mainIdx].curTrajectory);
 
             if (pop_back_and_check(entryNodes)) {
                 return;
@@ -227,19 +230,21 @@ void SearchThread::distribute_mini_batch_across_nodes()
         }
 
         // branch and split
-        NodeSplit nodeSplit = curNodeAndBudget->node->select_child_nodes(searchSettings, curNodeAndBudget->budget);
+        NodeSplit nodeSplit = entryNodes[mainIdx].node->select_child_nodes(searchSettings, entryNodes[mainIdx].budget);
 
         if (nodeSplit.secondBudget > 0) {
             // 2nd branch
-            if (single_split(curNodeAndBudget, nodeSplit.secondArg, nodeSplit.secondBudget, description)) {
+            if (single_split(entryNodes[mainIdx], nodeSplit.secondArg, nodeSplit.secondBudget, description)) {
                 return;
             }
         }
 
         // 1st branch
-        if (single_split(curNodeAndBudget, nodeSplit.secondArg, nodeSplit.secondBudget, description)) {
+        if (single_split(entryNodes[mainIdx], nodeSplit.firstArg, nodeSplit.firstBudget, description)) {
             return;
         }
+        // delete old main branch
+        entryNodes.erase(entryNodes.begin()+mainIdx);
     }
 }
 
@@ -274,6 +279,8 @@ Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, C
 #ifdef MCTS_STORE_STATES
     StateObj* currentState = currentNode->get_state()->clone();
 #endif
+    cout << "fen: " << currentState->fen() << endl;
+    cout << "action: " << StateConstants::action_to_uci(currentNode->get_action(childIdx), false) << endl;
     currentState->do_action(currentNode->get_action(childIdx));
     currentNode->increment_no_visit_idx();
     Node* nextNode = add_new_node_to_tree(currentState, currentNode, childIdx, description.type);
@@ -341,7 +348,7 @@ Node* SearchThread::init_child_index(Node* currentNode, StateObj* currentState, 
 }
 
 
-Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* startingState)
+Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* startingState, Trajectory& trajectoryBuffer)
 {
     description.depth = 0;
     Node* nextNode;
@@ -451,6 +458,7 @@ size_t SearchThread::get_avg_depth()
 
 void SearchThread::handle_simulation_return(Node* newNode, NodeBackup nodeBackup, const Trajectory& trajectoryBuffer)
 {
+    assert(trajectoryBuffer.size() != 0);
     switch (nodeBackup) {
     case NODE_TERMINAL:
         ++numTerminalNodes;
@@ -484,7 +492,7 @@ void SearchThread::create_mini_batch()
            numTerminalNodes < terminalNodeCache) {
 
         trajectoryBuffer.clear();
-        Node* newNode = get_new_child_to_evaluate(description, rootNode, rootState);
+        Node* newNode = get_new_child_to_evaluate(description, rootNode, rootState, trajectoryBuffer);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
@@ -495,6 +503,7 @@ void SearchThread::create_mini_batch()
 void SearchThread::thread_iteration()
 {
     create_mini_batch();
+//    distribute_mini_batch_across_nodes();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
         net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
