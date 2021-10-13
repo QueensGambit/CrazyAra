@@ -207,6 +207,8 @@ private:
      */
     Node* create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description);
 
+    Node* init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
+
     /**
      * @brief handle_returns Checks for possible node return types given nextNode != nullptr.
      * If there is no return NODE_UNKNOWN will be returned.

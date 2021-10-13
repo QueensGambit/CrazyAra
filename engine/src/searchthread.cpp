@@ -327,19 +327,18 @@ Node* SearchThread::check_next_node(Node* currentNode, StateObj* currentState, N
     return nullptr;
 }
 
-Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState)
+Node* SearchThread::init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx)
 {
-    description.depth = 0;
-    Node* nextNode;
+    childIdx = uint16_t(-1);
 
-    ChildIdx childIdx = uint16_t(-1);
     if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
         currentNode->lock();
         random_playout(currentNode, childIdx);
         currentNode->unlock();
+        return currentNode;
     }
-    else if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
+    if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
         currentNode = get_starting_node(currentNode, description, childIdx);
         currentNode->lock();
         childIdx = select_enhanced_move(currentNode);
@@ -347,7 +346,18 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node
             random_playout(currentNode, childIdx);
         }
         currentNode->unlock();
+        return currentNode;
     }
+    return currentNode;
+}
+
+
+Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState)
+{
+    description.depth = 0;
+    Node* nextNode;
+    ChildIdx childIdx;
+    currentNode = init_child_index(currentNode, description, childIdx);
 
     while (true) {
         currentNode->lock();
