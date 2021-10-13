@@ -43,6 +43,7 @@ using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 using ChildIdx = uint_fast16_t;
+using Budget = uint_fast16_t;
 
 struct NodeAndIdx {
     Node* node;
@@ -64,8 +65,8 @@ struct MapWithMutex {
 struct NodeSplit {
     ChildIdx firstArg;
     ChildIdx secondArg;
-    uint_fast16_t firstBudget;
-    uint_fast16_t secondBudget;
+    Budget firstBudget;
+    Budget secondBudget;
 
     inline void only_first(ChildIdx firstArg, uint_fast16_t budget) {
         this->firstArg = firstArg;

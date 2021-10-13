@@ -62,6 +62,7 @@ private:
     unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<float>> transpositionValues;
+    size_t numTerminalNodes;
 
 //    unique_ptr<FixedVector<Node*>> entryNodes;
 //    unique_ptr<FixedVector<size_t>> budget;
@@ -159,6 +160,8 @@ public:
 
     Node* get_starting_node(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
 
+    void handle_simulation_return(Node* newNode, NodeBackup nodeBackup);
+
 private:
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
@@ -180,12 +183,16 @@ private:
      */
     void split_budget_across_nodes();
 
+
+    NodeBackup handle_single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget);
+
     /**
-     * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
+     * @brief get_new_child_to_evaluate Traverses the search tree beginning from the given starting node and returns the parent node and child index for the next node to expand.
      * @param description Output struct which holds information what type of node it is
+     * @param CurrentNode Node where to start the trajectory
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(NodeDescription& description);
+    Node* get_new_child_to_evaluate(NodeDescription& description, Node* currentNode);
 
     /**
      * @brief create_new_node Creates a new node and sets it corresponding inputPlanes and sideToMove

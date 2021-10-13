@@ -46,6 +46,7 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
+    numTerminalNodes(0),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
     #ifdef MCTS_SINGLE_PLAYER
@@ -155,39 +156,68 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     return currentNode;
 }
 
+NodeBackup SearchThread::handle_single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget)
+{
+    Node* currentNode = curNodeAndBudget->node;
+    currentNode->apply_virtual_loss_to_child(childIdx, budget);
+    StateObj* newState = curNodeAndBudget->curState->clone();
+    newState->do_action(currentNode->get_action(childIdx));
+    Node* nextNode = currentNode->get_child_node(childIdx);
+
+    NodeDescription description;
+
+    if (nextNode == nullptr) {
+        currentNode->unlock();
+        return NODE_NEW_NODE;
+    }
+
+    description.type = handle_returns(currentNode, nextNode, childIdx);
+    if (description.type != NODE_UNKNOWN) {
+        // handle early break off
+        currentNode->unlock();
+        return description.type;
+    }
+
+    // extend trajectory
+    entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
+    entryNodes.back().curTrajectory = curNodeAndBudget->curTrajectory;
+    entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
+
+    return description.type;
+}
+
 void SearchThread::split_budget_across_nodes()
 {
-    Node* currentNode = rootNode;
+    // initialize node budget
     entryNodes.emplace_back(NodeAndBudget(rootNode, net->get_batch_size(), rootState->clone()));
 
-    while(true) {
+    while(!entryNodes.empty()) {
         NodeAndBudget* curNodeAndBudget = &entryNodes.back();
-        if (curNodeAndBudget->node == nullptr) {
-            // handle collision and evaluate new node
-        }
+
         if (curNodeAndBudget->budget == 1) {
             // extend single trajectory as used to
             NodeDescription description;
-            get_new_child_to_evaluate(description);
+            Node* nextNode = get_new_child_to_evaluate(description, curNodeAndBudget->node);
+
+            // drop last item
+            entryNodes.pop_back();
+
+            if (entryNodes.empty()) {
+                return;
+            }
         }
 
         // branch and split
-        NodeSplit nodeSplit = curNodeAndBudget->node->select_child_nodes(searchSettings, net->get_batch_size() - newNodes->size());
-        StateObj* stateFirst = curNodeAndBudget->curState->clone();
-        stateFirst->do_action(curNodeAndBudget->node->get_action(nodeSplit.firstArg));
+        NodeSplit nodeSplit = curNodeAndBudget->node->select_child_nodes(searchSettings, curNodeAndBudget->budget);
 
         if (nodeSplit.secondBudget > 0) {
-            StateObj* stateSecond = curNodeAndBudget->curState->clone();
-            stateSecond->do_action(curNodeAndBudget->node->get_action(nodeSplit.firstArg));
-            entryNodes.emplace_back(NodeAndBudget(currentNode->get_child_node(nodeSplit.firstArg), nodeSplit.firstBudget, stateSecond));
-            entryNodes.back().curTrajectory = curNodeAndBudget->curTrajectory;
-            entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(curNodeAndBudget->node, nodeSplit.secondArg));
+            // 2nd branch
+            handle_single_split(curNodeAndBudget, nodeSplit.secondArg, nodeSplit.secondBudget);
         }
-        entryNodes.emplace_back(NodeAndBudget(currentNode->get_child_node(nodeSplit.firstArg), nodeSplit.firstBudget, stateFirst));
-        entryNodes.back().curTrajectory = curNodeAndBudget->curTrajectory;
-        entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(curNodeAndBudget->node, nodeSplit.firstArg));
-    }
 
+        // 1st branch
+        handle_single_split(curNodeAndBudget, nodeSplit.firstArg, nodeSplit.firstBudget);
+    }
 }
 
 NodeBackup SearchThread::handle_returns(Node* currentNode, Node* nextNode, ChildIdx childIdx) {
@@ -258,10 +288,9 @@ Node* SearchThread::create_new_node(Node* currentNode, ChildIdx childIdx, NodeDe
     return nextNode;
 }
 
-Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
+Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode)
 {
     description.depth = 0;
-    Node* currentNode = rootNode;
     Node* nextNode;
 
     ChildIdx childIdx = uint16_t(-1);
@@ -388,11 +417,34 @@ size_t SearchThread::get_avg_depth()
     return size_t(double(depthSum) / (rootNode->get_visits() - visitsPreSearch) + 0.5);
 }
 
+void SearchThread::handle_simulation_return(Node* newNode, NodeBackup nodeBackup)
+{
+    switch (nodeBackup) {
+    case NODE_TERMINAL:
+        ++numTerminalNodes;
+        backup_value<true>(newNode->get_value(), searchSettings->virtualLoss, trajectoryBuffer, searchSettings->mctsSolver);
+        break;
+    case NODE_COLLISION:
+        // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
+        collisionTrajectories.emplace_back(trajectoryBuffer);
+        break;
+    case NODE_TRANSPOSITION:
+        transpositionTrajectories.emplace_back(trajectoryBuffer);
+        break;
+    case NODE_NEW_NODE:
+        newNodes->add_element(newNode);
+        newTrajectories.emplace_back(trajectoryBuffer);
+        break;
+    case NODE_UNKNOWN:
+        throw "NODE_UNKNOWN is invalid as return type";
+    }
+}
+
 void SearchThread::create_mini_batch()
 {
     // select nodes to add to the mini-batch
     NodeDescription description;
-    size_t numTerminalNodes = 0;
+    numTerminalNodes = 0;
 
     while (!newNodes->is_full() &&
            collisionTrajectories.size() != searchSettings->batchSize &&
@@ -401,25 +453,11 @@ void SearchThread::create_mini_batch()
 
         trajectoryBuffer.clear();
         actionsBuffer.clear();
-        Node* newNode = get_new_child_to_evaluate(description);
+        Node* newNode = get_new_child_to_evaluate(description, rootNode);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
-        if(description.type == NODE_TERMINAL) {
-            ++numTerminalNodes;
-            backup_value<true>(newNode->get_value(), searchSettings->virtualLoss, trajectoryBuffer, searchSettings->mctsSolver);
-        }
-        else if (description.type == NODE_COLLISION) {
-            // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
-            collisionTrajectories.emplace_back(trajectoryBuffer);
-        }
-        else if (description.type == NODE_TRANSPOSITION) {
-            transpositionTrajectories.emplace_back(trajectoryBuffer);
-        }
-        else {  // NODE_NEW_NODE
-            newNodes->add_element(newNode);
-            newTrajectories.emplace_back(trajectoryBuffer);
-        }
+        handle_simulation_return(newNode, description.type);
     }
 }
 
