@@ -56,7 +56,6 @@ class SearchThread : NeuralNetAPIUser
 private:
     Node* rootNode;
     StateObj* rootState;
-    unique_ptr<StateObj> newState;
 
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
@@ -74,7 +73,6 @@ private:
     vector<Trajectory> collisionTrajectories;
 
     Trajectory trajectoryBuffer;
-    vector<Action> actionsBuffer;
 
     bool isRunning;
 
@@ -158,7 +156,7 @@ public:
 
     size_t get_max_depth() const;
 
-    Node* get_starting_node(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
+    Node* get_starting_node(Node* currentNode, StateObj* currentState, NodeDescription& description, ChildIdx& childIdx);
 
     void handle_simulation_return(Node* newNode, NodeBackup nodeBackup);
 
@@ -181,9 +179,9 @@ private:
     void backup_collisions();
 
     /**
-     * @brief split_budget_across_nodes Splits a budget of evaluations across different child nodes.
+     * @brief distribute_mini_batch_across_nodes Splits a budget of evaluations across different child nodes.
      */
-    void split_budget_across_nodes();
+    void distribute_mini_batch_across_nodes();
 
 
     bool single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
@@ -207,7 +205,7 @@ private:
      */
     Node* create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description);
 
-    Node* init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
+    Node* init_child_index(Node* currentNode, StateObj* currentState, NodeDescription& description, ChildIdx& childIdx);
 
     /**
      * @brief handle_returns Checks for possible node return types given nextNode != nullptr.
@@ -227,7 +225,7 @@ private:
      * @param currentNode Current node during forward simulation
      * @return uint_16_t(-1) for no action else custom idx
      */
-    ChildIdx select_enhanced_move(Node* currentNode) const;
+    ChildIdx select_enhanced_move(Node* currentNode, StateObj* currentState) const;
 };
 
 void run_search_thread(SearchThread *t);

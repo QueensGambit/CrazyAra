@@ -42,7 +42,7 @@ size_t SearchThread::get_max_depth() const
 
 SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
     NeuralNetAPIUser(netBatch),
-    rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
+    rootNode(nullptr), rootState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
@@ -58,7 +58,6 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
 {
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
     trajectoryBuffer.reserve(DEPTH_INIT);
-    actionsBuffer.reserve(DEPTH_INIT);
 }
 
 void SearchThread::set_root_node(Node *value)
@@ -137,7 +136,7 @@ void random_playout(Node* currentNode, ChildIdx& childIdx)
     }
 }
 
-Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& description, ChildIdx& childIdx)
+Node* SearchThread::get_starting_node(Node* currentNode, StateObj* currentState, NodeDescription& description, ChildIdx& childIdx)
 {
     size_t depth = get_random_depth();
     for (uint curDepth = 0; curDepth < depth; ++curDepth) {
@@ -149,7 +148,7 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
             break;
         }
         currentNode->unlock();
-        actionsBuffer.emplace_back(currentNode->get_action(childIdx));
+        currentState->do_action(currentNode->get_action(childIdx));
         currentNode = nextNode;
         ++description.depth;
     }
@@ -208,7 +207,7 @@ bool SearchThread::single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childI
     return false;
 }
 
-void SearchThread::split_budget_across_nodes()
+void SearchThread::distribute_mini_batch_across_nodes()
 {
     // initialize node budget
     entryNodes.emplace_back(NodeAndBudget(rootNode, net->get_batch_size(), rootState->clone()));
@@ -273,21 +272,11 @@ NodeBackup SearchThread::handle_returns(Node* currentNode, Node* nextNode, Child
 
 Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description) {
 #ifdef MCTS_STORE_STATES
-    StateObj* newState = currentNode->get_state()->clone();
-#else
-    newState = unique_ptr<StateObj>(currentState->clone());
-    assert(actionsBuffer.size() == description.depth-1);
-    for (Action action : actionsBuffer) {
-        newState->do_action(action);
-    }
+    StateObj* currentState = currentNode->get_state()->clone();
 #endif
-    newState->do_action(currentNode->get_action(childIdx));
+    currentState->do_action(currentNode->get_action(childIdx));
     currentNode->increment_no_visit_idx();
-#ifdef MCTS_STORE_STATES
-    Node* nextNode = add_new_node_to_tree(newState, currentNode, childIdx, description.type);
-#else
-    Node* nextNode = add_new_node_to_tree(newState.get(), currentNode, childIdx, description.type);
-#endif
+    Node* nextNode = add_new_node_to_tree(currentState, currentNode, childIdx, description.type);
     currentNode->unlock();
 
     if (description.type == NODE_NEW_NODE) {
@@ -303,10 +292,10 @@ Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, C
 #else
         // fill a new board in the input_planes vector
         // we shift the index by nbNNInputValues each time
-        newState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_version());
+        currentState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_version());
         // save a reference newly created list in the temporary list for node creation
         // it will later be updated with the evaluation of the NN
-        newNodeSideToMove->add_element(newState->side_to_move());
+        newNodeSideToMove->add_element(currentState->side_to_move());
 #endif
     }
     return nextNode;
@@ -327,21 +316,21 @@ Node* SearchThread::check_next_node(Node* currentNode, StateObj* currentState, N
     return nullptr;
 }
 
-Node* SearchThread::init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx)
+Node* SearchThread::init_child_index(Node* currentNode, StateObj* currentState, NodeDescription& description, ChildIdx& childIdx)
 {
     childIdx = uint16_t(-1);
 
     if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
-        currentNode = get_starting_node(currentNode, description, childIdx);
+        currentNode = get_starting_node(currentNode, currentState, description, childIdx);
         currentNode->lock();
         random_playout(currentNode, childIdx);
         currentNode->unlock();
         return currentNode;
     }
     if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
-        currentNode = get_starting_node(currentNode, description, childIdx);
+        currentNode = get_starting_node(currentNode, currentState, description, childIdx);
         currentNode->lock();
-        childIdx = select_enhanced_move(currentNode);
+        childIdx = select_enhanced_move(currentNode, currentState);
         if (childIdx ==  uint16_t(-1)) {
             random_playout(currentNode, childIdx);
         }
@@ -352,12 +341,13 @@ Node* SearchThread::init_child_index(Node* currentNode, NodeDescription& descrip
 }
 
 
-Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState)
+Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* startingState)
 {
     description.depth = 0;
     Node* nextNode;
     ChildIdx childIdx;
-    currentNode = init_child_index(currentNode, description, childIdx);
+    unique_ptr<StateObj> currentState = unique_ptr<StateObj>(startingState->clone());
+    currentNode = init_child_index(currentNode, currentState.get(), description, childIdx);
 
     while (true) {
         currentNode->lock();
@@ -370,16 +360,14 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node
         nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
 
-        Node* returnNode = check_next_node(currentNode, currentState, nextNode, childIdx, description);
+        Node* returnNode = check_next_node(currentNode, currentState.get(), nextNode, childIdx, description);
 
         if (returnNode != nullptr) {
             return returnNode;
         }
 
         currentNode->unlock();
-#ifndef MCTS_STORE_STATES
-        actionsBuffer.emplace_back(currentNode->get_action(childIdx));
-#endif
+        currentState->do_action(currentNode->get_action(childIdx));
         currentNode = nextNode;
         childIdx = uint16_t(-1);
     }
@@ -496,7 +484,6 @@ void SearchThread::create_mini_batch()
            numTerminalNodes < terminalNodeCache) {
 
         trajectoryBuffer.clear();
-        actionsBuffer.clear();
         Node* newNode = get_new_child_to_evaluate(description, rootNode, rootState);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
@@ -551,14 +538,11 @@ void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>&
     trajectories.clear();
 }
 
-ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
+ChildIdx SearchThread::select_enhanced_move(Node* currentNode, StateObj* currentState) const {
     if (currentNode->is_playout_node() && !currentNode->was_inspected() && !currentNode->is_terminal()) {
 
         // iterate over the current state
-        unique_ptr<StateObj> pos = unique_ptr<StateObj>(rootState->clone());
-        for (Action action : actionsBuffer) {
-            pos->do_action(action);
-        }
+        unique_ptr<StateObj> pos = unique_ptr<StateObj>(currentState->clone());
 
         // make sure a check has been explored at least once
         for (size_t childIdx = currentNode->get_no_visit_idx(); childIdx < currentNode->get_number_child_nodes(); ++childIdx) {
