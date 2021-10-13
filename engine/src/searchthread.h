@@ -63,10 +63,7 @@ private:
     unique_ptr<FixedVector<float>> transpositionValues;
     size_t numTerminalNodes;
 
-//    unique_ptr<FixedVector<Node*>> entryNodes;
-//    unique_ptr<FixedVector<size_t>> budget;
     vector<NodeAndBudget> entryNodes;
-//    vector<size_t> budget;
 
     vector<Trajectory> newTrajectories;
     vector<Trajectory> transpositionTrajectories;
@@ -158,7 +155,7 @@ public:
 
     Node* get_starting_node(Node* currentNode, StateObj* currentState, NodeDescription& description, ChildIdx& childIdx);
 
-    void handle_simulation_return(Node* newNode, NodeBackup nodeBackup);
+    void handle_simulation_return(Node* newNode, NodeBackup nodeBackup, const Trajectory& trajectoryBuffer);
 
     Node* check_next_node(Node* currentNode, StateObj* currentState, Node* nextNode, ChildIdx childIdx, NodeDescription& description);
 

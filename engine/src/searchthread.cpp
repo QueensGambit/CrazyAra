@@ -166,7 +166,7 @@ Node* SearchThread::handle_single_split(NodeAndBudget* curNodeAndBudget, ChildId
     Node* returnNode = check_next_node(currentNode, curState, nextNode, childIdx, description);
 
     if (returnNode != nullptr) {
-        currentNode->unlock();
+//        currentNode->unlock();
         return returnNode;
     }
 
@@ -193,7 +193,7 @@ bool SearchThread::single_split(NodeAndBudget* curNodeAndBudget, ChildIdx childI
     Node* returnNode = handle_single_split(curNodeAndBudget, childIdx, budget, description);
 
     if (returnNode != nullptr) {
-        handle_simulation_return(returnNode, description.type);
+        handle_simulation_return(returnNode, description.type, curNodeAndBudget->curTrajectory);
 
         // issue "budget-1" collision trajectories
         for (Budget idx = 0; idx < budget-1; ++idx) {
@@ -219,7 +219,7 @@ void SearchThread::distribute_mini_batch_across_nodes()
         if (curNodeAndBudget->budget == 1) {
             // extend single trajectory as used to
             Node* newNode = get_new_child_to_evaluate(description, curNodeAndBudget->node, curNodeAndBudget->curState.get());
-            handle_simulation_return(newNode, description.type);
+            handle_simulation_return(newNode, description.type, curNodeAndBudget->curTrajectory);
 
             if (pop_back_and_check(entryNodes)) {
                 return;
@@ -449,7 +449,7 @@ size_t SearchThread::get_avg_depth()
     return size_t(double(depthSum) / (rootNode->get_visits() - visitsPreSearch) + 0.5);
 }
 
-void SearchThread::handle_simulation_return(Node* newNode, NodeBackup nodeBackup)
+void SearchThread::handle_simulation_return(Node* newNode, NodeBackup nodeBackup, const Trajectory& trajectoryBuffer)
 {
     switch (nodeBackup) {
     case NODE_TERMINAL:
@@ -488,7 +488,7 @@ void SearchThread::create_mini_batch()
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
-        handle_simulation_return(newNode, description.type);
+        handle_simulation_return(newNode, description.type, trajectoryBuffer);
     }
 }
 
