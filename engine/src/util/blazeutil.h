@@ -30,6 +30,7 @@
 
 #include <cfloat>
 #include <blaze/Math.h>
+#include<climits>
 #include "randomgen.h"
 
 using namespace std;
@@ -147,19 +148,26 @@ template <typename T, typename U>
 void first_and_second_max(const DynamicVector<T>& v, U endIdx, T& firstMax, T& secondMax, U& firstArg, U& secondArg)
 {
     firstMax = v[0];
-    secondMax = v[0];
+    secondMax = -INT_MAX;
     firstArg = 0;
     secondArg = 0;
     for (size_t idx = 1; idx < endIdx; ++idx) {
         if (v[idx] > firstMax) {
-            // save previous best result as 2nd best
+            // swap with second best result
             secondMax = firstMax;
             secondArg = firstArg;
+
             // update first best result
             firstMax = v[idx];
             firstArg = idx;
         }
+        else if (v[idx] > secondMax) {
+            // update first best result
+            secondMax = v[idx];
+            secondArg = idx;
+        }
     }
+
 }
 
 /**
