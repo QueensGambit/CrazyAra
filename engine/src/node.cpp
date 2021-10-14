@@ -1026,7 +1026,7 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, ChildIdx& bestMove
         mctsPolicy = d->childNumberVisits;
         prune_losses_in_mcts_policy(mctsPolicy);
         ChildIdx bestQIdx = argmax(d->qValues);
-        first_and_second_max(mctsPolicy, d->noVisitIdx, firstMaxValue, secondMaxValue, bestMoveIdx, secondArg);
+        first_and_second_max(mctsPolicy, ChildIdx(d->noVisitIdx), firstMaxValue, secondMaxValue, bestMoveIdx, secondArg);
         if (qVetoDelta != 0 && bestQIdx != bestMoveIdx && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + qVetoDelta && d->childNumberVisits[bestQIdx] > 1) {
             if (mctsPolicy[bestMoveIdx] > mctsPolicy[bestQIdx]) {
                 // swap values of highest qValues and most visits
@@ -1130,7 +1130,7 @@ NodeSplit Node::select_child_nodes(const SearchSettings* searchSettings, uint_fa
 //    ChildIdx firstArg;
 //    ChildIdx secondArg;
 //    cout << "q_u_sum: " << d->qValues + get_current_u_values(searchSettings) << endl;
-    first_and_second_max(q_u_sum, d->noVisitIdx, firstMax, secondMax, nodeSplit.firstArg, nodeSplit.secondArg);
+    first_and_second_max(q_u_sum, ChildIdx(d->noVisitIdx), firstMax, secondMax, nodeSplit.firstArg, nodeSplit.secondArg);
 
 //    cout << "firstMax: " << firstMax << " secondMax: " << secondMax << " diff: " << firstMax - secondMax << endl;
     float firstShare = 0.5 + std::min(float(firstMax - secondMax), 0.5f);

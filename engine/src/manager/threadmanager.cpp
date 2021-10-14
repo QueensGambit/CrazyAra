@@ -127,7 +127,7 @@ bool ThreadManager::early_stopping()
     uint32_t secondMax;
     ChildIdx firstArg;
     ChildIdx secondArg;
-    first_and_second_max(tData->rootNode->get_child_number_visits(), tData->rootNode->get_no_visit_idx(), firstMax, secondMax, firstArg, secondArg);
+    first_and_second_max(tData->rootNode->get_child_number_visits(), ChildIdx(tData->rootNode->get_no_visit_idx()), firstMax, secondMax, firstArg, secondArg);
     const Node* firstNode = tData->rootNode->get_child_node(firstArg);
     const Node* secondNode = tData->rootNode->get_child_node(secondArg);
     if (firstNode != nullptr && firstNode->is_playout_node()) {
