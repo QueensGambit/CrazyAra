@@ -191,7 +191,7 @@ public:
     {
         lock();
         // decrement virtual loss counter
-        update_virtual_loss_counter<false>(childIdx);
+        update_virtual_loss_counter<false>(childIdx, virtualLoss);
 
         valueSum += value;
         ++realVisitsSum;
@@ -481,14 +481,14 @@ public:
     double get_q_sum(ChildIdx childIdx, float virtualLoss) const;
 
     template<bool increment>
-    void update_virtual_loss_counter(ChildIdx childIdx)
+    void update_virtual_loss_counter(ChildIdx childIdx, float virtualLoss)
     {
         if (increment) {
-            ++d->virtualLossCounter[childIdx];
+            d->virtualLossCounter[childIdx] += virtualLoss;
         }
         else {
             assert(d->virtualLossCounter[childIdx] != 0);
-            --d->virtualLossCounter[childIdx];
+            d->virtualLossCounter[childIdx] -= virtualLoss;
         }
     }
 

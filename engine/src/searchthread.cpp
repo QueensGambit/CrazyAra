@@ -160,6 +160,7 @@ Node* SearchThread::handle_single_split(const NodeAndBudget& curNodeAndBudget, C
     Node* currentNode = curNodeAndBudget.node;
     assert(currentNode != nullptr);
     StateObj* curState = curNodeAndBudget.curState.get();
+    assert(curState != nullptr);
 
     currentNode->apply_virtual_loss_to_child(childIdx, budget);
     Node* nextNode = currentNode->get_child_node(childIdx);
@@ -168,20 +169,16 @@ Node* SearchThread::handle_single_split(const NodeAndBudget& curNodeAndBudget, C
     entryNodes.back().curTrajectory = curNodeAndBudget.curTrajectory;
     entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
 
-    cout << "added to entryNodes" << endl;
     Node* returnNode = check_next_node(currentNode, newState, nextNode, childIdx, description);
 
     if (returnNode != nullptr) {
-//        currentNode->unlock();
-//        delete newState;  // a bit ugly :/
+        //        currentNode->unlock();
         return returnNode;
     }
 
     // extend trajectory
     assert(nextNode != nullptr);
-    newState->do_action(currentNode->get_action(childIdx));  // necessary?
-//    entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
-//    entryNodes.back().curTrajectory = curNodeAndBudget.curTrajectory;
+    newState->do_action(currentNode->get_action(childIdx));
 
     return nullptr;
 }
@@ -199,13 +196,13 @@ bool SearchThread::single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx 
     Node* returnNode = handle_single_split(curNodeAndBudget, childIdx, budget, description);
 
     if (returnNode != nullptr) {
-        handle_simulation_return(returnNode, description.type, curNodeAndBudget.curTrajectory);
+        handle_simulation_return(returnNode, description.type, entryNodes.back().curTrajectory);
 
+        assert(entryNodes.back().curTrajectory.size() > 0);
         // issue "budget-1" collision trajectories
         for (Budget idx = 0; idx < budget-1; ++idx) {
-            collisionTrajectories.emplace_back(trajectoryBuffer);
+            collisionTrajectories.emplace_back(entryNodes.back().curTrajectory);
         }
-
         if (pop_back_and_check(entryNodes)) {
             return true;
         }
@@ -218,38 +215,33 @@ void SearchThread::distribute_mini_batch_across_nodes()
     // initialize node budget
     entryNodes.emplace_back(NodeAndBudget(rootNode, net->get_batch_size(), rootState->clone()));
     NodeDescription description;
+    for (int var = 0; var < rootNode->get_no_visit_idx(); ++var) {
+        const int vr = rootNode->get_virtual_loss_counter(var);
+        assert(vr == 0);
+    }
 
     while(!entryNodes.empty()) {
         size_t mainIdx = entryNodes.size() - 1;
-        cout << "Iteration start: Base FEN: " << entryNodes[mainIdx].curState->fen() << endl;
 
         if (entryNodes[mainIdx].budget == 1) {
             // extend single trajectory as used to
             Node* newNode = get_new_child_to_evaluate(description, entryNodes[mainIdx].node, entryNodes[mainIdx].curState.get(), entryNodes[mainIdx].curTrajectory);
             handle_simulation_return(newNode, description.type, entryNodes[mainIdx].curTrajectory);
+        }
+        else {
+            // branch and split
+            NodeSplit nodeSplit = entryNodes[mainIdx].node->select_child_nodes(searchSettings, entryNodes[mainIdx].budget);
 
-            if (pop_back_and_check(entryNodes)) {
-                return;
+            if (nodeSplit.secondBudget > 0) {
+                // 2nd branch
+                assert(nodeSplit.secondArg != nodeSplit.firstArg);
+                single_split(entryNodes[mainIdx], nodeSplit.secondArg, nodeSplit.secondBudget, description);
             }
+
+            // 1st branch
+            single_split(entryNodes[mainIdx], nodeSplit.firstArg, nodeSplit.firstBudget, description); // {
         }
 
-        // branch and split
-        NodeSplit nodeSplit = entryNodes[mainIdx].node->select_child_nodes(searchSettings, entryNodes[mainIdx].budget);
-
-        if (nodeSplit.secondBudget > 0) {
-            // 2nd branch
-            cout << "2nd branch - Child Idx: " << nodeSplit.secondArg << endl;
-            if (single_split(entryNodes[mainIdx], nodeSplit.secondArg, nodeSplit.secondBudget, description)) {
-                cout << "return" << endl;
-                return;
-            }
-        }
-
-        // 1st branch
-        cout << "1st branch - ChildIdx: " << nodeSplit.firstArg << endl;
-        if (single_split(entryNodes[mainIdx], nodeSplit.firstArg, nodeSplit.firstBudget, description)) {
-            return;
-        }
         // delete old main branch
         entryNodes.erase(entryNodes.begin()+mainIdx);
     }
@@ -286,8 +278,6 @@ Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, C
 #ifdef MCTS_STORE_STATES
     StateObj* currentState = currentNode->get_state()->clone();
 #endif
-    cout << "fen: " << currentState->fen() << endl;
-    cout << "action: " << StateConstants::action_to_uci(currentNode->get_action(childIdx), false) << endl;
     currentState->do_action(currentNode->get_action(childIdx));
     currentNode->increment_no_visit_idx();
     Node* nextNode = add_new_node_to_tree(currentState, currentNode, childIdx, description.type);
@@ -509,8 +499,8 @@ void SearchThread::create_mini_batch()
 
 void SearchThread::thread_iteration()
 {
-//    create_mini_batch();
-    distribute_mini_batch_across_nodes();
+    create_mini_batch();
+//    distribute_mini_batch_across_nodes();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
         net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
