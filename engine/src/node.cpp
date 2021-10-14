@@ -1114,10 +1114,11 @@ NodeSplit Node::select_child_nodes(const SearchSettings* searchSettings, uint_fa
     if (!sorted) {
         prepare_node_for_visits();
     }
-    if (d->noVisitIdx == 1) {
-        nodeSplit.only_first(0, budget);
-        return nodeSplit;
-    }
+//    if (d->noVisitIdx == 1) {
+//        nodeSplit.only_first(0, budget);
+//        cout << "firstShare: " << 1 << " split: " << nodeSplit.firstBudget << " | " << nodeSplit.secondBudget << endl;
+//        return nodeSplit;
+//    }
     if (has_forced_win()) {
         nodeSplit.only_first(d->checkmateIdx, budget);
         return nodeSplit;

@@ -160,24 +160,28 @@ Node* SearchThread::handle_single_split(const NodeAndBudget& curNodeAndBudget, C
     Node* currentNode = curNodeAndBudget.node;
     assert(currentNode != nullptr);
     StateObj* curState = curNodeAndBudget.curState.get();
-    entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
 
     currentNode->apply_virtual_loss_to_child(childIdx, budget);
     Node* nextNode = currentNode->get_child_node(childIdx);
     StateObj* newState = curState->clone();
+    entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
+    entryNodes.back().curTrajectory = curNodeAndBudget.curTrajectory;
+    entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
+
+    cout << "added to entryNodes" << endl;
     Node* returnNode = check_next_node(currentNode, newState, nextNode, childIdx, description);
 
     if (returnNode != nullptr) {
 //        currentNode->unlock();
-        delete newState;  // a bit ugly :/
+//        delete newState;  // a bit ugly :/
         return returnNode;
     }
 
     // extend trajectory
     assert(nextNode != nullptr);
     newState->do_action(currentNode->get_action(childIdx));  // necessary?
-    entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
-    entryNodes.back().curTrajectory = curNodeAndBudget.curTrajectory;
+//    entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
+//    entryNodes.back().curTrajectory = curNodeAndBudget.curTrajectory;
 
     return nullptr;
 }
@@ -216,8 +220,8 @@ void SearchThread::distribute_mini_batch_across_nodes()
     NodeDescription description;
 
     while(!entryNodes.empty()) {
-        cout << "Iteration start" << endl;
         size_t mainIdx = entryNodes.size() - 1;
+        cout << "Iteration start: Base FEN: " << entryNodes[mainIdx].curState->fen() << endl;
 
         if (entryNodes[mainIdx].budget == 1) {
             // extend single trajectory as used to
@@ -234,12 +238,15 @@ void SearchThread::distribute_mini_batch_across_nodes()
 
         if (nodeSplit.secondBudget > 0) {
             // 2nd branch
+            cout << "2nd branch - Child Idx: " << nodeSplit.secondArg << endl;
             if (single_split(entryNodes[mainIdx], nodeSplit.secondArg, nodeSplit.secondBudget, description)) {
+                cout << "return" << endl;
                 return;
             }
         }
 
         // 1st branch
+        cout << "1st branch - ChildIdx: " << nodeSplit.firstArg << endl;
         if (single_split(entryNodes[mainIdx], nodeSplit.firstArg, nodeSplit.firstBudget, description)) {
             return;
         }
@@ -502,8 +509,8 @@ void SearchThread::create_mini_batch()
 
 void SearchThread::thread_iteration()
 {
-    create_mini_batch();
-//    distribute_mini_batch_across_nodes();
+//    create_mini_batch();
+    distribute_mini_batch_across_nodes();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
         net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
