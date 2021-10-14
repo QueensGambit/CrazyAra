@@ -1008,7 +1008,7 @@ Node* Node::get_child_node(ChildIdx childIdx)
     return d->childNodes[childIdx].get();
 }
 
-void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const
+void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, ChildIdx& bestMoveIdx, float qValueWeight, float qVetoDelta) const
 {
     // fill only the winning moves in case of a known win
     if (d->nodeType == WIN) {
@@ -1020,12 +1020,12 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveId
         mcts_policy_based_on_losses(mctsPolicy);
     }
     else if (qValueWeight > 0) {
-        size_t secondArg;
+        ChildIdx secondArg;
         double firstMaxValue;
         double secondMaxValue;
         mctsPolicy = d->childNumberVisits;
         prune_losses_in_mcts_policy(mctsPolicy);
-        size_t bestQIdx = argmax(d->qValues);
+        ChildIdx bestQIdx = argmax(d->qValues);
         first_and_second_max(mctsPolicy, d->noVisitIdx, firstMaxValue, secondMaxValue, bestMoveIdx, secondArg);
         if (qVetoDelta != 0 && bestQIdx != bestMoveIdx && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + qVetoDelta && d->childNumberVisits[bestQIdx] > 1) {
             if (mctsPolicy[bestMoveIdx] > mctsPolicy[bestQIdx]) {
@@ -1083,7 +1083,7 @@ size_t get_best_action_index(const Node *curNode, bool fast, float qValueWeight,
         return argmax(curNode->get_child_number_visits());
     }
     DynamicVector<double> mctsPolicy(curNode->get_number_child_nodes());
-    size_t bestMoveIdx;
+    ChildIdx bestMoveIdx;
     curNode->get_mcts_policy(mctsPolicy, bestMoveIdx, qValueWeight, qVetoDelta);
     return bestMoveIdx;
 }

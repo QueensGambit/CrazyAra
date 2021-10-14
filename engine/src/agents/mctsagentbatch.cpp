@@ -113,7 +113,7 @@ void MCTSAgentBatch::evaluate_board_state()
             eval.policyProbSmall[0] = 1.0f;
         }
         else {
-            size_t bestMoveIdx;
+            ChildIdx bestMoveIdx;
             rootNode->get_mcts_policy(eval.policyProbSmall, bestMoveIdx, searchSettings->qValueWeight, searchSettings->qVetoDelta);
         }
        

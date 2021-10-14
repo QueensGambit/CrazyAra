@@ -143,8 +143,8 @@ vector<size_t> argsort(const DynamicVector<T>& v)
  * @param firstArg Index for max element
  * @param secondArg Index for 2nd max element
  */
-template <typename T>
-void first_and_second_max(const DynamicVector<T>& v, size_t endIdx, T& firstMax, T& secondMax, size_t& firstArg, size_t& secondArg)
+template <typename T, typename U>
+void first_and_second_max(const DynamicVector<T>& v, U endIdx, T& firstMax, T& secondMax, U& firstArg, U& secondArg)
 {
     firstMax = v[0];
     secondMax = v[0];
