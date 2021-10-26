@@ -218,6 +218,10 @@ void SearchThread::distribute_mini_batch_across_nodes()
     for (int var = 0; var < rootNode->get_no_visit_idx(); ++var) {
         const int vr = rootNode->get_virtual_loss_counter(var);
         assert(vr == 0);
+        if (vr != 0) {
+            cerr << "vr: " << vr << endl;
+            exit(EXIT_FAILURE);
+        }
     }
 
     while(!entryNodes.empty()) {
@@ -499,8 +503,26 @@ void SearchThread::create_mini_batch()
 
 void SearchThread::thread_iteration()
 {
-    create_mini_batch();
-//    distribute_mini_batch_across_nodes();
+    cout << "-------------------------------------------------------" << endl;
+//    create_mini_batch();
+    distribute_mini_batch_across_nodes();
+    cout << "newTrajectories lengths: " << newTrajectories.size() << endl;
+    for (int var = 0; var < newTrajectories.size(); ++var) {
+        cout << newTrajectories[var].size() << " ";
+        if (newTrajectories[var].front().node != rootNode) {
+            cerr << "rootNode not found!" << rootNode << endl;
+        }
+    }
+    cout << endl;
+    cout << "collisionTrajectories lengths: " << collisionTrajectories.size() << endl;
+    for (int var = 0; var < collisionTrajectories.size(); ++var) {
+        cout << collisionTrajectories[var].size() << " ";
+        if (collisionTrajectories[var].front().node != rootNode) {
+            cerr << "rootNode not found!" << rootNode << endl;
+        }
+    }
+    cout << endl;
+
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
         net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
@@ -509,6 +531,7 @@ void SearchThread::thread_iteration()
 #endif
     backup_value_outputs();
     backup_collisions();
+    rootNode->print_node_statistics(rootState, {});
 }
 
 void run_search_thread(SearchThread *t)
