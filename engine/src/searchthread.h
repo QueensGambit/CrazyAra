@@ -181,7 +181,7 @@ private:
     void distribute_mini_batch_across_nodes();
 
 
-    bool single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description);
+    void single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description);
 
     Node* handle_single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description);
 

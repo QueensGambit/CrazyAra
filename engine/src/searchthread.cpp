@@ -184,14 +184,7 @@ Node* SearchThread::handle_single_split(size_t mainIdx, ChildIdx childIdx, Budge
     return nullptr;
 }
 
-bool pop_back_and_check(vector<NodeAndBudget>& entryNodes)
-{
-    // drop last item
-    entryNodes.pop_back();
-    return entryNodes.empty();
-}
-
-bool SearchThread::single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description)
+void SearchThread::single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description)
 {
     assert(budget > 0);
     Node* returnNode = handle_single_split(mainIdx, childIdx, budget, description);
@@ -204,11 +197,8 @@ bool SearchThread::single_split(size_t mainIdx, ChildIdx childIdx, Budget budget
         for (Budget idx = 0; idx < budget-1; ++idx) {
             collisionTrajectories.emplace_back(entryNodes.back().curTrajectory);
         }
-        if (pop_back_and_check(entryNodes)) {
-            return true;
-        }
+        entryNodes.pop_back();
     }
-    return false;
 }
 
 void SearchThread::distribute_mini_batch_across_nodes()
