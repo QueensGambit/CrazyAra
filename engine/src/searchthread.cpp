@@ -155,20 +155,21 @@ Node* SearchThread::get_starting_node(Node* currentNode, StateObj* currentState,
     return currentNode;
 }
 
-Node* SearchThread::handle_single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description)
+Node* SearchThread::handle_single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description)
 {
-    Node* currentNode = curNodeAndBudget.node;
+    Node* currentNode = entryNodes[mainIdx].node;
     assert(currentNode != nullptr);
-    StateObj* curState = curNodeAndBudget.curState.get();
+    StateObj* curState = entryNodes[mainIdx].curState.get();
     assert(curState != nullptr);
 
     currentNode->apply_virtual_loss_to_child(childIdx, budget);
     Node* nextNode = currentNode->get_child_node(childIdx);
     StateObj* newState = curState->clone();
     entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
-    entryNodes.back().curTrajectory = curNodeAndBudget.curTrajectory;
+    entryNodes.back().curTrajectory = entryNodes[mainIdx].curTrajectory;
     entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
 
+    assert(entryNodes.back().curTrajectory.front().node == rootNode);
     Node* returnNode = check_next_node(currentNode, newState, nextNode, childIdx, description);
 
     if (returnNode != nullptr) {
@@ -190,10 +191,10 @@ bool pop_back_and_check(vector<NodeAndBudget>& entryNodes)
     return entryNodes.empty();
 }
 
-bool SearchThread::single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description)
+bool SearchThread::single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description)
 {
     assert(budget > 0);
-    Node* returnNode = handle_single_split(curNodeAndBudget, childIdx, budget, description);
+    Node* returnNode = handle_single_split(mainIdx, childIdx, budget, description);
 
     if (returnNode != nullptr) {
         handle_simulation_return(returnNode, description.type, entryNodes.back().curTrajectory);
@@ -215,14 +216,6 @@ void SearchThread::distribute_mini_batch_across_nodes()
     // initialize node budget
     entryNodes.emplace_back(NodeAndBudget(rootNode, net->get_batch_size(), rootState->clone()));
     NodeDescription description;
-    for (int var = 0; var < rootNode->get_no_visit_idx(); ++var) {
-        const int vr = rootNode->get_virtual_loss_counter(var);
-        assert(vr == 0);
-        if (vr != 0) {
-            cerr << "vr: " << vr << endl;
-            exit(EXIT_FAILURE);
-        }
-    }
 
     while(!entryNodes.empty()) {
         size_t mainIdx = entryNodes.size() - 1;
@@ -236,14 +229,15 @@ void SearchThread::distribute_mini_batch_across_nodes()
             // branch and split
             NodeSplit nodeSplit = entryNodes[mainIdx].node->select_child_nodes(searchSettings, entryNodes[mainIdx].budget);
 
+            assert(entryNodes[mainIdx].node != nullptr);
             if (nodeSplit.secondBudget > 0) {
                 // 2nd branch
                 assert(nodeSplit.secondArg != nodeSplit.firstArg);
-                single_split(entryNodes[mainIdx], nodeSplit.secondArg, nodeSplit.secondBudget, description);
+                single_split(mainIdx, nodeSplit.secondArg, nodeSplit.secondBudget, description);
             }
 
             // 1st branch
-            single_split(entryNodes[mainIdx], nodeSplit.firstArg, nodeSplit.firstBudget, description); // {
+            single_split(mainIdx, nodeSplit.firstArg, nodeSplit.firstBudget, description);
         }
 
         // delete old main branch
@@ -328,23 +322,23 @@ Node* SearchThread::init_child_index(Node* currentNode, StateObj* currentState, 
 {
     childIdx = uint16_t(-1);
 
-    if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
-        currentNode = get_starting_node(currentNode, currentState, description, childIdx);
-        currentNode->lock();
-        random_playout(currentNode, childIdx);
-        currentNode->unlock();
-        return currentNode;
-    }
-    if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
-        currentNode = get_starting_node(currentNode, currentState, description, childIdx);
-        currentNode->lock();
-        childIdx = select_enhanced_move(currentNode, currentState);
-        if (childIdx ==  uint16_t(-1)) {
-            random_playout(currentNode, childIdx);
-        }
-        currentNode->unlock();
-        return currentNode;
-    }
+//    if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
+//        currentNode = get_starting_node(currentNode, currentState, description, childIdx);
+//        currentNode->lock();
+//        random_playout(currentNode, childIdx);
+//        currentNode->unlock();
+//        return currentNode;
+//    }
+//    if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
+//        currentNode = get_starting_node(currentNode, currentState, description, childIdx);
+//        currentNode->lock();
+//        childIdx = select_enhanced_move(currentNode, currentState);
+//        if (childIdx ==  uint16_t(-1)) {
+//            random_playout(currentNode, childIdx);
+//        }
+//        currentNode->unlock();
+//        return currentNode;
+//    }
     return currentNode;
 }
 
@@ -503,25 +497,8 @@ void SearchThread::create_mini_batch()
 
 void SearchThread::thread_iteration()
 {
-    cout << "-------------------------------------------------------" << endl;
 //    create_mini_batch();
     distribute_mini_batch_across_nodes();
-    cout << "newTrajectories lengths: " << newTrajectories.size() << endl;
-    for (int var = 0; var < newTrajectories.size(); ++var) {
-        cout << newTrajectories[var].size() << " ";
-        if (newTrajectories[var].front().node != rootNode) {
-            cerr << "rootNode not found!" << rootNode << endl;
-        }
-    }
-    cout << endl;
-    cout << "collisionTrajectories lengths: " << collisionTrajectories.size() << endl;
-    for (int var = 0; var < collisionTrajectories.size(); ++var) {
-        cout << collisionTrajectories[var].size() << " ";
-        if (collisionTrajectories[var].front().node != rootNode) {
-            cerr << "rootNode not found!" << rootNode << endl;
-        }
-    }
-    cout << endl;
 
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
@@ -531,7 +508,6 @@ void SearchThread::thread_iteration()
 #endif
     backup_value_outputs();
     backup_collisions();
-    rootNode->print_node_statistics(rootState, {});
 }
 
 void run_search_thread(SearchThread *t)

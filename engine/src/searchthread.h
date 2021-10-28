@@ -181,9 +181,9 @@ private:
     void distribute_mini_batch_across_nodes();
 
 
-    bool single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
+    bool single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description);
 
-    Node* handle_single_split(const NodeAndBudget& curNodeAndBudget, ChildIdx childIdx, Budget budget, NodeDescription& description);
+    Node* handle_single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description);
 
     /**
      * @brief get_new_child_to_evaluate Traverses the search tree beginning from the given starting node and returns the parent node and child index for the next node to expand.
