@@ -127,7 +127,7 @@ void random_playout(Node* currentNode, ChildIdx& childIdx)
             childIdx = idx;
             return;
         }
-        childIdx = uint16_t(-1);
+        childIdx = NONE_IDX;
     }
     else {
         childIdx = min(size_t(currentNode->get_no_visit_idx()), currentNode->get_number_child_nodes()-1);
@@ -202,11 +202,26 @@ void SearchThread::single_split(size_t mainIdx, ChildIdx childIdx, Budget budget
     }
 }
 
+void SearchThread::handle_stochastic_exploration(NodeDescription& description)
+{
+    for (size_t idx = 0; idx < net->get_batch_size(); ++idx) {
+        ChildIdx childIdx;
+        Node* currentNode = init_child_index(rootNode, description, childIdx);
+        if (childIdx != NONE_IDX) {
+            entryNodes[0].budget--;
+            Trajectory trajectory;
+            Node* newNode = get_new_child_to_evaluate(description, currentNode, stateStore.back().get(), trajectory, childIdx);
+            handle_simulation_return(newNode, description.type, trajectory);
+        }
+    }
+}
+
 void SearchThread::distribute_mini_batch_across_nodes()
 {
     // initialize node budget
     entryNodes.emplace_back(NodeAndBudget(rootNode, net->get_batch_size(), rootState->clone()));
     NodeDescription description;
+    handle_stochastic_exploration(description);
 
     while(!entryNodes.empty()) {
         size_t mainIdx = entryNodes.size() - 1;
@@ -309,44 +324,44 @@ Node* SearchThread::check_next_node(Node* currentNode, StateObj* currentState, N
     return nullptr;
 }
 
-Node* SearchThread::init_child_index(Node* currentNode, StateObj* currentState, NodeDescription& description, ChildIdx& childIdx)
+Node* SearchThread::init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx)
 {
-    childIdx = uint16_t(-1);
+    childIdx = NONE_IDX;
 
-//    if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
-//        currentNode = get_starting_node(currentNode, currentState, description, childIdx);
-//        currentNode->lock();
-//        random_playout(currentNode, childIdx);
-//        currentNode->unlock();
-//        return currentNode;
-//    }
-//    if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
-//        currentNode = get_starting_node(currentNode, currentState, description, childIdx);
-//        currentNode->lock();
-//        childIdx = select_enhanced_move(currentNode, currentState);
-//        if (childIdx ==  uint16_t(-1)) {
-//            random_playout(currentNode, childIdx);
-//        }
-//        currentNode->unlock();
-//        return currentNode;
-//    }
+    if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
+        stateStore.emplace_back(unique_ptr<StateObj>(rootState->clone()));
+        currentNode = get_starting_node(currentNode, stateStore.back().get(), description, childIdx);
+        currentNode->lock();
+        random_playout(currentNode, childIdx);
+        currentNode->unlock();
+        return currentNode;
+    }
+    if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
+        stateStore.emplace_back(unique_ptr<StateObj>(rootState->clone()));
+        currentNode = get_starting_node(currentNode, stateStore.back().get(), description, childIdx);
+        currentNode->lock();
+        childIdx = select_enhanced_move(currentNode, stateStore.back().get());
+        if (childIdx == NONE_IDX) {
+            random_playout(currentNode, childIdx);
+        }
+        currentNode->unlock();
+        return currentNode;
+    }
     return currentNode;
 }
 
 
-Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState, Trajectory& trajectoryBuffer)
+Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState, Trajectory& trajectoryBuffer, ChildIdx childIdx)
 {
     description.depth = 0;
     Node* nextNode;
-    ChildIdx childIdx = uint16_t(-1);
-//    unique_ptr<StateObj> currentState = unique_ptr<StateObj>(startingState->clone());
-//    currentNode = init_child_index(currentNode, currentState.get(), description, childIdx);
 
     while (true) {
         currentNode->lock();
-        if (childIdx == uint16_t(-1)) {
+        if (childIdx == NONE_IDX) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
+
         currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
         trajectoryBuffer.emplace_back(NodeAndIdx(currentNode, childIdx));
 
@@ -362,7 +377,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node
         currentNode->unlock();
         currentState->do_action(currentNode->get_action(childIdx));
         currentNode = nextNode;
-        childIdx = uint16_t(-1);
+        childIdx = NONE_IDX;
     }
 }
 
@@ -553,7 +568,7 @@ ChildIdx SearchThread::select_enhanced_move(Node* currentNode, StateObj* current
         // a full loop has been done
         currentNode->set_as_inspected();
     }
-    return uint16_t(-1);
+    return NONE_IDX;
 }
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB)

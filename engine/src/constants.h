@@ -95,6 +95,7 @@ const string engineAuthors = "Johannes Czech and CrazyAra developers (see AUTHOR
 #define TIME_PROP_MOVES_TO_GO 14
 #define TIME_INCREMENT_FACTOR 0.7f
 #define TIME_BUFFER_FACTOR 30
+#define NONE_IDX uint16_t(-1)
 
 #ifndef MODE_POMMERMAN
 #define TERMINAL_NODE_CACHE 8192

@@ -162,6 +162,13 @@ public:
 
     Node* check_next_node(Node* currentNode, StateObj* currentState, Node* nextNode, ChildIdx childIdx, NodeDescription& description);
 
+    /**
+     * @brief handle_stochastic_exploration Runs multiple disconnected trajecotries using stochastic selection based on searchSettings->epsilonGreedyCounter
+     * and searchSettings->epsilonChecksCounter
+     * @param description Description struct
+     */
+    void handle_stochastic_exploration(NodeDescription& description);
+
 private:
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
@@ -194,7 +201,7 @@ private:
      * @param CurrentNode Node where to start the trajectory
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState, Trajectory& trajectoryBuffer);
+    Node* get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState, Trajectory& trajectoryBuffer, ChildIdx childIdx=NONE_IDX);
 
     /**
      * @brief create_new_node Creates a new node and sets it corresponding inputPlanes and sideToMove
@@ -205,7 +212,7 @@ private:
      */
     Node* create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description);
 
-    Node* init_child_index(Node* currentNode, StateObj* currentState, NodeDescription& description, ChildIdx& childIdx);
+    Node* init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
 
     /**
      * @brief handle_returns Checks for possible node return types given nextNode != nullptr.
