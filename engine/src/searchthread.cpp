@@ -174,7 +174,7 @@ Node* SearchThread::handle_single_split(size_t mainIdx, ChildIdx childIdx, Budge
     Node* returnNode = check_next_node(currentNode, newState, nextNode, childIdx, description);
 
     if (returnNode != nullptr) {
-        //        currentNode->unlock();
+        currentNode->unlock();
         return returnNode;
     }
 
