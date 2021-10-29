@@ -159,13 +159,14 @@ Node* SearchThread::handle_single_split(size_t mainIdx, ChildIdx childIdx, Budge
 {
     Node* currentNode = entryNodes[mainIdx].node;
     assert(currentNode != nullptr);
-    StateObj* curState = entryNodes[mainIdx].curState.get();
+    StateObj* curState = entryNodes[mainIdx].curState;
     assert(curState != nullptr);
 
     currentNode->apply_virtual_loss_to_child(childIdx, budget);
     Node* nextNode = currentNode->get_child_node(childIdx);
-    StateObj* newState = curState->clone();
-    entryNodes.emplace_back(NodeAndBudget(nextNode, budget, newState));
+    stateStore.emplace_back(unique_ptr<StateObj>(curState->clone()));
+    StateObj* newState = stateStore.back().get();
+    entryNodes.emplace_back(NodeAndBudget(nextNode, budget, stateStore.back().get()));
     entryNodes.back().curTrajectory = entryNodes[mainIdx].curTrajectory;
     entryNodes.back().curTrajectory.emplace_back(NodeAndIdx(currentNode, childIdx));
 
@@ -212,7 +213,7 @@ void SearchThread::distribute_mini_batch_across_nodes()
 
         if (entryNodes[mainIdx].budget == 1) {
             // extend single trajectory as used to
-            Node* newNode = get_new_child_to_evaluate(description, entryNodes[mainIdx].node, entryNodes[mainIdx].curState.get(), entryNodes[mainIdx].curTrajectory);
+            Node* newNode = get_new_child_to_evaluate(description, entryNodes[mainIdx].node, entryNodes[mainIdx].curState, entryNodes[mainIdx].curTrajectory);
             handle_simulation_return(newNode, description.type, entryNodes[mainIdx].curTrajectory);
         }
         else {
@@ -333,13 +334,13 @@ Node* SearchThread::init_child_index(Node* currentNode, StateObj* currentState, 
 }
 
 
-Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* startingState, Trajectory& trajectoryBuffer)
+Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState, Trajectory& trajectoryBuffer)
 {
     description.depth = 0;
     Node* nextNode;
-    ChildIdx childIdx;
-    unique_ptr<StateObj> currentState = unique_ptr<StateObj>(startingState->clone());
-    currentNode = init_child_index(currentNode, currentState.get(), description, childIdx);
+    ChildIdx childIdx = uint16_t(-1);
+//    unique_ptr<StateObj> currentState = unique_ptr<StateObj>(startingState->clone());
+//    currentNode = init_child_index(currentNode, currentState.get(), description, childIdx);
 
     while (true) {
         currentNode->lock();
@@ -352,7 +353,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node
         nextNode = currentNode->get_child_node(childIdx);
         description.depth++;
 
-        Node* returnNode = check_next_node(currentNode, currentState.get(), nextNode, childIdx, description);
+        Node* returnNode = check_next_node(currentNode, currentState, nextNode, childIdx, description);
 
         if (returnNode != nullptr) {
             return returnNode;
@@ -498,6 +499,7 @@ void SearchThread::thread_iteration()
 #endif
     backup_value_outputs();
     backup_collisions();
+    stateStore.clear();
 }
 
 void run_search_thread(SearchThread *t)

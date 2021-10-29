@@ -69,6 +69,9 @@ private:
     vector<Trajectory> transpositionTrajectories;
     vector<Trajectory> collisionTrajectories;
 
+    vector<unique_ptr<StateObj>> stateStore;
+
+
     Trajectory trajectoryBuffer;
 
     bool isRunning;

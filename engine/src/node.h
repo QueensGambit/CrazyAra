@@ -78,10 +78,10 @@ struct NodeSplit {
 struct NodeAndBudget {
     Node* node;
     uint_fast16_t budget;
-    unique_ptr<StateObj> curState;
+    StateObj* curState;
     Trajectory curTrajectory;
     NodeAndBudget(Node* node, uint_fast16_t budget, StateObj* state) :
-        node(node), budget(budget), curState(unique_ptr<StateObj>(state)) {}
+        node(node), budget(budget), curState(state) {}
 };
 
 class Node
