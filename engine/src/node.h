@@ -196,7 +196,7 @@ public:
         valueSum += value;
         ++realVisitsSum;
 
-        if (d->childNumberVisits[childIdx] == virtualLoss) {
+        if (d->qValues[childIdx] == Q_INIT) {
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
@@ -204,7 +204,7 @@ public:
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
-            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+            d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx]-1) + value) / d->childNumberVisits[childIdx];
             assert(!isnan(d->qValues[childIdx]));
         }
 
