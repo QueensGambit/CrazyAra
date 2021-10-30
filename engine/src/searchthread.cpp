@@ -174,7 +174,6 @@ Node* SearchThread::handle_single_split(size_t mainIdx, ChildIdx childIdx, Budge
     Node* returnNode = check_next_node(currentNode, newState, nextNode, childIdx, description);
 
     if (returnNode != nullptr) {
-        currentNode->unlock();
         return returnNode;
     }
 
@@ -233,6 +232,7 @@ void SearchThread::distribute_mini_batch_across_nodes()
         }
         else {
             // branch and split
+            entryNodes[mainIdx].node->lock();
             NodeSplit nodeSplit = entryNodes[mainIdx].node->select_child_nodes(searchSettings, entryNodes[mainIdx].budget);
 
             assert(entryNodes[mainIdx].node != nullptr);
@@ -244,11 +244,13 @@ void SearchThread::distribute_mini_batch_across_nodes()
 
             // 1st branch
             single_split(mainIdx, nodeSplit.firstArg, nodeSplit.firstBudget, description);
+            entryNodes[mainIdx].node->unlock();
         }
 
         // delete old main branch
         entryNodes.erase(entryNodes.begin()+mainIdx);
     }
+
 }
 
 NodeBackup SearchThread::handle_returns(Node* currentNode, Node* nextNode, ChildIdx childIdx) {
@@ -285,7 +287,6 @@ Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, C
     currentState->do_action(currentNode->get_action(childIdx));
     currentNode->increment_no_visit_idx();
     Node* nextNode = add_new_node_to_tree(currentState, currentNode, childIdx, description.type);
-    currentNode->unlock();
 
     if (description.type == NODE_NEW_NODE) {
 #ifdef SEARCH_UCT
@@ -318,7 +319,6 @@ Node* SearchThread::check_next_node(Node* currentNode, StateObj* currentState, N
 
     description.type = handle_returns(currentNode, nextNode, childIdx);
     if (description.type != NODE_UNKNOWN) {
-        currentNode->unlock();
         return nextNode;
     }
     return nullptr;
@@ -371,6 +371,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node
         Node* returnNode = check_next_node(currentNode, currentState, nextNode, childIdx, description);
 
         if (returnNode != nullptr) {
+            currentNode->unlock();
             return returnNode;
         }
 
