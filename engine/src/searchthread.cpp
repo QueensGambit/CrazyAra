@@ -190,6 +190,9 @@ void SearchThread::single_split(size_t mainIdx, ChildIdx childIdx, Budget budget
     Node* returnNode = handle_single_split(mainIdx, childIdx, budget, description);
 
     if (returnNode != nullptr) {
+        if (description.type == NODE_TERMINAL) {
+            entryNodes[mainIdx].node->unlock();
+        }
         handle_simulation_return(returnNode, description.type, entryNodes.back().curTrajectory);
 
         assert(entryNodes.back().curTrajectory.size() > 0);
