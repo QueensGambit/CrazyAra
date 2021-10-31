@@ -288,6 +288,7 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*(dynamic_cast<ChessBatchStream*>(calibrationStream.get())), 0, "model", "data"));
 #endif
         config->setInt8Calibrator(calibrator.get());
+        // samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f); -> unavailable for TensorRT >= 8.2.0.6
         break;
     }
 }
