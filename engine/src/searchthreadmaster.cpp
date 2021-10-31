@@ -76,7 +76,6 @@ SearchThreadMaster::SearchThreadMaster(NeuralNetAPI *netBatch, int numberChildTh
 void SearchThreadMaster::thread_iteration()
 {
     launch_child_threads();
-    wait_for_child_threads_to_finish();
 #ifndef SEARCH_UCT
     net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
 #endif
