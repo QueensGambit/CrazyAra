@@ -50,7 +50,7 @@ NeuralNetAPIUser::NeuralNetAPIUser(NeuralNetAPI *net):
 #else
     inputPlanes = new float[net->get_batch_size() * net->get_nb_input_values_total()];
     valueOutputs = new float[net->get_batch_size()];
-    probOutputs = new float[net->get_policy_output_length()];
+    probOutputs = new float[net->get_batch_size() * net->get_nb_policy_values()];
 #ifdef DYNAMIC_NN_ARCH
     if (net->has_auxiliary_outputs()) {
         auxiliaryOutputs = new float[net->get_batch_size() * net->get_nb_auxiliary_outputs()];
