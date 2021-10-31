@@ -611,7 +611,7 @@ TEST_CASE("Blaze: first_and_second_max()"){
     REQUIRE(secondArg == 1);
 
     DynamicVector<float> list2 = {99, 3, 1, 3, 42, 8, 7};
-    first_and_second_max(list, list2.size(), firstMax, secondMax, firstArg, secondArg);
+    first_and_second_max(list2, list2.size(), firstMax, secondMax, firstArg, secondArg);
 
     REQUIRE(firstMax == 99);
     REQUIRE(secondMax == 42);
