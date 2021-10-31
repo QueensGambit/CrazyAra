@@ -51,9 +51,28 @@ struct NodeDescription
     size_t depth;
 };
 
-class SearchThread : NeuralNetAPIUser
+struct NeuralNetData
+{
+    // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
+    float* inputPlanes;
+    // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
+    // sufficient memory according to the batch-size will be allocated in the constructor
+    float* valueOutputs;
+    float* probOutputs;
+    float* auxiliaryOutputs;
+
+    NeuralNetAPI* net;
+    size_t nbSamples;
+    NeuralNetData(float* inputPlanes, float* valueOutputs, float* probOutputs, float* auxiliaryOutputs,
+                  NeuralNetAPI* net, size_t nbSamples):
+        inputPlanes(inputPlanes), valueOutputs(valueOutputs), probOutputs(probOutputs),
+        auxiliaryOutputs(auxiliaryOutputs), net(net), nbSamples(nbSamples) {}
+};
+
+class SearchThread //: NeuralNetAPIUser
 {
 private:
+    NeuralNetData* nnData;
     Node* rootNode;
     StateObj* rootState;
 
@@ -85,6 +104,8 @@ private:
     size_t visitsPreSearch;
     const uint_fast32_t terminalNodeCache;
     bool reachedTablebases;
+    size_t offset;
+    size_t budget;
 public:
     /**
      * @brief SearchThread
@@ -92,7 +113,7 @@ public:
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(NeuralNetAPI* netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(NeuralNetData* nnData, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
@@ -169,7 +190,6 @@ public:
      */
     void handle_stochastic_exploration(NodeDescription& description);
 
-private:
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
      */
@@ -185,6 +205,7 @@ private:
      */
     void backup_collisions();
 
+private:
     /**
      * @brief distribute_mini_batch_across_nodes Splits a budget of evaluations across different child nodes.
      */
@@ -212,7 +233,7 @@ private:
      */
     Node* create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description);
 
-    Node* init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
+    Node* init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx, StateObj* state);
 
     /**
      * @brief handle_returns Checks for possible node return types given nextNode != nullptr.
@@ -235,7 +256,8 @@ private:
     ChildIdx select_enhanced_move(Node* currentNode, StateObj* currentState) const;
 };
 
-void run_search_thread(SearchThread *t);
+void run_create_mini_batch(SearchThread* t);
+void run_backup_values(SearchThread* t);
 
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB);
 void node_post_process_policy(Node *node, float temperature, const SearchSettings* searchSettings);

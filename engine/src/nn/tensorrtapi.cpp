@@ -154,7 +154,7 @@ void TensorrtAPI::bind_executor()
     memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
 #endif
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
-    memorySizes[idxPolicyOutput] = get_policy_output_length() * sizeof(float);
+    memorySizes[idxPolicyOutput] = batchSize * get_nb_policy_values() * sizeof(float);
 #ifdef DYNAMIC_NN_ARCH
     if (nnDesign.hasAuxiliaryOutputs) {
         memorySizes[idxAuxiliaryOutput] = batchSize * get_nb_auxiliary_outputs() * sizeof (float);
@@ -288,7 +288,6 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*(dynamic_cast<ChessBatchStream*>(calibrationStream.get())), 0, "model", "data"));
 #endif
         config->setInt8Calibrator(calibrator.get());
-        samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
         break;
     }
 }

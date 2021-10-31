@@ -48,7 +48,7 @@ MCTSAgentBatch::MCTSAgentBatch(NeuralNetAPI *netSingle, vector<unique_ptr<Neural
 
 MCTSAgentBatch::~MCTSAgentBatch()
 {
-    for (auto searchThread : searchThreads) {
+    for (auto searchThread : searchThreadsMaster) {
         delete searchThread;
     }
 }

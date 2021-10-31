@@ -40,19 +40,19 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    NeuralNetAPIUser(netBatch),
+SearchThread::SearchThread(NeuralNetData* nnData, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+    nnData(nnData),
     rootNode(nullptr), rootState(nullptr),  // will be be set via setter methods
-    newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
-    newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
-    transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
+    newNodes(make_unique<FixedVector<Node*>>(nnData->nbSamples)),
+    newNodeSideToMove(make_unique<FixedVector<SideToMove>>(nnData->nbSamples)),
+    transpositionValues(make_unique<FixedVector<float>>(nnData->nbSamples*2)),
     numTerminalNodes(0),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
     #ifdef MCTS_SINGLE_PLAYER
     terminalNodeCache(1),
     #else
-    terminalNodeCache(searchSettings->batchSize*2),
+    terminalNodeCache(nnData->nbSamples*2),
     #endif
     reachedTablebases(false)
 {
@@ -206,9 +206,10 @@ void SearchThread::single_split(size_t mainIdx, ChildIdx childIdx, Budget budget
 
 void SearchThread::handle_stochastic_exploration(NodeDescription& description)
 {
-    for (size_t idx = 0; idx < net->get_batch_size(); ++idx) {
+    for (size_t idx = 0; idx < nnData->nbSamples; ++idx) {
         ChildIdx childIdx;
-        Node* currentNode = init_child_index(rootNode, description, childIdx);
+        stateStore.emplace_back(unique_ptr<StateObj>(rootState->clone()));
+        Node* currentNode = init_child_index(rootNode, description, childIdx, stateStore.back().get());
         if (childIdx != NONE_IDX) {
             entryNodes[0].budget--;
             Trajectory trajectory;
@@ -221,7 +222,7 @@ void SearchThread::handle_stochastic_exploration(NodeDescription& description)
 void SearchThread::distribute_mini_batch_across_nodes()
 {
     // initialize node budget
-    entryNodes.emplace_back(NodeAndBudget(rootNode, net->get_batch_size(), rootState->clone()));
+    entryNodes.emplace_back(NodeAndBudget(rootNode, nnData->nbSamples, rootState->clone()));
     NodeDescription description;
     handle_stochastic_exploration(description);
 
@@ -304,7 +305,7 @@ Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, C
 #else
         // fill a new board in the input_planes vector
         // we shift the index by nbNNInputValues each time
-        currentState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_version());
+        currentState->get_state_planes(true, nnData->inputPlanes + newNodes->size() * nnData->net->get_nb_input_values_total(), nnData->net->get_version());
         // save a reference newly created list in the temporary list for node creation
         // it will later be updated with the evaluation of the NN
         newNodeSideToMove->add_element(currentState->side_to_move());
@@ -327,23 +328,21 @@ Node* SearchThread::check_next_node(Node* currentNode, StateObj* currentState, N
     return nullptr;
 }
 
-Node* SearchThread::init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx)
+Node* SearchThread::init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx, StateObj* state)
 {
     childIdx = NONE_IDX;
 
     if (searchSettings->epsilonGreedyCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonGreedyCounter == 0) {
-        stateStore.emplace_back(unique_ptr<StateObj>(rootState->clone()));
-        currentNode = get_starting_node(currentNode, stateStore.back().get(), description, childIdx);
+        currentNode = get_starting_node(currentNode, state, description, childIdx);
         currentNode->lock();
         random_playout(currentNode, childIdx);
         currentNode->unlock();
         return currentNode;
     }
     if (searchSettings->epsilonChecksCounter && rootNode->is_playout_node() && rand() % searchSettings->epsilonChecksCounter == 0) {
-        stateStore.emplace_back(unique_ptr<StateObj>(rootState->clone()));
-        currentNode = get_starting_node(currentNode, stateStore.back().get(), description, childIdx);
+        currentNode = get_starting_node(currentNode, state, description, childIdx);
         currentNode->lock();
-        childIdx = select_enhanced_move(currentNode, stateStore.back().get());
+        childIdx = select_enhanced_move(currentNode, state);
         if (childIdx == NONE_IDX) {
             random_playout(currentNode, childIdx);
         }
@@ -358,6 +357,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node
 {
     description.depth = 0;
     Node* nextNode;
+    currentNode = init_child_index(currentNode, description, childIdx, currentState);
 
     while (true) {
         currentNode->lock();
@@ -418,7 +418,7 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
         if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
+            fill_nn_results(batchIdx, nnData->net->is_policy_map(), nnData->valueOutputs, nnData->probOutputs, nnData->auxiliaryOutputs, node,
                             tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
                             searchSettings, rootNode->is_tablebase());
         }
@@ -491,13 +491,14 @@ void SearchThread::create_mini_batch()
     NodeDescription description;
     numTerminalNodes = 0;
 
-    while (!newNodes->is_full() &&
-           collisionTrajectories.size() != searchSettings->batchSize &&
-           !transpositionValues->is_full() &&
-           numTerminalNodes < terminalNodeCache) {
-
+//    while (!newNodes->is_full() &&
+//           collisionTrajectories.size() != searchSettings->batchSize &&
+//           !transpositionValues->is_full() &&
+//           numTerminalNodes < terminalNodeCache) { TODO: Check if this is better
+    for (size_t it = 0; it < nnData->nbSamples; ++it) {
         trajectoryBuffer.clear();
-        Node* newNode = get_new_child_to_evaluate(description, rootNode, rootState, trajectoryBuffer);
+        unique_ptr<StateObj> curState = unique_ptr<StateObj>(rootState->clone());
+        Node* newNode = get_new_child_to_evaluate(description, rootNode, curState.get(), trajectoryBuffer);
         depthSum += description.depth;
         depthMax = max(depthMax, description.depth);
 
@@ -505,30 +506,16 @@ void SearchThread::create_mini_batch()
     }
 }
 
-void SearchThread::thread_iteration()
+void run_create_mini_batch(SearchThread* t)
 {
-//    create_mini_batch();
-    distribute_mini_batch_across_nodes();
-
-#ifndef SEARCH_UCT
-    if (newNodes->size() != 0) {
-        net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
-        set_nn_results_to_child_nodes();
-    }
-#endif
-    backup_value_outputs();
-    backup_collisions();
-    stateStore.clear();
+    t->create_mini_batch();
 }
 
-void run_search_thread(SearchThread *t)
+void run_backup_values(SearchThread* t)
 {
-    t->set_is_running(true);
-    t->reset_stats();
-    while(t->is_running() && t->nodes_limits_ok() && t->is_root_node_unsolved()) {
-        t->thread_iteration();
-    }
-    t->set_is_running(false);
+    t->set_nn_results_to_child_nodes();
+    t->backup_value_outputs();
+    t->backup_collisions();
 }
 
 void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories) {

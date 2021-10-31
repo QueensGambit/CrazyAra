@@ -46,19 +46,15 @@ MCTSAgentRandom::MCTSAgentRandom(NeuralNetAPI *netSingle, vector<unique_ptr<Neur
 
 MCTSAgentRandom::~MCTSAgentRandom()
 {
-    for (auto searchThread : searchThreads) {
+    for (auto searchThread : searchThreadsMaster) {
         delete searchThread;
     }
 }
-
-
-
 
 string MCTSAgentRandom::get_name() const
 {
     return "MCTSRandom";
 }
-
 
 void MCTSAgentRandom::perform_action()
 {
@@ -71,6 +67,3 @@ void MCTSAgentRandom::perform_action()
         evalInfo->bestMove = lM[randomIndex];
     }
 }
-
-    
-   

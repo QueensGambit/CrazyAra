@@ -35,6 +35,7 @@ struct SearchSettings
 {
     uint16_t multiPV;
     size_t threads;
+    size_t childThreads;
     unsigned int batchSize;
     float dirichletEpsilon;
     float dirichletAlpha;
