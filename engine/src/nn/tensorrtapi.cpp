@@ -252,12 +252,10 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
             info_string("serialize engine:", trtFilePath);
             // serialized engines are not portable across platforms or TensorRT versions
             // engines are specific to the exact GPU model they were built on
-            IHostMemory *serializedModel = engine->serialize();
             unique_ptr<IHostMemory, samplesCommon::InferDeleter> enginePlan{engine->serialize()};
             // export engine for future uses
             // write engine to file
             write_buffer(enginePlan->data(), enginePlan->size(), trtFilePath);
-            serializedModel->destroy();
         }
     }
     return engine;
