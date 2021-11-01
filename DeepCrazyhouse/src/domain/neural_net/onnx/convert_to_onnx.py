@@ -29,7 +29,7 @@ def parse_args(cmd_args: list):
     :param cmd_args: Command-line arguments (sys.argv[1:])
     :return: Parsed arguments as dictionary object
     """
-    parser = argparse.ArgumentParser(description='MXNet to ONN converter')
+    parser = argparse.ArgumentParser(description='MXNet to ONNX converter')
 
     parser.add_argument("--model-dir", type=str, default="./model",
                         help="model directory which contains the .param and .sym file")

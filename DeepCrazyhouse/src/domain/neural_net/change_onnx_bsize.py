@@ -4,73 +4,101 @@ Created on 30.10.21
 @project: CrazyAra
 @author: queensgambit
 
-Allows changing the batch size of an already existing onnx-model.
+Allows changing the batch size of an already existing ONNX-model.
 
 Based on https://github.com/onnx/keras-onnx/issues/605
  https://github.com/sitting-duck/stuff/blob/32b77388c54c5ca5f5039365824b15483fc22fc2/ai/onnxruntime/edit.py
 """
 
 import onnx
+import os
+import argparse
+from glob import glob
+import logging
+import sys
 
-init_bsize = 16
-target_bsize = 32
 
-
-def change_input_dim(model):
-    # Use some symbolic name not used for any other dimension
+def change_input_dim(model, init_bsize: int, target_bsize: int, dynamic: bool):
+    """
+    Changes the input and output dimension for a given ONNX model.
+    Use some symbolic name "N" for dynamic==True and not used for any other dimension or an actual value "target_bsize".
+    """
     sym_batch_dim = "N"
-    # or an actal value
-    actual_batch_dim = target_bsize
 
-    # The following code changes the first dimension of every input to be batch-dim
-    # Modify as appropriate ... note that this requires all inputs to
-    # have the same batch_dim
     inputs = model.graph.input
-    for input in inputs:
-        # Checks omitted.This assumes that all inputs are tensors and have a shape with first dim.
-        # Add checks as needed.
-        dim1 = input.type.tensor_type.shape.dim[0]
-        # update dim to be a symbolic value
-        # dim1.dim_param = sym_batch_dim
-        # or update it to be an actual value:
-        # print("input.type.tensor_type.shape:", input.type.tensor_type.shape)
-        # print("dim1.dim_value", dim1.dim_value)
-
-        print("dim1.dim_value", dim1.dim_value)
-        if dim1.dim_value == init_bsize:
-            dim1.dim_value = actual_batch_dim
-
-
     outputs = model.graph.output
+    for values in [inputs, outputs]:
+        for value in values:
+            # Checks omitted.This assumes that all inputs are tensors and have a shape with first dim.
+            # Add checks as needed.
+            dim1 = value.type.tensor_type.shape.dim[0]
 
-    for output in outputs:
-        dim1 = output.type.tensor_type.shape.dim[0]
-        # update dim to be a symbolic value
-        # dim1.dim_param = sym_batch_dim
-        # or update it to be an actual value:
-        print("dim1.dim_value:", dim1.dim_value)
-        if dim1.dim_value == init_bsize:
-            dim1.dim_value = actual_batch_dim
-
-
-def apply(transform, infile, outfile):
-    model = onnx.load(infile)
-    transform(model)
-    onnx.save(model, outfile)
+            if dim1.dim_value == init_bsize:
+                if dynamic:
+                    dim1.dim_param = sym_batch_dim
+                else:
+                    dim1.dim_value = target_bsize
 
 
-onnx_dir = "/sample/dir/"
-onnx_model = f"model-1.19414-0.585-0513-v3.0-bsize-{init_bsize}.onnx"
-onnx_file_path = onnx_dir + onnx_model
-onnx_export_file_path = onnx_dir + onnx_model.replace(f"bsize-{init_bsize}", f"bsize-{target_bsize}")
+def parse_args(cmd_args: list):
+    """
+    Parses command-line argument and returns them as a dictionary object
+    :param cmd_args: Command-line arguments (sys.argv[1:])
+    :return: Parsed arguments as dictionary object
+    """
+    parser = argparse.ArgumentParser(description='ONNX Batch Size Modifier')
 
-apply(change_input_dim, onnx_file_path, onnx_export_file_path)
-print("exported to:", onnx_export_file_path)
+    parser.add_argument("--model-dir", type=str, default="./model",
+                        help="Model directory which contains the .onnx file."
+                             "It is assumed that the onnx-file has 'bsize-' in its file name.")
+    parser.add_argument("--init-bsize", type=int, default=1,
+                        help="Initial batch size which defines the model to load (default: 1),")
+    parser.add_argument("--target-bsize", type=int, default=64,
+                        help="Target batch size in which the model will be converted (default: 64).")
+    parser.add_argument("--dynamic", default=False, action="store_true",
+                        help="If true, the ONNX model will use a dynamic batch size and ignore target-bsize "
+                             "(default: False).")
 
-# for key in node_map.keys():
-#     print("key: " + key)
-#     if "Clip" in key:
-#         print("removing key: " + str(key))
-#         graph.node.remove(node_map[key])
+    args = parser.parse_args(cmd_args)
 
-# onnx.save(model, "netout.onnx")
+    if not os.path.isdir(args.model_dir):
+        raise Exception("The given directory %s does not exist." % args.model_dir)
+
+    args.onnx_file_path = glob(args.model_dir + f"/*bsize-{args.init_bsize}*.onnx")[0]
+
+    if not os.path.isfile(args.onnx_file_path):
+        raise Exception("The given file path %s does not exist." % args.onnx_file_path)
+
+    if args.dynamic:
+        args.onnx_export_file_path = args.onnx_file_path.replace(f"bsize-{args.init_bsize}", "")
+    else:
+        args.onnx_export_file_path = args.onnx_file_path.replace(f"bsize-{args.init_bsize}",
+                                                                 f"bsize-{args.target_bsize}")
+
+    return args
+
+
+def main():
+    """
+    Main function which is executed on start-up
+
+    Exemplary call: e.g. Convert batch-size 16 to batch-size 64
+    python change_onnx_bsize.py --model-dir ./model --init-bsize 16 --target-bsize 64
+
+    e.g. make batch-size dynamic
+    python change_onnx_bsize.py --model-dir ./model --dynamic
+
+    :return:
+    """
+    args = parse_args(sys.argv[1:])
+    logging.basicConfig(level=logging.INFO)
+
+    model = onnx.load(args.onnx_file_path)
+    change_input_dim(model, args.init_bsize, args.target_bsize, args.dynamic)
+    onnx.save(model, args.onnx_export_file_path)
+
+    logging.info("Exported ONNX model to:", args.onnx_export_file_path)
+
+
+if __name__ == '__main__':
+    main()
