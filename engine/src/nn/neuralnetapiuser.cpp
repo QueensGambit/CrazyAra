@@ -43,14 +43,14 @@ NeuralNetAPIUser::NeuralNetAPIUser(NeuralNetAPI *net):
      CHECK(cudaMallocHost((void**) &inputPlanes, net->get_batch_size() * StateConstants::NB_VALUES_TOTAL() * sizeof(float)));
 #endif
     CHECK(cudaMallocHost((void**) &valueOutputs, net->get_batch_size() * sizeof(float)));
-    CHECK(cudaMallocHost((void**) &probOutputs, net->get_policy_output_length() * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &probOutputs, net->get_batch_size() * net->get_nb_policy_values() * sizeof(float)));
     if (net->has_auxiliary_outputs()) {
         CHECK(cudaMallocHost((void**) &auxiliaryOutputs, net->get_batch_size() * net->get_nb_auxiliary_outputs() * sizeof(float)));
     }
 #else
     inputPlanes = new float[net->get_batch_size() * net->get_nb_input_values_total()];
     valueOutputs = new float[net->get_batch_size()];
-    probOutputs = new float[net->get_policy_output_length()];
+    probOutputs = new float[net->get_batch_size() * net->get_nb_policy_values()];
 #ifdef DYNAMIC_NN_ARCH
     if (net->has_auxiliary_outputs()) {
         auxiliaryOutputs = new float[net->get_batch_size() * net->get_nb_auxiliary_outputs()];

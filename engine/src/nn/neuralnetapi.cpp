@@ -69,7 +69,7 @@ void NeuralNetAPI::initialize_nn_design()
     init_nn_design();
     nbNNInputValues = nnDesign.inputShape.flatten() / batchSize;
     nbNNAuxiliaryOutputs = nnDesign.auxiliaryOutputShape.flatten() / batchSize;
-    policyOutputLength = nnDesign.policyOutputShape.v[1] * batchSize;
+    nbPolicyValues = nnDesign.policyOutputShape.v[1];
     version = read_version_from_string(modelName);
     info_string("Input representation: ", version_to_string(version));
 }
@@ -89,7 +89,7 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
     modelName(""),
     nbNNInputValues(0),  // will be set dynamically in initialize_nn_design()
     nbNNAuxiliaryOutputs(0),  // will be set dynamically in initialize_nn_design()
-    policyOutputLength(0),  // will be set dynamically in initialize_nn_design()
+    nbPolicyValues(0),  // will be set dynamically in initialize_nn_design()
     version(make_version<0,0,0>())
 {
     modelDir = parse_directory(modelDirectory);

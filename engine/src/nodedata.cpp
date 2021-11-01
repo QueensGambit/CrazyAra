@@ -52,6 +52,10 @@ void NodeData::reserve_initial_space()
     virtualLossCounter.reserve(initSize);
     nodeTypes.reserve(initSize);
     add_empty_node();
+    if (initSize > 1) {
+        add_empty_node();
+        ++noVisitIdx;
+    }
 }
 
 NodeData::NodeData():

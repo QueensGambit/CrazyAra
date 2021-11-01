@@ -43,6 +43,7 @@ using blaze::HybridVector;
 using blaze::DynamicVector;
 using namespace std;
 using ChildIdx = uint_fast16_t;
+using Budget = uint_fast16_t;
 
 struct NodeAndIdx {
     Node* node;
@@ -60,6 +61,28 @@ struct MapWithMutex {
     }
 };
 
+
+struct NodeSplit {
+    ChildIdx firstArg;
+    ChildIdx secondArg;
+    Budget firstBudget;
+    Budget secondBudget;
+
+    inline void only_first(ChildIdx firstArg, uint_fast16_t budget) {
+        this->firstArg = firstArg;
+        firstBudget = budget;
+        secondBudget = 0;
+    }
+};
+
+struct NodeAndBudget {
+    Node* node;
+    uint_fast16_t budget;
+    StateObj* curState;
+    Trajectory curTrajectory;
+    NodeAndBudget(Node* node, uint_fast16_t budget, StateObj* state) :
+        node(node), budget(budget), curState(state) {}
+};
 
 class Node
 {
@@ -121,6 +144,14 @@ public:
     ChildIdx select_child_node(const SearchSettings* searchSettings);
 
     /**
+     * @brief select_child_nodes Selects multiple nodes at once
+     * @param searchSettings Search settings struct
+     * @param budget How many simulations are still available
+     * @return Struct on how the selection was split
+     */
+    NodeSplit select_child_nodes(const SearchSettings* searchSettings, uint_fast16_t budget);
+
+    /**
      * @brief revert_virtual_loss_and_update Reverts the virtual loss and updates the Q-value and visits
      * @param value New value to update Q
      *
@@ -160,7 +191,7 @@ public:
     {
         lock();
         // decrement virtual loss counter
-        update_virtual_loss_counter<false>(childIdx);
+        update_virtual_loss_counter<false>(childIdx, virtualLoss);
 
         valueSum += value;
         ++realVisitsSum;
@@ -350,7 +381,7 @@ public:
      * @param qValueWeight Decides if Q-values are taken into account
      * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
      */
-     void get_mcts_policy(DynamicVector<double>& mctsPolicy, size_t& bestMoveIdx, float qValueWeight, float qVetoDelta) const;
+     void get_mcts_policy(DynamicVector<double>& mctsPolicy, ChildIdx& bestMoveIdx, float qValueWeight, float qVetoDelta) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
@@ -450,14 +481,14 @@ public:
     double get_q_sum(ChildIdx childIdx, float virtualLoss) const;
 
     template<bool increment>
-    void update_virtual_loss_counter(ChildIdx childIdx)
+    void update_virtual_loss_counter(ChildIdx childIdx, float virtualLoss)
     {
         if (increment) {
-            ++d->virtualLossCounter[childIdx];
+            d->virtualLossCounter[childIdx] += virtualLoss;
         }
         else {
             assert(d->virtualLossCounter[childIdx] != 0);
-            --d->virtualLossCounter[childIdx];
+            d->virtualLossCounter[childIdx] -= virtualLoss;
         }
     }
 

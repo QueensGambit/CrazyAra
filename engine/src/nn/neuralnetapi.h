@@ -145,7 +145,7 @@ protected:
     nn_api::NeuralNetDesign nnDesign;
     uint_fast32_t nbNNInputValues;
     uint_fast32_t nbNNAuxiliaryOutputs;
-    uint_fast32_t policyOutputLength;
+    uint_fast32_t nbPolicyValues;
 
     Version version;
 private:
@@ -218,8 +218,8 @@ public:
      * @brief get_policy_output_length Returns vector length for the policy output as returned by the neural network respecting the batch size
      * @return Vector length
      */
-    inline uint_fast32_t get_policy_output_length() const {
-        return policyOutputLength;
+    inline uint_fast32_t get_nb_policy_values() const {
+        return nbPolicyValues;
     }
 
     /**

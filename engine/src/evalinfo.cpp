@@ -183,7 +183,7 @@ void update_eval_info(EvalInfo& evalInfo, const Node* rootNode, size_t tbHits, s
         evalInfo.policyProbSmall[0] = 1.0f;
     }
     else {
-        size_t bestMoveIdx;
+        ChildIdx bestMoveIdx;
         rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, searchSettings->qValueWeight, searchSettings->qVetoDelta);
     }
     // ensure the policy has the correct length even if some child nodes have not been visited

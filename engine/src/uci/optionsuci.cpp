@@ -56,8 +56,9 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef USE_RL
     o["Batch_Size"]                    << Option(8, 1, 8192);
 #else
-    o["Batch_Size"]                    << Option(16, 1, 8192);
+    o["Batch_Size"]                    << Option(64, 1, 8192);
 #endif
+    o["ChildThreads"]                  << Option(4, 1, 512);
     o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
 #ifdef USE_RL
     o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);

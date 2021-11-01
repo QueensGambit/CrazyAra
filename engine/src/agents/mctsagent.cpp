@@ -54,7 +54,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     mapWithMutex.hashTable.reserve(1e6);
 
     for (auto i = 0; i < searchSettings->threads; ++i) {
-        searchThreads.emplace_back(new SearchThread(netBatches[i].get(), searchSettings, &mapWithMutex));
+        searchThreadsMaster.emplace_back(new SearchThreadMaster(netBatches[i].get(), searchSettings->childThreads, searchSettings, &mapWithMutex));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
@@ -62,7 +62,7 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
 
 MCTSAgent::~MCTSAgent()
 {
-    for (auto searchThread : searchThreads) {
+    for (auto searchThread : searchThreadsMaster) {
         delete searchThread;
     }
 }
@@ -203,7 +203,7 @@ void MCTSAgent::sleep_and_log_for(size_t timeMS, size_t updateIntervalMS)
         this_thread::sleep_for(chrono::milliseconds(updateIntervalMS));
         evalInfo->end = chrono::steady_clock::now();
         info_msg(evalInfo);
-        if (!searchThreads[0]->is_running()) {
+        if (!searchThreadsMaster[0]->is_running()) {
             isRunning = false;
             return;
         }
@@ -262,9 +262,9 @@ string MCTSAgent::get_name() const
 
 void MCTSAgent::update_stats()
 {
-    avgDepth = get_avg_depth(searchThreads);
-    maxDepth = get_max_depth(searchThreads);
-    tbHits = get_tb_hits(searchThreads);
+    avgDepth = get_avg_depth(searchThreadsMaster);
+    maxDepth = get_max_depth(searchThreadsMaster);
+    tbHits = get_tb_hits(searchThreadsMaster);
 }
 
 void MCTSAgent::handle_single_move()
@@ -328,14 +328,14 @@ void MCTSAgent::run_mcts_search()
 {
     thread** threads = new thread*[searchSettings->threads];
     for (size_t i = 0; i < searchSettings->threads; ++i) {
-        searchThreads[i]->set_root_node(rootNode.get());
-        searchThreads[i]->set_root_state(rootState.get());
-        searchThreads[i]->set_search_limits(searchLimits);
-        searchThreads[i]->set_reached_tablebases(reachedTablebases);
-        threads[i] = new thread(run_search_thread, searchThreads[i]);
+        searchThreadsMaster[i]->set_root_node(rootNode.get());
+        searchThreadsMaster[i]->set_root_state(rootState.get());
+        searchThreadsMaster[i]->set_search_limits(searchLimits);
+        searchThreadsMaster[i]->set_reached_tablebases(reachedTablebases);
+        threads[i] = new thread(run_search_thread_master, searchThreadsMaster[i]);
     }
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootState->side_to_move(), rootNode->plies_from_null()/2);
-    ThreadManagerData tData(rootNode.get(), searchThreads, evalInfo, lastValueEval);
+    ThreadManagerData tData(rootNode.get(), searchThreadsMaster, evalInfo, lastValueEval);
     ThreadManagerInfo tInfo(searchSettings, searchLimits, overallNPS, rootState->side_to_move());
     ThreadManagerParams tParams(curMovetime, 250, is_game_sceneario(searchLimits), can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
     threadManager = make_unique<ThreadManager>(&tData, &tInfo, &tParams);
