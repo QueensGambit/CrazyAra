@@ -540,7 +540,7 @@ private:
      * @brief check_for_two_fold_repeition Checks if the given state has already been repeated.
      * This is onyl done if two fold repetitions are treated as terminals during the search.
      */
-    void check_for_two_fold_repeition(const StateObj* state);
+    void check_for_two_fold_repetition(const StateObj* state);
 
 
 #ifdef MCTS_TB_SUPPORT

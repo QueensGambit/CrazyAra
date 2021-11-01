@@ -103,7 +103,7 @@ Node::Node(StateObj* state, const SearchSettings* searchSettings):
     }
 #endif
     if (searchSettings->useTwoFoldRepetition && !isTerminal) {
-        check_for_two_fold_repeition(state);
+        check_for_two_fold_repetition(state);
     }
 
     policyProbSmall.resize(legalActions.size());
@@ -869,7 +869,7 @@ void Node::check_for_terminal(const StateObj* pos)
     }
 }
 
-void Node::check_for_two_fold_repeition(const StateObj* state)
+void Node::check_for_two_fold_repetition(const StateObj* state)
 {
     if (state->is_two_fold_repetition()) {
         init_node_data();
