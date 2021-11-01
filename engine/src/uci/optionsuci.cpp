@@ -158,8 +158,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Threads_NN_Inference"]          << Option(8, 1, 512);
 #endif
     o["Timeout_MS"]                    << Option(0, 0, 99999999);
-#ifdef MODE_LICHESS
-    o["Use_Two_Fold_Repetition"]       << Option(false);
+    o["Use_Two_Fold_Repetition"]       << Option(true);
 #ifdef MODE_CRAZYHOUSE
       // we repeat "crazyhouse" in the list because of problem in XBoard/Winboard #23
     o["UCI_Variant"]                   << Option("crazyhouse", {"crazyhouse", "crazyhouse"});
