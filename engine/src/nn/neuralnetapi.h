@@ -215,11 +215,19 @@ public:
     void validate_neural_network();
 
     /**
-     * @brief get_policy_output_length Returns vector length for the policy output as returned by the neural network respecting the batch size
+     * @brief get_policy_output_length Returns the number of policy values for a single batch
      * @return Vector length
      */
     inline uint_fast32_t get_nb_policy_values() const {
         return nbPolicyValues;
+    }
+
+    /**
+     * @brief get_policy_output_length Returns vector length for the policy output as returned by the neural network respecting the batch size
+     * @return Vector length
+     */
+    inline uint_fast32_t get_policy_output_length() const {
+        return get_nb_policy_values() * batchSize;
     }
 
     /**

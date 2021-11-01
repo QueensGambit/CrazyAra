@@ -58,7 +58,7 @@ void OpenVinoAPI::init_nn_design()
         set_shape(nnDesign.auxiliaryOutputShape, outputInfo.at(nnDesign.auxiliaryOutputName).get()->getDims());
     }
     nnDesign.isPolicyMap = uint(nnDesign.policyOutputShape.v[1]) != (StateConstants::NB_LABELS());
-    policyOutputLength = nnDesign.policyOutputShape.v[1] * batchSize;
+    nbPolicyValues = nnDesign.policyOutputShape.v[1];
     nbNNInputValues = nnDesign.inputShape.flatten();
 }
 

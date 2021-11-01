@@ -104,7 +104,6 @@ private:
     size_t visitsPreSearch;
     const uint_fast32_t terminalNodeCache;
     bool reachedTablebases;
-    size_t offset;
     size_t budget;
 public:
     /**

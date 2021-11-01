@@ -97,7 +97,7 @@ def main():
     change_input_dim(model, args.init_bsize, args.target_bsize, args.dynamic)
     onnx.save(model, args.onnx_export_file_path)
 
-    logging.info("Exported ONNX model to:", args.onnx_export_file_path)
+    logging.info(f"Exported ONNX model to: {args.onnx_export_file_path}")
 
 
 if __name__ == '__main__':

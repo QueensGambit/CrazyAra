@@ -43,14 +43,10 @@ private:
 
     Node* rootNode;
     StateObj* rootState;
-    const SearchSettings* searchSettings;
     SearchLimits* searchLimits;
 
     bool isRunning;
     bool reachedTablebases;
-    size_t tbHits;
-    size_t depthSum;
-    size_t depthMax;
 
     void launch_child_threads();
     void child_threads_backup();

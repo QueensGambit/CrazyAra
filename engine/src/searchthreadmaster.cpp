@@ -57,7 +57,9 @@ void SearchThreadMaster::child_threads_backup()
 SearchThreadMaster::SearchThreadMaster(NeuralNetAPI *netBatch, int numberChildThreads,
                                        const SearchSettings* searchSettings, MapWithMutex* mapWithMutex) :
     NeuralNetAPIUser(netBatch),
-    numberChildThreads(numberChildThreads)
+    numberChildThreads(numberChildThreads),
+    rootNode(nullptr), rootState(nullptr), searchLimits(nullptr),  // will be be set via setter methods
+    reachedTablebases(false)
 {
 
     const int nbSamples = net->get_batch_size() / numberChildThreads;
@@ -113,9 +115,9 @@ void run_search_thread_master(SearchThreadMaster *t)
 
 void SearchThreadMaster::reset_stats()
 {
-    tbHits = 0;
-    depthMax = 0;
-    depthSum = 0;
+    for (size_t idx = 0; idx < searchThreads.size(); ++idx) {
+        searchThreads[idx]->reset_stats();
+    }
 }
 
 bool SearchThreadMaster::nodes_limits_ok()
@@ -147,17 +149,29 @@ void SearchThreadMaster::set_reached_tablebases(bool value)
 
 size_t SearchThreadMaster::get_tb_hits() const
 {
+    size_t tbHits = 0;
+    for (size_t idx = 0; idx < searchThreads.size(); ++idx) {
+        tbHits += searchThreads[idx]->get_tb_hits();
+    }
     return tbHits;
 }
 
 size_t SearchThreadMaster::get_avg_depth()
 {
-    return 0; // TODO
+    float avgDepthSum = 0;
+    for (size_t idx = 0; idx < searchThreads.size(); ++idx) {
+        avgDepthSum += searchThreads[idx]->get_avg_depth();
+    }
+    return avgDepthSum / searchThreads.size() + 0.5f;
 }
 
 size_t SearchThreadMaster::get_max_depth() const
 {
-    return 0;  // TODO
+    size_t maxDepth = 0;
+    for (size_t idx = 0; idx < searchThreads.size(); ++idx) {
+        maxDepth = max(maxDepth, searchThreads[idx]->get_max_depth());
+    }
+    return maxDepth;
 }
 
 void SearchThreadMaster::stop()
