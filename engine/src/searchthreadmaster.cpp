@@ -158,11 +158,7 @@ size_t SearchThreadMaster::get_tb_hits() const
 
 size_t SearchThreadMaster::get_avg_depth()
 {
-    float avgDepthSum = 0;
-    for (size_t idx = 0; idx < searchThreads.size(); ++idx) {
-        avgDepthSum += searchThreads[idx]->get_avg_depth();
-    }
-    return avgDepthSum / searchThreads.size() + 0.5f;
+    return 0;
 }
 
 size_t SearchThreadMaster::get_max_depth() const

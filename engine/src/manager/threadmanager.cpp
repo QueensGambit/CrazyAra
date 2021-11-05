@@ -185,12 +185,7 @@ bool can_prolong_search(size_t curMoveNumber, size_t expectedGameLength)
 
 size_t get_avg_depth(const vector<SearchThreadMaster*>& searchThreads)
 {
-    size_t avgDetph = 0;
-    for (SearchThreadMaster* searchThread : searchThreads) {
-        avgDetph += searchThread->get_avg_depth();
-    }
-    avgDetph = size_t(double(avgDetph) / searchThreads.size() + 0.5);
-    return avgDetph;
+    return 0;
 }
 
 size_t get_max_depth(const vector<SearchThreadMaster*>& searchThreads)
