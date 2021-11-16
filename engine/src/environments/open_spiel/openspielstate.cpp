@@ -24,11 +24,12 @@
  */
 
 #include "openspielstate.h"
+#include "util/communication.h"
 #include <functional>
 
 OpenSpielState::OpenSpielState():
-    spielGame(open_spiel::LoadGame("chess()")),
-//    spielGame(open_spiel::LoadGame("hex(board_size=5)")),
+    currentVariant(open_spiel::gametype::SupportedOpenSpielVariants::HEX),
+    spielGame(open_spiel::LoadGame(open_spiel::gametype::variantToString[currentVariant])),
     spielState(spielGame->NewInitialState())
 {
 }
@@ -44,8 +45,21 @@ std::vector<Action> OpenSpielState::legal_actions() const
     return spielState->LegalActions(spielState->CurrentPlayer());
 }
 
+inline void OpenSpielState::check_variant(int variant)
+{
+    if (variant != currentVariant) {
+        currentVariant = open_spiel::gametype::SupportedOpenSpielVariants(variant);
+        spielGame = open_spiel::LoadGame(open_spiel::gametype::variantToString[currentVariant]);
+    }
+}
+
 void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant)
 {
+    check_variant(variant);
+    if (currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::HEX) {
+        info_string_important("NewInitialState from string is not implemented for HEX.");
+        return;
+    }
     spielState = spielGame->NewInitialState(fenStr);
 }
 
@@ -167,5 +181,6 @@ OpenSpielState* OpenSpielState::clone() const
 }
 
 void OpenSpielState::init(int variant, bool isChess960) {
+    check_variant(variant);
     spielState = spielGame->NewInitialState();
 }

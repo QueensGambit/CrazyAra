@@ -36,13 +36,13 @@
 namespace open_spiel {
 namespace gametype {
 enum SupportedOpenSpielVariants : uint8_t {
-    CHESS = 0,
-    HEX = 1,
+    HEX = 0,  // 11x11 board
+    CHESS = 1,
     YORKTOWN = 2,
 };
 const static std::string variantToString[] = {
-    "chess",
     "hex",
+    "chess",
     "yorktown",
 };
 }
@@ -88,8 +88,16 @@ public:
 class OpenSpielState : public State
 {
 private:
+    open_spiel::gametype::SupportedOpenSpielVariants currentVariant;
     std::shared_ptr<const open_spiel::Game> spielGame;
     std::unique_ptr<open_spiel::State> spielState;
+
+    /**
+     * @brief check_variant Checks the given variant against the current active variant and loads a new game type if necessary.
+     * @param variant Variant specification
+     */
+    inline void check_variant(int variant);
+
 public:
     OpenSpielState();
     OpenSpielState(const OpenSpielState& openSpielState);
