@@ -295,13 +295,8 @@ Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, C
     if (description.type == NODE_NEW_NODE) {
 #ifdef SEARCH_UCT
         Node* nextNode = currentNode->get_child_node(childIdx);
-        nextNode->set_value(newState->random_rollout());
+        nextNode->set_value(currentState->random_rollout());
         nextNode->enable_has_nn_results();
-        if (searchSettings->useTranspositionTable && !nextNode->is_terminal()) {
-            mapWithMutex->mtx.lock();
-            mapWithMutex->hashTable.insert({nextNode->hash_key(), nextNode});
-            mapWithMutex->mtx.unlock();
-        }
 #else
         // fill a new board in the input_planes vector
         // we shift the index by nbNNInputValues each time
