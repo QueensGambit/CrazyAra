@@ -166,6 +166,6 @@ OpenSpielState* OpenSpielState::clone() const
     return new OpenSpielState(*this);
 }
 
-void init(int variant, bool isChess960) {
+void OpenSpielState::init(int variant, bool isChess960) {
     spielState = spielGame->NewInitialState();
 }
