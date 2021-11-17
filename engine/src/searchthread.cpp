@@ -286,7 +286,7 @@ NodeBackup SearchThread::handle_returns(Node* currentNode, Node* nextNode, Child
 
 Node* SearchThread::create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description) {
 #ifdef MCTS_STORE_STATES
-    StateObj* currentState = currentNode->get_state()->clone();
+    currentState = currentNode->get_state()->clone();
 #endif
     currentState->do_action(currentNode->get_action(childIdx));
     currentNode->increment_no_visit_idx();
@@ -374,7 +374,9 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description, Node
         }
 
         currentNode->unlock();
+#ifndef MCTS_STORE_STATES
         currentState->do_action(currentNode->get_action(childIdx));
+#endif
         currentNode = nextNode;
         childIdx = NONE_IDX;
     }
