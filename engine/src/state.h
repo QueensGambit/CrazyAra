@@ -34,6 +34,7 @@
 #include <cstdint>
 #include <memory>
 #include "version.h"
+#include "util/communication.h"
 
 typedef uint64_t Key;
 #ifdef ACTION_64_BIT
@@ -217,6 +218,57 @@ public:
      */
     inline static constexpr Version CURRENT_VERSION() {
         return make_version<0,0,0>();
+    }
+
+    /**
+     * @brief variants Returns a vector of all available variants in string format (aka UCI_Variant string)
+     * @return variants
+     */
+    static std::vector<std::string> variants() {
+        return T::variants();
+    }
+
+    /**
+     * @brief start_fen Returns the start fen for a particular variant.
+     * @param variant Variant as integer specification
+     * @return starting fen
+     */
+    static std::string start_fen(int variant) {
+        return T::start_fen(variant);
+    }
+
+    /**
+     * @brief variant_to_int Converts a string of a variant to its integer representation
+     * @param variant Variant in string format (aka UCI_Variant string)
+     * @return Variant as integer specification
+     */
+    inline static constexpr int variant_to_int(const std::string& variant) {
+        int idx = 0;
+        for (const std::string& curVariant: StateConstantsInterface::variants()) {
+            if (curVariant == variant) {
+                return idx;
+            }
+            ++idx;
+        }
+        info_string_important("Error: Given variant '", variant, "' is invalid");
+        return 0;
+    }
+
+    /**
+     * @brief variant_to_string Converts a variant in int string specification to its string format (aka UCI_Variant string)
+     * @param variant Variant as integer specification
+     * @return Variant as integer specification
+     */
+    inline static std::string variant_to_string(int variant) {
+        return StateConstantsInterface::variants()[variant];
+    }
+
+    /**
+     * @brief DEFAULT_VARIANT Default variant in integer representation
+     * @return Variant as integer specification
+     */
+    static int DEFAULT_VARIANT() {
+        return 0;
     }
 };
 
