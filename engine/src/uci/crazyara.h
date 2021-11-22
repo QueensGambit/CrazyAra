@@ -86,8 +86,7 @@ private:
     SearchLimits searchLimits;
     PlaySettings playSettings;
     thread mainSearchThread;
-
-    Variant variant;
+    int variant;
 
     bool useRawNetwork;
     bool networkLoaded;

@@ -213,19 +213,11 @@ public:
     }
 
     /**
-     * @brief CURRENT_VERSION Defines the current version. This can be changed depending on the input representation used.
-     * @return current version
-     */
-    inline static constexpr Version CURRENT_VERSION() {
-        return make_version<0,0,0>();
-    }
-
-    /**
-     * @brief variants Returns a vector of all available variants in string format (aka UCI_Variant string)
+     * @brief available_variants Returns a vector of all available variants in string format (aka UCI_Variant string)
      * @return variants
      */
-    static std::vector<std::string> variants() {
-        return T::variants();
+    static std::vector<std::string> available_variants() {
+        return T::available_variants();
     }
 
     /**
@@ -238,13 +230,21 @@ public:
     }
 
     /**
+     * @brief CURRENT_VERSION Defines the current version. This can be changed depending on the input representation used.
+     * @return current version
+     */
+    inline static constexpr Version CURRENT_VERSION() {
+        return make_version<0,0,0>();
+    }
+
+    /**
      * @brief variant_to_int Converts a string of a variant to its integer representation
      * @param variant Variant in string format (aka UCI_Variant string)
      * @return Variant as integer specification
      */
     inline static constexpr int variant_to_int(const std::string& variant) {
         int idx = 0;
-        for (const std::string& curVariant: StateConstantsInterface::variants()) {
+        for (const std::string& curVariant: StateConstantsInterface::available_variants()) {
             if (curVariant == variant) {
                 return idx;
             }
@@ -260,7 +260,7 @@ public:
      * @return Variant as integer specification
      */
     inline static std::string variant_to_string(int variant) {
-        return StateConstantsInterface::variants()[variant];
+        return StateConstantsInterface::available_variants()[variant];
     }
 
     /**
@@ -270,6 +270,15 @@ public:
     static int DEFAULT_VARIANT() {
         return 0;
     }
+
+    /**
+     * @brief DEFAULT_VARIANT Default variant in string format (aka UCI_Variant string)
+     * @return Variant as uci string
+     */
+    static string DEFAULT_UCI_VARIANT() {
+        return StateConstantsInterface::variant_to_string(StateConstantsInterface::DEFAULT_VARIANT());
+    }
+
 };
 
 class State

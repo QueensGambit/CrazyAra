@@ -30,7 +30,6 @@
 
 #include "uci.h"
 #include "misc.h"
-#include "variants.h"
 #include "stateobj.h"
 #include "agents/config/searchlimits.h"
 
@@ -51,7 +50,7 @@ namespace OptionsUCI {
      * @param variant Active variant
      * @param state Active state object
      */
-    void setoption(istringstream& is, Variant& variant, StateObj& state);
+    void setoption(istringstream& is, int& variant, StateObj& state);
 
 
     /**

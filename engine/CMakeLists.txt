@@ -299,8 +299,6 @@ if (MODE_OPEN_SPIEL OR MODE_STRATEGO)
             "src/environments/open_spiel/*.cpp"
             "3rdparty/open_spiel/open_spiel/games/chess.h"
             "3rdparty/open_spiel/open_spiel/games/chess.cc"
-            "3rdparty/open_spiel/open_spiel/games/chess/*.h"
-            "3rdparty/open_spiel/open_spiel/games/chess/*.cc"
             "3rdparty/open_spiel/open_spiel/games/hex.h"
             "3rdparty/open_spiel/open_spiel/games/hex.cc"
             )

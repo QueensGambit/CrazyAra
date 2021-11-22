@@ -39,7 +39,6 @@
 #include "evalinfo.h"
 #include "constants.h"
 #include "state.h"
-#include "variants.h"
 #include "optionsuci.h"
 #include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
@@ -66,13 +65,7 @@ CrazyAra::CrazyAra():
     searchSettings(SearchSettings()),
     searchLimits(SearchLimits()),
     playSettings(PlaySettings()),
-#ifdef MODE_CRAZYHOUSE
-    variant(CRAZYHOUSE_VARIANT),
-#elif defined(MODE_XIANGQI)
-    variant(*variants.find("xiangqi")->second),
-#else
-    variant(CHESS_VARIANT),
-#endif
+    variant(StateConstants::DEFAULT_VARIANT()),
     useRawNetwork(false),      // will be initialized in init_search_settings()
     networkLoaded(false),
     ongoingSearch(false),
@@ -99,14 +92,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
     EvalInfo evalInfo;
-#ifndef MODE_XIANGQI
-    auto uiThread = make_shared<Thread>(0);
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    state->set(StartFENs[variant], is960, variant);
-#endif
-#ifdef MODE_XIANGQI
-    state->set(variant.startFen, is960, 0);
-#endif
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
+    state->set(StateConstants::start_fen(variant), is960, variant);
+
     for (int i = 1; i < argc; ++i)
         cmd += string(argv[i]) + " ";
 
@@ -114,6 +102,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     // this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
+        "isready",
+        "setoption name uci_variant value horde",
     };
 
     do {
@@ -216,12 +206,8 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
 
-#ifndef MODE_XIANGQI
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    state->set(StartFENs[variant], is960, variant);
-#else
-    state->set(variant.startFen, is960, 0);
-#endif
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
+    state->set(StateConstants::start_fen(variant), is960, variant);
 
     istringstream is("fen " + fen);
     position(state.get(), is);
@@ -251,17 +237,12 @@ void CrazyAra::position(StateObj* state, istringstream& is)
 
     Action action;
     string token, fen;
-#ifndef MODE_XIANGQI
     variant = UCI::variant_from_name(Options["UCI_Variant"]);
-#endif
+
     is >> token;
     if (token == "startpos")
     {
-#ifndef MODE_XIANGQI
-        fen = StartFENs[variant];
-#else
-        fen = variant.startFen;
-#endif
+        fen = StateConstants::start_fen(variant);
         is >> token; // Consume "moves" token if any
     }
     else if (token == "fen") {
@@ -272,11 +253,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     else
         return;
 
-#ifndef MODE_XIANGQI
-        state->set(fen, is960, variant);
-#else
-        state->set(fen, is960, 0);
-#endif
+    state->set(fen, is960, variant);
     Action lastMove = ACTION_NONE;
 
     // Parse move list (if any)
@@ -552,14 +529,20 @@ bool CrazyAra::is_ready()
         if (timeoutMS != 0) {
             tTimeoutThread = thread(run_timeout_thread, &timeoutThread);
         }
+        info_string("isready");
         init_search_settings();
         init_play_settings();
 #ifdef USE_RL
         init_rl_settings();
 #endif
-        netSingle = create_new_net_single(Options["Model_Directory"]);
+        info_string("before create_new_net_single");
+        cout << "Options[Model_Directory]: " << string(Options["Model_Directory"]) << endl;
+        netSingle = create_new_net_single(string(Options["Model_Directory"]));
+        info_string("before validate_neural_network");
         netSingle->validate_neural_network();
-        netBatches = create_new_net_batches(Options["Model_Directory"]);
+        info_string("before create_new_net_batches");
+        netBatches = create_new_net_batches(string(Options["Model_Directory"]));
+        info_string("before netBatches.front()");
         netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
@@ -602,6 +585,7 @@ unique_ptr<NeuralNetAPI> CrazyAra::create_new_net_single(const string& modelDire
 #elif defined TENSORRT
     return make_unique<TensorrtAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
 #elif defined OPENVINO
+    info_string("modelDirectory: ", modelDirectory);
     return make_unique<OpenVinoAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Threads_NN_Inference"]);
 #endif
     return nullptr;

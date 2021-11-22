@@ -33,7 +33,6 @@
 #include "uci.h"
 #include "uci/optionsuci.h"
 #include "environments/chess_related/sfutil.h"
-#include "uci/variants.h"
 #include "thread.h"
 #include "constants.h"
 #include "environments/chess_related/inputrepresentation.h"
