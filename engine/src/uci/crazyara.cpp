@@ -155,7 +155,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "arena")      arena(is);
     #ifdef MODE_STRATEGO
         // Test if the new modes are also usable for chess and others
-        else if (token == "mctsmatch")   mctsarena(is);
+        else if (token == "mctsmatch")   mctsarena(is, "" , "");
         else if (token == "mctstournament")   mctstournament(is);
         else if (token == "tournament")   evaltournament(is);
     #endif
@@ -446,7 +446,7 @@ void CrazyAra::mctstournament(istringstream &is)
     std::vector<std::string> combinations = comb(numbers, 2);
     for(int i = 0;i<combinations.size();i++){
         std::istringstream iss (combinations[i] + std::to_string(numberofgames));
-        mctsarena(iss);
+        mctsarena(iss, "" , "");
     }
 
     exit(0);
