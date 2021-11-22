@@ -32,16 +32,19 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/games/chess.h"
 #include "open_spiel/games/hex.h"
+#include "open_spiel/games/dark_hex.h"
 
 namespace open_spiel {
 namespace gametype {
 enum SupportedOpenSpielVariants : uint8_t {
     HEX = 0,  // 11x11 board
-    CHESS = 1,
-    YORKTOWN = 2,
+    DARKHEX = 1,
+    CHESS = 2,
+    YORKTOWN = 3,
 };
 const static std::string variantToString[] = {
     "hex",
+    "dark_hex",
     "chess",
     "yorktown",
 };
@@ -52,25 +55,25 @@ class StateConstantsOpenSpiel : public StateConstantsInterface<StateConstantsOpe
 {
 public:
     static uint BOARD_WIDTH() {
-        return open_spiel::chess::BoardSize();
+        return open_spiel::hex::kDefaultBoardSize;
     }
     static uint BOARD_HEIGHT() {
-        return  open_spiel::chess::BoardSize();
+        return  open_spiel::hex::kDefaultBoardSize;
     }
     static uint NB_CHANNELS_TOTAL() {
-        return 34U;  // TODO
+        return 5;  // TODO
     }
     static uint NB_LABELS() {
-        return 2272U;  // TODO
+        return NB_CHANNELS_TOTAL()*BOARD_HEIGHT()*BOARD_WIDTH();  // TODO
     }
     static uint NB_LABELS_POLICY_MAP() {
-        return 5184U;  // TODO
+        return BOARD_HEIGHT()*BOARD_WIDTH();  // TODO
     }
     static uint NB_AUXILIARY_OUTPUTS() {
         return 0U;
     }
     static int NB_PLAYERS() {
-        return  open_spiel::chess::NumPlayers();
+        return  open_spiel::hex::kNumPlayers;
     }
     static std::string action_to_uci(Action action, bool is960) {
         // TODO use actual uci for this
@@ -125,6 +128,7 @@ public:
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result);
     void set_auxiliary_outputs(const float* auxiliaryOutputs);
     OpenSpielState *clone() const;
+    OpenSpielState *openBoard() const;
     void init(int variant, bool isChess960);
 };
 
