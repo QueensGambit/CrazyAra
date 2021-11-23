@@ -27,9 +27,11 @@
 
 #ifdef BUILD_TESTS
 #include <iostream>
-#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
-#include <string>
 #include "catch.hpp"
+using namespace Catch::literals;
+using namespace std;
+#include <string>
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
 #include "uci.h"
 #include "uci/optionsuci.h"
 #include "environments/chess_related/sfutil.h"
@@ -39,8 +41,6 @@
 #include "legacyconstants.h"
 #include "util/blazeutil.h"
 #include "environments/chess_related/boardstate.h"
-using namespace Catch::literals;
-using namespace std;
 using namespace OptionsUCI;
 
 void init() {
@@ -1430,5 +1430,9 @@ TEST_CASE("Lichess Crazyhouse") {
 
 
 #endif //MODE_LICHESS
+
+#ifdef MODE_STRATEGO
+    // TODO
 #endif
 
+#endif
