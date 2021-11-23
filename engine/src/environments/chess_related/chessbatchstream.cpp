@@ -164,7 +164,7 @@ nvinfer1::Dims ChessBatchStream::getDims() const
 void reset_to_startpos(Board& pos, Thread* uiThread, StateListPtr& states)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-    pos.set(StateConstants::start_fen(StateConstants::DEFAULT_VARIANT()), false, StateConstants::DEFAULT_VARIANT(), &states->back(), uiThread);
+    pos.set(StateConstants::start_fen(StateConstants::DEFAULT_VARIANT()), false, Variant(StateConstants::DEFAULT_VARIANT()), &states->back(), uiThread);
 }
 #endif
 #endif

@@ -237,7 +237,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
 
     Action action;
     string token, fen;
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
 
     is >> token;
     if (token == "startpos")

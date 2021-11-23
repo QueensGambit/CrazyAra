@@ -27,7 +27,7 @@
 
 #ifdef BUILD_TESTS
 #include <iostream>
-#ifndef MODE_XIANGQI
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
 #include <string>
 #include "catch.hpp"
 #include "uci.h"
@@ -159,7 +159,7 @@ TEST_CASE("En-passent moves") {
 TEST_CASE("Anti-Chess StartFEN"){
     init();
     StateObj state;
-    state.set(StartFENs[ANTI_VARIANT], false, ANTI_VARIANT);
+    state.set(StateConstants::start_fen(ANTI_VARIANT), false, ANTI_VARIANT);
     PlaneStatistics stats = get_planes_statistics(state, false);
 
 //    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008); // no last move planes
@@ -711,7 +711,7 @@ TEST_CASE("State: clone()"){
     unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state.clone());
     REQUIRE(state2->fen() == state.fen());
 }
-#else
+#elif defined (MODE_XIANGQI)
 #include "catch.hpp"
 #include "piece.h"
 #include "thread.h"
