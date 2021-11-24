@@ -40,11 +40,6 @@ enum SupportedOpenSpielVariants : uint8_t {
     CHESS = 1,
     YORKTOWN = 2,
 };
-const static std::string variantToString[] = {
-    "hex",
-    "chess",
-    "yorktown",
-};
 }
 }
 
@@ -52,10 +47,10 @@ class StateConstantsOpenSpiel : public StateConstantsInterface<StateConstantsOpe
 {
 public:
     static uint BOARD_WIDTH() {
-        return open_spiel::chess::BoardSize();
+        return open_spiel::chess::kDefaultBoardSize;
     }
     static uint BOARD_HEIGHT() {
-        return  open_spiel::chess::BoardSize();
+        return  open_spiel::chess::kDefaultBoardSize;
     }
     static uint NB_CHANNELS_TOTAL() {
         return 34U;  // TODO
@@ -82,6 +77,26 @@ public:
     }
     static void init(bool isPolicyMap) {
         return; // pass
+    }
+
+    static std::vector<std::string> available_variants() {
+        return {"hex",
+                "chess",
+                "yorktown"};
+    }
+
+    static std::string start_fen(int variant) {
+        switch (variant) {
+        case open_spiel::gametype::SupportedOpenSpielVariants::HEX:
+            return ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .";
+        case open_spiel::gametype::SupportedOpenSpielVariants::CHESS:
+            return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        case open_spiel::gametype::SupportedOpenSpielVariants::YORKTOWN:
+            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+        default:
+            info_string("Unknown variant:", variant, "given");
+            return "";
+        }
     }
 };
 
