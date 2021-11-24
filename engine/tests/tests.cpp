@@ -31,7 +31,7 @@
 using namespace Catch::literals;
 using namespace std;
 #include <string>
-#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
+#ifndef MODE_XIANGQI
 #include "uci.h"
 #include "uci/optionsuci.h"
 #include "environments/chess_related/sfutil.h"
