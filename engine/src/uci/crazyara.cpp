@@ -102,8 +102,6 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     // this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
-        "isready",
-        "setoption name uci_variant value horde",
     };
 
     do {
