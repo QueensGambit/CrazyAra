@@ -1431,11 +1431,5 @@ TEST_CASE("Lichess Crazyhouse") {
 
 #endif //MODE_LICHESS
 
-#ifdef MODE_STRATEGO
-TEST_CASE("dummy") {
-    REQUIRE(true);
-}
-#endif
-
 #endif
 

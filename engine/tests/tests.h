@@ -33,7 +33,9 @@
 #include <vector>
 #include <string>
 #include "stateobj.h"
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
 #include "environments/chess_related/board.h"
+#endif
 
 using namespace std;
 

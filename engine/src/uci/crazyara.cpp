@@ -527,20 +527,14 @@ bool CrazyAra::is_ready()
         if (timeoutMS != 0) {
             tTimeoutThread = thread(run_timeout_thread, &timeoutThread);
         }
-        info_string("isready");
         init_search_settings();
         init_play_settings();
 #ifdef USE_RL
         init_rl_settings();
 #endif
-        info_string("before create_new_net_single");
-        cout << "Options[Model_Directory]: " << string(Options["Model_Directory"]) << endl;
         netSingle = create_new_net_single(string(Options["Model_Directory"]));
-        info_string("before validate_neural_network");
         netSingle->validate_neural_network();
-        info_string("before create_new_net_batches");
         netBatches = create_new_net_batches(string(Options["Model_Directory"]));
-        info_string("before netBatches.front()");
         netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
@@ -583,7 +577,6 @@ unique_ptr<NeuralNetAPI> CrazyAra::create_new_net_single(const string& modelDire
 #elif defined TENSORRT
     return make_unique<TensorrtAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
 #elif defined OPENVINO
-    info_string("modelDirectory: ", modelDirectory);
     return make_unique<OpenVinoAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Threads_NN_Inference"]);
 #endif
     return nullptr;
