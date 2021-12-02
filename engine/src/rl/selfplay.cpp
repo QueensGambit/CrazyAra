@@ -225,7 +225,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
     // unique_ptr<StateObj> state= make_unique<StateObj>();
-    unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature);
+    unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, 0, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature);
     
     if (fen != "") {
         // set starting fen

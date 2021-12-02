@@ -74,7 +74,7 @@ class TrainConfig:
 
     nb_parts: int = None
 
-    normalize: bool = True  # define whether to normalize input data to [01]
+    normalize: bool = False  # define whether to normalize input data to [01]
 
     # how many epochs the network will be trained each time there is enough new data available
     nb_training_epochs: int = 1
@@ -92,7 +92,7 @@ class TrainConfig:
     seed: int = 42
 
     # Boolean if potential legal moves will be selected from final policy output
-    select_policy_from_plane: bool = True
+    select_policy_from_plane: bool = False
 
     # define spike threshold when the detection will be triggered
     spike_thresh: float = 1.5
