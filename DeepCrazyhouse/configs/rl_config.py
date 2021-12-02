@@ -20,7 +20,7 @@ class RLConfig:
     # How many times to train the NN, create a model contender or generate nn_update_files games
     nb_nn_updates: int = 10
     # How many new generated training files are needed to apply an update to the NN
-    nn_update_files: int = 10
+    nn_update_files: int = 3
     precision: str = f'float16'
     # Replay Memory
     rm_nb_files: int = 5  # how many data packages/files shall be randomly taken from memory
@@ -55,7 +55,7 @@ class UCIConfig:
     Reuse_Tree: str = False
     Search_Type: str = f'mcts'
     Selfplay_Chunk_Size: int = 128  # default: 128
-    Selfplay_Number_Chunks: int = 640  # default: 640
+    Selfplay_Number_Chunks: int = 1  # default: 640
     Simulations: int = 3200
     SyzygyPath: str = f''
     Temperature_Moves: int = 15  # CZ: 500

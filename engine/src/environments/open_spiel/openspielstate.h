@@ -64,7 +64,7 @@ public:
         return 5;  // TODO
     }
     static uint NB_LABELS() {
-        return NB_CHANNELS_TOTAL()*BOARD_HEIGHT()*BOARD_WIDTH();  // TODO
+        return 121; // NB_CHANNELS_TOTAL()*BOARD_HEIGHT()*BOARD_WIDTH();  // TODO
     }
     static uint NB_LABELS_POLICY_MAP() {
         return BOARD_HEIGHT()*BOARD_WIDTH();  // TODO
@@ -81,7 +81,7 @@ public:
     }
     template<PolicyType p = normal, MirrorType m = notMirrored>
     static MoveIdx action_to_index(Action action) {
-        return 0;  // TODO
+        return action;  // TODO
     }
     static void init(bool isPolicyMap) {
         return; // pass
