@@ -3,7 +3,7 @@
 	url = https://github.com/QueensGambit/Stockfish.git
 [submodule "engine/3rdparty/open_spiel"]
 	path = engine/3rdparty/open_spiel
-	url = https://github.com/BluemlJ/open_spiel.git
+	url = https://github.com/BluemlJ/open_spiel
 	branch = thesis
 [submodule "engine/3rdparty/Fairy-Stockfish"]
 	path = engine/3rdparty/Fairy-Stockfish
