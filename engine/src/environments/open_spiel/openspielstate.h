@@ -61,7 +61,7 @@ public:
         return  open_spiel::hex::kDefaultBoardSize;
     }
     static uint NB_CHANNELS_TOTAL() {
-        return 5;  // TODO
+        return 9;  // TODO
     }
     static uint NB_LABELS() {
         return 121; // NB_CHANNELS_TOTAL()*BOARD_HEIGHT()*BOARD_WIDTH();  // TODO

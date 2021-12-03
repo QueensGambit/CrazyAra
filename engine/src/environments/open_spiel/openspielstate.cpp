@@ -67,6 +67,9 @@ void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant
 
 void OpenSpielState::get_state_planes(bool normalize, float *inputPlanes, Version version) const
 {
+     std::fill(inputPlanes, inputPlanes+StateConstantsOpenSpiel::NB_VALUES_TOTAL(), 0.0f);
+    return;
+    // std::cout << StateConstantsOpenSpiel::NB_VALUES_TOTAL() << std::endl;
     std::vector<float> v(spielGame->ObservationTensorSize());
     spielState->ObservationTensor(spielState->CurrentPlayer(), absl::MakeSpan(v));
     std::copy( v.begin(), v.end(), inputPlanes);
