@@ -93,12 +93,12 @@ void OpenSpielState::do_action(Action action)
 {
     auto cur_player = spielState->CurrentPlayer();
     if(cur_player == 1){
-        int X = action % row_size_;
-        int Y = action / row_size_;
-        std::string new_move = "(" + Y + "," + X + ")";
-        auto action2 = spielState->StringToAction(new_move);
+        int X = action % 11; //currently easier to set board size fix; change it later
+        int Y = action / 11;
+        std::string new_move = "(" + std::to_string(Y) + "," + std::to_string(X) + ")";
+        action = spielState->StringToAction(new_move);
     }
-    spielState->ApplyAction(action2);
+    spielState->ApplyAction(action);
 }
 
 void OpenSpielState::undo_action(Action action)
