@@ -95,7 +95,7 @@ void OpenSpielState::do_action(Action action)
     if(player == 1){
         int X = action / 11; //currently easier to set board size fix; change it later
         int Y = action % 11;
-        do_action(Y*11+X);
+        spielState->ApplyAction(Y*11+X);
         return;
     }
     spielState->ApplyAction(action);
