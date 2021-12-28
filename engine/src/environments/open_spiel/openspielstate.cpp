@@ -92,7 +92,7 @@ std::string OpenSpielState::fen() const
 void OpenSpielState::do_action(Action action)
 {
     auto player = spielState->CurrentPlayer();
-    if(cur_player == 1){
+    if(player == 1){
         int X = action % 11; //currently easier to set board size fix; change it later
         int Y = action / 11;
         std::string new_move = "";
