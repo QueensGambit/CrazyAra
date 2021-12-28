@@ -91,7 +91,14 @@ std::string OpenSpielState::fen() const
 
 void OpenSpielState::do_action(Action action)
 {
-    spielState->ApplyAction(action);
+    auto cur_player = spielState->CurrentPlayer();
+    if(cur_player == 1){
+        int X = action % row_size_;
+        int Y = action / row_size_;
+        std::string new_move = "(" + Y + "," + X + ")";
+        auto action2 = spielState->StringToAction(new_move);
+    }
+    spielState->ApplyAction(action2);
 }
 
 void OpenSpielState::undo_action(Action action)
