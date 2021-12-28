@@ -91,11 +91,14 @@ std::string OpenSpielState::fen() const
 
 void OpenSpielState::do_action(Action action)
 {
-    auto cur_player = spielState->CurrentPlayer();
+    auto player = spielState->CurrentPlayer();
     if(cur_player == 1){
         int X = action % 11; //currently easier to set board size fix; change it later
         int Y = action / 11;
-        std::string new_move = spielState->StateToString(spielState->PlayerAndActionToState(player, action_id)) + "(" + std::to_string(Y) + "," + std::to_string(X) + ")";
+        try {std::string new_move = "o(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
+        try {std::string new_move = "p(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
+        try {std::string new_move = "q(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
+        try {std::string new_move = "O(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
         action = spielState->StringToAction(new_move);
     }
     spielState->ApplyAction(action);
