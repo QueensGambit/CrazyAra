@@ -93,13 +93,16 @@ void OpenSpielState::do_action(Action action)
 {
     auto player = spielState->CurrentPlayer();
     if(player == 1){
-        int X = action % 11; //currently easier to set board size fix; change it later
-        int Y = action / 11;
+        int X = action / 11; //currently easier to set board size fix; change it later
+        int Y = action % 11;
         std::string new_move = "";
-        try {new_move = "o(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
-        try {new_move = "p(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
-        try {new_move = "q(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
-        try {new_move = "O(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
+        try {new_move = "o(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) {
+            try {new_move = "p(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { 
+                try {new_move = "q(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { 
+                    try {new_move = "O(" + std::to_string(Y) + "," + std::to_string(X) + ")";} catch (...) { /* */ };
+                 };
+             };
+         };
         action = spielState->StringToAction(new_move);
     }
     spielState->ApplyAction(action);
