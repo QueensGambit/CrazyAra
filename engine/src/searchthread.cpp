@@ -488,11 +488,10 @@ void SearchThread::create_mini_batch()
     NodeDescription description;
     numTerminalNodes = 0;
 
-//    while (!newNodes->is_full() &&
-//           collisionTrajectories.size() != searchSettings->batchSize &&
-//           !transpositionValues->is_full() &&
-//           numTerminalNodes < terminalNodeCache) { TODO: Check if this is better
-    for (size_t it = 0; it < nnData->nbSamples; ++it) {
+    while (!newNodes->is_full() &&
+           collisionTrajectories.size() != searchSettings->batchSize &&
+           !transpositionValues->is_full() &&
+           numTerminalNodes < terminalNodeCache) {
         trajectoryBuffer.clear();
         unique_ptr<StateObj> curState = unique_ptr<StateObj>(rootState->clone());
         Node* newNode = get_new_child_to_evaluate(description, rootNode, curState.get(), trajectoryBuffer);
