@@ -41,6 +41,11 @@ Key FairyBoard::hash_key() const {
 }
 
 bool FairyBoard::is_terminal() const {
+    // "Unlike in chess, in which stalemate is a draw, in xiangqi, it is a loss for the stalemated player."
+    // -- https://en.wikipedia.org/wiki/Xiangqi
+    if (this->number_repetitions() != 0) {
+        return true;
+    }
     for (const ExtMove move : MoveList<LEGAL>(*this)) {
         return false;
     }
@@ -49,13 +54,17 @@ bool FairyBoard::is_terminal() const {
 
 size_t FairyBoard::number_repetitions() const {
     StateInfo *st = state();
-    if (st->repetition == 0) {
-        return 0;
-    }
-    else if (st->repetition) {
+    // st->repetition:
+    // "It is the ply distance from the previous
+    // occurrence of the same position, negative in the 3-fold case, or zero" -- fairy/position.cpp
+    // if the position was not repeated.
+    if (st->repetition > 0) {
         return 1;
     }
-    else return 0;
+    if (st->repetition < 0) {
+        return 2;
+    }
+    return 0;
 }
 
 Result get_result(const FairyBoard &pos, bool inCheck) {

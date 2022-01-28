@@ -513,6 +513,7 @@ void CrazyAra::init()
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");
+    Options.erase("Use NNUE");
 #endif
 }
 
