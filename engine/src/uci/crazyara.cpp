@@ -168,8 +168,10 @@ void CrazyAra::prepare_search_config_structs()
     }
 }
 
-void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
-
+void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
+{
+    wait_to_finish_last_search();
+    ongoingSearch = true;
     prepare_search_config_structs();
 
     string token;
@@ -186,15 +188,15 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
         else if (token == "movetime")  is >> searchLimits.movetime;
         else if (token == "infinite")  searchLimits.infinite = true;
     }
-    wait_to_finish_last_search();
 
-    ongoingSearch = true;
     if (useRawNetwork) {
         rawAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        rawAgent->lock();  // lock() rawAgent to avoid calling stop() immediatly
         mainSearchThread = thread(run_agent_thread, rawAgent.get());
     }
     else {
         mctsAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        mctsAgent->lock(); // lock() mctsAgent to avoid calling stop() immediatly
         mainSearchThread = thread(run_agent_thread, mctsAgent.get());
     }
 }
@@ -211,7 +213,6 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     position(state.get(), is);
     istringstream isGoCommand(goCommand);
     go(state.get(), isGoCommand, evalInfo);
-    wait_to_finish_last_search();
 }
 
 void CrazyAra::wait_to_finish_last_search()
@@ -226,6 +227,7 @@ void CrazyAra::stop_search()
 {
     if (mctsAgent != nullptr) {
         mctsAgent->stop();
+        wait_to_finish_last_search();
     }
 }
 
