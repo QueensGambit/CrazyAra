@@ -54,7 +54,7 @@ void Agent::set_best_move(size_t moveCounter)
 
 Agent::Agent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose):
     NeuralNetAPIUser(net),
-    playSettings(playSettings), verbose(verbose)
+    playSettings(playSettings), verbose(verbose), isRunning(false)
 {
 }
 
@@ -70,8 +70,19 @@ Action Agent::get_best_action()
     return evalInfo->bestMove;
 }
 
+void Agent::lock()
+{
+    runnerMutex.lock();
+}
+
+void Agent::unlock()
+{
+    runnerMutex.unlock();
+}
+
 void Agent::perform_action()
 {
+    isRunning = true;
     evalInfo->start = chrono::steady_clock::now();
     this->evaluate_board_state();
     evalInfo->end = chrono::steady_clock::now();
@@ -83,9 +94,8 @@ void Agent::perform_action()
     #else
         info_bestmove(StateConstants::action_to_uci(evalInfo->bestMove, state->is_chess960()));
     #endif
-
-        
-    
+    isRunning = false;
+    runnerMutex.unlock();
 }
 
 void run_agent_thread(Agent* agent)

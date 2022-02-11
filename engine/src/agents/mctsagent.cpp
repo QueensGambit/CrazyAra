@@ -45,7 +45,6 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     opponentsNextRoot(nullptr),
     lastValueEval(-1.0f),
     reusedFullTree(false),
-    isRunning(false),
     overallNPS(0.0f),
     nbNPSentries(0),
     threadManager(nullptr),
@@ -340,26 +339,27 @@ void MCTSAgent::run_mcts_search()
     ThreadManagerParams tParams(curMovetime, 250, is_game_sceneario(searchLimits), can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
     threadManager = make_unique<ThreadManager>(&tData, &tInfo, &tParams);
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());
-    isRunning = true;
-
+    runnerMutex.unlock();
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
     threadManager->kill();
     tManager->join();
     delete[] threads;
-    isRunning = false;
 }
 
 void MCTSAgent::stop()
 {
+    runnerMutex.lock();
     if (!isRunning) {
+        runnerMutex.unlock();
         return;
     }
     if (threadManager != nullptr) {
         threadManager->stop_search();
     }
     isRunning = false;
+    runnerMutex.unlock();
 }
 
 void MCTSAgent::print_root_node()
