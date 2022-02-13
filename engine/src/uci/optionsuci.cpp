@@ -56,10 +56,14 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef USE_RL
     o["Batch_Size"]                    << Option(8, 1, 8192);
 #else
+#ifdef OPENVINO
+    o["Batch_Size"]                    << Option(16, 1, 8192);
+#else
 #ifdef MODE_CHESS
     o["Batch_Size"]                    << Option(64, 1, 8192);
 #else
     o["Batch_Size"]                    << Option(16, 1, 8192);
+#endif
 #endif
 #endif
     o["Child_Threads"]                 << Option(4, 1, 512);
