@@ -29,7 +29,6 @@
 #define OPTIONSUCI_H
 
 #include "uci.h"
-#include "misc.h"
 #include "stateobj.h"
 #include "agents/config/searchlimits.h"
 

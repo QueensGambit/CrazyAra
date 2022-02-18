@@ -201,15 +201,15 @@ list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-St
 if (NOT MODE_XIANGQI)
     set(source_files
         ${source_files}
-        ${sf_related_files}
         ${uci_files}
         )
 endif ()
 
-if (NOT MODE_OPEN_SPIEL AND NOT MODE_XIANGQI AND NOT MODE_STRATEGO)
+if (MODE_CRAZYHOUSE OR MODE_CHESS OR MODE_LICHESS)
     set(source_files
         ${source_files}
         ${chess_related_files}
+        ${sf_related_files}
         )
 endif()
 

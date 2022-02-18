@@ -38,9 +38,6 @@
 #include <unordered_map>
 #include <iostream>
 #include "state.h"
-#ifndef MODE_POMMERMAN
-#include "types.h"
-#endif
 
 using namespace std;
 

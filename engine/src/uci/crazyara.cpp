@@ -26,15 +26,9 @@
 #include "crazyara.h"
 
 #include <thread>
-#include "bitboard.h"
 #include "mctsagent.h"
-#include "position.h"
 #include "search.h"
-#include "thread.h"
-#include "tt.h"
 #include "uci.h"
-#include "syzygy/tbprobe.h"
-#include "movegen.h"
 #include "search.h"
 #include "evalinfo.h"
 #include "constants.h"
@@ -495,7 +489,7 @@ void CrazyAra::init_rl_settings()
 
 void CrazyAra::init()
 {
-#ifndef MODE_XIANGQI
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
     OptionsUCI::init(Options);
     Bitboards::init();
     Position::init();

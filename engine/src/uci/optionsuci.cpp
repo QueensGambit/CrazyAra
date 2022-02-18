@@ -33,7 +33,9 @@
 #include <algorithm>
 #include <cstring>
 #include "customlogger.h"
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
 #include "syzygy/tbprobe.h"
+#endif
 #include "../util/communication.h"
 #include "../nn/neuralnetapi.h"
 
@@ -43,8 +45,14 @@ void on_logger(const Option& o) {
     CustomLogger::start(o, ifstream::app);
 }
 
+// method is based on 3rdparty/Stockfish/misc.cpp
+inline TimePoint current_time() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>
+        (std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 // method is based on 3rdparty/Stockfish/uci.cpp
-#ifndef MODE_XIANGQI
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
 void on_tb_path(const Option& o) {
     Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
 }
@@ -158,7 +166,7 @@ void OptionsUCI::init(OptionsMap &o)
    o["Centi_Temperature_Decay"]        << Option(100, 0, 100);
    o["Temperature_Moves"]              << Option(0, 0, 99999);
 #endif
-#ifndef MODE_XIANGQI
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
 #endif
     o["Threads"]                       << Option(2, 1, 512);
@@ -305,7 +313,7 @@ const string OptionsUCI::get_first_variant_with_model()
 void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap &options)
 {
     searchLimits.reset();
-    searchLimits.startTime = now();
+    searchLimits.startTime = current_time();
     searchLimits.moveOverhead = TimePoint(options["Move_Overhead"]);
     searchLimits.nodes = options["Nodes"];
     searchLimits.nodesLimit = options["Nodes_Limit"];

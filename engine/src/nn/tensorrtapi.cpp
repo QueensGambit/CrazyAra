@@ -34,7 +34,7 @@
 #include "EntropyCalibrator.h"
 #include "stateobj.h"
 #include "../util/communication.h"
-#if !defined(MODE_POMMERMAN) && !defined(MODE_XIANGQI) && !defined(MODE_STRATEGO)
+#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
 #include "environments/chess_related/chessbatchstream.h"
 #endif
 
