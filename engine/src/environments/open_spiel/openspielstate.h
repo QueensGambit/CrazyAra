@@ -32,13 +32,15 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/games/chess.h"
 #include "open_spiel/games/hex.h"
+#include "open_spiel/games/tic_tac_toe.h"
 
 namespace open_spiel {
 namespace gametype {
 enum SupportedOpenSpielVariants : uint8_t {
-    HEX = 0,  // 11x11 board
-    CHESS = 1,
-    YORKTOWN = 2,
+    TICTACTOE = 0,
+    HEX = 1,  // 11x11 board
+    CHESS = 2,
+    YORKTOWN = 3,
 };
 }
 }
@@ -47,19 +49,21 @@ class StateConstantsOpenSpiel : public StateConstantsInterface<StateConstantsOpe
 {
 public:
     static uint BOARD_WIDTH() {
-        return open_spiel::chess::kDefaultBoardSize;
+        return 3;
+//        return open_spiel::chess::kDefaultBoardSize;
     }
     static uint BOARD_HEIGHT() {
-        return  open_spiel::chess::kDefaultBoardSize;
+         return 3;
+//        return  open_spiel::chess::kDefaultBoardSize;
     }
     static uint NB_CHANNELS_TOTAL() {
-        return 34U;  // TODO
+        return 1;  // TODO
     }
     static uint NB_LABELS() {
-        return 2272U;  // TODO
+        return 9;  // TODO
     }
     static uint NB_LABELS_POLICY_MAP() {
-        return 5184U;  // TODO
+        return 9;  // TODO
     }
     static uint NB_AUXILIARY_OUTPUTS() {
         return 0U;
@@ -73,20 +77,23 @@ public:
     }
     template<PolicyType p = normal, MirrorType m = notMirrored>
     static MoveIdx action_to_index(Action action) {
-        return 0;  // TODO
+        return action;
     }
     static void init(bool isPolicyMap) {
         return; // pass
     }
 
     static std::vector<std::string> available_variants() {
-        return {"hex",
+        return {"tic_tac_toe",
+                "hex",
                 "chess",
                 "yorktown"};
     }
 
     static std::string start_fen(int variant) {
         switch (variant) {
+        case open_spiel::gametype::SupportedOpenSpielVariants::TICTACTOE:
+            return ". . .  . . .  . . .";
         case open_spiel::gametype::SupportedOpenSpielVariants::HEX:
             return ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .";
         case open_spiel::gametype::SupportedOpenSpielVariants::CHESS:

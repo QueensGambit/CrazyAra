@@ -201,38 +201,31 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     info_string("Building TensorRT engine...");
     info_string("This may take a few minutes...");
     // create an engine builder
-    SampleUniquePtr<IBuilder> builder = SampleUniquePtr<IBuilder>(createInferBuilder(gLogger.getTRTLogger()));
+    IBuilder* builder = createInferBuilder(gLogger.getTRTLogger());
     builder->setMaxBatchSize(int(batchSize));
 
     // create an ONNX network object
-    const uint32_t explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+    const auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
     auto network = SampleUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
+
+    SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
+    unique_ptr<IInt8Calibrator> calibrator;
+    unique_ptr<IBatchStream> calibrationStream;
+    set_config_settings(config, network, 1_GiB, calibrator, calibrationStream);
 
     // conversion of ONNX model to TensorRT
     // parse the ONNX model file along with logger object for reporting info
-    SampleUniquePtr<nvonnxparser::IParser> parser = SampleUniquePtr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, gLogger.getTRTLogger()));
+    auto parser = nvonnxparser::createParser(*network, gLogger.getTRTLogger());
     if (!parser->parseFromFile(modelFilePath.c_str(), static_cast<int>(gLogger.getReportableSeverity())))
     {
         gLogger.log(nvinfer1::ILogger::Severity::kERROR, "failed to parse onnx file");
-        for (int32_t idx = 0; idx < parser->getNbErrors(); ++idx) {
-            std::cout << parser->getError(idx)->desc() << std::endl;
-        }
         exit(EXIT_FAILURE);
         return nullptr;
     }
     configure_network(network);
 
-    SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
-    unique_ptr<IInt8Calibrator> calibrator;
-    unique_ptr<IBatchStream> calibrationStream;
-    set_config_settings(config, 1_GiB, calibrator, calibrationStream);
-
     // build an engine from the TensorRT network with a given configuration struct
-    SampleUniquePtr<IHostMemory> serializedModel{builder->buildSerializedNetwork(*network, *config)};
-    SampleUniquePtr<IRuntime> runtime{createInferRuntime(sample::gLogger.getTRTLogger())};
-
-    // build an engine from the serialized model
-    return runtime->deserializeCudaEngine(serializedModel->data(), serializedModel->size());;
+    return builder->buildEngineWithConfig(*network, *config);
 }
 
 ICudaEngine* TensorrtAPI::get_cuda_engine() {
@@ -244,7 +237,7 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
     if (buffer) {
         info_string("deserialize engine:", trtFilePath);
         unique_ptr<IRuntime, samplesCommon::InferDeleter> runtime{createInferRuntime(gLogger)};
-        engine = runtime->deserializeCudaEngine(buffer, bufferSize);
+        engine = runtime->deserializeCudaEngine(buffer, bufferSize, nullptr);
     }
 
     if (!engine) {
@@ -269,6 +262,7 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 }
 
 void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
+                                      SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
                                       size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
                                       unique_ptr<IBatchStream>& calibrationStream)
 {
