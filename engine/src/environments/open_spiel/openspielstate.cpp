@@ -153,10 +153,7 @@ std::string OpenSpielState::action_to_san(Action action, const std::vector<Actio
 
 TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, float &customTerminalValue) const
 {
-    if (spielState->CurrentPlayer() == -4) {
-        return TERMINAL_DRAW;
-    }
-    if (spielState->IsTerminal()) {
+    if (spielState->IsTerminal() || spielState->CurrentPlayer() == -4) {
         const double currentReturn = spielState->Returns()[spielState->MoveNumber() % 2];
         if (currentReturn == spielGame->MaxUtility()) {
             return TERMINAL_WIN;

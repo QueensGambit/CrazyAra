@@ -27,7 +27,7 @@ class RLConfig:
     rm_fraction_for_selection: float = 0.05  # which percentage of the most recent memory shall be taken into account
     # The UCI_Variant. Must be in ["3check", "atomic", "chess", "crazyhouse",
     # "giveaway" (= antichess), "horde", "kingofthehill", "racingkings"]
-    uci_variant: str = f'atomic'
+    uci_variant: str = f'tic_tac_toe'
 
 
 @dataclass
@@ -55,7 +55,7 @@ class UCIConfig:
     Reuse_Tree: str = False
     Search_Type: str = f'mcts'
     Selfplay_Chunk_Size: int = 128  # default: 128
-    Selfplay_Number_Chunks: int = 640  # default: 640
+    Selfplay_Number_Chunks: int = 1  # default: 640
     Simulations: int = 3200
     SyzygyPath: str = f''
     Temperature_Moves: int = 15  # CZ: 500
