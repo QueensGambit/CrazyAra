@@ -55,7 +55,7 @@ inline TimePoint current_time() {
 // method is based on 3rdparty/Stockfish/uci.cpp
 #ifdef SF_DEPENDENCY
 void on_tb_path(const CUSTOM_UCI::Option& o) {
-    Tablebases::init(UCI::variant_from_name(CUSTOM_UCI::Options["UCI_Variant"]), CUSTOM_UCI::Options["SyzygyPath"]);
+    Tablebases::init(UCI::variant_from_name(CustomOptions["UCI_Variant"]), CustomOptions["SyzygyPath"]);
 }
 #endif
 
@@ -219,7 +219,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
     while (is >> token)
         value += (value.empty() ? "" : " ") + token;
 
-    if (CUSTOM_UCI::Options.find(name) != CUSTOM_UCI::Options.end()) {
+    if (CustomOptions.find(name) != CustomOptions.end()) {
         const string givenName = name;
         std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 #ifdef MODE_LICHESS
@@ -230,7 +230,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             }
         }
 #endif
-        CUSTOM_UCI::Options[name] = value;
+        CustomOptions[name] = value;
         if (name != "uci_variant" && name != "uci_chess960") {
             info_string_important("Updated option", givenName, "to", value);
         } else {
@@ -241,11 +241,11 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             }
 #else
             bool is960 = false;
-            string uciVariant = CUSTOM_UCI::Options["UCI_Variant"];
+            string uciVariant = CustomOptions["UCI_Variant"];
             if (name == "uci_variant") {
                 std::transform(value.begin(), value.end(), value.begin(), ::tolower);
                 uciVariant = check_uci_variant_input(value, &is960);
-                CUSTOM_UCI::Options["UCI_Variant"] << Option(uciVariant.c_str());
+                CustomOptions["UCI_Variant"] << Option(uciVariant.c_str());
                 info_string_important("Updated option", givenName, "to", uciVariant);
 #ifdef SUPPORT960
                 if (Options["UCI_Chess960"] != is960) {
@@ -255,7 +255,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
 #endif // SUPPORT960
             } else { // name == "uci_chess960"
                 info_string_important("Updated option", givenName, "to", value);
-                is960 = CUSTOM_UCI::Options["UCI_Chess960"];
+                is960 = CustomOptions["UCI_Chess960"];
             }
             variant = StateConstants::variant_to_int(uciVariant);
             state.init(variant, is960);
@@ -265,7 +265,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             Options["Model_Directory"] << Option(("model/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             Options["Model_Directory_Contender"] << Option(("model_contender/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
 #endif
-            info_string_important("variant", (string)CUSTOM_UCI::Options["UCI_Variant"] + suffix_960, "startpos", state.fen());
+            info_string_important("variant", (string)CustomOptions["UCI_Variant"] + suffix_960, "startpos", state.fen());
 #endif // not XIANGQI
         }
     }

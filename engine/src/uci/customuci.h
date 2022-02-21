@@ -77,7 +77,8 @@ void init(OptionsMap&);
 //Move to_move(const Position& pos, std::string& str);
 //Variant variant_from_name(const std::string& str);
 
-extern CUSTOM_UCI::OptionsMap Options;
 } // namespace CUSTOM_UCI
+
+extern CUSTOM_UCI::OptionsMap CustomOptions;
 
 #endif // #ifndef CUSTOMUCI_H_INCLUDED
