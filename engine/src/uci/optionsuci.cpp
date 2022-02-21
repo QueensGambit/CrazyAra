@@ -33,7 +33,8 @@
 #include <algorithm>
 #include <cstring>
 #include "customlogger.h"
-#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
+#ifdef SF_DEPENDENCY
+#include "uci.h"
 #include "syzygy/tbprobe.h"
 #endif
 #include "../util/communication.h"
@@ -41,7 +42,7 @@
 
 using namespace std;
 
-void on_logger(const Option& o) {
+void on_logger(const CUSTOM_UCI::Option& o) {
     CustomLogger::start(o, ifstream::app);
 }
 
@@ -52,9 +53,9 @@ inline TimePoint current_time() {
 }
 
 // method is based on 3rdparty/Stockfish/uci.cpp
-#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
-void on_tb_path(const Option& o) {
-    Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
+#ifdef SF_DEPENDENCY
+void on_tb_path(const CUSTOM_UCI::Option& o) {
+    Tablebases::init(UCI::variant_from_name(CUSTOM_UCI::Options["UCI_Variant"]), CUSTOM_UCI::Options["SyzygyPath"]);
 }
 #endif
 
@@ -166,7 +167,7 @@ void OptionsUCI::init(OptionsMap &o)
    o["Centi_Temperature_Decay"]        << Option(100, 0, 100);
    o["Temperature_Moves"]              << Option(0, 0, 99999);
 #endif
-#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
+#ifdef SF_DEPENDENCY
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
 #endif
     o["Threads"]                       << Option(2, 1, 512);
@@ -218,7 +219,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
     while (is >> token)
         value += (value.empty() ? "" : " ") + token;
 
-    if (Options.find(name) != Options.end()) {
+    if (CUSTOM_UCI::Options.find(name) != CUSTOM_UCI::Options.end()) {
         const string givenName = name;
         std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 #ifdef MODE_LICHESS
@@ -229,7 +230,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             }
         }
 #endif
-        Options[name] = value;
+        CUSTOM_UCI::Options[name] = value;
         if (name != "uci_variant" && name != "uci_chess960") {
             info_string_important("Updated option", givenName, "to", value);
         } else {
@@ -240,11 +241,11 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             }
 #else
             bool is960 = false;
-            string uciVariant = Options["UCI_Variant"];
+            string uciVariant = CUSTOM_UCI::Options["UCI_Variant"];
             if (name == "uci_variant") {
                 std::transform(value.begin(), value.end(), value.begin(), ::tolower);
                 uciVariant = check_uci_variant_input(value, &is960);
-                Options["UCI_Variant"] << Option(uciVariant.c_str());
+                CUSTOM_UCI::Options["UCI_Variant"] << Option(uciVariant.c_str());
                 info_string_important("Updated option", givenName, "to", uciVariant);
 #ifdef SUPPORT960
                 if (Options["UCI_Chess960"] != is960) {
@@ -254,7 +255,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
 #endif // SUPPORT960
             } else { // name == "uci_chess960"
                 info_string_important("Updated option", givenName, "to", value);
-                is960 = Options["UCI_Chess960"];
+                is960 = CUSTOM_UCI::Options["UCI_Chess960"];
             }
             variant = StateConstants::variant_to_int(uciVariant);
             state.init(variant, is960);
@@ -264,7 +265,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             Options["Model_Directory"] << Option(("model/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             Options["Model_Directory_Contender"] << Option(("model_contender/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
 #endif
-            info_string_important("variant", (string)Options["UCI_Variant"] + suffix_960, "startpos", state.fen());
+            info_string_important("variant", (string)CUSTOM_UCI::Options["UCI_Variant"] + suffix_960, "startpos", state.fen());
 #endif // not XIANGQI
         }
     }

@@ -28,11 +28,11 @@
 #ifndef OPTIONSUCI_H
 #define OPTIONSUCI_H
 
-#include "uci.h"
+#include "customuci.h"
 #include "stateobj.h"
 #include "agents/config/searchlimits.h"
 
-using namespace UCI;
+using namespace CUSTOM_UCI;
 
 namespace OptionsUCI {
 

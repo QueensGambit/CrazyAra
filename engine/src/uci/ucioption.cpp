@@ -22,7 +22,7 @@
 #include <sstream>
 
 #include "uci.h"
-#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
+#ifdef SF_DEPENDENCY
 #include "evaluate.h"
 #include "misc.h"
 #include "search.h"
@@ -38,7 +38,7 @@ UCI::OptionsMap Options; // Global object
 namespace UCI {
 
 /// 'On change' actions, triggered by an option's value change
-#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
+#ifdef SF_DEPENDENCY
 void on_clear_hash(const Option&) { Search::clear(); }
 void on_hash_size(const Option& o) { TT.resize(size_t(o)); }
 void on_logger(const Option& o) { start_logger(o); }
@@ -61,7 +61,7 @@ bool CaseInsensitiveLess::operator() (const string& s1, const string& s2) const 
 /// UCI::init() initializes the UCI options to their hard-coded default values
 
 void init(OptionsMap& o) {
-#if defined(MODE_CRAZYHOUSE) || defined(MODE_CHESS) || defined(MODE_LICHESS)
+#ifdef SF_DEPENDENCY
   constexpr int MaxHashMB = Is64Bit ? 33554432 : 2048;
   o["Debug Log File"]        << Option("", on_logger);
   o["Contempt"]              << Option(24, -100, 100);

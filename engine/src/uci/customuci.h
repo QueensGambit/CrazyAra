@@ -16,18 +16,18 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef UCI_H_INCLUDED
-#define UCI_H_INCLUDED
+#ifndef CUSTOMUCI_H_INCLUDED
+#define CUSTOMUCI_H_INCLUDED
 
 #include <map>
 #include <string>
 #include <vector>
 
+#ifdef SF_DEPENDENCY
 #include "types.h"
+#endif
 
-class Position;
-
-namespace UCI {
+namespace CUSTOM_UCI {
 
 class Option;
 
@@ -77,8 +77,7 @@ void init(OptionsMap&);
 //Move to_move(const Position& pos, std::string& str);
 //Variant variant_from_name(const std::string& str);
 
-} // namespace UCI
+extern CUSTOM_UCI::OptionsMap Options;
+} // namespace CUSTOM_UCI
 
-extern UCI::OptionsMap Options;
-
-#endif // #ifndef UCI_H_INCLUDED
+#endif // #ifndef CUSTOMUCI_H_INCLUDED
