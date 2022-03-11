@@ -40,7 +40,7 @@ namespace OptionsUCI {
      * @brief init Defines and initiatlizes the UCI options
      * @param o Alias to the option map which will get initialized
      */
-    void init(OptionsMap& o);
+    void init(CUSTOM_UCI::OptionsMap& o);
 
     /**
      * @brief setoption Sets a given option value to the Options map.

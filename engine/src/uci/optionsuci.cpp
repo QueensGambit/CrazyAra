@@ -59,7 +59,7 @@ void on_tb_path(const CUSTOM_UCI::Option& o) {
 }
 #endif
 
-void OptionsUCI::init(OptionsMap &o)
+void OptionsUCI::init(CUSTOM_UCI::OptionsMap &o)
 {
     o["Allow_Early_Stopping"]          << CUSTOM_UCI::Option(true);
 #ifdef USE_RL
