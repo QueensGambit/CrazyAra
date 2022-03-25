@@ -40,11 +40,17 @@
 #include "agents/config/searchlimits.h"
 #include "agents/config/playsettings.h"
 #include "node.h"
-#include "customuci.h"
 #include "timeoutreadythread.h"
 #ifdef USE_RL
 #include "rl/selfplay.h"
 #include "agents/config/rlsettings.h"
+#endif
+#ifdef SF_DEPENDENCY
+#include "uci.h"
+using namespace UCI;
+#else
+#include "customuci.h"
+using namespace CUSTOM_UCI;
 #endif
 
 using namespace crazyara;
@@ -300,13 +306,13 @@ private:
  * @brief get_num_gpus Returns the number of GPU based on the UCI settings "First_Device_ID" and "Last_Device_ID"
  * @return number of gpus
  */
-size_t get_num_gpus(CUSTOM_UCI::OptionsMap& option);
+size_t get_num_gpus(OptionsMap& option);
 
 /**
  * @brief validate_device_indices Valdiates if the "Last_Device_ID" >= "First_Device_ID"
  * @param option
  */
-void validate_device_indices(CUSTOM_UCI::OptionsMap& option);
+void validate_device_indices(OptionsMap& option);
 
 /**
 * @brief Calculates all combinations of size K out of set N

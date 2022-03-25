@@ -23,10 +23,6 @@
 #include <string>
 #include <vector>
 
-#ifdef SF_DEPENDENCY
-#include "types.h"
-#endif
-
 namespace CUSTOM_UCI {
 
 class Option;
@@ -68,17 +64,11 @@ private:
 };
 
 void init(OptionsMap&);
-//void loop(int argc, char* argv[]);
-//std::string value(Value v);
-//std::string square(Square s);
-//std::string move(Move m, bool chess960);
-//std::string pv(const Position& pos, Depth depth, Value alpha, Value beta);
-//std::string wdl(Value v, int ply);
-//Move to_move(const Position& pos, std::string& str);
-//Variant variant_from_name(const std::string& str);
 
 } // namespace CUSTOM_UCI
 
-extern CUSTOM_UCI::OptionsMap CustomOptions;
+#ifndef SF_DEPENDENCY
+extern CUSTOM_UCI::OptionsMap Options;
+#endif
 
 #endif // #ifndef CUSTOMUCI_H_INCLUDED

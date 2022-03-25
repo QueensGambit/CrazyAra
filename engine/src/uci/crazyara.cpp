@@ -28,7 +28,6 @@
 #include <thread>
 #include "mctsagent.h"
 #include "search.h"
-#include "customuci.h"
 #include "search.h"
 #include "evalinfo.h"
 #include "constants.h"
@@ -86,7 +85,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
     EvalInfo evalInfo;
-    variant = StateConstants::variant_to_int(CustomOptions["UCI_Variant"]);
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
     state->set(StateConstants::start_fen(variant), is960, variant);
 
     for (int i = 1; i < argc; ++i)
@@ -116,7 +115,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         }
         else if (token == "uci") {
             cout << engine_info()
-                 << CustomOptions << endl
+                 << Options << endl
                  << "uciok" << endl;
         }
         else if (token == "setoption")  set_uci_option(is, *state.get());
@@ -153,7 +152,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
 void CrazyAra::prepare_search_config_structs()
 {
-    OptionsUCI::init_new_search(searchLimits, CustomOptions);
+    OptionsUCI::init_new_search(searchLimits, Options);
 
     if (changedUCIoption) {
         init_search_settings();
@@ -200,7 +199,7 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
 
-    variant = StateConstants::variant_to_int(CustomOptions["UCI_Variant"]);
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
     state->set(StateConstants::start_fen(variant), is960, variant);
 
     istringstream is("fen " + fen);
@@ -231,7 +230,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
 
     Action action;
     string token, fen;
-    variant = StateConstants::variant_to_int(CustomOptions["UCI_Variant"]);
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
 
     is >> token;
     if (token == "startpos")
@@ -326,8 +325,8 @@ void CrazyAra::export_search_tree(istringstream &is)
 
 void CrazyAra::activeuci()
 {
-    for (const auto& it : CustomOptions)
-        cout << "option name " << it.first << " value " << string(CustomOptions[it.first]) << endl;
+    for (const auto& it : Options)
+        cout << "option name " << it.first << " value " << string(Options[it.first]) << endl;
     cout << "readyok" << endl;
 }
 
@@ -490,7 +489,7 @@ void CrazyAra::init_rl_settings()
 void CrazyAra::init()
 {
 #ifdef SF_DEPENDENCY
-    OptionsUCI::init(CustomOptions);
+    OptionsUCI::init(Options);
     Bitboards::init();
     Position::init();
     Bitbases::init();
@@ -518,7 +517,7 @@ bool CrazyAra::is_ready()
 {
     bool hasReplied = false;
     if (!networkLoaded) {
-        const size_t timeoutMS = CustomOptions["Timeout_MS"];
+        const size_t timeoutMS = Options["Timeout_MS"];
         TimeOutReadyThread timeoutThread(timeoutMS);
         thread tTimeoutThread;
         if (timeoutMS != 0) {
@@ -529,9 +528,9 @@ bool CrazyAra::is_ready()
 #ifdef USE_RL
         init_rl_settings();
 #endif
-        netSingle = create_new_net_single(string(CustomOptions["Model_Directory"]));
+        netSingle = create_new_net_single(string(Options["Model_Directory"]));
         netSingle->validate_neural_network();
-        netBatches = create_new_net_batches(string(CustomOptions["Model_Directory"]));
+        netBatches = create_new_net_batches(string(Options["Model_Directory"]));
         netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
@@ -570,7 +569,7 @@ string CrazyAra::engine_info()
 unique_ptr<NeuralNetAPI> CrazyAra::create_new_net_single(const string& modelDirectory)
 {
 #ifdef MXNET
-    return make_unique<MXNetAPI>(CustomOptions["Context"], int(CustomOptions["First_Device_ID"]), 1, modelDirectory, CustomOptions["Precision"], false);
+    return make_unique<MXNetAPI>(Options["Context"], int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"], false);
 #elif defined TENSORRT
     return make_unique<TensorrtAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
 #elif defined OPENVINO
@@ -589,10 +588,10 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
         const bool useTensorRT = false;
     #endif
 #endif
-    for (int deviceId = int(CustomOptions["First_Device_ID"]); deviceId <= int(CustomOptions["Last_Device_ID"]); ++deviceId) {
-        for (size_t i = 0; i < size_t(CustomOptions["Threads"]); ++i) {
+    for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
+        for (size_t i = 0; i < size_t(Options["Threads"]); ++i) {
     #ifdef MXNET
-            netBatches.push_back(make_unique<MXNetAPI>(CustomOptions["Context"], deviceId, searchSettings.batchSize, modelDirectory, CustomOptions["Precision"], useTensorRT));
+            netBatches.push_back(make_unique<MXNetAPI>(Options["Context"], deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"], useTensorRT));
     #elif defined TENSORRT
             netBatches.push_back(make_unique<TensorrtAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"]));
     #elif defined OPENVINO
@@ -606,17 +605,17 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
 void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
 {
     // these three UCI-Options may trigger a network reload, keep an eye on them
-    const string prevModelDir = CustomOptions["Model_Directory"];
-    const int prevThreads = CustomOptions["Threads"];
-    const string prevUciVariant = CustomOptions["UCI_Variant"];
-    const int prevFirstDeviceID = CustomOptions["First_Device_ID"];
-    const int prevLastDeviceID = CustomOptions["Last_Device_ID"];
+    const string prevModelDir = Options["Model_Directory"];
+    const int prevThreads = Options["Threads"];
+    const string prevUciVariant = Options["UCI_Variant"];
+    const int prevFirstDeviceID = Options["First_Device_ID"];
+    const int prevLastDeviceID = Options["Last_Device_ID"];
 
     OptionsUCI::setoption(is, variant, state);
     changedUCIoption = true;
     if (networkLoaded) {
-        if (string(CustomOptions["Model_Directory"]) != prevModelDir || int(CustomOptions["Threads"]) != prevThreads || string(CustomOptions["UCI_Variant"]) != prevUciVariant ||
-            int(CustomOptions["First_Device_ID"]) != prevFirstDeviceID || int(CustomOptions["Last_Device_ID"] != prevLastDeviceID)) {
+        if (string(Options["Model_Directory"]) != prevModelDir || int(Options["Threads"]) != prevThreads || string(Options["UCI_Variant"]) != prevUciVariant ||
+            int(Options["First_Device_ID"]) != prevFirstDeviceID || int(Options["Last_Device_ID"] != prevLastDeviceID)) {
             networkLoaded = false;
             is_ready<false>();
         }
@@ -657,61 +656,61 @@ unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, v
 
 void CrazyAra::init_search_settings()
 {
-    validate_device_indices(CustomOptions);
-    searchSettings.multiPV = CustomOptions["MultiPV"];
-    searchSettings.threads = CustomOptions["Threads"] * get_num_gpus(CustomOptions);
-    searchSettings.childThreads = CustomOptions["Child_Threads"];
-    searchSettings.batchSize = CustomOptions["Batch_Size"];
-    searchSettings.useMCGS = CustomOptions["Search_Type"] == "mcgs";
-//    searchSettings.uInit = float(CustomOptions["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
-//    searchSettings.uMin = CustomOptions["Centi_U_Min"] / 100.0f;                      currently disabled
-//    searchSettings.uBase = CustomOptions["U_Base"];                                   currently disabled
-    searchSettings.qValueWeight = CustomOptions["Centi_Q_Value_Weight"] / 100.0f;
-    searchSettings.qVetoDelta = CustomOptions["Centi_Q_Veto_Delta"] / 100.0f;
-    searchSettings.epsilonChecksCounter = round((1.0f / CustomOptions["Centi_Epsilon_Checks"]) * 100.0f);
-    searchSettings.epsilonGreedyCounter = round((1.0f / CustomOptions["Centi_Epsilon_Greedy"]) * 100.0f);
-//    searchSettings.enhanceCaptures = CustomOptions["Enhance_Captures"];               //currently disabled
-    searchSettings.cpuctInit = CustomOptions["Centi_CPuct_Init"] / 100.0f;
-    searchSettings.cpuctBase = CustomOptions["CPuct_Base"];
-    searchSettings.dirichletEpsilon = CustomOptions["Centi_Dirichlet_Epsilon"] / 100.0f;
-    searchSettings.dirichletAlpha = CustomOptions["Centi_Dirichlet_Alpha"] / 100.0f;
-    searchSettings.nodePolicyTemperature = CustomOptions["Centi_Node_Temperature"] / 100.0f;
-    searchSettings.virtualLoss = CustomOptions["Centi_Virtual_Loss"] / 100.0f;
-    searchSettings.randomMoveFactor = CustomOptions["Centi_Random_Move_Factor"]  / 100.0f;
-    searchSettings.allowEarlyStopping = CustomOptions["Allow_Early_Stopping"];
-    useRawNetwork = CustomOptions["Use_Raw_Network"];
+    validate_device_indices(Options);
+    searchSettings.multiPV = Options["MultiPV"];
+    searchSettings.threads = Options["Threads"] * get_num_gpus(Options);
+    searchSettings.childThreads = Options["Child_Threads"];
+    searchSettings.batchSize = Options["Batch_Size"];
+    searchSettings.useMCGS = Options["Search_Type"] == "mcgs";
+//    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
+//    searchSettings.uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
+//    searchSettings.uBase = Options["U_Base"];                                   currently disabled
+    searchSettings.qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
+    searchSettings.qVetoDelta = Options["Centi_Q_Veto_Delta"] / 100.0f;
+    searchSettings.epsilonChecksCounter = round((1.0f / Options["Centi_Epsilon_Checks"]) * 100.0f);
+    searchSettings.epsilonGreedyCounter = round((1.0f / Options["Centi_Epsilon_Greedy"]) * 100.0f);
+//    searchSettings.enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
+    searchSettings.cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
+    searchSettings.cpuctBase = Options["CPuct_Base"];
+    searchSettings.dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
+    searchSettings.dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
+    searchSettings.nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
+    searchSettings.virtualLoss = Options["Centi_Virtual_Loss"] / 100.0f;
+    searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
+    searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
+    useRawNetwork = Options["Use_Raw_Network"];
 #ifdef SUPPORT960
-    is960 = CustomOptions["UCI_Chess960"];
+    is960 = Options["UCI_Chess960"];
 #endif
-    searchSettings.useNPSTimemanager = CustomOptions["Use_NPS_Time_Manager"];
-    if (string(CustomOptions["SyzygyPath"]).empty() || string(CustomOptions["SyzygyPath"]) == "<empty>") {
+    searchSettings.useNPSTimemanager = Options["Use_NPS_Time_Manager"];
+    if (string(Options["SyzygyPath"]).empty() || string(Options["SyzygyPath"]) == "<empty>") {
         searchSettings.useTablebase = false;
     }
     else {
         searchSettings.useTablebase = true;
     }
-    searchSettings.reuseTree = CustomOptions["Reuse_Tree"];
-    searchSettings.mctsSolver = CustomOptions["MCTS_Solver"];
+    searchSettings.reuseTree = Options["Reuse_Tree"];
+    searchSettings.mctsSolver = Options["MCTS_Solver"];
 }
 
 void CrazyAra::init_play_settings()
 {
-    playSettings.initTemperature = CustomOptions["Centi_Temperature"] / 100.0f;
-    playSettings.temperatureMoves = CustomOptions["Temperature_Moves"];
-    playSettings.temperatureDecayFactor = CustomOptions["Centi_Temperature_Decay"] / 100.0f;
-    playSettings.quantileClipping = CustomOptions["Centi_Quantile_Clipping"] / 100.0f;
+    playSettings.initTemperature = Options["Centi_Temperature"] / 100.0f;
+    playSettings.temperatureMoves = Options["Temperature_Moves"];
+    playSettings.temperatureDecayFactor = Options["Centi_Temperature_Decay"] / 100.0f;
+    playSettings.quantileClipping = Options["Centi_Quantile_Clipping"] / 100.0f;
 #ifdef USE_RL
-    playSettings.meanInitPly = CustomOptions["MeanInitPly"];
-    playSettings.maxInitPly = CustomOptions["MaxInitPly"];
+    playSettings.meanInitPly = Options["MeanInitPly"];
+    playSettings.maxInitPly = Options["MaxInitPly"];
 #endif
 }
 
-size_t get_num_gpus(CUSTOM_UCI::OptionsMap& option)
+size_t get_num_gpus(OptionsMap& option)
 {
     return size_t(option["Last_Device_ID"] - option["First_Device_ID"] + 1);
 }
 
-void validate_device_indices(CUSTOM_UCI::OptionsMap& option)
+void validate_device_indices(OptionsMap& option)
 {
     if (option["Last_Device_ID"] < option["First_Device_ID"]) {
         info_string("Last_Device_ID:", option["Last_Device_ID"]);

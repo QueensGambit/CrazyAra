@@ -28,11 +28,19 @@
 #ifndef OPTIONSUCI_H
 #define OPTIONSUCI_H
 
+#ifndef SF_DEPENDENCY
 #include "customuci.h"
+#else
+#include "uci.h"
+#endif
 #include "stateobj.h"
 #include "agents/config/searchlimits.h"
 
+#ifndef SF_DEPENDENCY
 using namespace CUSTOM_UCI;
+#else
+using namespace UCI;
+#endif
 
 namespace OptionsUCI {
 
@@ -40,7 +48,7 @@ namespace OptionsUCI {
      * @brief init Defines and initiatlizes the UCI options
      * @param o Alias to the option map which will get initialized
      */
-    void init(CUSTOM_UCI::OptionsMap& o);
+    void init(OptionsMap& o);
 
     /**
      * @brief setoption Sets a given option value to the Options map.

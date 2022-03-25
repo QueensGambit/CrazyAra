@@ -47,7 +47,7 @@ using namespace OptionsUCI;
 
 #ifdef SF_DEPENDENCY
 void init() {
-    OptionsUCI::init(CustomOptions);
+    OptionsUCI::init(Options);
     Bitboards::init();
     Position::init();
     Bitbases::init();
