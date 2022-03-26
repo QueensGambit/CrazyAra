@@ -36,6 +36,8 @@
 #ifdef SF_DEPENDENCY
 #include "uci.h"
 #include "syzygy/tbprobe.h"
+#else
+#include "customuci.h"
 #endif
 #include "../util/communication.h"
 #include "../nn/neuralnetapi.h"

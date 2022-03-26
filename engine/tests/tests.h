@@ -33,12 +33,14 @@
 #include <vector>
 #include <string>
 #include "stateobj.h"
+#ifdef SF_DEPENDENCY
 #include "environments/chess_related/board.h"
+#endif
 
 using namespace std;
 
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
-
+#ifndef MODE_STRATEGO
 /**
  * @brief init Initializes bitboards, bitbases and position arrays
  */
@@ -126,6 +128,7 @@ bool legal_actions_equal_ucimoves(const BoardState& pos, const vector<string>& u
 #endif
 #endif
 
+#endif
 #endif
 
 #endif // TESTS_H

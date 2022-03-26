@@ -31,6 +31,7 @@
 using namespace Catch::literals;
 using namespace std;
 #include <string>
+#ifndef MODE_STRATEGO
 #ifndef MODE_XIANGQI
 #ifdef SF_DEPENDENCY
 #include "uci.h"
@@ -1434,6 +1435,12 @@ TEST_CASE("Lichess Crazyhouse") {
 
 
 #endif //MODE_LICHESS
+
+#else // MODE_STRATEGO
+TEST_CASE("Build tests") {
+    REQUIRE(true);
+}
+#endif
 
 #endif
 
