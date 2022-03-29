@@ -28,7 +28,6 @@
 #include <thread>
 #include "mctsagent.h"
 #include "search.h"
-#include "search.h"
 #include "evalinfo.h"
 #include "constants.h"
 #include "state.h"
@@ -36,7 +35,7 @@
 #include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
 #ifdef MODE_XIANGQI
-    #include "piece.h"
+#include "piece.h"
 #endif
 #ifdef MXNET
 #include "nn/mxnetapi.h"
@@ -488,23 +487,18 @@ void CrazyAra::init_rl_settings()
 
 void CrazyAra::init()
 {
-#ifdef SF_DEPENDENCY
     OptionsUCI::init(Options);
+#ifdef MODE_XIANGQI
+    UCI::init(Options);
+    pieceMap.init();
+#endif
+#ifdef SF_DEPENDENCY
     Bitboards::init();
     Position::init();
     Bitbases::init();
     Search::init();
 #endif
 #ifdef MODE_XIANGQI
-    pieceMap.init();
-    OptionsUCI::init(Options);
-    UCI::init(Options);
-    Bitboards::init();
-    Position::init();
-    Bitbases::init();
-    Search::init();
-    Tablebases::init("");
-
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");
