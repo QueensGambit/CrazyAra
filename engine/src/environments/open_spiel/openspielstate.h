@@ -38,9 +38,10 @@ namespace open_spiel {
 namespace gametype {
 enum SupportedOpenSpielVariants : uint8_t {
     TICTACTOE = 0,
-    HEX = 1,  // 11x11 board
-    CHESS = 2,
-    YORKTOWN = 3,
+    CONNECTFOUR = 1,
+    HEX = 2,  // 11x11 board
+    CHESS = 3,
+    YORKTOWN = 4,
 };
 }
 }
@@ -85,6 +86,7 @@ public:
 
     static std::vector<std::string> available_variants() {
         return {"tic_tac_toe",
+                "connect_four",
                 "hex",
                 "chess",
                 "yorktown"};
@@ -93,7 +95,9 @@ public:
     static std::string start_fen(int variant) {
         switch (variant) {
         case open_spiel::gametype::SupportedOpenSpielVariants::TICTACTOE:
-            return ". . .  . . .  . . .";
+            return "... ... ..."
+        case open_spiel::gametype::SupportedOpenSpielVariants::CONNECTFOUR:
+            return "....... ....... ....... ....... ....... .......";
         case open_spiel::gametype::SupportedOpenSpielVariants::HEX:
             return ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .";
         case open_spiel::gametype::SupportedOpenSpielVariants::CHESS:

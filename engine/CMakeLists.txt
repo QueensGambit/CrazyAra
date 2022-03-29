@@ -305,6 +305,8 @@ if (MODE_OPEN_SPIEL OR MODE_STRATEGO)
             "3rdparty/open_spiel/open_spiel/games/hex.cc"
             "3rdparty/open_spiel/open_spiel/games/tic_tac_toe.h"
             "3rdparty/open_spiel/open_spiel/games/tic_tac_toe.cc"
+            "3rdparty/open_spiel/open_spiel/games/connect_four.h"
+            "3rdparty/open_spiel/open_spiel/games/connect_four.cc"
             )
     endif()
 

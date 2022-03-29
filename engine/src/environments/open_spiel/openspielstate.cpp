@@ -61,7 +61,6 @@ void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant
         return;
     }
     if (currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::TICTACTOE) {
-        spielState = spielGame->NewInitialState();
         info_string_important("NewInitialState from string is not implemented for Tic-Tac-Toe.");
         return;
     }
