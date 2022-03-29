@@ -70,9 +70,6 @@ public:
     // boolean which indicates if the same node was requested twice for analysis
     bool reusedFullTree;
 
-    // boolean which can be triggered by "stop" from std-in to stop the current search
-    bool isRunning;
-
     // saves the overall nps for each move during the game
     float overallNPS;
     size_t avgDepth;

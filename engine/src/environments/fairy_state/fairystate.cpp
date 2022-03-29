@@ -118,7 +118,7 @@ string FairyState::action_to_san(Action action, const std::vector<Action> &legal
 }
 
 Tablebase::WDLScore FairyState::check_for_tablebase_wdl(Tablebase::ProbeState &result) {
-
+	return Tablebase::WDLScoreNone;  // TODO
 }
 
 void FairyState::set_auxiliary_outputs(const float* auxiliaryOutputs) {

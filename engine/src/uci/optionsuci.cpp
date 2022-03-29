@@ -33,7 +33,12 @@
 #include <algorithm>
 #include <cstring>
 #include "customlogger.h"
+#ifdef SF_DEPENDENCY
+#include "uci.h"
 #include "syzygy/tbprobe.h"
+#else
+#include "customuci.h"
+#endif
 #include "../util/communication.h"
 #include "../nn/neuralnetapi.h"
 
@@ -43,11 +48,19 @@ void on_logger(const Option& o) {
     CustomLogger::start(o, ifstream::app);
 }
 
+// method is based on 3rdparty/Stockfish/misc.cpp
+inline TimePoint current_time() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>
+        (std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 // method is based on 3rdparty/Stockfish/uci.cpp
+#ifdef SF_DEPENDENCY
 #ifndef MODE_XIANGQI
 void on_tb_path(const Option& o) {
     Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
 }
+#endif
 #endif
 
 void OptionsUCI::init(OptionsMap &o)
@@ -56,10 +69,14 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef USE_RL
     o["Batch_Size"]                    << Option(8, 1, 8192);
 #else
+#ifdef OPENVINO
+    o["Batch_Size"]                    << Option(16, 1, 8192);
+#else
 #ifdef MODE_CHESS
     o["Batch_Size"]                    << Option(64, 1, 8192);
 #else
     o["Batch_Size"]                    << Option(16, 1, 8192);
+#endif
 #endif
 #endif
     o["Child_Threads"]                 << Option(4, 1, 512);
@@ -154,8 +171,10 @@ void OptionsUCI::init(OptionsMap &o)
    o["Centi_Temperature_Decay"]        << Option(100, 0, 100);
    o["Temperature_Moves"]              << Option(0, 0, 99999);
 #endif
+#ifdef SF_DEPENDENCY
 #ifndef MODE_XIANGQI
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
+#endif
 #endif
     o["Threads"]                       << Option(2, 1, 512);
 #ifdef OPENVINO
@@ -301,7 +320,7 @@ const string OptionsUCI::get_first_variant_with_model()
 void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap &options)
 {
     searchLimits.reset();
-    searchLimits.startTime = now();
+    searchLimits.startTime = current_time();
     searchLimits.moveOverhead = TimePoint(options["Move_Overhead"]);
     searchLimits.nodes = options["Nodes"];
     searchLimits.nodesLimit = options["Nodes_Limit"];

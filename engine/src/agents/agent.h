@@ -58,7 +58,11 @@ protected:
     PlaySettings* playSettings;
     StateObj* state;
     EvalInfo* evalInfo;
+    // protect the isRunning attribute and makes sure that the stop() command can only be called after the search has actually been started
+    mutex runnerMutex;
     bool verbose;
+    // boolean which can be triggered by "stop" from std-in to stop the current search
+    bool isRunning;
 
 public:
     Agent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose);
@@ -100,6 +104,10 @@ public:
      * @return Action
      */
     Action get_best_action();
+
+    void lock();
+
+    void unlock();
 };
 }
 
