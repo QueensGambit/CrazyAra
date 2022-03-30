@@ -51,6 +51,7 @@ jobs:
         cmake --build ${{github.workspace}}/engine/build/xiangqi --config ${{env.BUILD_TYPE}}
         cmake --build ${{github.workspace}}/engine/build/stratego --config ${{env.BUILD_TYPE}}
         cmake --build ${{github.workspace}}/engine/build/hex --config ${{env.BUILD_TYPE}}
+
     - name: Test
       working-directory: ${{github.workspace}}/engine
       # Execute tests defined by the CMake configuration.
@@ -60,4 +61,4 @@ jobs:
         ./build/lichess/MultiAra
         ./build/xiangqi/XiangqiAra
         ./build/stratego/StrategoAra
-        ./build/stratego/OpenSpielAra
+        ./build/hex/OpenSpielAra
