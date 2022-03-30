@@ -51,4 +51,4 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: |
         ./build/stratego/StrategoAra
-        ./build/stratego/OpenSpielAra
+        ./build/hex/OpenSpielAra
