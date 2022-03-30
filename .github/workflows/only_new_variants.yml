@@ -1,4 +1,4 @@
-name: variants
+name: only_new_variants
 
 on: [ pull_request, workflow_dispatch ]
 env:
