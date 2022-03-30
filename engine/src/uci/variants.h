@@ -71,11 +71,15 @@ const int SUBVARIANT_NB = 20; // Thats high quality code
 #endif
 
 const static string StartFENs[SUBVARIANT_NB] = {
+    
+    #ifdef MODE_OPEN_SPIEL
     ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .",    
-
-    //#ifndef MODE_STRATEGO or MODE_OPEN_SPIEL
-    //"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    //#endif
+    #endif
+    
+    #ifndef MODE_STRATEGO or MODE_OPEN_SPIEL
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    #endif
+    
     #ifdef ANTI
     // "The king has no royal power and accordingly:
     // it may be captured like any other piece
