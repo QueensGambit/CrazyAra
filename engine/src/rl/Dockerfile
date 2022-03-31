@@ -39,7 +39,7 @@ RUN cd /root \
     && make install
 
 # Clone TensorRT repository for TensorRT backend
-# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
+# checkout commit for tag 8.2.1
 RUN cd /root \
     && git clone https://github.com/NVIDIA/TensorRT \
     && cd TensorRT \
