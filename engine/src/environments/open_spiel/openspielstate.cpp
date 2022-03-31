@@ -55,13 +55,7 @@ inline void OpenSpielState::check_variant(int variant)
 
 void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant)
 {
-    //check_variant(variant);
-    if (currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::HEX || currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::DARKHEX ) {
-        // info_string_important(currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::HEX );
-        // info_string_important(currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::DARKHEX );
-        // info_string_important("NewInitialState from string is not implemented for HEX.");
-        //return;
-    }
+    check_variant(variant);
     spielState = spielGame->NewInitialState(fenStr);
 }
 
