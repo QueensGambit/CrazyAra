@@ -307,6 +307,8 @@ if (MODE_OPEN_SPIEL OR MODE_STRATEGO)
             "3rdparty/open_spiel/open_spiel/games/chess/*.cc"
             "3rdparty/open_spiel/open_spiel/games/hex.h"
             "3rdparty/open_spiel/open_spiel/games/hex.cc"
+            "3rdparty/open_spiel/open_spiel/games/dark_hex.h"
+            "3rdparty/open_spiel/open_spiel/games/dark_hex.cc"
             )
     endif()
 
