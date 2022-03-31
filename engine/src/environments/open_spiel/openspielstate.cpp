@@ -201,6 +201,6 @@ OpenSpielState* OpenSpielState::openBoard() const
 
 
 void OpenSpielState::init(int variant, bool isChess960) {
-    //check_variant(variant);
+    check_variant(variant);
     spielState = spielGame->NewInitialState();
 }
