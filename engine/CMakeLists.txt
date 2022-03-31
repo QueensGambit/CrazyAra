@@ -8,7 +8,6 @@ option(BACKEND_TENSORRT          "Build with TensorRT support"  ON)
 option(BACKEND_MXNET             "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OFF)
 option(BACKEND_OPENVINO          "Build with OpenVino backend (CPU/GPU) support" OFF)
-option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
 option(USE_DYNAMIC_NN_ARCH       "Build with dynamic neural network architektur support"  ON)
 # enable a single mode for different model input / outputs
@@ -26,6 +25,7 @@ add_definitions(-DIS_64BIT)
 if (MODE_CRAZYHOUSE)
     project(CrazyAra CXX)
     add_definitions(-DMODE_CRAZYHOUSE)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DVERSION=1)
 endif()
@@ -33,16 +33,19 @@ endif()
 if (MODE_CHESS)
     project(ClassicAra CXX)
     add_definitions(-DMODE_CHESS)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DMCTS_TB_SUPPORT)
 #    add_definitions(-DVERSION=1)
 #    add_definitions(-DVERSION=2)
 #    add_definitions(-DSUB_VERSION=8)
     add_definitions(-DVERSION=3)
+    add_definitions(-DSUPPORT960)
 endif()
 
 if (MODE_LICHESS)
     project(MultiAra CXX)
     add_definitions(-DMODE_LICHESS)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DKOTH)
     add_definitions(-DTHREECHECK)
@@ -68,6 +71,7 @@ if (MODE_STRATEGO)
 endif()
 if (MODE_XIANGQI)
     project(XiangqiAra CXX)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DNO_THREADS)
     add_definitions(-DXIANGQI)
     add_definitions(-DMODE_XIANGQI)
@@ -201,15 +205,15 @@ list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-St
 if (NOT MODE_XIANGQI)
     set(source_files
         ${source_files}
-        ${sf_related_files}
         ${uci_files}
         )
 endif ()
 
-if (NOT MODE_OPEN_SPIEL AND NOT MODE_XIANGQI AND NOT MODE_STRATEGO)
+if (MODE_CRAZYHOUSE OR MODE_CHESS OR MODE_LICHESS)
     set(source_files
         ${source_files}
         ${chess_related_files}
+        ${sf_related_files}
         )
 endif()
 
@@ -427,10 +431,6 @@ if (BACKEND_TENSORRT)
     include_directories("$ENV{TENSORRT_PATH}/include")
     include_directories("$ENV{TENSORRT_PATH}/samples/common/")
     add_definitions(-DTENSORRT)
-endif()
-
-if (USE_960)
-    add_definitions(-DSUPPORT960)
 endif()
 
 add_executable(${PROJECT_NAME} ${source_files})

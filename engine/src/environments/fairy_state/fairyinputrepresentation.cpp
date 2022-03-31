@@ -5,8 +5,8 @@ using namespace std;
 
 void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color) {
     size_t p = 0;
-    while (bitboard != 0) {
-        if (bitboard & 0x1) {
+    while (bitboard != Bitboard(0)) {
+        if (bitboard & Bitboard(0x1)) {
             if (color == WHITE) {
                 int col = std::abs(9-std::floor(p/9));
                 int row = p % 9;
@@ -17,7 +17,7 @@ void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes,
             }
         }
         // Largeboards use 12 files per rank, xiangqi boards only use 9 files per rank
-        (p+1) % 9 == 0 ? bitboard >>= 4 : bitboard >>= 1;
+        (p+1) % 9 == 0 ? bitboard = bitboard >> 4 : bitboard = bitboard >> 1;
         p++;
     }
 }

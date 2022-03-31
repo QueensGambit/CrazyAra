@@ -71,6 +71,15 @@ public:
     static void init(bool isPolicyMap) {
         return; // pass
     }
+    static std::vector<std::string> available_variants() {
+        return {"stratego"};
+    }
+    static std::string start_fen(int variant) {
+        switch (variant) {
+        default:
+            return "MBCaaaaaaaKaaaaaaaaaaaaaaDaaaaaaEaDaaaLaaa__aa__aaaa__aa__aaPaaaWNaOXaQPaaaYaaaaaaaaaaaaaaaaaaaaaaaa r 0";
+        }
+    }
 };
 
 class StrategoState : public State

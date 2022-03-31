@@ -27,7 +27,6 @@
 #include "boardstate.h"
 #include "inputrepresentation.h"
 #include "syzygy/tbprobe.h"
-#include "uci/variants.h"
 #include "chess960position.h"
 #include "../util/communication.h"
 
@@ -261,7 +260,7 @@ BoardState* BoardState::clone() const
 void BoardState::init(int variant, bool is960)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-    string start_fen = StartFENs[variant];
+    string start_fen = StateConstantsBoard::start_fen(variant);
     if(is960 && variant == CHESS_VARIANT) {
         start_fen = chess960fen();
     } else if (is960) {

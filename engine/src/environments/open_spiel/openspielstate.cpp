@@ -28,8 +28,8 @@
 #include <functional>
 
 OpenSpielState::OpenSpielState():
-    currentVariant(open_spiel::gametype::SupportedOpenSpielVariants::DARKHEX),
-    spielGame(open_spiel::LoadGame(open_spiel::gametype::variantToString[currentVariant])),
+    currentVariant(open_spiel::gametype::SupportedOpenSpielVariants::HEX),
+    spielGame(open_spiel::LoadGame(StateConstantsOpenSpiel::variant_to_string(currentVariant))),
     spielState(spielGame->NewInitialState())
 {
 }
@@ -49,7 +49,7 @@ inline void OpenSpielState::check_variant(int variant)
 {
     if (variant != currentVariant) {
         currentVariant = open_spiel::gametype::SupportedOpenSpielVariants(variant);
-        spielGame = open_spiel::LoadGame(open_spiel::gametype::variantToString[currentVariant]);
+        spielGame = open_spiel::LoadGame(StateConstantsOpenSpiel::variant_to_string(currentVariant));
     }
 }
 

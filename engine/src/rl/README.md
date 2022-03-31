@@ -22,10 +22,10 @@ In order to build the docker container, use the following command:
 
 Afterwards you can start the container using a specified list of GPUs:
 ```shell script
-docker run --gpus '"device=10,11,12"' -it \
+docker run -gpus all -it \
  --rm -v local_dir:/data/RL crazyara_docker:latest
 ```
-If you want to use all available gpu, use `-gpus all` instead.
+If you want to launch the docker using only a subset of availabe you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.
 
 The parameter `-v` describes the mount directory, where the selfplay data will be stored.
 
@@ -100,6 +100,11 @@ The main configuration files for reinforcement learning can be found at `/root/C
 *   `docker images`: Lists all availabe docker images
 *   `docker ps`: List all running docker containers
 *   `Ctrl-p + Ctrl-q`: To detach the tty without exiting the shell. Processes will continue running in daemon mode.
-*   `docker exec -it [container-id] bash`: Enter a running docker container in shell mode
+*   `docker attach [container-id]`: Attach to a running docker container session
+*   `docker exec -it [container-id] bash`: Enter a running docker container in shell mode and create a new session
 *   `docker kill [OPTIONS] CONTAINER [CONTAINER...]`: Kill one or more running containers
 *   `docker image rm [OPTIONS] IMAGE [IMAGE...]`: Remove one or more images
+
+* `tmux`: Start a new tmux session
+* `tmux detach`: Detach from a tmux session
+* `tmux attach -t <id>`: Attach to a tmux session

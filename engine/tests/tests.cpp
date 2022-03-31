@@ -27,29 +27,33 @@
 
 #ifdef BUILD_TESTS
 #include <iostream>
-#ifndef MODE_XIANGQI
-#include <string>
 #include "catch.hpp"
+using namespace Catch::literals;
+using namespace std;
+#include <string>
+#ifndef MODE_STRATEGO
+#ifndef MODE_XIANGQI
+#ifdef SF_DEPENDENCY
 #include "uci.h"
+#endif
 #include "uci/optionsuci.h"
 #include "environments/chess_related/sfutil.h"
-#include "uci/variants.h"
 #include "thread.h"
 #include "constants.h"
 #include "environments/chess_related/inputrepresentation.h"
 #include "legacyconstants.h"
 #include "util/blazeutil.h"
 #include "environments/chess_related/boardstate.h"
-using namespace Catch::literals;
-using namespace std;
 using namespace OptionsUCI;
 
+#ifdef SF_DEPENDENCY
 void init() {
     OptionsUCI::init(Options);
     Bitboards::init();
     Position::init();
     Bitbases::init();
 }
+#endif
 
 struct PlaneStatistics {
     double sum;
@@ -160,7 +164,7 @@ TEST_CASE("En-passent moves") {
 TEST_CASE("Anti-Chess StartFEN"){
     init();
     StateObj state;
-    state.set(StartFENs[ANTI_VARIANT], false, ANTI_VARIANT);
+    state.set(StateConstants::start_fen(ANTI_VARIANT), false, ANTI_VARIANT);
     PlaneStatistics stats = get_planes_statistics(state, false);
 
 //    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008); // no last move planes
@@ -712,7 +716,7 @@ TEST_CASE("State: clone()"){
     unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state.clone());
     REQUIRE(state2->fen() == state.fen());
 }
-#else
+#elif defined (MODE_XIANGQI)
 #include "catch.hpp"
 #include "piece.h"
 #include "thread.h"
@@ -1431,5 +1435,12 @@ TEST_CASE("Lichess Crazyhouse") {
 
 
 #endif //MODE_LICHESS
+
+#else // MODE_STRATEGO
+TEST_CASE("Build tests") {
+    REQUIRE(true);
+}
+#endif
+
 #endif
 

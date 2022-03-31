@@ -84,10 +84,14 @@ Action FairyState::uci_to_action(string &uciStr) const {
 
 TerminalType FairyState::is_terminal(size_t numberLegalMoves, float &customTerminalValue) const {
     if (numberLegalMoves == 0) {
-        if (board.checkers()) {
-            return TERMINAL_LOSS;
-        }
-        return TERMINAL_DRAW;
+        // "Unlike in chess, in which stalemate is a draw, in xiangqi, it is a loss for the stalemated player."
+        // -- https://en.wikipedia.org/wiki/Xiangqi
+        return TERMINAL_LOSS;
+    }
+    if (this->number_repetitions() != 0) {
+        // "If one side perpetually checks and the other side perpetually chases, the checking side has to stop or be ruled to have lost."
+        // -- https://en.wikipedia.org/wiki/Xiangqi
+        return TERMINAL_WIN;
     }
     return TERMINAL_NONE;
 }
@@ -114,7 +118,7 @@ string FairyState::action_to_san(Action action, const std::vector<Action> &legal
 }
 
 Tablebase::WDLScore FairyState::check_for_tablebase_wdl(Tablebase::ProbeState &result) {
-
+	return Tablebase::WDLScoreNone;  // TODO
 }
 
 void FairyState::set_auxiliary_outputs(const float* auxiliaryOutputs) {

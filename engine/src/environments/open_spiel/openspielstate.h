@@ -42,12 +42,6 @@ enum SupportedOpenSpielVariants : uint8_t {
     CHESS = 2,
     YORKTOWN = 3,
 };
-const static std::string variantToString[] = {
-    "hex",
-    "dark_hex",
-    "chess",
-    "yorktown",
-};
 }
 }
 
@@ -85,6 +79,26 @@ public:
     }
     static void init(bool isPolicyMap) {
         return; // pass
+    }
+
+    static std::vector<std::string> available_variants() {
+        return {"hex",
+                "chess",
+                "yorktown"};
+    }
+
+    static std::string start_fen(int variant) {
+        switch (variant) {
+        case open_spiel::gametype::SupportedOpenSpielVariants::HEX:
+            return ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .";
+        case open_spiel::gametype::SupportedOpenSpielVariants::CHESS:
+            return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        case open_spiel::gametype::SupportedOpenSpielVariants::YORKTOWN:
+            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+        default:
+            info_string("Unknown variant:", variant, "given");
+            return "";
+        }
     }
 };
 
