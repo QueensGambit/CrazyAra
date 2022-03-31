@@ -24,7 +24,7 @@
 # Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
 # see release page for  all current available releases:
 # https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
-FROM nvcr.io/nvidia/mxnet:20.09-py3
+FROM nvcr.io/nvidia/mxnet:22.03-py3
 
 MAINTAINER QueensGambit
 
@@ -43,7 +43,7 @@ RUN cd /root \
 RUN cd /root \
     && git clone https://github.com/NVIDIA/TensorRT \
     && cd TensorRT \
-    && git checkout f693a6d723ef2766be36deb5e7987cd50159973a
+    && git checkout 6f38570b74066ef464744bc789f8512191f1cbc0
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
 
