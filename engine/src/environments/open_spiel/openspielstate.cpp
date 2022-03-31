@@ -186,14 +186,6 @@ OpenSpielState* OpenSpielState::clone() const
     return new OpenSpielState(*this);
 }
 
-OpenSpielState* OpenSpielState::openBoard() const
-{
-    // openBoard so get a corret information state which is not randomly sampled
-    
-
-}
-
-
 void OpenSpielState::init(int variant, bool isChess960) {
     check_variant(variant);
     spielState = spielGame->NewInitialState();
