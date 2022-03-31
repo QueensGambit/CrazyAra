@@ -140,11 +140,7 @@ const static string StartFENs[SUBVARIANT_NB] = {
     #ifdef MODE_STRATEGO
     "MBCaaaaaaaKaaaaaaaaaaaaaaDaaaaaaEaDaaaLaaa__aa__aaaa__aa__aaPaaaWNaOXaQPaaaYaaaaaaaaaaaaaaaaaaaaaaaa r 0",
     #endif
-    
-    #ifdef DARKHEX
-    ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .",    
-    #endif
-    
+       
 };
 
 #endif // VARIANTS_H
