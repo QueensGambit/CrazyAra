@@ -142,7 +142,6 @@ public:
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result);
     void set_auxiliary_outputs(const float* auxiliaryOutputs);
     OpenSpielState *clone() const;
-    OpenSpielState *openBoard() const;
     void init(int variant, bool isChess960);
 };
 
