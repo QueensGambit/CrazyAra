@@ -18,7 +18,7 @@ option(MODE_OPEN_SPIEL           "Build with open_spiel environment support"  OF
 option(MODE_XIANGQI              "Build with xiangqi only support" OFF)
 option(MODE_STRATEGO             "Build Stratego with open_spiel environment support"  OFF)
 option(SEARCH_UCT                "Build with UCT instead of PUCT search"  OFF)
-option(MCTS_STORE_STATES         "Build search by storing the state objects in each node. Results in higher memory usage but faster CPU runtime."  ON)
+option(MCTS_STORE_STATES         "Build search by storing the state objects in each node. Results in higher memory usage but faster CPU runtime."  OFF)
 
 add_definitions(-DIS_64BIT)
 
