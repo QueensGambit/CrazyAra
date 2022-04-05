@@ -88,27 +88,27 @@ public:
     /**
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
-     * @param variant Variant to generate games for
+     * @param int variant to generate games for
      */
-    void go(size_t numberOfGames, Variant variant);
+    void go(size_t numberOfGames, int variant);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
      * the mctsContender which uses the new updated wieghts
      * @param mctsContender MCTSAgent using different NN weights
      * @param numberOfGames Number of games to compare
-     * @param variant Variant to generate games for
+     * @param int variant to generate games for
      * @return Score in respect to the contender, as floating point number.
      *  Wins give 1.0 points, 0.5 for draw, 0.0 for loss.
      */
-    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, Variant variant);
+    TournamentResult go_arena(MCTSAgent *mctsContender, size_t numberOfGames, int variant);
 
 private:
     /**
      * @brief generate_game Generates a new game in self play mode
      * @param variant Current chess variant
      */
-    void generate_game(Variant variant, bool verbose);
+    void generate_game(int variant, bool verbose);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
@@ -119,7 +119,7 @@ private:
      * The fen will be stored in gamePGN.fen.
      * @param verbose If true the games will printed to stdout
      */
-    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, Variant variant, bool verbose, const string& fen);
+    Result generate_arena_game(MCTSAgent *whitePlayer, MCTSAgent *blackPlayer, int variant, bool verbose, const string& fen);
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
@@ -206,7 +206,7 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent);
  * @param rawPolicyProbTemp Probability for which a temperature scaling > 1.0f is applied
  * @return New state object
  */
-unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, Variant variant, bool is960, float rawPolicyProbTemp);
+unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, int variant, bool is960, float rawPolicyProbTemp);
 
 /**
  * @brief init_starting_state_from_fixed_move Initializes a starting position using a vector of actions
@@ -216,7 +216,7 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, 
  * @param actions Vector of actions
  * @return New state object
  */
-unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN& gamePGN, Variant variant, bool is960, const vector<Action>& actions);
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN& gamePGN, int variant, bool is960, const vector<Action>& actions);
 
 /**
  * @brief apply_raw_policy_temp Applies a temperature scaling to the policyProbSmall of the eval struct.
