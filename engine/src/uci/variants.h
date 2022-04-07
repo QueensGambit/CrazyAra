@@ -61,6 +61,7 @@ const static vector<string> availableVariants = {
 #endif
 #ifdef MODE_OPEN_SPIEL
     "hex",
+    "darkhex",
 #endif
 };
 
@@ -70,9 +71,11 @@ const int SUBVARIANT_NB = 20; // Thats high quality code
 #endif
 
 const static string StartFENs[SUBVARIANT_NB] = {
-    #ifndef MODE_STRATEGO
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    
+    #ifdef MODE_OPEN_SPIEL
+    ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .",    
     #endif
+        
     #ifdef ANTI
     // "The king has no royal power and accordingly:
     // it may be captured like any other piece
@@ -137,6 +140,7 @@ const static string StartFENs[SUBVARIANT_NB] = {
     #ifdef MODE_STRATEGO
     "MBCaaaaaaaKaaaaaaaaaaaaaaDaaaaaaEaDaaaLaaa__aa__aaaa__aa__aaPaaaWNaOXaQPaaaYaaaaaaaaaaaaaaaaaaaaaaaa r 0",
     #endif
+       
 };
 
 #endif // VARIANTS_H

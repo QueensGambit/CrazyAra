@@ -159,7 +159,7 @@ void SelfPlay::reset_search_params(bool isQuickSearch)
     }
 }
 
-void SelfPlay::generate_game(Variant variant, bool verbose)
+void SelfPlay::generate_game(int variant, bool verbose)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
 
@@ -219,11 +219,13 @@ void SelfPlay::generate_game(Variant variant, bool verbose)
     ++gameIdx;
 }
 
-Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, Variant variant, bool verbose, const string& fen)
+Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, int variant, bool verbose, const string& fen)
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
     unique_ptr<StateObj> state= make_unique<StateObj>();
+    //unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, 0, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature);
+    
     if (fen != "") {
         // set starting fen
         state->set(fen, is960, variant);
@@ -316,7 +318,7 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
-void SelfPlay::go(size_t numberOfGames, Variant variant)
+void SelfPlay::go(size_t numberOfGames, int variant)
 {
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
@@ -335,7 +337,7 @@ void SelfPlay::go(size_t numberOfGames, Variant variant)
     export_number_generated_games();
 }
 
-TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, Variant variant)
+TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGames, int variant)
 {
     TournamentResult tournamentResult;
     tournamentResult.playerA = mctsContender->get_name();
@@ -399,7 +401,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     return tournamentResult;
 }
 
-unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, Variant variant, bool is960, float rawPolicyProbTemp)
+unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, int variant, bool is960, float rawPolicyProbTemp)
 {
     unique_ptr<StateObj> state= make_unique<StateObj>();
     state->init(variant, is960);
@@ -424,7 +426,7 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, 
     return state;
 }
 
-unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, Variant variant, bool is960, const vector<Action>& actions)
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, int variant, bool is960, const vector<Action>& actions)
 {
     unique_ptr<StateObj> state= make_unique<StateObj>();
     state->init(variant, is960);
