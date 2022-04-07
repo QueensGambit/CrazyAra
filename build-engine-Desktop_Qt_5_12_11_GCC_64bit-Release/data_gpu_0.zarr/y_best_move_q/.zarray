@@ -1,0 +1,13 @@
+{
+    "chunks": [
+        128
+    ],
+    "compressor": null,
+    "dtype": "<f4",
+    "fill_value": 0.0,
+    "filters": null,
+    "order": "C",
+    "shape": [
+        81920
+    ]
+}

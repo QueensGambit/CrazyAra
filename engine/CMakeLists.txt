@@ -25,6 +25,7 @@ add_definitions(-DIS_64BIT)
 if (MODE_CRAZYHOUSE)
     project(CrazyAra CXX)
     add_definitions(-DMODE_CRAZYHOUSE)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DVERSION=1)
 endif()
@@ -32,6 +33,7 @@ endif()
 if (MODE_CHESS)
     project(ClassicAra CXX)
     add_definitions(-DMODE_CHESS)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DMCTS_TB_SUPPORT)
 #    add_definitions(-DVERSION=1)
 #    add_definitions(-DVERSION=2)
@@ -43,6 +45,7 @@ endif()
 if (MODE_LICHESS)
     project(MultiAra CXX)
     add_definitions(-DMODE_LICHESS)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DKOTH)
     add_definitions(-DTHREECHECK)
@@ -68,6 +71,7 @@ if (MODE_STRATEGO)
 endif()
 if (MODE_XIANGQI)
     project(XiangqiAra CXX)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DNO_THREADS)
     add_definitions(-DXIANGQI)
     add_definitions(-DMODE_XIANGQI)
@@ -201,15 +205,15 @@ list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-St
 if (NOT MODE_XIANGQI)
     set(source_files
         ${source_files}
-        ${sf_related_files}
         ${uci_files}
         )
 endif ()
 
-if (NOT MODE_OPEN_SPIEL AND NOT MODE_XIANGQI AND NOT MODE_STRATEGO)
+if (MODE_CRAZYHOUSE OR MODE_CHESS OR MODE_LICHESS)
     set(source_files
         ${source_files}
         ${chess_related_files}
+        ${sf_related_files}
         )
 endif()
 
@@ -307,6 +311,8 @@ if (MODE_OPEN_SPIEL OR MODE_STRATEGO)
             "3rdparty/open_spiel/open_spiel/games/tic_tac_toe.cc"
             "3rdparty/open_spiel/open_spiel/games/connect_four.h"
             "3rdparty/open_spiel/open_spiel/games/connect_four.cc"
+            "3rdparty/open_spiel/open_spiel/games/dark_hex.h"
+            "3rdparty/open_spiel/open_spiel/games/dark_hex.cc"
             )
     endif()
 

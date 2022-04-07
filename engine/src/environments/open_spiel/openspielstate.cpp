@@ -100,7 +100,13 @@ std::string OpenSpielState::fen() const
 
 void OpenSpielState::do_action(Action action)
 {
-    //cout << "action: " << action << endl;
+    auto player = spielState->CurrentPlayer();
+    if(player == 1){
+        int X = action / 11; //currently easier to set board size fix; change it later
+        int Y = action % 11;
+        spielState->ApplyAction(Y*11+X);
+        return;
+    }
     spielState->ApplyAction(action);
 }
 

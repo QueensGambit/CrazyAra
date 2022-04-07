@@ -26,15 +26,7 @@
 #include "crazyara.h"
 
 #include <thread>
-#include "bitboard.h"
 #include "mctsagent.h"
-#include "position.h"
-#include "search.h"
-#include "thread.h"
-#include "tt.h"
-#include "uci.h"
-#include "syzygy/tbprobe.h"
-#include "movegen.h"
 #include "search.h"
 #include "evalinfo.h"
 #include "constants.h"
@@ -43,7 +35,7 @@
 #include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
 #ifdef MODE_XIANGQI
-    #include "piece.h"
+#include "piece.h"
 #endif
 #ifdef MXNET
 #include "nn/mxnetapi.h"
@@ -141,12 +133,11 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
-    #ifdef MODE_STRATEGO
         // Test if the new modes are also usable for chess and others
+
         else if (token == "mctsmatch")   mctsarena(is, "", "");
         else if (token == "mctstournament")   mctstournament(is);
         else if (token == "tournament")   evaltournament(is);
-    #endif
 #endif   
         else
             cout << "Unknown command: " << cmd << endl;
@@ -168,8 +159,10 @@ void CrazyAra::prepare_search_config_structs()
     }
 }
 
-void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
-
+void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
+{
+    wait_to_finish_last_search();
+    ongoingSearch = true;
     prepare_search_config_structs();
 
     string token;
@@ -186,15 +179,15 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
         else if (token == "movetime")  is >> searchLimits.movetime;
         else if (token == "infinite")  searchLimits.infinite = true;
     }
-    wait_to_finish_last_search();
 
-    ongoingSearch = true;
     if (useRawNetwork) {
         rawAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        rawAgent->lock();  // lock() rawAgent to avoid calling stop() immediatly
         mainSearchThread = thread(run_agent_thread, rawAgent.get());
     }
     else {
         mctsAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        mctsAgent->lock(); // lock() mctsAgent to avoid calling stop() immediatly
         mainSearchThread = thread(run_agent_thread, mctsAgent.get());
     }
 }
@@ -211,7 +204,6 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     position(state.get(), is);
     istringstream isGoCommand(goCommand);
     go(state.get(), isGoCommand, evalInfo);
-    wait_to_finish_last_search();
 }
 
 void CrazyAra::wait_to_finish_last_search()
@@ -226,6 +218,7 @@ void CrazyAra::stop_search()
 {
     if (mctsAgent != nullptr) {
         mctsAgent->stop();
+        wait_to_finish_last_search();
     }
 }
 
@@ -422,6 +415,7 @@ void CrazyAra::mctstournament(istringstream &is)
     for(int i = 0;i<combinations.size();i++){
         std::istringstream iss (combinations[i] + std::to_string(numberofgames));
         mctsarena(iss, "", "");
+
     }
 
     exit(0);
@@ -493,23 +487,18 @@ void CrazyAra::init_rl_settings()
 
 void CrazyAra::init()
 {
-#ifndef MODE_XIANGQI
     OptionsUCI::init(Options);
+#ifdef MODE_XIANGQI
+    UCI::init(Options);
+    pieceMap.init();
+#endif
+#ifdef SF_DEPENDENCY
     Bitboards::init();
     Position::init();
     Bitbases::init();
     Search::init();
 #endif
 #ifdef MODE_XIANGQI
-    pieceMap.init();
-    OptionsUCI::init(Options);
-    UCI::init(Options);
-    Bitboards::init();
-    Position::init();
-    Bitbases::init();
-    Search::init();
-    Tablebases::init("");
-
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");

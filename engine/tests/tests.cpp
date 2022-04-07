@@ -31,8 +31,11 @@
 using namespace Catch::literals;
 using namespace std;
 #include <string>
+#ifndef MODE_STRATEGO
 #ifndef MODE_XIANGQI
+#ifdef SF_DEPENDENCY
 #include "uci.h"
+#endif
 #include "uci/optionsuci.h"
 #include "environments/chess_related/sfutil.h"
 #include "thread.h"
@@ -43,12 +46,14 @@ using namespace std;
 #include "environments/chess_related/boardstate.h"
 using namespace OptionsUCI;
 
+#ifdef SF_DEPENDENCY
 void init() {
     OptionsUCI::init(Options);
     Bitboards::init();
     Position::init();
     Bitbases::init();
 }
+#endif
 
 struct PlaneStatistics {
     double sum;
@@ -1430,6 +1435,12 @@ TEST_CASE("Lichess Crazyhouse") {
 
 
 #endif //MODE_LICHESS
+
+#else // MODE_STRATEGO
+TEST_CASE("Build tests") {
+    REQUIRE(true);
+}
+#endif
 
 #endif
 

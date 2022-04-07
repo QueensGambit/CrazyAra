@@ -32,7 +32,11 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/games/chess.h"
 #include "open_spiel/games/hex.h"
+<<<<<<< HEAD
 #include "open_spiel/games/tic_tac_toe.h"
+=======
+#include "open_spiel/games/dark_hex.h"
+>>>>>>> origin/master
 
 namespace open_spiel {
 namespace gametype {
@@ -65,12 +69,13 @@ public:
     }
     static uint NB_LABELS_POLICY_MAP() {
         return 9;  // TODO
+
     }
     static uint NB_AUXILIARY_OUTPUTS() {
         return 0U;
     }
     static int NB_PLAYERS() {
-        return  open_spiel::chess::NumPlayers();
+        return  open_spiel::hex::kNumPlayers;
     }
     static std::string action_to_uci(Action action, bool is960) {
         // TODO use actual uci for this

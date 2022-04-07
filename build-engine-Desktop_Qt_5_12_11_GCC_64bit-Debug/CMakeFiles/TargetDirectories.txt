@@ -1,0 +1,3 @@
+/home/chooga/uni/CrazyAraTic-Tac-Toe/CrazyAra/build-engine-Desktop_Qt_5_12_11_GCC_64bit-Debug/CMakeFiles/OpenSpielAra.dir
+/home/chooga/uni/CrazyAraTic-Tac-Toe/CrazyAra/build-engine-Desktop_Qt_5_12_11_GCC_64bit-Debug/CMakeFiles/edit_cache.dir
+/home/chooga/uni/CrazyAraTic-Tac-Toe/CrazyAra/build-engine-Desktop_Qt_5_12_11_GCC_64bit-Debug/CMakeFiles/rebuild_cache.dir

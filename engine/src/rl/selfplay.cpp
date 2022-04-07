@@ -224,6 +224,8 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
     unique_ptr<StateObj> state= make_unique<StateObj>();
+    //unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, 0, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature);
+    
     if (fen != "") {
         // set starting fen
         state->set(fen, is960, variant);
@@ -424,7 +426,7 @@ unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, 
     return state;
 }
 
-unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, Variant variant, bool is960, const vector<Action>& actions)
+unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, int variant, bool is960, const vector<Action>& actions)
 {
     unique_ptr<StateObj> state= make_unique<StateObj>();
     state->init(variant, is960);

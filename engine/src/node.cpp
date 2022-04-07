@@ -144,23 +144,18 @@ bool Node::at_least_one_drawn_child() const
 
 bool Node::only_won_child_nodes() const
 {
-    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
-        const Node* childNode = it->get();
-        if (childNode->d->nodeType != WIN) {
-            return false;
-        }
-    }
-    return true;
+    return only_child_nodes_of_one_kind<WIN>();
 }
 
 bool Node::solved_loss(const Node* childNode) const
 {
 #ifndef MCTS_SINGLE_PLAYER
     if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == WIN) {
+        return only_won_child_nodes();
 #else
     if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == LOSS) {
+        return only_child_nodes_of_one_kind<LOSS>();
 #endif
-        return only_won_child_nodes();
     }
     return false;
 }
@@ -210,23 +205,18 @@ bool Node::solved_tb_loss(const Node* childNode) const
 {
 #ifndef MCTS_SINGLE_PLAYER
     if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == TB_WIN) {
+        return only_won_tb_child_nodes();
 #else
     if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == TB_LOSS) {
+        return only_child_nodes_of_one_kind<TB_LOSS>();
 #endif
-        return only_won_tb_child_nodes();
     }
     return false;
 }
 
 bool Node::only_won_tb_child_nodes() const
 {
-    for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
-        const Node* childNode = it->get();
-        if (childNode->d->nodeType != TB_WIN) {
-            return false;
-        }
-    }
-    return true;
+    return only_child_nodes_of_one_kind<TB_WIN>();
 }
 
 void Node::mark_as_tb_loss()

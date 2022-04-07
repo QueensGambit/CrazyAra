@@ -34,7 +34,7 @@
 #include "EntropyCalibrator.h"
 #include "stateobj.h"
 #include "../util/communication.h"
-#if !defined(MODE_POMMERMAN) && !defined(MODE_XIANGQI) && !defined(MODE_STRATEGO)
+#ifdef SF_DEPENDENCY
 #include "environments/chess_related/chessbatchstream.h"
 #endif
 

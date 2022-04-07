@@ -71,4 +71,3 @@ class UCIConfigArena:
     Centi_Temperature: int = 60
 
 
-
