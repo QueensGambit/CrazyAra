@@ -7,7 +7,6 @@
 #include "uci.h"
 #include "variant.h"
 
-
 class StateConstantsFairy : public StateConstantsInterface<StateConstantsFairy>
 {
 public:
@@ -86,7 +85,8 @@ public:
         FairyOutputRepresentation::init_labels();
         FairyOutputRepresentation::init_policy_constants(isPolicyMap);
     }
-#ifdef MODE_XIANGQI
+
+#ifdef MODE_BOARDGAMES
     static uint NB_SQUARES_HORIZONTAL() {
         return 9;
     }
@@ -108,7 +108,8 @@ public:
 #endif
 
     static std::vector<std::string> available_variants() {
-        return {"xiangqi"};
+        return {"xiangqi",
+                "connect4"};
     }
 
     static std::string start_fen(int variant) {

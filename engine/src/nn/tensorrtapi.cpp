@@ -282,7 +282,7 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 #elif defined MODE_CRAZYHOUSE
         calibrationStream.reset(new ChessBatchStream(1, 232));
 #endif
-#if !defined(MODE_POMMERMAN) && !defined(MODE_OPEN_SPIEL) && !defined(MODE_XIANGQI) && !defined(MODE_STRATEGO)
+#if !defined(MODE_POMMERMAN) && !defined(MODE_OPEN_SPIEL) && !defined(MODE_XIANGQI) && !defined(MODE_STRATEGO) && !defined (MODE_BOARDGAMES)
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*(dynamic_cast<ChessBatchStream*>(calibrationStream.get())), 0, "model", "data"));
 #endif
         config->setInt8Calibrator(calibrator.get());

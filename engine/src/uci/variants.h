@@ -53,8 +53,15 @@ const static vector<string> availableVariants = {
     "3check",
     "threecheck", // 3check
 #endif
-#ifdef MODE_XIANGQI
-    "xiangqi",
+//#ifdef MODE_XIANGQI
+//    "xiangqi",
+//#endif
+#ifdef MODE_BOARDGAMES
+    "tictactoe",
+    "cfour",
+    "breakthrough5:breakthrough",
+    "breakthrough6:breakthrough",
+    "breakthrough7:breakthrough",
 #endif
 #ifdef MODE_STRATEGO
     "stratego",
@@ -75,7 +82,6 @@ const static string StartFENs[SUBVARIANT_NB] = {
     #ifdef MODE_OPEN_SPIEL
     ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .",    
     #endif
-        
     #ifdef ANTI
     // "The king has no royal power and accordingly:
     // it may be captured like any other piece
@@ -134,9 +140,9 @@ const static string StartFENs[SUBVARIANT_NB] = {
     #ifdef TWOKINGSSYMMETRIC
     "rnbqkknr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKKNR w KQkq - 0 1",
     #endif
-    #ifdef XIANGQI
-    "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
-    #endif
+//    #ifdef XIANGQI
+//    "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+//    #endif
     #ifdef MODE_STRATEGO
     "MBCaaaaaaaKaaaaaaaaaaaaaaDaaaaaaEaDaaaLaaa__aa__aaaa__aa__aaPaaaWNaOXaQPaaaYaaaaaaaaaaaaaaaaaaaaaaaa r 0",
     #endif

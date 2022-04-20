@@ -46,8 +46,8 @@ using namespace std;
 const string engineName = "CrazyAra";
 #elif defined MODE_LICHESS
 const string engineName = "MultiAra";
-#elif defined MODE_XIANGQI
-const string engineName = "XiangqiAra";
+#elif defined MODE_BOARDGAMES
+const string engineName = "BoardAra";
 #elif defined MODE_STRATEGO
 const string engineName = "StrategoAra";
 #elif defined MODE_OPEN_SPIEL
@@ -61,8 +61,8 @@ const string engineVersion = "0.9.9";
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer and CrazyAra developers (see AUTHORS file)";
 #elif defined MODE_LICHESS
 const string engineAuthors = "Johannes Czech, Maximilian Alexander Gehrke and CrazyAra developers (see AUTHORS file)";
-#elif defined MODE_XIANGQI
-const string engineAuthors = "Johannes Czech, Maximilian Langer and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_BOARDGAMES
+const string engineAuthors = "Johannes Czech, Rumei Ma and CrazyAra developers (see AUTHORS file)";
 #elif defined MODE_STRATEGO
 const string engineAuthors = "Johannes Czech, Jannis Blüml and CrazyAra developers (see AUTHORS file)";
 #elif defined MODE_OPEN_SPIEL

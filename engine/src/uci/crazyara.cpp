@@ -488,9 +488,17 @@ void CrazyAra::init_rl_settings()
 void CrazyAra::init()
 {
     OptionsUCI::init(Options);
-#ifdef MODE_XIANGQI
+//#ifdef MODE_XIANGQI
+//    UCI::init(Options);
+//    pieceMap.init();
+//#endif
+#ifdef MODE_BOARDGAMES
     UCI::init(Options);
     pieceMap.init();
+    string variantInitContent;
+    std::stringstream ss(variantInitContent);
+    variants.parse_istream<false>(ss);
+    Options["UCI_Variant"].set_combo(variants.get_keys());
 #endif
 #ifdef SF_DEPENDENCY
     Bitboards::init();
@@ -498,7 +506,13 @@ void CrazyAra::init()
     Bitbases::init();
     Search::init();
 #endif
-#ifdef MODE_XIANGQI
+//#ifdef MODE_XIANGQI
+//    // This is a workaround for compatibility with Fairy-Stockfish
+//    // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
+//    Options.erase("Hash");
+//    Options.erase("Use NNUE");
+//#endif
+#ifdef MODE_BOARDGAMES
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");

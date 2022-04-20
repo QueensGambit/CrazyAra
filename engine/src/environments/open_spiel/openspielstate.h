@@ -100,7 +100,7 @@ public:
     static std::string start_fen(int variant) {
         switch (variant) {
         case open_spiel::gametype::SupportedOpenSpielVariants::TICTACTOE:
-            return "... ... ..."
+            return "... ... ...";
         case open_spiel::gametype::SupportedOpenSpielVariants::CONNECTFOUR:
             return "....... ....... ....... ....... ....... .......";
         case open_spiel::gametype::SupportedOpenSpielVariants::HEX:
