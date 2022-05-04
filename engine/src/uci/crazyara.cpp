@@ -201,6 +201,8 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     state->set(StateConstants::start_fen(variant), is960, variant);
 
     istringstream is("fen " + fen);
+
+    std:cout << state.get()->fen() << endl;
     position(state.get(), is);
     istringstream isGoCommand(goCommand);
     go(state.get(), isGoCommand, evalInfo);
@@ -485,6 +487,19 @@ void CrazyAra::init_rl_settings()
 }
 #endif
 
+std::string read_string_from_file(const std::string &file_path){
+    const std::ifstream input_stream(file_path, std::ios_base::binary);
+
+    if (input_stream.fail()) {
+        throw std::runtime_error("Failed to open file");
+    }
+
+    std::stringstream buffer;
+    buffer << input_stream.rdbuf();
+
+    return buffer.str();
+}
+
 void CrazyAra::init()
 {
     OptionsUCI::init(Options);
@@ -495,7 +510,9 @@ void CrazyAra::init()
 #ifdef MODE_BOARDGAMES
     UCI::init(Options);
     pieceMap.init();
-    string variantInitContent;
+    fstream variantIni;
+    const string file_path = "/home/chooga/uni/CrazyAraTic-Tac-Toe/CrazyAra/engine/3rdparty/Fairy-Stockfish/src/variants.ini";
+    string variantInitContent = read_string_from_file(file_path);
     std::stringstream ss(variantInitContent);
     variants.parse_istream<false>(ss);
     Options["UCI_Variant"].set_combo(variants.get_keys());

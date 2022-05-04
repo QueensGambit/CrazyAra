@@ -20,7 +20,7 @@ from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mx
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS, NB_POLICY_MAP_CHANNELS, NB_CHANNELS_TOTAL,\
     BOARD_WIDTH, BOARD_HEIGHT
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
-from DeepCrazyhouse.src.domain.neural_net.architectures.ttt_model import get_ttt_symbol
+#from DeepCrazyhouse.src.domain.neural_net.architectures.ttt_model import get_ttt_symbol
 enable_color_logging()
 
 

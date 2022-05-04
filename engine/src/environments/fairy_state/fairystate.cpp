@@ -128,5 +128,5 @@ void FairyState::set_auxiliary_outputs(const float* auxiliaryOutputs) {
 void FairyState::init(int variant, bool isChess960)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-    board.set(variants.find("xiangqi")->second, variants.find("xiangqi")->second->startFen, isChess960, &states->back(), nullptr, false);
+    board.set(variants.find("cfour")->second, variants.find("cfour")->second->startFen, isChess960, &states->back(), nullptr, false);
 }

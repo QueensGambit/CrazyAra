@@ -23,7 +23,7 @@ public:
         return NB_CHANNELS_POS() + NB_CHANNELS_CONST();
     }
     static uint NB_LABELS() {
-        return 2086;
+        return 49;
     }
     static uint NB_LABELS_POLICY_MAP() {
         return 4500;
@@ -88,19 +88,19 @@ public:
 
 #ifdef MODE_BOARDGAMES
     static uint NB_SQUARES_HORIZONTAL() {
-        return 9;
+        return 7;
     }
     static uint NB_SQUARES_VERTICAL() {
-        return 10;
+        return 7;
     }
     static uint NB_CHANNELS_POS() {
-        return 26;
+        return 2;
     }
     static uint NB_CHANNELS_CONST() {
         return 2;
     }
     static float MAX_NB_PRISONERS() {
-        return 5;
+        return 0;
     }
     static float MAX_FULL_MOVE_COUNTER() {
         return 500;
@@ -108,14 +108,25 @@ public:
 #endif
 
     static std::vector<std::string> available_variants() {
-        return {"xiangqi",
-                "connect4"};
+        return {"cfour",
+                "tictactoe",
+                "breakthrough",
+//                "xiangqi"
+                };
     }
 
     static std::string start_fen(int variant) {
         switch (variant) {
+        case 0: //cfour
+            return "7/7/7/7/7/7[PPPPPPPPPPPPPPPPPPPPPppppppppppppppppppppp] w - - 0 1";
+        case 1: //tictactoe
+            return "3/3/3 w - - 0 1";
+        case 2: //breakthrough
+            return "ppppppp/ppppppp/7/7/7/PPPPPPP/PPPPPPP w - - 0 1";
+//        case 3:
+//            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
         default:
-            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+            return "";
         }
     }
 
