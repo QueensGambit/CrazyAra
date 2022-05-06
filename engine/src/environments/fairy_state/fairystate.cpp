@@ -34,7 +34,11 @@ std::vector<Action> FairyState::legal_actions() const {
 void FairyState::set(const string &fenStr, bool isChess960, int variant) {
     states = StateListPtr(new std::deque<StateInfo>(1));
     Thread *thread;
+#ifdef MODE_BOARDGAMES
+    board.set(variants.find("cfour")->second, fenStr, isChess960, &states->back(), thread, false);
+#else
     board.set(variants.find("xiangqi")->second, fenStr, isChess960, &states->back(), thread, false);
+#endif
 }
 
 void FairyState::get_state_planes(bool normalize, float *inputPlanes, Version version) const {
