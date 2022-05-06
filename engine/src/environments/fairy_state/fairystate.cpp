@@ -118,7 +118,7 @@ unsigned int FairyState::number_repetitions() const {
 }
 
 string FairyState::action_to_san(Action action, const std::vector<Action> &legalActions, bool leadsToWin, bool bookMove) const {
-    return uci_move(Move(action));
+    return UCI::move(board, Move(action));
 }
 
 Tablebase::WDLScore FairyState::check_for_tablebase_wdl(Tablebase::ProbeState &result) {
