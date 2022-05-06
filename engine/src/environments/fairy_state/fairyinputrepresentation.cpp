@@ -27,16 +27,23 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
     size_t currentChannel = 0;
     Color me = pos->side_to_move();
     Color you = ~me;
-
+#ifdef MODE_BOARDGAMES
+    const vector<PieceType> pieces = {PAWN};
+#else
     // pieces (ORDER: King, Advisor, Elephant, Horse, Rook, Cannon, Soldier)
+    const vector<PieceType> pieces = {KING, FERS, ELEPHANT, HORSE, ROOK, CANNON, SOLDIER};
+#endif
+
+    // pieces
     for (Color color : {me, you}) {
-        for (PieceType piece : {KING, FERS, ELEPHANT, HORSE, ROOK, CANNON, SOLDIER}) {
+        for (PieceType piece : pieces) {
             const Bitboard pieces = pos->pieces(color, piece);
             set_bits_from_bitmap(pieces, currentChannel, inputPlanes, me);
             currentChannel++;
         }
     }
 
+#ifndef MODE_BOARDGAMES
     // pocket count
     for (Color color : {me, you}) {
         for (PieceType piece : {FERS, ELEPHANT, HORSE, ROOK, CANNON, SOLDIER}) {
@@ -49,6 +56,7 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
             currentChannel++;
         }
     }
+#endif
 
     // color
     if (me == WHITE) {
