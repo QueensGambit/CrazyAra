@@ -37,20 +37,21 @@ public:
     template<PolicyType p, MirrorType m>
     static MoveIdx action_to_index(Action action) {
 #ifdef MODE_BOARDGAMES
+        const int nRowsCfour = 6;
         const int a10a1 = 443088896;
         vector<int> a10aX = {a10a1};
-        for (int idx = 0; idx < 6; ++idx) {
+        for (int idx = 0; idx < nRowsCfour-1; ++idx) {
             a10aX.emplace_back(a10aX.back()+12);  // increment by 12 for each row
         }
         vector<int> a10gX;
-        for (int idx = 0; idx < 7; ++idx) {
+        for (int idx = 0; idx < nRowsCfour; ++idx) {
             a10gX.emplace_back(a10aX[idx]+7);  // increment by 7 for end of row
         }
         vector<int> prefix;
-        for (int idx = 0; idx < 7; ++idx) {
+        for (int idx = 0; idx < nRowsCfour; ++idx) {
             prefix.emplace_back(idx*7);
         }
-        for (int idx = 0; idx < 7; ++idx) {
+        for (int idx = 0; idx < nRowsCfour; ++idx) {
             // check if action is in between a given row
             // e.g. action >= a10a1 && action <= a10g1
             if (action >= a10aX[idx] && action <= a10gX[idx]) {
