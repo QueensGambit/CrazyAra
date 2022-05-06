@@ -98,7 +98,21 @@ vector<string> uci_labels::generate_uci_labels() {
     return labels;
 }
 
+vector<string> uci_labels::generate_uci_labels_cfour() {
+    vector<string> labels;
+    for (char row = '1'; row <= '7'; ++row) {
+        for (char column = 'a';  column <= 'g'; ++column) {
+            labels.emplace_back("a10" + std::string(1, column) + std::string(1, row));
+        }
+    }
+    return labels;
+}
+
 string uci_labels::mirror_move(const string &ucciMove) {
+#ifdef MODE_BOARDGAMES
+    // TODO: This only works for cfour
+    return ucciMove;
+#endif
     // a10b10
         if (ucciMove.size() == 6) {
             return string(1, ucciMove[0]) + string(1, '1') + string(1, ucciMove[3]) + string(1, '1');
@@ -143,7 +157,11 @@ array<string, 10> uci_labels::ranks() {
 }
 
 void FairyOutputRepresentation::init_labels() {
+#ifdef MODE_BOARDGAMES
+    LABELS = uci_labels::generate_uci_labels_cfour();
+#else
     LABELS = uci_labels::generate_uci_labels();
+#endif
     if (LABELS.size() != StateConstantsFairy::NB_LABELS()) {
         cerr << "LABELS.size() != StateConstantsFairy::NB_LABELS():" << LABELS.size() << " "
              << StateConstantsFairy::NB_LABELS() << endl;

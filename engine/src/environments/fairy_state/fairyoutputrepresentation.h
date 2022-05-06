@@ -23,6 +23,13 @@ namespace uci_labels {
 
     vector<string> generate_uci_labels();
 
+    /**
+     * @brief generate_uci_labels_cfour Returns a vector of all possible uci moves for connect four.
+     * {"a10a1", "a10b1", ..., "a10g1"}
+     * @return Vector of UCI-Strings
+     */
+    vector<string> generate_uci_labels_cfour();
+
     string mirror_move(const string &ucciMove);
 
     // For the ucci labels we begin with index 0 for the ranks

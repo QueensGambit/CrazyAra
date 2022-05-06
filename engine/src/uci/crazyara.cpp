@@ -94,6 +94,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     // this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
+//        "setoption name uci_variant value cfour",
+//        "isready",
+//        "go"
     };
 
     do {
@@ -511,7 +514,7 @@ void CrazyAra::init()
     UCI::init(Options);
     pieceMap.init();
     fstream variantIni;
-    const string file_path = "/home/chooga/uni/CrazyAraTic-Tac-Toe/CrazyAra/engine/3rdparty/Fairy-Stockfish/src/variants.ini";
+    const string file_path = "variants.ini";
     string variantInitContent = read_string_from_file(file_path);
     std::stringstream ss(variantInitContent);
     variants.parse_istream<false>(ss);

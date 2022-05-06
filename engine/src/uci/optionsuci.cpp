@@ -240,7 +240,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
         if (name != "uci_variant" && name != "uci_chess960") {
             info_string_important("Updated option", givenName, "to", value);
         } else {
-#ifdef false
+#if defined(XIANGQI) && !defined(MODE_BOARDGAMES)
             if (name == "uci_variant") {
                 // Workaround. Fairy-Stockfish does not use an enum for variants
                 info_string_important("variant Xiangqi startpos rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1");
