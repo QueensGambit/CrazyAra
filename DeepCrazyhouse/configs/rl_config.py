@@ -15,19 +15,19 @@ class RLConfig:
     # How many arena games will be done to judge the quality of the new network
     arena_games: int = 100
     # Directory where the executable is located and where the selfplay data will be stored
-    binary_dir: str = f'/data/RL/'
+    binary_dir: str = f'/media/queensgambit/Volume/Deep_Learning/projects/ContinualAra/build-engine-Desktop-RelWithDebInfo/'
     binary_name: str = f'BoardAra'
     # How many times to train the NN, create a model contender or generate nn_update_files games
     nb_nn_updates: int = 10
     # How many new generated training files are needed to apply an update to the NN
-    nn_update_files: int = 10
+    nn_update_files: int = 3
     precision: str = f'float16'
     # Replay Memory
     rm_nb_files: int = 5  # how many data packages/files shall be randomly taken from memory
     rm_fraction_for_selection: float = 0.05  # which percentage of the most recent memory shall be taken into account
     # The UCI_Variant. Must be in ["3check", "atomic", "chess", "crazyhouse",
     # "giveaway" (= antichess), "horde", "kingofthehill", "racingkings"]
-    uci_variant: str = f'tictactoe'
+    uci_variant: str = f'cfour' #f'tictactoe'
 
 
 @dataclass
@@ -51,7 +51,7 @@ class UCIConfig:
     MCTS_Solver: bool = False
     MeanInitPly: int = 0  # default: 15
     Milli_Policy_Clip_Thresh: int = 10
-    Nodes: int = 800
+    Nodes: int = 200
     Reuse_Tree: str = False
     Search_Type: str = f'mcts'
     Selfplay_Chunk_Size: int = 128  # default: 128
