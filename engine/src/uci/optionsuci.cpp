@@ -79,7 +79,6 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
 #endif
 #endif
-    o["Child_Threads"]                 << Option(4, 1, 512);
     o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
 #ifdef USE_RL
     o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);

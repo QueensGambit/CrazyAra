@@ -41,7 +41,7 @@
 #include "config/searchsettings.h"
 #include "config/searchlimits.h"
 #include "config/playsettings.h"
-#include "../searchthreadmaster.h"
+#include "../searchthread.h"
 #include "../manager/timemanager.h"
 #include "../manager/threadmanager.h"
 #include "util/gcthread.h"
@@ -52,7 +52,7 @@ class MCTSAgent : public Agent
 {
 public:
     SearchSettings* searchSettings;  // TODO: add "const" to searchSetting
-    vector<SearchThreadMaster*> searchThreadsMaster;
+    vector<SearchThread*> searchThreads;
     unique_ptr<TimeManager> timeManager;
 
     shared_ptr<Node> rootNode;

@@ -31,7 +31,7 @@
 #include <vector>
 #include <thread>
 #include <condition_variable>
-#include "../searchthreadmaster.h"
+#include "../searchthread.h"
 #include "../evalinfo.h"
 #include "../util/killablethread.h"
 
@@ -40,13 +40,13 @@ using namespace std;
 
 struct ThreadManagerData {
     const Node* rootNode;
-    vector<SearchThreadMaster*> searchThreadsMaster;
+    vector<SearchThread*> searchThreads;
     EvalInfo* evalInfo;
     int remainingMoveTimeMS;
     float lastValueEval;
 
-    ThreadManagerData(const Node* rootNode, vector<SearchThreadMaster*> searchThreadsMaster, EvalInfo* evalInfo, float lastValueEval) :
-        rootNode(rootNode), searchThreadsMaster(searchThreadsMaster), evalInfo(evalInfo), remainingMoveTimeMS(0), lastValueEval(lastValueEval)
+    ThreadManagerData(const Node* rootNode, vector<SearchThread*> searchThreads, EvalInfo* evalInfo, float lastValueEval) :
+        rootNode(rootNode), searchThreads(searchThreads), evalInfo(evalInfo), remainingMoveTimeMS(0), lastValueEval(lastValueEval)
     {}
 };
 
@@ -140,7 +140,7 @@ void run_thread_manager(ThreadManager* t);
  * @brief stop_search_threads Stops all search threads in the given list
  * @param searchThreads Vector of mcts search threads
  */
-void stop_search_threads(vector<SearchThreadMaster*>& searchThreads);
+void stop_search_threads(vector<SearchThread*>& searchThreads);
 
 /**
  * @brief can_prolong_search Returns true if it is allowed to prolong the current search
@@ -155,21 +155,21 @@ bool can_prolong_search(size_t curMoveNumber, size_t expectedGameLength);
  * @param searchThreads MCTS search threads
  * @return number of table base hits
  */
-size_t get_tb_hits(const vector<SearchThreadMaster*>& searchThreads);
+size_t get_tb_hits(const vector<SearchThread*>& searchThreads);
 
 /**
  * @brief get_avg_depth Returns the average number of search depth in the tree
  * @param searchThreads MCTS search threads
  * @return average depth for all simulations
  */
-size_t get_avg_depth(const vector<SearchThreadMaster*>& searchThreads);
+size_t get_avg_depth(const vector<SearchThread*>& searchThreads);
 
 /**
  * @brief get_max_depth Returns the maximum reached search depth for all threads
  * @param searchThreads MCTS search threads
  * @return maximum reached depth
  */
-size_t get_max_depth(const vector<SearchThreadMaster*>& searchThreads);
+size_t get_max_depth(const vector<SearchThread*>& searchThreads);
 
 
 #endif // THREADMANAGER_H
