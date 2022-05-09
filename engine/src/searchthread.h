@@ -51,47 +51,24 @@ struct NodeDescription
     size_t depth;
 };
 
-struct NeuralNetData
-{
-    // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
-    float* inputPlanes;
-    // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
-    // sufficient memory according to the batch-size will be allocated in the constructor
-    float* valueOutputs;
-    float* probOutputs;
-    float* auxiliaryOutputs;
-
-    NeuralNetAPI* net;
-    size_t nbSamples;
-    NeuralNetData(float* inputPlanes, float* valueOutputs, float* probOutputs, float* auxiliaryOutputs,
-                  NeuralNetAPI* net, size_t nbSamples):
-        inputPlanes(inputPlanes), valueOutputs(valueOutputs), probOutputs(probOutputs),
-        auxiliaryOutputs(auxiliaryOutputs), net(net), nbSamples(nbSamples) {}
-};
-
-class SearchThread //: NeuralNetAPIUser
+class SearchThread : NeuralNetAPIUser
 {
 private:
-    NeuralNetData* nnData;
     Node* rootNode;
     StateObj* rootState;
+    unique_ptr<StateObj> newState;
 
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
     unique_ptr<FixedVector<float>> transpositionValues;
-    size_t numTerminalNodes;
-
-    vector<NodeAndBudget> entryNodes;
 
     vector<Trajectory> newTrajectories;
     vector<Trajectory> transpositionTrajectories;
     vector<Trajectory> collisionTrajectories;
 
-    vector<unique_ptr<StateObj>> stateStore;
-
-
     Trajectory trajectoryBuffer;
+    vector<Action> actionsBuffer;
 
     bool isRunning;
 
@@ -104,7 +81,6 @@ private:
     size_t visitsPreSearch;
     const uint_fast32_t terminalNodeCache;
     bool reachedTablebases;
-    size_t budget;
 public:
     /**
      * @brief SearchThread
@@ -112,7 +88,7 @@ public:
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(NeuralNetData* nnData, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(NeuralNetAPI* netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
@@ -176,19 +152,9 @@ public:
 
     size_t get_max_depth() const;
 
-    Node* get_starting_node(Node* currentNode, StateObj* currentState, NodeDescription& description, ChildIdx& childIdx);
+    Node* get_starting_node(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
 
-    void handle_simulation_return(Node* newNode, NodeBackup nodeBackup, const Trajectory& trajectoryBuffer);
-
-    Node* check_next_node(Node* currentNode, StateObj* currentState, Node* nextNode, ChildIdx childIdx, NodeDescription& description);
-
-    /**
-     * @brief handle_stochastic_exploration Runs multiple disconnected trajecotries using stochastic selection based on searchSettings->epsilonGreedyCounter
-     * and searchSettings->epsilonChecksCounter
-     * @param description Description struct
-     */
-    void handle_stochastic_exploration(NodeDescription& description);
-
+private:
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
      */
@@ -204,45 +170,12 @@ public:
      */
     void backup_collisions();
 
-private:
     /**
-     * @brief distribute_mini_batch_across_nodes Splits a budget of evaluations across different child nodes.
-     */
-    void distribute_mini_batch_across_nodes();
-
-
-    void single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description);
-
-    Node* handle_single_split(size_t mainIdx, ChildIdx childIdx, Budget budget, NodeDescription& description);
-
-    /**
-     * @brief get_new_child_to_evaluate Traverses the search tree beginning from the given starting node and returns the parent node and child index for the next node to expand.
+     * @brief get_new_child_to_evaluate Traverses the search tree beginning from the root node and returns the prarent node and child index for the next node to expand.
      * @param description Output struct which holds information what type of node it is
-     * @param CurrentNode Node where to start the trajectory
      * @return Pointer to next child to evaluate (can also be terminal or tranposition node in which case no NN eval is required)
      */
-    Node* get_new_child_to_evaluate(NodeDescription& description, Node* currentNode, StateObj* currentState, Trajectory& trajectoryBuffer, ChildIdx childIdx=NONE_IDX);
-
-    /**
-     * @brief create_new_node Creates a new node and sets it corresponding inputPlanes and sideToMove
-     * @param currentNode Current Node
-     * @param childIdx Child index for node to select next
-     * @param description Pseudo return, either NODE_NEW_NODE or NODE_TRANSPOSITION
-     * @return Newly created node
-     */
-    Node* create_new_node(Node* currentNode, StateObj* currentState, ChildIdx childIdx, NodeDescription& description);
-
-    Node* init_child_index(Node* currentNode, NodeDescription& description, ChildIdx& childIdx, StateObj* state);
-
-    /**
-     * @brief handle_returns Checks for possible node return types given nextNode != nullptr.
-     * If there is no return NODE_UNKNOWN will be returned.
-     * @param currentNode Current node (parent node of next node)
-     * @param nextNode Next node to select
-     * @param childIdx Child index
-     * @return NODE_TERMINAL, NODE_COLLISION, NODE_TRANSPOSITION or NODE_UNKNOWN
-     */
-    NodeBackup handle_returns(Node* currentNode, Node* nextNode, ChildIdx childIdx);
+    Node* get_new_child_to_evaluate(NodeDescription& description);
 
     void backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& trajectories);
     void backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories);
@@ -252,11 +185,10 @@ private:
      * @param currentNode Current node during forward simulation
      * @return uint_16_t(-1) for no action else custom idx
      */
-    ChildIdx select_enhanced_move(Node* currentNode, StateObj* currentState) const;
+    ChildIdx select_enhanced_move(Node* currentNode) const;
 };
 
-void run_create_mini_batch(SearchThread* t);
-void run_backup_values(SearchThread* t);
+void run_search_thread(SearchThread *t);
 
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB);
 void node_post_process_policy(Node *node, float temperature, const SearchSettings* searchSettings);
