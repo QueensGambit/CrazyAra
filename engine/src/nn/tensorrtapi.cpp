@@ -211,7 +211,7 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
     unique_ptr<IInt8Calibrator> calibrator;
     unique_ptr<IBatchStream> calibrationStream;
-    set_config_settings(config, network, 1_GiB, calibrator, calibrationStream);
+    set_config_settings(config, 1_GiB, calibrator, calibrationStream);
 
     // conversion of ONNX model to TensorRT
     // parse the ONNX model file along with logger object for reporting info
@@ -226,11 +226,6 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
         return nullptr;
     }
     configure_network(network);
-
-    SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
-    unique_ptr<IInt8Calibrator> calibrator;
-    unique_ptr<IBatchStream> calibrationStream;
-    set_config_settings(config, 1_GiB, calibrator, calibrationStream);
 
     // build an engine from the TensorRT network with a given configuration struct
 #ifdef TENSORRT7

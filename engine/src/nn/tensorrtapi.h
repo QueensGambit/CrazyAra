@@ -124,13 +124,11 @@ private:
     /**
      * @brief set_config_settings Sets the configuration object which will be later used to build the engine
      * @param config Configuration object
-     * @param network ONNX network object
      * @param maxWorkspace Maximum allowable GPU work space for TensorRT tactic selection (e.g. 16_MiB, 1_GiB)
      * @param calibrator INT8 calibration object
      * @param calibrationStream Calibration stream used for INT8 calibration
      */
     void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-                             SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
                              size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
                              unique_ptr<IBatchStream>& calibrationStream);
 
