@@ -46,7 +46,7 @@ MCTSAgentTrueSight::MCTSAgentTrueSight(NeuralNetAPI *netSingle, vector<unique_pt
 
 MCTSAgentTrueSight::~MCTSAgentTrueSight()
 {
-    for (auto searchThread : searchThreadsMaster) {
+    for (auto searchThread : searchThreads) {
         delete searchThread;
     }
 }

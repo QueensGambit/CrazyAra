@@ -687,7 +687,6 @@ void CrazyAra::init_search_settings()
     validate_device_indices(Options);
     searchSettings.multiPV = Options["MultiPV"];
     searchSettings.threads = Options["Threads"] * get_num_gpus(Options);
-    searchSettings.childThreads = Options["Child_Threads"];
     searchSettings.batchSize = Options["Batch_Size"];
     searchSettings.useMCGS = Options["Search_Type"] == "mcgs";
 //    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled

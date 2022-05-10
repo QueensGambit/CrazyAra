@@ -46,7 +46,7 @@ MCTSAgentRandom::MCTSAgentRandom(NeuralNetAPI *netSingle, vector<unique_ptr<Neur
 
 MCTSAgentRandom::~MCTSAgentRandom()
 {
-    for (auto searchThread : searchThreadsMaster) {
+    for (auto searchThread : searchThreads) {
         delete searchThread;
     }
 }
