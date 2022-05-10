@@ -38,7 +38,11 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
     for (Color color : {me, you}) {
         for (PieceType piece : pieces) {
             const Bitboard pieces = pos->pieces(color, piece);
+#ifdef MODE_BOARDGAMES
+            set_bits_from_bitmap(pieces, currentChannel, inputPlanes, BLACK);  // disable mirroring
+#else
             set_bits_from_bitmap(pieces, currentChannel, inputPlanes, me);
+#endif
             currentChannel++;
         }
     }
