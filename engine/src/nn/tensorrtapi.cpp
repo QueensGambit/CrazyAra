@@ -228,11 +228,15 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     set_config_settings(config, 1_GiB, calibrator, calibrationStream);
 
     // build an engine from the TensorRT network with a given configuration struct
+#ifdef TENSORRT7
+    return builder->buildEngineWithConfig(*network, *config);
+#else
     SampleUniquePtr<IHostMemory> serializedModel{builder->buildSerializedNetwork(*network, *config)};
     SampleUniquePtr<IRuntime> runtime{createInferRuntime(sample::gLogger.getTRTLogger())};
 
     // build an engine from the serialized model
     return runtime->deserializeCudaEngine(serializedModel->data(), serializedModel->size());;
+#endif
 }
 
 ICudaEngine* TensorrtAPI::get_cuda_engine() {
@@ -244,7 +248,11 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
     if (buffer) {
         info_string("deserialize engine:", trtFilePath);
         unique_ptr<IRuntime, samplesCommon::InferDeleter> runtime{createInferRuntime(gLogger)};
+#ifdef TENSORRT7
+        engine = runtime->deserializeCudaEngine(buffer, bufferSize, nullptr);
+#else
         engine = runtime->deserializeCudaEngine(buffer, bufferSize);
+#endif
     }
 
     if (!engine) {
