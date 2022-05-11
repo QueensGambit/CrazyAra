@@ -98,7 +98,7 @@ RUN apt-get update -y \
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DBACKEND_TENSORRT_7 .. \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DBACKEND_TENSORRT_7=ON .. \
     && make -j8
 
 # Rename the config files
