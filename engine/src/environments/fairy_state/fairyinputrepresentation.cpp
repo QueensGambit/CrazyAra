@@ -27,27 +27,39 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
     size_t currentChannel = 0;
     Color me = pos->side_to_move();
     Color you = ~me;
-#ifdef MODE_BOARDGAMES
-    const vector<PieceType> pieces = {PAWN};
-#else
+#ifndef MODE_BOARDGAMES
     // pieces (ORDER: King, Advisor, Elephant, Horse, Rook, Cannon, Soldier)
     const vector<PieceType> pieces = {KING, FERS, ELEPHANT, HORSE, ROOK, CANNON, SOLDIER};
 #endif
 
+#ifdef MODE_BOARDGAMES
+    // iterate over all board squares
+    size_t currentIdx = 0;
+    for (Color color : {me, you}) {
+        for (Rank rank = RANK_1; rank <= RANK_6; ++rank) {
+            for (File file = FILE_A; file <= FILE_G; ++file) {
+                const Square square = make_square(file, rank);
+                const Piece piece = pos->piece_on(square);
+                if (piece != NO_PIECE && color_of(piece) == color) {
+                    inputPlanes[currentIdx] = 1;
+                }
+                currentIdx++;
+            }
+        }
+        currentChannel++;
+    }
+#endif
+
+#ifndef MODE_BOARDGAMES
     // pieces
     for (Color color : {me, you}) {
         for (PieceType piece : pieces) {
             const Bitboard pieces = pos->pieces(color, piece);
-#ifdef MODE_BOARDGAMES
-            set_bits_from_bitmap(pieces, currentChannel, inputPlanes, BLACK);  // disable mirroring
-#else
             set_bits_from_bitmap(pieces, currentChannel, inputPlanes, me);
-#endif
             currentChannel++;
         }
     }
 
-#ifndef MODE_BOARDGAMES
     // pocket count
     for (Color color : {me, you}) {
         for (PieceType piece : {FERS, ELEPHANT, HORSE, ROOK, CANNON, SOLDIER}) {
