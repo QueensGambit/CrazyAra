@@ -146,7 +146,7 @@ public:
         case 1: //tictactoe
             return "3/3/3 w - - 0 1";
         case 2: //breakthrough
-            return "ppppppp/ppppppp/7/7/7/PPPPPPP/PPPPPPP w - - 0 1";
+            return "pppppppp/pppppppp/8/8/8/8/PPPPPPPP/PPPPPPPP w - - 0 1";
 //        case 3:
 //            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
         default:
