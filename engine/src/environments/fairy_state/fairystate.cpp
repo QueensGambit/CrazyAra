@@ -35,7 +35,7 @@ void FairyState::set(const string &fenStr, bool isChess960, int variant) {
     states = StateListPtr(new std::deque<StateInfo>(1));
     Thread *thread;
 #ifdef MODE_BOARDGAMES
-    board.set(variants.find("cfour")->second, fenStr, isChess960, &states->back(), thread, false);
+    board.set(variants.find(StateConstantsFairy::available_variants()[variant])->second, fenStr, isChess960, &states->back(), thread, false);
 #else
     board.set(variants.find("xiangqi")->second, fenStr, isChess960, &states->back(), thread, false);
 #endif
