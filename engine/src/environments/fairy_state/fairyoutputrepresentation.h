@@ -29,7 +29,7 @@ namespace uci_labels {
      * {"a10a1", "a10b1", ..., "a10g1"}
      * @return Vector of UCI-Strings
      */
-    vector<string> generate_uci_labels_cfour();
+    vector<string> generate_uci_labels_cfour_and_flipello();
 
     /**
      * @brief generate_uci_labels_breakthrough_and_clobber Returns a vector of all possible uci moves for breakthrough

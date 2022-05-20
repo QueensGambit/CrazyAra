@@ -23,7 +23,7 @@ public:
         return NB_CHANNELS_POS() + NB_CHANNELS_CONST();
     }
     static uint NB_LABELS() {
-        return 533; // 484 (Breakthrough and clobber moves) + 49 (Connect)
+        return 548; // 484 (breakthrough and clobber moves) + 64 (connect4 and flipello moves)
     }
     static uint NB_LABELS_POLICY_MAP() {
         return 4500;
@@ -37,24 +37,25 @@ public:
     template<PolicyType p, MirrorType m>
     static MoveIdx action_to_index(Action action) {
 #ifdef MODE_BOARDGAMES
-        const int nRowsCfour = 6;
+        const int nRowsFlipello = 8;
+        const int nColumnsFlipello = 8;
         const int a10a1 = 443088896;
         vector<int> a10aX = {a10a1};
-        for (int idx = 0; idx < nRowsCfour-1; ++idx) {
+        for (int idx = 0; idx < nRowsFlipello-1; ++idx) {
             a10aX.emplace_back(a10aX.back()+12);  // increment by 12 for each row
         }
-        vector<int> a10gX;
-        for (int idx = 0; idx < nRowsCfour; ++idx) {
-            a10gX.emplace_back(a10aX[idx]+7);  // increment by 7 for end of row
+        vector<int> a10hX;
+        for (int idx = 0; idx < nRowsFlipello; ++idx) {
+            a10hX.emplace_back(a10aX[idx]+nColumnsFlipello);  // increment by nColumnsFlipello for end of row
         }
         vector<int> prefix;
-        for (int idx = 0; idx < nRowsCfour; ++idx) {
-            prefix.emplace_back(idx*7);
+        for (int idx = 0; idx < nRowsFlipello; ++idx) {
+            prefix.emplace_back(idx*nColumnsFlipello);
         }
-        for (int idx = 0; idx < nRowsCfour; ++idx) {
+        for (int idx = 0; idx < nRowsFlipello; ++idx) {
             // check if action is in between a given row
             // e.g. action >= a10a1 && action <= a10g1
-            if (action >= a10aX[idx] && action <= a10gX[idx]) {
+            if (action >= a10aX[idx] && action <= a10hX[idx]) {
                 const MoveIdx moveIdx = action - a10aX[idx] + prefix[idx];
                 return moveIdx;
             }
@@ -137,6 +138,7 @@ public:
                 "tictactoe",
                 "breakthrough",
                 "clobber",
+                "flipello",
 //                "xiangqi"
                 };
     }
@@ -151,6 +153,8 @@ public:
             return "pppppppp/pppppppp/8/8/8/8/PPPPPPPP/PPPPPPPP w - - 0 1";
         case 3: // clobber
             return "PpPpP/pPpPp/PpPpP/pPpPp/PpPpP/pPpPp w - - 0 1";
+        case 4: // flipello
+            return "8/8/8/3pP3/3Pp3/8/8/8[PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppppppppppppppppppppppppp] w - - 0 1";
 //        case 3:
 //            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
         default:
