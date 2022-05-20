@@ -108,18 +108,23 @@ vector<string> uci_labels::generate_uci_labels_cfour() {
     return labels;
 }
 
-vector<string> uci_labels::generate_uci_labels_breakthrough() {
-    vector<string> labels;
+void uci_labels::generate_uci_labels_breakthrough(vector<string>& labels) {
+
     for (char row = '1'; row <= '8'; ++row) {
-        for (char column = 'a';  column <= 'g'; ++column) {
-            for (char targetRow = std::max(int('a'),int(row)-1); targetRow < min(int('g'),int(row)+1); targetRow+=2) {
-                for (char targetCol = std::max(int('1'),column-1); targetCol < min(int('8'),column+1); ++targetCol) {
+        for (char column = 'a';  column <= 'h'; ++column) {
+            for (char targetRow = row-1; targetRow <= row+1; targetRow+=2) {
+                if (targetRow == '0' || targetRow == '9') {
+                    continue;
+                }
+              for (char targetCol = column-1; targetCol <= column+1; ++targetCol) {
+                  if (targetCol == 'a'-1 || targetCol == 'i') {
+                      continue;
+                  }
                     labels.emplace_back(std::string(1, column) + std::string(1, row) + std::string(1, targetCol) + std::string(1, targetRow));
                 }
             }
         }
     }
-    return labels;
 }
 
 string uci_labels::mirror_move(const string &ucciMove) {
@@ -173,6 +178,7 @@ array<string, 10> uci_labels::ranks() {
 void FairyOutputRepresentation::init_labels() {
 #ifdef MODE_BOARDGAMES
     LABELS = uci_labels::generate_uci_labels_cfour();
+    uci_labels::generate_uci_labels_breakthrough(LABELS);
 #else
     LABELS = uci_labels::generate_uci_labels();
 #endif

@@ -23,7 +23,7 @@ public:
         return NB_CHANNELS_POS() + NB_CHANNELS_CONST();
     }
     static uint NB_LABELS() {
-        return 49;
+        return 357; // 308 (Breakthrough moves) + 49 (Connect)
     }
     static uint NB_LABELS_POLICY_MAP() {
         return 4500;
@@ -59,6 +59,7 @@ public:
                 return moveIdx;
             }
         }
+        return FairyOutputRepresentation::MV_LOOKUP[action];
 #endif
         switch (p) {
             case normal:
@@ -112,10 +113,10 @@ public:
 
 #ifdef MODE_BOARDGAMES
     static uint NB_SQUARES_HORIZONTAL() {
-        return 7;
+        return 8;
     }
     static uint NB_SQUARES_VERTICAL() {
-        return 7;
+        return 8;
     }
     static uint NB_CHANNELS_POS() {
         return 2;
