@@ -124,7 +124,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Last_Device_ID"]                << Option(0, 0, 99999);
     o["Log_File"]                      << Option("", on_logger);
     o["MCTS_Solver"]                   << Option(true);
-#ifdef MODE_LICHESS
+#if defined(MODE_LICHESS) || defined(MODE_BOARDGAMES)
     o["Model_Directory"]               << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
 #else
     o["Model_Directory"]               << Option(string("model/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
