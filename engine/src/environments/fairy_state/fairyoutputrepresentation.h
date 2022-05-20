@@ -32,10 +32,10 @@ namespace uci_labels {
     vector<string> generate_uci_labels_cfour();
 
     /**
-     * @brief generate_uci_labels_breakthrough Returns a vector of all possible uci moves for breakthrough
+     * @brief generate_uci_labels_breakthrough_and_clobber Returns a vector of all possible uci moves for breakthrough
      * @return Vector of UCI-Strings
      */
-    void generate_uci_labels_breakthrough(vector<string>& labels);
+    void generate_uci_labels_breakthrough_and_clobber(vector<string>& labels);
 
     string mirror_move(const string &ucciMove);
 

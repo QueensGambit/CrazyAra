@@ -108,11 +108,11 @@ vector<string> uci_labels::generate_uci_labels_cfour() {
     return labels;
 }
 
-void uci_labels::generate_uci_labels_breakthrough(vector<string>& labels) {
+void uci_labels::generate_uci_labels_breakthrough_and_clobber(vector<string>& labels) {
 
     for (char row = '1'; row <= '8'; ++row) {
         for (char column = 'a';  column <= 'h'; ++column) {
-            for (char targetRow = row-1; targetRow <= row+1; targetRow+=2) {
+            for (char targetRow = row-1; targetRow <= row+1; ++targetRow) {
                 if (targetRow == '0' || targetRow == '9') {
                     continue;
                 }
@@ -178,7 +178,7 @@ array<string, 10> uci_labels::ranks() {
 void FairyOutputRepresentation::init_labels() {
 #ifdef MODE_BOARDGAMES
     LABELS = uci_labels::generate_uci_labels_cfour();
-    uci_labels::generate_uci_labels_breakthrough(LABELS);
+    uci_labels::generate_uci_labels_breakthrough_and_clobber(LABELS);
 #else
     LABELS = uci_labels::generate_uci_labels();
 #endif

@@ -23,7 +23,7 @@ public:
         return NB_CHANNELS_POS() + NB_CHANNELS_CONST();
     }
     static uint NB_LABELS() {
-        return 357; // 308 (Breakthrough moves) + 49 (Connect)
+        return 533; // 484 (Breakthrough and clobber moves) + 49 (Connect)
     }
     static uint NB_LABELS_POLICY_MAP() {
         return 4500;
