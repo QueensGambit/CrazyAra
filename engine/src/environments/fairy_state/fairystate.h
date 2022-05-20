@@ -123,7 +123,7 @@ public:
         return 2;
     }
     static uint NB_CHANNELS_CONST() {
-        return 2;
+        return 6;
     }
     static float MAX_NB_PRISONERS() {
         return 0;
@@ -134,27 +134,27 @@ public:
 #endif
 
     static std::vector<std::string> available_variants() {
-        return {"cfour",
-                "tictactoe",
-                "breakthrough",
-                "clobber",
+        return {"tictactoe",
+                "cfour",
                 "flipello",
+                "clobber",
+                "breakthrough",
 //                "xiangqi"
                 };
     }
 
     static std::string start_fen(int variant) {
         switch (variant) {
-        case 0: //cfour
-            return "7/7/7/7/7/7[PPPPPPPPPPPPPPPPPPPPPppppppppppppppppppppp] w - - 0 1";
-        case 1: //tictactoe
+        case 0: //tictactoe
             return "3/3/3 w - - 0 1";
-        case 2: //breakthrough
-            return "pppppppp/pppppppp/8/8/8/8/PPPPPPPP/PPPPPPPP w - - 0 1";
+        case 1: //cfour
+            return "7/7/7/7/7/7[PPPPPPPPPPPPPPPPPPPPPppppppppppppppppppppp] w - - 0 1";
+        case 2: // flipello
+            return "8/8/8/3pP3/3Pp3/8/8/8[PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppppppppppppppppppppppppp] w - - 0 1";
         case 3: // clobber
             return "PpPpP/pPpPp/PpPpP/pPpPp/PpPpP/pPpPp w - - 0 1";
-        case 4: // flipello
-            return "8/8/8/3pP3/3Pp3/8/8/8[PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPpppppppppppppppppppppppppppppppp] w - - 0 1";
+        case 4: //breakthrough
+            return "pppppppp/pppppppp/8/8/8/8/PPPPPPPP/PPPPPPPP w - - 0 1";
 //        case 3:
 //            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
         default:

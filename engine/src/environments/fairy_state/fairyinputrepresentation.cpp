@@ -81,8 +81,20 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
     }
     currentChannel++;
 
+#ifndef MODE_BOARDGAMES
     // total move count
     std::fill(inputPlanes + currentChannel * StateConstantsFairy::NB_SQUARES(),
               inputPlanes + (currentChannel + 1) * StateConstantsFairy::NB_SQUARES(),
               normalize ? (std::floor(pos->game_ply() / 2 )) / StateConstantsFairy::MAX_FULL_MOVE_COUNTER() : std::floor(pos->game_ply() / 2 ));
+#endif
+
+    // variant specification "tictactoe", "cfour", "flipello", "clobber", "breakthrough"
+    for (size_t idx = 0; idx < StateConstantsFairy::available_variants().size(); ++idx) {
+        if (pos->variant()->startFen == StateConstantsFairy::start_fen(idx)) {
+            std::fill(inputPlanes + currentChannel * StateConstantsFairy::NB_SQUARES(),
+                      inputPlanes + (currentChannel + 1) * StateConstantsFairy::NB_SQUARES(), 1.0f);
+            break;
+        }
+        ++currentChannel;
+    }
 }
