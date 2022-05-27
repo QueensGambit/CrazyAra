@@ -30,7 +30,6 @@
 #include "thread.h"
 #include <iostream>
 #include <fstream>
-#include "uci.h"
 #include "state.h"
 #include "util/blazeutil.h"
 #include "util/randomgen.h"
@@ -57,7 +56,7 @@ void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& ga
 
 
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
-                   RLSettings* rlSettings, UCI::OptionsMap& options):
+                   RLSettings* rlSettings, OptionsMap& options):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
     rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
 {
