@@ -36,8 +36,8 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
     // iterate over all board squares
     size_t currentIdx = 0;
     for (Color color : {me, you}) {
-        for (Rank rank = RANK_1; rank <= RANK_6; ++rank) {
-            for (File file = FILE_A; file <= FILE_G; ++file) {
+        for (Rank rank = RANK_1; rank < Rank(StateConstantsFairy::BOARD_HEIGHT()); ++rank) {
+            for (File file = FILE_A; file < File(StateConstantsFairy::BOARD_WIDTH()); ++file) {
                 const Square square = make_square(file, rank);
                 const Piece piece = pos->piece_on(square);
                 if (piece != NO_PIECE && color_of(piece) == color) {
