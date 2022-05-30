@@ -87,10 +87,27 @@ Action FairyState::uci_to_action(string &uciStr) const {
 }
 
 TerminalType FairyState::is_terminal(size_t numberLegalMoves, float &customTerminalValue) const {
+    Value value;
+    bool gameEnd = board.is_game_end(value, board.game_ply());
+
+    if (gameEnd) {
+        if (value == VALUE_DRAW) {
+            return TERMINAL_DRAW;
+        }
+        if (value < VALUE_DRAW) {
+            return TERMINAL_LOSS;
+        }
+        return TERMINAL_WIN;
+    }
+
     if (numberLegalMoves == 0) {
+#ifdef MODE_BOARDGAMES
+        return TERMINAL_DRAW;
+#else   // Xinagqi
         // "Unlike in chess, in which stalemate is a draw, in xiangqi, it is a loss for the stalemated player."
         // -- https://en.wikipedia.org/wiki/Xiangqi
         return TERMINAL_LOSS;
+#endif
     }
     if (this->number_repetitions() != 0) {
         // "If one side perpetually checks and the other side perpetually chases, the checking side has to stop or be ruled to have lost."
