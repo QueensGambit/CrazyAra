@@ -25,11 +25,12 @@
  * Main entry point for the engine CrazyAra
  */
 
+#ifdef BUILD_TESTS
 #include "../tests/tests.h"
+#endif
 #include "stateobj.h"
 #include <iostream>
 #include "crazyara.h"
-#include "variants.h"
 
 #ifndef BUILD_TESTS
 int main(int argc, char* argv[]) {

@@ -584,6 +584,22 @@ private:
     bool only_won_child_nodes() const;
 
     /**
+     * @brief only_child_nodes_of_one_kind Check if all expanded child nodes are of the same kind.
+     * @return true if only child nodes of type <nodeType> exist else false
+     */
+    template <NodeType nodeType>
+    bool only_child_nodes_of_one_kind() const
+    {
+        for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
+            const Node* childNode = it->get();
+            if (childNode->d->nodeType != nodeType) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * @brief solved_loss Checks if the current node is a solved loss based on the given child node
      * @param childNode Child nodes which backpropagates the value
      * @return true for LOSS else false

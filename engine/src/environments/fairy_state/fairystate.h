@@ -105,7 +105,19 @@ public:
     static float MAX_FULL_MOVE_COUNTER() {
         return 500;
     }
-    #endif
+#endif
+
+    static std::vector<std::string> available_variants() {
+        return {"xiangqi"};
+    }
+
+    static std::string start_fen(int variant) {
+        switch (variant) {
+        default:
+            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+        }
+    }
+
 };
 
 class FairyState : public State

@@ -38,9 +38,6 @@
 #include <unordered_map>
 #include <iostream>
 #include "state.h"
-#ifndef MODE_POMMERMAN
-#include "types.h"
-#endif
 
 using namespace std;
 
@@ -59,7 +56,7 @@ const string engineName = "OpenSpielAra";
 const string engineName = "ClassicAra";
 #endif
 
-const string engineVersion = "0.9.7.post0";
+const string engineVersion = "1.0.0";
 #ifdef MODE_CRAZYHOUSE
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer and CrazyAra developers (see AUTHORS file)";
 #elif defined MODE_LICHESS

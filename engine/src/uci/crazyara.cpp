@@ -26,25 +26,16 @@
 #include "crazyara.h"
 
 #include <thread>
-#include "bitboard.h"
 #include "mctsagent.h"
-#include "position.h"
-#include "search.h"
-#include "thread.h"
-#include "tt.h"
-#include "uci.h"
-#include "syzygy/tbprobe.h"
-#include "movegen.h"
 #include "search.h"
 #include "evalinfo.h"
 #include "constants.h"
 #include "state.h"
-#include "variants.h"
 #include "optionsuci.h"
 #include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
 #ifdef MODE_XIANGQI
-    #include "piece.h"
+#include "piece.h"
 #endif
 #ifdef MXNET
 #include "nn/mxnetapi.h"
@@ -66,13 +57,7 @@ CrazyAra::CrazyAra():
     searchSettings(SearchSettings()),
     searchLimits(SearchLimits()),
     playSettings(PlaySettings()),
-#ifdef MODE_CRAZYHOUSE
-    variant(CRAZYHOUSE_VARIANT),
-#elif defined(MODE_XIANGQI)
-    variant(*variants.find("xiangqi")->second),
-#else
-    variant(CHESS_VARIANT),
-#endif
+    variant(StateConstants::DEFAULT_VARIANT()),
     useRawNetwork(false),      // will be initialized in init_search_settings()
     networkLoaded(false),
     ongoingSearch(false),
@@ -99,14 +84,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
     EvalInfo evalInfo;
-#ifndef MODE_XIANGQI
-    auto uiThread = make_shared<Thread>(0);
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    state->set(StartFENs[variant], is960, variant);
-#endif
-#ifdef MODE_XIANGQI
-    state->set(variant.startFen, is960, 0);
-#endif
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
+    state->set(StateConstants::start_fen(variant), is960, variant);
+
     for (int i = 1; i < argc; ++i)
         cmd += string(argv[i]) + " ";
 
@@ -153,12 +133,11 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
-    #ifdef MODE_STRATEGO
         // Test if the new modes are also usable for chess and others
-        else if (token == "mctsmatch")   mctsarena(is);
+
+        else if (token == "mctsmatch")   mctsarena(is, "", "");
         else if (token == "mctstournament")   mctstournament(is);
         else if (token == "tournament")   evaltournament(is);
-    #endif
 #endif   
         else
             cout << "Unknown command: " << cmd << endl;
@@ -180,8 +159,10 @@ void CrazyAra::prepare_search_config_structs()
     }
 }
 
-void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
-
+void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
+{
+    wait_to_finish_last_search();
+    ongoingSearch = true;
     prepare_search_config_structs();
 
     string token;
@@ -198,15 +179,15 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
         else if (token == "movetime")  is >> searchLimits.movetime;
         else if (token == "infinite")  searchLimits.infinite = true;
     }
-    wait_to_finish_last_search();
 
-    ongoingSearch = true;
     if (useRawNetwork) {
         rawAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        rawAgent->lock();  // lock() rawAgent to avoid calling stop() immediatly
         mainSearchThread = thread(run_agent_thread, rawAgent.get());
     }
     else {
         mctsAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        mctsAgent->lock(); // lock() mctsAgent to avoid calling stop() immediatly
         mainSearchThread = thread(run_agent_thread, mctsAgent.get());
     }
 }
@@ -216,18 +197,13 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
 
-#ifndef MODE_XIANGQI
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    state->set(StartFENs[variant], is960, variant);
-#else
-    state->set(variant.startFen, is960, 0);
-#endif
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
+    state->set(StateConstants::start_fen(variant), is960, variant);
 
     istringstream is("fen " + fen);
     position(state.get(), is);
     istringstream isGoCommand(goCommand);
     go(state.get(), isGoCommand, evalInfo);
-    wait_to_finish_last_search();
 }
 
 void CrazyAra::wait_to_finish_last_search()
@@ -242,6 +218,7 @@ void CrazyAra::stop_search()
 {
     if (mctsAgent != nullptr) {
         mctsAgent->stop();
+        wait_to_finish_last_search();
     }
 }
 
@@ -251,17 +228,12 @@ void CrazyAra::position(StateObj* state, istringstream& is)
 
     Action action;
     string token, fen;
-#ifndef MODE_XIANGQI
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-#endif
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
+
     is >> token;
     if (token == "startpos")
     {
-#ifndef MODE_XIANGQI
-        fen = StartFENs[variant];
-#else
-        fen = variant.startFen;
-#endif
+        fen = StateConstants::start_fen(variant);
         is >> token; // Consume "moves" token if any
     }
     else if (token == "fen") {
@@ -272,11 +244,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     else
         return;
 
-#ifndef MODE_XIANGQI
-        state->set(fen, is960, variant);
-#else
-        state->set(fen, is960, 0);
-#endif
+    state->set(fen, is960, variant);
     Action lastMove = ACTION_NONE;
 
     // Parse move list (if any)
@@ -446,7 +414,8 @@ void CrazyAra::mctstournament(istringstream &is)
     std::vector<std::string> combinations = comb(numbers, 2);
     for(int i = 0;i<combinations.size();i++){
         std::istringstream iss (combinations[i] + std::to_string(numberofgames));
-        mctsarena(iss);
+        mctsarena(iss, "", "");
+
     }
 
     exit(0);
@@ -518,26 +487,22 @@ void CrazyAra::init_rl_settings()
 
 void CrazyAra::init()
 {
-#ifndef MODE_XIANGQI
     OptionsUCI::init(Options);
+#ifdef MODE_XIANGQI
+    UCI::init(Options);
+    pieceMap.init();
+#endif
+#ifdef SF_DEPENDENCY
     Bitboards::init();
     Position::init();
     Bitbases::init();
     Search::init();
 #endif
 #ifdef MODE_XIANGQI
-    pieceMap.init();
-    OptionsUCI::init(Options);
-    UCI::init(Options);
-    Bitboards::init();
-    Position::init();
-    Bitbases::init();
-    Search::init();
-    Tablebases::init("");
-
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");
+    Options.erase("Use NNUE");
 #endif
 }
 
@@ -557,9 +522,9 @@ bool CrazyAra::is_ready()
 #ifdef USE_RL
         init_rl_settings();
 #endif
-        netSingle = create_new_net_single(Options["Model_Directory"]);
+        netSingle = create_new_net_single(string(Options["Model_Directory"]));
         netSingle->validate_neural_network();
-        netBatches = create_new_net_batches(Options["Model_Directory"]);
+        netBatches = create_new_net_batches(string(Options["Model_Directory"]));
         netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
@@ -688,7 +653,6 @@ void CrazyAra::init_search_settings()
     validate_device_indices(Options);
     searchSettings.multiPV = Options["MultiPV"];
     searchSettings.threads = Options["Threads"] * get_num_gpus(Options);
-    searchSettings.childThreads = Options["Child_Threads"];
     searchSettings.batchSize = Options["Batch_Size"];
     searchSettings.useMCGS = Options["Search_Type"] == "mcgs";
 //    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled

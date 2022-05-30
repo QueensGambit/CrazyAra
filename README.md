@@ -240,6 +240,20 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 ## B.Sc. Thesis
 
+* J. Holmer: **Stochastic Exploration in Minimax Search by Using a Policy Predictor Network**, [pdf](https://ml-research.github.io/papers/holmer2022stochastic.pdf)
+```latex
+@bachelorthesis{holmer2022eval,
+	       title = { Stochastic Exploration in Minimax Search by Using a Policy Predictor Network },
+	       author = { Jannik Holmer },
+               year = { 2022 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/QueensGambit/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 49 },
+	       month = { may }
+	       }
+```
+
 * M. Langer: **Evaluation of Monte-Carlo Tree Search for Xiangqi**, [pdf](https://ml-research.github.io/papers/langer2021xiangqi.pdf)
 ```latex
 @bachelorthesis{langer2021eval,

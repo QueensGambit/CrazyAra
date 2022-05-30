@@ -33,7 +33,12 @@
 #include <algorithm>
 #include <cstring>
 #include "customlogger.h"
+#ifdef SF_DEPENDENCY
+#include "uci.h"
 #include "syzygy/tbprobe.h"
+#else
+#include "customuci.h"
+#endif
 #include "../util/communication.h"
 #include "../nn/neuralnetapi.h"
 
@@ -43,11 +48,19 @@ void on_logger(const Option& o) {
     CustomLogger::start(o, ifstream::app);
 }
 
+// method is based on 3rdparty/Stockfish/misc.cpp
+inline TimePoint current_time() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>
+        (std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 // method is based on 3rdparty/Stockfish/uci.cpp
+#ifdef SF_DEPENDENCY
 #ifndef MODE_XIANGQI
 void on_tb_path(const Option& o) {
     Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
 }
+#endif
 #endif
 
 void OptionsUCI::init(OptionsMap &o)
@@ -56,9 +69,16 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef USE_RL
     o["Batch_Size"]                    << Option(8, 1, 8192);
 #else
+#ifdef OPENVINO
+    o["Batch_Size"]                    << Option(16, 1, 8192);
+#else
+#ifdef MODE_CHESS
     o["Batch_Size"]                    << Option(64, 1, 8192);
+#else
+    o["Batch_Size"]                    << Option(16, 1, 8192);
 #endif
-    o["Child_Threads"]                 << Option(4, 1, 512);
+#endif
+#endif
     o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
 #ifdef USE_RL
     o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);
@@ -107,7 +127,7 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef MODE_LICHESS
     o["Model_Directory"]               << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
 #else
-    o["Model_Directory"]               << Option(string("model/" + engineName + "/" + availableVariants.front()).c_str());
+    o["Model_Directory"]               << Option(string("model/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
 #endif
     o["Move_Overhead"]                 << Option(20, 0, 5000);
     o["MultiPV"]                       << Option(1, 1, 99999);
@@ -150,8 +170,10 @@ void OptionsUCI::init(OptionsMap &o)
    o["Centi_Temperature_Decay"]        << Option(100, 0, 100);
    o["Temperature_Moves"]              << Option(0, 0, 99999);
 #endif
+#ifdef SF_DEPENDENCY
 #ifndef MODE_XIANGQI
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
+#endif
 #endif
     o["Threads"]                       << Option(2, 1, 512);
 #ifdef OPENVINO
@@ -159,10 +181,10 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Timeout_MS"]                    << Option(0, 0, 99999999);
 #ifdef MODE_LICHESS
-    o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), availableVariants);
+    o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), StateConstants::available_variants());
 #else
     // we repeat e.g. "crazyhouse" in the list because of problem in XBoard/Winboard CrazyAra#23
-    o["UCI_Variant"]                   << Option(availableVariants.front().c_str(), {availableVariants.front().c_str(), availableVariants.front().c_str()});
+    o["UCI_Variant"]                   << Option(StateConstants::DEFAULT_UCI_VARIANT().c_str(), {StateConstants::DEFAULT_UCI_VARIANT().c_str(), StateConstants::DEFAULT_UCI_VARIANT().c_str()});
 #endif
     o["Use_Raw_Network"]               << Option(false);
     // additional UCI-Options for RL only
@@ -179,7 +201,7 @@ void OptionsUCI::init(OptionsMap &o)
 #ifdef MODE_LICHESS
     o["Model_Directory_Contender"]     << Option((string("model_contender/" + engineName + "/") + get_first_variant_with_model()).c_str());
 #else
-    o["Model_Directory_Contender"]     << Option(string("model_contender/" + engineName + "/" + availableVariants.front()).c_str());
+    o["Model_Directory_Contender"]     << Option(string("model_contender/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
 #endif
     o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
     o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
@@ -188,7 +210,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
 }
 
-void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
+void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
 {
 
     string token, name, value;
@@ -240,7 +262,7 @@ void OptionsUCI::setoption(istringstream &is, Variant& variant, StateObj& state)
                 info_string_important("Updated option", givenName, "to", value);
                 is960 = Options["UCI_Chess960"];
             }
-            variant = UCI::variant_from_name(uciVariant);
+            variant = StateConstants::variant_to_int(uciVariant);
             state.init(variant, is960);
 
             string suffix_960 = (is960) ? "960" : "";
@@ -282,6 +304,7 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
 const string OptionsUCI::get_first_variant_with_model()
 {
     vector<string> dirs = get_directory_files("model/" + engineName + "/");
+    const static vector<string> availableVariants = StateConstants::available_variants();
     for(string dir : dirs) {
         if (std::find(availableVariants.begin(), availableVariants.end(), dir) != availableVariants.end()) {
             const vector <string> files = get_directory_files("model/" + engineName + "/" + dir);
@@ -290,13 +313,13 @@ const string OptionsUCI::get_first_variant_with_model()
             }
         }
     }
-    return availableVariants.front();
+    return StateConstants::DEFAULT_UCI_VARIANT();
 }
 
 void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap &options)
 {
     searchLimits.reset();
-    searchLimits.startTime = now();
+    searchLimits.startTime = current_time();
     searchLimits.moveOverhead = TimePoint(options["Move_Overhead"]);
     searchLimits.nodes = options["Nodes"];
     searchLimits.nodesLimit = options["Nodes_Limit"];

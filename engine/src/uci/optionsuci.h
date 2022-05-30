@@ -28,13 +28,19 @@
 #ifndef OPTIONSUCI_H
 #define OPTIONSUCI_H
 
+#ifndef SF_DEPENDENCY
+#include "customuci.h"
+#else
 #include "uci.h"
-#include "misc.h"
-#include "variants.h"
+#endif
 #include "stateobj.h"
 #include "agents/config/searchlimits.h"
 
+#ifndef SF_DEPENDENCY
+using namespace CUSTOM_UCI;
+#else
 using namespace UCI;
+#endif
 
 namespace OptionsUCI {
 
@@ -51,7 +57,7 @@ namespace OptionsUCI {
      * @param variant Active variant
      * @param state Active state object
      */
-    void setoption(istringstream& is, Variant& variant, StateObj& state);
+    void setoption(istringstream& is, int& variant, StateObj& state);
 
 
     /**

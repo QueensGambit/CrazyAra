@@ -5,10 +5,10 @@ set (CMAKE_CXX_STANDARD 17)
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
 option(BACKEND_TENSORRT          "Build with TensorRT support"  ON)
+option(BACKEND_TENSORRT_7        "Build with deprecated TensorRT 7 support"  OFF)
 option(BACKEND_MXNET             "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OFF)
 option(BACKEND_OPENVINO          "Build with OpenVino backend (CPU/GPU) support" OFF)
-option(USE_960                   "Build with 960 variant support"  OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
 option(USE_DYNAMIC_NN_ARCH       "Build with dynamic neural network architektur support"  ON)
 # enable a single mode for different model input / outputs
@@ -26,6 +26,7 @@ add_definitions(-DIS_64BIT)
 if (MODE_CRAZYHOUSE)
     project(CrazyAra CXX)
     add_definitions(-DMODE_CRAZYHOUSE)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DVERSION=1)
 endif()
@@ -33,16 +34,19 @@ endif()
 if (MODE_CHESS)
     project(ClassicAra CXX)
     add_definitions(-DMODE_CHESS)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DMCTS_TB_SUPPORT)
 #    add_definitions(-DVERSION=1)
 #    add_definitions(-DVERSION=2)
 #    add_definitions(-DSUB_VERSION=8)
     add_definitions(-DVERSION=3)
+    add_definitions(-DSUPPORT960)
 endif()
 
 if (MODE_LICHESS)
     project(MultiAra CXX)
     add_definitions(-DMODE_LICHESS)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DCRAZYHOUSE)
     add_definitions(-DKOTH)
     add_definitions(-DTHREECHECK)
@@ -68,6 +72,7 @@ if (MODE_STRATEGO)
 endif()
 if (MODE_XIANGQI)
     project(XiangqiAra CXX)
+    add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DNO_THREADS)
     add_definitions(-DXIANGQI)
     add_definitions(-DMODE_XIANGQI)
@@ -201,15 +206,15 @@ list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-St
 if (NOT MODE_XIANGQI)
     set(source_files
         ${source_files}
-        ${sf_related_files}
         ${uci_files}
         )
 endif ()
 
-if (NOT MODE_OPEN_SPIEL AND NOT MODE_XIANGQI AND NOT MODE_STRATEGO)
+if (MODE_CRAZYHOUSE OR MODE_CHESS OR MODE_LICHESS)
     set(source_files
         ${source_files}
         ${chess_related_files}
+        ${sf_related_files}
         )
 endif()
 
@@ -303,6 +308,8 @@ if (MODE_OPEN_SPIEL OR MODE_STRATEGO)
             "3rdparty/open_spiel/open_spiel/games/chess/*.cc"
             "3rdparty/open_spiel/open_spiel/games/hex.h"
             "3rdparty/open_spiel/open_spiel/games/hex.cc"
+            "3rdparty/open_spiel/open_spiel/games/dark_hex.h"
+            "3rdparty/open_spiel/open_spiel/games/dark_hex.cc"
             )
     endif()
 
@@ -407,6 +414,11 @@ if (USE_RL)
     add_definitions(-DDISABLE_UCI_INFO)
 endif()
 
+if(BACKEND_TENSORRT_7)
+    set(BACKEND_TENSORRT ON)
+    add_definitions(-DTENSORRT7)
+endif()
+
 if (BACKEND_TENSORRT)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
     message(STATUS "Enabled TensorRT support")
@@ -422,19 +434,25 @@ if (BACKEND_TENSORRT)
     link_directories("$ENV{CUDA_PATH}/lib64")
     link_directories("$ENV{CUDA_PATH}/lib/x64")
     link_directories("$ENV{TENSORRT_PATH}/lib")
+    if(BACKEND_TENSORRT_7)
+        if(WIN32)
+          find_library(TENSORRT_LIBRARY_MYELIN myelin64_1
+            HINTS  ${TENSORRT_PATH}
+            PATH_SUFFIXES lib lib64 lib/x64)
+        endif()
+    endif()
     include_directories("$ENV{TENSORRT_PATH}/include")
     include_directories("$ENV{TENSORRT_PATH}/samples/common/")
     add_definitions(-DTENSORRT)
-endif()
-
-if (USE_960)
-    add_definitions(-DSUPPORT960)
 endif()
 
 add_executable(${PROJECT_NAME} ${source_files})
 
 if (BACKEND_TENSORRT)
     target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
+    if(BACKEND_TENSORRT_7)
+        target_link_libraries(${PROJECT_NAME} myelin)
+    endif()
 endif()
 
 if (BACKEND_OPENVINO)
