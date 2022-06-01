@@ -138,7 +138,6 @@ class RiseV3():
             if se_type not in valid_se_types:
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
-
         res_blocks = _get_res_blocks(act_type, bn_mom, channels, channels_operating_init, channel_expansion, kernels, se_types)
 
         self.body_spatial = Sequential(
