@@ -21,6 +21,7 @@ from rtpt import RTPT
 from tqdm import tqdm_notebook
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import TensorDataset, DataLoader
+from torch.optim.optimizer import Optimizer
 
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
@@ -180,7 +181,7 @@ class TrainerAgentPytorch:
                 logging.debug("lr: %.7f - momentum: %.7f", self.to.lr_schedule(self.cur_it), self.to.momentum_schedule(self.cur_it))
                 train_metric_values = evaluate_metrics(
                     self.to.metrics,
-                    train_data,
+                    train_loader,
                     self._model,
                     nb_batches=10,  # 25,
                     ctx=self._ctx,
@@ -189,7 +190,7 @@ class TrainerAgentPytorch:
                 )
                 val_metric_values = evaluate_metrics(
                     self.to.metrics,
-                    self._val_data,
+                    self._val_loader,
                     self._model,
                     nb_batches=None,
                     ctx=self._ctx,
@@ -200,7 +201,7 @@ class TrainerAgentPytorch:
                     # update process title according to loss
                     self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
                 if self.tc.use_spike_recovery and (
-                        old_val_loss * self.tc.spike_thresh < val_metric_values["loss"]
+                        self.old_val_loss * self.tc.spike_thresh < val_metric_values["loss"]
                         or np.isnan(val_metric_values["loss"])
                 ):  # check for spikes
                     self.nb_spikes += 1
@@ -233,8 +234,8 @@ class TrainerAgentPytorch:
                         self.k_steps_best,
                     )  # Load the best model once again
                     logging.debug("load current best model:%s", model_path)
-                    self._net.load_parameters(model_path, ctx=self._ctx)
-                    k_steps = self.k_steps_best
+                    load_torch_state(self._model, self.optimizer, model_path)
+                    self.k_steps = self.k_steps_best
                     logging.debug("k_step is back at %d", self.k_steps_best)
                     # print the elapsed time
                     t_delta = time() - self.t_s_steps
@@ -242,7 +243,7 @@ class TrainerAgentPytorch:
                     t_s_steps = time()
                 else:
                     # update the val_loss_value to compare with using spike recovery
-                    old_val_loss = val_metric_values["loss"]
+                    self.old_val_loss = val_metric_values["loss"]
                     # log the metric values to tensorboard
                     self._log_metrics(train_metric_values, global_step=self.k_steps, prefix="train_")
                     self._log_metrics(val_metric_values, global_step=self.k_steps, prefix="val_")
@@ -250,11 +251,10 @@ class TrainerAgentPytorch:
                     if self.tc.export_grad_histograms:
                         grads = []
                         # logging the gradients of parameters for checking convergence
-                        for _, name in enumerate(self._param_names):
+                        for name, param in self._model.named_parameters():
                             if "bn" not in name and "batch" not in name and name != "policy_flat_plane_idx":
-                                grads.append(self._params[name].grad())
                                 self.sum_writer.add_histogram(
-                                    tag=name, values=grads[-1], global_step=self.k_steps, bins=20
+                                    tag=name, values=param, global_step=self.k_steps,
                                 )
 
                     # check if a new checkpoint shall be created
@@ -263,15 +263,15 @@ class TrainerAgentPytorch:
                         val_loss_best = val_metric_values["loss"]
                         val_p_acc_best = val_metric_values["policy_acc"]
                         val_metric_values_best = val_metric_values
-                        k_steps_best = self.k_steps
+                        self.k_steps_best = self.k_steps
 
                         if self.tc.export_weights:
-                            prefix = self.tc.export_dir + "weights/model-%.5f-%.3f" \
-                                     % (val_loss_best, val_p_acc_best)
+                            filepath = Path(self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.tar" \
+                                     % (val_loss_best, val_p_acc_best, self.k_steps_best))
                             # the export function saves both the architecture and the weights
-                            export_as_script_module(self._model, batch_size, data, "./weights")
+                            save_torch_state(self._model, self.optimizer, filepath)
                             print()
-                            logging.info("Saved checkpoint to %s-%04d.params", prefix, k_steps_best)
+                            logging.info("Saved checkpoint to %s", filepath)
 
                         patience_cnt = 0  # reset the patience counter
                     # print the elapsed time
@@ -290,7 +290,7 @@ class TrainerAgentPytorch:
                     self.sum_writer.add_scalar(tag="lr", scalar_value=self.to.lr_schedule(self.cur_it), global_step=self.k_steps)
                     # log the current momentum value
                     self.sum_writer.add_scalar(
-                        tag="momentum", scalar_value=self.to.momentum_schedule(self.cur_it), global_step=k_steps
+                        tag="momentum", scalar_value=self.to.momentum_schedule(self.cur_it), global_step=self.k_steps
                     )
 
                     if self.cur_it >= self.tc.total_it:
@@ -308,7 +308,7 @@ class TrainerAgentPytorch:
                         if self.tc.log_metrics_to_tensorboard:
                             self.sum_writer.close()
 
-                        return return_metrics_and_stop_training(k_steps, val_metric_values, self.k_steps_best,
+                        return return_metrics_and_stop_training(self.k_steps, val_metric_values, self.k_steps_best,
                                                                 self.val_metric_values_best)
 
 
@@ -316,6 +316,20 @@ class TrainerAgentPytorch:
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
+    def _log_metrics(self, metric_values, global_step, prefix="train_"):
+        """
+        Logs a dictionary object of metric value to the console and to tensorboard
+        if _log_metrics_to_tensorboard is set to true
+        :param metric_values: Dictionary object storing the current metrics
+        :param global_step: X-Position point of all metric entries
+        :param prefix: Used for labelling the metrics
+        :return:
+        """
+        for name in metric_values.keys():  # show the metric stats
+            print(" - %s%s: %.4f" % (prefix, name, metric_values[name]), end="")
+            # add the metrics to the tensorboard event file
+            if self.tc.log_metrics_to_tensorboard:
+                self.sum_writer.add_scalar(name, [prefix.replace("_", ""), metric_values[name]], global_step)
 
     def _setup_variables(self, cur_it):
         if self.tc.seed is not None:
@@ -367,6 +381,19 @@ def get_context(context: str, device_id: int):
         return torch.device("cpu")
     else:
         return torch.device("cpu")
+
+
+def load_torch_state(model: nn.Module, optimizer: Optimizer, path: str):
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+
+def save_torch_state(model: nn.Module, optimizer: Optimizer, path):
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+    }, path)
 
 
 def export_model(model, batch_sizes, input_shape, dir=Path('.'), torch_cpu=True, torch_cuda=True, onnx=True,
