@@ -13,7 +13,10 @@ from time import time
 import mxnet as mx
 from mxnet import autograd, gluon, nd
 import numpy as np
-from mxboard import SummaryWriter
+try:
+    from mxboard import SummaryWriter
+except Exception:
+    pass
 from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
@@ -112,7 +115,7 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-class TrainerAgent:  # Probably needs refactoring
+class TrainerAgentGluon:  # Probably needs refactoring
     """Main training loop"""
 
     def __init__(
