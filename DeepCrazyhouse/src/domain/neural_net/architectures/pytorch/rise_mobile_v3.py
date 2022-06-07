@@ -82,12 +82,11 @@ def _get_res_blocks(act_type, bn_mom, channels, channels_operating_init, channel
     return res_blocks
 
 
-class RiseV3():
+class RiseV3(Module):
 
     def __init__(self, nb_input_channels, board_height, board_width,
                   channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
                   channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
-                  grad_scale_value=0.01, grad_scale_policy=0.99, grad_scale_wdl=None, grad_scale_ply=None,
                   select_policy_from_plane=True, kernels=None, n_labels=4992,
                   se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
                   use_mlp_wdl_ply=False, bn_mom=0.9,
@@ -127,6 +126,7 @@ class RiseV3():
         Later the spatial and scalar embeddings will be merged again.
         :return: symbol
         """
+        super(RiseV3, self).__init__()
         self.nb_input_channels = nb_input_channels
 
         if len(kernels) != len(se_types):
@@ -151,12 +151,11 @@ class RiseV3():
         self.policy_head = _PolicyHead(board_height, board_width, channels, channels_policy_head, n_labels,
                                        bn_mom, act_type, select_policy_from_plane)
 
-    def forward(self, x, hidden_state: Tensor = None):
+    def forward(self, x):
         """
         Implementation of the forward pass of the full network
         Uses a broadcast add operation for the shortcut and the output of the residual block
         :param x: Input to the ResidualBlock
-        :param hidden_state: Input to lstm
         :return: Value & Policy Output
         """
 
@@ -192,7 +191,6 @@ def get_rise_v33_model(args):
                     channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
                     channels_value_head=8, value_fc_size=256,
                     channels_policy_head=args.channels_policy_head,
-                    grad_scale_value=args.val_loss_factor, grad_scale_policy=args.policy_loss_factor,
                     dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
                     kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels)
     return model
