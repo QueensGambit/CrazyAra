@@ -218,21 +218,16 @@ class _PolicyHead(Module):
 
         self.body = Sequential()
         self.select_policy_from_plane = select_policy_from_plane
-
-        if self.select_policy_from_plane:
-            self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels, padding=1, kernel_size=(3, 3), bias=False),
-                                   BatchNorm2d(momentum=bn_mom, num_features=channels),
-                                   get_act(act_type),
-                                   Conv2d(in_channels=channels, out_channels=policy_channels, padding=1, kernel_size=(3, 3), bias=False))
-            self.nb_flatten = policy_channels*board_width*policy_channels
-
-        else:
-            self.body = Sequential(Conv2d(in_channels=channels, out_channels=policy_channels, kernel_size=(1, 1), bias=False),
-                                   BatchNorm2d(momentum=bn_mom, num_features=policy_channels),
-                                   get_act(act_type))
-
-            self.nb_flatten = board_height*board_width*policy_channels
-            self.body2 = Sequential(Linear(in_features=self.nb_flatten, out_features=n_labels))
+        self.nb_flatten = policy_channels * board_width * board_height
+        self.body = Sequential(
+            Conv2d(in_channels=channels, out_channels=channels, padding=1, kernel_size=(3, 3), bias=False),
+            BatchNorm2d(momentum=bn_mom, num_features=channels),
+            get_act(act_type),
+            Conv2d(in_channels=channels, out_channels=policy_channels, padding=1, kernel_size=(3, 3), bias=False))
+        if not self.select_policy_from_plane:
+            self.body2 = Sequential(BatchNorm2d(momentum=bn_mom, num_features=policy_channels),
+                                    get_act(act_type))
+            self.body3 = Sequential(Linear(in_features=self.nb_flatten, out_features=n_labels))
 
     def forward(self, x):
         """
@@ -243,8 +238,9 @@ class _PolicyHead(Module):
         if self.select_policy_from_plane:
             return self.body(x).view(-1, self.nb_flatten)
         else:
-            x = self.body(x).view(-1, self.nb_flatten)
-            return self.body2(x)
+            x = self.body(x)
+            x = self.body2(x).view(-1, self.nb_flatten)
+            return self.body3(x)
 
 
 class _ValueHead(Module):
