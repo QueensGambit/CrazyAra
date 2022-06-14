@@ -69,9 +69,6 @@ class TrainerAgentPytorch:
 
         self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
 
-        # decides if the policy indices shall be selected directly from spatial feature maps without dense layer
-        self.batch_end_callbacks = [self.batch_callback]
-
         # few variables which are internally used
         self.val_loss_best = self.val_p_acc_best = self.k_steps_best = \
             self.old_label = self.value_out = self.t_s = None
@@ -109,7 +106,6 @@ class TrainerAgentPytorch:
             logging.info("EPOCH %d", self.epoch)
             logging.info("=========================")
             self.t_s_steps = time()
-            self._model.init_optimizer(optimizer=self.optimizer)
 
             for part_id in tqdm_notebook(self.ordering):
                 self._train_one_dataset_chunk(part_id)
@@ -132,20 +128,23 @@ class TrainerAgentPytorch:
         train_loader = DataLoader(train_dataset, shuffle=True, batch_size=self.tc.batch_size, num_workers=self.tc.cpu_count)
 
         for _, (data, value_label, policy_label, plys_label) in enumerate(train_loader):
+            self.optimizer.zero_grad()
             data = data.to(self._ctx)
             value_label = value_label.to(self._ctx)
             policy_label = policy_label.to(self._ctx)
+            if self.tc.sparse_policy_label:
+                policy_label = policy_label.long()
             plys_label = plys_label.to(self._ctx)
 
             # update a dummy metric to see a proper progress bar
             #  (the metrics will get evaluated at the end of 100k steps)
-            if self.batch_proc_tmp > 0:
-                self.to.metrics["value_loss"].update(self.old_label, value_out)
+            # if self.batch_proc_tmp > 0:
+            #     self.to.metrics["value_loss"].update(self.old_label, value_out)
 
             self.old_label = value_label
 
             value_out, policy_out = self._model(data)
-            policy_out = policy_out.softmax()
+            #policy_out = policy_out.softmax(dim=1)
             value_loss = self._l2_loss(value_out, value_label)
             policy_loss = self._cross_entropy_loss(policy_out, policy_label)
             # weight the components of the combined loss
@@ -164,7 +163,7 @@ class TrainerAgentPytorch:
             self.batch_proc_tmp += 1
             # add the graph representation of the network to the tensorboard log file
             if not self.graph_exported and self.tc.log_metrics_to_tensorboard:
-                self.sum_writer.add_graph(self._model)
+                self.sum_writer.add_graph(self._model, data)
                 self.graph_exported = True
 
             if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
@@ -361,7 +360,7 @@ class TrainerAgentPytorch:
 
 
 def create_optimizer(model: nn.Module, train_config: TrainConfig):
-    if train_config.optimizer_name == "sgd":
+    if train_config.optimizer_name == "nag":  # torch.optim.SGD uses Nestorov momentum already
         return torch.optim.SGD(model.parameters(), lr=train_config.max_lr, momentum=train_config.max_momentum,
                                weight_decay=train_config.wd)
     raise Exception(f"Selected optimizer {train_config.optimizer_name} is not supported.")
@@ -531,16 +530,17 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     :return:
     """
     reset_metrics(metrics)
-    for i, (data, value_label, policy_label) in enumerate(data_iterator):
+    for i, (data, value_label, policy_label, plys_label) in enumerate(data_iterator):
         data = data.to(ctx)
         value_label = value_label.to(ctx)
         policy_label = policy_label.to(ctx)
+        plys_label = plys_label.to(ctx)
 
         value_out, policy_out = model(data)
 
         # update the metrics
         metrics["value_loss"].update(preds=value_out, labels=value_label)
-        metrics["policy_loss"].update(preds=policy_out.softmax(),
+        metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
                                       labels=policy_label)
         metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
         metrics["policy_acc"].update(preds=policy_out.argmax(axis=1),
@@ -552,5 +552,5 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     metric_values = {"loss": 0.01 * metrics["value_loss"].get()[1] + 0.99 * metrics["policy_loss"].get()[1]}
 
     for metric in metrics.values():
-        metric_values[metric.get()[0]] = metric.get()[1]
+        metric_values[metric.get()[0]] = metric.compute()
     return metric_values

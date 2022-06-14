@@ -13,3 +13,4 @@ ipytree
 setproctitle
 rtpt
 dataclasses
+torchsummary
