@@ -91,6 +91,9 @@ TerminalType FairyState::is_terminal(size_t numberLegalMoves, float &customTermi
     bool gameEnd = board.is_game_end(value, board.game_ply());
 
     if (gameEnd) {
+        if (numberLegalMoves == 0)
+            return TERMINAL_DRAW;
+        cout << "game ended: Value is: " << value << endl;
         if (value == VALUE_DRAW) {
             return TERMINAL_DRAW;
         }

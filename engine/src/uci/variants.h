@@ -59,9 +59,9 @@ const static vector<string> availableVariants = {
 #ifdef MODE_BOARDGAMES
     "tictactoe",
     "cfour",
-    "breakthrough5:breakthrough",
-    "breakthrough6:breakthrough",
-    "breakthrough7:breakthrough",
+    "flipello",
+    "clobber",
+    "breakthrough",
 #endif
 #ifdef MODE_STRATEGO
     "stratego",
