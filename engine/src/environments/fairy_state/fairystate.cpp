@@ -36,8 +36,8 @@ void FairyState::set(const string &fenStr, bool isChess960, int variant) {
     Thread *thread;
 #ifdef MODE_BOARDGAMES
     board.set(variants.find(StateConstantsFairy::available_variants()[variant])->second, fenStr, isChess960, &states->back(), thread, false);
-    cout << "connectN: "<<board.variant()->connectN<< endl;
-    cout << "stalematevalue: " << board.variant()->stalemateValue;
+//    cout << "connectN: "<<board.variant()->connectN<< endl;
+//    cout << "stalematevalue: " << board.variant()->stalemateValue;
 #else
     board.set(variants.find("xiangqi")->second, fenStr, isChess960, &states->back(), thread, false);
 #endif
