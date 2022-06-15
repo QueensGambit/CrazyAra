@@ -1,3 +1,4 @@
+protobuf==3.6.9
 numpy
 python-chess==0.23.11
 zarr

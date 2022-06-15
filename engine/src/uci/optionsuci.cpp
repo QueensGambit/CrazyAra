@@ -281,6 +281,11 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
 
 string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
     // default value of is960 == false
+#ifdef MODE_BOARDGAMES
+    if (value == "standard") {
+       return "tictactoe";
+    }
+#endif
 #ifdef SUPPORT960
     // we only want 960 for chess atm
     if (value == "fischerandom" || value == "chess960"
@@ -303,13 +308,14 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
 
 const string OptionsUCI::get_first_variant_with_model()
 {
+    string value;
     vector<string> dirs = get_directory_files("model/" + engineName + "/");
     const static vector<string> availableVariants = StateConstants::available_variants();
-    for(string dir : dirs) {
-        if (std::find(availableVariants.begin(), availableVariants.end(), dir) != availableVariants.end()) {
-            const vector <string> files = get_directory_files("model/" + engineName + "/" + dir);
+    for(string variant : availableVariants) {
+        if (std::find(dirs.begin(), dirs.end(), variant) != dirs.end()) {
+            const vector <string> files = get_directory_files("model/" + engineName + "/" + variant);
             if ("" != get_string_ending_with(files, ".onnx")) {
-                return dir;
+                return variant;
             }
         }
     }
