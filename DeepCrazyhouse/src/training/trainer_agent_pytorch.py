@@ -201,7 +201,7 @@ class TrainerAgentPytorch:
                     self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
                 if self.tc.use_spike_recovery and (
                         self.old_val_loss * self.tc.spike_thresh < val_metric_values["loss"]
-                        or np.isnan(val_metric_values["loss"])
+                        or torch.isnan(val_metric_values["loss"])
                 ):  # check for spikes
                     self.nb_spikes += 1
                     logging.warning(
@@ -247,7 +247,7 @@ class TrainerAgentPytorch:
                     self._log_metrics(train_metric_values, global_step=self.k_steps, prefix="train_")
                     self._log_metrics(val_metric_values, global_step=self.k_steps, prefix="val_")
 
-                    if self.tc.export_grad_histograms:
+                    if self.tc.log_metrics_to_tensorboard and self.tc.export_grad_histograms:
                         grads = []
                         # logging the gradients of parameters for checking convergence
                         for name, param in self._model.named_parameters():
@@ -278,19 +278,20 @@ class TrainerAgentPytorch:
                     print(" - %.ds" % t_delta)
                     t_s_steps = time()
 
-                    # log the samples per second metric to tensorboard
-                    self.sum_writer.add_scalar(
-                        tag="samples_per_second",
-                        scalar_value={"hybrid_sync": data.shape[0] * self.tc.batch_steps / t_delta},
-                        global_step=self.k_steps,
-                    )
+                    if self.tc.log_metrics_to_tensorboard:
+                        # log the samples per second metric to tensorboard
+                        self.sum_writer.add_scalar(
+                            tag="samples_per_second",
+                            scalar_value={"hybrid_sync": data.shape[0] * self.tc.batch_steps / t_delta},
+                            global_step=self.k_steps,
+                        )
 
-                    # log the current learning rate
-                    self.sum_writer.add_scalar(tag="lr", scalar_value=self.to.lr_schedule(self.cur_it), global_step=self.k_steps)
-                    # log the current momentum value
-                    self.sum_writer.add_scalar(
-                        tag="momentum", scalar_value=self.to.momentum_schedule(self.cur_it), global_step=self.k_steps
-                    )
+                        # log the current learning rate
+                        self.sum_writer.add_scalar(tag="lr", scalar_value=self.to.lr_schedule(self.cur_it), global_step=self.k_steps)
+                        # log the current momentum value
+                        self.sum_writer.add_scalar(
+                            tag="momentum", scalar_value=self.to.momentum_schedule(self.cur_it), global_step=self.k_steps
+                        )
 
                     if self.cur_it >= self.tc.total_it:
 
@@ -328,7 +329,7 @@ class TrainerAgentPytorch:
             print(" - %s%s: %.4f" % (prefix, name, metric_values[name]), end="")
             # add the metrics to the tensorboard event file
             if self.tc.log_metrics_to_tensorboard:
-                self.sum_writer.add_scalar(name, [prefix.replace("_", ""), metric_values[name]], global_step)
+                self.sum_writer.add_scalar(name, prefix.replace("_", ""), metric_values[name], global_step)
 
     def _setup_variables(self, cur_it):
         if self.tc.seed is not None:
@@ -375,7 +376,7 @@ def get_context(context: str, device_id: int):
     """
     if context == "gpu":
         if torch.cuda.is_available():
-            return torch.cuda.device(device_id)
+            return torch.device(f"cuda:{device_id}")
         logging.info("No cuda device available. Fallback to CPU")
         return torch.device("cpu")
     else:
@@ -549,8 +550,8 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
         if nb_batches and i == nb_batches:
             break
 
-    metric_values = {"loss": 0.01 * metrics["value_loss"].get()[1] + 0.99 * metrics["policy_loss"].get()[1]}
+    metric_values = {"loss": 0.01 * metrics["value_loss"].compute() + 0.99 * metrics["policy_loss"].compute()}
 
-    for metric in metrics.values():
-        metric_values[metric.get()[0]] = metric.compute()
+    for metric_name in metrics:
+        metric_values[metric_name] = metrics[metric_name].compute()
     return metric_values

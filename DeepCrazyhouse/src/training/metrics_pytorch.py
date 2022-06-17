@@ -16,7 +16,7 @@ class Metric:
     def reset(self) -> None:
         pass
 
-    def update(self, preds: torch.Tensor, label: torch.Tensor) -> None:
+    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
         pass
 
     def compute(self) -> float:
@@ -33,9 +33,9 @@ class Accuracy(Metric):
         self.correct_cnt = 0
         self.total_cnt = 0
 
-    def update(self, preds: torch.Tensor, label: torch.Tensor) -> None:
-        self.correct_cnt += float((preds == label.data).sum())
-        self.total_cnt += preds.shape[1]
+    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
+        self.correct_cnt += float((preds == labels.data).sum())
+        self.total_cnt += preds.shape[0]
 
     def compute(self) -> float:
         return self.correct_cnt / self.total_cnt
@@ -50,24 +50,31 @@ class MSE(Metric):
     def reset(self) -> None:
         self.loss_value = 0
 
-    def update(self, preds: torch.Tensor, label: torch.Tensor) -> None:
-        self.loss_value = self.loss(preds, label)
+    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
+        self.loss_value = self.loss(preds, labels)
 
     def compute(self) -> float:
         return self.loss_value
 
 
 class CrossEntropy(Metric):
-    def __init__(self):
+    def __init__(self, sparse_policy_label):
+        """
+        :param: sparse_policy_label: Decides if the cross entropy loss has sparse labels
+        """
         super().__init__()
         self.loss = torch.nn.CrossEntropyLoss()
         self.loss_value = 0
+        self.sparse_policy_label = sparse_policy_label
 
     def reset(self) -> None:
         self.loss_value = 0
 
-    def update(self, preds: torch.Tensor, label: torch.Tensor) -> None:
-        self.loss_value = self.loss(preds, label)
+    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
+        if self.sparse_policy_label:
+            self.loss_value = self.loss(preds, labels.long())
+        else:
+            self.loss_value = self.loss(preds, labels)
 
     def compute(self) -> float:
         return self.loss_value
@@ -83,9 +90,9 @@ class AccuracySign(Metric):
         self.correct_cnt = 0
         self.denominator = 0
 
-    def update(self, preds: torch.Tensor, label: torch.Tensor) -> None:
-        self.correct_cnt += float((preds.sign() == label.data.sign()).sum())
-        self.denominator += label.shape[1] - (label == 0).sum()
+    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
+        self.correct_cnt += float((preds.sign() == labels.data.sign()).sum())
+        self.denominator += labels.shape[0] - (labels == 0).sum()
 
     def compute(self) -> float:
         if self.denominator != 0:

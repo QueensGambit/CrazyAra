@@ -158,9 +158,7 @@ class RiseV3(Module):
         :param x: Input to the ResidualBlock
         :return: Value & Policy Output
         """
-
         out = self.body_spatial(x)
-        out = out.view(*out.shape[:-3], self.nb_body_spatial_out)
 
         # use the output to create value/policy predictions
         value = self.value_head(out)
