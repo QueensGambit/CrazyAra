@@ -135,9 +135,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "arena")      arena(is);
         // Test if the new modes are also usable for chess and others
 
-        else if (token == "mctsmatch")   mctsarena(is, "", "");
-        else if (token == "mctstournament")   mctstournament(is);
-        else if (token == "tournament")   evaltournament(is);
+        else if (token == "match")   multimodel_arena(is, "", "", true);
+        else if (token == "tournament")   roundrobin(is);
 #endif   
         else
             cout << "Unknown command: " << cmd << endl;
@@ -361,73 +360,59 @@ void CrazyAra::arena(istringstream &is)
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 
-void CrazyAra::mctsarena(istringstream &is, const string& modeldirectory1, const string& modeldirectory2)
+void CrazyAra::multimodel_arena(istringstream &is, const string &modeldirectory1, const string &modeldirectory2, boolean models_in_is)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
 
     // create two MCTS agents
     int type;
+    int folder;
     is >> type;
+    if (models_in_is)
+    {
+        is >> folder;
+        modeldirectory1 = "m" + folder + "/";
+    }
     auto mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
-    if(modeldirectory1 != ""){
+    if (modeldirectory1 != "")
+    {
         netSingle = create_new_net_single(modeldirectory1);
         netBatches = create_new_net_batches(modeldirectory1);
         mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
-
     }
 
-
     is >> type;
+    if (models_in_is)
+    {
+        is >> folder;
+        modeldirectory2 = "m" + folder + "/";
+    }
     auto mcts2 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
-    if(modeldirectory2 != ""){
+    if (modeldirectory2 != "")
+    {
         netSingleContender = create_new_net_single(modeldirectory2);
         netBatchesContender = create_new_net_batches(modeldirectory2);
         mcts2 = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings, static_cast<MCTSAgentType>(type));
-
     }
-
 
     SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchLimits, &playSettings, &rlSettings, Options);
     size_t numberOfGames;
     is >> numberOfGames;
     TournamentResult tournamentResult = selfPlay.go_arena(mcts2.get(), numberOfGames, variant);
 
-    cout << "MCTSArena summary" << endl;
-    cout << "Score of Contender vs Producer: " << tournamentResult << endl;
+    cout << "Arena summary" << endl;
+    cout << "Score of Agent1 vs Agent2: " << tournamentResult << endl;
     write_tournament_result_to_csv(tournamentResult, "mcts_arena_results.csv");
 }
 
-void CrazyAra::mctstournament(istringstream &is)
+void CrazyAra::roundrobin(istringstream &is)
 {
     int type;
     int numberofgames;
     is >> numberofgames;
-    std::vector<int> numbers;
-    while(!is.eof()){
-        is >> type;
-        numbers.push_back(type);
-        is >> type;
-
-    }
-
-    std::vector<std::string> combinations = comb(numbers, 2);
-    for(int i = 0;i<combinations.size();i++){
-        std::istringstream iss (combinations[i] + std::to_string(numberofgames));
-        mctsarena(iss, "", "");
-
-    }
-
-    exit(0);
-
-}
-
-void CrazyAra::evaltournament(istringstream &is)
-{
-    int type;
-    int numberofgames;
-    is >> numberofgames;
-    struct modelstring{
+    struct modelstring
+    {
         int number_of_mcts_agent;
         int number_of_model_folder;
     };
@@ -435,7 +420,8 @@ void CrazyAra::evaltournament(istringstream &is)
     int i = 0;
     std::vector<modelstring> agents;
     std::vector<int> numbers;
-    while(!is.eof()){
+    while (!is.eof())
+    {
         is >> type;
         int tmp1 = type;
         is >> type;
@@ -451,7 +437,8 @@ void CrazyAra::evaltournament(istringstream &is)
 
     std::vector<std::string> combinations = comb(numbers, 2);
     std::string delimiter = " ";
-    for(int i = 0;i<combinations.size();i++){
+    for (int i = 0; i < combinations.size(); i++)
+    {
         std::string s = combinations[i];
 
         int token1 = std::stoi(s.substr(0, s.find(delimiter)));
@@ -459,14 +446,12 @@ void CrazyAra::evaltournament(istringstream &is)
         std::string comb = std::to_string(agents[token1].number_of_mcts_agent) + " " + std::to_string(agents[token2].number_of_mcts_agent);
         std::string m1 = "m" + std::to_string(agents[token1].number_of_model_folder) + "/";
         std::string m2 = "m" + std::to_string(agents[token2].number_of_model_folder) + "/";
-        std::istringstream iss (comb + " " + std::to_string(numberofgames));
-        mctsarena(iss, m1, m2);
+        std::istringstream iss(comb + " " + std::to_string(numberofgames));
+        multimodel_arena(iss, m1, m2, false);
     }
 
     exit(0);
-
 }
-
 
 void CrazyAra::init_rl_settings()
 {
