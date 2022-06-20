@@ -204,7 +204,7 @@ public:
     void multimodel_arena(istringstream &is, const string &modeldirectory1, const string &modeldirectory2, boolean model_in_is);
 
     /**
-     * @brief roundrobin is an extension to the mctstournament method,
+     * @brief roundrobin is an extension to the multimodel_arena method,
      * enabling the user to additionally define a model directory for each agent.
      * @param is Input string with the information about the number of games per match as well as tuples of agent types
      * and model directories. To increase usability the model directories are represented by numbers.
