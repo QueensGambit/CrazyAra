@@ -20,8 +20,8 @@ Influenced by the following papers:
     https://arxiv.org/pdf/1807.06521.pdf
 
 """
+import torch
 from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
-from torch import Tensor
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se
 
 
@@ -101,14 +101,10 @@ class RiseV3(Module):
         :param value_fc_size: Number of units in the fully connected layer of the value head
         :param channels_policy_head: Number of channels for the policy head
         :param dropout_rate: Droput factor to use. If 0, no dropout will be applied. Value must be in [0,1]
-        :param grad_scale_value: Constant scalar which the gradient for the value outputs are being scaled width.
-                                (0.01 is recommended for supervised learning with little data)
-        :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
         :param select_policy_from_plane: True, if policy head type shall be used
         :param kernels: List of kernel sizes used for the residual blocks. The length of the list corresponds to the number
         of residual blocks.
         :param n_labels: Number of policy target labels (used for select_policy_from_plane=False)
-        :param se_ratio: Reduction ration used in the squeeze excitation module
         :param se_types: List of squeeze exciation modules to use for each residual layer.
          The length of this list must be the same as len(kernels). Available types:
         - "se": Squeeze excitation block - Hu et al. - https://arxiv.org/abs/1709.01507
@@ -117,17 +113,17 @@ class RiseV3(Module):
         - "cm_se": Squeeze excitation with max operator
         - "sa_se": Spatial excitation with average operator
         - "sm_se": Spatial excitation with max operator
-        :param use_avg_features: If true the value head receives the avg of the each channel of the original input
-        :param use_raw_features: If true the value receives the raw features of the pieces positions one hot encoded
-        :param value_nb_hidden: Number of hidden layers of the vlaue head
-        :param use_downsampling: If true in the middle of the network a strided convolution will be used to downsample
          the spatial dimensionality and the number of channels will be doubled.
-        :param slice_scalars: If true, the scalar features will be sliced and processed in an independent MLP.
         Later the spatial and scalar embeddings will be merged again.
+        :param use_wdl: If a win draw loss head shall be used
+        :param use_plys_to_end: If a plys to end prediction head shall be used
+        :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
         :return: symbol
         """
         super(RiseV3, self).__init__()
         self.nb_input_channels = nb_input_channels
+        self.use_plys_to_end = use_plys_to_end
+        self.use_wdl = use_wdl
 
         if len(kernels) != len(se_types):
             raise Exception(f'The length of "kernels": {len(kernels)} must be the same as'
@@ -147,7 +143,9 @@ class RiseV3(Module):
         self.nb_body_spatial_out = channels * board_height * board_width
 
         # create the two heads which will be used in the hybrid fwd pass
-        self.value_head = _ValueHead(board_height, board_width, channels, channels_value_head, value_fc_size, bn_mom, act_type)
+        self.value_head = _ValueHead(board_height, board_width, channels, channels_value_head, value_fc_size,
+                                     bn_mom, act_type, False, nb_input_channels,
+                                     use_wdl, use_plys_to_end, use_mlp_wdl_ply)
         self.policy_head = _PolicyHead(board_height, board_width, channels, channels_policy_head, n_labels,
                                        bn_mom, act_type, select_policy_from_plane)
 
@@ -161,10 +159,16 @@ class RiseV3(Module):
         out = self.body_spatial(x)
 
         # use the output to create value/policy predictions
-        value = self.value_head(out)
-        policy = self.policy_head(out)
+        value_head_out = self.value_head(out)
+        policy_out = self.policy_head(out)
 
-        return value, policy
+        if self.use_plys_to_end and self.use_wdl:
+            value_out, wdl_out, plys_to_end_out = value_head_out
+            auxiliary_out = torch.cat((wdl_out, plys_to_end_out), dim=1)
+            return value_out, policy_out, auxiliary_out, wdl_out, plys_to_end_out
+        else:
+            value_out = value_head_out
+            return value_out, policy_out
 
 
 def get_rise_v33_model(args):
@@ -190,5 +194,7 @@ def get_rise_v33_model(args):
                     channels_value_head=8, value_fc_size=256,
                     channels_policy_head=args.channels_policy_head,
                     dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
-                    kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels)
+                    kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
+                    use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
+                   )
     return model

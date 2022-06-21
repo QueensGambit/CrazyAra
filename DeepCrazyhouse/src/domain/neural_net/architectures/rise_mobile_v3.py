@@ -125,6 +125,9 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     - "cm_se": Squeeze excitation with max operator
     - "sa_se": Spatial excitation with average operator
     - "sm_se": Spatial excitation with max operator
+    :param use_wdl: If a win draw loss head shall be used
+    :param use_plys_to_end: If a plys to end prediction head shall be used
+    :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
     :return: symbol
     """
     if len(kernels) != len(se_types):

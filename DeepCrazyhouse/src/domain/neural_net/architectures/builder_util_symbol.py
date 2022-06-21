@@ -110,6 +110,9 @@ def value_head(data, channels_value_head=4, value_kernelsize=1, act_type='relu',
     :param grad_scale_value: Optional re-weighting of gradient
     :param use_se: Indicates if a squeeze excitation layer shall be used
     :param use_mix_conv: True, if an additional mix convolutional layer shall be used
+    :param use_wdl: If a win draw loss head shall be used
+    :param use_plys_to_end: If a plys to end prediction head shall be used
+    :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
     """
     # for value output
     value_out = mx.sym.Convolution(data=data, num_filter=channels_value_head,

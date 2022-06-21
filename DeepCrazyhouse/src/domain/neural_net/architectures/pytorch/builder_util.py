@@ -244,7 +244,9 @@ class _PolicyHead(Module):
 
 
 class _ValueHead(Module):
-    def __init__(self, board_height=11, board_width=11, channels=256, channels_value_head=1, fc0=256, bn_mom=0.9, act_type="relu", use_raw_features=False, nb_input_channels=18):
+    def __init__(self, board_height=11, board_width=11, channels=256, channels_value_head=1, fc0=256, bn_mom=0.9,
+                 act_type="relu", use_raw_features=False, nb_input_channels=18,
+                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False):
         """
         Definition of the value head proposed by the alpha zero authors
         :param board_height: Height of the board
@@ -254,6 +256,9 @@ class _ValueHead(Module):
         :param fc0: Number of units in Dense/Fully-Connected layer
         :param bn_mom: Batch normalization momentum parameter
         :param act_type: Activation type to use
+        :param use_wdl: If a win draw loss head shall be used
+        :param use_plys_to_end: If a plys to end prediction head shall be used
+        :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
         """
 
         super(_ValueHead, self).__init__()
@@ -263,16 +268,31 @@ class _ValueHead(Module):
                                get_act(act_type))
 
         self.use_raw_features = use_raw_features
+        self.use_wdl = use_wdl
+        self.use_plys_to_end = use_plys_to_end
+        self.use_mlp_wdl_ply = use_mlp_wdl_ply
         self.nb_flatten = board_height*board_width*channels_value_head
         if use_raw_features:
             self.nb_flatten_raw = board_height*board_width*nb_input_channels
         else:
             self.nb_flatten_raw = 0
 
-        self.body2 = Sequential(Linear(in_features=self.nb_flatten+self.nb_flatten_raw, out_features=fc0),
-                                get_act(act_type),
-                                Linear(in_features=fc0, out_features=1),
-                                get_act("tanh"))
+        if use_wdl:
+            self.body_wdl = Sequential(Linear(in_features=self.nb_flatten + self.nb_flatten_raw, out_features=3))
+        if use_plys_to_end:
+            self.body_plys = Sequential(Linear(in_features=self.nb_flatten + self.nb_flatten_raw, out_features=1),
+                                        get_act('sigmoid'))
+
+        if use_wdl and use_plys_to_end and use_mlp_wdl_ply:
+            self.body_final = Sequential(Linear(in_features=4, out_features=8),
+                                               get_act(act_type),
+                                               Linear(in_features=8, out_features=1),
+                                               get_act("tanh"))
+        else:
+            self.body_final = Sequential(Linear(in_features=self.nb_flatten+self.nb_flatten_raw, out_features=fc0),
+                                    get_act(act_type),
+                                    Linear(in_features=fc0, out_features=1),
+                                    get_act("tanh"))
 
     def forward(self, x, raw_data=None):
         """
@@ -285,7 +305,17 @@ class _ValueHead(Module):
             raw_data = raw_data.view(-1, self.nb_flatten_raw)
             x = torch.cat((x, raw_data), dim=1)
 
-        return self.body2(x)
+        if self.use_wdl and self.use_plys_to_end:
+            wdl_out = self.body_wdl(x)
+            plys_out = self.body_plys(x)
+            if self.use_mlp_wdl_ply:
+                x = torch.cat((wdl_out, plys_out), dim=1)
+                return self.body_final(x), wdl_out, plys_out
+            else:
+                loss_out, _, win_out = torch.split(wdl_out, 3, dim=1)
+                return -loss_out + win_out, wdl_out, plys_out
+
+        return self.body_final(x)
 
 
 # Inspired by https://discuss.pytorch.org/t/any-pytorch-function-can-work-as-keras-timedistributed/1346/4

@@ -22,11 +22,13 @@ from tqdm import tqdm_notebook
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import TensorDataset, DataLoader
 from torch.optim.optimizer import Optimizer
+from torch.autograd import Variable
 
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.pytorch.metrics import Metrics
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, return_metrics_and_stop_training
+from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, return_metrics_and_stop_training,\
+    value_to_wdl_label, prepare_plys_label
 
 
 class TrainerAgentPytorch:
@@ -61,8 +63,10 @@ class TrainerAgentPytorch:
         if self.tc.log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(log_dir=self.tc.export_dir+"logs", flush_secs=5)
         # Define the two loss functions
-        self._cross_entropy_loss = nn.CrossEntropyLoss()
-        self._l2_loss = nn.MSELoss()
+        self.policy_loss = nn.CrossEntropyLoss()
+        self.value_loss = nn.MSELoss()
+        self.wdl_loss = nn.CrossEntropyLoss()
+        self.ply_loss = nn.MSELoss()
 
         # Define the optimizer
         self.optimizer = create_optimizer(self._model, self.tc)
@@ -123,18 +127,29 @@ class TrainerAgentPytorch:
                                   is_policy_from_plane_data=self.tc.is_policy_from_plane_data)
 
         # update the train_data object
-        train_dataset = TensorDataset(torch.Tensor(self.x_train), torch.Tensor(self.yv_train),
-                                      torch.Tensor(self.yp_train), torch.Tensor(self.plys_to_end))
+        if self.tc.use_wdl and self.tc.use_plys_to_end:
+            train_dataset = TensorDataset(torch.Tensor(self.x_train), torch.Tensor(self.yv_train),
+                                          torch.Tensor(self.yp_train),
+                                          torch.Tensor(value_to_wdl_label(self.yv_train)),
+                                          torch.Tensor(prepare_plys_label(self.plys_to_end)))
+        else:
+            train_dataset = TensorDataset(torch.Tensor(self.x_train), torch.Tensor(self.yv_train),
+                                          torch.Tensor(self.yp_train))
         train_loader = DataLoader(train_dataset, shuffle=True, batch_size=self.tc.batch_size, num_workers=self.tc.cpu_count)
 
-        for _, (data, value_label, policy_label, plys_label) in enumerate(train_loader):
+        for _, batch in enumerate(train_loader):
             self.optimizer.zero_grad()
+            if self.tc.use_wdl and self.tc.use_plys_to_end:
+                data, value_label, policy_label, wdl_label, plys_label = batch
+                plys_label = plys_label.to(self._ctx)
+                wdl_label = wdl_label.to(self._ctx).long()
+            else:
+                data, value_label, policy_label = batch
             data = data.to(self._ctx)
             value_label = value_label.to(self._ctx)
             policy_label = policy_label.to(self._ctx)
             if self.tc.sparse_policy_label:
                 policy_label = policy_label.long()
-            plys_label = plys_label.to(self._ctx)
 
             # update a dummy metric to see a proper progress bar
             #  (the metrics will get evaluated at the end of 100k steps)
@@ -143,16 +158,29 @@ class TrainerAgentPytorch:
 
             self.old_label = value_label
 
-            value_out, policy_out = self._model(data)
+            if self.tc.use_wdl and self.tc.use_plys_to_end:
+                value_out, policy_out, _, wdl_out, plys_out = self._model(data)
+                wdl_loss = self.wdl_loss(wdl_out, wdl_label)
+                ply_loss = self.ply_loss(plys_out, plys_label)
+            else:
+                value_out, policy_out = self._model(data)
+
             #policy_out = policy_out.softmax(dim=1)
-            value_loss = self._l2_loss(value_out, value_label)
-            policy_loss = self._cross_entropy_loss(policy_out, policy_label)
+            value_loss = self.value_loss(value_out, value_label)
+            policy_loss = self.policy_loss(policy_out, policy_label)
             # weight the components of the combined loss
-            combined_loss = (
-                    self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
-            )
+            if self.tc.use_wdl and self.tc.use_wdl:
+                combined_loss = (
+                        self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss +
+                        self.tc.wdl_loss_factor * wdl_loss + self.tc.plys_to_end_loss_factor * ply_loss
+                )
+            else:
+                combined_loss = (
+                        self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
+                )
 
             combined_loss.backward()
+
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = self.to.lr_schedule(self.cur_it)  # update the learning rate
                 param_group['momentum'] = self.to.momentum_schedule(self.cur_it)  # update the momentum
@@ -185,7 +213,9 @@ class TrainerAgentPytorch:
                     nb_batches=10,  # 25,
                     ctx=self._ctx,
                     sparse_policy_label=self.tc.sparse_policy_label,
-                    apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data
+                    apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
+                    use_wdl=self.tc.use_wdl,
+                    use_plys_to_end=self.tc.use_plys_to_end,
                 )
                 val_metric_values = evaluate_metrics(
                     self.to.metrics,
@@ -194,7 +224,9 @@ class TrainerAgentPytorch:
                     nb_batches=None,
                     ctx=self._ctx,
                     sparse_policy_label=self.tc.sparse_policy_label,
-                    apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data
+                    apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
+                    use_wdl = self.tc.use_wdl,
+                    use_plys_to_end = self.tc.use_plys_to_end,
                 )
                 if self.use_rtpt:
                     # update process title according to loss
@@ -294,9 +326,6 @@ class TrainerAgentPytorch:
                         )
 
                     if self.cur_it >= self.tc.total_it:
-
-                        val_loss = val_metric_values["loss"]
-                        val_p_acc = val_metric_values["policy_acc"]
                         logging.debug("The number of given iterations has been reached")
                         # finally stop training because the number of lr drops has been achieved
                         print()
@@ -308,13 +337,12 @@ class TrainerAgentPytorch:
                         if self.tc.log_metrics_to_tensorboard:
                             self.sum_writer.close()
 
+                        # make sure to empty cache
+                        if torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+
                         return return_metrics_and_stop_training(self.k_steps, val_metric_values, self.k_steps_best,
                                                                 self.val_metric_values_best)
-
-
-    # make sure to empty cache
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
@@ -513,7 +541,7 @@ def reset_metrics(metrics):
 
 
 def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_policy_label=False,
-                     apply_select_policy_from_plane=True):
+                     apply_select_policy_from_plane=True, use_wdl=False, use_plys_to_end=False):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
     The metric results are returned as a dictionary object.
@@ -531,13 +559,29 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     :return:
     """
     reset_metrics(metrics)
-    for i, (data, value_label, policy_label, plys_label) in enumerate(data_iterator):
+    for i, batch in enumerate(data_iterator):
+        if use_wdl and use_plys_to_end:
+            data, value_label, policy_label, wdl_label, plys_label = batch
+            plys_label = plys_label.to(ctx)
+            wdl_label = wdl_label.to(ctx).long()
+            plys_label = Variable(plys_label, requires_grad=False)
+            wdl_label = Variable(wdl_label, requires_grad=False)
+        else:
+            data, value_label, policy_label = batch
         data = data.to(ctx)
         value_label = value_label.to(ctx)
         policy_label = policy_label.to(ctx)
-        plys_label = plys_label.to(ctx)
 
-        value_out, policy_out = model(data)
+        data, value_label, policy_label = Variable(data, requires_grad=False), Variable(value_label, requires_grad=False),\
+                                          Variable(policy_label, requires_grad=False)
+        if use_wdl and use_plys_to_end:
+            value_out, policy_out, _, wdl_out, plys_out = model(data)
+            metrics["wdl_loss"].update(preds=wdl_out,
+                                         labels=wdl_label)
+            metrics["plys_to_end_loss"].update(preds=plys_out,
+                                         labels=plys_label)
+        else:
+            value_out, policy_out = model(data)
 
         # update the metrics
         metrics["value_loss"].update(preds=value_out, labels=value_label)
@@ -546,6 +590,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
         metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
         metrics["policy_acc"].update(preds=policy_out.argmax(axis=1),
                                      labels=policy_label)
+
         # stop after evaluating x batches (only recommended to use this for the train set evaluation)
         if nb_batches and i == nb_batches:
             break
