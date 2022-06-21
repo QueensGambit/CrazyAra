@@ -94,9 +94,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     // this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
-        "setoption name uci_variant value tictactoe",
-        "isready",
-        "go"
+//        "setoption name uci_variant value tictactoe",
+//        "isready",
+//        "go"
 //        "position startpos moves P@c3 P@a2 P@c2 P@c1"
     };
 
