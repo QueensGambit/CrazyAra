@@ -24,29 +24,29 @@
 # Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
 # see release page for  all current available releases:
 # https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
-FROM nvcr.io/nvidia/mxnet:20.10-py3                                                                                                                                                                                                                                       [24/1653]
-                                                                                                                                                                                                                                                                                   
-MAINTAINER QueensGambit                                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                                                                   
-# General dependencies to run CrazyAra                                                                                                                                                                                                                                             
-# -------------------------------------                                                                                                                                                                                                                                            
-# Install blaze                                                                                                                                                                                                                                                                    
-RUN cd /root \                                                                                                                                                                                                                                                                     
-    && wget https://bitbucket.org/blaze-lib/blaze/downloads/blaze-3.6.tar.gz \                                                                                                                                                                                                     
-    && tar -xvzf blaze-3.6.tar.gz \                                                                                                                                                                                                                                                
-    && cd blaze-3.6 \                                                                                                                                                                                                                                                              
-    && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ \                                                                                                                                                                                                                                  
-    && make install                                                                                                                                                                                                                                                                
-                                                                                                                                                                                                                                                                                   
-# Clone TensorRT repository for TensorRT backend                                                                                                                                                                                                                                   
-# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)                                                                                                                                                                                               
-RUN cd /root \                                                                                                                                                                                                                                                                     
-    && git clone https://github.com/NVIDIA/TensorRT \                                                                                                                                                                                                                              
-    && cd TensorRT \                                                                                                                                                                                                                                                               
-    && git checkout f693a6d723ef2766be36deb5e7987cd50159973a                                                                                                                                                                                                                       
-ENV TENSORRT_PATH /root/TensorRT/                                                                                                                                                                                                                                                  
-ENV CUDA_PATH /usr/local/cuda/                                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                                                                   
+FROM nvcr.io/nvidia/mxnet:20.10-py3
+
+MAINTAINER QueensGambit
+
+# General dependencies to run CrazyAra
+# -------------------------------------
+# Install blaze
+RUN cd /root \
+    && wget https://bitbucket.org/blaze-lib/blaze/downloads/blaze-3.6.tar.gz \
+    && tar -xvzf blaze-3.6.tar.gz \
+    && cd blaze-3.6 \
+    && cmake -DCMAKE_INSTALL_PREFIX=/usr/local/ \
+    && make install
+
+# Clone TensorRT repository for TensorRT backend
+# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
+RUN cd /root \
+    && git clone https://github.com/NVIDIA/TensorRT \
+    && cd TensorRT \
+    && git checkout f693a6d723ef2766be36deb5e7987cd50159973a
+ENV TENSORRT_PATH /root/TensorRT/
+ENV CUDA_PATH /usr/local/cuda/
+                                                                                                                                                                                                                                                                
 # Additional dependencies for reinforcement learning                                                                                                                                                                                                                               
 # ---------------------------------------------------                                                                                                                                                                                                                              
 # Install boost library (dependecy of z5 library, preinstalled on normal Debian systems)
