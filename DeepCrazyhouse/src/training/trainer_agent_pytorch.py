@@ -196,7 +196,7 @@ class TrainerAgentPytorch:
             if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
                 # log the current learning rate
                 # update batch_proc_tmp counter by subtracting the batch_steps
-                batch_proc_tmp = self.batch_proc_tmp - self.tc.batch_steps
+                self.batch_proc_tmp -= self.tc.batch_steps
                 ms_step = ((time() - self.t_s_steps) / self.tc.batch_steps) * 1000  # measure elapsed time
                 # update the counters
                 self.k_steps += 1
@@ -558,44 +558,44 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     :return:
     """
     reset_metrics(metrics)
-    for i, batch in enumerate(data_iterator):
-        if use_wdl and use_plys_to_end:
-            data, value_label, policy_label, wdl_label, plys_label = batch
-            plys_label = plys_label.to(ctx)
-            wdl_label = wdl_label.to(ctx).long()
-            plys_label = Variable(plys_label, requires_grad=False)
-            wdl_label = Variable(wdl_label, requires_grad=False)
-        else:
-            data, value_label, policy_label = batch
-        data = data.to(ctx)
-        value_label = value_label.to(ctx)
-        policy_label = policy_label.to(ctx)
+    # make sure to empty cache
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    with torch.no_grad():  # operations inside don't track history
+        for i, batch in enumerate(data_iterator):
+            if use_wdl and use_plys_to_end:
+                data, value_label, policy_label, wdl_label, plys_label = batch
+                plys_label = plys_label.to(ctx)
+                wdl_label = wdl_label.to(ctx).long()
+            else:
+                data, value_label, policy_label = batch
+            data = data.to(ctx)
+            value_label = value_label.to(ctx)
+            policy_label = policy_label.to(ctx)
 
-        data, value_label, policy_label = Variable(data, requires_grad=False), Variable(value_label, requires_grad=False),\
-                                          Variable(policy_label, requires_grad=False)
-        if use_wdl and use_plys_to_end:
-            value_out, policy_out, _, wdl_out, plys_out = model(data)
-            metrics["wdl_loss"].update(preds=wdl_out,
-                                         labels=wdl_label)
-            metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out),
-                                         labels=plys_label)
-        else:
-            value_out, policy_out = model(data)
+            if use_wdl and use_plys_to_end:
+                value_out, policy_out, _, wdl_out, plys_out = model(data)
+                metrics["wdl_loss"].update(preds=wdl_out,
+                                             labels=wdl_label)
+                metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out),
+                                             labels=plys_label)
+            else:
+                value_out, policy_out = model(data)
 
-        # update the metrics
-        metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label)
-        metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
-                                      labels=policy_label)
-        metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
-        metrics["policy_acc"].update(preds=policy_out.argmax(axis=1),
-                                     labels=policy_label)
+            # update the metrics
+            metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label)
+            metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
+                                          labels=policy_label)
+            metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
+            metrics["policy_acc"].update(preds=policy_out.argmax(axis=1),
+                                         labels=policy_label)
 
-        # stop after evaluating x batches (only recommended to use this for the train set evaluation)
-        if nb_batches and i == nb_batches:
-            break
+            # stop after evaluating x batches (only recommended to use this for the train set evaluation)
+            if nb_batches and i == nb_batches:
+                break
 
-    metric_values = {"loss": 0.01 * metrics["value_loss"].compute() + 0.99 * metrics["policy_loss"].compute()}
+        metric_values = {"loss": 0.01 * metrics["value_loss"].compute() + 0.99 * metrics["policy_loss"].compute()}
 
-    for metric_name in metrics:
-        metric_values[metric_name] = metrics[metric_name].compute()
-    return metric_values
+        for metric_name in metrics:
+            metric_values[metric_name] = metrics[metric_name].compute()
+        return metric_values
