@@ -313,7 +313,7 @@ class TrainerAgentPytorch:
                         # log the samples per second metric to tensorboard
                         self.sum_writer.add_scalar(
                             tag="samples_per_second",
-                            scalar_value={"hybrid_sync": data.shape[0] * self.tc.batch_steps / self.t_delta},
+                            scalar_value=data.shape[0] * self.tc.batch_steps / self.t_delta,
                             global_step=self.k_steps,
                         )
 
@@ -356,7 +356,10 @@ class TrainerAgentPytorch:
             print(" - %s%s: %.4f" % (prefix, name, metric_values[name]), end="")
             # add the metrics to the tensorboard event file
             if self.tc.log_metrics_to_tensorboard:
-                self.sum_writer.add_scalar(name, prefix.replace("_", ""), metric_values[name], global_step)
+                self.sum_writer.add_scalar(tag="lr", scalar_value=self.to.lr_schedule(self.cur_it),
+                                           global_step=self.k_steps)
+
+                self.sum_writer.add_scalar(tag=f'{name}/{prefix.replace("_", "")}', scalar_value=metric_values[name], global_step=global_step)
 
     def _setup_variables(self, cur_it):
         if self.tc.seed is not None:
