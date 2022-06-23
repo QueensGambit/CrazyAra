@@ -137,96 +137,16 @@ class TrainerAgentPytorch:
         train_loader = DataLoader(train_dataset, shuffle=True, batch_size=self.tc.batch_size, num_workers=self.tc.cpu_count)
 
         for _, batch in enumerate(train_loader):
-            self.optimizer.zero_grad()
-            if self.tc.use_wdl and self.tc.use_plys_to_end:
-                data, value_label, policy_label, wdl_label, plys_label = batch
-                plys_label = plys_label.to(self._ctx)
-                wdl_label = wdl_label.to(self._ctx).long()
-            else:
-                data, value_label, policy_label = batch
-            data = data.to(self._ctx)
-            value_label = value_label.to(self._ctx)
-            policy_label = policy_label.to(self._ctx)
-            if self.tc.sparse_policy_label:
-                policy_label = policy_label.long()
+            data = self.train_update(batch)
 
-            # update a dummy metric to see a proper progress bar
-            #  (the metrics will get evaluated at the end of 100k steps)
-            # if self.batch_proc_tmp > 0:
-            #     self.to.metrics["value_loss"].update(self.old_label, value_out)
-
-            self.old_label = value_label
-
-            if self.tc.use_wdl and self.tc.use_plys_to_end:
-                value_out, policy_out, _, wdl_out, plys_out = self._model(data)
-                wdl_loss = self.wdl_loss(wdl_out, wdl_label)
-                ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label)
-            else:
-                value_out, policy_out = self._model(data)
-
-            #policy_out = policy_out.softmax(dim=1)
-            value_loss = self.value_loss(torch.flatten(value_out), value_label)
-            policy_loss = self.policy_loss(policy_out, policy_label)
-            # weight the components of the combined loss
-            if self.tc.use_wdl and self.tc.use_wdl:
-                combined_loss = (
-                        self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss +
-                        self.tc.wdl_loss_factor * wdl_loss + self.tc.plys_to_end_loss_factor * ply_loss
-                )
-            else:
-                combined_loss = (
-                        self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
-                )
-
-            combined_loss.backward()
-
-            for param_group in self.optimizer.param_groups:
-                param_group['lr'] = self.to.lr_schedule(self.cur_it)  # update the learning rate
-                param_group['momentum'] = self.to.momentum_schedule(self.cur_it)  # update the momentum
-
-            self.optimizer.step()
-
-            self.cur_it += 1
-            self.batch_proc_tmp += 1
             # add the graph representation of the network to the tensorboard log file
             if not self.graph_exported and self.tc.log_metrics_to_tensorboard:
                 self.sum_writer.add_graph(self._model, data)
                 self.graph_exported = True
 
             if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
-                # log the current learning rate
-                # update batch_proc_tmp counter by subtracting the batch_steps
-                self.batch_proc_tmp -= self.tc.batch_steps
-                ms_step = ((time() - self.t_s_steps) / self.tc.batch_steps) * 1000  # measure elapsed time
-                # update the counters
-                self.k_steps += 1
-                self.patience_cnt += 1
-                logging.info("Step %dK/%dK - %dms/step", self.k_steps, self.k_steps_end, ms_step)
-                logging.info("-------------------------")
-                logging.debug("Iteration %d/%d", self.cur_it, self.tc.total_it)
-                logging.debug("lr: %.7f - momentum: %.7f", self.to.lr_schedule(self.cur_it), self.to.momentum_schedule(self.cur_it))
-                train_metric_values = evaluate_metrics(
-                    self.to.metrics,
-                    train_loader,
-                    self._model,
-                    nb_batches=10,  # 25,
-                    ctx=self._ctx,
-                    sparse_policy_label=self.tc.sparse_policy_label,
-                    apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
-                    use_wdl=self.tc.use_wdl,
-                    use_plys_to_end=self.tc.use_plys_to_end,
-                )
-                val_metric_values = evaluate_metrics(
-                    self.to.metrics,
-                    self._val_loader,
-                    self._model,
-                    nb_batches=None,
-                    ctx=self._ctx,
-                    sparse_policy_label=self.tc.sparse_policy_label,
-                    apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
-                    use_wdl = self.tc.use_wdl,
-                    use_plys_to_end = self.tc.use_plys_to_end,
-                )
+                train_metric_values, val_metric_values = self.evaluate(train_loader)
+
                 if self.use_rtpt:
                     # update process title according to loss
                     self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
@@ -342,6 +262,89 @@ class TrainerAgentPytorch:
 
                         return return_metrics_and_stop_training(self.k_steps, val_metric_values, self.k_steps_best,
                                                                 self.val_metric_values_best)
+
+    def evaluate(self, train_loader):
+        # log the current learning rate
+        # update batch_proc_tmp counter by subtracting the batch_steps
+        self.batch_proc_tmp -= self.tc.batch_steps
+        ms_step = ((time() - self.t_s_steps) / self.tc.batch_steps) * 1000  # measure elapsed time
+        # update the counters
+        self.k_steps += 1
+        self.patience_cnt += 1
+        logging.info("Step %dK/%dK - %dms/step", self.k_steps, self.k_steps_end, ms_step)
+        logging.info("-------------------------")
+        logging.debug("Iteration %d/%d", self.cur_it, self.tc.total_it)
+        logging.debug("lr: %.7f - momentum: %.7f", self.to.lr_schedule(self.cur_it),
+                      self.to.momentum_schedule(self.cur_it))
+        train_metric_values = evaluate_metrics(
+            self.to.metrics,
+            train_loader,
+            self._model,
+            nb_batches=10,  # 25,
+            ctx=self._ctx,
+            sparse_policy_label=self.tc.sparse_policy_label,
+            apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
+            use_wdl=self.tc.use_wdl,
+            use_plys_to_end=self.tc.use_plys_to_end,
+        )
+        val_metric_values = evaluate_metrics(
+            self.to.metrics,
+            self._val_loader,
+            self._model,
+            nb_batches=None,
+            ctx=self._ctx,
+            sparse_policy_label=self.tc.sparse_policy_label,
+            apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
+            use_wdl=self.tc.use_wdl,
+            use_plys_to_end=self.tc.use_plys_to_end,
+        )
+        return train_metric_values, val_metric_values
+
+    def train_update(self, batch):
+        self.optimizer.zero_grad()
+        if self.tc.use_wdl and self.tc.use_plys_to_end:
+            data, value_label, policy_label, wdl_label, plys_label = batch
+            plys_label = plys_label.to(self._ctx)
+            wdl_label = wdl_label.to(self._ctx).long()
+        else:
+            data, value_label, policy_label = batch
+        data = data.to(self._ctx)
+        value_label = value_label.to(self._ctx)
+        policy_label = policy_label.to(self._ctx)
+        if self.tc.sparse_policy_label:
+            policy_label = policy_label.long()
+        # update a dummy metric to see a proper progress bar
+        #  (the metrics will get evaluated at the end of 100k steps)
+        # if self.batch_proc_tmp > 0:
+        #     self.to.metrics["value_loss"].update(self.old_label, value_out)
+        self.old_label = value_label
+        if self.tc.use_wdl and self.tc.use_plys_to_end:
+            value_out, policy_out, _, wdl_out, plys_out = self._model(data)
+            wdl_loss = self.wdl_loss(wdl_out, wdl_label)
+            ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label)
+        else:
+            value_out, policy_out = self._model(data)
+        # policy_out = policy_out.softmax(dim=1)
+        value_loss = self.value_loss(torch.flatten(value_out), value_label)
+        policy_loss = self.policy_loss(policy_out, policy_label)
+        # weight the components of the combined loss
+        if self.tc.use_wdl and self.tc.use_wdl:
+            combined_loss = (
+                    self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss +
+                    self.tc.wdl_loss_factor * wdl_loss + self.tc.plys_to_end_loss_factor * ply_loss
+            )
+        else:
+            combined_loss = (
+                    self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
+            )
+        combined_loss.backward()
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = self.to.lr_schedule(self.cur_it)  # update the learning rate
+            param_group['momentum'] = self.to.momentum_schedule(self.cur_it)  # update the momentum
+        self.optimizer.step()
+        self.cur_it += 1
+        self.batch_proc_tmp += 1
+        return data
 
     def _log_metrics(self, metric_values, global_step, prefix="train_"):
         """
