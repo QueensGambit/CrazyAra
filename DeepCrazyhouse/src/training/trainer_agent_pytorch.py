@@ -575,10 +575,9 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
 
             if use_wdl and use_plys_to_end:
                 value_out, policy_out, _, wdl_out, plys_out = model(data)
-                metrics["wdl_loss"].update(preds=wdl_out,
-                                             labels=wdl_label)
-                metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out),
-                                             labels=plys_label)
+                metrics["wdl_loss"].update(preds=wdl_out, labels=wdl_label)
+                metrics["wdl_acc"].update(preds=wdl_out.argmax(axis=1), labels=wdl_label)
+                metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out), labels=plys_label)
             else:
                 value_out, policy_out = model(data)
 
