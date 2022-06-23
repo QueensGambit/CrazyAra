@@ -585,7 +585,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
             metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label)
             metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
                                           labels=policy_label)
-            metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
+            metrics["value_acc_sign"].update(preds=torch.flatten(value_out), labels=value_label)
             metrics["policy_acc"].update(preds=policy_out.argmax(axis=1),
                                          labels=policy_label)
 
