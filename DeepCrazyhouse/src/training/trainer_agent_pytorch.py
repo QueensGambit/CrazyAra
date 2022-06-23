@@ -268,9 +268,9 @@ class TrainerAgentPytorch:
                     self.k_steps = self.k_steps_best
                     logging.debug("k_step is back at %d", self.k_steps_best)
                     # print the elapsed time
-                    t_delta = time() - self.t_s_steps
-                    print(" - %.ds" % t_delta)
-                    t_s_steps = time()
+                    self.t_delta = time() - self.t_s_steps
+                    print(" - %.ds" % self.t_delta)
+                    self.t_s_steps = time()
                 else:
                     # update the val_loss_value to compare with using spike recovery
                     self.old_val_loss = val_metric_values["loss"]
@@ -290,14 +290,14 @@ class TrainerAgentPytorch:
                     # check if a new checkpoint shall be created
                     if self.val_loss_best is None or val_metric_values["loss"] < self.val_loss_best:
                         # update val_loss_best
-                        val_loss_best = val_metric_values["loss"]
-                        val_p_acc_best = val_metric_values["policy_acc"]
+                        self.val_loss_best = val_metric_values["loss"]
+                        self.val_p_acc_best = val_metric_values["policy_acc"]
                         val_metric_values_best = val_metric_values
                         self.k_steps_best = self.k_steps
 
                         if self.tc.export_weights:
                             filepath = Path(self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.tar" \
-                                     % (val_loss_best, val_p_acc_best, self.k_steps_best))
+                                     % (self.val_loss_best, self.val_p_acc_best, self.k_steps_best))
                             # the export function saves both the architecture and the weights
                             save_torch_state(self._model, self.optimizer, filepath)
                             print()
@@ -305,15 +305,15 @@ class TrainerAgentPytorch:
 
                         patience_cnt = 0  # reset the patience counter
                     # print the elapsed time
-                    t_delta = time() - self.t_s_steps
-                    print(" - %.ds" % t_delta)
-                    t_s_steps = time()
+                    self.t_delta = time() - self.t_s_steps
+                    print(" - %.ds" % self.t_delta)
+                    self.t_s_steps = time()
 
                     if self.tc.log_metrics_to_tensorboard:
                         # log the samples per second metric to tensorboard
                         self.sum_writer.add_scalar(
                             tag="samples_per_second",
-                            scalar_value={"hybrid_sync": data.shape[0] * self.tc.batch_steps / t_delta},
+                            scalar_value={"hybrid_sync": data.shape[0] * self.tc.batch_steps / self.t_delta},
                             global_step=self.k_steps,
                         )
 
