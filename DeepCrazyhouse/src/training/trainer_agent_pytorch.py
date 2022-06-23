@@ -121,7 +121,6 @@ class TrainerAgentPytorch:
                                                                                          normalize=self.tc.normalize,
                                                                                          verbose=False,
                                                                                          q_value_ratio=self.tc.q_value_ratio)
-
         self.yp_train = prepare_policy(y_policy=self.yp_train, select_policy_from_plane=self.tc.select_policy_from_plane,
                                   sparse_policy_label=self.tc.sparse_policy_label,
                                   is_policy_from_plane_data=self.tc.is_policy_from_plane_data)
@@ -161,12 +160,12 @@ class TrainerAgentPytorch:
             if self.tc.use_wdl and self.tc.use_plys_to_end:
                 value_out, policy_out, _, wdl_out, plys_out = self._model(data)
                 wdl_loss = self.wdl_loss(wdl_out, wdl_label)
-                ply_loss = self.ply_loss(plys_out, plys_label)
+                ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label)
             else:
                 value_out, policy_out = self._model(data)
 
             #policy_out = policy_out.softmax(dim=1)
-            value_loss = self.value_loss(value_out, value_label)
+            value_loss = self.value_loss(torch.flatten(value_out), value_label)
             policy_loss = self.policy_loss(policy_out, policy_label)
             # weight the components of the combined loss
             if self.tc.use_wdl and self.tc.use_wdl:
@@ -578,13 +577,13 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
             value_out, policy_out, _, wdl_out, plys_out = model(data)
             metrics["wdl_loss"].update(preds=wdl_out,
                                          labels=wdl_label)
-            metrics["plys_to_end_loss"].update(preds=plys_out,
+            metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out),
                                          labels=plys_label)
         else:
             value_out, policy_out = model(data)
 
         # update the metrics
-        metrics["value_loss"].update(preds=value_out, labels=value_label)
+        metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label)
         metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
                                       labels=policy_label)
         metrics["value_acc_sign"].update(preds=value_out, labels=value_label)
