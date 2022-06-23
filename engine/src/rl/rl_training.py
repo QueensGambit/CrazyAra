@@ -21,12 +21,12 @@ from mxnet import gluon
 sys.path.append("../../../")
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.training.trainer_agent import acc_sign, cross_entropy, acc_distribution
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy
-from DeepCrazyhouse.src.training.trainer_agent import TrainerAgent
+from DeepCrazyhouse.src.training.trainer_agent_gluon import TrainerAgentGluon
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, LinearWarmUp,\
     CosineAnnealingSchedule
 from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
+from DeepCrazyhouse.src.training.train_util import get_metrics
 
 
 def update_network(queue, nn_update_idx, symbol_filename, params_filename, convert_to_onnx, main_config, train_config: TrainConfig, model_contender_dir):
@@ -57,7 +57,7 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, conve
         raise Exception('No .zip files for training available. Check the path in main_config["planes_train_dir"]:'
                         ' %s' % main_config["planes_train_dir"])
 
-    _, x_val, y_val_value, y_val_policy, _, _ = load_pgn_dataset(dataset_type="val",
+    _, x_val, y_val_value, y_val_policy, plys_to_end, _ = load_pgn_dataset(dataset_type="val",
                                                                  part_id=0,
                                                                  normalize=train_config.normalize,
                                                                  verbose=False,
@@ -87,30 +87,10 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, conve
     net = mx.gluon.SymbolBlock(sym, inputs)
     net.collect_params().load(params_filename, ctx)
 
-    metrics_gluon = {
-        'value_loss': metric.MSE(name='value_loss', output_names=['value_output']),
-
-        'value_acc_sign': metric.create(acc_sign, name='value_acc_sign', output_names=['value_output'],
-                                        label_names=['value_label']),
-    }
-
-    if train_config.sparse_policy_label:
-        print("train with sparse labels")
-        # the default cross entropy only supports sparse labels
-        metrics_gluon['policy_loss'] = metric.CrossEntropy(name='policy_loss', output_names=['policy_output'],
-                                           label_names=['policy_label']),
-        metrics_gluon['policy_acc'] = metric.Accuracy(axis=1, name='policy_acc', output_names=['policy_output'],
-                                      label_names=['policy_label'])
-    else:
-        metrics_gluon['policy_loss'] = metric.create(cross_entropy, name='policy_loss', output_names=['policy_output'],
-                                        label_names=['policy_label'])
-        metrics_gluon['policy_acc'] = metric.create(acc_distribution, name='policy_acc', output_names=['policy_output'],
-                       label_names=['policy_label'])
-
-    train_objects.metrics = metrics_gluon
+    train_objects.metrics = get_metrics(train_config)
 
     train_config.export_weights = True  # save intermediate results to handle spikes
-    train_agent = TrainerAgent(net, val_data, train_config, train_objects, use_rtpt=False)
+    train_agent = TrainerAgentGluon(net, val_data, train_config, train_objects, use_rtpt=False)
 
     # iteration counter used for the momentum and learning rate schedule
     cur_it = train_config.k_steps_initial * train_config.batch_steps
