@@ -45,16 +45,19 @@ class MSE(Metric):
     def __init__(self):
         super().__init__()
         self.loss = torch.nn.MSELoss()
-        self.loss_value = 0
+        self.loss_sum = 0
+        self.nb_batches = 0
 
     def reset(self) -> None:
-        self.loss_value = 0
+        self.loss_sum = 0
+        self.nb_batches = 0
 
     def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
-        self.loss_value = self.loss(preds, labels)
+        self.loss_sum += self.loss(preds, labels)
+        self.nb_batches += 1
 
     def compute(self) -> float:
-        return self.loss_value
+        return self.loss_sum / self.nb_batches
 
 
 class CrossEntropy(Metric):
@@ -64,20 +67,23 @@ class CrossEntropy(Metric):
         """
         super().__init__()
         self.loss = torch.nn.CrossEntropyLoss()
-        self.loss_value = 0
+        self.loss_sum = 0
+        self.nb_batches = 0
         self.sparse_policy_label = sparse_policy_label
 
     def reset(self) -> None:
-        self.loss_value = 0
+        self.loss_sum = 0
+        self.nb_batches = 0
 
     def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
         if self.sparse_policy_label:
-            self.loss_value = self.loss(preds, labels.long())
+            self.loss_sum += self.loss(preds, labels.long())
         else:
-            self.loss_value = self.loss(preds, labels)
+            self.loss_sum += self.loss(preds, labels)
+        self.nb_batches += 1
 
     def compute(self) -> float:
-        return self.loss_value
+        return self.loss_sum / self.nb_batches
 
 
 class AccuracySign(Metric):

@@ -17,7 +17,7 @@ import DeepCrazyhouse.src.training.metrics_pytorch as pytorch_metrics
 def get_metrics(train_config):
     """
     Returns the metrics according to the used training framework.
-    :param train_config: Training configuration object#
+    :param train_config: Training configuration object
     :return: Training metrics
     """
     if train_config.framework == 'mxnet':
