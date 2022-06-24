@@ -380,7 +380,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
                 if (gameResult == WHITE_WIN) {
                     ++tournamentResult.numberWins;
                 }
-                else {
+                else if (gameResult == BLACK_WIN){
                     ++tournamentResult.numberLosses;
                 }
             }
@@ -389,7 +389,7 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
                 if (gameResult == BLACK_WIN) {
                     ++tournamentResult.numberWins;
                 }
-                else {
+                else if (gameResult == BLACK_WIN){
                     ++tournamentResult.numberLosses;
                 }
             }
