@@ -24,6 +24,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.optim.optimizer import Optimizer
 from torch.autograd import Variable
 
+from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.pytorch.metrics import Metrics
@@ -216,10 +217,22 @@ class TrainerAgentPytorch:
                         self.k_steps_best = self.k_steps
 
                         if self.tc.export_weights:
-                            filepath = Path(self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.tar" \
-                                     % (self.val_loss_best, self.val_p_acc_best, self.k_steps_best))
+                            model_prefix = "model-%.5f-%.3f-%04d"\
+                                           % (self.val_loss_best, self.val_p_acc_best, self.k_steps_best)
+                            filepath = Path(self.tc.export_dir + f"weights/{model_prefix}.tar")
                             # the export function saves both the architecture and the weights
                             save_torch_state(self._model, self.optimizer, filepath)
+                            with torch.no_grad():
+                                dummy_input = torch.zeros(1, data.shape[1], data.shape[2], data.shape[3]).to(self._ctx)
+                                export_to_onnx(self._model, 1,
+                                               dummy_input,
+                                               Path("weights"), model_prefix, self.tc.use_wdl and self.tc.use_plys_to_end,
+                                               True)
+                                for batch_size in [1,8,16,64]:
+                                    dummy_input = torch.zeros(batch_size, data.shape[1], data.shape[2], data.shape[3]).to(self._ctx)
+                                    export_to_onnx(self._model, batch_size,
+                                                   dummy_input,
+                                                   Path("weights"), model_prefix, self.tc.use_wdl and self.tc.use_plys_to_end, False)
                             print()
                             logging.info("Saved checkpoint to %s", filepath)
 
@@ -498,24 +511,41 @@ def export_model(model, batch_sizes, input_shape, dir=Path('.'), torch_cpu=True,
                 print(f"{i}: {e.shape}")
 
 
-def export_to_onnx(model, batch_size, dummy_input, dir) -> None:
+def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path, model_prefix: str,
+                   has_auxiliary_output: bool, dynamic_batch_size: bool) -> None:
     """
     Exports the model to ONNX format to allow later import in TensorRT.
 
     :param model: Pytorch model
     :param batch_size: The batch size of the input
     :param dummy_input: Dummy input which defines the input shape for the model
+    :param dir: Output directory
+    :param model_prefix: Model prefix name
+    :param has_auxiliary_output: Determines if the model has an auxiliary output
+    :param dynamic_batch_size: Wether to export model with dynamic batch size
     :return:
     """
-    if model.is_stateful:
+    if has_auxiliary_output:
         input_names = ["data"]
-        output_names = ["value_out", "policy_out", "auxiliary_out"]
+        output_names = [main_config["value_output"], main_config["policy_output"], main_config["auxiliary_output"]]
     else:
         input_names = ["data"]
-        output_names = ["value_out", "policy_out"]
+        output_names = [main_config["value_output"], main_config["policy_output"]]
 
-    torch.onnx.export(model, dummy_input, str(dir / Path(f"model-bsize-{batch_size}.onnx")), input_names=input_names,
-                      output_names=output_names)
+    if dynamic_batch_size:
+        dynamic_axes = {'data' : {0 : 'batch_size'}}
+        for output_name in output_names:
+            dynamic_axes[output_name] = {0 : 'batch_size'}
+    else:
+        dynamic_axes = None
+
+    onnx_name = f"{model_prefix}-v{main_config['version']}.0"
+    if not dynamic_batch_size:
+        onnx_name += f"-bsize-{batch_size}"
+    onnx_name += ".onnx"
+
+    torch.onnx.export(model, dummy_input, str(dir / Path(onnx_name)), input_names=input_names,
+                      output_names=output_names, dynamic_axes=dynamic_axes)
 
 
 def export_as_script_module(model, batch_size, dummy_input, dir) -> None:
