@@ -266,7 +266,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             state.init(variant, is960);
 
             string suffix_960 = (is960) ? "960" : "";
-#ifdef MODE_LICHESS
+#if defined(MODE_LICHESS) || defined(MODE_BOARDGAMES)
             Options["Model_Directory"] << Option(("model/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             Options["Model_Directory_Contender"] << Option(("model_contender/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
 #endif
