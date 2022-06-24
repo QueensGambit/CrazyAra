@@ -280,7 +280,7 @@ class TrainerAgentPytorch:
             self.to.metrics,
             train_loader,
             self._model,
-            nb_batches=10,  # 25,
+            nb_batches=25,
             ctx=self._ctx,
             sparse_policy_label=self.tc.sparse_policy_label,
             apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
