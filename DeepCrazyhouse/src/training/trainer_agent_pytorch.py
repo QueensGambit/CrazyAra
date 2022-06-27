@@ -113,7 +113,7 @@ class TrainerAgentPytorch:
             self.t_s_steps = time()
 
             for part_id in tqdm_notebook(self.ordering):
-                self._train_one_dataset_chunk(part_id)
+                return self._train_one_dataset_chunk(part_id)
 
     def _train_one_dataset_chunk(self, part_id):
         # load one chunk of the dataset from memory
