@@ -61,7 +61,7 @@ class TrainConfig:
 
     # # optimization parameters
     optimizer_name: str = "nag"
-    max_lr: float = 0.1 / div_factor  # 0.35 / div_factor
+    max_lr: float = 0.5 / div_factor  # 0.35 / div_factor
     min_lr: float = 0.00001 / div_factor  # 0.2 / div_factor  # 0.00001
     max_momentum: float = 0.95
     min_momentum: float = 0.8
