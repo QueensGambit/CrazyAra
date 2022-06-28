@@ -107,8 +107,7 @@ RUN cd /root/CrazyAra/engine \
 
 #-DBACKEND_TENSORRT_7=ON
 # Rename the config files
-RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
-    && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
+RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py 
 
 # Install debugging utilities for "coredumpctl gdb"
 RUN apt-get update -y \
