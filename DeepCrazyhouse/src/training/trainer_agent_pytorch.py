@@ -17,6 +17,7 @@ import torch
 import torch.nn as nn
 from time import time
 import datetime
+import onnx
 from rtpt import RTPT
 from tqdm import tqdm_notebook
 from torch.utils.tensorboard import SummaryWriter
@@ -113,9 +114,137 @@ class TrainerAgentPytorch:
             self.t_s_steps = time()
 
             for part_id in tqdm_notebook(self.ordering):
-                return self._train_one_dataset_chunk(part_id)
+                train_loader = self._get_train_loader(part_id)
 
-    def _train_one_dataset_chunk(self, part_id):
+                for _, batch in enumerate(train_loader):
+                    data = self.train_update(batch)
+
+                    # add the graph representation of the network to the tensorboard log file
+                    if not self.graph_exported and self.tc.log_metrics_to_tensorboard:
+                        self.sum_writer.add_graph(self._model, data)
+                        self.graph_exported = True
+
+                    if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+                        train_metric_values, val_metric_values = self.evaluate(train_loader)
+
+                        if self.use_rtpt:
+                            # update process title according to loss
+                            self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
+                        if self.tc.use_spike_recovery and (
+                                self.old_val_loss * self.tc.spike_thresh < val_metric_values["loss"]
+                                or torch.isnan(val_metric_values["loss"])
+                        ):  # check for spikes
+                            self.nb_spikes += 1
+                            logging.warning(
+                                "Spike %d/%d occurred - val_loss: %.3f",
+                                self.nb_spikes,
+                                self.tc.max_spikes,
+                                val_metric_values["loss"],
+                            )
+                            if self.nb_spikes >= self.tc.max_spikes:
+                                self.val_loss = val_metric_values["loss"]
+                                self.val_p_acc = val_metric_values["policy_acc"]
+                                logging.debug("The maximum number of spikes has been reached. Stop training.")
+                                # finally stop training because the number of lr drops has been achieved
+                                print()
+                                print(
+                                    "Elapsed time for training(hh:mm:ss): "
+                                    + str(datetime.timedelta(seconds=round(time() - self.t_s)))
+                                )
+
+                                if self.tc.log_metrics_to_tensorboard:
+                                    self.sum_writer.close()
+                                return return_metrics_and_stop_training(self.k_steps, val_metric_values, self.k_steps_best,
+                                                                        self.val_metric_values_best)
+
+                            logging.debug("Recover to latest checkpoint")
+                            model_path = self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.params" % (
+                                self.val_loss_best,
+                                self.val_p_acc_best,
+                                self.k_steps_best,
+                            )  # Load the best model once again
+                            logging.debug("load current best model:%s", model_path)
+                            load_torch_state(self._model, self.optimizer, model_path)
+                            self.k_steps = self.k_steps_best
+                            logging.debug("k_step is back at %d", self.k_steps_best)
+                            # print the elapsed time
+                            self.t_delta = time() - self.t_s_steps
+                            print(" - %.ds" % self.t_delta)
+                            self.t_s_steps = time()
+                        else:
+                            # update the val_loss_value to compare with using spike recovery
+                            self.old_val_loss = val_metric_values["loss"]
+                            # log the metric values to tensorboard
+                            self._log_metrics(train_metric_values, global_step=self.k_steps, prefix="train_")
+                            self._log_metrics(val_metric_values, global_step=self.k_steps, prefix="val_")
+
+                            if self.tc.log_metrics_to_tensorboard and self.tc.export_grad_histograms:
+                                grads = []
+                                # logging the gradients of parameters for checking convergence
+                                for name, param in self._model.named_parameters():
+                                    if "bn" not in name and "batch" not in name and name != "policy_flat_plane_idx":
+                                        self.sum_writer.add_histogram(
+                                            tag=name, values=param, global_step=self.k_steps,
+                                        )
+
+                            # check if a new checkpoint shall be created
+                            if self.val_loss_best is None or val_metric_values["loss"] < self.val_loss_best:
+                                # update val_loss_best
+                                self.val_loss_best = val_metric_values["loss"]
+                                self.val_p_acc_best = val_metric_values["policy_acc"]
+                                self.val_metric_values_best = val_metric_values
+                                self.k_steps_best = self.k_steps
+
+                                if self.tc.export_weights:
+                                    model_prefix = "model-%.5f-%.3f-%04d"\
+                                                   % (self.val_loss_best, self.val_p_acc_best, self.k_steps_best)
+                                    filepath = Path(self.tc.export_dir + f"weights/{model_prefix}.tar")
+                                    # the export function saves both the architecture and the weights
+                                    save_torch_state(self._model, self.optimizer, filepath)
+                                    print()
+                                    logging.info("Saved checkpoint to %s", filepath)
+
+                                patience_cnt = 0  # reset the patience counter
+                            # print the elapsed time
+                            self.t_delta = time() - self.t_s_steps
+                            print(" - %.ds" % self.t_delta)
+                            self.t_s_steps = time()
+
+                            if self.tc.log_metrics_to_tensorboard:
+                                # log the samples per second metric to tensorboard
+                                self.sum_writer.add_scalar(
+                                    tag="samples_per_second",
+                                    scalar_value=data.shape[0] * self.tc.batch_steps / self.t_delta,
+                                    global_step=self.k_steps,
+                                )
+
+                                # log the current learning rate
+                                self.sum_writer.add_scalar(tag="lr", scalar_value=self.to.lr_schedule(self.cur_it), global_step=self.k_steps)
+                                # log the current momentum value
+                                self.sum_writer.add_scalar(
+                                    tag="momentum", scalar_value=self.to.momentum_schedule(self.cur_it), global_step=self.k_steps
+                                )
+
+                            if self.cur_it >= self.tc.total_it:
+                                logging.debug("The number of given iterations has been reached")
+                                # finally stop training because the number of lr drops has been achieved
+                                print()
+                                print(
+                                    "Elapsed time for training(hh:mm:ss): "
+                                    + str(datetime.timedelta(seconds=round(time() - self.t_s)))
+                                )
+
+                                if self.tc.log_metrics_to_tensorboard:
+                                    self.sum_writer.close()
+
+                                # make sure to empty cache
+                                if torch.cuda.is_available():
+                                    torch.cuda.empty_cache()
+
+                                return return_metrics_and_stop_training(self.k_steps, val_metric_values, self.k_steps_best,
+                                                                        self.val_metric_values_best)
+
+    def _get_train_loader(self, part_id):
         # load one chunk of the dataset from memory
         _, self.x_train, self.yv_train, self.yp_train, self.plys_to_end, _ = load_pgn_dataset(dataset_type="train",
                                                                                          part_id=part_id,
@@ -136,145 +265,7 @@ class TrainerAgentPytorch:
             train_dataset = TensorDataset(torch.Tensor(self.x_train), torch.Tensor(self.yv_train),
                                           torch.Tensor(self.yp_train))
         train_loader = DataLoader(train_dataset, shuffle=True, batch_size=self.tc.batch_size, num_workers=self.tc.cpu_count)
-
-        for _, batch in enumerate(train_loader):
-            data = self.train_update(batch)
-
-            # add the graph representation of the network to the tensorboard log file
-            if not self.graph_exported and self.tc.log_metrics_to_tensorboard:
-                self.sum_writer.add_graph(self._model, data)
-                self.graph_exported = True
-
-            if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
-                train_metric_values, val_metric_values = self.evaluate(train_loader)
-
-                if self.use_rtpt:
-                    # update process title according to loss
-                    self.rtpt.step(subtitle=f"loss={val_metric_values['loss']:2.2f}")
-                if self.tc.use_spike_recovery and (
-                        self.old_val_loss * self.tc.spike_thresh < val_metric_values["loss"]
-                        or torch.isnan(val_metric_values["loss"])
-                ):  # check for spikes
-                    self.nb_spikes += 1
-                    logging.warning(
-                        "Spike %d/%d occurred - val_loss: %.3f",
-                        self.nb_spikes,
-                        self.tc.max_spikes,
-                        val_metric_values["loss"],
-                    )
-                    if self.nb_spikes >= self.tc.max_spikes:
-                        self.val_loss = val_metric_values["loss"]
-                        self.val_p_acc = val_metric_values["policy_acc"]
-                        logging.debug("The maximum number of spikes has been reached. Stop training.")
-                        # finally stop training because the number of lr drops has been achieved
-                        print()
-                        print(
-                            "Elapsed time for training(hh:mm:ss): "
-                            + str(datetime.timedelta(seconds=round(time() - self.t_s)))
-                        )
-
-                        if self.tc.log_metrics_to_tensorboard:
-                            self.sum_writer.close()
-                        return return_metrics_and_stop_training(self.k_steps, val_metric_values, self.k_steps_best,
-                                                                self.val_metric_values_best)
-
-                    logging.debug("Recover to latest checkpoint")
-                    model_path = self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.params" % (
-                        self.val_loss_best,
-                        self.val_p_acc_best,
-                        self.k_steps_best,
-                    )  # Load the best model once again
-                    logging.debug("load current best model:%s", model_path)
-                    load_torch_state(self._model, self.optimizer, model_path)
-                    self.k_steps = self.k_steps_best
-                    logging.debug("k_step is back at %d", self.k_steps_best)
-                    # print the elapsed time
-                    self.t_delta = time() - self.t_s_steps
-                    print(" - %.ds" % self.t_delta)
-                    self.t_s_steps = time()
-                else:
-                    # update the val_loss_value to compare with using spike recovery
-                    self.old_val_loss = val_metric_values["loss"]
-                    # log the metric values to tensorboard
-                    self._log_metrics(train_metric_values, global_step=self.k_steps, prefix="train_")
-                    self._log_metrics(val_metric_values, global_step=self.k_steps, prefix="val_")
-
-                    if self.tc.log_metrics_to_tensorboard and self.tc.export_grad_histograms:
-                        grads = []
-                        # logging the gradients of parameters for checking convergence
-                        for name, param in self._model.named_parameters():
-                            if "bn" not in name and "batch" not in name and name != "policy_flat_plane_idx":
-                                self.sum_writer.add_histogram(
-                                    tag=name, values=param, global_step=self.k_steps,
-                                )
-
-                    # check if a new checkpoint shall be created
-                    if self.val_loss_best is None or val_metric_values["loss"] < self.val_loss_best:
-                        # update val_loss_best
-                        self.val_loss_best = val_metric_values["loss"]
-                        self.val_p_acc_best = val_metric_values["policy_acc"]
-                        val_metric_values_best = val_metric_values
-                        self.k_steps_best = self.k_steps
-
-                        if self.tc.export_weights:
-                            model_prefix = "model-%.5f-%.3f-%04d"\
-                                           % (self.val_loss_best, self.val_p_acc_best, self.k_steps_best)
-                            filepath = Path(self.tc.export_dir + f"weights/{model_prefix}.tar")
-                            # the export function saves both the architecture and the weights
-                            save_torch_state(self._model, self.optimizer, filepath)
-                            with torch.no_grad():
-                                dummy_input = torch.zeros(1, data.shape[1], data.shape[2], data.shape[3]).to(self._ctx)
-                                export_to_onnx(self._model, 1,
-                                               dummy_input,
-                                               Path("weights"), model_prefix, self.tc.use_wdl and self.tc.use_plys_to_end,
-                                               True)
-                                for batch_size in [1,8,16,64]:
-                                    dummy_input = torch.zeros(batch_size, data.shape[1], data.shape[2], data.shape[3]).to(self._ctx)
-                                    export_to_onnx(self._model, batch_size,
-                                                   dummy_input,
-                                                   Path("weights"), model_prefix, self.tc.use_wdl and self.tc.use_plys_to_end, False)
-                            print()
-                            logging.info("Saved checkpoint to %s", filepath)
-
-                        patience_cnt = 0  # reset the patience counter
-                    # print the elapsed time
-                    self.t_delta = time() - self.t_s_steps
-                    print(" - %.ds" % self.t_delta)
-                    self.t_s_steps = time()
-
-                    if self.tc.log_metrics_to_tensorboard:
-                        # log the samples per second metric to tensorboard
-                        self.sum_writer.add_scalar(
-                            tag="samples_per_second",
-                            scalar_value=data.shape[0] * self.tc.batch_steps / self.t_delta,
-                            global_step=self.k_steps,
-                        )
-
-                        # log the current learning rate
-                        self.sum_writer.add_scalar(tag="lr", scalar_value=self.to.lr_schedule(self.cur_it), global_step=self.k_steps)
-                        # log the current momentum value
-                        self.sum_writer.add_scalar(
-                            tag="momentum", scalar_value=self.to.momentum_schedule(self.cur_it), global_step=self.k_steps
-                        )
-
-                    if self.cur_it >= self.tc.total_it:
-                        logging.debug("The number of given iterations has been reached")
-                        # finally stop training because the number of lr drops has been achieved
-                        print()
-                        print(
-                            "Elapsed time for training(hh:mm:ss): "
-                            + str(datetime.timedelta(seconds=round(time() - self.t_s)))
-                        )
-
-                        if self.tc.log_metrics_to_tensorboard:
-                            self.sum_writer.close()
-
-                        # make sure to empty cache
-                        if torch.cuda.is_available():
-                            torch.cuda.empty_cache()
-
-                        return return_metrics_and_stop_training(self.k_steps, val_metric_values, self.k_steps_best,
-                                                                self.val_metric_values_best)
+        return train_loader
 
     def evaluate(self, train_loader):
         # log the current learning rate
@@ -527,7 +518,8 @@ def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path,
     """
     if has_auxiliary_output:
         input_names = ["data"]
-        output_names = [main_config["value_output"], main_config["policy_output"], main_config["auxiliary_output"]]
+        output_names = [main_config["value_output"], main_config["policy_output"], main_config["auxiliary_output"],
+                        main_config["wdl_output"], main_config["plys_to_end_output"]]
     else:
         input_names = ["data"]
         output_names = [main_config["value_output"], main_config["policy_output"]]
@@ -544,8 +536,24 @@ def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path,
         onnx_name += f"-bsize-{batch_size}"
     onnx_name += ".onnx"
 
-    torch.onnx.export(model, dummy_input, str(dir / Path(onnx_name)), input_names=input_names,
+    model_filepath = str(dir / Path(onnx_name))
+    torch.onnx.export(model, dummy_input, model_filepath, input_names=input_names,
                       output_names=output_names, dynamic_axes=dynamic_axes)
+
+    if has_auxiliary_output:
+        # Remove unneeded outputs
+        model = onnx.load(model_filepath)
+        graph = model.graph
+
+        # Generate a name for all node if they have none.
+        outputs_to_remove = []
+        for output in graph.output:
+            if output.name == main_config["auxiliary_output"] or output.name == main_config["wdl_output"] \
+                    or output.name == main_config["plys_to_end_output"]:
+                outputs_to_remove.append(output)
+        for output in outputs_to_remove:
+            graph.output.remove(output)
+        onnx.save(model, model_filepath)
 
 
 def export_as_script_module(model, batch_size, dummy_input, dir) -> None:
