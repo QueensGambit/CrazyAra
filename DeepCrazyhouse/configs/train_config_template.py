@@ -46,7 +46,7 @@ class TrainConfig:
     export_grad_histograms: bool = True
 
     # Decide between 'pytorch', 'mxnet' and 'gluon' style for training
-    # Reinforcement Learning only works with gluon (== False) atm
+    # Reinforcement Learning only works with gluon and pytorch atm
     framework: str = 'pytorch'
 
     # Boolean if the policy data is also defined in select_policy_from_plane representation
@@ -132,4 +132,4 @@ class TrainObjects:
     momentum_schedule = None
     metrics = None
     variant_metrics = None
-    
+
