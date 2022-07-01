@@ -59,6 +59,7 @@ class RLLoop:
         self.tc.k_steps = k_steps
         self.device_name = f'{args.context}_{args.device_id}'
         self.model_name = ""  # will be set in initialize()
+        self.did_contender_win = False
 
         # change working directory (otherwise binary would generate .zip files at .py location)
         os.chdir(self.file_io.binary_dir)
@@ -145,8 +146,8 @@ class RLLoop:
 
             self.initialize()
             logging.info(f'Start arena tournament ({self.nb_arena_games} rounds)')
-            did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
-            if did_contender_win is True:
+            self.did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
+            if self.did_contender_win is True:
                 logging.info("REPLACING current generator with contender")
                 self.file_io.replace_current_model_with_contender()
             else:
