@@ -12,7 +12,10 @@ import logging
 import random
 from time import time
 import numpy as np
-from mxboard import SummaryWriter
+try:
+    from mxboard import SummaryWriter
+except Exception:
+    pass
 from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
