@@ -90,22 +90,21 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, tar_f
     cur_it = train_config.k_steps_initial * train_config.batch_steps
     (k_steps_final, val_value_loss_final, val_policy_loss_final, val_value_acc_sign_final,
      val_policy_acc_final), (_, _) = train_agent.train(cur_it)
-
     prefix = "%smodel-%.5f-%.5f-%.3f-%.3f" % (model_contender_dir, val_value_loss_final, val_policy_loss_final,
-                                                                  val_value_acc_sign_final, val_policy_acc_final)
+                                                                   val_value_acc_sign_final, val_policy_acc_final)
 
     sym_file = prefix + "-symbol.json"
     params_file = prefix + "-" + "%04d.params" % nn_update_idx
 
     _export_net(convert_to_onnx, input_shape, k_steps_final, net, nn_update_idx, params_file, prefix, sym_file,
-                train_config)
+                train_config, model_contender_dir)
 
     logging.info("k_steps_final %d" % k_steps_final)
     queue.put(k_steps_final)
 
 
 def _export_net(convert_to_onnx, input_shape, k_steps_final, net, nn_update_idx, params_file, prefix, sym_file,
-                train_config):
+                train_config, model_contender_dir):
     """
     Export function saves both the architecture and the weights and optionally saves it as onnx
     """
@@ -127,14 +126,14 @@ def _export_net(convert_to_onnx, input_shape, k_steps_final, net, nn_update_idx,
                 dummy_input = torch.zeros(1, input_shape[0], input_shape[1], input_shape[2]).to(ctx)
                 export_to_onnx(net, 1,
                                dummy_input,
-                               Path(train_config.export_dir) / Path("best-model"), model_prefix,
+                               Path(model_contender_dir), model_prefix,
                                train_config.use_wdl and train_config.use_plys_to_end,
                                True)
-                for batch_size in [1, 8, 16, 64]:
+                for batch_size in [1, 8, 16]:
                     dummy_input = torch.zeros(batch_size, input_shape[0], input_shape[1], input_shape[2]).to(ctx)
                     export_to_onnx(net, batch_size,
                                    dummy_input,
-                                   Path(train_config.export_dir) / Path("best-model"), model_prefix,
+                                   Path(model_contender_dir), model_prefix,
                                    train_config.use_wdl and train_config.use_plys_to_end, False)
 
 
@@ -154,7 +153,7 @@ def _get_net(ctx, input_shape, main_config, params_filename, symbol_filename, ta
         net = get_rise_v33_model_by_train_config(input_shape, train_config)
         if torch.cuda.is_available():
             net.cuda(torch.device(f"cuda:{train_config.device_id}"))
-        load_torch_state(net, torch.optim.SGD(net.parameters(), lr=train_config.max_lr), tar_filename)
+        load_torch_state(net, torch.optim.SGD(net.parameters(), lr=train_config.max_lr), tar_filename, train_config.device_id)
     return net
 
 
@@ -169,7 +168,7 @@ def _get_val_loader(train_config):
                                                                            q_value_ratio=train_config.q_value_ratio)
     y_val_policy = prepare_policy(y_val_policy, train_config.select_policy_from_plane,
                                   train_config.sparse_policy_label, train_config.is_policy_from_plane_data)
-    if train_config.framework == 'pytorch':
+    if train_config.framework == 'gluon':
         if train_config.use_wdl and train_config.use_plys_to_end:
             val_dataset = gluon.data.ArrayDataset(nd.array(x_val), nd.array(y_val_value), nd.array(y_val_policy),
                                                   nd.array(value_to_wdl_label(y_val_value)),

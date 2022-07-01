@@ -246,7 +246,7 @@ class FileIO:
         """
         if self.framework != "pytorch":
             return ""
-        model_params = glob.glob(self.model_dir + "/*.params")
+        model_params = glob.glob(self.model_dir + "/*.tar")
         if len(model_params) == 0:
             raise FileNotFoundError(f'No model file found in {self.model_dir}')
         return model_params[0]
