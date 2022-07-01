@@ -393,13 +393,6 @@ public:
      void get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta);
 
     /**
-     * @brief mark_nodes_as_fully_expanded Sets the noVisitIdx to be the number of child nodes.
-     * This method should be called for instance after applying dirichlet noise,
-     * when the node ordering is not guaranteed to be correct anymore.
-     */
-    void mark_nodes_as_fully_expanded();
-
-    /**
      * @brief is_root_node Checks if the current node is the root node
      * @return true if root node else false
      */

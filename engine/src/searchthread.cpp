@@ -228,11 +228,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
             }
             return nextNode;
         }
-#ifdef MCTS_TB_SUPPORT
-        if (nextNode->is_terminal() || (!reachedTablebases && nextNode->is_playout_node() && nextNode->is_solved())) {
-#else
-        if (nextNode->is_terminal() || (nextNode->is_playout_node() && nextNode->is_solved())) {
-#endif
+        if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
             return nextNode;

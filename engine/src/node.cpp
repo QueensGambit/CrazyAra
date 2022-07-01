@@ -270,9 +270,6 @@ void Node::update_solved_terminal(const Node* childNode, ChildIdx childIdx)
     define_end_ply_for_solved_terminal(childNode);
     set_value(targetValue);
     d->qValues[childIdx] = targetValue;
-    if (targetValue == WIN_VALUE) {
-        d->checkmateIdx = childIdx;
-    }
 }
 
 void Node::mcts_policy_based_on_wins(DynamicVector<double> &mctsPolicy) const
@@ -355,7 +352,7 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
     }
 #endif
 
-    if (d->nodeType != UNSOLVED) {
+    if (d->nodeType == WIN || d->nodeType == LOSS || d->nodeType == DRAW) {
         // already solved
         return false;
     }
@@ -366,13 +363,7 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
         switch(childNode->d->nodeType) {
 #ifndef MCTS_SINGLE_PLAYER
         case WIN:
-#ifdef MCTS_TB_SUPPORT
-        case TB_WIN:
-#endif
 #else
-#ifdef MCTS_TB_SUPPORT
-        case TB_LOSS:
-#endif
         case LOSS:
 #endif
             disable_action(childIdx);
@@ -384,6 +375,7 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
     if (solved_win(childNode)) {
         d->nodeType = WIN;
         update_solved_terminal<WIN_VALUE>(childNode, childIdx);
+        d->checkmateIdx = childIdx;
         return true;
     }
     if (solved_loss(childNode)) {
@@ -397,9 +389,6 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
         return true;
     }
 #ifdef MCTS_TB_SUPPORT
-    if (isTablebase) {
-        return false;
-    }
     if (solve_tb_win(childNode)) {
         d->nodeType = TB_WIN;
         update_solved_terminal<WIN_VALUE>(childNode, childIdx);
@@ -417,12 +406,6 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
     }
 #endif
     return false;
-}
-
-void Node::mark_nodes_as_fully_expanded()
-{
-    info_string("mark as fully expanded");
-    d->noVisitIdx = get_number_child_nodes();
 }
 
 bool Node::is_root_node() const
