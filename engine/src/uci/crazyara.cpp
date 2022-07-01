@@ -360,7 +360,7 @@ void CrazyAra::arena(istringstream &is)
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 
-void CrazyAra::multimodel_arena(istringstream &is, const string &modeldirectory1, const string &modeldirectory2, boolean models_in_is)
+void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1, const string &modelDirectory2, bool isModelInInputStream)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
@@ -369,30 +369,32 @@ void CrazyAra::multimodel_arena(istringstream &is, const string &modeldirectory1
     int type;
     int folder;
     is >> type;
-    if (models_in_is)
+    string modelDir1 = modelDirectory1;
+    if (isModelInInputStream)
     {
         is >> folder;
-        modeldirectory1 = "m" + folder + "/";
+        modelDir1 = "m" + std::to_string(folder) + "/";
     }
     auto mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
-    if (modeldirectory1 != "")
+    if (modelDir1 != "")
     {
-        netSingle = create_new_net_single(modeldirectory1);
-        netBatches = create_new_net_batches(modeldirectory1);
+        netSingle = create_new_net_single(modelDir1);
+        netBatches = create_new_net_batches(modelDir1);
         mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
     }
 
     is >> type;
-    if (models_in_is)
+    string modelDir2 = modelDirectory2;
+    if (isModelInInputStream)
     {
         is >> folder;
-        modeldirectory2 = "m" + folder + "/";
+        modelDir2 = "m" + std::to_string(folder) + "/";
     }
     auto mcts2 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
-    if (modeldirectory2 != "")
+    if (modelDir2 != "")
     {
-        netSingleContender = create_new_net_single(modeldirectory2);
-        netBatchesContender = create_new_net_batches(modeldirectory2);
+        netSingleContender = create_new_net_single(modelDir2);
+        netBatchesContender = create_new_net_batches(modelDir2);
         mcts2 = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings, static_cast<MCTSAgentType>(type));
     }
 
