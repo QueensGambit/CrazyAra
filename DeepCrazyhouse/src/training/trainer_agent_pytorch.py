@@ -23,12 +23,12 @@ from tqdm import tqdm_notebook
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import TensorDataset, DataLoader
 from torch.optim.optimizer import Optimizer
-from torch.autograd import Variable
+from torch.nn.modules.loss import _Loss
+from torch import Tensor
 
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.training.pytorch.metrics import Metrics
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, return_metrics_and_stop_training,\
     value_to_wdl_label, prepare_plys_label
 
@@ -65,7 +65,10 @@ class TrainerAgentPytorch:
         if self.tc.log_metrics_to_tensorboard:
             self.sum_writer = SummaryWriter(log_dir=self.tc.export_dir+"logs", flush_secs=5)
         # Define the two loss functions
-        self.policy_loss = nn.CrossEntropyLoss()
+        if train_config.sparse_policy_label:
+            self.policy_loss = nn.CrossEntropyLoss()
+        else:
+            self.policy_loss = SoftCrossEntropyLoss()
         self.value_loss = nn.MSELoss()
         self.wdl_loss = nn.CrossEntropyLoss()
         self.ply_loss = nn.MSELoss()
@@ -164,7 +167,7 @@ class TrainerAgentPytorch:
                                 self.k_steps_best,
                             )  # Load the best model once again
                             logging.debug("load current best model:%s", model_path)
-                            load_torch_state(self._model, self.optimizer, model_path)
+                            load_torch_state(self._model, self.optimizer, model_path, self.tc.device_id)
                             self.k_steps = self.k_steps_best
                             logging.debug("k_step is back at %d", self.k_steps_best)
                             # print the elapsed time
@@ -394,14 +397,26 @@ class TrainerAgentPytorch:
             # Start the RTPT tracking
             self.rtpt.start()
 
-        self.train_metrics = Metrics()
-
 
 def create_optimizer(model: nn.Module, train_config: TrainConfig):
     if train_config.optimizer_name == "nag":  # torch.optim.SGD uses Nestorov momentum already
         return torch.optim.SGD(model.parameters(), lr=train_config.max_lr, momentum=train_config.max_momentum,
                                weight_decay=train_config.wd)
     raise Exception(f"Selected optimizer {train_config.optimizer_name} is not supported.")
+
+
+class SoftCrossEntropyLoss(_Loss):
+    """
+    Computes cross entropy loss for continuous target distribution.
+    # https://discuss.pytorch.org/t/how-should-i-implement-cross-entropy-loss-with-continuous-target-outputs/10720/18
+    # or use BCELoss
+    """
+    def __init__(self, size_average=None, reduce=None, reduction: str = 'mean') -> None:
+        super(SoftCrossEntropyLoss, self).__init__(size_average, reduce, reduction)
+
+    def forward(self, input: Tensor, target: Tensor) -> Tensor:
+        log_softmax = torch.nn.LogSoftmax(dim=1)
+        return torch.mean(torch.sum(-target * log_softmax(input), 1))
 
 
 def get_context(context: str, device_id: int):
@@ -420,8 +435,8 @@ def get_context(context: str, device_id: int):
         return torch.device("cpu")
 
 
-def load_torch_state(model: nn.Module, optimizer: Optimizer, path: str):
-    checkpoint = torch.load(path)
+def load_torch_state(model: nn.Module, optimizer: Optimizer, path: str, device_id: int):
+    checkpoint = torch.load(path, map_location=f"cuda:{device_id}")
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
@@ -602,9 +617,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     :return:
     """
     reset_metrics(metrics)
-    # make sure to empty cache
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    model.eval()  # set model to evaluation mode
     with torch.no_grad():  # operations inside don't track history
         for i, batch in enumerate(data_iterator):
             if use_wdl and use_plys_to_end:
@@ -634,11 +647,12 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
                                          labels=policy_label)
 
             # stop after evaluating x batches (only recommended to use this for the train set evaluation)
-            if nb_batches and i == nb_batches:
+            if nb_batches and i+1 == nb_batches:
                 break
 
-        metric_values = {"loss": 0.01 * metrics["value_loss"].compute() + 0.99 * metrics["policy_loss"].compute()}
+    metric_values = {"loss": 0.01 * metrics["value_loss"].compute() + 0.99 * metrics["policy_loss"].compute()}
 
-        for metric_name in metrics:
-            metric_values[metric_name] = metrics[metric_name].compute()
-        return metric_values
+    for metric_name in metrics:
+        metric_values[metric_name] = metrics[metric_name].compute()
+    model.train()  # return back to training mode
+    return metric_values

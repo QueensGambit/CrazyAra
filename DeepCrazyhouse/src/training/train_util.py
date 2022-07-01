@@ -75,11 +75,11 @@ def _get_pytorch_metrics(train_config):
         'value_loss': pytorch_metrics.MSE(),
         'policy_loss': pytorch_metrics.CrossEntropy(train_config.sparse_policy_label),
         'value_acc_sign': pytorch_metrics.AccuracySign(),
-        'policy_acc': pytorch_metrics.Accuracy()
+        'policy_acc': pytorch_metrics.Accuracy(train_config.sparse_policy_label)
     }
     if train_config.use_wdl:
         metrics_pytorch['wdl_loss'] = pytorch_metrics.CrossEntropy(True)
-        metrics_pytorch['wdl_acc'] = pytorch_metrics.Accuracy()
+        metrics_pytorch['wdl_acc'] = pytorch_metrics.Accuracy(True)
     if train_config.use_plys_to_end:
         metrics_pytorch['plys_to_end_loss'] = pytorch_metrics.MSE()
 
