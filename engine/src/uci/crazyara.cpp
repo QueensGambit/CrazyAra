@@ -368,7 +368,7 @@ void CrazyAra::arena(istringstream &is)
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 
-void CrazyAra::multimodel_arena(istringstream &is, const string &modeldirectory1, const string &modeldirectory2, boolean models_in_is)
+void CrazyAra::multimodel_arena(istringstream &is, const string &modeldirectory1, const string &modeldirectory2, bool models_in_is)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
@@ -380,7 +380,7 @@ void CrazyAra::multimodel_arena(istringstream &is, const string &modeldirectory1
     if (models_in_is)
     {
         is >> folder;
-        modeldirectory1 = "m" + folder + "/";
+//        modeldirectory1 = string("m") + std::to_string(folder) + string("/");
     }
     auto mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
     if (modeldirectory1 != "")
@@ -394,7 +394,7 @@ void CrazyAra::multimodel_arena(istringstream &is, const string &modeldirectory1
     if (models_in_is)
     {
         is >> folder;
-        modeldirectory2 = "m" + folder + "/";
+//        modeldirectory2 = "m" + folder + "/";
     }
     auto mcts2 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
     if (modeldirectory2 != "")

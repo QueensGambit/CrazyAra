@@ -263,7 +263,7 @@ class FileIO:
         os.rename(self.logs_dir, os.path.join(self.logs_dir_archive, dir_name))
         create_dir(self.logs_dir)
 
-    def prepare_data_for_training(self, rm_nb_files, rm_fraction_for_selection):
+    def prepare_data_for_training(self, rm_nb_files, rm_fraction_for_selection, did_contender_win):
         """
         Move files from training, validation and model contender folder into archive.
         Moves newly generated files into training and validation directory.
@@ -271,7 +271,8 @@ class FileIO:
         :param rm_nb_files:
         :param rm_fraction_for_selection:
         """
-        self._move_train_val_contender_into_archive()
+        if did_contender_win:
+            self._move_train_val_contender_into_archive()
         self._move_generated_data_to_train_val()
         # We don’t need them anymore; the last model from last training has already been saved
         self._remove_files_in_weight_dir()

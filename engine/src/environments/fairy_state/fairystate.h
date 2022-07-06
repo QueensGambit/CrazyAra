@@ -169,6 +169,7 @@ class FairyState : public State
 private:
     FairyBoard board;
     StateListPtr states;
+    int variantNumber;
 
 public:
     FairyState();

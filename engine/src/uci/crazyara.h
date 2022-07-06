@@ -201,7 +201,7 @@ public:
      * @param modeldirectory2 name of the model directory of agent 2
      * @param model_in_is boolean that informs the program if the modeldirectory are part of the input string or not
      */
-    void multimodel_arena(istringstream &is, const string &modeldirectory1, const string &modeldirectory2, boolean model_in_is);
+    void multimodel_arena(istringstream &is, const string &modeldirectory1, const string &modeldirectory2, bool model_in_is);
 
     /**
      * @brief roundrobin is an extension to the multimodel_arena method,

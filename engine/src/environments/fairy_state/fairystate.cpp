@@ -14,12 +14,14 @@ vector<std::string> FairyOutputRepresentation::LABELS_MIRRORED;
 
 FairyState::FairyState() :
         State(),
-        states(StateListPtr(new std::deque<StateInfo>(0))) {}
+        states(StateListPtr(new std::deque<StateInfo>(0))),
+        variantNumber(0) {}
 
 FairyState::FairyState(const FairyState &f) :
         State(),
         board(f.board),
-        states(StateListPtr(new std::deque<StateInfo>(0))) {
+        states(StateListPtr(new std::deque<StateInfo>(0))),
+        variantNumber(f.variantNumber){
     states->emplace_back(f.states->back());
 }
 
@@ -36,8 +38,7 @@ void FairyState::set(const string &fenStr, bool isChess960, int variant) {
     Thread *thread;
 #ifdef MODE_BOARDGAMES
     board.set(variants.find(StateConstantsFairy::available_variants()[variant])->second, fenStr, isChess960, &states->back(), thread, false);
-//    cout << "connectN: "<<board.variant()->connectN<< endl;
-//    cout << "stalematevalue: " << board.variant()->stalemateValue;
+    variantNumber = variant;
 #else
     board.set(variants.find("xiangqi")->second, fenStr, isChess960, &states->back(), thread, false);
 #endif
@@ -108,6 +109,10 @@ TerminalType FairyState::is_terminal(size_t numberLegalMoves, float &customTermi
 
     if (numberLegalMoves == 0) {
 #ifdef MODE_BOARDGAMES
+        if(variantNumber == 3){ //variant clobber
+            return TERMINAL_LOSS;
+        }
+
         return TERMINAL_DRAW;
 #else   // Xinagqi
         // "Unlike in chess, in which stalemate is a draw, in xiangqi, it is a loss for the stalemated player."
@@ -156,4 +161,5 @@ void FairyState::init(int variant, bool isChess960)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
     board.set(variants.find(StateConstantsFairy::available_variants()[variant])->second, variants.find(StateConstantsFairy::available_variants()[variant])->second->startFen, isChess960, &states->back(), nullptr, false);
+    variantNumber = variant;
 }

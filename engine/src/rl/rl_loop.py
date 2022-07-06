@@ -118,9 +118,10 @@ class RLLoop:
         :param number_files_to_update: Number of newly generated files needed to trigger a new NN update
         :return: True, if enough training data was availble and a training run has been executed.
         """
+        did_contender_win = False
         if self.file_io.get_number_generated_files() >= number_files_to_update:
             self.binary_io.stop_process()
-            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection)
+            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection, did_contender_win)
             # start training using a process to ensure memory clearing afterwards
             queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
