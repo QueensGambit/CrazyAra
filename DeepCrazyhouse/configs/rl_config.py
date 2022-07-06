@@ -54,8 +54,8 @@ class UCIConfig:
     Nodes: int = 200
     Reuse_Tree: str = False
     Search_Type: str = f'mcts'
-    Selfplay_Chunk_Size: int = 32  # default: 128
-    Selfplay_Number_Chunks: int = 1  # default: 640
+    Selfplay_Chunk_Size: int = 128  # default: 128
+    Selfplay_Number_Chunks: int = 32  # default: 640
     Simulations: int = 3200
     SyzygyPath: str = f''
     Temperature_Moves: int = 15  # CZ: 500
