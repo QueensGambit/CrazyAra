@@ -59,6 +59,7 @@ class RLLoop:
         self.tc.k_steps = k_steps
         self.device_name = f'{args.context}_{args.device_id}'
         self.model_name = ""  # will be set in initialize()
+        self.did_contender_win = False
 
         # change working directory (otherwise binary would generate .zip files at .py location)
         os.chdir(self.file_io.binary_dir)
@@ -118,10 +119,9 @@ class RLLoop:
         :param number_files_to_update: Number of newly generated files needed to trigger a new NN update
         :return: True, if enough training data was availble and a training run has been executed.
         """
-        did_contender_win = False
         if self.file_io.get_number_generated_files() >= number_files_to_update:
             self.binary_io.stop_process()
-            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection, did_contender_win)
+            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection, self.did_contender_win)
             # start training using a process to ensure memory clearing afterwards
             queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
@@ -145,8 +145,8 @@ class RLLoop:
 
             self.initialize()
             logging.info(f'Start arena tournament ({self.nb_arena_games} rounds)')
-            did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
-            if did_contender_win is True:
+            self.did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
+            if self.did_contender_win is True:
                 logging.info("REPLACING current generator with contender")
                 self.file_io.replace_current_model_with_contender()
             else:

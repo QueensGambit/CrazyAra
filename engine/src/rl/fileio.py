@@ -164,14 +164,13 @@ class FileIO:
         for file_name in file_names[:-1]:
             os.rename(self.export_dir_gen_data + file_name, self.train_dir + file_name)
 
-    def _move_train_val_contender_into_archive(self):
+    def _move_train_val_data_into_archive(self):
         """
-        Moves files from training, validation & model_contender dir into archive directory
+        Moves files from training, validation dir into archive directory
         :return:
         """
         move_all_files(self.train_dir, self.train_dir_archive)
         move_all_files(self.val_dir, self.val_dir_archive)
-        move_all_files(self.model_contender_dir, self.model_dir_archive)
 
     def _remove_files_in_weight_dir(self):
         """
@@ -263,16 +262,20 @@ class FileIO:
         os.rename(self.logs_dir, os.path.join(self.logs_dir_archive, dir_name))
         create_dir(self.logs_dir)
 
-    def prepare_data_for_training(self, rm_nb_files, rm_fraction_for_selection, did_contender_win):
+    def prepare_data_for_training(self, rm_nb_files: int, rm_fraction_for_selection: float, did_contender_win: bool):
         """
         Move files from training, validation and model contender folder into archive.
         Moves newly generated files into training and validation directory.
         Remove files in weight directory. Include data from replay memory.
-        :param rm_nb_files:
-        :param rm_fraction_for_selection:
+        :param rm_nb_files: Number of files of the replay memory to include
+        :param rm_fraction_for_selection: Proportion for selecting files from the replay memory
+        :param did_contender_win: Defines if the last contender won vs the generator
         """
         if did_contender_win:
-            self._move_train_val_contender_into_archive()
+            self._move_train_val_data_into_archive()
+        # move last contender into archive
+        move_all_files(self.model_contender_dir, self.model_dir_archive)
+        
         self._move_generated_data_to_train_val()
         # We don’t need them anymore; the last model from last training has already been saved
         self._remove_files_in_weight_dir()
