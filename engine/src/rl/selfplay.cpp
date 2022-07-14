@@ -222,7 +222,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
-    unique_ptr<StateObj> state= make_unique<StateObj>();
+    unique_ptr<StateObj> state = make_unique<StateObj>();
     //unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, 0, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature);
     
     if (fen != "") {
@@ -350,21 +350,22 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
-            else if (gameResult == BLACK_WIN) {
+            else if (gameResult == BLACK_WIN){
                 ++tournamentResult.numberLosses;
             }
         }
-        else{
-             // use same starting position as before stored via gamePGN.fen
+        else {
+            // use same starting position as before stored via gamePGN.fen
+            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, gamePGN.fen);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }
-            else if (gameResult == WHITE_WIN) {
+            else if (gameResult == WHITE_WIN){
                 ++tournamentResult.numberLosses;
             }
         }
         if (gameResult == DRAWN) {
-                    ++tournamentResult.numberDraws;
+            ++tournamentResult.numberDraws;
         }
     }
     return tournamentResult;

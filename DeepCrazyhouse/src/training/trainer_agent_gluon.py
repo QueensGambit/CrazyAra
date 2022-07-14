@@ -13,7 +13,10 @@ from time import time
 import mxnet as mx
 from mxnet import autograd, gluon, nd
 import numpy as np
-from mxboard import SummaryWriter
+try:
+    from mxboard import SummaryWriter
+except Exception:
+    pass
 from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
@@ -112,7 +115,7 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-class TrainerAgent:  # Probably needs refactoring
+class TrainerAgentGluon:  # Probably needs refactoring
     """Main training loop"""
 
     def __init__(
@@ -311,7 +314,7 @@ class TrainerAgent:  # Probably needs refactoring
                         self.sum_writer.add_graph(self._net)
                         graph_exported = True
 
-                    if batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+                    if batch_proc_tmp >= self.tc.batch_steps or self.cur_it >= self.tc.total_it:  # show metrics every thousands steps
                         # log the current learning rate
                         # update batch_proc_tmp counter by subtracting the batch_steps
                         batch_proc_tmp = batch_proc_tmp - self.tc.batch_steps

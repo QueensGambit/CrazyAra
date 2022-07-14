@@ -56,7 +56,7 @@ const string engineName = "OpenSpielAra";
 const string engineName = "ClassicAra";
 #endif
 
-const string engineVersion = "1.0.0";
+const string engineVersion = "1.0.1";
 #ifdef MODE_CRAZYHOUSE
 const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer and CrazyAra developers (see AUTHORS file)";
 #elif defined MODE_LICHESS

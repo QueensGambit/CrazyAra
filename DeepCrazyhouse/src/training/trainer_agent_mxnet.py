@@ -12,7 +12,10 @@ import logging
 import random
 from time import time
 import numpy as np
-from mxboard import SummaryWriter
+try:
+    from mxboard import SummaryWriter
+except Exception:
+    pass
 from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
@@ -543,7 +546,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.cur_it += 1
         self.batch_proc_tmp += 1
 
-        if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+        if self.batch_proc_tmp >= self.tc.batch_steps or self.cur_it >= self.tc.total_it:  # show metrics every thousands steps
             self.batch_proc_tmp = self.batch_proc_tmp - self.tc.batch_steps
             # update the counters
             self.k_steps += 1

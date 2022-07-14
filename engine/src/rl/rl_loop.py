@@ -49,7 +49,7 @@ class RLLoop:
         self.rl_config = rl_config
 
         self.file_io = FileIO(orig_binary_name=self.rl_config.binary_name, binary_dir=self.rl_config.binary_dir,
-                              uci_variant=self.rl_config.uci_variant)
+                              uci_variant=self.rl_config.uci_variant, framework=self.tc.framework)
         self.binary_io = None
 
         if nb_arena_games % 2 == 1:
@@ -121,13 +121,15 @@ class RLLoop:
         """
         if self.file_io.get_number_generated_files() >= number_files_to_update:
             self.binary_io.stop_process()
-            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection, self.did_contender_win)
+            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection,
+                                                   self.did_contender_win)
             # start training using a process to ensure memory clearing afterwards
             queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
             process = Process(target=update_network, args=(queue, self.nn_update_index,
                                                            self.file_io.get_current_model_arch_file(),
                                                            self.file_io.get_current_model_weight_file(),
+                                                           self.file_io.get_current_model_tar_file(),
                                                            not self.args.no_onnx_export,
                                                            main_config, self.tc,
                                                            self.file_io.model_contender_dir))

@@ -197,11 +197,11 @@ public:
    /**
      * @brief multimodel_arena Alternative to the arena method which enables us to define two different models to use in the match and also define the mctsagent types to use.
      * @param is Input string representing both agent types and the number of games to play
-     * @param modeldirectory1 name of the model directory of agent 1
-     * @param modeldirectory2 name of the model directory of agent 2
-     * @param model_in_is boolean that informs the program if the modeldirectory are part of the input string or not
+     * @param modelDirectory1 name of the model directory of agent 1
+     * @param modelDirectory2 name of the model directory of agent 2
+     * @param isModelInInputStream boolean that informs the program if the modeldirectory are part of the input string or not
      */
-    void multimodel_arena(istringstream &is, const string &modeldirectory1, const string &modeldirectory2, bool model_in_is);
+    void multimodel_arena(istringstream &is, const string &modelDirectory1, const string &modelDirectory2, bool isModelInInputStream);
 
     /**
      * @brief roundrobin is an extension to the multimodel_arena method,
