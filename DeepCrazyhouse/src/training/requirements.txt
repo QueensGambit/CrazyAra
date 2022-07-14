@@ -14,3 +14,4 @@ setproctitle
 rtpt
 dataclasses
 torchsummary
+onnxsim

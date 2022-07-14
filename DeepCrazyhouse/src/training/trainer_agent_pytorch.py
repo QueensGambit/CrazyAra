@@ -25,6 +25,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.optim.optimizer import Optimizer
 from torch.nn.modules.loss import _Loss
 from torch import Tensor
+from onnxsim import simplify
 
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
@@ -127,7 +128,7 @@ class TrainerAgentPytorch:
                         self.sum_writer.add_graph(self._model, data)
                         self.graph_exported = True
 
-                    if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+                    if self.batch_proc_tmp >= self.tc.batch_steps or self.cur_it >= self.tc.total_it:  # show metrics every thousands steps
                         train_metric_values, val_metric_values = self.evaluate(train_loader)
 
                         if self.use_rtpt:
@@ -347,7 +348,8 @@ class TrainerAgentPytorch:
         combined_loss.backward()
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = self.to.lr_schedule(self.cur_it)  # update the learning rate
-            param_group['momentum'] = self.to.momentum_schedule(self.cur_it)  # update the momentum
+            if 'momentum' in param_group:
+                param_group['momentum'] = self.to.momentum_schedule(self.cur_it)  # update the momentum
         self.optimizer.step()
         self.cur_it += 1
         self.batch_proc_tmp += 1
@@ -402,6 +404,8 @@ def create_optimizer(model: nn.Module, train_config: TrainConfig):
     if train_config.optimizer_name == "nag":  # torch.optim.SGD uses Nestorov momentum already
         return torch.optim.SGD(model.parameters(), lr=train_config.max_lr, momentum=train_config.max_momentum,
                                weight_decay=train_config.wd)
+    elif train_config.optimizer_name == "adam":
+        return torch.optim.Adam(model.parameters(), lr=train_config.max_lr, weight_decay=train_config.wd)
     raise Exception(f"Selected optimizer {train_config.optimizer_name} is not supported.")
 
 
@@ -554,6 +558,13 @@ def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path,
     model_filepath = str(dir / Path(onnx_name))
     torch.onnx.export(model, dummy_input, model_filepath, input_names=input_names,
                       output_names=output_names, dynamic_axes=dynamic_axes)
+
+    # simplify ONNX model
+    # https://github.com/daquexian/onnx-simplifier
+    model = onnx.load(model_filepath)
+    model_simp, check = simplify(model)
+    onnx.save(model, model_filepath)
+    assert check, "Simplified ONNX model could not be validated"
 
     if has_auxiliary_output:
         # Remove unneeded outputs

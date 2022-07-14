@@ -314,7 +314,7 @@ class TrainerAgentGluon:  # Probably needs refactoring
                         self.sum_writer.add_graph(self._net)
                         graph_exported = True
 
-                    if batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+                    if batch_proc_tmp >= self.tc.batch_steps or self.cur_it >= self.tc.total_it:  # show metrics every thousands steps
                         # log the current learning rate
                         # update batch_proc_tmp counter by subtracting the batch_steps
                         batch_proc_tmp = batch_proc_tmp - self.tc.batch_steps
