@@ -107,6 +107,7 @@ class TrainerAgentPytorch:
         """
 
         self._setup_variables(cur_it)
+        self._model.train()  # set training mode
 
         while self.continue_training:
             # reshuffle the ordering of the training game batches (shuffle works in place)
