@@ -45,6 +45,10 @@ class TrainConfig:
 
     export_grad_histograms: bool = True
 
+    # Decide between 'pytorch', 'mxnet' and 'gluon' style for training
+    # Reinforcement Learning only works with gluon and pytorch atm
+    framework: str = 'pytorch'
+        
     # Boolean if the policy data is also defined in select_policy_from_plane representation
     is_policy_from_plane_data: bool = False
 
@@ -61,8 +65,8 @@ class TrainConfig:
 
     # # optimization parameters
     optimizer_name: str = "nag"
-    max_lr: float = 0.5 / div_factor  # 0.35 / div_factor
-    min_lr: float = 0.49999 / div_factor  # 0.2 / div_factor  # 0.00001
+    max_lr: float = 0.05 / div_factor  # 0.35 / div_factor
+    min_lr: float = 0.04999 / div_factor  # 0.2 / div_factor  # 0.00001
     max_momentum: float = 0.95
     min_momentum: float = 0.8
     # stop training as soon as max_spikes has been reached
@@ -102,10 +106,6 @@ class TrainConfig:
 
     # total of training iterations
     total_it: int = None
-
-    # Decide between mxnet and gluon style for training
-    # Reinforcement Learning only works with gluon (== False) atm
-    use_mxnet_style: bool = True
 
     # adds a small mlp to infer the value loss from wdl and plys_to_end_output
     use_mlp_wdl_ply: bool = False
