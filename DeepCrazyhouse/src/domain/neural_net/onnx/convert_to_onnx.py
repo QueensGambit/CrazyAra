@@ -26,8 +26,6 @@ import torch
 from pathlib import Path
 import sys
 sys.path.append("../../../../../")
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model_by_train_config
-from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state, get_context, export_to_onnx
 from DeepCrazyhouse.configs.train_config import TrainConfig
 
 
@@ -153,6 +151,10 @@ def convert_pytorch_tar_model_to_onnx(tar_file, input_shape, batch_sizes, model_
     Converts the given pytorch model specified by the tar file to ONNX format.
     For parameters see: parse_args.
     """
+    from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import \
+        get_rise_v33_model_by_train_config
+    from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state, get_context, export_to_onnx
+
     train_config = TrainConfig()
 
     # load the model and its paramters
