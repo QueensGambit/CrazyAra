@@ -47,7 +47,7 @@ class TrainConfig:
 
     # Decide between 'pytorch', 'mxnet' and 'gluon' style for training
     # Reinforcement Learning only works with gluon and pytorch atm
-    framework: str = 'pytorch'
+    framework: str = 'gluon'
         
     # Boolean if the policy data is also defined in select_policy_from_plane representation
     is_policy_from_plane_data: bool = False
