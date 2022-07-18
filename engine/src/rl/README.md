@@ -22,7 +22,7 @@ In order to build the docker container, use the following command:
 
 Afterwards you can start the container using a specified list of GPUs:
 ```shell script
-docker run -gpus all -it \
+docker run --gpus all -it \
  --rm -v local_dir:/data/RL crazyara_docker:latest
 ```
 If you want to launch the docker using only a subset of availabe you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.
