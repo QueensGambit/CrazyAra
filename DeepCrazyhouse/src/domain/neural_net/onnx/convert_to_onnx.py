@@ -25,8 +25,6 @@ import logging
 from pathlib import Path
 import sys
 sys.path.append("../../../../../")
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model_by_train_config
-from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state, get_context, export_to_onnx
 from DeepCrazyhouse.configs.train_config import TrainConfig
 
 
@@ -71,6 +69,8 @@ def parse_args(cmd_args: list):
         filepaths = [args.sym_file, args.params_file]
     elif args.framework == 'pytorch':
         import torch
+        from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state, get_context, export_to_onnx
+        from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model_by_train_config
         args.tar_file = glob(args.model_dir + "/*.tar")[0]
         filepaths = [args.tar_file]
 

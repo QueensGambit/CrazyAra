@@ -25,6 +25,7 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, prepare_plys_label, value_to_wdl_label
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, LinearWarmUp,\
     CosineAnnealingSchedule
+from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
 from DeepCrazyhouse.src.training.train_util import get_metrics
 
 
@@ -81,7 +82,6 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, tar_f
     elif train_config.framework == 'pytorch':
         from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch, load_torch_state, \
             save_torch_state, get_context, export_to_onnx
-        from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
         train_agent = TrainerAgentPytorch(net, val_data, train_config, train_objects, use_rtpt=False)
 
     # iteration counter used for the momentum and learning rate schedule
