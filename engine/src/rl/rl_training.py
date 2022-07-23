@@ -17,8 +17,6 @@ except ModuleNotFoundError:
     import mxnet.gluon.metric as metric
 from mxnet import nd
 from mxnet import gluon
-import torch
-from torch.utils.data import TensorDataset, DataLoader
 from pathlib import Path
 
 sys.path.append("../../../")
@@ -27,7 +25,6 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, prepare_plys_label, value_to_wdl_label
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, LinearWarmUp,\
     CosineAnnealingSchedule
-from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
 from DeepCrazyhouse.src.training.train_util import get_metrics
 
 
@@ -84,6 +81,7 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, tar_f
     elif train_config.framework == 'pytorch':
         from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch, load_torch_state, \
             save_torch_state, get_context, export_to_onnx
+        from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
         train_agent = TrainerAgentPytorch(net, val_data, train_config, train_objects, use_rtpt=False)
 
     # iteration counter used for the momentum and learning rate schedule
@@ -112,8 +110,7 @@ def _export_net(convert_to_onnx, input_shape, k_steps_final, net, nn_update_idx,
         net.export(prefix, epoch=nn_update_idx)
     elif train_config.framework == 'pytorch':
         from DeepCrazyhouse.src.training.trainer_agent_pytorch import save_torch_state, get_context, export_to_onnx
-        save_torch_state(net, torch.optim.SGD(net.parameters(), lr=train_config.max_lr),
-                         '%s-%04d.tar' % (prefix, k_steps_final))
+        save_torch_state(net, torch.optim.SGD(net.parameters(), lr=train_config.max_lr),'%s-%04d.tar' % (prefix, k_steps_final))
     print()
     logging.info("Saved checkpoint to %s-%04d.params", prefix, nn_update_idx)
     if convert_to_onnx:
@@ -121,6 +118,8 @@ def _export_net(convert_to_onnx, input_shape, k_steps_final, net, nn_update_idx,
             convert_mxnet_model_to_onnx(sym_file, params_file, ["value_out_output", "policy_out_output"], input_shape,
                                         [1, 8, 16], False)
         elif train_config.framework == 'pytorch':
+            import torch
+            from torch.utils.data import TensorDataset, DataLoader
             model_prefix = "%s-%04d" % (prefix, k_steps_final)
             with torch.no_grad():
                 ctx = get_context(train_config.context, train_config.device_id)

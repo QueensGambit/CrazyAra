@@ -22,7 +22,6 @@ import numpy as np
 from mxnet.contrib import onnx as onnx_mxnet
 import logging
 
-import torch
 from pathlib import Path
 import sys
 sys.path.append("../../../../../")
@@ -71,6 +70,7 @@ def parse_args(cmd_args: list):
         args.params_file = glob(args.model_dir + "/*.params")[0]
         filepaths = [args.sym_file, args.params_file]
     elif args.framework == 'pytorch':
+        import torch
         args.tar_file = glob(args.model_dir + "/*.tar")[0]
         filepaths = [args.tar_file]
 
