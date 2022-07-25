@@ -123,6 +123,17 @@ bool check_condition(const T& value, const T& target, const string& valueStr, co
 
 
 /**
+ * @brief get_onnx_model_name Returns the model name in the given model directory based on the given batch size.
+ * If no file is found, it looks for an onnx file with dynamic shape support.
+ * If this is satisfied neither, an exception is thrown.
+ * @param modelDir Model directory
+ * @param batchSize Batch size
+ * @return model directory as string
+ */
+string get_onnx_model_name(const string& modelDir, int batchSize);
+
+
+/**
  * @brief The NeuralNetAPI class is an abstract class for accessing a neural network back-end and to run inference
  */
 class NeuralNetAPI
