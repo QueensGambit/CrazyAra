@@ -52,7 +52,8 @@ TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &mod
     // select the requested device
     cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
-    modelName = get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
+    modelName = get_onnx_model_name(modelDir, batchSize);
+
     modelFilePath = modelDir + modelName;
     info_string("onnx file:", modelFilePath);
     trtFilePath = generate_trt_file_path(modelDir, batchSize, precision, deviceID);
@@ -134,6 +135,8 @@ void TensorrtAPI::init_nn_design()
     }
 
     set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
+    // make sure that the first dimension is the batch size, otherwise '-1' could cause problems
+    nnDesign.inputShape.v[0] = batchSize;
     set_shape(nnDesign.valueOutputShape, engine->getBindingDimensions(idxValueOutput));
     set_shape(nnDesign.policyOutputShape, engine->getBindingDimensions(idxPolicyOutput));
     if (nnDesign.hasAuxiliaryOutputs) {
@@ -146,6 +149,8 @@ void TensorrtAPI::bind_executor()
 {
     // create an exectution context for applying inference
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
+    context->setBindingDimensions(0, Dims4(batchSize,nnDesign.inputShape.v[1],nnDesign.inputShape.v[2],nnDesign.inputShape.v[3]));
+
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
 #ifdef DYNAMIC_NN_ARCH
@@ -226,6 +231,18 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     unique_ptr<IInt8Calibrator> calibrator;
     unique_ptr<IBatchStream> calibrationStream;
     set_config_settings(config, 1_GiB, calibrator, calibrationStream);
+
+    IOptimizationProfile* profile = builder->createOptimizationProfile();
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMIN,
+                           Dims4(batchSize,network->getInput(0)->getDimensions().d[1],
+                           network->getInput(0)->getDimensions().d[2],network->getInput(0)->getDimensions().d[3]));
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kOPT,
+                           Dims4(batchSize,network->getInput(0)->getDimensions().d[1],
+                           network->getInput(0)->getDimensions().d[2],network->getInput(0)->getDimensions().d[3]));
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMAX,
+                           Dims4(batchSize,network->getInput(0)->getDimensions().d[1],
+                           network->getInput(0)->getDimensions().d[2],network->getInput(0)->getDimensions().d[3]));
+    config->addOptimizationProfile(profile);
 
     // build an engine from the TensorRT network with a given configuration struct
 #ifdef TENSORRT7

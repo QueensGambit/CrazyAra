@@ -35,6 +35,7 @@
 #include "neuralnetapi.h"
 
 #include <ie_core.hpp>
+#include "openvino/openvino.hpp"
 
 
 /**
@@ -43,17 +44,13 @@
 class OpenVinoAPI : public NeuralNetAPI
 {
 private:
-    InferenceEngine::Core core;
-    InferenceEngine::CNNNetwork network;
-    InferenceEngine::ExecutableNetwork executableNetwork;
-    InferenceEngine::InputsDataMap inputInfo;
-    InferenceEngine::OutputsDataMap outputInfo;
-    InferenceEngine::InferRequest inferRequest;
-    InferenceEngine::Blob::Ptr inputBlob;
-    float* rawInputData;
+    ov::Core core;
+    std::shared_ptr<ov::Model> model;
+    ov::CompiledModel compiledModel;
+    ov::InferRequest inferRequest;
 
-    InferenceEngine::Blob::Ptr outputBlobValue;
-    InferenceEngine::Blob::Ptr outputBlobPolicy;
+    ov::Tensor inputTensor;
+    float* rawInputData;
     size_t threadsNNInference;
 public:
     OpenVinoAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, size_t threadsNNInference);
