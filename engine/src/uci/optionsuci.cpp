@@ -91,7 +91,11 @@ void OptionsUCI::init(OptionsMap &o)
 //    o["Centi_U_Init"]                  << Option(100, 0, 100);         currently disabled
 //    o["Centi_U_Min"]                   << Option(100, 0, 100);         currently disabled
 //    o["U_Base"]                        << Option(1965, 0, 99999);      currently disabled
+#ifdef USE_RL
+    o["Centi_Node_Temperature"]        << Option(100, 1, 99999);
+#else
     o["Centi_Node_Temperature"]        << Option(170, 1, 99999);
+#endif
     o["Centi_Q_Value_Weight"]          << Option(100, 0, 99999);
     o["Centi_Q_Veto_Delta"]            << Option(40, 0, 99999);
 #ifdef USE_RL
@@ -196,6 +200,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Raw_Prob_Temperature"]    << Option(25, 0, 100);
     o["Centi_Resign_Probability"]      << Option(90, 0, 100);
     o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
+    o["EPD_File_Path"]                 << Option("<empty>");
     o["MaxInitPly"]                    << Option(30, 0, 99999);
     o["MeanInitPly"]                   << Option(15, 0, 99999);
 #ifdef MODE_LICHESS
