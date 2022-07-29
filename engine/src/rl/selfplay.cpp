@@ -55,6 +55,30 @@ void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& ga
 }
 
 
+string load_random_fen(string filepath)
+{
+    if (filepath == "<empty>" or filepath == "") {
+        return "";
+    }
+    std::ifstream myfile (filepath);
+    // https://stackoverflow.com/questions/33532108/pick-a-random-line-from-text-file-in-c
+    std::random_device seed;
+    std::mt19937 prng(seed());
+    std::string line;
+    std::string result;
+    for(std::size_t n = 0; std::getline(myfile, line); n++) {
+        std::uniform_int_distribution<> dist(0, n);
+        if (dist(prng) < 1)
+            result = line;
+    }
+    // remove last ";"
+    if (result.back() == ';') {
+        result.pop_back();
+    }
+    return result;
+}
+
+
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
                    RLSettings* rlSettings, OptionsMap& options):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
@@ -166,7 +190,9 @@ void SelfPlay::generate_game(int variant, bool verbose)
     ply = clip_ply(ply, playSettings->maxInitPly);
 
     srand(unsigned(int(time(nullptr))));
-    unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature);
+    // load position from file if epd filepath was set
+    string startingFen = load_random_fen(rlSettings->epdFilePath);
+    unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature, startingFen);
     EvalInfo evalInfo;
     Result gameResult;
     exporter->new_game();
@@ -345,8 +371,9 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
 
     for (size_t idx = 0; idx < numberOfGames; ++idx) {
         if (idx % 2 == 0) {
+            string startFen = load_random_fen(rlSettings->epdFilePath);
             // use default or in case of chess960 a random starting position
-            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true, "");
+            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true, startFen);
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
@@ -371,10 +398,16 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     return tournamentResult;
 }
 
-unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, int variant, bool is960, float rawPolicyProbTemp)
+unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent &rawAgent, size_t plys, GamePGN &gamePGN, int variant, bool is960, float rawPolicyProbTemp, const string& fen)
 {
     unique_ptr<StateObj> state= make_unique<StateObj>();
-    state->init(variant, is960);
+    if (fen != "") {
+        // set starting fen
+        state->set(fen, is960, variant);
+    } else {
+        // create new starting fen and return it
+        state->init(variant, is960);
+    }
     gamePGN.fen = state->fen();
     
     for (size_t ply = 0; ply < plys; ++ply) {

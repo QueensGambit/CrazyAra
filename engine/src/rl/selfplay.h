@@ -54,6 +54,15 @@ using namespace CUSTOM_UCI;
 void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& gamePGN, Result& gameResult);
 
 
+/**
+ * @brief load_random_fen Returns a random fen string from a epd file defined by its file path.
+ * If the filepath is "" or "<empty>" an empty string will be returned.
+ * @param filepath Points to the location of the epd file.
+ * @return fen string
+ */
+string load_random_fen(string filepath);
+
+
 class SelfPlay
 {
 private:
@@ -209,9 +218,10 @@ void clean_up(GamePGN& gamePGN, MCTSAgent* mctsAgent);
  * @param variant Game variant
  * @param is960 If we are in a 960 game or not
  * @param rawPolicyProbTemp Probability for which a temperature scaling > 1.0f is applied
+ * @param fen Starting fen. If "" then standard starting position will be used.
  * @return New state object
  */
-unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, int variant, bool is960, float rawPolicyProbTemp);
+unique_ptr<StateObj> init_starting_state_from_raw_policy(RawNetAgent& rawAgent, size_t plys, GamePGN& gamePGN, int variant, bool is960, float rawPolicyProbTemp, const string& fen);
 
 /**
  * @brief init_starting_state_from_fixed_move Initializes a starting position using a vector of actions

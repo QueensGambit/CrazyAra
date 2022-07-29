@@ -469,6 +469,13 @@ void CrazyAra::init_rl_settings()
     rlSettings.resignProbability = Options["Centi_Resign_Probability"] / 100.0f;
     rlSettings.resignThreshold = Options["Centi_Resign_Threshold"] / 100.0f;
     rlSettings.reuseTreeForSelpay = Options["Reuse_Tree"];
+    rlSettings.epdFilePath = string(Options["EPD_File_Path"]);
+    if (rlSettings.epdFilePath != "<empty>" and rlSettings.epdFilePath != "") {
+        std::ifstream epdFile (rlSettings.epdFilePath);
+        if (!epdFile.is_open()) {
+            throw invalid_argument("Given epd file: " + rlSettings.epdFilePath + " could not be opened.");
+        }
+    }
 }
 #endif
 
