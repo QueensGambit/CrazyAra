@@ -395,8 +395,8 @@ endif()
 
 if (BACKEND_OPENVINO)
     add_definitions(-DOPENVINO)
-    find_package(ngraph REQUIRED OPTIONAL_COMPONENTS onnx_importer)
-    find_package(InferenceEngine REQUIRED)
+    find_package(OpenVINO REQUIRED COMPONENTS Runtime)
+    set(ov_link_libraries openvino::runtime)
 endif()
 
 if (USE_RL)
@@ -456,13 +456,7 @@ if (BACKEND_TENSORRT)
 endif()
 
 if (BACKEND_OPENVINO)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE IMPLEMENT_INFERENCE_EXTENSION_API)
-    target_link_libraries(${PROJECT_NAME} PRIVATE IE::inference_engine
-                                                 ${${OPEN_VINO_PATH}/deployment_tools/inference_engine/shareNGRAPH_LIBRARIES})
-    if (ngraph_onnx_importer_FOUND)
-        target_link_libraries(${PROJECT_NAME} PRIVATE ${ONNX_IMPORTER_LIBRARIES})
-        target_compile_definitions(${PROJECT_NAME} PRIVATE NGRAPH_ONNX_IMPORT_ENABLED)
-    endif()
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${ov_link_libraries})
 endif()
 
 if (USE_RL)
