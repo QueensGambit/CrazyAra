@@ -130,12 +130,6 @@ def _export_net(convert_to_onnx, input_shape, k_steps_final, net, nn_update_idx,
                                Path(model_contender_dir), model_prefix,
                                train_config.use_wdl and train_config.use_plys_to_end,
                                True)
-                for batch_size in [1, 8, 16]:
-                    dummy_input = torch.zeros(batch_size, input_shape[0], input_shape[1], input_shape[2]).to(ctx)
-                    export_to_onnx(net, batch_size,
-                                   dummy_input,
-                                   Path(model_contender_dir), model_prefix,
-                                   train_config.use_wdl and train_config.use_plys_to_end, False)
 
 
 def _get_net(ctx, input_shape, main_config, params_filename, symbol_filename, tar_filename, train_config):

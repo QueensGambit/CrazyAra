@@ -24,7 +24,13 @@
 # Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
 # see release page for  all current available releases:
 # https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
-FROM nvcr.io/nvidia/mxnet:20.09-py3
+ARG FRAMEWORK="pytorch"
+ARG ID=22.05
+
+FROM nvcr.io/nvidia/${FRAMEWORK}:${ID}-py3
+# alternative arguments
+# ARG FRAMEWORK="mxnet"
+# ARG ID=20.09
 
 MAINTAINER QueensGambit
 
@@ -39,11 +45,18 @@ RUN cd /root \
     && make install
 
 # Clone TensorRT repository for TensorRT backend
-# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
 RUN cd /root \
     && git clone https://github.com/NVIDIA/TensorRT \
-    && cd TensorRT \
-    && git checkout f693a6d723ef2766be36deb5e7987cd50159973a
+    && cd TensorRT
+
+RUN if [ ${FRAMEWORK} = "pytorch" ]; then
+# checkout commit for tag 22.05
+git checkout 99a11a5fcdd1f184739bb20a8c4a473262c8ecc8
+else
+# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
+git checkout f693a6d723ef2766be36deb5e7987cd50159973a
+fi
+
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
 
@@ -87,6 +100,12 @@ RUN cd /root \
     && cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
     && pip install -r requirements.txt
 
+# prepare setup for pytorch
+RUN if [ ${FRAMEWORK} = "pytorch" ]; then
+    pip uninstall mxboard \
+    && pip install --upgrade onnx
+fi
+
 # Install graphviz for plotting NN architectures
 RUN apt-get update -y \
     && apt-get install -y graphviz \
@@ -98,8 +117,13 @@ RUN apt-get update -y \
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DBACKEND_TENSORRT_7=ON .. \
+RUN if [ ${FRAMEWORK} = "pytorch" ]; then
+    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 .. \
     && make -j8
+else
+    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 -DBACKEND_TENSORRT_7=ON .. \
+    && make -j8
+fi
 
 # Rename the config files
 RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
@@ -114,5 +138,3 @@ RUN apt-get update -y \
 
 CMD cd /root/CrazyAra/engine/src/rl/ \
     && /bin/bash
-
-
