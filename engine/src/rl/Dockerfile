@@ -24,15 +24,21 @@
 # Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
 # see release page for  all current available releases:
 # https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
-ARG FRAMEWORK="pytorch"
-ARG ID=22.05
-
+ENV FRAMEWORK="pytorch"
+ENV ID=22.05
+# alternative arguments: Uncomment the following two lines if you want to use mxnet instead
+# ENV FRAMEWORK="mxnet"
+# ENV ID=20.09
 FROM nvcr.io/nvidia/${FRAMEWORK}:${ID}-py3
-# alternative arguments
-# ARG FRAMEWORK="mxnet"
-# ARG ID=20.09
 
 MAINTAINER QueensGambit
+
+# Info message before building
+RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
+echo "choose pytorch:${ID}-py3" ; \
+else \
+echo "choose mxnet:${ID}-py3" ; \
+fi
 
 # General dependencies to run CrazyAra
 # -------------------------------------
@@ -49,12 +55,14 @@ RUN cd /root \
     && git clone https://github.com/NVIDIA/TensorRT \
     && cd TensorRT
 
-RUN if [ ${FRAMEWORK} = "pytorch" ]; then
+RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
 # checkout commit for tag 22.05
-git checkout 99a11a5fcdd1f184739bb20a8c4a473262c8ecc8
-else
+cd /root/TensorRT \
+&& git checkout 99a11a5fcdd1f184739bb20a8c4a473262c8ecc8 ; \
+else \
 # checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
-git checkout f693a6d723ef2766be36deb5e7987cd50159973a
+cd /root/TensorRT \
+&& git checkout f693a6d723ef2766be36deb5e7987cd50159973a ; \
 fi
 
 ENV TENSORRT_PATH /root/TensorRT/
@@ -101,9 +109,9 @@ RUN cd /root \
     && pip install -r requirements.txt
 
 # prepare setup for pytorch
-RUN if [ ${FRAMEWORK} = "pytorch" ]; then
-    pip uninstall mxboard \
-    && pip install --upgrade onnx
+RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
+    pip uninstall -y mxboard \
+    && pip install --upgrade onnx ; \
 fi
 
 # Install graphviz for plotting NN architectures
@@ -116,13 +124,15 @@ RUN apt-get update -y \
 # --------------------------------------------------------------
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
-    && cd build \
-RUN if [ ${FRAMEWORK} = "pytorch" ]; then
-    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 .. \
-    && make -j8
-else
-    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 -DBACKEND_TENSORRT_7=ON .. \
-    && make -j8
+    && cd build
+RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
+    cd /root/CrazyAra/engine/build \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 .. \
+    && make -j8 ; \
+else \
+    cd /root/CrazyAra/engine/build \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 -DBACKEND_TENSORRT_7=ON .. \
+    && make -j8 ; \
 fi
 
 # Rename the config files

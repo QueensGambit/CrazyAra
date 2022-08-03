@@ -17,11 +17,12 @@ Lastly, it compiles the CrazyAra executable from the C++ source code using the c
 In order to build the docker container with pytorch support, use the following command:
  
 ```shell script
- docker build -t crazyara_docker . -build-arg FRAMEWORK=pytorch ID=22.05
+ docker build -t crazyara_docker .
 ```
-if you want to use mxnet instead, use the following:
+if you want to use mxnet instead, uncomment the following lines in the Dockerfile before building:
 ```shell script
- docker build -t crazyara_docker . -build-arg FRAMEWORK=mxnet ID=20.09
+# ENV FRAMEWORK="mxnet"
+# ENV ID=20.09
 ```
 
 Afterwards you can start the container using a specified list of GPUs:
