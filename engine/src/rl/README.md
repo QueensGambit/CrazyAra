@@ -14,18 +14,22 @@ installs all additional libraries for reinforcement learning.
 Lastly, it compiles the CrazyAra executable from the C++ source code using the current repository state.
 :warning: NVIDIA Docker [does not work on Windows](https://github.com/NVIDIA/nvidia-docker/wiki/Frequently-Asked-Questions#is-microsoft-windows-supported).
 
-In order to build the docker container, use the following command:
+In order to build the docker container with pytorch support, use the following command:
  
 ```shell script
- docker build -t crazyara_docker .
+ docker build -t crazyara_docker . -build-arg FRAMEWORK=pytorch ID=22.05
+```
+if you want to use mxnet instead, use the following:
+```shell script
+ docker build -t crazyara_docker . -build-arg FRAMEWORK=mxnet ID=20.09
 ```
 
 Afterwards you can start the container using a specified list of GPUs:
 ```shell script
-docker run --gpus all -it \
- --rm -v local_dir:/data/RL --name crazyara_rl crazyara_docker:latest
+docker run --gpus all --shm-size 16G -it \
+ --rm -v ~/mnt:/data/RL --name crazyara_rl crazyara_docker:latest
 ```
-If you want to launch the docker using only a subset of availabe you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.
+If you want to launch the docker using only a subset of available you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.
 
 The parameter `-v` describes the mount directory, where the selfplay data will be stored.
 
