@@ -24,6 +24,7 @@ from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se, process_value_policy_head
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_modules import E_MHSA
 
 
 class _BottlekneckResidualBlock(Module):
@@ -62,7 +63,7 @@ class _BottlekneckResidualBlock(Module):
         return x + self.body(x)
 
 
-def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types):
+def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers):
     """Helper function which generates the residual blocks for Risev3"""
 
     channels_operating = channels_operating_init
@@ -74,10 +75,13 @@ def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansi
         else:
             channels_operating_active = channels_operating
 
-        res_blocks.append(_BottlekneckResidualBlock(channels=channels,
-                                                    channels_operating=channels_operating_active,
-                                                    kernel=kernel, act_type=act_type,
-                                                    se_type=se_types[idx]))
+        if use_transformers[idx]:
+            res_blocks.append(E_MHSA(dim=channels))
+        else:
+            res_blocks.append(_BottlekneckResidualBlock(channels=channels,
+                                                        channels_operating=channels_operating_active,
+                                                        kernel=kernel, act_type=act_type,
+                                                        se_type=se_types[idx]))
         channels_operating += channel_expansion
 
     return res_blocks
@@ -90,7 +94,8 @@ class RiseV3(Module):
                   channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                   select_policy_from_plane=True, kernels=None, n_labels=4992,
                   se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
-                  use_mlp_wdl_ply=False
+                  use_mlp_wdl_ply=False,
+                  use_transformers=None,
                  ):
         """
         RISEv3 architecture
@@ -135,7 +140,7 @@ class RiseV3(Module):
             if se_type not in valid_se_types:
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
-        res_blocks = _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types)
+        res_blocks = _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers)
 
         self.body_spatial = Sequential(
             _Stem(channels=channels, act_type=act_type, nb_input_channels=nb_input_channels),
