@@ -135,6 +135,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
     if (nextNode != nullptr) {
         nextNode->get_principal_variation(pv, searchSettings->qValueWeight, searchSettings->qVetoDelta);
         evalInfo.pv[idx] = pv;
+        evalInfo.bestMoveQ[idx] = get_best_move_q(nextNode);
 
         // scores
         // return mate score for known wins and losses
@@ -142,17 +143,26 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
             if (nextNode->get_node_type() == LOSS) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
+#ifdef MCTS_SINGLE_PLAYER
+                evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
+#endif
                 return;
             }
             if (nextNode->get_node_type() == WIN) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
+#ifdef MCTS_SINGLE_PLAYER
+                evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
+#endif
                 return;
             }
-            evalInfo.bestMoveQ[idx] = get_best_move_q(nextNode);
         }
         else {
+#ifndef MCTS_SINGLE_PLAYER
             evalInfo.bestMoveQ[idx] = -nextNode->get_value();
+#else
+            evalInfo.bestMoveQ[idx] = nextNode->get_value();
+#endif
         }
     }
     else {
