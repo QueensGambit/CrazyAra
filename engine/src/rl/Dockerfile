@@ -24,20 +24,19 @@
 # Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
 # see release page for  all current available releases:
 # https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
+FROM nvcr.io/nvidia/pytorch:22.05-py3
 ENV FRAMEWORK="pytorch"
-ENV ID=22.05
 # alternative arguments: Uncomment the following two lines if you want to use mxnet instead
+# FROM nvcr.io/nvidia/mxnet:20.09-py3
 # ENV FRAMEWORK="mxnet"
-# ENV ID=20.09
-FROM nvcr.io/nvidia/${FRAMEWORK}:${ID}-py3
 
 MAINTAINER QueensGambit
 
 # Info message before building
 RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
-echo "choose pytorch:${ID}-py3" ; \
+echo "choose pytorch" ; \
 else \
-echo "choose mxnet:${ID}-py3" ; \
+echo "choose mxnet" ; \
 fi
 
 # General dependencies to run CrazyAra

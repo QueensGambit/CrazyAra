@@ -21,8 +21,12 @@ In order to build the docker container with pytorch support, use the following c
 ```
 if you want to use mxnet instead, uncomment the following lines in the Dockerfile before building:
 ```shell script
+# FROM nvcr.io/nvidia/mxnet:20.09-py3
 # ENV FRAMEWORK="mxnet"
-# ENV ID=20.09
+```
+and comment the line:
+```shell script
+FROM nvcr.io/nvidia/pytorch:22.05-py3
 ```
 
 Afterwards you can start the container using a specified list of GPUs:
@@ -57,8 +61,8 @@ You can download a network which was trained via
 
 ```shell script
 cd /data/RL
-wget https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip
-unzip RISEv2-mobile.zip
+wget https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/ClassicAra-sl-model-wdlp-rise3.3-input3.0.zip
+unzip ClassicAra-sl-model-wdlp-rise3.3-input3.0.zip
 ```
 
 Alternatively, if a model file is already available on the host machine, you can move the model directory into the mounted docker directory.
