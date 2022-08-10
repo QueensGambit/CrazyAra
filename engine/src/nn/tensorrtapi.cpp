@@ -149,7 +149,9 @@ void TensorrtAPI::bind_executor()
 {
     // create an exectution context for applying inference
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
-    context->setBindingDimensions(0, Dims4(batchSize,nnDesign.inputShape.v[1],nnDesign.inputShape.v[2],nnDesign.inputShape.v[3]));
+    Dims inputDims;
+    set_dims(inputDims, nnDesign.inputShape);
+    context->setBindingDimensions(0, inputDims);
 
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
@@ -233,9 +235,12 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     set_config_settings(config, 1_GiB, calibrator, calibrationStream);
 
     IOptimizationProfile* profile = builder->createOptimizationProfile();
-    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMIN, network->getInput(0)->getDimensions());
-    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kOPT, network->getInput(0)->getDimensions());
-    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMAX, network->getInput(0)->getDimensions());
+
+    Dims inputDims = network->getInput(0)->getDimensions();
+    inputDims.d[0] = batchSize;
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMIN, inputDims);
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kOPT, inputDims);
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMAX, inputDims);
     config->addOptimizationProfile(profile);
 
     // build an engine from the TensorRT network with a given configuration struct
@@ -428,6 +433,14 @@ void set_shape(nn_api::Shape &shape, const Dims &dims)
     shape.nbDims = dims.nbDims;
     for (int idx = 0; idx < shape.nbDims; ++idx) {
         shape.v[idx] = dims.d[idx];
+    }
+}
+
+void set_dims(Dims &dims, const nn_api::Shape &shape)
+{
+    dims.nbDims = shape.nbDims;
+    for (int idx = 0; idx < shape.nbDims; ++idx) {
+        dims.d[idx] = shape.v[idx];
     }
 }
 
