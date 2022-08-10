@@ -233,15 +233,9 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     set_config_settings(config, 1_GiB, calibrator, calibrationStream);
 
     IOptimizationProfile* profile = builder->createOptimizationProfile();
-    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMIN,
-                           Dims4(batchSize,network->getInput(0)->getDimensions().d[1],
-                           network->getInput(0)->getDimensions().d[2],network->getInput(0)->getDimensions().d[3]));
-    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kOPT,
-                           Dims4(batchSize,network->getInput(0)->getDimensions().d[1],
-                           network->getInput(0)->getDimensions().d[2],network->getInput(0)->getDimensions().d[3]));
-    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMAX,
-                           Dims4(batchSize,network->getInput(0)->getDimensions().d[1],
-                           network->getInput(0)->getDimensions().d[2],network->getInput(0)->getDimensions().d[3]));
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMIN, network->getInput(0)->getDimensions());
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kOPT, network->getInput(0)->getDimensions());
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMAX, network->getInput(0)->getDimensions());
     config->addOptimizationProfile(profile);
 
     // build an engine from the TensorRT network with a given configuration struct
