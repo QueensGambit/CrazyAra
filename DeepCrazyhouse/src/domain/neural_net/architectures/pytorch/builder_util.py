@@ -11,6 +11,7 @@ import math
 import torch
 from torch.nn import Sequential, Conv1d, Conv2d, BatchNorm2d, ReLU, LeakyReLU, Sigmoid, Tanh, Linear, Hardsigmoid, Hardswish,\
     Module, AdaptiveAvgPool2d, BatchNorm1d
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
 def get_act(act_type):
@@ -202,12 +203,13 @@ class _DepthWiseStem(Module):
 
 class _PolicyHead(Module):
     def __init__(self, board_height=11, board_width=11, channels=256, policy_channels=2, n_labels=4992, act_type="relu",
-                 select_policy_from_plane=False):
+                 select_policy_from_plane=False, use_transformer=False):
         """
         Definition of the value head proposed by the alpha zero authors
         :param policy_channels: Number of channels for 1st conv operation in branch 0
         :param act_type: Activation type to use
         channelwise squeeze excitation, channel-spatial-squeeze-excitation, respectively
+        :param use_transformer: Decides if a transformer should be used in the head
         """
 
         super(_PolicyHead, self).__init__()
@@ -215,11 +217,14 @@ class _PolicyHead(Module):
         self.body = Sequential()
         self.select_policy_from_plane = select_policy_from_plane
         self.nb_flatten = policy_channels * board_width * board_height
-        self.body = Sequential(
-            Conv2d(in_channels=channels, out_channels=channels, padding=1, kernel_size=(3, 3), bias=False),
-            BatchNorm2d(num_features=channels),
-            get_act(act_type),
-            Conv2d(in_channels=channels, out_channels=policy_channels, padding=1, kernel_size=(3, 3), bias=False))
+        if use_transformer:
+            self.body = NTB(channels, channels, out_features=policy_channels)
+        else:
+            self.body = Sequential(
+                Conv2d(in_channels=channels, out_channels=channels, padding=1, kernel_size=(3, 3), bias=False),
+                BatchNorm2d(num_features=channels),
+                get_act(act_type),
+                Conv2d(in_channels=channels, out_channels=policy_channels, padding=1, kernel_size=(3, 3), bias=False))
         if not self.select_policy_from_plane:
             self.body2 = Sequential(BatchNorm2d(num_features=policy_channels),
                                     get_act(act_type))
@@ -242,7 +247,7 @@ class _PolicyHead(Module):
 class _ValueHead(Module):
     def __init__(self, board_height=11, board_width=11, channels=256, channels_value_head=1, fc0=256,
                  act_type="relu", use_raw_features=False, nb_input_channels=18,
-                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False):
+                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False, use_transformer=False):
         """
         Definition of the value head proposed by the alpha zero authors
         :param board_height: Height of the board
@@ -254,13 +259,17 @@ class _ValueHead(Module):
         :param use_wdl: If a win draw loss head shall be used
         :param use_plys_to_end: If a plys to end prediction head shall be used
         :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
+        :param use_transformer: Decides if a transformer should be used in the head
         """
 
         super(_ValueHead, self).__init__()
 
-        self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels_value_head, kernel_size=(1, 1), bias=False),
-                               BatchNorm2d(num_features=channels_value_head),
-                               get_act(act_type))
+        if use_transformer:
+            self.body = NTB(channels, channels, out_features=channels_value_head)
+        else:
+            self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels_value_head, kernel_size=(1, 1), bias=False),
+                                   BatchNorm2d(num_features=channels_value_head),
+                                   get_act(act_type))
 
         self.use_raw_features = use_raw_features
         self.use_wdl = use_wdl

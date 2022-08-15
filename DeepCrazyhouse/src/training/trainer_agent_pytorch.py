@@ -163,7 +163,7 @@ class TrainerAgentPytorch:
                                                                         self.val_metric_values_best)
 
                             logging.debug("Recover to latest checkpoint")
-                            model_path = self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.params" % (
+                            model_path = self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.tar" % (
                                 self.val_loss_best,
                                 self.val_p_acc_best,
                                 self.k_steps_best,
@@ -407,6 +407,8 @@ def create_optimizer(model: nn.Module, train_config: TrainConfig):
                                weight_decay=train_config.wd)
     elif train_config.optimizer_name == "adam":
         return torch.optim.Adam(model.parameters(), lr=train_config.max_lr, weight_decay=train_config.wd)
+    elif train_config.optimizer_name == "adamw":
+        return torch.optim.AdamW(model.parameters(), lr=train_config.max_lr, weight_decay=train_config.wd)
     raise Exception(f"Selected optimizer {train_config.optimizer_name} is not supported.")
 
 
