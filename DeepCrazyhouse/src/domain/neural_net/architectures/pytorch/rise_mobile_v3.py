@@ -24,7 +24,7 @@ from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se, process_value_policy_head
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_modules import E_MHSA
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
 class _BottlekneckResidualBlock(Module):
@@ -76,7 +76,7 @@ def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansi
             channels_operating_active = channels_operating
 
         if use_transformers[idx]:
-            res_blocks.append(E_MHSA(dim=channels))
+            res_blocks.append(NTB(channels, channels))
         else:
             res_blocks.append(_BottlekneckResidualBlock(channels=channels,
                                                         channels_operating=channels_operating_active,
