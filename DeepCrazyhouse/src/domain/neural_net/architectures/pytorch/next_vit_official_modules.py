@@ -11,6 +11,9 @@ import torch
 from torch import nn
 from einops import rearrange
 from functools import partial
+
+from timm.models.layers import DropPath
+
 NORM_EPS=1e-5
 
 
@@ -161,11 +164,11 @@ class NCB(nn.Module):
 
         self.patch_embed = PatchEmbed(in_channels, out_channels, stride)
         self.mhca = MHCA(out_channels, head_dim)
-        # self.attention_path_dropout = DropPath(path_dropout)
+        self.attention_path_dropout = DropPath(path_dropout)
 
         self.norm = norm_layer(out_channels)
         self.mlp = Mlp(out_channels, mlp_ratio=mlp_ratio, drop=drop, bias=True)
-        # self.mlp_path_dropout = DropPath(path_dropout)
+        self.mlp_path_dropout = DropPath(path_dropout)
         self.is_bn_merged = False
 
     def merge_bn(self):
@@ -174,15 +177,13 @@ class NCB(nn.Module):
             self.is_bn_merged = True
     def forward(self, x):
         x = self.patch_embed(x)
-        # x = x + self.attention_path_dropout(self.mhca(x))
-        x = x + self.mhca(x)
+        x = x + self.attention_path_dropout(self.mhca(x))
 
         if not torch.onnx.is_in_onnx_export() and not self.is_bn_merged:
             out = self.norm(x)
         else:
             out = x
-        # x  = x + self.mlp_path_dropout(self.mlp(out))
-        x  = x + self.mlp(out)
+        x  = x + self.mlp_path_dropout(self.mlp(out))
 
         return x
 
@@ -255,33 +256,36 @@ class NTB(nn.Module):
     Next Transformer Block
     """
     def __init__(
-            self, in_channels, out_channels, stride=1, sr_ratio=1, # path_dropout
+            self, in_channels, out_channels, path_dropout=0, stride=1, sr_ratio=1,
             mlp_ratio=2, head_dim=32, mix_block_ratio=0.75, attn_drop=0, drop=0,
-            out_features=None,
+            out_features=None, simple=False
     ):
         super(NTB, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.mix_block_ratio=mix_block_ratio
         self.out_features = out_features
+        self.simple = simple
         norm_func = partial(nn.BatchNorm2d, eps=NORM_EPS)
 
         self.mhsa_out_channels = _make_divisible(int(out_channels*mix_block_ratio), 32)
         self.mhca_out_channels = out_channels - self.mhsa_out_channels
+        if self.simple:
+            self.mhsa_out_channels = out_channels
 
         self.patch_embed = PatchEmbed(in_channels, self.mhsa_out_channels, stride)
         self.norm1 = norm_func(self.mhsa_out_channels)
         self.e_mhsa = E_MHSA(self.mhsa_out_channels, head_dim=head_dim, sr_ratio=sr_ratio,
                              attn_drop=attn_drop, proj_drop=drop)
-        # self.mhsa_path_dropout = DropPath(path_dropout*mix_block_ratio)
+        self.mhsa_path_dropout = DropPath(path_dropout*mix_block_ratio)
 
         self.projection = PatchEmbed(self.mhsa_out_channels, self.mhca_out_channels, stride=1)
         self.mhca = MHCA(self.mhca_out_channels, head_dim=head_dim)
-        # self.mhca_path_dropout = DropPath(path_dropout*(1-mix_block_ratio))
+        self.mhca_path_dropout = DropPath(path_dropout*(1-mix_block_ratio))
 
         self.norm2 = norm_func(out_channels)
         self.mlp = Mlp(out_channels, mlp_ratio=mlp_ratio, drop=drop, out_features=out_features)
-        # self.mlp_path_dropout = DropPath(path_dropout)
+        self.mlp_path_dropout = DropPath(path_dropout)
 
         self.is_bn_merged = False
 
@@ -298,25 +302,21 @@ class NTB(nn.Module):
         else:
             out = x
         out = rearrange(out, "b c h w -> b (h w) c")  # b n c
-        # out = self.mhsa_path_dropout(self.e_mhsa(out))
-        out = self.e_mhsa(out)
+        out = self.mhsa_path_dropout(self.e_mhsa(out))
 
         x = x + rearrange(out, "b (h w) c -> b c h w", h=H)
+        if not self.simple:
+            out = self.projection(x)
+            out = out + self.mhca_path_dropout(self.mhca(out))
 
-        out = self.projection(x)
-        # out = out + self.mhca_path_dropout(self.mhca(out))
-        out = out + self.mhca(out)
-
-        x = torch.cat([x, out], dim=1)
-
+            x = torch.cat([x, out], dim=1)
 
         if not torch.onnx.is_in_onnx_export() and not self.is_bn_merged:
             out = self.norm2(x)
         else:
             out = x
-        # x = x + self.mlp_path_dropout(self.mlp(out))
         if self.out_features is None:
-            x = x + self.mlp(out)
+            x = x + self.mlp_path_dropout(self.mlp(out))
         else:
             x = self.mlp(out)
 

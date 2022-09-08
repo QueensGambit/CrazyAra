@@ -12,10 +12,10 @@ from torch import nn
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB, NCB, ConvBNReLU
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, get_se, process_value_policy_head
-
+from timm.models.layers import DropPath
 
 class Block(nn.Module):
-    def __init__(self, in_channels, out_channels, ncb_layers, nct_layers, repeat, se_type):
+    def __init__(self, in_channels, out_channels, ncb_layers, nct_layers, repeat, se_type, use_simple_transformer_blocks):
         super(Block, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -23,6 +23,7 @@ class Block(nn.Module):
         self.nct_layers = nct_layers
         self.repeat = repeat
         self.se_type = se_type
+        self.use_simple_transformer_blocks = use_simple_transformer_blocks
 
         block = []
         for num in range(repeat):
@@ -40,7 +41,7 @@ class Block(nn.Module):
             # self.sub_layers +=  [NCB(in_channels, out_channels)]
             self.sub_layers +=  [ResidualBlock(in_channels, 'relu', self.se_type)]
         for _ in range(nct_layers):
-            self.sub_layers +=  [NTB(in_channels, out_channels)]
+            self.sub_layers +=  [NTB(in_channels, out_channels, simple=self.use_simple_transformer_blocks)]
         return nn.Sequential(*self.sub_layers)
 
     def forward(self, x):
@@ -52,10 +53,11 @@ class ResidualBlock(torch.nn.Module):
     Definition of a residual block without any pooling operation
     """
 
-    def __init__(self, channels, act_type, se_type=None):
+    def __init__(self, channels, act_type, path_dropout=0, se_type=None):
         """
         :param channels: Number of channels used in the conv-operations
         :param act_type: Activation function to use
+        :param path_dropout: Dropout ratio for stochastic depth training
         """
         super(ResidualBlock, self).__init__()
         self.act_type = act_type
@@ -69,7 +71,7 @@ class ResidualBlock(torch.nn.Module):
                                nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
                                nn.BatchNorm2d(num_features=channels),
                                )
-        # self.final_act = get_act(act_type)
+        self.path_dropout = DropPath(path_dropout)
 
     def forward(self, x):
         """
@@ -80,8 +82,8 @@ class ResidualBlock(torch.nn.Module):
         """
         # return self.final_act(x + self.body(x))
         if self.se_type:
-            return x + self.body(self.se(x))
-        return x + self.body(x)
+            return x + self.path_dropout(self.body(self.se(x)))
+        return x + self.path_dropout(self.body(x))
 
 
 class NextVit(nn.Module):
@@ -96,6 +98,7 @@ class NextVit(nn.Module):
                  select_policy_from_plane=True,
                  use_transformer_heads=True,
                  se_type=None,
+                 use_simple_transformer_blocks=False,
                  ):
         super().__init__()
         self.use_wdl = use_wdl
@@ -104,10 +107,10 @@ class NextVit(nn.Module):
         self.stem = ConvBNReLU(in_channels, channels, kernel_size=3, stride=1)
 
         self.stage1 = nn.Sequential(
-            Block(channels, channels, 4, 0, 1, se_type),
+           Block(channels, channels, 4, 0, 1, se_type, use_simple_transformer_blocks),
         )
         self.stage3 = nn.Sequential(
-            Block(channels, channels, 4, 1, stage3_repeat, se_type),
+            Block(channels, channels, 4, 1, stage3_repeat, se_type, use_simple_transformer_blocks),
         )
 
         self.value_head = _ValueHead(board_height=image_size, board_width=image_size, channels=channels, channels_value_head=8, fc0=256,

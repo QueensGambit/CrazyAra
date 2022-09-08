@@ -247,7 +247,8 @@ class _PolicyHead(Module):
 class _ValueHead(Module):
     def __init__(self, board_height=11, board_width=11, channels=256, channels_value_head=1, fc0=256,
                  act_type="relu", use_raw_features=False, nb_input_channels=18,
-                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False, use_transformer=False):
+                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False, use_transformer=False,
+                 use_flat_inputs=False, in_features=512):
         """
         Definition of the value head proposed by the alpha zero authors
         :param board_height: Height of the board
@@ -260,6 +261,8 @@ class _ValueHead(Module):
         :param use_plys_to_end: If a plys to end prediction head shall be used
         :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
         :param use_transformer: Decides if a transformer should be used in the head
+        :param use_flat_inputs: If the input to the Value head is already flattened
+        :param in_features: Number of flattened input features. Only relevant for use_flat_inputs=True.
         """
 
         super(_ValueHead, self).__init__()
@@ -275,11 +278,14 @@ class _ValueHead(Module):
         self.use_wdl = use_wdl
         self.use_plys_to_end = use_plys_to_end
         self.use_mlp_wdl_ply = use_mlp_wdl_ply
+        self.use_flat_inputs = use_flat_inputs
         self.nb_flatten = board_height*board_width*channels_value_head
         if use_raw_features:
             self.nb_flatten_raw = board_height*board_width*nb_input_channels
         else:
             self.nb_flatten_raw = 0
+        if use_flat_inputs:
+            self.nb_flatten_raw = in_features
 
         if use_wdl:
             self.body_wdl = Sequential(Linear(in_features=self.nb_flatten + self.nb_flatten_raw, out_features=3))
@@ -304,7 +310,8 @@ class _ValueHead(Module):
         :param x: Input data to the block
         :return: Activation maps of the block
         """
-        x = self.body(x).view(-1, self.nb_flatten)
+        if not self.use_flat_inputs:
+            x = self.body(x).view(-1, self.nb_flatten)
         if self.use_raw_features:
             raw_data = raw_data.view(-1, self.nb_flatten_raw)
             x = torch.cat((x, raw_data), dim=1)

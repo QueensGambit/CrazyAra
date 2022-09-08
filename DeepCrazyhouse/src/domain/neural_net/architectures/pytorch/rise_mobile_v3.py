@@ -20,7 +20,10 @@ Influenced by the following papers:
     https://arxiv.org/pdf/1807.06521.pdf
 
 """
+import torch
 from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
+from timm.models.layers import DropPath
+
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se, process_value_policy_head
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
@@ -29,7 +32,7 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_officia
 
 class _BottlekneckResidualBlock(Module):
 
-    def __init__(self, channels, channels_operating, kernel=3, act_type='relu', se_type=None):
+    def __init__(self, channels, channels_operating, kernel=3, act_type='relu', se_type=None, path_dropout=0):
         """
         Returns a residual block without any max pooling operation
         :param channels: Number of filters for all CNN-layers
@@ -51,6 +54,7 @@ class _BottlekneckResidualBlock(Module):
                                get_act(act_type),
                                Conv2d(in_channels=channels_operating, out_channels=channels, kernel_size=(1, 1), bias=False),
                                BatchNorm2d(num_features=channels))
+        self.path_dropout = DropPath(path_dropout)
 
     def forward(self, x):
         """
@@ -59,11 +63,11 @@ class _BottlekneckResidualBlock(Module):
         :return: Activation maps of the block
         """
         if self.se_type:
-            return x + self.body(self.se(x))
-        return x + self.body(x)
+            return x + self.path_dropout(self.body(self.se(x)))
+        return x + self.path_dropout(self.body(x))
 
 
-def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers):
+def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates):
     """Helper function which generates the residual blocks for Risev3"""
 
     channels_operating = channels_operating_init
@@ -76,12 +80,13 @@ def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansi
             channels_operating_active = channels_operating
 
         if use_transformers[idx]:
-            res_blocks.append(NTB(channels, channels))
+            res_blocks.append(NTB(channels, channels, path_dropout=path_dropout_rates[idx]))
         else:
             res_blocks.append(_BottlekneckResidualBlock(channels=channels,
                                                         channels_operating=channels_operating_active,
                                                         kernel=kernel, act_type=act_type,
-                                                        se_type=se_types[idx]))
+                                                        se_type=se_types[idx],
+                                                        path_dropout=path_dropout_rates[idx]))
         channels_operating += channel_expansion
 
     return res_blocks
@@ -95,7 +100,7 @@ class RiseV3(Module):
                   select_policy_from_plane=True, kernels=None, n_labels=4992,
                   se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
                   use_mlp_wdl_ply=False,
-                  use_transformers=None,
+                  use_transformers=None, path_dropout=0,
                  ):
         """
         RISEv3 architecture
@@ -124,6 +129,7 @@ class RiseV3(Module):
         :param use_wdl: If a win draw loss head shall be used
         :param use_plys_to_end: If a plys to end prediction head shall be used
         :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
+        :param path_dropout: Path dropout for stochastic depth
         :return: symbol
         """
         super(RiseV3, self).__init__()
@@ -140,7 +146,8 @@ class RiseV3(Module):
             if se_type not in valid_se_types:
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
-        res_blocks = _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers)
+        path_dropout_rates = [x.item() for x in torch.linspace(0, path_dropout, len(kernels))]  # stochastic depth decay rule
+        res_blocks = _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates)
 
         self.body_spatial = Sequential(
             _Stem(channels=channels, act_type=act_type, nb_input_channels=nb_input_channels),
