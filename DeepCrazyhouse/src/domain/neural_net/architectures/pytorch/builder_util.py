@@ -9,15 +9,17 @@ Utility methods for building the neural network architectures.
 
 import math
 import torch
+from torch import nn
 from torch.nn import Sequential, Conv1d, Conv2d, BatchNorm2d, ReLU, LeakyReLU, Sigmoid, Tanh, Linear, Hardsigmoid, Hardswish,\
     Module, AdaptiveAvgPool2d, BatchNorm1d
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
+from timm.models.layers import DropPath
+#from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
 def get_act(act_type):
     """Wrapper method for different non linear activation functions"""
     if act_type == "relu":
-        return ReLU()
+        return ReLU(inplace=True)
     if act_type == "sigmoid":
         return Sigmoid()
     if act_type == "tanh":
@@ -203,7 +205,7 @@ class _DepthWiseStem(Module):
 
 class _PolicyHead(Module):
     def __init__(self, board_height=11, board_width=11, channels=256, policy_channels=2, n_labels=4992, act_type="relu",
-                 select_policy_from_plane=False, use_transformer=False):
+                 select_policy_from_plane=False): #, use_transformer=False):
         """
         Definition of the value head proposed by the alpha zero authors
         :param policy_channels: Number of channels for 1st conv operation in branch 0
@@ -217,14 +219,14 @@ class _PolicyHead(Module):
         self.body = Sequential()
         self.select_policy_from_plane = select_policy_from_plane
         self.nb_flatten = policy_channels * board_width * board_height
-        if use_transformer:
-            self.body = NTB(channels, channels, out_features=policy_channels)
-        else:
-            self.body = Sequential(
-                Conv2d(in_channels=channels, out_channels=channels, padding=1, kernel_size=(3, 3), bias=False),
-                BatchNorm2d(num_features=channels),
-                get_act(act_type),
-                Conv2d(in_channels=channels, out_channels=policy_channels, padding=1, kernel_size=(3, 3), bias=False))
+        #if use_transformer:
+        #    self.body = NTB(channels, channels, out_features=policy_channels)
+        #else:
+        self.body = Sequential(
+            Conv2d(in_channels=channels, out_channels=channels, padding=1, kernel_size=(3, 3), bias=False),
+            BatchNorm2d(num_features=channels),
+            get_act(act_type),
+            Conv2d(in_channels=channels, out_channels=policy_channels, padding=1, kernel_size=(3, 3), bias=False))
         if not self.select_policy_from_plane:
             self.body2 = Sequential(BatchNorm2d(num_features=policy_channels),
                                     get_act(act_type))
@@ -247,7 +249,7 @@ class _PolicyHead(Module):
 class _ValueHead(Module):
     def __init__(self, board_height=11, board_width=11, channels=256, channels_value_head=1, fc0=256,
                  act_type="relu", use_raw_features=False, nb_input_channels=18,
-                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False, use_transformer=False,
+                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False, #use_transformer=False,
                  use_flat_inputs=False, in_features=512):
         """
         Definition of the value head proposed by the alpha zero authors
@@ -267,12 +269,12 @@ class _ValueHead(Module):
 
         super(_ValueHead, self).__init__()
 
-        if use_transformer:
-            self.body = NTB(channels, channels, out_features=channels_value_head)
-        else:
-            self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels_value_head, kernel_size=(1, 1), bias=False),
-                                   BatchNorm2d(num_features=channels_value_head),
-                                   get_act(act_type))
+        #if use_transformer:
+        #    self.body = NTB(channels, channels, out_features=channels_value_head)
+        #else:
+        self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels_value_head, kernel_size=(1, 1), bias=False),
+                               BatchNorm2d(num_features=channels_value_head),
+                               get_act(act_type))
 
         self.use_raw_features = use_raw_features
         self.use_wdl = use_wdl
@@ -399,3 +401,81 @@ def process_value_policy_head(x, value_head: _ValueHead, policy_head: _PolicyHea
     else:
         value_out = value_head_out
         return value_out, policy_out
+
+
+class ClassicalResidualBlock(torch.nn.Module):
+    """
+    Definition of a classical residual block without any pooling operation
+    """
+
+    def __init__(self, channels, act_type, se_type=None, path_dropout=0):
+        """
+        :param channels: Number of channels used in the conv-operations
+        :param bn_mom: Batch normalization momentum
+        :param act_type: Activation function to use
+        """
+        super(ClassicalResidualBlock, self).__init__()
+        self.act_type = act_type
+        self.se_type = se_type
+        if se_type:
+            self.se = get_se(se_type=se_type, channels=channels, use_hard_sigmoid=True)
+        self.body = nn.Sequential(nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
+                                  nn.BatchNorm2d(num_features=channels),
+                                  get_act(act_type),
+                                  nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
+                                  nn.BatchNorm2d(num_features=channels),
+                                  get_act(act_type))
+        self.path_dropout = DropPath(path_dropout)
+
+    def forward(self, x):
+        """
+        Implementation of the forward pass of the residual block.
+        Uses a broadcast add operation for the shortcut and the output of the residual block
+        :param x: Input to the ResidualBlock
+        :return: Sum of the shortcut and the computed residual block computation
+        """
+        if self.se_type:
+            x = self.se(x)
+        return x + self.path_dropout(self.body(x))
+
+
+class _BottlekneckResidualBlock(Module):
+
+    def __init__(self, channels, channels_operating, use_depthwise_conv=True, kernel=3, act_type='relu', se_type=None, path_dropout=0):
+        """
+        Returns a residual block without any max pooling operation
+        :param channels: Number of filters for all CNN-layers
+        :param name: Name for the residual block
+        :param act_type: Activation function to use
+        :param se_type: Squeeze excitation module that will be used
+        :return: symbol
+        """
+        super(_BottlekneckResidualBlock, self).__init__()
+
+        self.se_type = se_type
+        if se_type:
+            self.se = get_se(se_type=se_type, channels=channels, use_hard_sigmoid=True)
+        if use_depthwise_conv:
+            groups = channels_operating
+        else:
+            groups = 1
+        self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels_operating, kernel_size=(1, 1), bias=False),
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=groups),
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels, kernel_size=(1, 1), bias=False),
+                               BatchNorm2d(num_features=channels))
+        self.path_dropout = DropPath(path_dropout)
+
+    def forward(self, x):
+        """
+        Compute forward pass
+        :param x: Input data to the block
+        :return: Activation maps of the block
+        """
+        if self.se_type:
+            x = self.se(x)
+        return x + self.path_dropout(self.body(x))
+

@@ -12,39 +12,9 @@ from torch import nn
 
 from vit_pytorch.levit import LeViT
 from vit_pytorch.levit import Transformer, cast_tuple, Rearrange, exists, ceil, always
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, process_value_policy_head
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, process_value_policy_head, ClassicalResidualBlock
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 
-
-class ResidualBlock(torch.nn.Module):
-    """
-    Definition of a residual block without any pooling operation
-    """
-
-    def __init__(self, channels, act_type):
-        """
-        :param channels: Number of channels used in the conv-operations
-        :param bn_mom: Batch normalization momentum
-        :param act_type: Activation function to use
-        """
-        super(ResidualBlock, self).__init__()
-        self.act_type = act_type
-
-        self.body = nn.Sequential(nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
-                                  nn.BatchNorm2d(num_features=channels),
-                                  get_act(act_type),
-                                  nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
-                                  nn.BatchNorm2d(num_features=channels),
-                                  get_act(act_type))
-
-    def forward(self, x):
-        """
-        Implementation of the forward pass of the residual block.
-        Uses a broadcast add operation for the shortcut and the output of the residual block
-        :param x: Input to the ResidualBlock
-        :return: Sum of the shortcut and the computed residual block computation
-        """
-        return x + self.body(x)
 
 
 class LeViT(nn.Module):
@@ -81,7 +51,7 @@ class LeViT(nn.Module):
             nn.Conv2d(in_channels, 256, 3, stride=1, padding=1),
             nn.BatchNorm2d(num_features=256),
             get_act("hard_swish"),
-            ResidualBlock(256, "hard_swish"),
+            ClassicalResidualBlock(256, "hard_swish"),
             # ResidualBlock(256, "hard_swish"),
         )
 

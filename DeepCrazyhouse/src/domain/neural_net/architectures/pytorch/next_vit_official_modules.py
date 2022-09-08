@@ -13,6 +13,7 @@ from einops import rearrange
 from functools import partial
 
 from timm.models.layers import DropPath
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_se
 
 NORM_EPS=1e-5
 
@@ -154,11 +155,16 @@ class NCB(nn.Module):
     """
     Next Convolution Block
     """
-    def __init__(self, in_channels, out_channels, stride=1, path_dropout=0,
+    def __init__(self, in_channels, out_channels, stride=1, se_type=None, path_dropout=0,
                  drop=0, head_dim=32, mlp_ratio=3):
         super(NCB, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
+
+        self.se_type = se_type
+        if se_type:
+            self.se = get_se(se_type=se_type, channels=in_channels, use_hard_sigmoid=True)
+
         norm_layer = partial(nn.BatchNorm2d, eps=NORM_EPS)
         assert out_channels % head_dim == 0
 
