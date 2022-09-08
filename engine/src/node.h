@@ -187,7 +187,7 @@ public:
      * @param solveForTerminal Decides if the terminal solver will be used
      */
     template<bool freeBackup>
-    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, float virtualLoss, bool& solveForTerminal)
+    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, float virtualLoss, bool solveForTerminal)
     {
         lock();
         // decrement virtual loss counter
@@ -216,7 +216,7 @@ public:
             ++d->freeVisits;
         }
         if (solveForTerminal) {
-            solveForTerminal = solve_for_terminal(childIdx);
+            solve_for_terminal(childIdx);
         }
         unlock();
     }
