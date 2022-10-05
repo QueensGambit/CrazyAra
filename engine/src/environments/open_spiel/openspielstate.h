@@ -32,15 +32,20 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/games/chess.h"
 #include "open_spiel/games/hex.h"
+<<<<<<< HEAD
+#include "open_spiel/games/tic_tac_toe.h"
+=======
 #include "open_spiel/games/dark_hex.h"
+>>>>>>> origin/master
 
 namespace open_spiel {
 namespace gametype {
 enum SupportedOpenSpielVariants : uint8_t {
-    HEX = 0,  // 11x11 board
-    DARKHEX = 1,
-    CHESS = 2,
-    YORKTOWN = 3,
+    TICTACTOE = 0,
+    CONNECTFOUR = 1,
+    HEX = 2,  // 11x11 board
+    CHESS = 3,
+    YORKTOWN = 4,
 };
 }
 }
@@ -49,19 +54,22 @@ class StateConstantsOpenSpiel : public StateConstantsInterface<StateConstantsOpe
 {
 public:
     static uint BOARD_WIDTH() {
-        return open_spiel::hex::kDefaultBoardSize;
+        return 3;
+//        return open_spiel::chess::kDefaultBoardSize;
     }
     static uint BOARD_HEIGHT() {
-        return  open_spiel::hex::kDefaultBoardSize;
+         return 3;
+//        return  open_spiel::chess::kDefaultBoardSize;
     }
     static uint NB_CHANNELS_TOTAL() {
-        return 9;  // TODO
+        return 1;  // TODO
     }
     static uint NB_LABELS() {
-        return 121; // NB_CHANNELS_TOTAL()*BOARD_HEIGHT()*BOARD_WIDTH();  // TODO
+        return 9;  // TODO
     }
     static uint NB_LABELS_POLICY_MAP() {
-        return BOARD_HEIGHT()*BOARD_WIDTH();  // TODO
+        return 9;  // TODO
+
     }
     static uint NB_AUXILIARY_OUTPUTS() {
         return 0U;
@@ -75,20 +83,26 @@ public:
     }
     template<PolicyType p = normal, MirrorType m = notMirrored>
     static MoveIdx action_to_index(Action action) {
-        return action;  // TODO
+        return action;
     }
     static void init(bool isPolicyMap) {
         return; // pass
     }
 
     static std::vector<std::string> available_variants() {
-        return {"hex",
+        return {"tic_tac_toe",
+                "connect_four",
+                "hex",
                 "chess",
                 "yorktown"};
     }
 
     static std::string start_fen(int variant) {
         switch (variant) {
+        case open_spiel::gametype::SupportedOpenSpielVariants::TICTACTOE:
+            return "... ... ...";
+        case open_spiel::gametype::SupportedOpenSpielVariants::CONNECTFOUR:
+            return "....... ....... ....... ....... ....... .......";
         case open_spiel::gametype::SupportedOpenSpielVariants::HEX:
             return ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .";
         case open_spiel::gametype::SupportedOpenSpielVariants::CHESS:

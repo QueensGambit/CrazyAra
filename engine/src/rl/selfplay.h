@@ -34,8 +34,13 @@
 #include "tournamentresult.h"
 #include "../agents/config/rlsettings.h"
 #include "../stateobj.h"
+#ifdef SF_DEPENDENCY
 #include "uci.h"
-
+using namespace UCI;
+#else
+#include "uci/customuci.h"
+using namespace CUSTOM_UCI;
+#endif
 
 #ifdef USE_RL
 /**
@@ -57,7 +62,7 @@ private:
     SearchLimits* searchLimits;
     PlaySettings* playSettings;
     RLSettings* rlSettings;
-    UCI::OptionsMap& options;
+    OptionsMap& options;
     GamePGN gamePGN;
     TrainDataExporter* exporter;
     string filenamePGNSelfplay;
@@ -82,7 +87,7 @@ public:
      * @param options Object holding all UCI options
      */
     SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings,
-        RLSettings* rlSettings, UCI::OptionsMap& options);
+        RLSettings* rlSettings, OptionsMap& options);
     ~SelfPlay();
 
     /**

@@ -13,7 +13,10 @@ from time import time
 import mxnet as mx
 from mxnet import autograd, gluon, nd
 import numpy as np
-from mxboard import SummaryWriter
+try:
+    from mxboard import SummaryWriter
+except Exception:
+    pass
 from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
@@ -112,7 +115,7 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-class TrainerAgent:  # Probably needs refactoring
+class TrainerAgentGluon:  # Probably needs refactoring
     """Main training loop"""
 
     def __init__(
@@ -161,6 +164,7 @@ class TrainerAgent:  # Probably needs refactoring
 
         # collect parameter names for logging the gradients of parameters in each epoch
         self._params = self._net.collect_params()
+        self.cur_it = None
         self._param_names = self._params.keys()
         self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
 
@@ -236,6 +240,9 @@ class TrainerAgent:  # Probably needs refactoring
                              max_iterations=k_steps_end-self.tc.k_steps_initial)
         if cur_it is None:
             cur_it = self.tc.k_steps_initial * 1000
+        else:
+            self.cur_it = cur_it
+
         nb_spikes = 0  # count the number of spikes that have been detected
         # initialize the loss to compare with, with a very high value
         old_val_loss = np.inf
@@ -311,7 +318,7 @@ class TrainerAgent:  # Probably needs refactoring
                         self.sum_writer.add_graph(self._net)
                         graph_exported = True
 
-                    if batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+                    if batch_proc_tmp >= self.tc.batch_steps or self.cur_it >= self.tc.total_it:  # show metrics every thousands steps
                         # log the current learning rate
                         # update batch_proc_tmp counter by subtracting the batch_steps
                         batch_proc_tmp = batch_proc_tmp - self.tc.batch_steps

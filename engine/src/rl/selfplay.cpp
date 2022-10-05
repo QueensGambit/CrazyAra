@@ -30,7 +30,6 @@
 #include "thread.h"
 #include <iostream>
 #include <fstream>
-#include "uci.h"
 #include "state.h"
 #include "util/blazeutil.h"
 #include "util/randomgen.h"
@@ -57,7 +56,7 @@ void play_move_and_update(const EvalInfo& evalInfo, StateObj* state, GamePGN& ga
 
 
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
-                   RLSettings* rlSettings, UCI::OptionsMap& options):
+                   RLSettings* rlSettings, OptionsMap& options):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
     rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
 {
@@ -223,7 +222,7 @@ Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPla
 {
     gamePGN.white = whitePlayer->get_name();
     gamePGN.black = blackPlayer->get_name();
-    unique_ptr<StateObj> state= make_unique<StateObj>();
+    unique_ptr<StateObj> state = make_unique<StateObj>();
     //unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, 0, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature);
     
     if (fen != "") {
@@ -343,61 +342,32 @@ TournamentResult SelfPlay::go_arena(MCTSAgent *mctsContender, size_t numberOfGam
     tournamentResult.playerA = mctsContender->get_name();
     tournamentResult.playerB = mctsAgent->get_name();
     Result gameResult;
-    #ifdef MODE_STRATEGO
-    // Due to the not symmetrical/mirrored starting position it is necessary to play two games
-    // per starting position with alternating colors. 
 
-        for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            unique_ptr<StateObj> state= make_unique<StateObj>();
-            state->init(variant, is960);
-            auto fen = state->fen();
-            gamePGN.fen = state->fen();
-            
-            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, fen);
+    for (size_t idx = 0; idx < numberOfGames; ++idx) {
+        if (idx % 2 == 0) {
+            // use default or in case of chess960 a random starting position
+            gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true, "");
             if (gameResult == WHITE_WIN) {
                 ++tournamentResult.numberWins;
             }
-            else if (gameResult == BLACK_WIN) {
+            else if (gameResult == BLACK_WIN){
                 ++tournamentResult.numberLosses;
-            }else{
-            ++tournamentResult.numberDraws;
             }
-        
-            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, fen);
+        }
+        else {
+            // use same starting position as before stored via gamePGN.fen
+            gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, gamePGN.fen);
             if (gameResult == BLACK_WIN) {
                 ++tournamentResult.numberWins;
             }
-            else if (gameResult == WHITE_WIN) {
+            else if (gameResult == WHITE_WIN){
                 ++tournamentResult.numberLosses;
-            }else{
+            }
+        }
+        if (gameResult == DRAWN) {
             ++tournamentResult.numberDraws;
-            }
         }
-    #else
-        for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            if (idx % 2 == 0) {
-                gameResult = generate_arena_game(mctsContender, mctsAgent, variant, true, "");
-                if (gameResult == WHITE_WIN) {
-                    ++tournamentResult.numberWins;
-                }
-                else {
-                    ++tournamentResult.numberLosses;
-                }
-            }
-            else {
-                gameResult = generate_arena_game(mctsAgent, mctsContender, variant, true, gamePGN.fen);
-                if (gameResult == BLACK_WIN) {
-                    ++tournamentResult.numberWins;
-                }
-                else {
-                    ++tournamentResult.numberLosses;
-                }
-            }
-            if (gameResult == DRAWN) {
-                ++tournamentResult.numberDraws;
-            }
-        }
-    #endif
+    }
     return tournamentResult;
 }
 

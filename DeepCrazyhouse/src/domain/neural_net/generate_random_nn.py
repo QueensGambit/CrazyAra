@@ -20,7 +20,7 @@ from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mx
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS, NB_POLICY_MAP_CHANNELS, NB_CHANNELS_TOTAL,\
     BOARD_WIDTH, BOARD_HEIGHT
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
-
+#from DeepCrazyhouse.src.domain.neural_net.architectures.ttt_model import get_ttt_symbol
 enable_color_logging()
 
 
@@ -85,6 +85,8 @@ def generate_random_nn(args):
         symbol = get_rise_v2_symbol(args)
     elif args.model_type == "risev3.3":
         symbol = get_rise_v33_symbol(args)
+    elif args.model_type == "tic_tac_toe":
+        symbol = get_ttt_symbol()
     else:
         raise NotImplementedError
 

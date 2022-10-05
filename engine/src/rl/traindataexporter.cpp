@@ -39,6 +39,7 @@ void TrainDataExporter::save_sample(const StateObj* pos, const EvalInfo& eval)
     save_policy(eval.legalMoves, eval.policyProbSmall, pos->mirror_policy(pos->side_to_move()));
     save_best_move_q(eval);
     save_side_to_move(Color(pos->side_to_move()));
+    save_cur_sample_index();
     ++curSampleIdx;
     // value will be set later in export_game_result()
     firstMove = false;
@@ -72,6 +73,20 @@ void TrainDataExporter::save_side_to_move(Color col)
     }
 }
 
+void TrainDataExporter::save_cur_sample_index()
+{
+    // curSampleIdx aka ply/half-move, starting from 0
+    xt::xarray<int16_t> idxArray({ 1 }, curSampleIdx);
+
+    if (firstMove) {
+        gamePlysToEnd = idxArray;
+    }
+    else {
+        // concatenate the sample to array for the current game
+        gamePlysToEnd = xt::concatenate(xtuple(gamePlysToEnd, idxArray));
+    }
+}
+
 void TrainDataExporter::export_game_samples(Result result) {
     if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
@@ -80,6 +95,7 @@ void TrainDataExporter::export_game_samples(Result result) {
 
     // game value update
     apply_result_to_value(result);
+    apply_result_to_plys_to_end();
 
     // write value to roi
     z5::types::ShapeType offset = { startIdx };
@@ -89,6 +105,7 @@ void TrainDataExporter::export_game_samples(Result result) {
     z5::multiarray::writeSubarray<float>(dbestMoveQ, gameBestMoveQ, offset.begin());
     z5::types::ShapeType offsetPolicy = { startIdx, 0 };
     z5::multiarray::writeSubarray<float>(dPolicy, gamePolicy, offsetPolicy.begin());
+    z5::multiarray::writeSubarray<int16_t>(dPlysToEnd, gamePlysToEnd, offset.begin());
 
     startIdx += curSampleIdx;
     gameIdx++;
@@ -196,6 +213,7 @@ void TrainDataExporter::open_dataset_from_file(const z5::filesystem::handle::Fil
     dValue = z5::openDataset(file, "y_value");
     dPolicy = z5::openDataset(file, "y_policy");
     dbestMoveQ = z5::openDataset(file, "y_best_move_q");
+    dPlysToEnd = z5::openDataset(file, "plys_to_end");
 }
 
 void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::File &file)
@@ -212,6 +230,7 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     dValue = z5::createDataset(file, "y_value", "int16", { numberSamples }, { chunkSize });
     dPolicy = z5::createDataset(file, "y_policy", "float32", { numberSamples, StateConstants::NB_LABELS() }, { chunkSize, StateConstants::NB_LABELS() });
     dbestMoveQ = z5::createDataset(file, "y_best_move_q", "float32", { numberSamples }, { chunkSize });
+    dPlysToEnd = z5::createDataset(file, "plys_to_end", "int16", { numberSamples }, { chunkSize });
 
     save_start_idx();
 }
@@ -225,6 +244,12 @@ void TrainDataExporter::apply_result_to_value(Result result)
     else if (result == DRAWN) {
         gameValue *= 0;
     }
+}
+
+void TrainDataExporter::apply_result_to_plys_to_end()
+{
+    gamePlysToEnd -= curSampleIdx;
+    gamePlysToEnd *= -1;
 }
 
 #endif

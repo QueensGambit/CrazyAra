@@ -45,6 +45,10 @@ class TrainConfig:
 
     export_grad_histograms: bool = True
 
+    # Decide between 'pytorch', 'mxnet' and 'gluon' style for training
+    # Reinforcement Learning only works with gluon and pytorch atm
+    framework: str = 'pytorch'
+
     # Boolean if the policy data is also defined in select_policy_from_plane representation
     is_policy_from_plane_data: bool = False
 
@@ -103,10 +107,6 @@ class TrainConfig:
     # total of training iterations
     total_it: int = None
 
-    # Decide between mxnet and gluon style for training
-    # Reinforcement Learning only works with gluon (== False) atm
-    use_mxnet_style: bool = True
-
     # adds a small mlp to infer the value loss from wdl and plys_to_end_output
     use_mlp_wdl_ply: bool = False
     # enables training with ply to end head
@@ -132,4 +132,4 @@ class TrainObjects:
     momentum_schedule = None
     metrics = None
     variant_metrics = None
-    
+

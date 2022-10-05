@@ -70,7 +70,7 @@ class FileIO:
     Class to facilitate creation of directories, reading of file
     names and moving of files during Reinforcement Learning.
     """
-    def __init__(self, orig_binary_name: str, binary_dir: str, uci_variant: str):
+    def __init__(self, orig_binary_name: str, binary_dir: str, uci_variant: str, framework: str):
         """
         Creates all necessary directories and sets all path variables.
         If no '*.param' file can be found in the 'binary-dir/model/' directory,
@@ -78,6 +78,7 @@ class FileIO:
         """
         self.binary_dir = binary_dir
         self.uci_variant = uci_variant
+        self.framework = framework
 
         # If there is no model in 'model/', we assume that the model and every
         # other path has an additional '<variant>' folder
@@ -164,14 +165,13 @@ class FileIO:
         for file_name in file_names[:-1]:
             os.rename(self.export_dir_gen_data + file_name, self.train_dir + file_name)
 
-    def _move_train_val_contender_into_archive(self):
+    def _move_train_val_data_into_archive(self):
         """
-        Moves files from training, validation & model_contender dir into archive directory
+        Moves files from training, validation dir into archive directory
         :return:
         """
         move_all_files(self.train_dir, self.train_dir_archive)
         move_all_files(self.val_dir, self.val_dir_archive)
-        move_all_files(self.model_contender_dir, self.model_dir_archive)
 
     def _remove_files_in_weight_dir(self):
         """
@@ -221,6 +221,8 @@ class FileIO:
         """
         Return the filename of the current active model architecture (.json) file
         """
+        if self.framework != "gluon" and self.framework != "mxnet":
+            return ""
         model_arch = glob.glob(self.model_dir + "/*.json")
         if len(model_arch) == 0:
             raise FileNotFoundError(f'No arch file found in {self.model_dir}')
@@ -230,7 +232,20 @@ class FileIO:
         """
         Return the filename of the current active model weight (.params) file
         """
+        if self.framework != "gluon" and self.framework != "mxnet":
+            return ""
         model_params = glob.glob(self.model_dir + "/*.params")
+        if len(model_params) == 0:
+            raise FileNotFoundError(f'No model file found in {self.model_dir}')
+        return model_params[0]
+
+    def get_current_model_tar_file(self) -> str:
+        """
+        Return the filename of the current active model weight (.tar) file for pytorch
+        """
+        if self.framework != "pytorch":
+            return ""
+        model_params = glob.glob(self.model_dir + "/*.tar")
         if len(model_params) == 0:
             raise FileNotFoundError(f'No model file found in {self.model_dir}')
         return model_params[0]
@@ -263,15 +278,19 @@ class FileIO:
         os.rename(self.logs_dir, os.path.join(self.logs_dir_archive, dir_name))
         create_dir(self.logs_dir)
 
-    def prepare_data_for_training(self, rm_nb_files, rm_fraction_for_selection):
+    def prepare_data_for_training(self, rm_nb_files: int, rm_fraction_for_selection: float, did_contender_win: bool):
         """
         Move files from training, validation and model contender folder into archive.
         Moves newly generated files into training and validation directory.
         Remove files in weight directory. Include data from replay memory.
-        :param rm_nb_files:
-        :param rm_fraction_for_selection:
+        :param rm_nb_files: Number of files of the replay memory to include
+        :param rm_fraction_for_selection: Proportion for selecting files from the replay memory
+        :param did_contender_win: Defines if the last contender won vs the generator
         """
-        self._move_train_val_contender_into_archive()
+        if did_contender_win:
+            self._move_train_val_data_into_archive()
+        # move last contender into archive
+        move_all_files(self.model_contender_dir, self.model_dir_archive)
         self._move_generated_data_to_train_val()
         # We don’t need them anymore; the last model from last training has already been saved
         self._remove_files_in_weight_dir()

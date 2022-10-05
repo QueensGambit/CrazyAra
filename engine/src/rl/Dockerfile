@@ -24,7 +24,7 @@
 # Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
 # see release page for  all current available releases:
 # https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
-FROM nvcr.io/nvidia/mxnet:20.09-py3
+FROM nvcr.io/nvidia/mxnet:20.10-py3
 
 MAINTAINER QueensGambit
 
@@ -46,9 +46,9 @@ RUN cd /root \
     && git checkout f693a6d723ef2766be36deb5e7987cd50159973a
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
-
-# Additional dependencies for reinforcement learning
-# ---------------------------------------------------
+                                                                                                                                                                                                                                                                
+# Additional dependencies for reinforcement learning                                                                                                                                                                                                                               
+# ---------------------------------------------------                                                                                                                                                                                                                              
 # Install boost library (dependecy of z5 library, preinstalled on normal Debian systems)
 RUN cd /root \
     && wget https://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.bz2 \
@@ -82,9 +82,13 @@ ENV Z5_PATH /root/z5/
 
 # Clone the CrazyAra repository
 # Install python dependencies for training the neural network
+RUN pwd
 RUN cd /root \
-    && git clone https://github.com/QueensGambit/CrazyAra.git --recursive \
+    && git clone https://github.com/Chooga/CrazyAra.git --recursive \
+    && cd /root/CrazyAra/ \
+    && git checkout tictactoe \
     && cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
+    && /usr/bin/python -m pip install --upgrade pip \
     && pip install -r requirements.txt
 
 # Install graphviz for plotting NN architectures
@@ -98,12 +102,12 @@ RUN apt-get update -y \
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DBACKEND_TENSORRT_7 .. \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DBACKEND_TENSORRT_7=ON .. \
     && make -j8
 
+#-DBACKEND_TENSORRT_7=ON
 # Rename the config files
-RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
-    && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
+RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py 
 
 # Install debugging utilities for "coredumpctl gdb"
 RUN apt-get update -y \
@@ -116,3 +120,11 @@ CMD cd /root/CrazyAra/engine/src/rl/ \
     && /bin/bash
 
 
+# CMD mv /root/CrazyAra/engine/build/BoardAra /data/RL \
+#	&& mkdir -p /data/RL/model/BoardAra/tictactoe \
+#    && cd ~/CrazyAra/DeepCrazyhouse/src/domain/neural_net \
+#    && python generate_random_nn.py --model-type risev3.3  --n-labels=548 --channels-policy-head 10 --input-shape 8 8 8 \
+#	&& cp /root/CrazyAra/engine/3rdparty/Fairy-Stockfish/src/variants.ini /data/RL \
+#	&& mv risev3.3-0000-bsize-*.onnx risev3.3-0000.params risev3.3-symbol.json /data/RL/model/BoardAra/tictactoe/ \
+#	&& cd /data/RL/ \
+#   && /bin/bash

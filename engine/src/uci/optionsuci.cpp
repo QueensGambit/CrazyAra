@@ -124,7 +124,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Last_Device_ID"]                << Option(0, 0, 99999);
     o["Log_File"]                      << Option("", on_logger);
     o["MCTS_Solver"]                   << Option(true);
-#ifdef MODE_LICHESS
+#if defined(MODE_LICHESS) || defined(MODE_BOARDGAMES)
     o["Model_Directory"]               << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
 #else
     o["Model_Directory"]               << Option(string("model/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
@@ -196,8 +196,8 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Raw_Prob_Temperature"]    << Option(25, 0, 100);
     o["Centi_Resign_Probability"]      << Option(90, 0, 100);
     o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
-    o["MaxInitPly"]                    << Option(30, 0, 99999);
-    o["MeanInitPly"]                   << Option(15, 0, 99999);
+    o["MaxInitPly"]                    << Option(0, 0, 99999);
+    o["MeanInitPly"]                   << Option(0, 0, 99999);
 #ifdef MODE_LICHESS
     o["Model_Directory_Contender"]     << Option((string("model_contender/" + engineName + "/") + get_first_variant_with_model()).c_str());
 #else
@@ -239,7 +239,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
         if (name != "uci_variant" && name != "uci_chess960") {
             info_string_important("Updated option", givenName, "to", value);
         } else {
-#ifdef XIANGQI
+#if defined(XIANGQI) && !defined(MODE_BOARDGAMES)
             if (name == "uci_variant") {
                 // Workaround. Fairy-Stockfish does not use an enum for variants
                 info_string_important("variant Xiangqi startpos rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1");
@@ -266,7 +266,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             state.init(variant, is960);
 
             string suffix_960 = (is960) ? "960" : "";
-#ifdef MODE_LICHESS
+#if defined(MODE_LICHESS) || defined(MODE_BOARDGAMES)
             Options["Model_Directory"] << Option(("model/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             Options["Model_Directory_Contender"] << Option(("model_contender/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
 #endif
@@ -281,6 +281,11 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
 
 string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
     // default value of is960 == false
+#ifdef MODE_BOARDGAMES
+    if (value == "standard") {
+       return "tictactoe";
+    }
+#endif
 #ifdef SUPPORT960
     // we only want 960 for chess atm
     if (value == "fischerandom" || value == "chess960"
@@ -303,13 +308,14 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
 
 const string OptionsUCI::get_first_variant_with_model()
 {
+    string value;
     vector<string> dirs = get_directory_files("model/" + engineName + "/");
     const static vector<string> availableVariants = StateConstants::available_variants();
-    for(string dir : dirs) {
-        if (std::find(availableVariants.begin(), availableVariants.end(), dir) != availableVariants.end()) {
-            const vector <string> files = get_directory_files("model/" + engineName + "/" + dir);
+    for(string variant : availableVariants) {
+        if (std::find(dirs.begin(), dirs.end(), variant) != dirs.end()) {
+            const vector <string> files = get_directory_files("model/" + engineName + "/" + variant);
             if ("" != get_string_ending_with(files, ".onnx")) {
-                return dir;
+                return variant;
             }
         }
     }

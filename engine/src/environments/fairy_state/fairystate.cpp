@@ -14,12 +14,14 @@ vector<std::string> FairyOutputRepresentation::LABELS_MIRRORED;
 
 FairyState::FairyState() :
         State(),
-        states(StateListPtr(new std::deque<StateInfo>(0))) {}
+        states(StateListPtr(new std::deque<StateInfo>(0))),
+        variantNumber(0) {}
 
 FairyState::FairyState(const FairyState &f) :
         State(),
         board(f.board),
-        states(StateListPtr(new std::deque<StateInfo>(0))) {
+        states(StateListPtr(new std::deque<StateInfo>(0))),
+        variantNumber(f.variantNumber){
     states->emplace_back(f.states->back());
 }
 
@@ -34,7 +36,12 @@ std::vector<Action> FairyState::legal_actions() const {
 void FairyState::set(const string &fenStr, bool isChess960, int variant) {
     states = StateListPtr(new std::deque<StateInfo>(1));
     Thread *thread;
+#ifdef MODE_BOARDGAMES
+    board.set(variants.find(StateConstantsFairy::available_variants()[variant])->second, fenStr, isChess960, &states->back(), thread, false);
+    variantNumber = variant;
+#else
     board.set(variants.find("xiangqi")->second, fenStr, isChess960, &states->back(), thread, false);
+#endif
 }
 
 void FairyState::get_state_planes(bool normalize, float *inputPlanes, Version version) const {
@@ -83,10 +90,35 @@ Action FairyState::uci_to_action(string &uciStr) const {
 }
 
 TerminalType FairyState::is_terminal(size_t numberLegalMoves, float &customTerminalValue) const {
+    Value value;
+    bool gameEnd = board.is_game_end(value, board.game_ply());
+
+    if (gameEnd) {
+//        info_string_important("fen", board.fen());
+//        info_string_important("Value", value);
+//        info_string_important("SideToMove", board.side_to_move());
+//        if (value <= VALUE_DRAW - 10 && value <= VALUE_DRAW + 10) {
+        if (value == VALUE_DRAW) {
+            return TERMINAL_DRAW;
+        }
+        if (value < VALUE_DRAW) {
+            return TERMINAL_LOSS;
+        }
+        return TERMINAL_WIN;
+    }
+
     if (numberLegalMoves == 0) {
+#ifdef MODE_BOARDGAMES
+        if(variantNumber == 3){ //variant clobber
+            return TERMINAL_LOSS;
+        }
+
+        return TERMINAL_DRAW;
+#else   // Xinagqi
         // "Unlike in chess, in which stalemate is a draw, in xiangqi, it is a loss for the stalemated player."
         // -- https://en.wikipedia.org/wiki/Xiangqi
         return TERMINAL_LOSS;
+#endif
     }
     if (this->number_repetitions() != 0) {
         // "If one side perpetually checks and the other side perpetually chases, the checking side has to stop or be ruled to have lost."
@@ -114,7 +146,7 @@ unsigned int FairyState::number_repetitions() const {
 }
 
 string FairyState::action_to_san(Action action, const std::vector<Action> &legalActions, bool leadsToWin, bool bookMove) const {
-    return uci_move(Move(action));
+    return UCI::move(board, Move(action));
 }
 
 Tablebase::WDLScore FairyState::check_for_tablebase_wdl(Tablebase::ProbeState &result) {
@@ -128,5 +160,6 @@ void FairyState::set_auxiliary_outputs(const float* auxiliaryOutputs) {
 void FairyState::init(int variant, bool isChess960)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-    board.set(variants.find("xiangqi")->second, variants.find("xiangqi")->second->startFen, isChess960, &states->back(), nullptr, false);
+    board.set(variants.find(StateConstantsFairy::available_variants()[variant])->second, variants.find(StateConstantsFairy::available_variants()[variant])->second->startFen, isChess960, &states->back(), nullptr, false);
+    variantNumber = variant;
 }

@@ -49,7 +49,7 @@ class RLLoop:
         self.rl_config = rl_config
 
         self.file_io = FileIO(orig_binary_name=self.rl_config.binary_name, binary_dir=self.rl_config.binary_dir,
-                              uci_variant=self.rl_config.uci_variant)
+                              uci_variant=self.rl_config.uci_variant, framework=self.tc.framework)
         self.binary_io = None
 
         if nb_arena_games % 2 == 1:
@@ -59,6 +59,7 @@ class RLLoop:
         self.tc.k_steps = k_steps
         self.device_name = f'{args.context}_{args.device_id}'
         self.model_name = ""  # will be set in initialize()
+        self.did_contender_win = False
 
         # change working directory (otherwise binary would generate .zip files at .py location)
         os.chdir(self.file_io.binary_dir)
@@ -120,13 +121,15 @@ class RLLoop:
         """
         if self.file_io.get_number_generated_files() >= number_files_to_update:
             self.binary_io.stop_process()
-            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection)
+            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection,
+                                                   self.did_contender_win)
             # start training using a process to ensure memory clearing afterwards
             queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
             process = Process(target=update_network, args=(queue, self.nn_update_index,
                                                            self.file_io.get_current_model_arch_file(),
                                                            self.file_io.get_current_model_weight_file(),
+                                                           self.file_io.get_current_model_tar_file(),
                                                            not self.args.no_onnx_export,
                                                            main_config, self.tc,
                                                            self.file_io.model_contender_dir))
@@ -144,8 +147,8 @@ class RLLoop:
 
             self.initialize()
             logging.info(f'Start arena tournament ({self.nb_arena_games} rounds)')
-            did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
-            if did_contender_win is True:
+            self.did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
+            if self.did_contender_win is True:
                 logging.info("REPLACING current generator with contender")
                 self.file_io.replace_current_model_with_contender()
             else:

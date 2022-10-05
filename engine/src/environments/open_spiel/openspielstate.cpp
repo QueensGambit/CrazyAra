@@ -28,7 +28,7 @@
 #include <functional>
 
 OpenSpielState::OpenSpielState():
-    currentVariant(open_spiel::gametype::SupportedOpenSpielVariants::HEX),
+    currentVariant(open_spiel::gametype::SupportedOpenSpielVariants::TICTACTOE),
     spielGame(open_spiel::LoadGame(StateConstantsOpenSpiel::variant_to_string(currentVariant))),
     spielState(spielGame->NewInitialState())
 {
@@ -56,16 +56,31 @@ inline void OpenSpielState::check_variant(int variant)
 void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant)
 {
     check_variant(variant);
+    if (currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::HEX) {
+        info_string_important("NewInitialState from string is not implemented for HEX.");
+        return;
+    }
+    if (currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::TICTACTOE) {
+        info_string_important("NewInitialState from string is not implemented for Tic-Tac-Toe.");
+        return;
+    }
     spielState = spielGame->NewInitialState(fenStr);
 }
 
 void OpenSpielState::get_state_planes(bool normalize, float *inputPlanes, Version version) const
 {
+    // TODO
     std::fill(inputPlanes, inputPlanes+StateConstantsOpenSpiel::NB_VALUES_TOTAL(), 0.0f);
     //info_string_important(StateConstantsOpenSpiel::NB_VALUES_TOTAL());
     std::vector<float> v(spielGame->ObservationTensorSize());
-    spielState->ObservationTensor(spielState->CurrentPlayer(), absl::MakeSpan(v));
-    std::copy( v.begin(), v.end(), inputPlanes);
+    int currentPlayer = spielState->CurrentPlayer();
+    if(currentPlayer >= 0 ){
+        spielState->ObservationTensor(spielState->CurrentPlayer(), absl::MakeSpan(v));
+        std::copy( v.begin(), v.end(), inputPlanes);
+    }
+    else{
+
+    }
 }
 
 unsigned int OpenSpielState::steps_from_null() const
@@ -143,7 +158,7 @@ std::string OpenSpielState::action_to_san(Action action, const std::vector<Actio
 
 TerminalType OpenSpielState::is_terminal(size_t numberLegalMoves, float &customTerminalValue) const
 {
-    if (spielState->IsTerminal()) {
+    if (spielState->IsTerminal() || spielState->CurrentPlayer() == -4) {
         const double currentReturn = spielState->Returns()[spielState->MoveNumber() % 2];
         if (currentReturn == spielGame->MaxUtility()) {
             return TERMINAL_WIN;

@@ -56,17 +56,20 @@ private:
     std::unique_ptr<z5::Dataset> dValue;
     std::unique_ptr<z5::Dataset> dPolicy;
     std::unique_ptr<z5::Dataset> dbestMoveQ;
+    std::unique_ptr<z5::Dataset> dPlysToEnd;
 
     xt::xarray<int16_t> gameX;
     xt::xarray<int16_t> gameValue;
     xt::xarray<float> gamePolicy;
     xt::xarray<float> gameBestMoveQ;
+    xt::xarray<int16_t> gamePlysToEnd;
     bool firstMove;
 
     // current number of games - 1
     size_t gameIdx;
     // current sample index to insert
     size_t startIdx;
+    // current sample index of the current game
     size_t curSampleIdx;
 
     /**
@@ -99,6 +102,11 @@ private:
     void save_side_to_move(Color col);
 
     /**
+     * @brief save_cur_sample_index Saves the current sample index, i.e. the ply index which is resetted to 0 before each game.
+     */
+    void save_cur_sample_index();
+
+    /**
      * @brief save_start_idx Saves the current starting index where the next game starts to the game array
      */
     void save_start_idx();
@@ -121,6 +129,13 @@ private:
      * @param result Possible values DRAWN, WHITE_WIN, BLACK_WIN,
      */
     void apply_result_to_value(Result result);
+
+    /**
+     * @brief apply_result_to_plys_to_end Converts the ply index information into plys-to-end
+     *  by subtracting the final ply and multiplying by -1.
+     */
+    void apply_result_to_plys_to_end();
+
 public:
     /**
      * @brief TrainDataExporter

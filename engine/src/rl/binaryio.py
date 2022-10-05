@@ -139,7 +139,7 @@ class BinaryIO:
         :return:
         """
         self._set_uci_param(f'Model_Directory', model_dir)
-        self._set_uci_param(f'Model_Contender_Directory', model_contender_dir)
+        self._set_uci_param(f'Model_Directory_Contender', model_contender_dir)
         self._set_uci_param(f'UCI_Variant', uci_variant)
         self._set_uci_param(f'Context', context)
         self._set_uci_param(f'First_Device_ID', device_id)

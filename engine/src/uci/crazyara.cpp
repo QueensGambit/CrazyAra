@@ -94,6 +94,12 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     // this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
+//        "setoption name uci_variant value tictactoe",
+//        "isready",
+//        "go",
+//        "position startpos moves a10c3 a10a2 a10c2 a10c1 a10a1 a10b2 a10a3 a10b3", //b1
+//        "position startpos moves P@c3", // p@a2 P@c2 p@c1 P@a1 p@b2 P@a3 p@b3",
+//        "go depth 1"
     };
 
     do {
@@ -135,9 +141,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "arena")      arena(is);
         // Test if the new modes are also usable for chess and others
 
-        else if (token == "mctsmatch")   mctsarena(is, "", "");
-        else if (token == "mctstournament")   mctstournament(is);
-        else if (token == "tournament")   evaltournament(is);
+        else if (token == "match")   multimodel_arena(is, "", "", true);
+        else if (token == "tournament")   roundrobin(is);
 #endif   
         else
             cout << "Unknown command: " << cmd << endl;
@@ -201,6 +206,8 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     state->set(StateConstants::start_fen(variant), is960, variant);
 
     istringstream is("fen " + fen);
+
+    std:cout << state.get()->fen() << endl;
     position(state.get(), is);
     istringstream isGoCommand(goCommand);
     go(state.get(), isGoCommand, evalInfo);
@@ -361,73 +368,61 @@ void CrazyAra::arena(istringstream &is)
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 
-void CrazyAra::mctsarena(istringstream &is, const string& modeldirectory1, const string& modeldirectory2)
+void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1, const string &modelDirectory2, bool isModelInInputStream)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
 
     // create two MCTS agents
     int type;
+    int folder;
     is >> type;
+    string modelDir1 = modelDirectory1;
+    if (isModelInInputStream)
+    {
+        is >> folder;
+        modelDir1 = "m" + std::to_string(folder) + "/";
+    }
     auto mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
-    if(modeldirectory1 != ""){
-        netSingle = create_new_net_single(modeldirectory1);
-        netBatches = create_new_net_batches(modeldirectory1);
+    if (modelDir1 != "")
+    {
+        netSingle = create_new_net_single(modelDir1);
+        netBatches = create_new_net_batches(modelDir1);
         mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
-
     }
-
 
     is >> type;
-    auto mcts2 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
-    if(modeldirectory2 != ""){
-        netSingleContender = create_new_net_single(modeldirectory2);
-        netBatchesContender = create_new_net_batches(modeldirectory2);
-        mcts2 = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings, static_cast<MCTSAgentType>(type));
-
+    string modelDir2 = modelDirectory2;
+    if (isModelInInputStream)
+    {
+        is >> folder;
+        modelDir2 = "m" + std::to_string(folder) + "/";
     }
-
+    auto mcts2 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+    if (modelDir2 != "")
+    {
+        netSingleContender = create_new_net_single(modelDir2);
+        netBatchesContender = create_new_net_batches(modelDir2);
+        mcts2 = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings, static_cast<MCTSAgentType>(type));
+    }
 
     SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchLimits, &playSettings, &rlSettings, Options);
     size_t numberOfGames;
     is >> numberOfGames;
     TournamentResult tournamentResult = selfPlay.go_arena(mcts2.get(), numberOfGames, variant);
 
-    cout << "MCTSArena summary" << endl;
-    cout << "Score of Contender vs Producer: " << tournamentResult << endl;
+    cout << "Arena summary" << endl;
+    cout << "Score of Agent1 vs Agent2: " << tournamentResult << endl;
     write_tournament_result_to_csv(tournamentResult, "mcts_arena_results.csv");
 }
 
-void CrazyAra::mctstournament(istringstream &is)
+void CrazyAra::roundrobin(istringstream &is)
 {
     int type;
     int numberofgames;
     is >> numberofgames;
-    std::vector<int> numbers;
-    while(!is.eof()){
-        is >> type;
-        numbers.push_back(type);
-        is >> type;
-
-    }
-
-    std::vector<std::string> combinations = comb(numbers, 2);
-    for(int i = 0;i<combinations.size();i++){
-        std::istringstream iss (combinations[i] + std::to_string(numberofgames));
-        mctsarena(iss, "", "");
-
-    }
-
-    exit(0);
-
-}
-
-void CrazyAra::evaltournament(istringstream &is)
-{
-    int type;
-    int numberofgames;
-    is >> numberofgames;
-    struct modelstring{
+    struct modelstring
+    {
         int number_of_mcts_agent;
         int number_of_model_folder;
     };
@@ -435,7 +430,8 @@ void CrazyAra::evaltournament(istringstream &is)
     int i = 0;
     std::vector<modelstring> agents;
     std::vector<int> numbers;
-    while(!is.eof()){
+    while (!is.eof())
+    {
         is >> type;
         int tmp1 = type;
         is >> type;
@@ -451,7 +447,8 @@ void CrazyAra::evaltournament(istringstream &is)
 
     std::vector<std::string> combinations = comb(numbers, 2);
     std::string delimiter = " ";
-    for(int i = 0;i<combinations.size();i++){
+    for (int i = 0; i < combinations.size(); i++)
+    {
         std::string s = combinations[i];
 
         int token1 = std::stoi(s.substr(0, s.find(delimiter)));
@@ -459,14 +456,12 @@ void CrazyAra::evaltournament(istringstream &is)
         std::string comb = std::to_string(agents[token1].number_of_mcts_agent) + " " + std::to_string(agents[token2].number_of_mcts_agent);
         std::string m1 = "m" + std::to_string(agents[token1].number_of_model_folder) + "/";
         std::string m2 = "m" + std::to_string(agents[token2].number_of_model_folder) + "/";
-        std::istringstream iss (comb + " " + std::to_string(numberofgames));
-        mctsarena(iss, m1, m2);
+        std::istringstream iss(comb + " " + std::to_string(numberofgames));
+        multimodel_arena(iss, m1, m2, false);
     }
 
     exit(0);
-
 }
-
 
 void CrazyAra::init_rl_settings()
 {
@@ -485,12 +480,35 @@ void CrazyAra::init_rl_settings()
 }
 #endif
 
+std::string read_string_from_file(const std::string &file_path){
+    const std::ifstream input_stream(file_path, std::ios_base::binary);
+
+    if (input_stream.fail()) {
+        throw std::runtime_error("Failed to open file");
+    }
+
+    std::stringstream buffer;
+    buffer << input_stream.rdbuf();
+
+    return buffer.str();
+}
+
 void CrazyAra::init()
 {
     OptionsUCI::init(Options);
-#ifdef MODE_XIANGQI
+//#ifdef MODE_XIANGQI
+//    UCI::init(Options);
+//    pieceMap.init();
+//#endif
+#ifdef MODE_BOARDGAMES
     UCI::init(Options);
     pieceMap.init();
+    fstream variantIni;
+    const string file_path = "variants.ini";
+    string variantInitContent = read_string_from_file(file_path);
+    std::stringstream ss(variantInitContent);
+    variants.parse_istream<false>(ss);
+    Options["UCI_Variant"].set_combo(variants.get_keys());
 #endif
 #ifdef SF_DEPENDENCY
     Bitboards::init();
@@ -498,7 +516,13 @@ void CrazyAra::init()
     Bitbases::init();
     Search::init();
 #endif
-#ifdef MODE_XIANGQI
+//#ifdef MODE_XIANGQI
+//    // This is a workaround for compatibility with Fairy-Stockfish
+//    // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
+//    Options.erase("Hash");
+//    Options.erase("Use NNUE");
+//#endif
+#ifdef MODE_BOARDGAMES
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");

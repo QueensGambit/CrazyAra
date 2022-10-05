@@ -98,7 +98,40 @@ vector<string> uci_labels::generate_uci_labels() {
     return labels;
 }
 
+vector<string> uci_labels::generate_uci_labels_cfour_and_flipello() {
+    vector<string> labels;
+    for (char row = '1'; row <= '8'; ++row) {
+        for (char column = 'a';  column <= 'h'; ++column) {
+            labels.emplace_back("a10" + std::string(1, column) + std::string(1, row));
+        }
+    }
+    return labels;
+}
+
+void uci_labels::generate_uci_labels_breakthrough_and_clobber(vector<string>& labels) {
+
+    for (char row = '1'; row <= '8'; ++row) {
+        for (char column = 'a';  column <= 'h'; ++column) {
+            for (char targetRow = row-1; targetRow <= row+1; ++targetRow) {
+                if (targetRow == '0' || targetRow == '9') {
+                    continue;
+                }
+              for (char targetCol = column-1; targetCol <= column+1; ++targetCol) {
+                  if (targetCol == 'a'-1 || targetCol == 'i') {
+                      continue;
+                  }
+                    labels.emplace_back(std::string(1, column) + std::string(1, row) + std::string(1, targetCol) + std::string(1, targetRow));
+                }
+            }
+        }
+    }
+}
+
 string uci_labels::mirror_move(const string &ucciMove) {
+#ifdef MODE_BOARDGAMES
+    // TODO: This only works for cfour
+    return ucciMove;
+#endif
     // a10b10
         if (ucciMove.size() == 6) {
             return string(1, ucciMove[0]) + string(1, '1') + string(1, ucciMove[3]) + string(1, '1');
@@ -143,7 +176,12 @@ array<string, 10> uci_labels::ranks() {
 }
 
 void FairyOutputRepresentation::init_labels() {
+#ifdef MODE_BOARDGAMES
+    LABELS = uci_labels::generate_uci_labels_cfour_and_flipello();
+    uci_labels::generate_uci_labels_breakthrough_and_clobber(LABELS);
+#else
     LABELS = uci_labels::generate_uci_labels();
+#endif
     if (LABELS.size() != StateConstantsFairy::NB_LABELS()) {
         cerr << "LABELS.size() != StateConstantsFairy::NB_LABELS():" << LABELS.size() << " "
              << StateConstantsFairy::NB_LABELS() << endl;
