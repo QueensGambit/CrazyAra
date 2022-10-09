@@ -32,7 +32,7 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS,
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
-def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio):
+def _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio):
     """Helper function which generates the residual blocks for Risev3"""
 
     channels_operating = channels_operating_init
@@ -53,18 +53,18 @@ def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansi
             res_blocks.append(_BottlekneckResidualBlock(channels=channels,
                                                         channels_operating=channels_operating_active,
                                                         use_depthwise_conv=True,
-                                                        kernel=kernel, act_type=act_type,
+                                                        kernel=kernel, act_type=act_types[idx],
                                                         se_type=se_types[idx],
                                                         path_dropout=path_dropout_rates[idx]))
         elif conv_block == "bottlekneck_res_block":
             res_blocks.append(_BottlekneckResidualBlock(channels=channels,
                                                         channels_operating=channels_operating_active,
                                                         use_depthwise_conv=False,
-                                                        kernel=kernel, act_type=act_type,
+                                                        kernel=kernel, act_type=act_types[idx],
                                                         se_type=se_types[idx],
                                                         path_dropout=path_dropout_rates[idx]))
         elif conv_block == "classical_res_block":
-            res_blocks.append(ClassicalResidualBlock(channels, act_type, se_type=se_types[idx], path_dropout=path_dropout_rates[idx]))
+            res_blocks.append(ClassicalResidualBlock(channels, act_types[idx], se_type=se_types[idx], path_dropout=path_dropout_rates[idx]))
         elif conv_block == "next_conv_block":
             res_blocks.append(NCB(channels, channels, stride=1, se_type=se_types[idx], path_dropout=path_dropout_rates[idx]))
 
@@ -76,7 +76,7 @@ def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansi
 class RiseV3(Module):
 
     def __init__(self, nb_input_channels, board_height, board_width,
-                 channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
+                 channels=256, channels_operating_init=224, channel_expansion=32, act_types=None,
                  channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                  select_policy_from_plane=True, kernels=None, n_labels=4992,
                  se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
@@ -89,7 +89,7 @@ class RiseV3(Module):
         :param channels: Main number of channels
         :param channels_operating: Initial number of channels at the start of the net for the depthwise convolution
         :param channel_expansion: Number of channels to add after each residual block
-        :param act_type: Activation type to use
+        :param act_types: Activation type to use as a list of layers.
         :param channels_value_head: Number of channels for the value head
         :param value_fc_size: Number of units in the fully connected layer of the value head
         :param channels_policy_head: Number of channels for the policy head
@@ -131,20 +131,20 @@ class RiseV3(Module):
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
         path_dropout_rates = [x.item() for x in torch.linspace(0, path_dropout, len(kernels))]  # stochastic depth decay rule
-        res_blocks = _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio)
+        res_blocks = _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio)
 
         self.body_spatial = Sequential(
-            _Stem(channels=channels, act_type=act_type, nb_input_channels=nb_input_channels),
+            _Stem(channels=channels, act_type=act_types[0], nb_input_channels=nb_input_channels),
             *res_blocks,
         )
         self.nb_body_spatial_out = channels * board_height * board_width
 
         # create the two heads which will be used in the hybrid fwd pass
         self.value_head = _ValueHead(board_height, board_width, channels, channels_value_head, value_fc_size,
-                                     act_type, False, nb_input_channels,
+                                     act_types[-1], False, nb_input_channels,
                                      use_wdl, use_plys_to_end, use_mlp_wdl_ply)
         self.policy_head = _PolicyHead(board_height, board_width, channels, channels_policy_head, n_labels,
-                                       act_type, select_policy_from_plane)
+                                       act_types[-1], select_policy_from_plane)
 
     def forward(self, x):
         """
@@ -176,13 +176,15 @@ def get_rise_v33_model(args):
     se_types[13] = "eca_se"
     se_types[14] = "eca_se"
 
+    act_types = ['relu'] * len(kernels)
+
     model = RiseV3(nb_input_channels=args.input_shape[0], board_height=args.input_shape[1], board_width=args.input_shape[2],
-                    channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
-                    channels_value_head=8, value_fc_size=256,
-                    channels_policy_head=args.channels_policy_head,
-                    dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
-                    kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
-                    use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
+                   channels=256, channels_operating_init=224, channel_expansion=32, act_types=act_types,
+                   channels_value_head=8, value_fc_size=256,
+                   channels_policy_head=args.channels_policy_head,
+                   dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
+                   kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
+                   use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
                    )
     return model
 
