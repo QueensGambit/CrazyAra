@@ -325,7 +325,8 @@ class _ValueHead(Module):
                 x = torch.cat((wdl_out, plys_out), dim=1)
                 return self.body_final(x), wdl_out, plys_out
             else:
-                loss_out, _, win_out = torch.split(wdl_out, 3, dim=1)
+                wdl_out_softmax = torch.softmax(wdl_out, dim=1)
+                (loss_out, _, win_out) = torch.split(wdl_out_softmax, 1, dim=1)
                 return -loss_out + win_out, wdl_out, plys_out
 
         return self.body_final(x)
