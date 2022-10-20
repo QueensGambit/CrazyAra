@@ -321,11 +321,11 @@ class _ValueHead(Module):
         if self.use_wdl and self.use_plys_to_end:
             wdl_out = self.body_wdl(x)
             plys_out = self.body_plys(x)
+            wdl_out_softmax = torch.softmax(wdl_out, dim=1)
             if self.use_mlp_wdl_ply:
-                x = torch.cat((wdl_out, plys_out), dim=1)
+                x = torch.cat((wdl_out_softmax, plys_out), dim=1)
                 return self.body_final(x), wdl_out, plys_out
             else:
-                wdl_out_softmax = torch.softmax(wdl_out, dim=1)
                 (loss_out, _, win_out) = torch.split(wdl_out_softmax, 1, dim=1)
                 return -loss_out + win_out, wdl_out, plys_out
 
