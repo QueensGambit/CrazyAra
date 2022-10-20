@@ -26,6 +26,7 @@
 #include "crazyara.h"
 
 #include <thread>
+#include <fstream>
 #include "mctsagent.h"
 #include "search.h"
 #include "evalinfo.h"
