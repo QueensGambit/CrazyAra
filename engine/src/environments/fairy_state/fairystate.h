@@ -23,7 +23,11 @@ public:
         return NB_CHANNELS_POS() + NB_CHANNELS_CONST();
     }
     static uint NB_LABELS() {
+#ifdef MODE_BOARDGAMES
         return 548; // 484 (breakthrough and clobber moves) + 64 (connect4 and flipello moves)
+#else  // MODE_XIANGQI
+        return 2086;
+#endif
     }
     static uint NB_LABELS_POLICY_MAP() {
         return 4500;
@@ -131,20 +135,44 @@ public:
     static float MAX_FULL_MOVE_COUNTER() {
         return 500;
     }
+#else  // MODE_XIANGQI
+    static uint NB_SQUARES_HORIZONTAL() {
+        return 9;
+    }
+    static uint NB_SQUARES_VERTICAL() {
+        return 10;
+    }
+    static uint NB_CHANNELS_POS() {
+        return 26;
+    }
+    static uint NB_CHANNELS_CONST() {
+        return 2;
+    }
+    static float MAX_NB_PRISONERS() {
+        return 5;
+    }
+    static float MAX_FULL_MOVE_COUNTER() {
+        return 500;
+    }
 #endif
 
     static std::vector<std::string> available_variants() {
+#ifdef MODE_BOARDGAMES
         return {"tictactoe",
                 "cfour",
                 "flipello",
                 "clobber",
                 "breakthrough",
-//                "xiangqi"
                 };
+#else  // MODE_XIANGQI
+        return {"xiangqi"};
+#endif
+
     }
 
     static std::string start_fen(int variant) {
         switch (variant) {
+#ifdef MODE_BOARDGAMES
         case 0: //tictactoe
             return "3/3/3 w - - 0 1";
         case 1: //cfour
@@ -155,10 +183,12 @@ public:
             return "PpPpP/pPpPp/PpPpP/pPpPp/PpPpP/pPpPp w - - 0 1";
         case 4: //breakthrough
             return "pppppppp/pppppppp/8/8/8/8/PPPPPPPP/PPPPPPPP w - - 0 1";
-//        case 3:
-//            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
         default:
             return "";
+#else  // MODE_XIANGQI
+        default:
+            return "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
+#endif
         }
     }
 
