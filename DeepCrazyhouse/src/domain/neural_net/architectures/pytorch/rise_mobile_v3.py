@@ -20,16 +20,15 @@ Influenced by the following papers:
     https://arxiv.org/pdf/1807.06521.pdf
 
 """
-import torch
 from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se, process_value_policy_head
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 
 
 class _BottlekneckResidualBlock(Module):
 
-    def __init__(self, channels, channels_operating, kernel=3, act_type='relu', se_type=None, bn_mom=0.9):
+    def __init__(self, channels, channels_operating, kernel=3, act_type='relu', se_type=None):
         """
         Returns a residual block without any max pooling operation
         :param channels: Number of filters for all CNN-layers
@@ -42,15 +41,15 @@ class _BottlekneckResidualBlock(Module):
 
         self.se_type = se_type
         if se_type:
-            self.se = get_se(se_type=se_type, channels=channels, use_hard_sigmoid=False)
+            self.se = get_se(se_type=se_type, channels=channels, use_hard_sigmoid=True)
         self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels_operating, kernel_size=(1, 1), bias=False),
-                               BatchNorm2d(momentum=bn_mom, num_features=channels_operating),
+                               BatchNorm2d(num_features=channels_operating),
                                get_act(act_type),
                                Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=channels_operating),
-                               BatchNorm2d(momentum=bn_mom, num_features=channels_operating),
+                               BatchNorm2d(num_features=channels_operating),
                                get_act(act_type),
                                Conv2d(in_channels=channels_operating, out_channels=channels, kernel_size=(1, 1), bias=False),
-                               BatchNorm2d(momentum=bn_mom, num_features=channels))
+                               BatchNorm2d(num_features=channels))
 
     def forward(self, x):
         """
@@ -63,7 +62,7 @@ class _BottlekneckResidualBlock(Module):
         return x + self.body(x)
 
 
-def _get_res_blocks(act_type, bn_mom, channels, channels_operating_init, channel_expansion, kernels, se_types):
+def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types):
     """Helper function which generates the residual blocks for Risev3"""
 
     channels_operating = channels_operating_init
@@ -78,7 +77,7 @@ def _get_res_blocks(act_type, bn_mom, channels, channels_operating_init, channel
         res_blocks.append(_BottlekneckResidualBlock(channels=channels,
                                                     channels_operating=channels_operating_active,
                                                     kernel=kernel, act_type=act_type,
-                                                    se_type=se_types[idx], bn_mom=bn_mom))
+                                                    se_type=se_types[idx]))
         channels_operating += channel_expansion
 
     return res_blocks
@@ -91,7 +90,7 @@ class RiseV3(Module):
                   channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
                   select_policy_from_plane=True, kernels=None, n_labels=4992,
                   se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
-                  use_mlp_wdl_ply=False, bn_mom=0.9,
+                  use_mlp_wdl_ply=False
                  ):
         """
         RISEv3 architecture
@@ -136,20 +135,20 @@ class RiseV3(Module):
             if se_type not in valid_se_types:
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
-        res_blocks = _get_res_blocks(act_type, bn_mom, channels, channels_operating_init, channel_expansion, kernels, se_types)
+        res_blocks = _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types)
 
         self.body_spatial = Sequential(
-            _Stem(channels=channels, bn_mom=bn_mom, act_type=act_type, nb_input_channels=nb_input_channels),
+            _Stem(channels=channels, act_type=act_type, nb_input_channels=nb_input_channels),
             *res_blocks,
         )
         self.nb_body_spatial_out = channels * board_height * board_width
 
         # create the two heads which will be used in the hybrid fwd pass
         self.value_head = _ValueHead(board_height, board_width, channels, channels_value_head, value_fc_size,
-                                     bn_mom, act_type, False, nb_input_channels,
+                                     act_type, False, nb_input_channels,
                                      use_wdl, use_plys_to_end, use_mlp_wdl_ply)
         self.policy_head = _PolicyHead(board_height, board_width, channels, channels_policy_head, n_labels,
-                                       bn_mom, act_type, select_policy_from_plane)
+                                       act_type, select_policy_from_plane)
 
     def forward(self, x):
         """
@@ -160,17 +159,7 @@ class RiseV3(Module):
         """
         out = self.body_spatial(x)
 
-        # use the output to create value/policy predictions
-        value_head_out = self.value_head(out)
-        policy_out = self.policy_head(out)
-
-        if self.use_plys_to_end and self.use_wdl:
-            value_out, wdl_out, plys_to_end_out = value_head_out
-            auxiliary_out = torch.cat((wdl_out, plys_to_end_out), dim=1)
-            return value_out, policy_out, auxiliary_out, wdl_out, plys_to_end_out
-        else:
-            value_out = value_head_out
-            return value_out, policy_out
+        return process_value_policy_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
 
 
 def get_rise_v33_model(args):

@@ -24,9 +24,20 @@
 # Base this Dockerfile from the official NVIDIA-MXNet docker contaienr
 # see release page for  all current available releases:
 # https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/running.html
-FROM nvcr.io/nvidia/mxnet:20.10-py3
+FROM nvcr.io/nvidia/pytorch:22.05-py3
+ENV FRAMEWORK="pytorch"
+# alternative arguments: Uncomment the following two lines if you want to use mxnet instead
+# FROM nvcr.io/nvidia/mxnet:20.09-py3
+# ENV FRAMEWORK="mxnet"
 
 MAINTAINER QueensGambit
+
+# Info message before building
+RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
+echo "choose pytorch" ; \
+else \
+echo "choose mxnet" ; \
+fi
 
 # General dependencies to run CrazyAra
 # -------------------------------------
@@ -39,11 +50,20 @@ RUN cd /root \
     && make install
 
 # Clone TensorRT repository for TensorRT backend
-# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
 RUN cd /root \
     && git clone https://github.com/NVIDIA/TensorRT \
-    && cd TensorRT \
-    && git checkout f693a6d723ef2766be36deb5e7987cd50159973a
+    && cd TensorRT
+
+RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
+# checkout commit for tag 22.05
+cd /root/TensorRT \
+&& git checkout 99a11a5fcdd1f184739bb20a8c4a473262c8ecc8 ; \
+else \
+# checkout commit for tag 20.09 ("git checkout tags/20.09" is currently not working)
+cd /root/TensorRT \
+&& git checkout f693a6d723ef2766be36deb5e7987cd50159973a ; \
+fi
+
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
                                                                                                                                                                                                                                                                 
@@ -91,6 +111,12 @@ RUN cd /root \
     && /usr/bin/python -m pip install --upgrade pip \
     && pip install -r requirements.txt
 
+# prepare setup for pytorch
+RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
+    pip uninstall -y mxboard \
+    && pip install --upgrade onnx ; \
+fi
+
 # Install graphviz for plotting NN architectures
 RUN apt-get update -y \
     && apt-get install -y graphviz \
@@ -101,9 +127,16 @@ RUN apt-get update -y \
 # --------------------------------------------------------------
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
-    && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DBACKEND_TENSORRT_7=ON .. \
-    && make -j8
+    && cd build
+RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
+    cd /root/CrazyAra/engine/build \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 .. \
+    && make -j8 ; \
+else \
+    cd /root/CrazyAra/engine/build \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 -DBACKEND_TENSORRT_7=ON .. \
+    && make -j8 ; \
+fi
 
 #-DBACKEND_TENSORRT_7=ON
 # Rename the config files
@@ -118,13 +151,3 @@ RUN apt-get update -y \
 
 CMD cd /root/CrazyAra/engine/src/rl/ \
     && /bin/bash
-
-
-# CMD mv /root/CrazyAra/engine/build/BoardAra /data/RL \
-#	&& mkdir -p /data/RL/model/BoardAra/tictactoe \
-#    && cd ~/CrazyAra/DeepCrazyhouse/src/domain/neural_net \
-#    && python generate_random_nn.py --model-type risev3.3  --n-labels=548 --channels-policy-head 10 --input-shape 8 8 8 \
-#	&& cp /root/CrazyAra/engine/3rdparty/Fairy-Stockfish/src/variants.ini /data/RL \
-#	&& mv risev3.3-0000-bsize-*.onnx risev3.3-0000.params risev3.3-symbol.json /data/RL/model/BoardAra/tictactoe/ \
-#	&& cd /data/RL/ \
-#   && /bin/bash

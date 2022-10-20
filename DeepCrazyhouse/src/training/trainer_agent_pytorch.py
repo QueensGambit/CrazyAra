@@ -20,7 +20,6 @@ import datetime
 import onnx
 from rtpt import RTPT
 from tqdm import tqdm_notebook
-from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import TensorDataset, DataLoader
 from torch.optim.optimizer import Optimizer
 from torch.nn.modules.loss import _Loss
@@ -64,6 +63,7 @@ class TrainerAgentPytorch:
 
         # define a summary writer that logs data and flushes to the file every 5 seconds
         if self.tc.log_metrics_to_tensorboard:
+            from torch.utils.tensorboard import SummaryWriter
             self.sum_writer = SummaryWriter(log_dir=self.tc.export_dir+"logs", flush_secs=5)
         # Define the two loss functions
         if train_config.sparse_policy_label:
@@ -107,6 +107,7 @@ class TrainerAgentPytorch:
         """
 
         self._setup_variables(cur_it)
+        self._model.train()  # set training mode
 
         while self.continue_training:
             # reshuffle the ordering of the training game batches (shuffle works in place)

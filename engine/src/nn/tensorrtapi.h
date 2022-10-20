@@ -195,6 +195,13 @@ string generate_trt_file_path(const string &modelDirectory, unsigned int batchSi
  */
 void set_shape(nn_api::Shape& shape, const nvinfer1::Dims& dims);
 
+/**
+ * @brief set_dims Converter function from nn_api::Shape to nvinfer1::Dims
+ * @param dims Dims object to be set
+ * @param shape Target object
+ */
+void set_dims(Dims &dims, const nn_api::Shape &shape);
+
 #endif
 
 #endif // TENSORRTAPI_H

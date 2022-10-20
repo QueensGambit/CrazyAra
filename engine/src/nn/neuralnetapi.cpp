@@ -52,10 +52,25 @@ vector<string> get_items_by_elment(const vector<string> &stringVector, const str
 string get_file_ending_with(const string& dir, const string& suffix) {
     const vector<string> files = get_directory_files(dir);
     const string retString = get_string_ending_with(files, suffix);
-    if (retString == "") {
-        throw invalid_argument( "The given directory at " + dir + " doesn't contain a file ending with " + suffix);
-    }
     return retString;
+}
+
+string get_onnx_model_name(const string& modelDir, int batchSize)
+{
+    string modelName = get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
+
+    if (modelName  == "") {
+        // check for onnx with dynamic shape
+        modelName = get_file_ending_with(modelDir, ".onnx");
+        if (modelName == "") {
+            throw invalid_argument( "The given directory at " + modelDir + " doesn't contain a file ending with " + ".onnx");
+        }
+        if (modelName.find("-bsize-") != string::npos) {
+            throw invalid_argument( "The given directory at " + modelDir + " should either contain an onnx file supporting the current batch size"
+                                                                           " or an onnx file with dynamic shape support.");
+        }
+    }
+    return modelName;
 }
 
 

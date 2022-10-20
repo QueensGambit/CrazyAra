@@ -27,6 +27,9 @@ from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedu
     CosineAnnealingSchedule
 from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
 from DeepCrazyhouse.src.training.train_util import get_metrics
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model_by_train_config
+from DeepCrazyhouse.src.training.trainer_agent_gluon import TrainerAgentGluon
+from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch, load_torch_state, save_torch_state, get_context, export_to_onnx
 
 
 def update_network(queue, nn_update_idx, symbol_filename, params_filename, tar_filename, convert_to_onnx, main_config, train_config: TrainConfig, model_contender_dir):
@@ -77,11 +80,8 @@ def update_network(queue, nn_update_idx, symbol_filename, params_filename, tar_f
 
     train_config.export_weights = True  # save intermediate results to handle spikes
     if train_config.framework == 'gluon':
-        from DeepCrazyhouse.src.training.trainer_agent_gluon import TrainerAgentGluon
         train_agent = TrainerAgentGluon(net, val_data, train_config, train_objects, use_rtpt=False)
     elif train_config.framework == 'pytorch':
-        from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch, load_torch_state, \
-            save_torch_state, get_context, export_to_onnx
         train_agent = TrainerAgentPytorch(net, val_data, train_config, train_objects, use_rtpt=False)
 
     # iteration counter used for the momentum and learning rate schedule
@@ -109,8 +109,9 @@ def _export_net(convert_to_onnx, input_shape, k_steps_final, net, nn_update_idx,
     if train_config.framework == 'gluon':
         net.export(prefix, epoch=nn_update_idx)
     elif train_config.framework == 'pytorch':
-        from DeepCrazyhouse.src.training.trainer_agent_pytorch import save_torch_state, get_context, export_to_onnx
-        save_torch_state(net, torch.optim.SGD(net.parameters(), lr=train_config.max_lr),'%s-%04d.tar' % (prefix, k_steps_final))
+        net.eval()
+        save_torch_state(net, torch.optim.SGD(net.parameters(), lr=train_config.max_lr),
+                         '%s-%04d.tar' % (prefix, k_steps_final))
     print()
     logging.info("Saved checkpoint to %s-%04d.params", prefix, nn_update_idx)
     if convert_to_onnx:
@@ -129,12 +130,6 @@ def _export_net(convert_to_onnx, input_shape, k_steps_final, net, nn_update_idx,
                                Path(model_contender_dir), model_prefix,
                                train_config.use_wdl and train_config.use_plys_to_end,
                                True)
-                for batch_size in [1, 8, 16]:
-                    dummy_input = torch.zeros(batch_size, input_shape[0], input_shape[1], input_shape[2]).to(ctx)
-                    export_to_onnx(net, batch_size,
-                                   dummy_input,
-                                   Path(model_contender_dir), model_prefix,
-                                   train_config.use_wdl and train_config.use_plys_to_end, False)
 
 
 def _get_net(ctx, input_shape, main_config, params_filename, symbol_filename, tar_filename, train_config):
@@ -150,8 +145,6 @@ def _get_net(ctx, input_shape, main_config, params_filename, symbol_filename, ta
         net = mx.gluon.SymbolBlock(sym, inputs)
         net.collect_params().load(params_filename, ctx)
     elif train_config.framework == 'pytorch':
-        from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state
-        from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model_by_train_config
         net = get_rise_v33_model_by_train_config(input_shape, train_config)
         if torch.cuda.is_available():
             net.cuda(torch.device(f"cuda:{train_config.device_id}"))

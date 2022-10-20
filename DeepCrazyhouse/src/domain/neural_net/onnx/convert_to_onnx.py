@@ -13,7 +13,6 @@ Reference:
 https://mxnet.apache.org/api/python/docs/tutorials/deploy/export/onnx.html
 """
 import os
-import sys
 import shutil
 import argparse
 import mxnet as mx
@@ -26,6 +25,9 @@ from pathlib import Path
 import sys
 sys.path.append("../../../../../")
 from DeepCrazyhouse.configs.train_config import TrainConfig
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import \
+    get_rise_v33_model_by_train_config
+from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state, get_context, export_to_onnx
 
 
 def parse_args(cmd_args: list):

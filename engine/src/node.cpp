@@ -1188,7 +1188,12 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
              << setw(10) << max(q, -9.9999999) << " | "
              << setw(5) << value_to_centipawn(q) << " | ";
         if (childIdx < get_no_visit_idx() && d->childNodes[childIdx] != nullptr && d->childNodes[childIdx]->d != nullptr && d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
-            cout << setfill(' ') << setw(4) << node_type_to_string(flip_node_type(NodeType(d->childNodes[childIdx]->d->nodeType)))
+            cout << setfill(' ') << setw(4) <<
+        #ifndef MCTS_SINGLE_PLAYER
+                    node_type_to_string(flip_node_type(NodeType(d->childNodes[childIdx]->d->nodeType)))
+        #else
+                    node_type_to_string(NodeType(d->childNodes[childIdx]->d->nodeType))
+        #endif
                  << " in " << setfill('0') << setw(2) << d->childNodes[childIdx]->d->endInPly+1;
         }
         else {

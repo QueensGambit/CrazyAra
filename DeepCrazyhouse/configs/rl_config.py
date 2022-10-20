@@ -16,7 +16,7 @@ class RLConfig:
     arena_games: int = 100
     # Directory where the executable is located and where the selfplay data will be stored
     binary_dir: str = f'/data/RL/'
-    binary_name: str = f'BoardAra'
+	binary_name: str = f'ClassicAra'
     # How many times to train the NN, create a model contender or generate nn_update_files games
     nb_nn_updates: int = 10
     # How many new generated training files are needed to apply an update to the NN
@@ -27,7 +27,7 @@ class RLConfig:
     rm_fraction_for_selection: float = 0.05  # which percentage of the most recent memory shall be taken into account
     # The UCI_Variant. Must be in ["3check", "atomic", "chess", "crazyhouse",
     # "giveaway" (= antichess), "horde", "kingofthehill", "racingkings"]
-    uci_variant: str = f'tictactoe' #f'tictactoe'
+    uci_variant: str = f'chess'
 
 
 @dataclass
@@ -47,8 +47,9 @@ class UCIConfig:
     Centi_Q_Value_Weight: int = 0
     Centi_Quick_Probability: int = 0
     Centi_Temperature: int = 80
+    EPD_File_Path: str = "<empty>"
     MaxInitPly: int = 0  # default: 30
-    MCTS_Solver: bool = False
+    MCTS_Solver: bool = True
     MeanInitPly: int = 0  # default: 15
     Milli_Policy_Clip_Thresh: int = 10
     Nodes: int = 200
@@ -60,6 +61,7 @@ class UCIConfig:
     SyzygyPath: str = f''
     Temperature_Moves: int = 15  # CZ: 500
     Timeout_MS: int = 0
+    UCI_Chess960: bool = False
 
 
 @dataclass

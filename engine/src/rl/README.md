@@ -14,25 +14,34 @@ installs all additional libraries for reinforcement learning.
 Lastly, it compiles the CrazyAra executable from the C++ source code using the current repository state.
 :warning: NVIDIA Docker [does not work on Windows](https://github.com/NVIDIA/nvidia-docker/wiki/Frequently-Asked-Questions#is-microsoft-windows-supported).
 
-In order to build the docker container, use the following command:
+In order to build the docker container with pytorch support, use the following command:
  
 ```shell script
  docker build -t crazyara_docker .
 ```
+if you want to use mxnet instead, uncomment the following lines in the Dockerfile before building:
+```shell script
+# FROM nvcr.io/nvidia/mxnet:20.09-py3
+# ENV FRAMEWORK="mxnet"
+```
+and comment the line:
+```shell script
+FROM nvcr.io/nvidia/pytorch:22.05-py3
+```
 
 Afterwards you can start the container using a specified list of GPUs:
 ```shell script
-docker run -gpus all -it \
- --rm -v local_dir:/data/RL crazyara_docker:latest
+docker run --gpus all --shm-size 16G -it \
+ --rm -v ~/mnt:/data/RL --name crazyara_rl crazyara_docker:latest
 ```
-If you want to launch the docker using only a subset of availabe you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.
+If you want to launch the docker using only a subset of available you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.
 
 The parameter `-v` describes the mount directory, where the selfplay data will be stored.
 
 For older docker version you can use the `nvidia-docker run` command instead:
 ```shell script
 nvidia-docker run -it --rm \
- -v <local_dir>:/data/RL crazyara_docker:latest
+ -v <local_dir>:/data/RL --name crazyara_rl crazyara_docker:latest
 ```
 
 ---
@@ -52,8 +61,8 @@ You can download a network which was trained via
 
 ```shell script
 cd /data/RL
-wget https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip
-unzip RISEv2-mobile.zip
+wget https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/ClassicAra-sl-model-wdlp-rise3.3-input3.0.zip
+unzip ClassicAra-sl-model-wdlp-rise3.3-input3.0.zip
 ```
 
 Alternatively, if a model file is already available on the host machine, you can move the model directory into the mounted docker directory.
