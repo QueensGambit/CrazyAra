@@ -140,7 +140,9 @@ const static string StartFENs[SUBVARIANT_NB] = {
     #ifdef TWOKINGSSYMMETRIC
     "rnbqkknr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKKNR w KQkq - 0 1",
     #endif
+    #ifdef XIANGQI
     "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
+    #endif
     #ifdef MODE_STRATEGO
     "MBCaaaaaaaKaaaaaaaaaaaaaaDaaaaaaEaDaaaLaaa__aa__aaaa__aa__aaPaaaWNaOXaQPaaaYaaaaaaaaaaaaaaaaaaaaaaaa r 0",
     #endif
