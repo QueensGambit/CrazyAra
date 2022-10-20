@@ -313,7 +313,6 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
 
 const string OptionsUCI::get_first_variant_with_model()
 {
-    string value;
     vector<string> dirs = get_directory_files("model/" + engineName + "/");
     const static vector<string> availableVariants = StateConstants::available_variants();
     for(string variant : availableVariants) {
