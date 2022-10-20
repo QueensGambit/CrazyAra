@@ -16,7 +16,7 @@ class RLConfig:
     arena_games: int = 100
     # Directory where the executable is located and where the selfplay data will be stored
     binary_dir: str = f'/data/RL/'
-	binary_name: str = f'ClassicAra'
+    binary_name: str = f'ClassicAra'
     # How many times to train the NN, create a model contender or generate nn_update_files games
     nb_nn_updates: int = 10
     # How many new generated training files are needed to apply an update to the NN
@@ -52,11 +52,11 @@ class UCIConfig:
     MCTS_Solver: bool = True
     MeanInitPly: int = 0  # default: 15
     Milli_Policy_Clip_Thresh: int = 10
-    Nodes: int = 200
+    Nodes: int = 800
     Reuse_Tree: str = False
     Search_Type: str = f'mcts'
     Selfplay_Chunk_Size: int = 128  # default: 128
-    Selfplay_Number_Chunks: int = 16  # default: 640
+    Selfplay_Number_Chunks: int = 640  # default: 640
     Simulations: int = 3200
     SyzygyPath: str = f''
     Temperature_Moves: int = 15  # CZ: 500

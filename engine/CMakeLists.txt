@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 set (CMAKE_CXX_STANDARD 17)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
-option(USE_RL                    "Build with reinforcement learning support"  ON)
+option(USE_RL                    "Build with reinforcement learning support"  OFF)
 option(BACKEND_TENSORRT          "Build with TensorRT support"  ON)
 option(BACKEND_TENSORRT_7        "Build with deprecated TensorRT 7 support"  OFF)
 option(BACKEND_MXNET             "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
@@ -12,11 +12,11 @@ option(BACKEND_OPENVINO          "Build with OpenVino backend (CPU/GPU) support"
 option(BUILD_TESTS               "Build and run tests"  OFF)
 option(USE_DYNAMIC_NN_ARCH       "Build with dynamic neural network architektur support"  ON)
 # enable a single mode for different model input / outputs
-option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  OFF)
+option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 option(MODE_OPEN_SPIEL           "Build with open_spiel environment support"  OFF)
-option(MODE_BOARDGAMES           "Build with Fairy-Stockfish environment support for board games"   ON)
+option(MODE_BOARDGAMES           "Build with Fairy-Stockfish environment support for board games"   OFF)
 option(MODE_XIANGQI              "Build with xiangqi only support" OFF)
 option(MODE_STRATEGO             "Build Stratego with open_spiel environment support"  OFF)
 option(SEARCH_UCT                "Build with UCT instead of PUCT search"  OFF)
@@ -185,7 +185,6 @@ file(GLOB sf_related_files
     "3rdparty/Stockfish/src/uci.cpp"
     "3rdparty/Stockfish/src/bitboard.h"
     "3rdparty/Stockfish/src/bitboard.cpp"
-    "3rdparty/Stockfish/src/*.cpp"
     "3rdparty/Stockfish/src/*.cpp"
     )
 file(GLOB uci_files
@@ -443,7 +442,7 @@ if (USE_RL)
     include_directories($ENV{XTL_PATH}/include)
     include_directories($ENV{XTENSOR_PATH}/include)
     add_definitions(-DUSE_RL)
-    # add_definitions(-DDISABLE_UCI_INFO)
+    add_definitions(-DDISABLE_UCI_INFO)
 endif()
 
 if(BACKEND_TENSORRT_7)
