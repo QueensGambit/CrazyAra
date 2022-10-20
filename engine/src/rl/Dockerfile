@@ -66,9 +66,9 @@ fi
 
 ENV TENSORRT_PATH /root/TensorRT/
 ENV CUDA_PATH /usr/local/cuda/
-                                                                                                                                                                                                                                                                
-# Additional dependencies for reinforcement learning                                                                                                                                                                                                                               
-# ---------------------------------------------------                                                                                                                                                                                                                              
+
+# Additional dependencies for reinforcement learning
+# ---------------------------------------------------
 # Install boost library (dependecy of z5 library, preinstalled on normal Debian systems)
 RUN cd /root \
     && wget https://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.bz2 \
@@ -102,13 +102,9 @@ ENV Z5_PATH /root/z5/
 
 # Clone the CrazyAra repository
 # Install python dependencies for training the neural network
-RUN pwd
 RUN cd /root \
-    && git clone https://github.com/Chooga/CrazyAra.git --recursive \
-    && cd /root/CrazyAra/ \
-    && git checkout tictactoe \
+    && git clone https://github.com/QueensGambit/CrazyAra.git --recursive \
     && cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
-    && /usr/bin/python -m pip install --upgrade pip \
     && pip install -r requirements.txt
 
 # prepare setup for pytorch
@@ -138,9 +134,9 @@ else \
     && make -j8 ; \
 fi
 
-#-DBACKEND_TENSORRT_7=ON
 # Rename the config files
-RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py 
+RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
+    && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
 
 # Install debugging utilities for "coredumpctl gdb"
 RUN apt-get update -y \
