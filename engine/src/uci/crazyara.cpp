@@ -94,12 +94,6 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     // this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
-//        "setoption name uci_variant value tictactoe",
-//        "isready",
-//        "go",
-//        "position startpos moves a10c3 a10a2 a10c2 a10c1 a10a1 a10b2 a10a3 a10b3", //b1
-//        "position startpos moves P@c3", // p@a2 P@c2 p@c1 P@a1 p@b2 P@a3 p@b3",
-//        "go depth 1"
     };
 
     do {
@@ -207,7 +201,6 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
 
     istringstream is("fen " + fen);
 
-    std:cout << state.get()->fen() << endl;
     position(state.get(), is);
     istringstream isGoCommand(goCommand);
     go(state.get(), isGoCommand, evalInfo);
@@ -503,10 +496,10 @@ std::string read_string_from_file(const std::string &file_path){
 void CrazyAra::init()
 {
     OptionsUCI::init(Options);
-//#ifdef MODE_XIANGQI
-//    UCI::init(Options);
-//    pieceMap.init();
-//#endif
+#ifdef MODE_XIANGQI
+    UCI::init(Options);
+    pieceMap.init();
+#endif
 #ifdef MODE_BOARDGAMES
     UCI::init(Options);
     pieceMap.init();
@@ -523,13 +516,7 @@ void CrazyAra::init()
     Bitbases::init();
     Search::init();
 #endif
-//#ifdef MODE_XIANGQI
-//    // This is a workaround for compatibility with Fairy-Stockfish
-//    // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
-//    Options.erase("Hash");
-//    Options.erase("Use NNUE");
-//#endif
-#ifdef MODE_BOARDGAMES
+#if defined(MODE_XIANGQI) || defined(MODE_BOARDGAMES)
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");
