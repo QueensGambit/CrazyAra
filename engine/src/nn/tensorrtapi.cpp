@@ -215,11 +215,6 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     const uint32_t explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
     auto network = SampleUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
 
-    SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
-    unique_ptr<IInt8Calibrator> calibrator;
-    unique_ptr<IBatchStream> calibrationStream;
-    set_config_settings(config, 1_GiB, calibrator, calibrationStream);
-
     // conversion of ONNX model to TensorRT
     // parse the ONNX model file along with logger object for reporting info
     SampleUniquePtr<nvonnxparser::IParser> parser = SampleUniquePtr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, gLogger.getTRTLogger()));
@@ -233,7 +228,6 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
         return nullptr;
     }
     configure_network(network);
-	
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
     unique_ptr<IInt8Calibrator> calibrator;
     unique_ptr<IBatchStream> calibrationStream;

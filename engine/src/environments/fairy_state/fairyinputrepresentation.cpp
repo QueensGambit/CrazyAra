@@ -27,10 +27,6 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
     size_t currentChannel = 0;
     Color me = pos->side_to_move();
     Color you = ~me;
-#ifndef MODE_BOARDGAMES
-    // pieces (ORDER: King, Advisor, Elephant, Horse, Rook, Cannon, Soldier)
-    const vector<PieceType> pieces = {KING, FERS, ELEPHANT, HORSE, ROOK, CANNON, SOLDIER};
-#endif
 
 #ifdef MODE_BOARDGAMES
     // iterate over all board squares
@@ -50,10 +46,10 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
     }
 #endif
 
-#ifndef MODE_BOARDGAMES
-    // pieces
+#ifdef MODE_XIANGQI
+    // pieces (ORDER: King, Advisor, Elephant, Horse, Rook, Cannon, Soldier)
     for (Color color : {me, you}) {
-        for (PieceType piece : pieces) {
+        for (PieceType piece : {KING, FERS, ELEPHANT, HORSE, ROOK, CANNON, SOLDIER}) {
             const Bitboard pieces = pos->pieces(color, piece);
             set_bits_from_bitmap(pieces, currentChannel, inputPlanes, me);
             currentChannel++;
@@ -81,13 +77,14 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
     }
     currentChannel++;
 
-#ifndef MODE_BOARDGAMES
+#ifdef MODE_XIANGQI
     // total move count
     std::fill(inputPlanes + currentChannel * StateConstantsFairy::NB_SQUARES(),
               inputPlanes + (currentChannel + 1) * StateConstantsFairy::NB_SQUARES(),
               normalize ? (std::floor(pos->game_ply() / 2 )) / StateConstantsFairy::MAX_FULL_MOVE_COUNTER() : std::floor(pos->game_ply() / 2 ));
 #endif
 
+#ifdef MODE_BOARDGAMES
     // variant specification "tictactoe", "cfour", "flipello", "clobber", "breakthrough"
     for (size_t idx = 0; idx < StateConstantsFairy::available_variants().size(); ++idx) {
         if (pos->variant()->startFen == StateConstantsFairy::start_fen(idx)) {
@@ -97,4 +94,6 @@ void board_to_planes(const FairyBoard* pos, bool normalize, float *inputPlanes) 
         }
         ++currentChannel;
     }
+    #endif
+
 }
