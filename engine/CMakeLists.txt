@@ -87,8 +87,6 @@ if (MODE_BOARDGAMES)
     project(BoardAra CXX)
     add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DNO_THREADS)
-    add_definitions(-DXIANGQI)
-    add_definitions(-DMODE_XIANGQI)
     add_definitions(-DMODE_BOARDGAMES)
     add_definitions(-DLARGEBOARDS)
     add_definitions(-DPRECOMPUTED_MAGICS)
@@ -335,10 +333,6 @@ if (MODE_OPEN_SPIEL OR MODE_STRATEGO)
             "3rdparty/open_spiel/open_spiel/games/chess/*.cc"
             "3rdparty/open_spiel/open_spiel/games/hex.h"
             "3rdparty/open_spiel/open_spiel/games/hex.cc"
-            "3rdparty/open_spiel/open_spiel/games/tic_tac_toe.h"
-            "3rdparty/open_spiel/open_spiel/games/tic_tac_toe.cc"
-            "3rdparty/open_spiel/open_spiel/games/connect_four.h"
-            "3rdparty/open_spiel/open_spiel/games/connect_four.cc"
             "3rdparty/open_spiel/open_spiel/games/dark_hex.h"
             "3rdparty/open_spiel/open_spiel/games/dark_hex.cc"
             )

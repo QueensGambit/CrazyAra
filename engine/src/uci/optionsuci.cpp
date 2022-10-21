@@ -56,7 +56,7 @@ inline TimePoint current_time() {
 
 // method is based on 3rdparty/Stockfish/uci.cpp
 #ifdef SF_DEPENDENCY
-#ifndef MODE_XIANGQI
+#if !defined(MODE_XIANGQI) && !defined(MODE_BOARDGAMES)
 void on_tb_path(const Option& o) {
     Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
 }
@@ -175,7 +175,7 @@ void OptionsUCI::init(OptionsMap &o)
    o["Temperature_Moves"]              << Option(0, 0, 99999);
 #endif
 #ifdef SF_DEPENDENCY
-#ifndef MODE_XIANGQI
+#if !defined(MODE_XIANGQI) && !defined(MODE_BOARDGAMES)
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
 #endif
 #endif

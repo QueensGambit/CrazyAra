@@ -35,7 +35,7 @@
 #include "optionsuci.h"
 #include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
-#ifdef MODE_XIANGQI
+#if defined(MODE_XIANGQI) || defined(MODE_BOARDGAMES)
 #include "piece.h"
 #endif
 #ifdef MXNET

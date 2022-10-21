@@ -60,10 +60,6 @@ void OpenSpielState::set(const std::string &fenStr, bool isChess960, int variant
         info_string_important("NewInitialState from string is not implemented for HEX.");
         return;
     }
-    if (currentVariant == open_spiel::gametype::SupportedOpenSpielVariants::TICTACTOE) {
-        info_string_important("NewInitialState from string is not implemented for Tic-Tac-Toe.");
-        return;
-    }
     spielState = spielGame->NewInitialState(fenStr);
 }
 
@@ -71,7 +67,6 @@ void OpenSpielState::get_state_planes(bool normalize, float *inputPlanes, Versio
 {
     std::fill(inputPlanes, inputPlanes+StateConstantsOpenSpiel::NB_VALUES_TOTAL(), 0.0f);
     std::vector<float> v(spielGame->ObservationTensorSize());
-    int currentPlayer = spielState->CurrentPlayer();
     spielState->ObservationTensor(spielState->CurrentPlayer(), absl::MakeSpan(v));
     std::copy( v.begin(), v.end(), inputPlanes);
 }

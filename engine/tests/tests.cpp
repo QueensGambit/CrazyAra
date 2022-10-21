@@ -32,7 +32,7 @@ using namespace Catch::literals;
 using namespace std;
 #include <string>
 #ifndef MODE_STRATEGO
-#ifndef MODE_XIANGQI
+#if !defined(MODE_XIANGQI) && !defined(MODE_BOARDGAMES)
 #ifdef SF_DEPENDENCY
 #include "uci.h"
 #endif
@@ -716,7 +716,7 @@ TEST_CASE("State: clone()"){
     unique_ptr<StateObj> state2 = unique_ptr<StateObj>(state.clone());
     REQUIRE(state2->fen() == state.fen());
 }
-#elif defined (MODE_XIANGQI)
+#elif defined(MODE_XIANGQI) || defined(MODE_BOARDGAMES)
 #include "catch.hpp"
 #include "piece.h"
 #include "thread.h"
@@ -772,7 +772,33 @@ void apply_move_to_board(string uciMove, FairyBoard& pos, StateListPtr& states) 
     states->emplace_back();
     pos.do_move(m, states->back());
 }
+#endif // MODE_XIANGQI || MODE_BOARDGAMES
 
+#ifdef MODE_BOARDGAMES
+TEST_CASE("Board_Games_Input_Planes") {
+    init();
+    FairyBoard pos;
+    StateListPtr states = StateListPtr(new std::deque<StateInfo>(1));
+
+    auto uiThread = make_shared<Thread>(0);
+
+    const Variant *breakthroughVariant = variants.find("breakthrough")->second;
+    string startFen = breakthroughVariant->startFen;
+    pos.set(breakthroughVariant, startFen, false, &states->back(), uiThread.get(), false);
+
+    // starting position test
+    double sum, maxNum, key;
+    size_t argMax;
+    get_planes_statistics(&pos, false, sum, maxNum, key, argMax);
+    REQUIRE(sum == 96);
+    REQUIRE(maxNum == 1);
+    REQUIRE(key == 12240);
+    REQUIRE(argMax == 0);
+    REQUIRE(pos.fen() == startFen);
+}
+#endif
+
+#ifdef MODE_XIANGQI
 TEST_CASE("Xiangqi_Input_Planes") {
     init();
     FairyBoard pos;

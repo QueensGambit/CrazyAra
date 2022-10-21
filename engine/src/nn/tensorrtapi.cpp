@@ -228,6 +228,7 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
         return nullptr;
     }
     configure_network(network);
+    
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
     unique_ptr<IInt8Calibrator> calibrator;
     unique_ptr<IBatchStream> calibrationStream;

@@ -107,7 +107,7 @@ void apply_given_moves(StateObj& state, const std::vector<string>& uciMoves);
 Variant get_default_variant();
 
 #ifdef SF_DEPENDENCY
-#ifndef MODE_XIANGQI
+#if !defined(MODE_XIANGQI) && !defined(MODE_BOARDGAMES)
 /**
  * @brief is_uci_move_legal Check if a uci move, given as a string, is legal at a specific position
  * @return bool True, if the engine thinks the move is legal
