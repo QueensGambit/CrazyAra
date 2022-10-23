@@ -794,7 +794,7 @@ TEST_CASE("Board_Games_Input_Planes") {
     REQUIRE(maxNum == 1);
     REQUIRE(key == 12240);
     REQUIRE(argMax == 0);
-    REQUIRE(pos.fen() == startFen);
+    REQUIRE(pos.fen() == string("pppppppp/pppppppp/8/8/8/8/PPPPPPPP/PPPPPPPP w - - 0 1"));
 }
 #endif
 
