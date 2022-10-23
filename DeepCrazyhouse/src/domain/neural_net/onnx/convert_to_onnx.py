@@ -21,7 +21,6 @@ import numpy as np
 from mxnet.contrib import onnx as onnx_mxnet
 import logging
 
-import torch
 from pathlib import Path
 import sys
 sys.path.append("../../../../../")
@@ -71,6 +70,9 @@ def parse_args(cmd_args: list):
         args.params_file = glob(args.model_dir + "/*.params")[0]
         filepaths = [args.sym_file, args.params_file]
     elif args.framework == 'pytorch':
+        import torch
+        from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state, get_context, export_to_onnx
+        from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model_by_train_config
         args.tar_file = glob(args.model_dir + "/*.tar")[0]
         filepaths = [args.tar_file]
 

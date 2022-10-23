@@ -16,6 +16,7 @@ option(MODE_CRAZYHOUSE           "Build with crazyhouse only support"  ON)
 option(MODE_CHESS                "Build with chess + chess960 only support"  OFF)
 option(MODE_LICHESS              "Build with lichess variants support"  OFF)
 option(MODE_OPEN_SPIEL           "Build with open_spiel environment support"  OFF)
+option(MODE_BOARDGAMES           "Build with Fairy-Stockfish environment support for board games"   OFF)
 option(MODE_XIANGQI              "Build with xiangqi only support" OFF)
 option(MODE_STRATEGO             "Build Stratego with open_spiel environment support"  OFF)
 option(SEARCH_UCT                "Build with UCT instead of PUCT search"  OFF)
@@ -70,12 +71,23 @@ if (MODE_STRATEGO)
     add_definitions(-DMODE_STRATEGO)
     add_definitions(-DACTION_64_BIT)
 endif()
+
 if (MODE_XIANGQI)
     project(XiangqiAra CXX)
     add_definitions(-DSF_DEPENDENCY)
     add_definitions(-DNO_THREADS)
     add_definitions(-DXIANGQI)
     add_definitions(-DMODE_XIANGQI)
+    add_definitions(-DLARGEBOARDS)
+    add_definitions(-DPRECOMPUTED_MAGICS)
+    add_definitions(-DNNUE_EMBEDDING_OFF)
+endif ()
+
+if (MODE_BOARDGAMES)
+    project(BoardAra CXX)
+    add_definitions(-DSF_DEPENDENCY)
+    add_definitions(-DNO_THREADS)
+    add_definitions(-DMODE_BOARDGAMES)
     add_definitions(-DLARGEBOARDS)
     add_definitions(-DPRECOMPUTED_MAGICS)
     add_definitions(-DNNUE_EMBEDDING_OFF)
@@ -153,7 +165,7 @@ file(GLOB_RECURSE CPP_PACKAGE_HEADERS
 
 find_package (Threads)
 
-if (MODE_XIANGQI)
+if (MODE_XIANGQI OR MODE_BOARDGAMES)
     include_directories("3rdparty/Fairy-Stockfish/src")
 else ()
     include_directories("3rdparty/Stockfish/src")
@@ -184,6 +196,7 @@ file(GLOB chess_related_files
 file(GLOB xiangqi_related_files
     "src/environments/fairy_state/*.h"
     "src/environments/fairy_state/*.cpp"
+    "src/"
     )
 file(GLOB fsf_related_files
     "3rdparty/Fairy-Stockfish/src/*.h"
@@ -198,6 +211,9 @@ file(GLOB fsf_related_files
     "3rdparty/Fairy-Stockfish/src/nnue/features/*.cpp"
     "3rdparty/Fairy-Stockfish/src/nnue/architectures/*.h"
     "3rdparty/Fairy-Stockfish/src/nnue/architectures/*.cpp"
+    )
+file(GLOB boardgames_related_files
+    "3rdparty/Fairy-Stockfish/src/variants.ini"
     )
 list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/ffishjs.cpp)
 list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/pyffish.cpp)
@@ -224,6 +240,15 @@ if (MODE_XIANGQI)
         ${xiangqi_related_files}
         ${fsf_related_files}
         ${uci_files})
+endif ()
+
+if (MODE_BOARDGAMES)
+    set(source_files
+        ${source_files}
+        ${xiangqi_related_files}
+        ${fsf_related_files}
+        ${uci_files}
+        ${boardgames_related_files})
 endif ()
 
 if (MODE_OPEN_SPIEL OR MODE_STRATEGO)

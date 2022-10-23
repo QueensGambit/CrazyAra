@@ -56,6 +56,13 @@ const static vector<string> availableVariants = {
 #ifdef MODE_XIANGQI
     "xiangqi",
 #endif
+#ifdef MODE_BOARDGAMES
+    "tictactoe",
+    "cfour",
+    "flipello",
+    "clobber",
+    "breakthrough",
+#endif
 #ifdef MODE_STRATEGO
     "stratego",
 #endif
@@ -75,7 +82,7 @@ const static string StartFENs[SUBVARIANT_NB] = {
     #ifdef MODE_OPEN_SPIEL
     ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .",    
     #endif
-        
+
     #ifdef ANTI
     // "The king has no royal power and accordingly:
     // it may be captured like any other piece

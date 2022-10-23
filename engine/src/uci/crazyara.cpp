@@ -26,6 +26,7 @@
 #include "crazyara.h"
 
 #include <thread>
+#include <fstream>
 #include "mctsagent.h"
 #include "search.h"
 #include "evalinfo.h"
@@ -34,7 +35,7 @@
 #include "optionsuci.h"
 #include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
-#ifdef MODE_XIANGQI
+#if defined(MODE_XIANGQI) || defined(MODE_BOARDGAMES)
 #include "piece.h"
 #endif
 #ifdef MXNET
@@ -200,6 +201,7 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     state->set(StateConstants::start_fen(variant), is960, variant);
 
     istringstream is("fen " + fen);
+
     position(state.get(), is);
     istringstream isGoCommand(goCommand);
     go(state.get(), isGoCommand, evalInfo);
@@ -479,6 +481,19 @@ void CrazyAra::init_rl_settings()
 }
 #endif
 
+std::string read_string_from_file(const std::string &file_path){
+    const std::ifstream input_stream(file_path, std::ios_base::binary);
+
+    if (input_stream.fail()) {
+        throw std::runtime_error("Failed to open file");
+    }
+
+    std::stringstream buffer;
+    buffer << input_stream.rdbuf();
+
+    return buffer.str();
+}
+
 void CrazyAra::init()
 {
     OptionsUCI::init(Options);
@@ -486,13 +501,23 @@ void CrazyAra::init()
     UCI::init(Options);
     pieceMap.init();
 #endif
+#ifdef MODE_BOARDGAMES
+    UCI::init(Options);
+    pieceMap.init();
+    fstream variantIni;
+    const string file_path = "variants.ini";
+    string variantInitContent = read_string_from_file(file_path);
+    std::stringstream ss(variantInitContent);
+    variants.parse_istream<false>(ss);
+    Options["UCI_Variant"].set_combo(variants.get_keys());
+#endif
 #ifdef SF_DEPENDENCY
     Bitboards::init();
     Position::init();
     Bitbases::init();
     Search::init();
 #endif
-#ifdef MODE_XIANGQI
+#if defined(MODE_XIANGQI) || defined(MODE_BOARDGAMES)
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");

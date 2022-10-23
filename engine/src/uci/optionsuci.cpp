@@ -56,7 +56,7 @@ inline TimePoint current_time() {
 
 // method is based on 3rdparty/Stockfish/uci.cpp
 #ifdef SF_DEPENDENCY
-#ifndef MODE_XIANGQI
+#if !defined(MODE_XIANGQI) && !defined(MODE_BOARDGAMES)
 void on_tb_path(const Option& o) {
     Tablebases::init(UCI::variant_from_name(Options["UCI_Variant"]), Options["SyzygyPath"]);
 }
@@ -128,7 +128,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Last_Device_ID"]                << Option(0, 0, 99999);
     o["Log_File"]                      << Option("", on_logger);
     o["MCTS_Solver"]                   << Option(true);
-#ifdef MODE_LICHESS
+#if defined(MODE_LICHESS) || defined(MODE_BOARDGAMES)
     o["Model_Directory"]               << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
 #else
     o["Model_Directory"]               << Option(string("model/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
@@ -175,7 +175,7 @@ void OptionsUCI::init(OptionsMap &o)
    o["Temperature_Moves"]              << Option(0, 0, 99999);
 #endif
 #ifdef SF_DEPENDENCY
-#ifndef MODE_XIANGQI
+#if !defined(MODE_XIANGQI) && !defined(MODE_BOARDGAMES)
     o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
 #endif
 #endif
@@ -271,7 +271,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
             state.init(variant, is960);
 
             string suffix_960 = (is960) ? "960" : "";
-#ifdef MODE_LICHESS
+#if defined(MODE_LICHESS) || defined(MODE_BOARDGAMES)
             Options["Model_Directory"] << Option(("model/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
             Options["Model_Directory_Contender"] << Option(("model_contender/" + engineName + "/" + (string)Options["UCI_Variant"] + suffix_960).c_str());
 #endif
@@ -286,6 +286,11 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
 
 string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
     // default value of is960 == false
+#ifdef MODE_BOARDGAMES
+    if (value == "standard") {
+       return "tictactoe";
+    }
+#endif
 #ifdef SUPPORT960
     // we only want 960 for chess atm
     if (value == "fischerandom" || value == "chess960"
@@ -310,11 +315,11 @@ const string OptionsUCI::get_first_variant_with_model()
 {
     vector<string> dirs = get_directory_files("model/" + engineName + "/");
     const static vector<string> availableVariants = StateConstants::available_variants();
-    for(string dir : dirs) {
-        if (std::find(availableVariants.begin(), availableVariants.end(), dir) != availableVariants.end()) {
-            const vector <string> files = get_directory_files("model/" + engineName + "/" + dir);
+    for(string variant : availableVariants) {
+        if (std::find(dirs.begin(), dirs.end(), variant) != dirs.end()) {
+            const vector <string> files = get_directory_files("model/" + engineName + "/" + variant);
             if ("" != get_string_ending_with(files, ".onnx")) {
-                return dir;
+                return variant;
             }
         }
     }

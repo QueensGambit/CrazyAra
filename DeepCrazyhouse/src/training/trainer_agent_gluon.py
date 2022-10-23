@@ -164,6 +164,7 @@ class TrainerAgentGluon:  # Probably needs refactoring
 
         # collect parameter names for logging the gradients of parameters in each epoch
         self._params = self._net.collect_params()
+        self.cur_it = None
         self._param_names = self._params.keys()
         self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
 
@@ -239,6 +240,9 @@ class TrainerAgentGluon:  # Probably needs refactoring
                              max_iterations=k_steps_end-self.tc.k_steps_initial)
         if cur_it is None:
             cur_it = self.tc.k_steps_initial * 1000
+        else:
+            self.cur_it = cur_it
+
         nb_spikes = 0  # count the number of spikes that have been detected
         # initialize the loss to compare with, with a very high value
         old_val_loss = np.inf

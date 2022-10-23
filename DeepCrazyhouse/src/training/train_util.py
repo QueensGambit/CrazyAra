@@ -11,7 +11,6 @@ try:
 except ModuleNotFoundError:
     import mxnet.gluon.metric as metric
 from DeepCrazyhouse.src.training.trainer_agent_gluon import acc_sign, cross_entropy, acc_distribution
-import DeepCrazyhouse.src.training.metrics_pytorch as pytorch_metrics
 
 
 def get_metrics(train_config):
@@ -25,6 +24,7 @@ def get_metrics(train_config):
     if train_config.framework == 'gluon':
         return _get_gluon_metrics(train_config)
     if train_config.framework == 'pytorch':
+        import DeepCrazyhouse.src.training.metrics_pytorch as pytorch_metrics
         return _get_pytorch_metrics(train_config)
 
 
