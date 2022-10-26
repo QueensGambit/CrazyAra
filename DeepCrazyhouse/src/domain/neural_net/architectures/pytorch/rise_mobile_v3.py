@@ -121,6 +121,13 @@ class RiseV3(Module):
         self.use_plys_to_end = use_plys_to_end
         self.use_wdl = use_wdl
 
+        if se_types is None:
+            se_types = [None] * len(kernels)
+        if use_transformers is None:
+            use_transformers = [None] * len(kernels)
+        if act_types is None:
+            act_types = ['relu'] * len(kernels)
+
         if len(kernels) != len(se_types):
             raise Exception(f'The length of "kernels": {len(kernels)} must be the same as'
                             f' the length of "se_types": {len(se_types)}')
