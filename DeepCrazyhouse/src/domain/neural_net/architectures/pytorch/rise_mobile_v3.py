@@ -189,7 +189,46 @@ def get_rise_v33_model(args):
     return model
 
 
+def get_rise_v2_model(args):
+    """
+    Wrapper definition for RISEv2.0
+    :return: pytorch model object
+    """
+    kernels = [3] * 13
+
+    se_types = [None] * len(kernels)
+    se_types[8] = "ca_se"
+    se_types[9] = "ca_se"
+    se_types[10] = "ca_se"
+    se_types[11] = "ca_se"
+    se_types[12] = "ca_se"
+
+    act_types = ['relu'] * len(kernels)
+
+    model = RiseV3(nb_input_channels=args.input_shape[0], board_height=args.input_shape[1], board_width=args.input_shape[2],
+                   channels=256, channels_operating_init=128, channel_expansion=64, act_types=act_types,
+                   channels_value_head=8, value_fc_size=256,
+                   channels_policy_head=args.channels_policy_head,
+                   dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
+                   kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
+                   use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
+                   )
+    return model
+
+
+def get_rise_v2_model_by_train_config(input_shape, tc: TrainConfig):
+    args = create_args_by_train_config(input_shape, tc)
+    model = get_rise_v2_model(args)
+    return model
+
+
 def get_rise_v33_model_by_train_config(input_shape, tc: TrainConfig):
+    args = create_args_by_train_config(input_shape, tc)
+    model = get_rise_v33_model(args)
+    return model
+
+
+def create_args_by_train_config(input_shape, tc):
     class Args:
         pass
 
@@ -201,5 +240,4 @@ def get_rise_v33_model_by_train_config(input_shape, tc: TrainConfig):
     args.use_wdl = tc.use_wdl
     args.use_plys_to_end = tc.use_plys_to_end
     args.use_mlp_wdl_ply = tc.use_mlp_wdl_ply
-    model = get_rise_v33_model(args)
-    return model
+    return args

@@ -35,7 +35,7 @@ def get_act(act_type):
 
 def get_se(se_type, channels, use_hard_sigmoid=False):
     """Wrapper method for different squeeze excitation types"""
-    if se_type == "ca_se":
+    if se_type == "ca_se" or se_type == "se":
         return _ChannelAttentionModule(channels=channels, use_hard_sigmoid=use_hard_sigmoid)
     if se_type == "eca_se":
         return _EfficientChannelAttentionModule(channels=channels, use_hard_sigmoid=use_hard_sigmoid)
@@ -77,7 +77,7 @@ class _EfficientChannelAttentionModule(torch.nn.Module):
 
 
 class _ChannelAttentionModule(torch.nn.Module):
-    def __init__(self, channels, kernel, reduction=2, use_hard_sigmoid=False):
+    def __init__(self, channels, reduction=2, use_hard_sigmoid=False):
         """
         Channel-wise attention module, Squeeze-and-Excitation Networks Jie Hu1, Li Shen, Gang Sun - https://arxiv.org/pdf/1709.01507v2.pdf
         :param channels: Number of input channels
@@ -90,10 +90,6 @@ class _ChannelAttentionModule(torch.nn.Module):
         else:
             act_type = "sigmoid"
         self.avg_pool = AdaptiveAvgPool2d(1)
-        self.body = Sequential(
-            Conv1d(in_channels=channels, out_channels=channels, kernel_size=kernel, padding=kernel//2, stride=1,
-                   bias=True),
-            get_act("sigmoid"))
 
         self.fc = Sequential(
             Linear(channels, channels // reduction, bias=False),
@@ -321,11 +317,11 @@ class _ValueHead(Module):
         if self.use_wdl and self.use_plys_to_end:
             wdl_out = self.body_wdl(x)
             plys_out = self.body_plys(x)
-            wdl_out_softmax = torch.softmax(wdl_out, dim=1)
             if self.use_mlp_wdl_ply:
-                x = torch.cat((wdl_out_softmax, plys_out), dim=1)
+                x = torch.cat((wdl_out, plys_out), dim=1)
                 return self.body_final(x), wdl_out, plys_out
             else:
+                wdl_out_softmax = torch.softmax(wdl_out, dim=1)
                 (loss_out, _, win_out) = torch.split(wdl_out_softmax, 1, dim=1)
                 return -loss_out + win_out, wdl_out, plys_out
 

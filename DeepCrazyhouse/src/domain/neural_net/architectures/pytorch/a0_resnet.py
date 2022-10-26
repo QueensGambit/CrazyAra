@@ -74,13 +74,14 @@ class ResidualBlock(torch.nn.Module):
     Definition of a residual block without any pooling operation
     """
 
-    def __init__(self, channels, act_type):
+    def __init__(self, channels, act_type: str, use_se: bool = False):
         """
         :param channels: Number of channels used in the conv-operations
         :param act_type: Activation function to use
         """
         super(ResidualBlock, self).__init__()
         self.act_type = act_type
+        self.use_se = use_se
 
         self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
                                BatchNorm2d(num_features=channels),
@@ -88,6 +89,9 @@ class ResidualBlock(torch.nn.Module):
                                Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
                                BatchNorm2d(num_features=channels),
                                )
+        if use_se:
+            self.se = get_se(se_type="se", channels=channels, use_hard_sigmoid=False)
+
         self.final_act = get_act(act_type)
 
     def forward(self, x):
@@ -97,7 +101,10 @@ class ResidualBlock(torch.nn.Module):
         :param x: Input to the ResidualBlock
         :return: Sum of the shortcut and the computed residual block computation
         """
-        return self.final_act(x + self.body(x))
+        out = self.body(x)
+        if self.use_se:
+            out = self.se(out)
+        return self.final_act(x + out)
 
 
 class AlphaZeroResnet(torch.nn.Module):
@@ -118,6 +125,7 @@ class AlphaZeroResnet(torch.nn.Module):
         select_policy_from_plane=False,
         use_wdl=False, use_plys_to_end=False,
         use_mlp_wdl_ply=False,
+        use_se=False,
     ):
         """
         :param n_labels: Number of labels the for the policy
@@ -134,7 +142,7 @@ class AlphaZeroResnet(torch.nn.Module):
 
         res_blocks = []
         for i in range(num_res_blocks):
-            res_blocks.append(ResidualBlock(channels, act_type))
+            res_blocks.append(ResidualBlock(channels, act_type, use_se))
 
         self.body = Sequential(_Stem(channels=channels, act_type=act_type,
                                      nb_input_channels=nb_input_channels),
