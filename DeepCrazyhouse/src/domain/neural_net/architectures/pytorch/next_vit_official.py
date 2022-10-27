@@ -96,7 +96,6 @@ class NextVit(nn.Module):
                  use_wdl=False, use_plys_to_end=False,
                  use_mlp_wdl_ply=False,
                  select_policy_from_plane=True,
-                 use_transformer_heads=True,
                  se_type=None,
                  use_simple_transformer_blocks=False,
                  ):
@@ -114,10 +113,9 @@ class NextVit(nn.Module):
         )
 
         self.value_head = _ValueHead(board_height=image_size, board_width=image_size, channels=channels, channels_value_head=8, fc0=256,
-                                     nb_input_channels=channels, use_wdl=use_wdl, use_plys_to_end=use_plys_to_end, use_mlp_wdl_ply=use_mlp_wdl_ply,
-                                     use_transformer=use_transformer_heads)
+                                     nb_input_channels=channels, use_wdl=use_wdl, use_plys_to_end=use_plys_to_end, use_mlp_wdl_ply=use_mlp_wdl_ply)
         self.policy_head = _PolicyHead(board_height=image_size, board_width=image_size, channels=channels, policy_channels=channels_policy_head, n_labels=NB_LABELS,
-                                       select_policy_from_plane=select_policy_from_plane, use_transformer=use_transformer_heads)
+                                       select_policy_from_plane=select_policy_from_plane)
 
     def forward(self, x):
 

@@ -201,7 +201,7 @@ class _DepthWiseStem(Module):
 
 class _PolicyHead(Module):
     def __init__(self, board_height=11, board_width=11, channels=256, policy_channels=2, n_labels=4992, act_type="relu",
-                 select_policy_from_plane=False): #, use_transformer=False):
+                 select_policy_from_plane=False):
         """
         Definition of the value head proposed by the alpha zero authors
         :param policy_channels: Number of channels for 1st conv operation in branch 0
@@ -215,9 +215,6 @@ class _PolicyHead(Module):
         self.body = Sequential()
         self.select_policy_from_plane = select_policy_from_plane
         self.nb_flatten = policy_channels * board_width * board_height
-        #if use_transformer:
-        #    self.body = NTB(channels, channels, out_features=policy_channels)
-        #else:
         self.body = Sequential(
             Conv2d(in_channels=channels, out_channels=channels, padding=1, kernel_size=(3, 3), bias=False),
             BatchNorm2d(num_features=channels),
@@ -245,7 +242,7 @@ class _PolicyHead(Module):
 class _ValueHead(Module):
     def __init__(self, board_height=11, board_width=11, channels=256, channels_value_head=1, fc0=256,
                  act_type="relu", use_raw_features=False, nb_input_channels=18,
-                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False, #use_transformer=False,
+                 use_wdl=False, use_plys_to_end=False, use_mlp_wdl_ply=False,
                  use_flat_inputs=False, in_features=512):
         """
         Definition of the value head proposed by the alpha zero authors
@@ -265,9 +262,6 @@ class _ValueHead(Module):
 
         super(_ValueHead, self).__init__()
 
-        #if use_transformer:
-        #    self.body = NTB(channels, channels, out_features=channels_value_head)
-        #else:
         self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels_value_head, kernel_size=(1, 1), bias=False),
                                BatchNorm2d(num_features=channels_value_head),
                                get_act(act_type))
