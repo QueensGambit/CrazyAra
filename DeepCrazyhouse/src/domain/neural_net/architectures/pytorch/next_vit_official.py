@@ -7,12 +7,11 @@ Created on 11.08.22
 # Based on official NextViT code (Copyright (c) ByteDance Inc. All rights reserved.)
 https://github.com/bytedance/Next-ViT/blob/main/classification/nextvit.py
 """
-import torch
 from torch import nn
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB, NCB, ConvBNReLU
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, get_se, process_value_policy_head
-from timm.models.layers import DropPath
+
 
 class Block(nn.Module):
     def __init__(self, in_channels, out_channels, ncb_layers, nct_layers, repeat, se_type, use_simple_transformer_blocks):
@@ -38,52 +37,13 @@ class Block(nn.Module):
     def _make_layer(self, in_channels, out_channels, ncb_layers, nct_layers):
         self.sub_layers = []
         for _ in range(ncb_layers):
-            # self.sub_layers +=  [NCB(in_channels, out_channels)]
-            self.sub_layers +=  [ResidualBlock(in_channels, 'relu', self.se_type)]
+            self.sub_layers += [NCB(in_channels, out_channels)]
         for _ in range(nct_layers):
-            self.sub_layers +=  [NTB(in_channels, out_channels, simple=self.use_simple_transformer_blocks)]
+            self.sub_layers += [NTB(in_channels, out_channels, simple=self.use_simple_transformer_blocks)]
         return nn.Sequential(*self.sub_layers)
 
     def forward(self, x):
         return self.block(x)
-
-
-class ResidualBlock(torch.nn.Module):
-    """
-    Definition of a residual block without any pooling operation
-    """
-
-    def __init__(self, channels, act_type, path_dropout=0, se_type=None):
-        """
-        :param channels: Number of channels used in the conv-operations
-        :param act_type: Activation function to use
-        :param path_dropout: Dropout ratio for stochastic depth training
-        """
-        super(ResidualBlock, self).__init__()
-        self.act_type = act_type
-        self.se_type = se_type
-        if se_type:
-            self.se = get_se(se_type=se_type, channels=channels, use_hard_sigmoid=True)
-
-        self.body = nn.Sequential(nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
-                               nn.BatchNorm2d(num_features=channels),
-                               get_act(act_type),
-                               nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=(3, 3), padding=(1, 1), bias=False),
-                               nn.BatchNorm2d(num_features=channels),
-                               )
-        self.path_dropout = DropPath(path_dropout)
-
-    def forward(self, x):
-        """
-        Implementation of the forward pass of the residual block.
-        Uses a broadcast add operation for the shortcut and the output of the residual block
-        :param x: Input to the ResidualBlock
-        :return: Sum of the shortcut and the computed residual block computation
-        """
-        # return self.final_act(x + self.body(x))
-        if self.se_type:
-            return x + self.path_dropout(self.body(self.se(x)))
-        return x + self.path_dropout(self.body(x))
 
 
 class NextVit(nn.Module):
@@ -121,8 +81,6 @@ class NextVit(nn.Module):
 
         x = self.stem(x)
         x = self.stage1(x)
-        # print('x after stage 1:', x.shape)
         x = self.stage3(x)
-        # print('x after stage 3:', x.shape)
 
         return process_value_policy_head(x, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
