@@ -16,6 +16,11 @@ from timm.models.layers import DropPath
 #from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
+def round_to_next_multiple_of_32(number):
+    """Rounds a given number to the next multiple of 32."""
+    return int((number / 32) + 0.5) * 32
+
+
 def get_act(act_type):
     """Wrapper method for different non linear activation functions"""
     if act_type == "relu":

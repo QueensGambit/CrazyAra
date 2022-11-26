@@ -25,14 +25,14 @@ from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
 from timm.models.layers import DropPath
 
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead,\
-    _Stem, get_se, process_value_policy_head, _BottlekneckResidualBlock, ClassicalResidualBlock
+    _Stem, get_se, process_value_policy_head, _BottlekneckResidualBlock, ClassicalResidualBlock, round_to_next_multiple_of_32
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NCB
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
-def _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio):
+def _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32):
     """Helper function which generates the residual blocks for Risev3"""
 
     channels_operating = channels_operating_init
@@ -46,6 +46,10 @@ def _get_res_blocks(act_types, channels, channels_operating_init, channel_expans
                 channels_operating_active = int(channels_operating * kernel_5_channel_ratio + 0.5) # 0.68 95 #- 32 * (idx // 2)
         else:
             channels_operating_active = channels_operating
+
+        if round_channels_to_next_32:
+            channels_operating_active = round_to_next_multiple_of_32(channels_operating_active)
+            channels = round_to_next_multiple_of_32(channels)
 
         if use_transformers[idx]:
             res_blocks.append(NTB(channels, channels, path_dropout=path_dropout_rates[idx]))
@@ -82,7 +86,7 @@ class RiseV3(Module):
                  se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
                  use_mlp_wdl_ply=False,
                  use_transformers=None, path_dropout=0, conv_block="mobile_bottlekneck_res_block",
-                 kernel_5_channel_ratio=None
+                 kernel_5_channel_ratio=None, round_channels_to_next_32=False,
                  ):
         """
         RISEv3 architecture
@@ -114,12 +118,16 @@ class RiseV3(Module):
         :param path_dropout: Path dropout for stochastic depth
         :param conv_block: Base convolutional block ["mobile_bottlekneck_res_block", "bottlekneck_res_block", "classical_res_block", "next_conv_block"]
         :param kernel_5_channel_ratio: Downscale factor for channels_operating in case of 5x5 kernels
+        :param round_channels_to_next_32: Rounds all number of channels within the network to the closest multiple of 32
         :return: symbol
         """
         super(RiseV3, self).__init__()
         self.nb_input_channels = nb_input_channels
         self.use_plys_to_end = use_plys_to_end
         self.use_wdl = use_wdl
+
+        if round_channels_to_next_32:
+            channels = round_to_next_multiple_of_32(channels)
 
         if se_types is None:
             se_types = [None] * len(kernels)
@@ -138,7 +146,7 @@ class RiseV3(Module):
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
         path_dropout_rates = [x.item() for x in torch.linspace(0, path_dropout, len(kernels))]  # stochastic depth decay rule
-        res_blocks = _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio)
+        res_blocks = _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32)
 
         self.body_spatial = Sequential(
             _Stem(channels=channels, act_type=act_types[0], nb_input_channels=nb_input_channels),
