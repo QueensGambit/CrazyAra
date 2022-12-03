@@ -87,6 +87,7 @@ void update_eval_info(EvalInfo& evalInfo, const Node* rootNode, size_t tbHits, s
 /**
  * @brief get_best_move_q Return the value evaluation for the given next node.
  * If it is a drawn tablebase position, 0.0 is returned.
+ * Warning: Must be called with d != nullptr
  * @param searchSettings Search settings
  * @param nextNode Node object
  * @return value evaluation

@@ -135,11 +135,12 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
     if (nextNode != nullptr) {
         nextNode->get_principal_variation(pv, searchSettings->qValueWeight, searchSettings->qVetoDelta);
         evalInfo.pv[idx] = pv;
-        evalInfo.bestMoveQ[idx] = get_best_move_q(nextNode);
 
         // scores
         // return mate score for known wins and losses
         if (nextNode->is_playout_node()) {
+            evalInfo.bestMoveQ[idx] = get_best_move_q(nextNode);
+
             if (nextNode->get_node_type() == LOSS) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
