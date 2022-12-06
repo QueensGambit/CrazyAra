@@ -220,8 +220,6 @@ Version read_version_from_string(const string &modelFileName)
 
 void apply_softmax(float* input, size_t size) {
 
-    assert(size <= sizeof(input) / sizeof(double));
-
     size_t idx;
     double maximum = -INFINITY;
     for (idx = 0; idx < size; ++idx) {
