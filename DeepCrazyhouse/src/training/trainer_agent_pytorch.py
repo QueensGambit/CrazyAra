@@ -208,6 +208,15 @@ class TrainerAgentPytorch:
                                     save_torch_state(self._model, self.optimizer, filepath)
                                     print()
                                     logging.info("Saved checkpoint to %s", filepath)
+                                    with torch.no_grad():
+                                        ctx = get_context(self.tc.context, self.tc.device_id)
+                                        dummy_input = torch.zeros(1, 52, 8, 8).to(
+                                            ctx)
+                                        export_to_onnx(self._model, 1,
+                                                       dummy_input,
+                                                       Path(self.tc.export_dir) / Path("weights"), model_prefix,
+                                                       self.tc.use_wdl and self.tc.use_plys_to_end,
+                                                       True)
 
                                 patience_cnt = 0  # reset the patience counter
                             # print the elapsed time
