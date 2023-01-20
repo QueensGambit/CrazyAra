@@ -114,7 +114,7 @@ void MCTSAgentBatch::evaluate_board_state()
         }
         else {
             ChildIdx bestMoveIdx;
-            rootNode->get_mcts_policy(eval.policyProbSmall, bestMoveIdx, searchSettings->qValueWeight, searchSettings->qVetoDelta);
+            rootNode->get_mcts_policy(eval.policyProbSmall, bestMoveIdx, searchSettings);
         }
        
         eval.legalMoves = rootNode->get_legal_actions();

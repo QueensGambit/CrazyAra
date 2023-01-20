@@ -208,6 +208,8 @@ public:
      * @param curNPS New NPS measurement
      */
     void update_nps_measurement(float curNPS);
+private:
+    void set_root_node_predictions();
 };
 
 /**

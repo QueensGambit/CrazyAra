@@ -674,6 +674,12 @@ void CrazyAra::init_search_settings()
     searchSettings.threads = Options["Threads"] * get_num_gpus(Options);
     searchSettings.batchSize = Options["Batch_Size"];
     searchSettings.useMCGS = Options["Search_Type"] == "mcgs";
+    if (Options["Search_Player_Mode"] == "two_player") {
+        searchSettings.searchPlayerMode = MODE_TWO_PLAYER;
+    }
+    else if (Options["Search_Player_Mode"] == "single_player") {
+        searchSettings.searchPlayerMode = MODE_SINGLE_PLAYER;
+    }
 //    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
 //    searchSettings.uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
 //    searchSettings.uBase = Options["U_Base"];                                   currently disabled

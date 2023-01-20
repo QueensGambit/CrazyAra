@@ -164,6 +164,15 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
     return nullptr;
 }
 
+void MCTSAgent::set_root_node_predictions()
+{
+    state->get_state_planes(true, inputPlanes, net->get_version());
+    net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    size_t tbHits = 0;
+    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
+                    rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
+}
+
 void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
@@ -177,11 +186,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
     rootNode->set_value(newState->random_rollout());
     rootNode->enable_has_nn_results();
 #else
-    state->get_state_planes(true, inputPlanes, net->get_version());
-    net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
-    size_t tbHits = 0;
-    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
-                    rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
+    set_root_node_predictions();
 #endif
     rootNode->prepare_node_for_visits();
 }
@@ -269,11 +274,13 @@ void MCTSAgent::update_stats()
 void MCTSAgent::handle_single_move()
 {
     float targetEval = lastValueEval;
-#ifndef MCTS_SINGLE_PLAYER
-    if (lastSideToMove != state->side_to_move()) {
-        targetEval = -lastValueEval;
+    switch(searchSettings->searchPlayerMode) {
+    case MODE_TWO_PLAYER:
+        if (lastSideToMove != state->side_to_move()) {
+            targetEval = -lastValueEval;
+        }
+    case MODE_SINGLE_PLAYER: ;
     }
-#endif
     rootNode->set_value(targetEval);
     rootNode->set_q_value(0, targetEval);
 }
@@ -369,7 +376,7 @@ void MCTSAgent::print_root_node()
         return;
     }
     const vector<size_t> customOrdering = sort_permutation(evalInfo->policyProbSmall, std::greater<float>());
-    rootNode->print_node_statistics(rootState.get(), customOrdering);
+    rootNode->print_node_statistics(rootState.get(), customOrdering, searchSettings);
 }
 
 void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t parentId, size_t& nodeId, ostream& outFile, size_t depth, size_t maxDepth)

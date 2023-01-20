@@ -105,24 +105,30 @@ Node::Node(StateObj* state, const SearchSettings* searchSettings):
     policyProbSmall.resize(legalActions.size());
 }
 
-bool Node::solved_win(const Node* childNode) const
+bool Node::solved_win(const Node* childNode, const SearchSettings* searchSettings) const
 {
-#ifndef MCTS_SINGLE_PLAYER
-    return childNode->d->nodeType == LOSS;
-#else
-    return childNode->d->nodeType == WIN;
-#endif
+    switch (searchSettings->searchPlayerMode) {
+    case MODE_TWO_PLAYER:
+        return childNode->d->nodeType == LOSS;
+    case MODE_SINGLE_PLAYER:
+        return childNode->d->nodeType == WIN;
+    }
 }
 
-bool Node::solved_draw(const Node* childNode) const
+bool Node::solved_draw(const Node* childNode, const SearchSettings* searchSettings) const
 {
-    if (d->numberUnsolvedChildNodes == 0 &&
-#ifndef MCTS_SINGLE_PLAYER
-            (childNode->d->nodeType != LOSS)) {
-#else
-            (childNode->d->nodeType != WIN)) {
-#endif
-        return at_least_one_drawn_child();
+    if (d->numberUnsolvedChildNodes == 0) {
+        switch (searchSettings->searchPlayerMode) {
+        case MODE_TWO_PLAYER:
+            if (childNode->d->nodeType != LOSS) {
+                return at_least_one_drawn_child();
+            }
+            break;
+        case MODE_SINGLE_PLAYER:
+            if (childNode->d->nodeType != WIN) {
+                return at_least_one_drawn_child();
+            }
+        }
     }
     return false;
 }
@@ -147,15 +153,20 @@ bool Node::only_won_child_nodes() const
     return only_child_nodes_of_one_kind<WIN>();
 }
 
-bool Node::solved_loss(const Node* childNode) const
+bool Node::solved_loss(const Node* childNode, const SearchSettings* searchSettings) const
 {
-#ifndef MCTS_SINGLE_PLAYER
-    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == WIN) {
-        return only_won_child_nodes();
-#else
-    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == LOSS) {
-        return only_child_nodes_of_one_kind<LOSS>();
-#endif
+    if (d->numberUnsolvedChildNodes == 0) {
+        switch (searchSettings->searchPlayerMode) {
+        case MODE_TWO_PLAYER:
+            if (childNode->d->nodeType == WIN) {
+                return only_won_child_nodes();
+            }
+            break;
+        case MODE_SINGLE_PLAYER:
+            if (childNode->d->nodeType == LOSS) {
+                return only_child_nodes_of_one_kind<LOSS>();
+            }
+        }
     }
     return false;
 }
@@ -179,37 +190,48 @@ void Node::mark_as_win()
 }
 
 #ifdef MCTS_TB_SUPPORT
-bool Node::solve_tb_win(const Node* childNode) const
+bool Node::solve_tb_win(const Node* childNode, const SearchSettings* searchSettings) const
 {
-#ifndef MCTS_SINGLE_PLAYER
-    return childNode->d->nodeType == TB_LOSS;
-#else
-    return childNode->d->nodeType == TB_WIN;
-#endif
+    switch (searchSettings->searchPlayerMode) {
+    case MODE_TWO_PLAYER:
+        return childNode->d->nodeType == TB_LOSS;
+    case MODE_SINGLE_PLAYER:
+        return childNode->d->nodeType == TB_WIN;
+    }
 }
 
-bool Node::solved_tb_draw(const Node* childNode) const
+bool Node::solved_tb_draw(const Node* childNode, const SearchSettings* searchSettings) const
 {
-    if (d->numberUnsolvedChildNodes == 0 &&
-#ifndef MCTS_SINGLE_PLAYER
-            (childNode->d->nodeType != TB_LOSS || childNode->d->nodeType == LOSS)) {
-#else
-            (childNode->d->nodeType != TB_WIN || childNode->d->nodeType == WIN)) {
-#endif
-        return at_least_one_drawn_child();
+    if (d->numberUnsolvedChildNodes == 0) {
+        switch (searchSettings->searchPlayerMode) {
+        case MODE_TWO_PLAYER:
+            if (childNode->d->nodeType != TB_LOSS || childNode->d->nodeType == LOSS) {
+                return at_least_one_drawn_child();
+            }
+            break;
+        case MODE_SINGLE_PLAYER:
+            if (childNode->d->nodeType != TB_WIN || childNode->d->nodeType == WIN) {
+                return at_least_one_drawn_child();
+            }
+        }
     }
     return false;
 }
 
-bool Node::solved_tb_loss(const Node* childNode) const
+bool Node::solved_tb_loss(const Node* childNode, const SearchSettings* searchSettings) const
 {
-#ifndef MCTS_SINGLE_PLAYER
-    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == TB_WIN) {
-        return only_won_tb_child_nodes();
-#else
-    if (d->numberUnsolvedChildNodes == 0 && childNode->d->nodeType == TB_LOSS) {
-        return only_child_nodes_of_one_kind<TB_LOSS>();
-#endif
+    if (d->numberUnsolvedChildNodes == 0) {
+        switch (searchSettings->searchPlayerMode) {
+        case MODE_TWO_PLAYER:
+            if (childNode->d->nodeType == TB_WIN) {
+                return only_won_tb_child_nodes();
+            }
+            break;
+        case MODE_SINGLE_PLAYER:
+            if (childNode->d->nodeType == TB_LOSS) {
+                return only_child_nodes_of_one_kind<TB_LOSS>();
+            }
+        }
     }
     return false;
 }
@@ -272,19 +294,23 @@ void Node::update_solved_terminal(const Node* childNode, ChildIdx childIdx)
     d->qValues[childIdx] = targetValue;
 }
 
-void Node::mcts_policy_based_on_wins(DynamicVector<double> &mctsPolicy) const
+void Node::mcts_policy_based_on_wins(DynamicVector<double> &mctsPolicy, const SearchSettings* searchSettings) const
 {
     mctsPolicy = 0;
     ChildIdx childIdx = 0;
     for (auto it = d->childNodes.begin(); it != d->childNodes.end(); ++it) {
         const Node* childNode = it->get();
         if (childNode != nullptr && childNode->d != nullptr) {
-#ifndef MCTS_SINGLE_PLAYER
-            if (childNode->d->nodeType == LOSS) {
-#else
-            if (childNode->d->nodeType == WIN) {
-#endif
-            mctsPolicy[childIdx] = 1.0f;
+            switch (searchSettings->searchPlayerMode) {
+            case MODE_TWO_PLAYER:
+                if (childNode->d->nodeType == LOSS) {
+                    mctsPolicy[childIdx] = 1.0f;
+                }
+                break;
+            case MODE_SINGLE_PLAYER:
+                if (childNode->d->nodeType == WIN) {
+                    mctsPolicy[childIdx] = 1.0f;
+                }
             }
         }
         ++childIdx;
@@ -310,25 +336,31 @@ void Node::mcts_policy_based_on_losses(DynamicVector<double> &mctsPolicy) const
     mctsPolicy[longestChildIdx] = 1.0f;
 }
 
-void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy) const
+void Node::prune_losses_in_mcts_policy(DynamicVector<double> &mctsPolicy, const SearchSettings* searchSettings) const
 {
     // check if PV line leads to a loss
     if (d->numberUnsolvedChildNodes != get_number_child_nodes() && !is_loss_node_type(d->nodeType)) {
         // set all entries which lead to a WIN of the opponent to zero
         for (size_t childIdx = 0; childIdx < d->noVisitIdx; ++childIdx) {
             const Node* childNode = d->childNodes[childIdx].get();
-#ifndef MCTS_SINGLE_PLAYER
-            if (childNode != nullptr && childNode->is_playout_node() && is_win_node_type(childNode->d->nodeType)) {
-#else
-            if (childNode != nullptr && childNode->is_playout_node() && is_loss_node_type(childNode->d->nodeType)) {
-#endif
-                mctsPolicy[childIdx] = 0;
+            if (childNode != nullptr && childNode->is_playout_node()) {
+                switch (searchSettings->searchPlayerMode) {
+                case MODE_TWO_PLAYER:
+                    if (is_win_node_type(childNode->d->nodeType)) {
+                        mctsPolicy[childIdx] = 0;
+                    }
+                    break;
+                case MODE_SINGLE_PLAYER:
+                    if (is_loss_node_type(childNode->d->nodeType)) {
+                        mctsPolicy[childIdx] = 0;
+                    }
+                }
             }
         }
     }
 }
 
-bool Node::solve_for_terminal(ChildIdx childIdx)
+bool Node::solve_for_terminal(ChildIdx childIdx, const SearchSettings* searchSettings)
 {
     const Node* childNode = d->childNodes[childIdx].get();
 
@@ -342,12 +374,16 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
 #ifdef MCTS_TB_SUPPORT
     // disable draws for winning tb positions
     if (d->nodeType == TB_WIN) {
-#ifndef MCTS_SINGLE_PLAYER
-        if (is_win_node_type(childNode->d->nodeType) || is_draw_node_type(childNode->d->nodeType)) {
-#else
-        if (is_loss_node_type(childNode->d->nodeType) || is_draw_node_type(childNode->d->nodeType)) {
-#endif
-        disable_action(childIdx);
+        switch (searchSettings->searchPlayerMode) {
+        case MODE_TWO_PLAYER:
+            if (is_win_node_type(childNode->d->nodeType) || is_draw_node_type(childNode->d->nodeType)) {
+                disable_action(childIdx);
+            }
+            break;
+        case MODE_SINGLE_PLAYER:
+            if (is_loss_node_type(childNode->d->nodeType) || is_draw_node_type(childNode->d->nodeType)) {
+                disable_action(childIdx);
+            }
         }
     }
 #endif
@@ -360,46 +396,52 @@ bool Node::solve_for_terminal(ChildIdx childIdx)
     if (d->nodeTypes[childIdx] == UNSOLVED) {
         --d->numberUnsolvedChildNodes;
         d->nodeTypes[childIdx] = childNode->d->nodeType;
-        switch(childNode->d->nodeType) {
-#ifndef MCTS_SINGLE_PLAYER
-        case WIN:
-#else
-        case LOSS:
-#endif
-            disable_action(childIdx);
+        switch (searchSettings->searchPlayerMode) {
+        case MODE_TWO_PLAYER:
+            switch(childNode->d->nodeType) {
+            case WIN:
+                disable_action(childIdx);
+            default: ; // pass
+            }
             break;
-        default: ; // pass
+        case MODE_SINGLE_PLAYER:
+            switch(childNode->d->nodeType) {
+            case LOSS:
+                disable_action(childIdx);
+            default: ; // pass
+            }
+
         }
     }
 
-    if (solved_win(childNode)) {
+    if (solved_win(childNode, searchSettings)) {
         d->nodeType = WIN;
         update_solved_terminal<WIN_VALUE>(childNode, childIdx);
         d->checkmateIdx = childIdx;
         return true;
     }
-    if (solved_loss(childNode)) {
+    if (solved_loss(childNode, searchSettings)) {
         d->nodeType = LOSS;
         update_solved_terminal<LOSS_VALUE>(childNode, childIdx);
         return true;
     }
-    if (solved_draw(childNode)) {
+    if (solved_draw(childNode, searchSettings)) {
         d->nodeType = DRAW;
         update_solved_terminal<DRAW_VALUE>(childNode, childIdx);
         return true;
     }
 #ifdef MCTS_TB_SUPPORT
-    if (solve_tb_win(childNode)) {
+    if (solve_tb_win(childNode, searchSettings)) {
         d->nodeType = TB_WIN;
         update_solved_terminal<WIN_VALUE>(childNode, childIdx);
         return true;
     }
-    if (solved_tb_draw(childNode)) {
+    if (solved_tb_draw(childNode, searchSettings)) {
         d->nodeType = TB_DRAW;
         update_solved_terminal<DRAW_VALUE>(childNode, childIdx);
         return true;
     }
-    if (solved_tb_loss(childNode)) {
+    if (solved_tb_loss(childNode, searchSettings)) {
         d->nodeType = TB_LOSS;
         update_solved_terminal<LOSS_VALUE>(childNode, childIdx);
         return true;
@@ -671,11 +713,13 @@ Node* Node::add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState,
                     tranpositionNode->lock();
                     tranpositionNode->add_transposition_parent_node();
                     tranpositionNode->unlock();
-    #ifndef MCTS_SINGLE_PLAYER
-                    if (tranpositionNode->is_playout_node() && tranpositionNode->get_node_type() == LOSS) {
-                        set_checkmate_idx(childIdx);
+                    switch (searchSettings->searchPlayerMode) {
+                    case MODE_TWO_PLAYER:
+                        if (tranpositionNode->is_playout_node() && tranpositionNode->get_node_type() == LOSS) {
+                            set_checkmate_idx(childIdx);
+                        }
+                    case MODE_SINGLE_PLAYER: ;
                     }
-    #endif
                     transposition = true;
                     return tranpositionNode;
                 }
@@ -981,26 +1025,26 @@ Node* Node::get_child_node(ChildIdx childIdx)
     return d->childNodes[childIdx].get();
 }
 
-void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, ChildIdx& bestMoveIdx, float qValueWeight, float qVetoDelta) const
+void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, ChildIdx& bestMoveIdx, const SearchSettings* searchSettings) const
 {
     // fill only the winning moves in case of a known win
     if (d->nodeType == WIN) {
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
-        mcts_policy_based_on_wins(mctsPolicy);
+        mcts_policy_based_on_wins(mctsPolicy, searchSettings);
     }
     else if (is_loss_node_type(d->nodeType)) {
         mctsPolicy = DynamicVector<float>(d->noVisitIdx);
         mcts_policy_based_on_losses(mctsPolicy);
     }
-    else if (qValueWeight > 0) {
+    else if (searchSettings->qValueWeight > 0) {
         ChildIdx secondArg;
         double firstMaxValue;
         double secondMaxValue;
         mctsPolicy = d->childNumberVisits;
-        prune_losses_in_mcts_policy(mctsPolicy);
+        prune_losses_in_mcts_policy(mctsPolicy, searchSettings);
         ChildIdx bestQIdx = argmax(d->qValues);
         first_and_second_max(mctsPolicy, ChildIdx(d->noVisitIdx), firstMaxValue, secondMaxValue, bestMoveIdx, secondArg);
-        if (qVetoDelta != 0 && bestQIdx != bestMoveIdx && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + qVetoDelta && d->childNumberVisits[bestQIdx] > 1) {
+        if (searchSettings->qVetoDelta != 0 && bestQIdx != bestMoveIdx && d->qValues[bestQIdx] > d->qValues[bestMoveIdx] + searchSettings->qVetoDelta && d->childNumberVisits[bestQIdx] > 1) {
             if (mctsPolicy[bestMoveIdx] > mctsPolicy[bestQIdx]) {
                 // swap values of highest qValues and most visits
                 info_string("veto move");
@@ -1011,30 +1055,30 @@ void Node::get_mcts_policy(DynamicVector<double>& mctsPolicy, ChildIdx& bestMove
         }
         else if (bestMoveIdx != secondArg && d->qValues[secondArg] > d->qValues[bestMoveIdx]) {
             const float qDiff = d->qValues[secondArg] - d->qValues[bestMoveIdx];
-            mctsPolicy[secondArg] += qDiff * qValueWeight * mctsPolicy[bestMoveIdx];
+            mctsPolicy[secondArg] += qDiff * searchSettings->qValueWeight * mctsPolicy[bestMoveIdx];
         }
     }
     else {
         mctsPolicy = d->childNumberVisits;
-        prune_losses_in_mcts_policy(mctsPolicy);
+        prune_losses_in_mcts_policy(mctsPolicy, searchSettings);
     }
     mctsPolicy /= sum(mctsPolicy);
     bestMoveIdx = argmax(mctsPolicy);
 }
 
-void Node::get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta)
+void Node::get_principal_variation(vector<Action>& pv, const SearchSettings* searchSettings)
 {
     Node* curNode = this;
     while (curNode != nullptr && curNode->is_playout_node() && !curNode->is_terminal()) {
         curNode->lock();
-        size_t childIdx = get_best_action_index(curNode, true, qValueWeight, qVetoDelta);
+        size_t childIdx = get_best_action_index(curNode, true, searchSettings);
         pv.push_back(curNode->get_action(childIdx));
         curNode->unlock();
         curNode = curNode->d->childNodes[childIdx].get();
     }
 }
 
-size_t get_best_action_index(const Node *curNode, bool fast, float qValueWeight, float qVetoDelta)
+size_t get_best_action_index(const Node *curNode, bool fast, const SearchSettings* searchSettings)
 {
     if (curNode->get_checkmate_idx() != NO_CHECKMATE) {
         // chose mating line
@@ -1057,7 +1101,7 @@ size_t get_best_action_index(const Node *curNode, bool fast, float qValueWeight,
     }
     DynamicVector<double> mctsPolicy(curNode->get_number_child_nodes());
     ChildIdx bestMoveIdx;
-    curNode->get_mcts_policy(mctsPolicy, bestMoveIdx, qValueWeight, qVetoDelta);
+    curNode->get_mcts_policy(mctsPolicy, bestMoveIdx, searchSettings);
     return bestMoveIdx;
 }
 
@@ -1159,7 +1203,7 @@ float get_current_cput(float visits, const SearchSettings* searchSettings)
     return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
 }
 
-void Node::print_node_statistics(const StateObj* state, const vector<size_t>& customOrdering) const
+void Node::print_node_statistics(const StateObj* state, const vector<size_t>& customOrdering, const SearchSettings* searchSettings) const
 {
     const string header = "  #  | Move  |    Visits    |  Policy   |  Q-values  |  CP   |    Type    ";
     const string filler = "-----+-------+--------------+-----------+------------+-------+------------";
@@ -1188,13 +1232,16 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
              << setw(10) << max(q, -9.9999999) << " | "
              << setw(5) << value_to_centipawn(q) << " | ";
         if (childIdx < get_no_visit_idx() && d->childNodes[childIdx] != nullptr && d->childNodes[childIdx]->d != nullptr && d->childNodes[childIdx]->get_node_type() != UNSOLVED) {
-            cout << setfill(' ') << setw(4) <<
-        #ifndef MCTS_SINGLE_PLAYER
-                    node_type_to_string(flip_node_type(NodeType(d->childNodes[childIdx]->d->nodeType)))
-        #else
-                    node_type_to_string(NodeType(d->childNodes[childIdx]->d->nodeType))
-        #endif
-                 << " in " << setfill('0') << setw(2) << d->childNodes[childIdx]->d->endInPly+1;
+            string nodeTypeToPrint;
+            switch (searchSettings->searchPlayerMode) {
+                case MODE_TWO_PLAYER:
+                nodeTypeToPrint = node_type_to_string(flip_node_type(NodeType(d->childNodes[childIdx]->d->nodeType)));
+                break;
+            case MODE_SINGLE_PLAYER:
+                nodeTypeToPrint = node_type_to_string(NodeType(d->childNodes[childIdx]->d->nodeType));
+
+            }
+            cout << setfill(' ') << setw(4) << nodeTypeToPrint << " in " << setfill('0') << setw(2) << d->childNodes[childIdx]->d->endInPly+1;
         }
         else {
             cout << setfill(' ') << setw(9) << node_type_to_string(UNSOLVED);
