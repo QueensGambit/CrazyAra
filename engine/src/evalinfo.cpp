@@ -148,7 +148,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
                 switch (searchSettings->searchPlayerMode) {
                 case MODE_SINGLE_PLAYER:
                     evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
-                default: ;
+                case MODE_TWO_PLAYER: ;
                 }
                 return;
             }
@@ -158,7 +158,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
                 switch (searchSettings->searchPlayerMode) {
                 case MODE_SINGLE_PLAYER:
                     evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
-                default: ;
+                case MODE_TWO_PLAYER: ;
                 }
                 return;
             }
