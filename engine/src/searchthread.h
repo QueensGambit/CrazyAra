@@ -79,7 +79,7 @@ private:
     size_t depthSum;
     size_t depthMax;
     size_t visitsPreSearch;
-    const uint_fast32_t terminalNodeCache;
+    uint_fast32_t terminalNodeCache;  // TODO: better add "const" classifier here is possible
     bool reachedTablebases;
 public:
     /**

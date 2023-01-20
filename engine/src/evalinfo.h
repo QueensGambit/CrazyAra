@@ -88,11 +88,11 @@ void update_eval_info(EvalInfo& evalInfo, const Node* rootNode, size_t tbHits, s
  * @brief get_best_move_q Return the value evaluation for the given next node.
  * If it is a drawn tablebase position, 0.0 is returned.
  * Warning: Must be called with d != nullptr
- * @param searchSettings Search settings
  * @param nextNode Node object
+ * @param searchSettings Search settings
  * @return value evaluation
  */
-float get_best_move_q(const Node* nextNode);
+float get_best_move_q(const Node* nextNode, const SearchSettings* searchSettings);
 
 /**
  * @brief set_eval_for_single_pv Sets the eval struct pv line and score for a single pv

@@ -184,19 +184,19 @@ public:
      *
      * @param childIdx Index to the child node to update
      * @param value Specifies the value evaluation to backpropagate
-     * @param solveForTerminal Decides if the terminal solver will be used
+     * @param searchSettings Pointer to the search settings struct
      */
     template<bool freeBackup>
-    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, float virtualLoss, bool solveForTerminal)
+    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, const SearchSettings* searchSettings, bool solveForTerminal)
     {
         lock();
         // decrement virtual loss counter
-        update_virtual_loss_counter<false>(childIdx, virtualLoss);
+        update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
 
         valueSum += value;
         ++realVisitsSum;
 
-        if (d->childNumberVisits[childIdx] == virtualLoss) {
+        if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
@@ -204,19 +204,19 @@ public:
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
-            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss + value) / d->childNumberVisits[childIdx];
+            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
             assert(!isnan(d->qValues[childIdx]));
         }
 
-        if (virtualLoss != 1) {
-            d->childNumberVisits[childIdx] -= size_t(virtualLoss) - 1;
-            d->visitSum -= size_t(virtualLoss) - 1;
+        if (searchSettings->virtualLoss != 1) {
+            d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
+            d->visitSum -= size_t(searchSettings->virtualLoss) - 1;
         }
         if (freeBackup) {
             ++d->freeVisits;
         }
         if (solveForTerminal) {
-            solve_for_terminal(childIdx);
+            solve_for_terminal(childIdx, searchSettings);
         }
         unlock();
     }
@@ -378,19 +378,17 @@ public:
      * Depending on the searchSettings, Q-values will be taken into account for creating this.
      * @param mctsPolicy Output of the final mcts policy after search
      * @param bestMoveIdx Index for the best move
-     * @param qValueWeight Decides if Q-values are taken into account
-     * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
+     * @param searchSettings Pointer to the search settings struct
      */
-     void get_mcts_policy(DynamicVector<double>& mctsPolicy, ChildIdx& bestMoveIdx, float qValueWeight, float qVetoDelta) const;
+     void get_mcts_policy(DynamicVector<double>& mctsPolicy, ChildIdx& bestMoveIdx, const SearchSettings* searchSettings) const;
 
     /**
      * @brief get_principal_variation Traverses the tree using the get_mcts_policy() function until a leaf or terminal node is found.
      * The moves a are pushed into the pv vector.
      * @param pv Vector in which moves will be pushed.
-     * @param qValueWeight Decides if Q-values are taken into account
-     * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
+     * @param searchSettings Pointer to the search settings struct.
      */
-     void get_principal_variation(vector<Action>& pv, float qValueWeight, float qVetoDelta);
+     void get_principal_variation(vector<Action>& pv, const SearchSettings* searchSettings);
 
     /**
      * @brief is_root_node Checks if the current node is the root node
@@ -454,8 +452,9 @@ public:
      *  If the position is given as "nulltptr" the moves will be displayed in UCI notation instead of SAN.
      * @param customOrdering Optional custom ordering of how the moves shall be displayed (e.g. according to the MCTS policy after search).
      *  If an empty vector is given, it will use the current ordering of the child nodes (by default according to the prior policy).
+     * @param searchSettings Pointer to the search settings struct
      */
-    void print_node_statistics(const StateObj* pos, const vector<size_t>& customOrdering) const;
+    void print_node_statistics(const StateObj* pos, const vector<size_t>& customOrdering, const SearchSettings* searchSettings) const;
 
     /**
      * @brief get_node_count Returns the number of nodes in the subgraph of this nodes without counting terminal simulations
@@ -545,24 +544,27 @@ private:
      * https://www.researchgate.net/publication/331216459_Exact-Win_Strategy_for_Overcoming_AlphaZero
      * The solver uses the current backpropagating child node as well as all available child nodes.
      * @param childNode Child nodes which backpropagates the value
+     * @param searchSettings Pointer to the search settings struct
      * @return true, if the node type of the current node was modified
      */
-    bool solve_for_terminal(ChildIdx childIdx);
+    bool solve_for_terminal(ChildIdx childIdx, const SearchSettings* searchSettings);
 
     /**
      * @brief solved_win Checks if the current node is a solved win based on the given child node
      * @param childNode Child nodes which backpropagates the value
+     * @param searchSettings Pointer of the search settings struct
      * @return true for WIN else false
      */
-    bool solved_win(const Node* childNode) const;
+    bool solved_win(const Node* childNode, const SearchSettings* searchSettings) const;
 
     /**
      * @brief solved_draw Checks if the current node is a solved draw based on the given child node
      * and all available child node
      * @param childNode Child nodes which backpropagates the value
+     * @param searchSettings Pointer of the search settings struct
      * @return true for DRAW else false
      */
-    bool solved_draw(const Node* childNode) const;
+    bool solved_draw(const Node* childNode, const SearchSettings* searchSettings) const;
 
     /**
      * @brief at_least_one_drawn_child Checks if this node has only DRAWN or WON child nodes and at least one DRAWN child
@@ -595,9 +597,10 @@ private:
     /**
      * @brief solved_loss Checks if the current node is a solved loss based on the given child node
      * @param childNode Child nodes which backpropagates the value
+     * @param searchSettings Pointer to the search settings struct
      * @return true for LOSS else false
      */
-    bool solved_loss(const Node* childNode) const;
+    bool solved_loss(const Node* childNode, const SearchSettings* searchSettings) const;
 
     /**
      * @brief mark_as_loss Marks the current node as a loss
@@ -618,24 +621,27 @@ private:
     /**
      * @brief solve_tb_win Checks if the current node is a solved tablebase win based on the given child node
      * @param childNode Child nodes which backpropagates the value
+     * @param searchSettings Pointer to the search settings struct
      * @return true for TB_WIN else false
      */
-    bool solve_tb_win(const Node* childNode) const;
+    bool solve_tb_win(const Node* childNode, const SearchSettings* searchSettings) const;
 
     /**
      * @brief solved_tb_draw Checks if the current node is a solved tablebase draw based on the given child node
      * and all available child node
      * @param childNode Child nodes which backpropagates the value
+     * @param searchSettings Pointer to the search settings struct
      * @return true for TB_DRAW else false
      */
-    bool solved_tb_draw(const Node* childNode) const;
+    bool solved_tb_draw(const Node* childNode, const SearchSettings* searchSettings) const;
 
     /**
      * @brief solved_tb_loss Checks if the current node is a solved tablebase loss based on the given child node
      * @param childNode Child nodes which backpropagates the value
+     * @param searchSettings Pointer to the search settings struct
      * @return true for TB_LOSS else false
      */
-    bool solved_tb_loss(const Node* childNode) const;
+    bool solved_tb_loss(const Node* childNode, const SearchSettings* searchSettings) const;
 
     /**
      * @brief only_won_tb_child_nodws Checks if this node has only WON child nodes
@@ -678,8 +684,9 @@ private:
      * @brief mcts_policy_based_on_wins Sets all known winning moves in a given policy to 1 and all
      * remaining moves to 0.
      * @param mctsPolicy MCTS policy which will be set
+     * @param searchSettings Pointer to the search settings struct
      */
-    void mcts_policy_based_on_wins(DynamicVector<double>& mctsPolicy) const;
+    void mcts_policy_based_on_wins(DynamicVector<double>& mctsPolicy, const SearchSettings* searchSettings) const;
 
     /**
      * @brief mcts_policy_based_on_losses Sets the policy entry which delays the mate the longest to 1 and remaining values to 0.
@@ -691,8 +698,9 @@ private:
      * @brief prune_losses_in_mcts_policy Sets all known losing moves in a given policy to 0 in case
      * the node is not known to be losing.
      * @param mctsPolicy MCTS policy which will be set
+     * @param searchSettings Pointer to the search settings struct
      */
-    void prune_losses_in_mcts_policy(DynamicVector<double>& mctsPolicy) const;
+    void prune_losses_in_mcts_policy(DynamicVector<double>& mctsPolicy, const SearchSettings* searchSettings) const;
 
 //    /**
 //     * @brief mark_enhaned_moves Fills the isCheck and isCapture vector according to the legal moves
@@ -713,11 +721,10 @@ private:
  * or solved wins / draws / losses.
  * @param curNode Current node
  * @param fast If true, then the argmax(childNumberVisits) is returned for unsolved nodes
- * @param qValueWeight Decides if qValues are taken into account
- * @param qVetoDelta Describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
+ * @param searchSettings Pointer to the search settings struct
  * @return Index for best move and child node
  */
- size_t get_best_action_index(const Node* curNode, bool fast, float qValueWeight, float qVetoDelto);
+ size_t get_best_action_index(const Node* curNode, bool fast, const SearchSettings* searchSettings);
 
 typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
@@ -770,26 +777,29 @@ float get_transposition_q_value(uint_fast32_t transposVisits, double transposQVa
  * The value is flipped at every ply.
  * @param rootNode Root node of the tree
  * @param value Value evaluation to backup, this is the NN eval in the general case or can be from a terminal node
- * @param virtualLoss Virtual loss value
+ * @param searchSettings Pointer to the search settings struct
  * @param trajectory Trajectory on how to get to the given value eval
  * @param solveForTerminal Decides if the terminal solver will be used
  */
 template <bool freeBackup>
-void backup_value(float value, float virtualLoss, const Trajectory& trajectory, bool solveForTerminal) {
+void backup_value(float value, const SearchSettings* searchSettings, const Trajectory& trajectory, bool solveForTerminal) {
     double targetQValue = 0;
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
         if (targetQValue != 0) {
             const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
             if (transposVisits != 0) {
-                const double transposQValue = -it->node->get_q_sum(it->childIdx, virtualLoss) / transposVisits;
+                const double transposQValue = -it->node->get_q_sum(it->childIdx, searchSettings->virtualLoss) / transposVisits;
                 value = get_transposition_q_value(transposVisits, transposQValue, targetQValue);
             }
         }
-#ifndef MCTS_SINGLE_PLAYER
-        value = -value;
-#endif
-        freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, virtualLoss, solveForTerminal) :
-                   it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, virtualLoss, solveForTerminal);
+        switch (searchSettings->searchPlayerMode) {
+            case MODE_TWO_PLAYER:
+                value = -value;
+            break;
+        case MODE_SINGLE_PLAYER: ;
+        }
+        freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal) :
+                   it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal);
 
         if (it->node->is_transposition()) {
             targetQValue = it->node->get_value();

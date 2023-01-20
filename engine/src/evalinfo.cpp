@@ -109,13 +109,14 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(VALUE_TO_CENTI_PARAM)) * 100.0f);
 }
 
-float get_best_move_q(const Node* nextNode)
+float get_best_move_q(const Node* nextNode, const SearchSettings* searchSettings)
 {
-#ifndef MCTS_SINGLE_PLAYER
-    return -nextNode->get_value_display();
-#else
-    return nextNode->get_value_display();
-#endif
+    switch(searchSettings->searchPlayerMode) {
+    case MODE_TWO_PLAYER:
+        return -nextNode->get_value_display();
+    case MODE_SINGLE_PLAYER:
+        return nextNode->get_value_display();
+    }
 }
 
 void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx, vector<size_t>& indices, const SearchSettings* searchSettings)
@@ -123,7 +124,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
     vector<Action> pv;
     size_t childIdx;
     if (idx == 0) {
-        childIdx = get_best_action_index(rootNode, false, searchSettings->qValueWeight, searchSettings->qVetoDelta);
+        childIdx = get_best_action_index(rootNode, false, searchSettings);
     }
     else {
         childIdx = indices[idx];
@@ -133,37 +134,43 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
     Node* nextNode = rootNode->get_child_node(childIdx);
     // make sure the nextNode has been expanded (e.g. when inference of the NN is too slow on the given hardware to evaluate the next node in time)
     if (nextNode != nullptr) {
-        nextNode->get_principal_variation(pv, searchSettings->qValueWeight, searchSettings->qVetoDelta);
+        nextNode->get_principal_variation(pv, searchSettings);
         evalInfo.pv[idx] = pv;
 
         // scores
         // return mate score for known wins and losses
         if (nextNode->is_playout_node()) {
-            evalInfo.bestMoveQ[idx] = get_best_move_q(nextNode);
+            evalInfo.bestMoveQ[idx] = get_best_move_q(nextNode, searchSettings);
 
             if (nextNode->get_node_type() == LOSS) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
-#ifdef MCTS_SINGLE_PLAYER
-                evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
-#endif
+                switch (searchSettings->searchPlayerMode) {
+                case MODE_SINGLE_PLAYER:
+                    evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
+                default: ;
+                }
                 return;
             }
             if (nextNode->get_node_type() == WIN) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
-#ifdef MCTS_SINGLE_PLAYER
-                evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
-#endif
+                switch (searchSettings->searchPlayerMode) {
+                case MODE_SINGLE_PLAYER:
+                    evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
+                default: ;
+                }
                 return;
             }
         }
         else {
-#ifndef MCTS_SINGLE_PLAYER
-            evalInfo.bestMoveQ[idx] = -nextNode->get_value();
-#else
-            evalInfo.bestMoveQ[idx] = nextNode->get_value();
-#endif
+            switch (searchSettings->searchPlayerMode) {
+            case MODE_TWO_PLAYER:
+                evalInfo.bestMoveQ[idx] = -nextNode->get_value();
+            break;
+            case MODE_SINGLE_PLAYER:
+                evalInfo.bestMoveQ[idx] = nextNode->get_value();
+            }
         }
     }
     else {
@@ -195,7 +202,7 @@ void update_eval_info(EvalInfo& evalInfo, const Node* rootNode, size_t tbHits, s
     }
     else {
         ChildIdx bestMoveIdx;
-        rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, searchSettings->qValueWeight, searchSettings->qVetoDelta);
+        rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, searchSettings);
     }
     // ensure the policy has the correct length even if some child nodes have not been visited
     if (evalInfo.policyProbSmall.size() != targetLength) {

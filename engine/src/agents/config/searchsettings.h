@@ -31,6 +31,11 @@
 #include <cstdlib>
 #include <cstdint>
 
+enum SearchPlayerMode {
+    MODE_SINGLE_PLAYER,
+    MODE_TWO_PLAYER
+};
+
 struct SearchSettings
 {
     uint16_t multiPV;
@@ -68,6 +73,8 @@ struct SearchSettings
     bool reuseTree;
     // If true, then the MCTS solver for terminals and tablebases will be active
     bool mctsSolver;
+    // Defines the nubmer of players within the MCTS search. Available are MODE_SINGLE_PLAYER and MODE_TWO_PLAYER
+    SearchPlayerMode searchPlayerMode;
     SearchSettings();
 
 };
