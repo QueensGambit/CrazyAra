@@ -115,6 +115,7 @@ float get_best_move_q(const Node* nextNode, const SearchSettings* searchSettings
     case MODE_TWO_PLAYER:
         return -nextNode->get_value_display();
     case MODE_SINGLE_PLAYER:
+    default:
         return nextNode->get_value_display();
     }
 }
