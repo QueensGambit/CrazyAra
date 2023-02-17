@@ -111,6 +111,7 @@ bool Node::solved_win(const Node* childNode, const SearchSettings* searchSetting
     case MODE_TWO_PLAYER:
         return childNode->d->nodeType == LOSS;
     case MODE_SINGLE_PLAYER:
+    default:
         return childNode->d->nodeType == WIN;
     }
 }
@@ -196,6 +197,7 @@ bool Node::solve_tb_win(const Node* childNode, const SearchSettings* searchSetti
     case MODE_TWO_PLAYER:
         return childNode->d->nodeType == TB_LOSS;
     case MODE_SINGLE_PLAYER:
+    default:
         return childNode->d->nodeType == TB_WIN;
     }
 }
