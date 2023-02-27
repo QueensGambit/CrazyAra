@@ -130,8 +130,10 @@ if (MCTS_STORE_STATES)
     add_definitions(-DMCTS_STORE_STATES)
 endif()
 
+
 file(GLOB source_files
-    "3rdparty/catch-2.91/*.hpp"
+    "3rdparty/catch-3.3.2/*.hpp"
+    "3rdparty/catch-3.3.2/*.cpp"
     "*.h"
     "*.cpp"
     "*.md"
@@ -372,7 +374,7 @@ if (MODE_OPEN_SPIEL OR MODE_STRATEGO)
         )
 endif()
 
-include_directories("3rdparty/catch-2.9.1")
+include_directories("3rdparty/catch-3.3.2")
 
 # incude dirent library seperately because it's missing in the stdlib
 if(MSVC OR MSYS OR MINGW)

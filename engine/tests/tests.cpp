@@ -27,7 +27,7 @@
 
 #ifdef BUILD_TESTS
 #include <iostream>
-#include "catch.hpp"
+#include "catch_amalgamated.hpp"
 using namespace Catch::literals;
 using namespace std;
 #include <string>
