@@ -198,7 +198,7 @@ class E_MHSA(nn.Module):
     Efficient Multi-Head Self Attention
     """
     def __init__(self, dim, out_dim=None, head_dim=32, qkv_bias=True, qk_scale=None,
-                 attn_drop=0, proj_drop=0., sr_ratio=1):
+                 attn_drop=0, proj_drop=0., sr_ratio=1, output_keys=False):
         super().__init__()
         self.dim = dim
         self.out_dim = out_dim if out_dim is not None else dim
@@ -217,6 +217,7 @@ class E_MHSA(nn.Module):
             self.sr = nn.AvgPool1d(kernel_size=self.N_ratio, stride=self.N_ratio)
             self.norm = nn.BatchNorm1d(dim, eps=NORM_EPS)
         self.is_bn_merge = False
+        self.output_keys = output_keys
     def merge_bn(self, pre_bn):
         merge_pre_bn(self.q, pre_bn)
         if self.sr_ratio > 1:
@@ -254,6 +255,8 @@ class E_MHSA(nn.Module):
         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
+        if self.output_keys:
+            return x, k
         return x
 
 
@@ -264,7 +267,7 @@ class NTB(nn.Module):
     def __init__(
             self, in_channels, out_channels, path_dropout=0, stride=1, sr_ratio=1,
             mlp_ratio=2, head_dim=32, mix_block_ratio=0.75, attn_drop=0, drop=0,
-            out_features=None, simple=False
+            out_features=None, simple=False, output_keys=False
     ):
         super(NTB, self).__init__()
         self.in_channels = in_channels
@@ -278,11 +281,12 @@ class NTB(nn.Module):
         self.mhca_out_channels = out_channels - self.mhsa_out_channels
         if self.simple:
             self.mhsa_out_channels = out_channels
+        self.output_keys = output_keys
 
         self.patch_embed = PatchEmbed(in_channels, self.mhsa_out_channels, stride)
         self.norm1 = norm_func(self.mhsa_out_channels)
         self.e_mhsa = E_MHSA(self.mhsa_out_channels, head_dim=head_dim, sr_ratio=sr_ratio,
-                             attn_drop=attn_drop, proj_drop=drop)
+                             attn_drop=attn_drop, proj_drop=drop, output_keys=output_keys)
         self.mhsa_path_dropout = DropPath(path_dropout*mix_block_ratio)
 
         self.projection = PatchEmbed(self.mhsa_out_channels, self.mhca_out_channels, stride=1)
@@ -308,7 +312,11 @@ class NTB(nn.Module):
         else:
             out = x
         out = rearrange(out, "b c h w -> b (h w) c")  # b n c
-        out = self.mhsa_path_dropout(self.e_mhsa(out))
+        if self.output_keys:
+            out, keys = self.e_mhsa(out)
+        else:
+            out = self.e_mhsa(out)
+        out = self.mhsa_path_dropout(out)
 
         x = x + rearrange(out, "b (h w) c -> b c h w", h=H)
         if not self.simple:
@@ -326,4 +334,6 @@ class NTB(nn.Module):
         else:
             x = self.mlp(out)
 
+        if self.output_keys:
+            return x, keys
         return x

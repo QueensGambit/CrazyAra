@@ -32,7 +32,7 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS,
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
-def _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32):
+def _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32, output_keys):
     """Helper function which generates the residual blocks for Risev3"""
 
     channels_operating = channels_operating_init
@@ -52,7 +52,7 @@ def _get_res_blocks(act_types, channels, channels_operating_init, channel_expans
             channels = round_to_next_multiple_of_32(channels)
 
         if use_transformers[idx]:
-            res_blocks.append(NTB(channels, channels, path_dropout=path_dropout_rates[idx]))
+            res_blocks.append(NTB(channels, channels, path_dropout=path_dropout_rates[idx], output_keys=output_keys))
         elif conv_block == "mobile_bottlekneck_res_block":
             res_blocks.append(_BottlekneckResidualBlock(channels=channels,
                                                         channels_operating=channels_operating_active,
@@ -87,6 +87,7 @@ class RiseV3(Module):
                  use_mlp_wdl_ply=False,
                  use_transformers=None, path_dropout=0, conv_block="mobile_bottlekneck_res_block",
                  kernel_5_channel_ratio=None, round_channels_to_next_32=False,
+                 output_keys=False
                  ):
         """
         RISEv3 architecture
@@ -125,6 +126,7 @@ class RiseV3(Module):
         self.nb_input_channels = nb_input_channels
         self.use_plys_to_end = use_plys_to_end
         self.use_wdl = use_wdl
+        self.output_keys = output_keys
 
         if round_channels_to_next_32:
             channels = round_to_next_multiple_of_32(channels)
@@ -146,7 +148,7 @@ class RiseV3(Module):
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
         path_dropout_rates = [x.item() for x in torch.linspace(0, path_dropout, len(kernels))]  # stochastic depth decay rule
-        res_blocks = _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32)
+        res_blocks = _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32, output_keys)
 
         self.body_spatial = Sequential(
             _Stem(channels=channels, act_type=act_types[0], nb_input_channels=nb_input_channels),
@@ -168,9 +170,15 @@ class RiseV3(Module):
         :param x: Input to the ResidualBlock
         :return: Value & Policy Output
         """
-        out = self.body_spatial(x)
+        if self.output_keys:
+            out, keys = self.body_spatial(x)
+            # print('out.shape', out.shape)
+            # print('keys.shape', keys.shape)
+        else:
+            out = self.body_spatial(x)
+            keys = None
 
-        return process_value_policy_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+        return process_value_policy_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl), keys
 
 
 def get_rise_v33_model(args):

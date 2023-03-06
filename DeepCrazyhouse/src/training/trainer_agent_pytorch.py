@@ -337,7 +337,7 @@ class TrainerAgentPytorch:
         #     self.to.metrics["value_loss"].update(self.old_label, value_out)
         self.old_label = value_label
         if self.tc.use_wdl and self.tc.use_plys_to_end:
-            value_out, policy_out, _, wdl_out, plys_out = self._model(data)
+            (value_out, policy_out, _, wdl_out, plys_out), keys = self._model(data)
             wdl_loss = self.wdl_loss(wdl_out, wdl_label)
             ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label)
         else:
@@ -655,7 +655,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
             policy_label = policy_label.to(ctx)
 
             if use_wdl and use_plys_to_end:
-                value_out, policy_out, _, wdl_out, plys_out = model(data)
+                (value_out, policy_out, _, wdl_out, plys_out), keys = model(data)
                 metrics["wdl_loss"].update(preds=wdl_out, labels=wdl_label)
                 metrics["wdl_acc"].update(preds=wdl_out.argmax(axis=1), labels=wdl_label)
                 metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out), labels=plys_label)
