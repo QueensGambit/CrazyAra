@@ -51,6 +51,13 @@ public:
     NeuralNetAPIUser(NeuralNetAPI* net);
     ~NeuralNetAPIUser();
     NeuralNetAPIUser(NeuralNetAPIUser&) = delete;
+
+    /**
+     * @brief run_inference Runs inference of the allocated input planes for a given number of iterations.
+     * Output of the inference is ignored.
+     * @param iterations Number of iterations to run
+     */
+    void run_inference(uint_fast16_t iterations);
 };
 
 #endif // NEURALNETAPIUSER_H
