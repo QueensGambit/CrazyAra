@@ -210,7 +210,7 @@ class TrainerAgentPytorch:
                                     logging.info("Saved checkpoint to %s", filepath)
                                     with torch.no_grad():
                                         ctx = get_context(self.tc.context, self.tc.device_id)
-                                        dummy_input = torch.zeros(1, 52, 8, 8).to(
+                                        dummy_input = torch.zeros(1, data.shape[1], data.shape[2], data.shape[3]).to(
                                             ctx)
                                         export_to_onnx(self._model, 1,
                                                        dummy_input,
