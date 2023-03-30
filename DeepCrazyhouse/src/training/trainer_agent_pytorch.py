@@ -218,7 +218,7 @@ class TrainerAgentPytorch:
                                                        self.tc.use_wdl and self.tc.use_plys_to_end,
                                                        True)
 
-                                patience_cnt = 0  # reset the patience counter
+                                self.patience_cnt = 0  # reset the patience counter
                             # print the elapsed time
                             self.t_delta = time() - self.t_s_steps
                             print(" - %.ds" % self.t_delta)
