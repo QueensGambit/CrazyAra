@@ -71,6 +71,7 @@ void RawNetAgent::evaluate_board_state()
     evalInfo->nodes = 1;
     evalInfo->isChess960 = state->is_chess960();
     evalInfo->pv[0] = { bestmove };
+    runnerMutex.unlock();
 }
 
 void RawNetAgent::stop()
