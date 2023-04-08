@@ -94,6 +94,10 @@ if (MODE_BOARDGAMES)
 endif ()
 
 if (BUILD_TESTS)
+    set(source_files
+        ${source_files}
+        ${catch_files}
+        )
     add_definitions(-DBUILD_TESTS)
 endif()
 
@@ -132,8 +136,6 @@ endif()
 
 
 file(GLOB source_files
-    "3rdparty/catch-3.3.2/*.hpp"
-    "3rdparty/catch-3.3.2/*.cpp"
     "*.h"
     "*.cpp"
     "*.md"
@@ -173,6 +175,11 @@ else ()
     include_directories("3rdparty/Stockfish/src")
 endif ()
 include_directories("src")
+
+file(GLOB catch_files
+    "3rdparty/catch-3.3.2/*.hpp"
+    "3rdparty/catch-3.3.2/*.cpp"
+)
 
 file(GLOB sf_related_files
     "3rdparty/Stockfish/src/syzygy/tbprobe.h"
