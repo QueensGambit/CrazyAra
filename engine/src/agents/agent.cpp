@@ -95,11 +95,11 @@ void Agent::perform_action()
         info_bestmove(StateConstants::action_to_uci(evalInfo->bestMove, state->is_chess960()));
     #endif
     isRunning = false;
-    runnerMutex.unlock();
 }
 
 void run_agent_thread(Agent* agent)
 {
+    agent->lock();
     agent->perform_action();
     // inform the agent of the move, so the tree can potentially be reused later
     agent->apply_move_to_tree(agent->get_best_action(), true);
