@@ -240,6 +240,34 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 ## B.Sc. Thesis
 
+* M. Ruzicka: **Utilizing Variance and Uncertainty in Monte-Carlo Tree Search**, [pdf](https://ml-research.github.io/papers/ruzicka2023utilizing.pdf)
+```latex
+@bachelorthesis{ruzicka2023utilizing,
+	       title = { Utilizing Variance and Uncertainty in Monte-Carlo Tree Search },
+	       author = { Martin Ruzicka },
+               year = { 2023 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/MartinRuz/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 40 },
+	       month = { april }
+	       }
+```
+
+* M. Reuter: **Nutzung der Neuartigkeit von Zuständen in Suchgraphen von AlphaZero**, (German) [pdf](https://ml-research.github.io/papers/reuter2023nutzung.pdf)
+```latex
+@bachelorthesis{reuter2023nutzung,
+	       title = { Stochastic Exploration in Minimax Search by Using a Policy Predictor Network },
+	       author = { Markus Reuter },
+               year = { 2023 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/KingEsel1/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 58 },
+	       month = { march }
+	       }
+```
+
 * J. Holmer: **Stochastic Exploration in Minimax Search by Using a Policy Predictor Network**, [pdf](https://ml-research.github.io/papers/holmer2022stochastic.pdf)
 ```latex
 @bachelorthesis{holmer2022eval,
