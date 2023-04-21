@@ -93,14 +93,6 @@ if (MODE_BOARDGAMES)
     add_definitions(-DNNUE_EMBEDDING_OFF)
 endif ()
 
-if (BUILD_TESTS)
-    set(source_files
-        ${source_files}
-        ${catch_files}
-        )
-    add_definitions(-DBUILD_TESTS)
-endif()
-
 if (USE_DYNAMIC_NN_ARCH)
     add_definitions(-DDYNAMIC_NN_ARCH)
 endif()
@@ -227,6 +219,14 @@ file(GLOB boardgames_related_files
 list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/ffishjs.cpp)
 list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/pyffish.cpp)
 list(REMOVE_ITEM fsf_related_files ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Fairy-Stockfish/src/main.cpp)
+
+if (BUILD_TESTS)
+    set(source_files
+        ${source_files}
+        ${catch_files}
+        )
+    add_definitions(-DBUILD_TESTS)
+endif()
 
 if (NOT MODE_XIANGQI)
     set(source_files
