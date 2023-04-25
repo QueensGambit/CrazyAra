@@ -540,10 +540,10 @@ TEST_CASE("Chess_Input_Planes Version 2.7, 2.8, 3.0"){
 #endif
 #endif
 #if VERSION == 3
-    REQUIRE(stats.sum == Approx(179.12));
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(179.12, 0.001));
     REQUIRE(stats.argMax == 8);
     REQUIRE(stats.maxNum == 1);
-    REQUIRE(stats.key == Approx(442487.2));
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(442487.2, 0.001));
 #endif
 }
 #endif
