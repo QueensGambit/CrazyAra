@@ -97,7 +97,7 @@ enum WDLScore {
 // Possible states after a probing operation
 enum ProbeState {
     FAIL              =  0, // Probe failed (missing file table)
-    OK                =  1, // Probe succesful
+    OK                =  1, // Probe successful
     CHANGE_STM        = -1, // DTZ should check the other side
     ZEROING_BEST_MOVE =  2, // Best move zeroes DTZ (capture or pawn move)
     THREAT            =  3  // Threatening to force capture in giveaway
@@ -196,7 +196,7 @@ public:
      * @brief action_to_index Function that is used to map an Action to the corresponding neural network policy index.
      * @param action Given action
      * @param p Policy type, either "normal" or "classic". Normal is the active policy output (e.g. classic, or policy map), "classic" corresponds to the classic policy-output.
-     * @param m Mirror type, either "notMirrored" or "mirrored". Can be used to give a different implementation when the input representatation is flipped.
+     * @param m Mirror type, either "notMirrored" or "mirrored". Can be used to give a different implementation when the input representation is flipped.
      * @return Neural network policy index
      */
     template<PolicyType p, MirrorType m>
@@ -205,7 +205,7 @@ public:
     }
 
     /**
-     * @brief init Init function which is called after a neural network has been loaded and can be used to initalize static variables.
+     * @brief init Init function which is called after a neural network has been loaded and can be used to initialize static variables.
      * @param isPolicyMap Boolean indicating if the neural network uses a policy map representation
      */
     static void init(bool isPolicyMap) {
@@ -344,7 +344,7 @@ public:
 
     /**
      * @brief get_state_planes Returns the state plane representation of the current state which can be used for NN inference.
-     * @param normalize If true thw normalized represnetation should be returned, otherwise the raw representation
+     * @param normalize If true the normalized representation should be returned, otherwise the raw representation
      * @param inputPlanes Pointer to the memory array where to set the state plane representation. It is assumed that the memory has already been allocated
      * @param version This can be used to decide between different neural network input shape designs.
      */
@@ -388,7 +388,7 @@ public:
     virtual void prepare_action() = 0;
 
     /**
-     * @brief number_repetitions Returns the number of times this state has already occured in the current episode
+     * @brief number_repetitions Returns the number of times this state has already occurred in the current episode
      * @return int
      */
     virtual unsigned int number_repetitions() const = 0;
@@ -419,7 +419,7 @@ public:
     virtual Action uci_to_action(std::string& uciStr) const = 0;
 
     /**
-     * @brief action_to_san Converts a given action to SAN (pgn move notation) usign the current position and legal moves
+     * @brief action_to_san Converts a given action to SAN (pgn move notation) using the current position and legal moves
      * @param action Given action
      * @param legalActions List of legal moves for the current position
      * @param leadsToWin Indicator which marks action as a terminating action (usually indicated with suffix #).
@@ -461,7 +461,7 @@ public:
     virtual Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState& result) = 0;
 
     /**
-     * @brief set_auxiliary_outputs Sets the auxliary outputs for the state. (By default: pass)
+     * @brief set_auxiliary_outputs Sets the auxiliary outputs for the state. (By default: pass)
      * Implement this method if you set StateConstantsInterface::NB_AUXILIARY_OUTPUTS() != 0.
      * @param auxiliaryOutputs Pointer to the auxiliary outputs
      */

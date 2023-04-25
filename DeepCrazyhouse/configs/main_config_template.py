@@ -46,8 +46,8 @@ main_config = {
 
     # The rec directory contains the plane representation which are used in the training loop of the network
     # use the the notebook create_rec_dataset to generate the .rec files:
-    # (Unfortunately when trying to start training with the big dataset a memory overflow occured.
-    # therfore the old working solution was used to train the latest model by loading the dataset via batch files)
+    # (Unfortunately when trying to start training with the big dataset a memory overflow occurred.
+    # therefore the old working solution was used to train the latest model by loading the dataset via batch files)
     #  "train.idx", "val.idx", "test.idx", "mate_in_one.idx", "train.rec", "val.rec", "test.rec", "mate_in_one.rec"
     "rec_dir": "/home/demo_user/datasets/lichess/Crazyhouse/rec/",
     # The architecture dir contains the architecture definition of the network in mxnet .symbol format

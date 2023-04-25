@@ -73,7 +73,7 @@ class PGN2PlanesConverter:
                             -> blosc.list_compressors()
                             ['blosclz', 'lz4', 'lz4hc', 'snappy', 'zlib', 'zstd']
         :param clevel: compression level (more info at: https://zarr.readthedocs.io/en/stable/tutorial.html#compressors)
-                            # see http://www.h5py.org/lzf/ for performance comparision
+                            # see http://www.h5py.org/lzf/ for performance comparison
                             # Tutorial about compression:
          https://dziganto.github.io/out-of-core%20computation/HDF5-Or-How-I-Learned-To-Love-Data-Compression-And-Partial-Input-Output/
         :param log_lvl: Sets the log_lvl for the log messages
@@ -84,7 +84,7 @@ class PGN2PlanesConverter:
                               pgn files. This has the condition that the pgns have been properly preprocessed before.
                               (This was option was added for the Stockfish self play dataset).
         :param first_pgn_to_analyze: Optional parameter in which you can define the first pgn file to select.
-         If None it will automaticly choose the first file in the specified directory
+         If None it will automatically choose the first file in the specified directory
         :param min_number_moves: Minimum of number of moves which have to be played in a game to be selected
         :return:
         """
@@ -486,7 +486,7 @@ class PGN2PlanesConverter:
 
         # Refactoring is probably a good idea
         # Too many arguments (8/5) - Too many local variables (32/15) - Too many statements (69/50)
-        params_inp = []  # create a param input list which will concatenate the pgn with it's corresponding game index
+        params_inp = []  # create a param input list which will concatenate the pgn with its corresponding game index
         for i, pgn in enumerate(pgn_sel):
             game_idx = game_idx_start + i
             params_inp.append((pgn, game_idx, self._mate_in_one))

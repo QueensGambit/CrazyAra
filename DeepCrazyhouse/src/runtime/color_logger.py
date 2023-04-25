@@ -125,7 +125,7 @@ def add_coloring_to_emit_ansi(fn):  #  Argument name doesn't conform to snake_ca
 
 
 def enable_color_logging(debug_lvl=logging.DEBUG):
-    """Groups every other function on this file, its the main of the module"""
+    """Groups every other function on this file, it's the main of the module"""
     if platform.system() == "Windows":
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)

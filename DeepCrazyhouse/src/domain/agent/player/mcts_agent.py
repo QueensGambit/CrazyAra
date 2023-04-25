@@ -449,7 +449,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                 is_leaf = True
                 legal_moves_child = []
                 p_vec_small_child = None
-            # check if you can claim a draw - its assumed that the draw is always claimed
+            # check if you can claim a draw - it's assumed that the draw is always claimed
             elif (
                 self.can_claim_threefold_repetition(state.get_transposition_key(), [0])
                 or state.get_pythonchess_board().can_claim_fifty_moves()
@@ -691,7 +691,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
                     # establish a mate in one connection in order to stop exploring different alternatives
                     parent_node.set_check_mate_node_idx(child_idx)
                 # get the value from the leaf node (the current function is called recursively)
-                # check if you can claim a draw - its assumed that the draw is always claimed
+                # check if you can claim a draw - it's assumed that the draw is always claimed
                 elif (
                     self.can_claim_threefold_repetition(transposition_key, chosen_nodes)
                     or state.get_pythonchess_board().can_claim_fifty_moves() is True
@@ -766,7 +766,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
     def check_for_duplicate(self, transposition_key, chosen_nodes):
         """
 
-        :param transposition_key: Transposition key which defines the board state by all it's pieces and pocket state.
+        :param transposition_key: Transposition key which defines the board state by all its pieces and pocket state.
                                   The move counter is disregarded.
         :param chosen_nodes: List of moves which have been taken in the current path.
         :return:
@@ -786,7 +786,7 @@ class MCTSAgent(AbsAgent):  # Too many instance attributes (31/7)
         Checks if a three fold repetition event can be claimed in the current search path.
         This method makes use of the class transposition table and checks for board occurrences in the local search path
         of the current thread as well.
-        :param transposition_key: Transposition key which defines the board state by all it's pieces and pocket state.
+        :param transposition_key: Transposition key which defines the board state by all its pieces and pocket state.
                                   The move counter is disregarded.
         :param chosen_nodes: List of integer indices which correspond to the child node indices chosen from the
                             root node downwards.

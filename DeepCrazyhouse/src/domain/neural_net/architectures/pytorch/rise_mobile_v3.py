@@ -101,12 +101,12 @@ class RiseV3(Module):
         :param channels_value_head: Number of channels for the value head
         :param value_fc_size: Number of units in the fully connected layer of the value head
         :param channels_policy_head: Number of channels for the policy head
-        :param dropout_rate: Droput factor to use. If 0, no dropout will be applied. Value must be in [0,1]
+        :param dropout_rate: Dropout factor to use. If 0, no dropout will be applied. Value must be in [0,1]
         :param select_policy_from_plane: True, if policy head type shall be used
         :param kernels: List of kernel sizes used for the residual blocks. The length of the list corresponds to the number
         of residual blocks.
         :param n_labels: Number of policy target labels (used for select_policy_from_plane=False)
-        :param se_types: List of squeeze exciation modules to use for each residual layer.
+        :param se_types: List of squeeze excitation modules to use for each residual layer.
          The length of this list must be the same as len(kernels). Available types:
         - "se": Squeeze excitation block - Hu et al. - https://arxiv.org/abs/1709.01507
         - "cbam": Convolutional Block Attention Module (CBAM) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf

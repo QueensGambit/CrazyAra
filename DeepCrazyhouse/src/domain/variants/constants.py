@@ -141,7 +141,7 @@ else:  # MODE = MODE_CHESS
     elif VERSION == 2:
         NB_CHANNELS_POS = 12 + 1 + 18  # 12 pieces + 1 en-passant and 18 auxiliary
     else:  # VERSION == 3
-        NB_CHANNELS_POS = 15 + 15  # 12 pieces + 2 repetition + 1 en-passent + 15 auxiliary
+        NB_CHANNELS_POS = 15 + 15  # 12 pieces + 2 repetition + 1 en-passant + 15 auxiliary
     if VERSION == 1:
         NB_CHANNELS_CONST = 7
     elif VERSION == 2:

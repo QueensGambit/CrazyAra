@@ -402,7 +402,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
     def recompute_eval(self):
         """
-        Recomputes the score on the validataion data
+        Recomputes the score on the validation data
         :return:
         """
         ms_step = ((time() - self.t_s_steps) / self.tc.batch_steps) * 1000
@@ -435,7 +435,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
     def handle_spike(self):
         """
-        Handles the occurence of a spike during training, in the case validation loss increased dramatically.
+        Handles the occurrence of a spike during training, in the case validation loss increased dramatically.
         :return: self._return_metrics_and_stop_training()
         """
         self.nb_spikes += 1

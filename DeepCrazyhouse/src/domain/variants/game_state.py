@@ -64,7 +64,7 @@ class GameState(AbsGameState):
         return self.board
 
     def is_draw(self):
-        """ Check if you can claim a draw - its assumed that the draw is always claimed """
+        """ Check if you can claim a draw - it's assumed that the draw is always claimed """
         return self.board.is_variant_draw() or self.can_claim_threefold_repetition() or self.board.can_claim_fifty_moves()
         # return self.board.can_claim_draw()
 
@@ -102,7 +102,7 @@ class GameState(AbsGameState):
         return [*self.board.legal_moves]  # is same as list(self.board.legal_moves)
 
     def is_white_to_move(self):
-        """ Returns true if its whites turn"""
+        """ Returns true if it's white's turn"""
         return self.board.turn
 
     def mirror_policy(self) -> bool:

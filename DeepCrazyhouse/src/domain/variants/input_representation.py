@@ -526,9 +526,9 @@ def get_planes_statistics(board: chess.Board, normalize: bool, last_moves_uci: l
     e.g get_planes_statistics(board, False, last_moves=[chess.Move.from_uci("d7d5")])
     :param board: Chess board object
     :param normalize: Decides if the planes should be normalized
-    :param last_moves_uci: Last moves in UCI notation. Chronoligically ordered, meaning first move is first entry and
+    :param last_moves_uci: Last moves in UCI notation. Chronologically ordered, meaning first move is first entry and
     most recent move is last entry.
-    :param board_occ: Gives information on how often this position has occured already.
+    :param board_occ: Gives information on how often this position has occurred already.
     """
     last_moves = []
     for uci_move in last_moves_uci[::-1]:

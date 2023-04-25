@@ -28,7 +28,7 @@ def mixture_net_symbol(channels=256, num_res_blocks=7, act_type='relu',
     :param channels_value_head: Number of channels for the value head
     :param value_fc_size: Number of units in the fully connected layer of the value head
     :param channels_policy_head: Number of channels for the policy head
-    :param dropout_rate: Droput factor to use. If 0, no dropout will be applied. Value must be in [0,1]
+    :param dropout_rate: Dropout factor to use. If 0, no dropout will be applied. Value must be in [0,1]
     :param grad_scale_value: Constant scalar which the gradient for the value outputs are being scaled width.
                             (0.01 is recommended for supervised learning with little data)
     :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
