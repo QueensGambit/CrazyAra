@@ -277,7 +277,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
             
     def _get_movetime_5_args(self):
         """
-        Returns the movetime whne given 5 command line arguments
+        Returns the movetime when given 5 command line arguments
         :return: movetime in ms
         """
 
@@ -513,7 +513,7 @@ jgs.-` __.'|  Developers: Johannes Czech, Moritz Willig, Alena Beyer
 
     def set_options(self):  # Too many branches (16/12)
         """
-        Updates the internal options as requested by the use via the uci-protocoll
+        Updates the internal options as requested by the use via the uci-protocol
         An example call could be: "setoption name nb_threads value 1"
         :param self.cmd_list: List of received of commands
         :return:

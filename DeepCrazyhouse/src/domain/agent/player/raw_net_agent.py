@@ -4,7 +4,7 @@ Created on 14.10.18
 @project: crazy_ara_refactor
 @author: queensgambit
 
-The raw network uses the the single network prediction for it's evaluation.
+The raw network uses the the single network prediction for its evaluation.
 No mcts search is being done.
 """
 from time import time

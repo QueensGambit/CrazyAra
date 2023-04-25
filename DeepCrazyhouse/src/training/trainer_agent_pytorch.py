@@ -533,7 +533,7 @@ def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path,
     :param dir: Output directory
     :param model_prefix: Model prefix name
     :param has_auxiliary_output: Determines if the model has an auxiliary output
-    :param dynamic_batch_size: Wether to export model with dynamic batch size
+    :param dynamic_batch_size: Whether to export model with dynamic batch size
     :return:
     """
     if has_auxiliary_output:

@@ -117,7 +117,7 @@ class RLLoop:
         """
         Checks if enough training games have been generated to trigger training a new network
         :param number_files_to_update: Number of newly generated files needed to trigger a new NN update
-        :return: True, if enough training data was availble and a training run has been executed.
+        :return: True, if enough training data was available and a training run has been executed.
         """
         if self.file_io.get_number_generated_files() >= number_files_to_update:
             self.binary_io.stop_process()
@@ -157,7 +157,7 @@ class RLLoop:
             self.file_io.remove_intermediate_weight_files()
 
             self.binary_io.stop_process()
-            self.rtpt.step()  # BUG: process changes it's name 1 iteration too late, fix?
+            self.rtpt.step()  # BUG: process changes its name 1 iteration too late, fix?
             self.current_binary_name = change_binary_name(self.file_io.binary_dir, self.current_binary_name,
                                                           self.rtpt._get_title(), self.nn_update_index)
             self.initialize()

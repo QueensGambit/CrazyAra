@@ -52,7 +52,7 @@ def preact_resnet_se(channels=256, act_type='relu',
     :param channels_value_head: Number of channels for the value head
     :param value_fc_size: Number of units in the fully connected layer of the value head
     :param channels_policy_head: Number of channels for the policy head
-    :param dropout_rate: Droput factor to use. If 0, no dropout will be applied. Value must be in [0,1]
+    :param dropout_rate: Dropout factor to use. If 0, no dropout will be applied. Value must be in [0,1]
     :param grad_scale_value: Constant scalar which the gradient for the value outputs are being scaled width.
                             (0.01 is recommended for supervised learning with little data)
     :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
@@ -61,7 +61,7 @@ def preact_resnet_se(channels=256, act_type='relu',
     of residual blocks.
     :param n_labels: Number of policy target labels (used for select_policy_from_plane=False)
     :param se_ratio: Reduction ration used in the squeeze excitation module
-    :param se_types: List of squeeze exciation modules to use for each residual layer.
+    :param se_types: List of squeeze excitation modules to use for each residual layer.
      The length of this list must be the same as len(kernels). Available types:
     - "se": Squeeze excitation block - Hu et al. - https://arxiv.org/abs/1709.01507
     - "cbam": Convolutional Block Attention Module (CBAM) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf

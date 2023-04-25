@@ -157,7 +157,7 @@ def convert_pytorch_tar_model_to_onnx(tar_file, input_shape, batch_sizes, model_
     """
     train_config = TrainConfig()
 
-    # load the model and its paramters
+    # load the model and its parameters
     net = get_rise_v33_model_by_train_config(input_shape, train_config)
     if torch.cuda.is_available():
         net.cuda(torch.device(f"cuda:{train_config.device_id}"))

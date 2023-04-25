@@ -165,7 +165,7 @@ def rise_mobile_v2_symbol(channels=256, channels_operating_init=128, channel_exp
                             (They used 1.0 for default and 0.01 in the supervised setting)
     :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
                             (They used 1.0 for default and 0.99 in the supervised setting)
-    :param dropout_rate: Applies optionally droput during learning with a given factor on the last feature space before
+    :param dropout_rate: Applies optionally dropout during learning with a given factor on the last feature space before
     :param use_extra_variant_input: If true, the last 9 channel which represent the active variant are passed to each
     residual block separately and concatenated at the end of the final feature representation
     branching into value and policy head

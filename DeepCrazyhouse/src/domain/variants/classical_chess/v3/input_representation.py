@@ -96,7 +96,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     Total: 52 planes
 
     :param board: Board handle (Python-chess object)
-    :param board_occ: Number of board occurences
+    :param board_occ: Number of board occurrences
     :param normalize: True if the inputs shall be normalized to the range [0.-1.]
     :param last_moves: List of last last moves. The most recent move is the first entry.
     :return: planes - the plane representation of the current board state

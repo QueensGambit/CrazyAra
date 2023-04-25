@@ -177,7 +177,7 @@ def set_illegal_moves_to_zero(board: chess.variant.CrazyhouseBoard, policy_vec, 
 def get_probs_of_move_list(policy_vec: np.ndarray, mv_list: [chess.Move], mirror_policy: bool, normalize: bool = True):
     """
     Returns an array in which entry relates to the probability for the given move list.
-    Its assumed that the moves in the move list are legal and shouldn't be mirrored.
+    It's assumed that the moves in the move list are legal and shouldn't be mirrored.
     :param policy_vec: Policy vector from the neural net prediction
     :param mv_list: List of legal moves for a specific board position
     :param mirror_policy: Decides if the current policy shall be mirrored

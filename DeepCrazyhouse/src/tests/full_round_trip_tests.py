@@ -125,7 +125,7 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
         self._pgn_filename = self._pgn_datasets_test["parameters/pgn_name"][0].decode("UTF8")
         self._batch_size = self._pgn_datasets_test["parameters/batch_size"][0]
         # self._min_elo_both = self._pgn_datasets_test["parameters/min_elo_both"][0]
-        # Rating cap at 90% cumulative rating for all varaints
+        # Rating cap at 90% cumulative rating for all variants
         self._min_elo_both = {
             "Chess": 2200,
             # "Crazyhouse": 2000,
@@ -160,7 +160,7 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
         """ Loads all games from the pgn file and calls the board_single_game() routine """
         logging.info("start board test...")
         logging.info("preparing input parameter...")
-        params_inp = []  # create a param input list which will concatenate the pgn with it's corresponding game index
+        params_inp = []  # create a param input list which will concatenate the pgn with its corresponding game index
         for i in range(self._batch_size):
             if i < self._batch_size - 1:
                 # select all board positions given by the start index to the start index of the next game
@@ -187,10 +187,10 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
 
     def test_moves(self):
         """ Loads all moves from all games in the pgn file and calls the moves_single_game() routine"""
-        logging.info("start move comparision test...")
+        logging.info("start move comparison test...")
         logging.info("preparing input parameter...")
 
-        params_inp = []  # create a param input list which will concatenate the pgn with it's corresponding game index
+        params_inp = []  # create a param input list which will concatenate the pgn with its corresponding game index
         for i in range(self._batch_size):
             if i < self._batch_size - 1:
                 yp_test = self._yp_test[self._start_indices[i]: self._start_indices[i + 1], :]
@@ -210,7 +210,7 @@ class FullRoundTripTests(unittest.TestCase):  # Too many instance attributes (10
 
         pool.close()
         pool.join()
-        logging.info("move comparision test done...")
+        logging.info("move comparison test done...")
 
 
 if __name__ == "__main__":

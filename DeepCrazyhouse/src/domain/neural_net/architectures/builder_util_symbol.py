@@ -197,7 +197,7 @@ def policy_head(data, channels, act_type, channels_policy_head, select_policy_fr
     :param n_labels: Number of possible move targets
     :param grad_scale_policy: Optional re-weighting of gradient
     :param use_se: Indicates if a squeeze excitation layer shall be used
-    :param no_bias: If no bias shall be used for the last conv layer before softmax (backward compability)
+    :param no_bias: If no bias shall be used for the last conv layer before softmax (backward compatibility)
     """
     # for policy output
     kernel = 3

@@ -34,7 +34,7 @@ class AbsGameState(ABC):
         """ Force the child to implement get_pythonchess_board method"""
 
     def is_draw(self):
-        """ Check if you can claim a draw - its assumed that the draw is always claimed """
+        """ Check if you can claim a draw - it's assumed that the draw is always claimed """
         return self.board.can_claim_draw()
 
     @abstractmethod
