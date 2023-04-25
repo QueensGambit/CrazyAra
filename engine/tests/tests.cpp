@@ -717,7 +717,6 @@ TEST_CASE("State: clone()"){
     REQUIRE(state2->fen() == state.fen());
 }
 #elif defined(MODE_XIANGQI) || defined(MODE_BOARDGAMES)
-#include "catch.hpp"
 #include "piece.h"
 #include "thread.h"
 #include "uci.h"
