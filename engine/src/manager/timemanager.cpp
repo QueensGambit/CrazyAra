@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#include <algorithm>
 #include "timemanager.h"
 #include "../util/communication.h"
 #include <cassert>
@@ -91,7 +92,7 @@ int TimeManager::get_time_for_move(const SearchLimits* searchLimits, SideToMove 
 
     if (searchLimits->time[me] != 0) {
         // make sure the returned movetime is within bounds
-        return min(searchLimits->get_safe_remaining_time(me), curMovetime);
+        return std::min(searchLimits->get_safe_remaining_time(me), curMovetime);
     }
     return curMovetime;
 }

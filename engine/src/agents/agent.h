@@ -28,6 +28,7 @@
 #ifndef AGENT_H
 #define AGENT_H
 
+#include <condition_variable>
 #include "../stateobj.h"
 #include "../evalinfo.h"
 #include "config/searchlimits.h"
@@ -58,8 +59,12 @@ protected:
     PlaySettings* playSettings;
     StateObj* state;
     EvalInfo* evalInfo;
-    // protect the isRunning attribute and makes sure that the stop() command can only be called after the search has actually been started
-    mutex runnerMutex;
+    // Protect the isRunning attribute and makes sure that the stop() command can only be called after the search has actually been started.
+    // Locking a mutex from the main thread and releasing it in a different thread causes problems in Windows.
+    // Therefore, we need to use a condition variable and a mutex here:
+    // Reference: https://github.com/dmfrodrigues/GraphViewerCpp/issues/16
+    condition_variable isRunningCondition;
+    mutex isRunningMutex;
     bool verbose;
     // boolean which can be triggered by "stop" from std-in to stop the current search
     bool isRunning;
@@ -105,9 +110,15 @@ public:
      */
     Action get_best_action();
 
-    void lock();
+    /**
+     * @brief lock_and_wait Locks the isRunningMutex and waits for it to be released from a different thread.
+     */
+    void lock_and_wait();
 
-    void unlock();
+    /**
+     * @brief unlock_and_notify Unlocks the isRunningMutex and notifies all threads from the isRunningCondition variable.
+     */
+    void unlock_and_notify();
 };
 }
 

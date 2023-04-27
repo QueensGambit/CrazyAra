@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#include <algorithm>
 #include "searchlimits.h"
 #include "state.h"
 #include "constants.h"
@@ -64,7 +65,7 @@ void SearchLimits::reset()
 
 int SearchLimits::get_safe_remaining_time(SideToMove sideToMove) const
 {
-    return max(time[sideToMove] - moveOverhead * TIME_BUFFER_FACTOR, 1);
+    return std::max(time[sideToMove] - moveOverhead * TIME_BUFFER_FACTOR, 1);
 }
 
 bool is_game_sceneario(const SearchLimits* searchLimits)
