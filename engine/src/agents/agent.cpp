@@ -70,14 +70,17 @@ Action Agent::get_best_action()
     return evalInfo->bestMove;
 }
 
-void Agent::lock()
+void Agent::lock_and_wait()
 {
-    runnerMutex.lock();
+    unique_lock<mutex> lock(isRunningMutex);
+    isRunningCondition.wait(lock);
 }
 
-void Agent::unlock()
+void Agent::unlock_and_notify()
 {
-    runnerMutex.unlock();
+    // std::lock_guard is deprecated in C++17, therefore we use scoped_lock instead
+    scoped_lock<mutex> lock(isRunningMutex);
+    isRunningCondition.notify_all();
 }
 
 void Agent::perform_action()
@@ -99,7 +102,6 @@ void Agent::perform_action()
 
 void run_agent_thread(Agent* agent)
 {
-    agent->lock();
     agent->perform_action();
     // inform the agent of the move, so the tree can potentially be reused later
     agent->apply_move_to_tree(agent->get_best_action(), true);

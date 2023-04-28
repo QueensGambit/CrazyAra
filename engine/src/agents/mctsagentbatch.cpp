@@ -80,9 +80,11 @@ void MCTSAgentBatch::evaluate_board_state()
         
         if (rootNode->get_number_child_nodes() == 1) {
             info_string("Only single move available -> early stopping");
+            unlock_and_notify();
         }
         else if (rootNode->get_number_child_nodes() == 0) {
             info_string("The given position has no legal moves");
+            unlock_and_notify();
         }
         else {
             if (searchSettings->dirichletEpsilon > 0.009f) {

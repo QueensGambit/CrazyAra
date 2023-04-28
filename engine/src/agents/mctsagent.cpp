@@ -297,9 +297,11 @@ void MCTSAgent::evaluate_board_state()
     if (rootNode->get_number_child_nodes() == 1) {
         info_string("Only single move available -> early stopping");
         handle_single_move();
+        unlock_and_notify();
     }
     else if (rootNode->get_number_child_nodes() == 0) {
         info_string("The given position has no legal moves");
+        unlock_and_notify();
     }
     else {
         if (searchSettings->dirichletEpsilon > 0.009f) {
@@ -346,7 +348,7 @@ void MCTSAgent::run_mcts_search()
     ThreadManagerParams tParams(curMovetime, 250, is_game_sceneario(searchLimits), can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
     threadManager = make_unique<ThreadManager>(&tData, &tInfo, &tParams);
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());
-    runnerMutex.unlock();
+    unlock_and_notify();
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
@@ -357,16 +359,13 @@ void MCTSAgent::run_mcts_search()
 
 void MCTSAgent::stop()
 {
-    runnerMutex.lock();
     if (!isRunning) {
-        runnerMutex.unlock();
         return;
     }
     if (threadManager != nullptr) {
         threadManager->stop_search();
     }
     isRunning = false;
-    runnerMutex.unlock();
 }
 
 void MCTSAgent::print_root_node()
