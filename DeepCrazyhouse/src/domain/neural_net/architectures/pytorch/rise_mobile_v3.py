@@ -20,49 +20,19 @@ Influenced by the following papers:
     https://arxiv.org/pdf/1807.06521.pdf
 
 """
+import torch
 from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se, process_value_policy_head
+from timm.models.layers import DropPath
+
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead,\
+    _Stem, get_se, process_value_policy_head, _BottlekneckResidualBlock, ClassicalResidualBlock, round_to_next_multiple_of_32
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NCB
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
-class _BottlekneckResidualBlock(Module):
-
-    def __init__(self, channels, channels_operating, kernel=3, act_type='relu', se_type=None):
-        """
-        Returns a residual block without any max pooling operation
-        :param channels: Number of filters for all CNN-layers
-        :param name: Name for the residual block
-        :param act_type: Activation function to use
-        :param se_type: Squeeze excitation module that will be used
-        :return: symbol
-        """
-        super(_BottlekneckResidualBlock, self).__init__()
-
-        self.se_type = se_type
-        if se_type:
-            self.se = get_se(se_type=se_type, channels=channels, use_hard_sigmoid=True)
-        self.body = Sequential(Conv2d(in_channels=channels, out_channels=channels_operating, kernel_size=(1, 1), bias=False),
-                               BatchNorm2d(num_features=channels_operating),
-                               get_act(act_type),
-                               Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=channels_operating),
-                               BatchNorm2d(num_features=channels_operating),
-                               get_act(act_type),
-                               Conv2d(in_channels=channels_operating, out_channels=channels, kernel_size=(1, 1), bias=False),
-                               BatchNorm2d(num_features=channels))
-
-    def forward(self, x):
-        """
-        Compute forward pass
-        :param x: Input data to the block
-        :return: Activation maps of the block
-        """
-        if self.se_type:
-            return x + self.body(self.se(x))
-        return x + self.body(x)
-
-
-def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types):
+def _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32):
     """Helper function which generates the residual blocks for Risev3"""
 
     channels_operating = channels_operating_init
@@ -70,14 +40,38 @@ def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansi
 
     for idx, kernel in enumerate(kernels):
         if kernel == 5:
-            channels_operating_active = channels_operating - 32 * (idx // 2)
+            if kernel_5_channel_ratio is None:
+                channels_operating_active = channels_operating - 32 * (idx // 2)
+            else:
+                channels_operating_active = int(channels_operating * kernel_5_channel_ratio + 0.5) # 0.68 95 #- 32 * (idx // 2)
         else:
             channels_operating_active = channels_operating
 
-        res_blocks.append(_BottlekneckResidualBlock(channels=channels,
-                                                    channels_operating=channels_operating_active,
-                                                    kernel=kernel, act_type=act_type,
-                                                    se_type=se_types[idx]))
+        if round_channels_to_next_32:
+            channels_operating_active = round_to_next_multiple_of_32(channels_operating_active)
+            channels = round_to_next_multiple_of_32(channels)
+
+        if use_transformers[idx]:
+            res_blocks.append(NTB(channels, channels, path_dropout=path_dropout_rates[idx]))
+        elif conv_block == "mobile_bottlekneck_res_block":
+            res_blocks.append(_BottlekneckResidualBlock(channels=channels,
+                                                        channels_operating=channels_operating_active,
+                                                        use_depthwise_conv=True,
+                                                        kernel=kernel, act_type=act_types[idx],
+                                                        se_type=se_types[idx],
+                                                        path_dropout=path_dropout_rates[idx]))
+        elif conv_block == "bottlekneck_res_block":
+            res_blocks.append(_BottlekneckResidualBlock(channels=channels,
+                                                        channels_operating=channels_operating_active,
+                                                        use_depthwise_conv=False,
+                                                        kernel=kernel, act_type=act_types[idx],
+                                                        se_type=se_types[idx],
+                                                        path_dropout=path_dropout_rates[idx]))
+        elif conv_block == "classical_res_block":
+            res_blocks.append(ClassicalResidualBlock(channels, act_types[idx], se_type=se_types[idx], path_dropout=path_dropout_rates[idx]))
+        elif conv_block == "next_conv_block":
+            res_blocks.append(NCB(channels, channels, stride=1, se_type=se_types[idx], path_dropout=path_dropout_rates[idx]))
+
         channels_operating += channel_expansion
 
     return res_blocks
@@ -86,18 +80,20 @@ def _get_res_blocks(act_type, channels, channels_operating_init, channel_expansi
 class RiseV3(Module):
 
     def __init__(self, nb_input_channels, board_height, board_width,
-                  channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
-                  channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
-                  select_policy_from_plane=True, kernels=None, n_labels=4992,
-                  se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
-                  use_mlp_wdl_ply=False
+                 channels=256, channels_operating_init=224, channel_expansion=32, act_types=None,
+                 channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
+                 select_policy_from_plane=True, kernels=None, n_labels=4992,
+                 se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
+                 use_mlp_wdl_ply=False,
+                 use_transformers=None, path_dropout=0, conv_block="mobile_bottlekneck_res_block",
+                 kernel_5_channel_ratio=None, round_channels_to_next_32=False,
                  ):
         """
         RISEv3 architecture
         :param channels: Main number of channels
         :param channels_operating: Initial number of channels at the start of the net for the depthwise convolution
         :param channel_expansion: Number of channels to add after each residual block
-        :param act_type: Activation type to use
+        :param act_types: Activation type to use as a list of layers.
         :param channels_value_head: Number of channels for the value head
         :param value_fc_size: Number of units in the fully connected layer of the value head
         :param channels_policy_head: Number of channels for the policy head
@@ -119,12 +115,26 @@ class RiseV3(Module):
         :param use_wdl: If a win draw loss head shall be used
         :param use_plys_to_end: If a plys to end prediction head shall be used
         :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
+        :param path_dropout: Path dropout for stochastic depth
+        :param conv_block: Base convolutional block ["mobile_bottlekneck_res_block", "bottlekneck_res_block", "classical_res_block", "next_conv_block"]
+        :param kernel_5_channel_ratio: Downscale factor for channels_operating in case of 5x5 kernels
+        :param round_channels_to_next_32: Rounds all number of channels within the network to the closest multiple of 32
         :return: symbol
         """
         super(RiseV3, self).__init__()
         self.nb_input_channels = nb_input_channels
         self.use_plys_to_end = use_plys_to_end
         self.use_wdl = use_wdl
+
+        if round_channels_to_next_32:
+            channels = round_to_next_multiple_of_32(channels)
+
+        if se_types is None:
+            se_types = [None] * len(kernels)
+        if use_transformers is None:
+            use_transformers = [None] * len(kernels)
+        if act_types is None:
+            act_types = ['relu'] * len(kernels)
 
         if len(kernels) != len(se_types):
             raise Exception(f'The length of "kernels": {len(kernels)} must be the same as'
@@ -135,20 +145,21 @@ class RiseV3(Module):
             if se_type not in valid_se_types:
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
-        res_blocks = _get_res_blocks(act_type, channels, channels_operating_init, channel_expansion, kernels, se_types)
+        path_dropout_rates = [x.item() for x in torch.linspace(0, path_dropout, len(kernels))]  # stochastic depth decay rule
+        res_blocks = _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32)
 
         self.body_spatial = Sequential(
-            _Stem(channels=channels, act_type=act_type, nb_input_channels=nb_input_channels),
+            _Stem(channels=channels, act_type=act_types[0], nb_input_channels=nb_input_channels),
             *res_blocks,
         )
         self.nb_body_spatial_out = channels * board_height * board_width
 
         # create the two heads which will be used in the hybrid fwd pass
         self.value_head = _ValueHead(board_height, board_width, channels, channels_value_head, value_fc_size,
-                                     act_type, False, nb_input_channels,
+                                     act_types[-1], False, nb_input_channels,
                                      use_wdl, use_plys_to_end, use_mlp_wdl_ply)
         self.policy_head = _PolicyHead(board_height, board_width, channels, channels_policy_head, n_labels,
-                                       act_type, select_policy_from_plane)
+                                       act_types[-1], select_policy_from_plane)
 
     def forward(self, x):
         """
@@ -180,18 +191,59 @@ def get_rise_v33_model(args):
     se_types[13] = "eca_se"
     se_types[14] = "eca_se"
 
+    act_types = ['relu'] * len(kernels)
+
     model = RiseV3(nb_input_channels=args.input_shape[0], board_height=args.input_shape[1], board_width=args.input_shape[2],
-                    channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
-                    channels_value_head=8, value_fc_size=256,
-                    channels_policy_head=args.channels_policy_head,
-                    dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
-                    kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
-                    use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
+                   channels=256, channels_operating_init=224, channel_expansion=32, act_types=act_types,
+                   channels_value_head=8, value_fc_size=256,
+                   channels_policy_head=args.channels_policy_head,
+                   dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
+                   kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
+                   use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
                    )
     return model
 
 
+def get_rise_v2_model(args):
+    """
+    Wrapper definition for RISEv2.0
+    :return: pytorch model object
+    """
+    kernels = [3] * 13
+
+    se_types = [None] * len(kernels)
+    se_types[8] = "ca_se"
+    se_types[9] = "ca_se"
+    se_types[10] = "ca_se"
+    se_types[11] = "ca_se"
+    se_types[12] = "ca_se"
+
+    act_types = ['relu'] * len(kernels)
+
+    model = RiseV3(nb_input_channels=args.input_shape[0], board_height=args.input_shape[1], board_width=args.input_shape[2],
+                   channels=256, channels_operating_init=128, channel_expansion=64, act_types=act_types,
+                   channels_value_head=8, value_fc_size=256,
+                   channels_policy_head=args.channels_policy_head,
+                   dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
+                   kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
+                   use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
+                   )
+    return model
+
+
+def get_rise_v2_model_by_train_config(input_shape, tc: TrainConfig):
+    args = create_args_by_train_config(input_shape, tc)
+    model = get_rise_v2_model(args)
+    return model
+
+
 def get_rise_v33_model_by_train_config(input_shape, tc: TrainConfig):
+    args = create_args_by_train_config(input_shape, tc)
+    model = get_rise_v33_model(args)
+    return model
+
+
+def create_args_by_train_config(input_shape, tc):
     class Args:
         pass
 
@@ -203,5 +255,4 @@ def get_rise_v33_model_by_train_config(input_shape, tc: TrainConfig):
     args.use_wdl = tc.use_wdl
     args.use_plys_to_end = tc.use_plys_to_end
     args.use_mlp_wdl_ply = tc.use_mlp_wdl_ply
-    model = get_rise_v33_model(args)
-    return model
+    return args

@@ -163,7 +163,7 @@ class TrainerAgentPytorch:
                                                                         self.val_metric_values_best)
 
                             logging.debug("Recover to latest checkpoint")
-                            model_path = self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.params" % (
+                            model_path = self.tc.export_dir + "weights/model-%.5f-%.3f-%04d.tar" % (
                                 self.val_loss_best,
                                 self.val_p_acc_best,
                                 self.k_steps_best,
@@ -208,8 +208,17 @@ class TrainerAgentPytorch:
                                     save_torch_state(self._model, self.optimizer, filepath)
                                     print()
                                     logging.info("Saved checkpoint to %s", filepath)
+                                    with torch.no_grad():
+                                        ctx = get_context(self.tc.context, self.tc.device_id)
+                                        dummy_input = torch.zeros(1, data.shape[1], data.shape[2], data.shape[3]).to(
+                                            ctx)
+                                        export_to_onnx(self._model, 1,
+                                                       dummy_input,
+                                                       Path(self.tc.export_dir) / Path("weights"), model_prefix,
+                                                       self.tc.use_wdl and self.tc.use_plys_to_end,
+                                                       True)
 
-                                patience_cnt = 0  # reset the patience counter
+                                self.patience_cnt = 0  # reset the patience counter
                             # print the elapsed time
                             self.t_delta = time() - self.t_s_steps
                             print(" - %.ds" % self.t_delta)
@@ -407,6 +416,8 @@ def create_optimizer(model: nn.Module, train_config: TrainConfig):
                                weight_decay=train_config.wd)
     elif train_config.optimizer_name == "adam":
         return torch.optim.Adam(model.parameters(), lr=train_config.max_lr, weight_decay=train_config.wd)
+    elif train_config.optimizer_name == "adamw":
+        return torch.optim.AdamW(model.parameters(), lr=train_config.max_lr, weight_decay=train_config.wd)
     raise Exception(f"Selected optimizer {train_config.optimizer_name} is not supported.")
 
 

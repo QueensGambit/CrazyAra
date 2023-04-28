@@ -51,7 +51,7 @@ struct NodeDescription
     size_t depth;
 };
 
-class SearchThread : NeuralNetAPIUser
+class SearchThread : public NeuralNetAPIUser
 {
 private:
     Node* rootNode;

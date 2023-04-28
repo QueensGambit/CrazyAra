@@ -89,3 +89,11 @@ NeuralNetAPIUser::~NeuralNetAPIUser()
     }
 #endif
 }
+
+void NeuralNetAPIUser::run_inference(uint_fast16_t iterations)
+{
+    for (uint_fast16_t it = 0; it < iterations; ++it) {
+        net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    }
+}
+

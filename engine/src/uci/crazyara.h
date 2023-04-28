@@ -243,6 +243,10 @@ public:
      */
     void prepare_search_config_structs();
 
+    /**
+     * @brief inference Runs nn inference for X number times with Y warmups and reports the results.
+     */
+    void inference(istringstream &is);
 private:
     /**
      * @brief engine_info Returns a string about the engine version and authors

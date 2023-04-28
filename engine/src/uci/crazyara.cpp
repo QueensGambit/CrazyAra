@@ -131,6 +131,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "flip")       state->flip();
         else if (token == "d")          cout << *(state.get()) << endl;
         else if (token == "activeuci") activeuci();
+        else if (token == "inference") inference(is);
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
@@ -157,6 +158,33 @@ void CrazyAra::prepare_search_config_structs()
         init_play_settings();
         changedUCIoption = false;
     }
+}
+
+void CrazyAra::inference(istringstream &is)
+{
+    size_t warmupIterations = 100;
+    size_t iterations = 3000;
+    string token;
+    while (is >> token) {
+        if (token == "warmup") {
+            is >> warmupIterations;
+        }
+        if (token == "iterations") {
+            is >> iterations;
+        }
+    }
+    info_string("running", warmupIterations, "warmup iteration...");
+    info_string("running", iterations, "iterations...");
+    info_string("batch-size:", searchSettings.batchSize);
+    mctsAgent->run_inference(warmupIterations);
+    const chrono::steady_clock::time_point start = chrono::steady_clock::now();
+    mctsAgent->searchThreads.front()->run_inference(iterations);
+    const chrono::steady_clock::time_point end = chrono::steady_clock::now();
+    const size_t elapsedMS = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    info_string("Inference results");
+    info_string("-----------------");
+    info_string("Elapsed time:", elapsedMS/1000.0, "s");
+    info_string("Evaluations per second:", (iterations/double(elapsedMS))*1000*searchSettings.batchSize, "nps");
 }
 
 void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
