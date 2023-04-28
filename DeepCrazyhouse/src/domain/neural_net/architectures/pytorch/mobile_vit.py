@@ -4,7 +4,7 @@ Created on 07.07.22
 @project: CrazyAra
 @author: queensgambit
 
-Please describe what the content of this file is about
+MobileViT network architecture definition based on:
 https://github.com/lucidrains/vit-pytorch#mobilevit
 """
 import torch
@@ -76,12 +76,6 @@ class MobileViT(nn.Module):
             MobileViTBlock(dims[2], depths[2], channels,
                            kernel_size, patch_size, int(dims[2] * 4))
         ]))
-
-        # self.to_logits = nn.Sequential(
-        #     conv_1x1_bn(channels[-2], last_dim),
-        #     Reduce('b c h w -> b c', 'mean'),
-        #     nn.Linear(channels[-1], num_classes, bias=False)
-        # )
 
         self.value_head = _ValueHead(board_height=image_size[0], board_width=image_size[1], channels=channels, channels_value_head=8, fc0=256,
                                      nb_input_channels=256, use_wdl=use_wdl, use_plys_to_end=use_plys_to_end, use_mlp_wdl_ply=use_mlp_wdl_ply)

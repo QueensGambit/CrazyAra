@@ -4,7 +4,8 @@ Created on 21.08.22
 @project: CrazyAra
 @author: queensgambit
 
-Based on
+Different ViT configs.
+Based on:
 https://github.com/jeonsworld/ViT-pytorch/blob/460a162767de1722a014ed2261463dbbc01196b6/models/configs.py
 """
 # Copyright 2020 Google LLC

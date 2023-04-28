@@ -80,6 +80,7 @@ class ConvBNReLU(nn.Module):
         x = self.act(x)
         return x
 
+
 def _make_divisible(v, divisor, min_value=None):
     if min_value is None:
         min_value = divisor
@@ -88,6 +89,7 @@ def _make_divisible(v, divisor, min_value=None):
     if new_v < 0.9 * v:
         new_v += divisor
     return new_v
+
 
 class PatchEmbed(nn.Module):
     def __init__(self,
@@ -110,6 +112,7 @@ class PatchEmbed(nn.Module):
             self.norm = nn.Identity()
     def forward(self, x):
         return self.norm(self.conv(self.avgpool(x)))
+
 
 class MHCA(nn.Module):
     """
@@ -150,6 +153,7 @@ class Mlp(nn.Module):
         x = self.conv2(x)
         x = self.drop(x)
         return x
+
 
 class NCB(nn.Module):
     """
@@ -192,6 +196,7 @@ class NCB(nn.Module):
         x  = x + self.mlp_path_dropout(self.mlp(out))
 
         return x
+
 
 class E_MHSA(nn.Module):
     """
@@ -300,6 +305,7 @@ class NTB(nn.Module):
             self.e_mhsa.merge_bn(self.norm1)
             self.mlp.merge_bn(self.norm2)
             self.is_bn_merged = True
+
     def forward(self, x):
         x = self.patch_embed(x)
         B, C, H, W = x.shape

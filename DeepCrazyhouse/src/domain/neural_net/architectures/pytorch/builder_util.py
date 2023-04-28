@@ -13,7 +13,6 @@ from torch import nn
 from torch.nn import Sequential, Conv1d, Conv2d, BatchNorm2d, ReLU, LeakyReLU, Sigmoid, Tanh, Linear, Hardsigmoid, Hardswish,\
     Module, AdaptiveAvgPool2d, BatchNorm1d
 from timm.models.layers import DropPath
-#from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
 def round_to_next_multiple_of_32(number):

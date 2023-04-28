@@ -4,7 +4,7 @@ Created on 07.07.22
 @project: CrazyAra
 @author: queensgambit
 
-Please describe what the content of this file is about
+TRT-ViT network architecture definition
 Based on: TRT-ViT: TensorRT-oriented Vision Transformer, Xia et al.
 https://arxiv.org/pdf/2205.09579.pdf
 
@@ -16,8 +16,8 @@ import torch.nn.functional as F
 from functools import partial
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_se, get_act, _ValueHead, _PolicyHead, process_value_policy_head
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
-#from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import _BottlekneckResidualBlock
 from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
+
 
 class _BottlekneckResidualBlock(Module):
 
@@ -263,18 +263,9 @@ class TrtViT(nn.Module):
         self,
         *,
         image_size,
-        # num_classes,
         channels_policy_head,
-        # dim,
-        # depth,
-        # heads,
-        # mlp_mult,
         in_channels = 3,
         channels=320,
-        stages = 3,
-        dim_key = 32,
-        dim_value = 64,
-        dropout = 0.,
         use_wdl=False, use_plys_to_end=False,
         use_mlp_wdl_ply=False,
         select_policy_from_plane=True
@@ -286,17 +277,14 @@ class TrtViT(nn.Module):
 
         self.layers = nn.Sequential(
             nn.Conv2d(in_channels, channels, (3,3), stride=(1,1), padding=1),
-            # ClassicBottleneckResidualBlock(channels, channels//4),
-            # ClassicBottleneckResidualBlock(channels, channels//4),
-            # ClassicBottleneckResidualBlock(channels, channels//4),
             ClassicResidualBlock(channels),
             ClassicResidualBlock(channels),
             ClassicResidualBlock(channels),
             ClassicResidualBlock(channels),
             ClassicResidualBlock(channels),
-            MixBlockC(channels, num_heads=4), #5),
-            MixBlockC(channels, num_heads=4), #5),
-            MixBlockC(channels, num_heads=4), #5),
+            MixBlockC(channels, num_heads=4),
+            MixBlockC(channels, num_heads=4),
+            MixBlockC(channels, num_heads=4),
         )
 
         self.value_head = _ValueHead(board_height=image_size, board_width=image_size, channels=channels, channels_value_head=8, fc0=256,
