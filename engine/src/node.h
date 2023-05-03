@@ -836,14 +836,15 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
             break;
         case MODE_SINGLE_PLAYER:;
         }
-        bool useMaxBackup = true;
         switch (searchSettings->backupOperator) {
         case BACKUP_MEAN:
             freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal) :
                 it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal);
+            break;
         case BACKUP_MAX:
             freeBackup ? it->node->revert_virtual_loss_and_update_with_max_operator<true>(it->childIdx, value, searchSettings, solveForTerminal) :
                 it->node->revert_virtual_loss_and_update_with_max_operator<false>(it->childIdx, value, searchSettings, solveForTerminal);
+            break;
         }
 
 
