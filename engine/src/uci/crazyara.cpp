@@ -709,7 +709,7 @@ void CrazyAra::init_search_settings()
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
     searchSettings.mctsSolver = Options["MCTS_Solver"];
-    if (Options["Backup_Operator"] == "mean") {
+    if (Options["Backup_Operator"] == "mean_op") {
         searchSettings.backupOperator = BACKUP_MEAN;
     }
     else {
