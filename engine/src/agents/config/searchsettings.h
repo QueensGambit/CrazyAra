@@ -36,6 +36,11 @@ enum SearchPlayerMode {
     MODE_TWO_PLAYER
 };
 
+enum BackupOperatorType {
+    BACKUP_MEAN,
+    BACKUP_MAX
+};
+
 struct SearchSettings
 {
     uint16_t multiPV;
@@ -51,9 +56,10 @@ struct SearchSettings
     uint_fast32_t virtualLoss;
     bool verbose;
     uint_fast8_t epsilonChecksCounter;
-//    bool enhanceCaptures;   currently not support
-//    bool useFutureQValues;  currently not supported
+    //    bool enhanceCaptures;   currently not support
+    //    bool useFutureQValues;  currently not supported
     bool useMCGS;
+    bool useMaxOperatpr;
     float cpuctInit;
     float cpuctBase;
     float uInit;
@@ -73,8 +79,10 @@ struct SearchSettings
     bool reuseTree;
     // If true, then the MCTS solver for terminals and tablebases will be active
     bool mctsSolver;
-    // Defines the nubmer of players within the MCTS search. Available are MODE_SINGLE_PLAYER and MODE_TWO_PLAYER
+    // Defines the nubmer of players within the MCTS. Available are MODE_SINGLE_PLAYER and MODE_TWO_PLAYER
     SearchPlayerMode searchPlayerMode;
+    // Defines backup operator use for MCTS.
+    BackupOperatorType backupOperator;
     SearchSettings();
 
 };

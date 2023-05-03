@@ -47,7 +47,7 @@
 #endif
 
 
-CrazyAra::CrazyAra():
+CrazyAra::CrazyAra() :
     rawAgent(nullptr),
     mctsAgent(nullptr),
     netSingle(nullptr),         // will be initialized in is_ready()
@@ -80,7 +80,7 @@ void CrazyAra::welcome()
     cout << intro << endl;
 }
 
-void CrazyAra::uci_loop(int argc, char *argv[])
+void CrazyAra::uci_loop(int argc, char* argv[])
 {
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
@@ -95,6 +95,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
     // this is debug vector which can contain uci commands which will be automatically processed when the executable is launched
     vector<string> commands = {
+        "isready"
     };
 
     do {
@@ -115,8 +116,8 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         }
         else if (token == "uci") {
             cout << engine_info()
-                 << Options << endl
-                 << "uciok" << endl;
+                << Options << endl
+                << "uciok" << endl;
         }
         else if (token == "setoption")  set_uci_option(is, *state.get());
         else if (token == "go")         go(state.get(), is, evalInfo);
@@ -159,7 +160,7 @@ void CrazyAra::prepare_search_config_structs()
     }
 }
 
-void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
+void CrazyAra::go(StateObj* state, istringstream& is, EvalInfo& evalInfo)
 {
     wait_to_finish_last_search();
     ongoingSearch = true;
@@ -240,7 +241,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     else if (token == "fen") {
         while (is >> token && token != "moves")
             fen += token + " ";
-        fen = fen.substr(0, fen.length()-1);  // remove last ' ' to avoid parsing problems
+        fen = fen.substr(0, fen.length() - 1);  // remove last ' ' to avoid parsing problems
     }
     else
         return;
@@ -261,7 +262,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     info_string("position", state->fen());
 }
 
-void CrazyAra::benchmark(istringstream &is)
+void CrazyAra::benchmark(istringstream& is)
 {
     int passedCounter = 0;
     EvalInfo evalInfo;
@@ -301,12 +302,12 @@ void CrazyAra::benchmark(istringstream &is)
     cout << endl << "Summary" << endl;
     cout << "----------------------" << endl;
     cout << "Passed:\t\t" << passedCounter << "/" << benchmark.positions.size() << endl;
-    cout << "NPS (avg):\t" << setw(2) << totalNPS /  benchmark.positions.size() << endl;
-    cout << "NPS (median):\t" << setw(2) << nps[nps.size()/2] << endl;
-    cout << "PV-Depth:\t" << setw(2) << totalDepth /  benchmark.positions.size() << endl;
+    cout << "NPS (avg):\t" << setw(2) << totalNPS / benchmark.positions.size() << endl;
+    cout << "NPS (median):\t" << setw(2) << nps[nps.size() / 2] << endl;
+    cout << "PV-Depth:\t" << setw(2) << totalDepth / benchmark.positions.size() << endl;
 }
 
-void CrazyAra::export_search_tree(istringstream &is)
+void CrazyAra::export_search_tree(istringstream& is)
 {
     string depth, filename;
     is >> depth;
@@ -330,7 +331,7 @@ void CrazyAra::activeuci()
 }
 
 #ifdef USE_RL
-void CrazyAra::selfplay(istringstream &is)
+void CrazyAra::selfplay(istringstream& is)
 {
     prepare_search_config_structs();
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings, Options);
@@ -340,7 +341,7 @@ void CrazyAra::selfplay(istringstream &is)
     cout << "readyok" << endl;
 }
 
-void CrazyAra::arena(istringstream &is)
+void CrazyAra::arena(istringstream& is)
 {
     prepare_search_config_structs();
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings, Options);
@@ -362,7 +363,7 @@ void CrazyAra::arena(istringstream &is)
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 
-void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1, const string &modelDirectory2, bool isModelInInputStream)
+void CrazyAra::multimodel_arena(istringstream& is, const string& modelDirectory1, const string& modelDirectory2, bool isModelInInputStream)
 {
     SearchLimits searchLimits;
     searchLimits.nodes = size_t(Options["Nodes"]);
@@ -410,7 +411,7 @@ void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1
     write_tournament_result_to_csv(tournamentResult, "mcts_arena_results.csv");
 }
 
-void CrazyAra::roundrobin(istringstream &is)
+void CrazyAra::roundrobin(istringstream& is)
 {
     int type;
     int numberofgames;
@@ -473,7 +474,7 @@ void CrazyAra::init_rl_settings()
     rlSettings.reuseTreeForSelpay = Options["Reuse_Tree"];
     rlSettings.epdFilePath = string(Options["EPD_File_Path"]);
     if (rlSettings.epdFilePath != "<empty>" and rlSettings.epdFilePath != "") {
-        std::ifstream epdFile (rlSettings.epdFilePath);
+        std::ifstream epdFile(rlSettings.epdFilePath);
         if (!epdFile.is_open()) {
             throw invalid_argument("Given epd file: " + rlSettings.epdFilePath + " could not be opened.");
         }
@@ -481,7 +482,7 @@ void CrazyAra::init_rl_settings()
 }
 #endif
 
-std::string read_string_from_file(const std::string &file_path){
+std::string read_string_from_file(const std::string& file_path) {
     const std::ifstream input_stream(file_path, std::ios_base::binary);
 
     if (input_stream.fail()) {
@@ -595,27 +596,27 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
 {
     vector<unique_ptr<NeuralNetAPI>> netBatches;
 #ifdef MXNET
-    #ifdef TENSORRT
-        const bool useTensorRT = bool(Options["Use_TensorRT"]);
-    #else
-        const bool useTensorRT = false;
-    #endif
+#ifdef TENSORRT
+    const bool useTensorRT = bool(Options["Use_TensorRT"]);
+#else
+    const bool useTensorRT = false;
+#endif
 #endif
     for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
         for (size_t i = 0; i < size_t(Options["Threads"]); ++i) {
-    #ifdef MXNET
+#ifdef MXNET
             netBatches.push_back(make_unique<MXNetAPI>(Options["Context"], deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"], useTensorRT));
-    #elif defined TENSORRT
+#elif defined TENSORRT
             netBatches.push_back(make_unique<TensorrtAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"]));
-    #elif defined OPENVINO
+#elif defined OPENVINO
             netBatches.push_back(make_unique<OpenVinoAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Threads_NN_Inference"]));
-    #endif
+#endif
         }
     }
     return netBatches;
 }
 
-void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
+void CrazyAra::set_uci_option(istringstream& is, StateObj& state)
 {
     // these three UCI-Options may trigger a network reload, keep an eye on them
     const string prevModelDir = Options["Model_Directory"];
@@ -636,25 +637,25 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
 }
 
 unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type)
-{   
+{
     switch (type) {
     case MCTSAgentType::kDefault:
         return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
     case MCTSAgentType::kBatch1:
         info_string("TYP 1 -> Batch 1");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 1, false);
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings, 1, false);
     case MCTSAgentType::kBatch3:
         info_string("TYP 2 -> Batch 3");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 3, false);
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings, 3, false);
     case MCTSAgentType::kBatch5:
         info_string("TYP 3 -> Batch 5");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 5, false);
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings, 5, false);
     case MCTSAgentType::kBatch3_reducedNodes:
         info_string("TYP 4 -> Batch 3 Split");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 3, true);
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings, 3, true);
     case MCTSAgentType::kBatch5_reducedNodes:
         info_string("TYP 5 -> Batch 5 Split");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 5, true);
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings, 5, true);
     case MCTSAgentType::kTrueSight:
         info_string("TYP 6 -> TrueSight");
         return make_unique<MCTSAgentTrueSight>(netSingle, netBatches, searchSettings, &playSettings);
@@ -662,9 +663,9 @@ unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, v
         info_string("TYP 7 -> Random");
         return make_unique<MCTSAgentRandom>(netSingle, netBatches, searchSettings, &playSettings);
     default:
-      info_string("Unknown MCTSAgentType");
-      return nullptr;
-  }
+        info_string("Unknown MCTSAgentType");
+        return nullptr;
+    }
 }
 
 void CrazyAra::init_search_settings()
@@ -680,21 +681,21 @@ void CrazyAra::init_search_settings()
     else if (Options["Search_Player_Mode"] == "single_player") {
         searchSettings.searchPlayerMode = MODE_SINGLE_PLAYER;
     }
-//    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
-//    searchSettings.uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
-//    searchSettings.uBase = Options["U_Base"];                                   currently disabled
+    //    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
+    //    searchSettings.uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
+    //    searchSettings.uBase = Options["U_Base"];                                   currently disabled
     searchSettings.qValueWeight = Options["Centi_Q_Value_Weight"] / 100.0f;
     searchSettings.qVetoDelta = Options["Centi_Q_Veto_Delta"] / 100.0f;
     searchSettings.epsilonChecksCounter = round((1.0f / Options["Centi_Epsilon_Checks"]) * 100.0f);
     searchSettings.epsilonGreedyCounter = round((1.0f / Options["Centi_Epsilon_Greedy"]) * 100.0f);
-//    searchSettings.enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
+    //    searchSettings.enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
     searchSettings.cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
     searchSettings.cpuctBase = Options["CPuct_Base"];
     searchSettings.dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
     searchSettings.dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
     searchSettings.nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
     searchSettings.virtualLoss = Options["Centi_Virtual_Loss"] / 100.0f;
-    searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
+    searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"] / 100.0f;
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
 #ifdef SUPPORT960
@@ -709,6 +710,7 @@ void CrazyAra::init_search_settings()
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
     searchSettings.mctsSolver = Options["MCTS_Solver"];
+    searchSettings.backupOperator = Options["Backup_Operator"];
 }
 
 void CrazyAra::init_play_settings()
@@ -736,6 +738,7 @@ void validate_device_indices(OptionsMap& option)
         info_string("Last_Device_ID is smaller than First_Device_ID.");
         info_string("Last_Device_ID will be set to ", option["First_Device_ID"]);
         option["Last_Device_ID"] = option["First_Device_ID"];
+
     }
 }
 
@@ -743,16 +746,16 @@ std::vector<std::string> comb(std::vector<int> N, int K)
 {
     std::string bitmask(K, 1); // K leading 1's
     bitmask.resize(N.size(), 0); // N-K trailing 0's
-    std::vector<std::string> p ;
+    std::vector<std::string> p;
     // print integers and permute bitmask
 
     do {
         std::string c = "";
         for (int i = 0; i < N.size(); ++i) // [0..N-1] integers
         {
-            if (bitmask[i]){
-                c.append(std::to_string(N[i])+ " ");
-            } 
+            if (bitmask[i]) {
+                c.append(std::to_string(N[i]) + " ");
+            }
         }
         p.push_back(c);
     } while (std::prev_permutation(bitmask.begin(), bitmask.end()));

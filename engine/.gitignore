@@ -33,3 +33,6 @@
 
 # Lib Directory
 libs/
+
+# vs
+.vs

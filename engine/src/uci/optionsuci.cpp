@@ -25,7 +25,7 @@
 
 #include "optionsuci.h"
 #ifdef MODE_XIANGQI
-    #include "variant.h"
+#include "variant.h"
 #endif
 #include <iostream>
 #include <sstream>
@@ -50,7 +50,7 @@ void on_logger(const Option& o) {
 
 // method is based on 3rdparty/Stockfish/misc.cpp
 inline TimePoint current_time() {
-  return std::chrono::duration_cast<std::chrono::milliseconds>
+    return std::chrono::duration_cast<std::chrono::milliseconds>
         (std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
@@ -63,160 +63,161 @@ void on_tb_path(const Option& o) {
 #endif
 #endif
 
-void OptionsUCI::init(OptionsMap &o)
+void OptionsUCI::init(OptionsMap& o)
 {
-    o["Allow_Early_Stopping"]          << Option(true);
+    o["Allow_Early_Stopping"] << Option(true);
+    o["Backup_Operator"] << Option("mean", { "mean", "max" });
 #ifdef USE_RL
-    o["Batch_Size"]                    << Option(8, 1, 8192);
+    o["Batch_Size"] << Option(8, 1, 8192);
 #else
 #ifdef OPENVINO
-    o["Batch_Size"]                    << Option(16, 1, 8192);
+    o["Batch_Size"] << Option(16, 1, 8192);
 #else
 #ifdef MODE_CHESS
-    o["Batch_Size"]                    << Option(64, 1, 8192);
+    o["Batch_Size"] << Option(64, 1, 8192);
 #else
-    o["Batch_Size"]                    << Option(16, 1, 8192);
+    o["Batch_Size"] << Option(16, 1, 8192);
 #endif
 #endif
 #endif
-    o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
+    o["Centi_CPuct_Init"] << Option(250, 1, 99999);
 #ifdef USE_RL
-    o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);
+    o["Centi_Dirichlet_Epsilon"] << Option(25, 0, 99999);
 #else
-    o["Centi_Dirichlet_Epsilon"]       << Option(0, 0, 99999);
+    o["Centi_Dirichlet_Epsilon"] << Option(0, 0, 99999);
 #endif
-    o["Centi_Dirichlet_Alpha"]         << Option(20, 1, 99999);
-    o["Centi_Epsilon_Checks"]          << Option(1, 0, 100);
-    o["Centi_Epsilon_Greedy"]          << Option(5, 0, 100);
-//    o["Centi_U_Init"]                  << Option(100, 0, 100);         currently disabled
-//    o["Centi_U_Min"]                   << Option(100, 0, 100);         currently disabled
-//    o["U_Base"]                        << Option(1965, 0, 99999);      currently disabled
+    o["Centi_Dirichlet_Alpha"] << Option(20, 1, 99999);
+    o["Centi_Epsilon_Checks"] << Option(1, 0, 100);
+    o["Centi_Epsilon_Greedy"] << Option(5, 0, 100);
+    //    o["Centi_U_Init"]                  << Option(100, 0, 100);         currently disabled
+    //    o["Centi_U_Min"]                   << Option(100, 0, 100);         currently disabled
+    //    o["U_Base"]                        << Option(1965, 0, 99999);      currently disabled
 #ifdef USE_RL
-    o["Centi_Node_Temperature"]        << Option(100, 1, 99999);
+    o["Centi_Node_Temperature"] << Option(100, 1, 99999);
 #else
-    o["Centi_Node_Temperature"]        << Option(170, 1, 99999);
+    o["Centi_Node_Temperature"] << Option(170, 1, 99999);
 #endif
-    o["Centi_Q_Value_Weight"]          << Option(100, 0, 99999);
-    o["Centi_Q_Veto_Delta"]            << Option(40, 0, 99999);
+    o["Centi_Q_Value_Weight"] << Option(100, 0, 99999);
+    o["Centi_Q_Veto_Delta"] << Option(40, 0, 99999);
 #ifdef USE_RL
-    o["Centi_Quantile_Clipping"]       << Option(0, 0, 100);
+    o["Centi_Quantile_Clipping"] << Option(0, 0, 100);
 #else
-    o["Centi_Quantile_Clipping"]       << Option(25, 0, 100);
+    o["Centi_Quantile_Clipping"] << Option(25, 0, 100);
 #endif
-    o["Centi_Random_Move_Factor"]      << Option(0, 0, 99);
+    o["Centi_Random_Move_Factor"] << Option(0, 0, 99);
 #ifdef USE_RL
-    o["Centi_Temperature"]             << Option(80, 0, 99999);
+    o["Centi_Temperature"] << Option(80, 0, 99999);
 #else
-    o["Centi_Temperature"]             << Option(170, 0, 99999);
+    o["Centi_Temperature"] << Option(170, 0, 99999);
 #endif
-    o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
-    o["Centi_U_Init_Divisor"]          << Option(100, 1, 99999);
-    o["Centi_Virtual_Loss"]            << Option(100, 0, 99999);
+    o["Centi_Temperature_Decay"] << Option(92, 0, 100);
+    o["Centi_U_Init_Divisor"] << Option(100, 1, 99999);
+    o["Centi_Virtual_Loss"] << Option(100, 0, 99999);
 #if defined(MXNET) && defined(TENSORRT)
-    o["Context"]                       << Option("gpu", {"cpu", "gpu"});
+    o["Context"] << Option("gpu", { "cpu", "gpu" });
 #elif defined (TORCH)
-    o["Context"]                       << Option("gpu", {"cpu", "gpu"});
+    o["Context"] << Option("gpu", { "cpu", "gpu" });
 #elif defined (TENSORRT)
-    o["Context"]                       << Option("gpu", {"gpu"});
+    o["Context"] << Option("gpu", { "gpu" });
 #else
-    o["Context"]                       << Option("cpu");
+    o["Context"] << Option("cpu");
 #endif
-    o["CPuct_Base"]                    << Option(19652, 1, 99999);
-//    o["Enhance_Captures"]              << Option(false);         currently disabled
-    o["First_Device_ID"]               << Option(0, 0, 99999);
-    o["Fixed_Movetime"]                << Option(0, 0, 99999999);
-    o["Last_Device_ID"]                << Option(0, 0, 99999);
-    o["Log_File"]                      << Option("", on_logger);
-    o["MCTS_Solver"]                   << Option(true);
+    o["CPuct_Base"] << Option(19652, 1, 99999);
+    //    o["Enhance_Captures"]              << Option(false);         currently disabled
+    o["First_Device_ID"] << Option(0, 0, 99999);
+    o["Fixed_Movetime"] << Option(0, 0, 99999999);
+    o["Last_Device_ID"] << Option(0, 0, 99999);
+    o["Log_File"] << Option("", on_logger);
+    o["MCTS_Solver"] << Option(true);
 #if defined(MODE_LICHESS) || defined(MODE_BOARDGAMES)
-    o["Model_Directory"]               << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
+    o["Model_Directory"] << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
 #else
-    o["Model_Directory"]               << Option(string("model/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
+    o["Model_Directory"] << Option(string("model/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
 #endif
-    o["Move_Overhead"]                 << Option(20, 0, 5000);
-    o["MultiPV"]                       << Option(1, 1, 99999);
+    o["Move_Overhead"] << Option(20, 0, 5000);
+    o["MultiPV"] << Option(1, 1, 99999);
 #ifdef USE_RL
-    o["Nodes"]                         << Option(800, 0, 99999999);
+    o["Nodes"] << Option(800, 0, 99999999);
 #else
-    o["Nodes"]                         << Option(0, 0, 99999999);
-    o["Nodes_Limit"]                   << Option(0, 0, 999999999);
+    o["Nodes"] << Option(0, 0, 99999999);
+    o["Nodes_Limit"] << Option(0, 0, 999999999);
 #endif
 #ifdef TENSORRT
-    o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
+    o["Precision"] << Option("float16", { "float32", "float16", "int8" });
 #else
-    o["Precision"]                     << Option("float32", {"float32", "int8"});
+    o["Precision"] << Option("float32", { "float32", "int8" });
 #endif
 #ifdef USE_RL
-    o["Reuse_Tree"]                    << Option(false);
+    o["Reuse_Tree"] << Option(false);
 #else
-    o["Reuse_Tree"]                    << Option(true);
+    o["Reuse_Tree"] << Option(true);
 #endif
 #ifdef USE_RL
-    o["Temperature_Moves"]             << Option(15, 0, 99999);
+    o["Temperature_Moves"] << Option(15, 0, 99999);
 #else
-    o["Temperature_Moves"]             << Option(0, 0, 99999);
+    o["Temperature_Moves"] << Option(0, 0, 99999);
 #endif
-    o["Use_NPS_Time_Manager"]          << Option(true);
+    o["Use_NPS_Time_Manager"] << Option(true);
 #ifdef TENSORRT
-    o["Use_TensorRT"]                  << Option(true);
+    o["Use_TensorRT"] << Option(true);
 #endif
 #ifdef SUPPORT960
-    o["UCI_Chess960"]                  << Option(false);
+    o["UCI_Chess960"] << Option(false);
 #endif
-    o["Search_Type"]                   << Option("mcgs", {"mcgs", "mcts"});
-    o["Search_Player_Mode"]            << Option("two_player", {"two_player", "single_player"});
+    o["Search_Type"] << Option("mcgs", { "mcgs", "mcts" });
+    o["Search_Player_Mode"] << Option("two_player", { "two_player", "single_player" });
 #ifdef USE_RL
-    o["Simulations"]                   << Option(3200, 0, 99999999);
+    o["Simulations"] << Option(3200, 0, 99999999);
 #else
-    o["Simulations"]                   << Option(0, 0, 99999999);
+    o["Simulations"] << Option(0, 0, 99999999);
 #endif
 #ifdef MODE_STRATEGO
-   o["Centi_Temperature"]              << Option(99999, 0, 99999);
-   o["Centi_Temperature_Decay"]        << Option(100, 0, 100);
-   o["Temperature_Moves"]              << Option(0, 0, 99999);
+    o["Centi_Temperature"] << Option(99999, 0, 99999);
+    o["Centi_Temperature_Decay"] << Option(100, 0, 100);
+    o["Temperature_Moves"] << Option(0, 0, 99999);
 #endif
 #ifdef SF_DEPENDENCY
 #if !defined(MODE_XIANGQI) && !defined(MODE_BOARDGAMES)
-    o["SyzygyPath"]                    << Option("<empty>", on_tb_path);
+    o["SyzygyPath"] << Option("<empty>", on_tb_path);
 #endif
 #endif
-    o["Threads"]                       << Option(2, 1, 512);
+    o["Threads"] << Option(2, 1, 512);
 #ifdef OPENVINO
-    o["Threads_NN_Inference"]          << Option(8, 1, 512);
+    o["Threads_NN_Inference"] << Option(8, 1, 512);
 #endif
-    o["Timeout_MS"]                    << Option(0, 0, 99999999);
+    o["Timeout_MS"] << Option(0, 0, 99999999);
 #ifdef MODE_LICHESS
-    o["UCI_Variant"]                   << Option(get_first_variant_with_model().c_str(), StateConstants::available_variants());
+    o["UCI_Variant"] << Option(get_first_variant_with_model().c_str(), StateConstants::available_variants());
 #else
     // we repeat e.g. "crazyhouse" in the list because of problem in XBoard/Winboard CrazyAra#23
-    o["UCI_Variant"]                   << Option(StateConstants::DEFAULT_UCI_VARIANT().c_str(), {StateConstants::DEFAULT_UCI_VARIANT().c_str(), StateConstants::DEFAULT_UCI_VARIANT().c_str()});
+    o["UCI_Variant"] << Option(StateConstants::DEFAULT_UCI_VARIANT().c_str(), { StateConstants::DEFAULT_UCI_VARIANT().c_str(), StateConstants::DEFAULT_UCI_VARIANT().c_str() });
 #endif
-    o["Use_Raw_Network"]               << Option(false);
+    o["Use_Raw_Network"] << Option(false);
     // additional UCI-Options for RL only
 #ifdef USE_RL
-    o["Centi_Node_Random_Factor"]      << Option(10, 0, 100);
+    o["Centi_Node_Random_Factor"] << Option(10, 0, 100);
     o["Centi_Quick_Dirichlet_Epsilon"] << Option(0, 0, 99999);
-    o["Centi_Quick_Probability"]       << Option(0, 0, 100);
-    o["Centi_Quick_Q_Value_Weight"]    << Option(70, 0, 99999);
-    o["Centi_Raw_Prob_Temperature"]    << Option(25, 0, 100);
-    o["Centi_Resign_Probability"]      << Option(90, 0, 100);
-    o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
-    o["EPD_File_Path"]                 << Option("<empty>");
-    o["MaxInitPly"]                    << Option(30, 0, 99999);
-    o["MeanInitPly"]                   << Option(15, 0, 99999);
+    o["Centi_Quick_Probability"] << Option(0, 0, 100);
+    o["Centi_Quick_Q_Value_Weight"] << Option(70, 0, 99999);
+    o["Centi_Raw_Prob_Temperature"] << Option(25, 0, 100);
+    o["Centi_Resign_Probability"] << Option(90, 0, 100);
+    o["Centi_Resign_Threshold"] << Option(-90, -100, 100);
+    o["EPD_File_Path"] << Option("<empty>");
+    o["MaxInitPly"] << Option(30, 0, 99999);
+    o["MeanInitPly"] << Option(15, 0, 99999);
 #ifdef MODE_LICHESS
-    o["Model_Directory_Contender"]     << Option((string("model_contender/" + engineName + "/") + get_first_variant_with_model()).c_str());
+    o["Model_Directory_Contender"] << Option((string("model_contender/" + engineName + "/") + get_first_variant_with_model()).c_str());
 #else
-    o["Model_Directory_Contender"]     << Option(string("model_contender/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
+    o["Model_Directory_Contender"] << Option(string("model_contender/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
 #endif
-    o["Selfplay_Number_Chunks"]        << Option(640, 1, 99999);
-    o["Selfplay_Chunk_Size"]           << Option(128, 1, 99999);
-    o["Milli_Policy_Clip_Thresh"]      << Option(0, 0, 100);
-    o["Quick_Nodes"]                   << Option(100, 0, 99999);
+    o["Selfplay_Number_Chunks"] << Option(640, 1, 99999);
+    o["Selfplay_Chunk_Size"] << Option(128, 1, 99999);
+    o["Milli_Policy_Clip_Thresh"] << Option(0, 0, 100);
+    o["Quick_Nodes"] << Option(100, 0, 99999);
 #endif
 }
 
-void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
+void OptionsUCI::setoption(istringstream& is, int& variant, StateObj& state)
 {
 
     string token, name, value;
@@ -236,7 +237,7 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
 #ifdef MODE_LICHESS
         if (name == "model_directory") {
             if (value.find((string)Options["UCI_Variant"]) == std::string::npos) {
-                info_string_important("The Model_Directory must have the active UCI_Variant", string("'")+(string)Options["UCI_Variant"]+string("'"), "in its filepath");
+                info_string_important("The Model_Directory must have the active UCI_Variant", string("'") + (string)Options["UCI_Variant"] + string("'"), "in its filepath");
                 return;
             }
         }
@@ -244,7 +245,8 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
         Options[name] = value;
         if (name != "uci_variant" && name != "uci_chess960") {
             info_string_important("Updated option", givenName, "to", value);
-        } else {
+        }
+        else {
 #ifdef XIANGQI
             if (name == "uci_variant") {
                 // Workaround. Fairy-Stockfish does not use an enum for variants
@@ -264,7 +266,8 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
                     info_string("Updated option UCI_Chess960 to", (string)Options["UCI_Chess960"]);
                 }
 #endif // SUPPORT960
-            } else { // name == "uci_chess960"
+            }
+            else { // name == "uci_chess960"
                 info_string_important("Updated option", givenName, "to", value);
                 is960 = Options["UCI_Chess960"];
             }
@@ -285,11 +288,11 @@ void OptionsUCI::setoption(istringstream &is, int& variant, StateObj& state)
     }
 }
 
-string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
+string OptionsUCI::check_uci_variant_input(const string& value, bool* is960) {
     // default value of is960 == false
 #ifdef MODE_BOARDGAMES
     if (value == "standard") {
-       return "tictactoe";
+        return "tictactoe";
     }
 #endif
 #ifdef SUPPORT960
@@ -301,7 +304,7 @@ string OptionsUCI::check_uci_variant_input(const string &value, bool *is960) {
     }
 #endif // SUPPORT960
     if (value == "standard") {
-       return "chess";
+        return "chess";
     }
 #ifdef MODE_LICHESS
     if (value == "threecheck") {
@@ -316,7 +319,7 @@ const string OptionsUCI::get_first_variant_with_model()
 {
     vector<string> dirs = get_directory_files("model/" + engineName + "/");
     const static vector<string> availableVariants = StateConstants::available_variants();
-    for(string variant : availableVariants) {
+    for (string variant : availableVariants) {
         if (std::find(dirs.begin(), dirs.end(), variant) != dirs.end()) {
             const vector <string> files = get_directory_files("model/" + engineName + "/" + variant);
             if ("" != get_string_ending_with(files, ".onnx")) {
@@ -327,7 +330,7 @@ const string OptionsUCI::get_first_variant_with_model()
     return StateConstants::DEFAULT_UCI_VARIANT();
 }
 
-void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap &options)
+void OptionsUCI::init_new_search(SearchLimits& searchLimits, OptionsMap& options)
 {
     searchLimits.reset();
     searchLimits.startTime = current_time();
