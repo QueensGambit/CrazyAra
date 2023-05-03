@@ -242,7 +242,7 @@ public:
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
             //TODO: revert virtual loss
-            d->qValues[childIdx] = max(d->qValues[childIdx], value)
+            d->qValues[childIdx] = max(d->qValues[childIdx], value);
         }
         if (searchSettings->virtualLoss != 1) {
             d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
@@ -842,8 +842,8 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
             freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal) :
                 it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal);
         case BACKUP_MAX:
-            freeBackup ? it->node->revert_virtual_loss_and_update_with_max_operator<true>(isQValueNotChange, it->childIdx, value, searchSettings, solveForTerminal) :
-                it->node->revert_virtual_loss_and_update_with_max_operator<false>(isQValueNotChange, it->childIdx, value, searchSettings, solveForTerminal);
+            freeBackup ? it->node->revert_virtual_loss_and_update_with_max_operator<true>(it->childIdx, value, searchSettings, solveForTerminal) :
+                it->node->revert_virtual_loss_and_update_with_max_operator<false>(it->childIdx, value, searchSettings, solveForTerminal);
         }
 
 

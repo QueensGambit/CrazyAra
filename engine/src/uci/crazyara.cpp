@@ -710,7 +710,13 @@ void CrazyAra::init_search_settings()
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
     searchSettings.mctsSolver = Options["MCTS_Solver"];
-    searchSettings.backupOperator = Options["Backup_Operator"];
+    if (Options["Backup_Operator"] == "mean") {
+        searchSettings.backupOperator = BACKUP_MEAN;
+    }
+    else {
+        searchSettings.backupOperator = BACKUP_MAX;
+    }
+    
 }
 
 void CrazyAra::init_play_settings()
