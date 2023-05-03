@@ -66,7 +66,7 @@ void on_tb_path(const Option& o) {
 void OptionsUCI::init(OptionsMap& o)
 {
     o["Allow_Early_Stopping"] << Option(true);
-    o["Backup_Operator"] << Option("mean", { "mean_op", "max_op" });
+    o["Backup_Operator"] << Option("mean_op", { "mean_op", "max_op" });
 #ifdef USE_RL
     o["Batch_Size"] << Option(8, 1, 8192);
 #else
