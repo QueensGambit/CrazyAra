@@ -65,7 +65,8 @@ NodeData::NodeData():
     endInPly(0),
     noVisitIdx(1),
     nodeType(UNSOLVED),
-    inspected(false)
+    inspected(false),
+    qValue_max(-2.0)
 {
 
 }
@@ -80,6 +81,11 @@ NodeData::NodeData(size_t numberChildNodes):
 auto NodeData::get_q_values()
 {
     return blaze::subvector(qValues, 0, noVisitIdx);
+}
+
+float NodeData::get_q_Value_max()
+{
+    return qValue_max;
 }
 
 bool is_unsolved_or_tablebase(NodeType nodeType)

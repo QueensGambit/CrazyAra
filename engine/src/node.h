@@ -202,11 +202,13 @@ public:
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
+            d->qValue_max = value;
         }
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
             d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+            d->qValue_max = max(d->qValue_max, d->qValues[childIdx]);
             assert(!isnan(d->qValues[childIdx]));
         }
 
@@ -236,14 +238,16 @@ public:
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
+            d->qValue_max = value;
         }
         else {
             // info_string() debug
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
             d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
-            value = max(value, max(d->qValues));
+            value = max(value, d->qValue_max);
             d->qValues[childIdx] = value;
+            d->qValue_max = value;
         }
         if (searchSettings->virtualLoss != 1) {
             d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
