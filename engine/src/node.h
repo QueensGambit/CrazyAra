@@ -241,8 +241,9 @@ public:
             // info_string() debug
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
-            //TODO: revert virtual loss
-            d->qValues[childIdx] = max(d->qValues[childIdx], value);
+            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
+            value = max(value, max(d->qValues));
+            d->qValues[childIdx] = value;
         }
         if (searchSettings->virtualLoss != 1) {
             d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
