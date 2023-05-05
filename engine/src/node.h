@@ -196,12 +196,15 @@ public:
         update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
         valueSum += value;
         ++realVisitsSum;
+        info_string("qValue_max before: ", d->qValue_max);
+        info_string("value: ", value);
 
         if (isMaxOperator) {
             assert(d->childNumberVisits[childIdx] != 0);
             d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
             d->qValue_max = max(value, d->qValue_max);
             d->qValues[childIdx] = d->qValue_max;
+            info_string("qValue_max after: ", d->qValue_max);
             assert(!isnan(d->qValues[childIdx]));
 
         }
