@@ -202,7 +202,12 @@ public:
         if (isMaxOperator) {
             assert(d->childNumberVisits[childIdx] != 0);
             info_string("qValues before: ", d->qValues);
-            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
+            if (isnan(d->qValues[childIdx])) {
+                d->qValues[childIdx] = value;
+            }
+            else {
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
+            }
             d->qValue_max = max(d->qValues);
             d->qValues[childIdx] = (1 - d->weight_of_minimax) * (valueSum / realVisitsSum) + (d->weight_of_minimax) * d->qValue_max;
             // d->qValues[childIdx] = d->qValue_max;
