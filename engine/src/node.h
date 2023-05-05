@@ -807,13 +807,13 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
         // should we keep this if-part in max-operator? because we only compare the new value with the previous value and update the value if 
         // it is bigger than the previous value. 
-        if (targetQValue != 0) {
+        /*if (targetQValue != 0) {
             const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
             if (transposVisits != 0) {
                 const double transposQValue = -it->node->get_q_sum(it->childIdx, searchSettings->virtualLoss) / transposVisits;
                 value = get_transposition_q_value(transposVisits, transposQValue, targetQValue);
             }
-        }
+        }*/
         switch (searchSettings->searchPlayerMode) {
         case MODE_TWO_PLAYER:
             value = -value;
