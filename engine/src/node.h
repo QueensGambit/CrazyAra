@@ -210,7 +210,10 @@ public:
             info_string("qValues before: ", d->qValues);
             d->qValue_max = max(d->qValues);
             d->qValues[childIdx] = (1 - d->weight_of_minimax) * (valueSum / realVisitsSum) + (d->weight_of_minimax) * d->qValue_max;
-            assert(d->childNumberVisits[childIdx] <= 1);
+            if (d->qValues[childIdx] > 1) {
+                info_string("check here");
+                info_string(d->qValues[childIdx]);
+            }
             info_string("qValue_max after: ", d->qValue_max);
             info_string("qValues after: ", d->qValues);
             assert(!isnan(d->qValues[childIdx]));
