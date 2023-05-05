@@ -194,7 +194,8 @@ public:
         lock();
         // decrement virtual loss counter
         update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
-
+        info_string("qValue_max: ", d->qValue_max);
+        info_string("value: ", value);
         valueSum += originValue;
         ++realVisitsSum;
 
