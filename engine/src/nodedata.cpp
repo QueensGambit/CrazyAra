@@ -67,7 +67,7 @@ NodeData::NodeData():
     nodeType(UNSOLVED),
     inspected(false),
     qValue_max(-2.0),
-    weight_of_minimax(0.6)
+    weight_of_minimax(0.3)
 {
 
 }
