@@ -83,11 +83,6 @@ auto NodeData::get_q_values()
     return blaze::subvector(qValues, 0, noVisitIdx);
 }
 
-float NodeData::get_q_Value_max()
-{
-    return qValue_max;
-}
-
 bool is_unsolved_or_tablebase(NodeType nodeType)
 {
     return nodeType > LOSS;

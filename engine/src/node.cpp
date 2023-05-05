@@ -528,6 +528,11 @@ DynamicVector<float> Node::get_q_values() const
     return d->qValues;
 }
 
+float Node::get_max_qValue() const
+{
+    return d->qValue_max;
+}
+
 void Node::set_q_value(ChildIdx childIdx, float value)
 {
     d->qValues[childIdx] = value;

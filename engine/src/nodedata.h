@@ -109,8 +109,6 @@ struct NodeData
 
     auto get_q_values();
 
-    float get_q_Value_max();
-
 public:
     /**
      * @brief add_empty_node Adds a new empty node to its child nodes
