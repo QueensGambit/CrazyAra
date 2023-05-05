@@ -840,7 +840,7 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
         case BACKUP_MAX:
             freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, true) :
                 it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, true);
-            value = it->node->get_max_qValue();
+            //value = it->node->get_max_qValue();
             break;
         }
 
