@@ -93,6 +93,7 @@ struct NodeData
     DynamicVector<uint8_t> virtualLossCounter;
     DynamicVector<NodeType> nodeTypes;
     float qValue_max;
+    float weight_of_minimax;
 
     uint32_t freeVisits;
     uint32_t visitSum;
