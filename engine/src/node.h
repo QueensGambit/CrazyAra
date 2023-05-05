@@ -201,7 +201,7 @@ public:
 
         if (isMaxOperator) {
             assert(d->childNumberVisits[childIdx] != 0);
-            if (isnan(d->qValues[childIdx])) {
+            if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
                 d->qValues[childIdx] = value;
             }
             else {
