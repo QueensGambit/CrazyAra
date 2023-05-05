@@ -202,7 +202,7 @@ public:
         if (isMaxOperator) {
             assert(d->childNumberVisits[childIdx] != 0);
             info_string("qValues before: ", d->qValues);
-            d->qValue_max = max(value, d->qValue_max);
+            d->qValue_max = max(d->qValues);
             if (isnan(d->qValues[childIdx])) {
                 d->qValues[childIdx] = value;
             }
