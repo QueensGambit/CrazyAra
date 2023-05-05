@@ -202,6 +202,9 @@ public:
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
             d->qValue_max = max(d->qValues);
+            if (isMaxOperator) {
+                d->qValues[childIdx] = d->qValue_max;
+            }
         }
         else {
             // revert virtual loss and update the Q-value
