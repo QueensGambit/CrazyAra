@@ -203,7 +203,7 @@ public:
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
-            d->qValue_max = value;
+            d->qValue_max = max(value, max(d->qValues));
         }
         else {
             // revert virtual loss and update the Q-value
