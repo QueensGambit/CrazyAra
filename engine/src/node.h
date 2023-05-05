@@ -208,13 +208,13 @@ public:
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
             if (isMaxOperator) {
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
-                d->qValue_max = max(d->qValue_max, d->qValues[childIdx]);
-            }
-            else {
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
                 d->qValue_max = max(value, d->qValue_max);
                 d->qValues[childIdx] = d->qValue_max;
+            }
+            else {
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+                d->qValue_max = max(d->qValue_max, d->qValues[childIdx]);
             }
             
             assert(!isnan(d->qValues[childIdx]));
