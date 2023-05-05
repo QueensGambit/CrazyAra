@@ -4,11 +4,11 @@ set (CMAKE_CXX_STANDARD 17)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
-option(BACKEND_TENSORRT          "Build with TensorRT support"  OFF)
+option(BACKEND_TENSORRT          "Build with TensorRT support"  ON)
 option(BACKEND_TENSORRT_7        "Build with deprecated TensorRT 7 support"  OFF)
 option(BACKEND_MXNET             "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OFF)
-option(BACKEND_OPENVINO          "Build with OpenVino backend (CPU/GPU) support" ON)
+option(BACKEND_OPENVINO          "Build with OpenVino backend (CPU/GPU) support" OFF)
 option(BUILD_TESTS               "Build and run tests"  OFF)
 option(USE_DYNAMIC_NN_ARCH       "Build with dynamic neural network architektur support"  ON)
 # enable a single mode for different model input / outputs
