@@ -189,12 +189,12 @@ public:
      * @param searchSettings Pointer to the search settings struct
      */
     template<bool freeBackup>
-    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, const SearchSettings* searchSettings, bool solveForTerminal, bool isMaxOperator)
+    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, const SearchSettings* searchSettings, bool solveForTerminal, bool isMaxOperator, float originValue)
     {
         lock();
         // decrement virtual loss counter
         update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
-        valueSum += value;
+        valueSum += originValue;
         ++realVisitsSum;
 
         if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
@@ -213,7 +213,6 @@ public:
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
                 d->qValue_max = max(value, d->qValue_max);
                 d->qValues[childIdx] = d->qValue_max;
-                info_string("check here");
             }
             else {
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
@@ -807,6 +806,7 @@ float get_transposition_q_value(uint_fast32_t transposVisits, double transposQVa
 template <bool freeBackup>
 void backup_value(float value, const SearchSettings* searchSettings, const Trajectory& trajectory, bool solveForTerminal) {
     double targetQValue = 0;
+    float originValue = value;
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) { 
         if (targetQValue != 0) {
             const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
@@ -823,12 +823,12 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
         }
         switch (searchSettings->backupOperator) {
         case BACKUP_MEAN:
-            freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, false) :
-                it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, false);
+            freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, false, originValue) :
+                it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, false, originValue);
             break;
         case BACKUP_MAX:
-            freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, true) :
-                it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, true);
+            freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, true, originValue) :
+                it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, true, originValue);
             value = it->node->get_max_qValue();
             break;
         }
