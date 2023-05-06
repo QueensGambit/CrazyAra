@@ -202,11 +202,11 @@ public:
             if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
                 d->qValues[childIdx] = value;
             }
-            /*else {
+            else {
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
-            }*/
+            }
             d->qValue_max = max(value, d->qValue_max);
-            d->qValues[childIdx] = ((1 - d->weight_of_minimax) * (d->childNodes[childIdx]->valueSum / d->childNodes[childIdx]->realVisitsSum)) + ((d->weight_of_minimax) * d->qValue_max);
+            d->qValues[childIdx] = ((1 - d->weight_of_minimax) * d->qValues[childIdx]) + ((d->weight_of_minimax) * d->qValue_max);
             if (d->qValues[childIdx] > 1) {
                 info_string("check here");
                 info_string(d->qValues[childIdx]);
