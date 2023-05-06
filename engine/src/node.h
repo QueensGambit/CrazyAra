@@ -196,26 +196,21 @@ public:
         update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
         valueSum += value;
         ++realVisitsSum;
-        info_string("qValue_max before: ", d->qValue_max);
-        info_string("value: ", value);
 
         if (isMaxOperator) {
             assert(d->childNumberVisits[childIdx] != 0);
             if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
                 d->qValues[childIdx] = value;
             }
-            else {
+            /*else {
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
-            }
-            info_string("qValues before: ", d->qValues);
-            d->qValue_max = max(d->qValues);
-            d->qValues[childIdx] = (1 - d->weight_of_minimax) * (valueSum / realVisitsSum) + (d->weight_of_minimax) * d->qValue_max;
+            }*/
+            d->qValue_max = max(value, d->qValue_max);
+            d->qValues[childIdx] = ((1 - d->weight_of_minimax) * (valueSum / realVisitsSum)) + ((d->weight_of_minimax) * d->qValue_max);
             if (d->qValues[childIdx] > 1) {
                 info_string("check here");
                 info_string(d->qValues[childIdx]);
             }
-            info_string("qValue_max after: ", d->qValue_max);
-            info_string("qValues after: ", d->qValues);
             assert(!isnan(d->qValues[childIdx]));
 
         }
@@ -842,7 +837,7 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
         case BACKUP_MAX:
             freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, true) :
                 it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, true);
-            //value = it->node->get_max_qValue();
+            value = it->node->get_max_qValue();
             break;
         }
 
