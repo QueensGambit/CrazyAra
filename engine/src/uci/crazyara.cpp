@@ -715,7 +715,7 @@ void CrazyAra::init_search_settings()
     else {
         searchSettings.backupOperator = BACKUP_MAX;
     }
-    searchSettings.weightMinimax = Options["Weight_Minimax"];
+    searchSettings.weightMinimax = Options["Weight_Minimax"] / 100.0f;
     
 }
 
