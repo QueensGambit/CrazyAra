@@ -204,19 +204,14 @@ public:
             }
             else {
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
+                d->qValues[childIdx] = ((1 - 0.4) * d->qValues[childIdx]) + 0.4 * d->qValue_max;
             }
-            info_string("qValues before : ", d->qValues);
-            info_string("qValue_max before: ", d->qValue_max);
-            info_string("value: ", value);
             d->qValue_max = max(value, d->qValue_max);
-            d->qValues[childIdx] = ((1 - d->weight_of_minimax) * d->qValues[childIdx]) + ((d->weight_of_minimax) * d->qValue_max);
             if (d->qValues[childIdx] > 1) {
                 info_string("check here");
                 info_string(d->qValues[childIdx]);
             }
-            info_string("qValues after : ", d->qValues);
-            info_string("qValue_max after: ", d->qValue_max);
-            info_string("value: ", value);
+            d->qValue_max = max(d->qValues);
             assert(!isnan(d->qValues[childIdx]));
 
         }
