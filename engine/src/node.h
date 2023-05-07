@@ -199,6 +199,7 @@ public:
 
         if (isMaxOperator) {
             assert(d->childNumberVisits[childIdx] != 0);
+            d->qValue_max = max(value, d->qValue_max);
             if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
                 d->qValues[childIdx] = value;
             }
@@ -206,12 +207,10 @@ public:
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
                 d->qValues[childIdx] = ((1 - 0.4) * d->qValues[childIdx]) + 0.4 * d->qValue_max;
             }
-            d->qValue_max = max(value, d->qValue_max);
             if (d->qValues[childIdx] > 1) {
                 info_string("check here");
                 info_string(d->qValues[childIdx]);
             }
-            d->qValue_max = max(d->qValues);
             assert(!isnan(d->qValues[childIdx]));
 
         }
