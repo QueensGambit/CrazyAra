@@ -205,7 +205,7 @@ public:
             }
             else {
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
-                d->qValues[childIdx] = ((1 - 0.9) * d->qValues[childIdx]) + 0.9 * d->qValue_max;
+                d->qValues[childIdx] = ((1 - searchSettings->weight_Minimax) * d->qValues[childIdx]) + searchSettings->weight_Minimax * d->qValue_max;
             }
             if (d->qValues[childIdx] > 1) {
                 info_string("check here");
