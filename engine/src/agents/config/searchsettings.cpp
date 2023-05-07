@@ -51,7 +51,7 @@ SearchSettings::SearchSettings() :
     mctsSolver(false),
     searchPlayerMode(MODE_TWO_PLAYER),
     backupOperator(BACKUP_MEAN),
-    weight_Minimax(1)
+    weightMinimax(1)
 {
 
 }
