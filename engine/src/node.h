@@ -247,7 +247,7 @@ public:
             d->qValues[childIdx] = value;
         }
         else {
-            float tempVal = value;
+            float tempVal = -value;
             if (d->childNodes[childIdx]->d != nullptr && d->childNodes[childIdx]->d->qValue_max > -2) {
                 tempVal = d->childNodes[childIdx]->d->qValue_max;
             }
