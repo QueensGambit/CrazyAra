@@ -249,7 +249,7 @@ public:
         else {
             float tempVal = value;
             if (d->childNodes[childIdx]->d != nullptr && d->childNodes[childIdx]->d->qValue_max > -2) {
-                tempVal = -d->childNodes[childIdx]->d->qValue_max;
+                tempVal = d->childNodes[childIdx]->d->qValue_max;
             }
             d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) + searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]);
             d->qValues[childIdx] = ((1 - searchSettings->minimaxWeight) * d->qValues[childIdx]) + searchSettings->minimaxWeight * tempVal;
