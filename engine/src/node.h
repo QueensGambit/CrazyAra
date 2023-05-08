@@ -247,12 +247,13 @@ public:
             d->qValues[childIdx] = value;
         }
         else {
-            float tempVal = -value;
+            float tempVal = value;
             if (d->childNodes[childIdx]->d != nullptr) {
-                info_string("qMax of child node: ", d->childNodes[childIdx]->d->qValue_max);
-                tempVal = d->childNodes[childIdx]->d->qValue_max;
+                tempVal = -d->childNodes[childIdx]->d->qValue_max;
             }
-            d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) + searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]);
+            if (searchSettings->minimaxWeight != 1) {
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) + searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]);
+            }
             d->qValues[childIdx] = ((1 - searchSettings->minimaxWeight) * d->qValues[childIdx]) + searchSettings->minimaxWeight * tempVal;
             d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx]) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
             assert(!isnan(d->qValues[childIdx]));
