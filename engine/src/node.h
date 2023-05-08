@@ -247,11 +247,9 @@ public:
             d->qValues[childIdx] = value;
         }
         else {
-            info_string("value: ", value);
-            float tempVal = -value;
+            float tempVal = value;
             if (d->childNodes[childIdx]->d != nullptr) {
-                info_string("child q_Value_max: ", d->childNodes[childIdx]->d->qValue_max);
-                tempVal = d->childNodes[childIdx]->d->qValue_max;
+                tempVal = -d->childNodes[childIdx]->d->qValue_max;
             }
             if (searchSettings->minimaxWeight != 1) {
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) + searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]);
@@ -832,17 +830,20 @@ float get_transposition_q_value(uint_fast32_t transposVisits, double transposQVa
 template <bool freeBackup>
 void backup_value(float value, const SearchSettings* searchSettings, const Trajectory& trajectory, bool solveForTerminal) {
     double targetQValue = 0;
+    float maxValue = value;
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) { 
         if (targetQValue != 0) {
             const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
             if (transposVisits != 0) {
                 const double transposQValue = -it->node->get_q_sum(it->childIdx, searchSettings->virtualLoss) / transposVisits;
                 value = get_transposition_q_value(transposVisits, transposQValue, targetQValue);
+                maxValue = value;
             }
         }
         switch (searchSettings->searchPlayerMode) {
         case MODE_TWO_PLAYER:
             value = -value;
+            maxValue = -maxValue;
             break;
         case MODE_SINGLE_PLAYER:;
         }
@@ -852,10 +853,10 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
                 it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, false);
             break;
         case BACKUP_MAX:
-            freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, true) :
-                it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, true);
+            freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, maxValue, searchSettings, solveForTerminal, true) :
+                it->node->revert_virtual_loss_and_update<false>(it->childIdx, maxValue, searchSettings, solveForTerminal, true);
             if (it->node->get_real_visits() >= searchSettings->switchingMaxOperatorAtNode) {
-                value = it->node->get_max_qValue();
+                maxValue = it->node->get_max_qValue();
             }
             break;
         }
