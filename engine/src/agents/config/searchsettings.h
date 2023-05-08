@@ -84,7 +84,7 @@ struct SearchSettings
     // Defines backup operator use for MCTS.
     BackupOperatorType backupOperator;
     float minimaxWeight;
-    uint16_t switchingMaxOperatorAtNode;
+    uint32_t switchingMaxOperatorAtNode;
     SearchSettings();
 
 };

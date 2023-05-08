@@ -247,9 +247,11 @@ public:
             d->qValues[childIdx] = value;
         }
         else {
-            float tempVal = value;
+            info_string("value: ", value);
+            float tempVal = -value;
             if (d->childNodes[childIdx]->d != nullptr) {
-                tempVal = -d->childNodes[childIdx]->d->qValue_max;
+                info_string("child q_Value_max: ", d->childNodes[childIdx]->d->qValue_max);
+                tempVal = d->childNodes[childIdx]->d->qValue_max;
             }
             if (searchSettings->minimaxWeight != 1) {
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) + searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]);
@@ -855,7 +857,6 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
             if (it->node->get_real_visits() >= searchSettings->switchingMaxOperatorAtNode) {
                 value = it->node->get_max_qValue();
             }
-            
             break;
         }
 
