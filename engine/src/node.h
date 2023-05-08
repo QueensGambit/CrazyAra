@@ -840,12 +840,12 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
             if (it->node->get_real_visits() + 1 >= searchSettings->switchingMaxOperatorAtNode) {
                 freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, maxValue, searchSettings, solveForTerminal, true) :
                     it->node->revert_virtual_loss_and_update<false>(it->childIdx, maxValue, searchSettings, solveForTerminal, true);
-                maxValue = it->node->get_max_qValue();
             } 
             else{
                 freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, false) :
                     it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, false);
             }
+            maxValue = it->node->get_max_qValue();
             break;
         }
 
