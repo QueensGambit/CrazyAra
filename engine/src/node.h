@@ -206,7 +206,7 @@ public:
             else {
                 float tempVal = value;
                 if (d->childNodes[childIdx]->d != nullptr) {
-                    tempVal = -d->childNodes[childIdx]->d->qValue_max;
+                    tempVal = d->childNodes[childIdx]->d->qValue_max;
                 }
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx]*searchSettings->virtualLoss)) + searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]);
                 d->qValues[childIdx] = ((1 - searchSettings->weightMinimax) * d->qValues[childIdx]) + searchSettings->weightMinimax * tempVal;
