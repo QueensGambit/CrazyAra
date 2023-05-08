@@ -67,7 +67,8 @@ void OptionsUCI::init(OptionsMap& o)
 {
     o["Allow_Early_Stopping"] << Option(true);
     o["Backup_Operator"] << Option("mean_op", { "mean_op", "max_op" });
-    o["Weight_Minimax"]  << Option(100 , 0, 1000);
+    o["Centi_Minimax_Weight"]  << Option(100 , 0, 100);
+    o["Switching_Max_Operator_At_Node"] << Option(800, 0, 99999999);
 #ifdef USE_RL
     o["Batch_Size"] << Option(8, 1, 8192);
 #else
