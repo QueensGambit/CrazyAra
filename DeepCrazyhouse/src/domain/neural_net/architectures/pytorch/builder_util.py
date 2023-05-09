@@ -382,6 +382,14 @@ class _PolicyHeadFlat(Module):
         return self.body(x)
 
 
+class _UncertaintyHead(Module):
+    """
+    TODO
+    """
+    def __init__(self):
+        pass
+
+
 def process_value_policy_head(x, value_head: _ValueHead, policy_head: _PolicyHead,
                               use_plys_to_end: bool, use_wdl: bool ):
     """
