@@ -12,7 +12,7 @@ from torch import nn
 
 from vit_pytorch.levit import LeViT
 from vit_pytorch.levit import Transformer, cast_tuple, Rearrange, exists, ceil, always
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, process_value_policy_head, ClassicalResidualBlock
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, process_value_policy_aux_head, ClassicalResidualBlock
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 
 
@@ -70,4 +70,4 @@ class LeViT(nn.Module):
 
         x = self.backbone(x)
 
-        return process_value_policy_head(x, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+        return process_value_policy_aux_head(x, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)

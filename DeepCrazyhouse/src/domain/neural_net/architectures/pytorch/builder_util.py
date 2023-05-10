@@ -383,27 +383,56 @@ class _PolicyHeadFlat(Module):
 
 
 class _UncertaintyHead(Module):
-    """
-    TODO
-    """
-    def __init__(self):
-        pass
+    def __init__(self, board_height=8, board_width=8, in_channels=256, channels_value_head=8, fc_units=256, act_type="relu"):
+        """
+        Definition of the uncertainty head.
+        It predicts the difference between the initial value prediction and the prediction after a certain number of playouts.
+        """
+        super(_UncertaintyHead, self).__init__()
+
+        self.body = Sequential(Conv2d(in_channels=in_channels, out_channels=channels_value_head, kernel_size=(1, 1), bias=False),
+                               BatchNorm2d(num_features=channels_value_head),
+                               get_act(act_type))
+        self.nb_flatten = board_height*board_width*channels_value_head
+
+        self.body_final = Sequential(Linear(in_features=self.nb_flatten, out_features=fc_units),
+                                     get_act(act_type),
+                                     Linear(in_features=fc_units, out_features=1),
+                                     get_act("sigmoid"))
+
+    def forward(self, x):
+        """
+        Compute forward pass
+        :param x: Input data to the block
+        :return: Activation maps of the block
+        """
+        return self.body(x)
 
 
-def process_value_policy_head(x, value_head: _ValueHead, policy_head: _PolicyHead,
-                              use_plys_to_end: bool, use_wdl: bool ):
+def process_value_policy_aux_head(x, value_head: _ValueHead, policy_head: _PolicyHead,
+                                  use_plys_to_end: bool, use_wdl: bool, uncertainty_head: _UncertaintyHead=None):
     """
-    Use the output to create value/policy predictions
+    Use the output to create value/policy and optional auxiliary predictions
     """
     value_head_out = value_head(x)
     policy_out = policy_head(x)
+    if uncertainty_head is not None:
+        uncertainty_out = uncertainty_head(x)
+
     if use_plys_to_end and use_wdl:
         value_out, wdl_out, plys_to_end_out = value_head_out
-        auxiliary_out = torch.cat((wdl_out, plys_to_end_out), dim=1)
-        return value_out, policy_out, auxiliary_out, wdl_out, plys_to_end_out
+        if uncertainty_head is not None:
+            auxiliary_out = torch.cat((wdl_out, plys_to_end_out, uncertainty_out), dim=1)
+            return value_out, policy_out, auxiliary_out, wdl_out, plys_to_end_out, uncertainty_out
+        else:
+            auxiliary_out = torch.cat((wdl_out, plys_to_end_out), dim=1)
+            return value_out, policy_out, auxiliary_out, wdl_out, plys_to_end_out
     else:
         value_out = value_head_out
-        return value_out, policy_out
+        if uncertainty_head is not None:
+            return value_out, policy_out, uncertainty_out
+        else:
+            return value_out, policy_out
 
 
 class ClassicalResidualBlock(torch.nn.Module):

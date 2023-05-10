@@ -61,7 +61,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Sequential, Conv2d, BatchNorm2d, ReLU, LeakyReLU, Sigmoid, Tanh, Linear, Hardsigmoid, Hardswish
 
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se, process_value_policy_head
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, _Stem, get_se, process_value_policy_aux_head
 
 
 def init_weights(m):
@@ -164,4 +164,4 @@ class AlphaZeroResnet(torch.nn.Module):
         """
         out = self.body(x)
 
-        return process_value_policy_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+        return process_value_policy_aux_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)

@@ -25,7 +25,8 @@ from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
 from timm.models.layers import DropPath
 
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead,\
-    _Stem, get_se, process_value_policy_head, _BottlekneckResidualBlock, ClassicalResidualBlock, round_to_next_multiple_of_32
+    _Stem, get_se, process_value_policy_aux_head, _BottlekneckResidualBlock, ClassicalResidualBlock, round_to_next_multiple_of_32, \
+    _UncertaintyHead
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NCB
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
@@ -87,6 +88,7 @@ class RiseV3(Module):
                  use_mlp_wdl_ply=False,
                  use_transformers=None, path_dropout=0, conv_block="mobile_bottlekneck_res_block",
                  kernel_5_channel_ratio=None, round_channels_to_next_32=False,
+                 use_uncertainty=False,
                  ):
         """
         RISEv3 architecture
@@ -119,12 +121,14 @@ class RiseV3(Module):
         :param conv_block: Base convolutional block ["mobile_bottlekneck_res_block", "bottlekneck_res_block", "classical_res_block", "next_conv_block"]
         :param kernel_5_channel_ratio: Downscale factor for channels_operating in case of 5x5 kernels
         :param round_channels_to_next_32: Rounds all number of channels within the network to the closest multiple of 32
+        :param use_uncertainty: Decides if an uncertainty head will be used.
         :return: symbol
         """
         super(RiseV3, self).__init__()
         self.nb_input_channels = nb_input_channels
         self.use_plys_to_end = use_plys_to_end
         self.use_wdl = use_wdl
+        self.use_uncertainty = use_uncertainty
 
         if round_channels_to_next_32:
             channels = round_to_next_multiple_of_32(channels)
@@ -161,6 +165,12 @@ class RiseV3(Module):
         self.policy_head = _PolicyHead(board_height, board_width, channels, channels_policy_head, n_labels,
                                        act_types[-1], select_policy_from_plane)
 
+        if self.use_uncertainty:
+            self.uncertainty_head = _UncertaintyHead(board_height, board_width, channels, channels_value_head,
+                                                     value_fc_size, act_types[-1])
+        else:
+            self.uncertainty_head = None
+
     def forward(self, x):
         """
         Implementation of the forward pass of the full network
@@ -170,7 +180,8 @@ class RiseV3(Module):
         """
         out = self.body_spatial(x)
 
-        return process_value_policy_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+        return process_value_policy_aux_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl,
+                                             self.uncertainty_head)
 
 
 def get_rise_v33_model(args):
@@ -200,6 +211,7 @@ def get_rise_v33_model(args):
                    dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
                    kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
                    use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
+                   use_uncertainty=args.use_uncertainty,
                    )
     return model
 
@@ -255,4 +267,5 @@ def create_args_by_train_config(input_shape, tc):
     args.use_wdl = tc.use_wdl
     args.use_plys_to_end = tc.use_plys_to_end
     args.use_mlp_wdl_ply = tc.use_mlp_wdl_ply
+    args.use_uncertainty = tc.use_uncertainty
     return args

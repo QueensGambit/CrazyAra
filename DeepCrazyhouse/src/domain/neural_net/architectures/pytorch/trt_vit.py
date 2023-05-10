@@ -14,7 +14,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from functools import partial
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_se, get_act, _ValueHead, _PolicyHead, process_value_policy_head
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_se, get_act, _ValueHead, _PolicyHead, process_value_policy_aux_head
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
 
@@ -296,4 +296,4 @@ class TrtViT(nn.Module):
 
         x = self.layers(x)
 
-        return process_value_policy_head(x, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+        return process_value_policy_aux_head(x, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)

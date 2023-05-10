@@ -78,7 +78,7 @@ def load_pgn_dataset(
         logging.debug("")
 
     pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
-    start_indices, x, y_value, y_policy, plys_to_end, y_best_move_q = get_numpy_arrays(pgn_dataset)  # Get the data
+    start_indices, x, y_value, y_policy, plys_to_end, y_best_move_q, eval_init, eval_search = get_numpy_arrays(pgn_dataset)  # Get the data
 
     if verbose:
         logging.info("STATISTICS:")
@@ -105,7 +105,7 @@ def load_pgn_dataset(
         y_policy = y_policy.astype(np.float32)
         # apply rescaling using a predefined scaling constant (this makes use of vectorized operations)
         x *= MATRIX_NORMALIZER
-    return start_indices, x, y_value, y_policy, plys_to_end, pgn_dataset
+    return start_indices, x, y_value, y_policy, plys_to_end, eval_init, eval_search, pgn_dataset
 
 
 def load_xiangqi_dataset(dataset_type="train", part_id=0, verbose=True, normalize=False):

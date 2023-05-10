@@ -58,7 +58,7 @@ class TrainerAgentPytorch:
             self.to.metrics = {}
         self._model = model
         self._val_loader = val_loader
-        self.x_train = self.yv_train = self.yp_train = None
+        self.x_train = self.yv_train = self.yp_train = self.uncertainty_train = None
         self._ctx = get_context(train_config.context, train_config.device_id)
 
         # define a summary writer that logs data and flushes to the file every 5 seconds
@@ -73,6 +73,7 @@ class TrainerAgentPytorch:
         self.value_loss = nn.MSELoss()
         self.wdl_loss = nn.CrossEntropyLoss()
         self.ply_loss = nn.MSELoss()
+        self.uncertainty_loss = nn.MSELoss()
 
         # Define the optimizer
         self.optimizer = create_optimizer(self._model, self.tc)
@@ -216,6 +217,7 @@ class TrainerAgentPytorch:
                                                        dummy_input,
                                                        Path(self.tc.export_dir) / Path("weights"), model_prefix,
                                                        self.tc.use_wdl and self.tc.use_plys_to_end,
+                                                       self.tc.use_uncertainty,
                                                        True)
 
                                 self.patience_cnt = 0  # reset the patience counter
@@ -260,24 +262,15 @@ class TrainerAgentPytorch:
 
     def _get_train_loader(self, part_id):
         # load one chunk of the dataset from memory
-        _, self.x_train, self.yv_train, self.yp_train, self.plys_to_end, _ = load_pgn_dataset(dataset_type="train",
+        _, self.x_train, self.yv_train, self.yp_train, self.plys_to_end, eval_init, eval_search, _ = load_pgn_dataset(dataset_type="train",
                                                                                          part_id=part_id,
                                                                                          normalize=self.tc.normalize,
                                                                                          verbose=False,
                                                                                          q_value_ratio=self.tc.q_value_ratio)
-        self.yp_train = prepare_policy(y_policy=self.yp_train, select_policy_from_plane=self.tc.select_policy_from_plane,
-                                  sparse_policy_label=self.tc.sparse_policy_label,
-                                  is_policy_from_plane_data=self.tc.is_policy_from_plane_data)
 
-        # update the train_data object
-        if self.tc.use_wdl and self.tc.use_plys_to_end:
-            train_dataset = TensorDataset(torch.Tensor(self.x_train), torch.Tensor(self.yv_train),
-                                          torch.Tensor(self.yp_train),
-                                          torch.Tensor(value_to_wdl_label(self.yv_train)),
-                                          torch.Tensor(prepare_plys_label(self.plys_to_end)))
-        else:
-            train_dataset = TensorDataset(torch.Tensor(self.x_train), torch.Tensor(self.yv_train),
-                                          torch.Tensor(self.yp_train))
+        train_dataset = create_tensor_dataset(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, eval_init,
+                                              eval_search, self.tc)
+
         train_loader = DataLoader(train_dataset, shuffle=True, batch_size=self.tc.batch_size, num_workers=self.tc.cpu_count)
         return train_loader
 
@@ -300,10 +293,7 @@ class TrainerAgentPytorch:
             self._model,
             nb_batches=25,
             ctx=self._ctx,
-            sparse_policy_label=self.tc.sparse_policy_label,
-            apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
-            use_wdl=self.tc.use_wdl,
-            use_plys_to_end=self.tc.use_plys_to_end,
+            tc=self.tc
         )
         val_metric_values = evaluate_metrics(
             self.to.metrics,
@@ -311,24 +301,14 @@ class TrainerAgentPytorch:
             self._model,
             nb_batches=None,
             ctx=self._ctx,
-            sparse_policy_label=self.tc.sparse_policy_label,
-            apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
-            use_wdl=self.tc.use_wdl,
-            use_plys_to_end=self.tc.use_plys_to_end,
+            tc=self.tc
         )
         return train_metric_values, val_metric_values
 
     def train_update(self, batch):
         self.optimizer.zero_grad()
-        if self.tc.use_wdl and self.tc.use_plys_to_end:
-            data, value_label, policy_label, wdl_label, plys_label = batch
-            plys_label = plys_label.to(self._ctx)
-            wdl_label = wdl_label.to(self._ctx).long()
-        else:
-            data, value_label, policy_label = batch
-        data = data.to(self._ctx)
-        value_label = value_label.to(self._ctx)
-        policy_label = policy_label.to(self._ctx)
+        data, policy_label, value_label, plys_label, wdl_label, uncertainty_label = _extract_batch(batch, self.tc, self._ctx)
+
         if self.tc.sparse_policy_label:
             policy_label = policy_label.long()
         # update a dummy metric to see a proper progress bar
@@ -336,25 +316,24 @@ class TrainerAgentPytorch:
         # if self.batch_proc_tmp > 0:
         #     self.to.metrics["value_loss"].update(self.old_label, value_out)
         self.old_label = value_label
-        if self.tc.use_wdl and self.tc.use_plys_to_end:
-            value_out, policy_out, _, wdl_out, plys_out = self._model(data)
-            wdl_loss = self.wdl_loss(wdl_out, wdl_label)
-            ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label)
-        else:
-            value_out, policy_out = self._model(data)
+
+        value_out, policy_out, aux_out, wdl_out, plys_out, uncertainty_out = _extract_model_outputs(self._model, data,
+                                                                                                    self.tc)
         # policy_out = policy_out.softmax(dim=1)
         value_loss = self.value_loss(torch.flatten(value_out), value_label)
         policy_loss = self.policy_loss(policy_out, policy_label)
+
         # weight the components of the combined loss
+        combined_loss = self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
+
         if self.tc.use_wdl and self.tc.use_wdl:
-            combined_loss = (
-                    self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss +
-                    self.tc.wdl_loss_factor * wdl_loss + self.tc.plys_to_end_loss_factor * ply_loss
-            )
-        else:
-            combined_loss = (
-                    self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
-            )
+            wdl_loss = self.wdl_loss(wdl_out, wdl_label)
+            ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label)
+            combined_loss += self.tc.wdl_loss_factor * wdl_loss + self.tc.plys_to_end_loss_factor * ply_loss
+        if self.tc.use_uncertainty:
+            uncertainty_loss = self.uncertainty_loss(uncertainty_out, uncertainty_label)
+            combined_loss += self.tc.uncertainty_loss_factor * uncertainty_loss
+
         combined_loss.backward()
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = self.to.lr_schedule(self.cur_it)  # update the learning rate
@@ -534,7 +513,7 @@ def export_model(model, batch_sizes, input_shape, dir=Path('.'), torch_cpu=True,
 
 
 def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path, model_prefix: str,
-                   has_auxiliary_output: bool, dynamic_batch_size: bool) -> None:
+                   has_auxiliary_output: bool, has_uncertainty_output: bool, dynamic_batch_size: bool) -> None:
     """
     Exports the model to ONNX format to allow later import in TensorRT.
 
@@ -544,16 +523,20 @@ def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path,
     :param dir: Output directory
     :param model_prefix: Model prefix name
     :param has_auxiliary_output: Determines if the model has an auxiliary output
+    :param has_uncertainty_output: Determines if the model has an uncertainty output
     :param dynamic_batch_size: Whether to export model with dynamic batch size
     :return:
     """
+    input_names = ["data"]
+    output_names = [main_config["value_output"], main_config["policy_output"]]
+
     if has_auxiliary_output:
-        input_names = ["data"]
-        output_names = [main_config["value_output"], main_config["policy_output"], main_config["auxiliary_output"],
-                        main_config["wdl_output"], main_config["plys_to_end_output"]]
-    else:
-        input_names = ["data"]
-        output_names = [main_config["value_output"], main_config["policy_output"]]
+        output_names.append(main_config["auxiliary_output"])
+        output_names.append(main_config["wdl_output"])
+        output_names.append(main_config["plys_to_end_output"])
+
+    if has_uncertainty_output:
+        output_names.append(main_config["uncertainty_output"])
 
     if dynamic_batch_size:
         dynamic_axes = {'data' : {0 : 'batch_size'}}
@@ -622,8 +605,7 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_policy_label=False,
-                     apply_select_policy_from_plane=True, use_wdl=False, use_plys_to_end=False):
+def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, tc: TrainConfig):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
     The metric results are returned as a dictionary object.
@@ -635,32 +617,28 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     :param nb_batches: Number of batches to evaluate (early stopping).
      If set to None all batches of the data_iterator will be evaluated
     :param ctx: Pytorch data context
-    :param sparse_policy_label: Should be set to true if the policy uses one-hot encoded targets
-     (e.g. supervised learning)
-    :param apply_select_policy_from_plane: If true, given policy label is converted to policy map index
+    :param tc: Train config
     :return:
     """
     reset_metrics(metrics)
     model.eval()  # set model to evaluation mode
+
+    # TODO: Handle the following
+    # sparse_policy_label = self.tc.sparse_policy_label,
+    # apply_select_policy_from_plane = self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
+
     with torch.no_grad():  # operations inside don't track history
         for i, batch in enumerate(data_iterator):
-            if use_wdl and use_plys_to_end:
-                data, value_label, policy_label, wdl_label, plys_label = batch
-                plys_label = plys_label.to(ctx)
-                wdl_label = wdl_label.to(ctx).long()
-            else:
-                data, value_label, policy_label = batch
-            data = data.to(ctx)
-            value_label = value_label.to(ctx)
-            policy_label = policy_label.to(ctx)
+            data, plys_label, policy_label, value_label, wdl_label = _extract_batch(batch, tc, ctx)
+            value_out, policy_out, aux_out, wdl_out, plys_out, uncertainty_out = _extract_model_outputs(model, data, tc)
 
-            if use_wdl and use_plys_to_end:
-                value_out, policy_out, _, wdl_out, plys_out = model(data)
+            if tc.use_wdl and tc.use_plys_to_end:
                 metrics["wdl_loss"].update(preds=wdl_out, labels=wdl_label)
                 metrics["wdl_acc"].update(preds=wdl_out.argmax(axis=1), labels=wdl_label)
                 metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out), labels=plys_label)
-            else:
-                value_out, policy_out = model(data)
+
+            if tc.use_uncertainty:
+                metrics["uncertainty_loss"].update(preds=torch.flatten(uncertainty_out), labels=uncertainty_label)
 
             # update the metrics
             metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label)
@@ -680,3 +658,58 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
         metric_values[metric_name] = metrics[metric_name].compute()
     model.train()  # return back to training mode
     return metric_values
+
+
+def _extract_batch(batch, tc: TrainConfig, ctx):
+    """
+    Extracts the labels from a given batch according to the train config and transfers them to the given context.
+    """
+    data, value_label, policy_label = batch[:3]
+    plys_label = wdl_label = uncertainty_label = None
+    if tc.use_uncertainty:
+        uncertainty_label = batch[-1]
+        uncertainty_label = uncertainty_label.to(ctx)
+    if tc.use_wdl and tc.use_plys_to_end:
+        wdl_label, plys_label = batch[3:5]
+        plys_label = plys_label.to(ctx)
+        wdl_label = wdl_label.to(ctx).long()
+    data = data.to(ctx)
+    value_label = value_label.to(ctx)
+    policy_label = policy_label.to(ctx)
+    return data, policy_label, value_label, plys_label, wdl_label, uncertainty_label
+
+
+def _extract_model_outputs(model, data, tc: TrainConfig):
+    """
+    Extracts the model outputs for the given data according to the train config.
+    """
+    model_out = model(data)
+    value_out, policy_out = model_out[:2]
+    aux_out = wdl_out = plys_out = uncertainty_out = None
+    if tc.use_wdl and tc.use_plys_to_end:
+        aux_out, wdl_out, plys_out = model_out[2:5]
+    if tc.use_uncertainty:
+        uncertainty_out = model_out[-1]
+
+    return value_out, policy_out, aux_out, wdl_out, plys_out, uncertainty_out
+
+
+def create_tensor_dataset(x, y_value, y_policy, plys_to_end, eval_init, eval_search, tc: TrainConfig):
+    """Returns a pytorch TensorDataset object given the numpy arrays and train config."""
+
+    y_policy = prepare_policy(y_policy=y_policy, select_policy_from_plane=tc.select_policy_from_plane,
+                              sparse_policy_label=tc.sparse_policy_label,
+                              is_policy_from_plane_data=tc.is_policy_from_plane_data)
+    
+    # default parameters
+    torch_tensor_list = [torch.Tensor(x), torch.Tensor(y_value), torch.Tensor(y_policy)]
+    # update the train_data object
+    if tc.use_wdl and tc.use_plys_to_end:
+        torch_tensor_list.append(torch.Tensor(value_to_wdl_label(y_value)))
+        torch_tensor_list.append(prepare_plys_label(plys_to_end))
+    if tc.use_uncertainty:
+        # add the uncertainty target
+        uncertainty_train = np.abs(eval_init - eval_search) * 0.5
+        torch_tensor_list.append(torch.Tensor(uncertainty_train))
+    dataset = TensorDataset(*torch_tensor_list)
+    return dataset

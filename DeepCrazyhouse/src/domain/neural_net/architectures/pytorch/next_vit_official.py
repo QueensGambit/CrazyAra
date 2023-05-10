@@ -10,7 +10,7 @@ https://github.com/bytedance/Next-ViT/blob/main/classification/nextvit.py
 from torch import nn
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB, NCB, ConvBNReLU
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, get_se, process_value_policy_head
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, get_se, process_value_policy_aux_head
 
 
 class Block(nn.Module):
@@ -83,4 +83,4 @@ class NextVit(nn.Module):
         x = self.stage1(x)
         x = self.stage3(x)
 
-        return process_value_policy_head(x, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+        return process_value_policy_aux_head(x, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)

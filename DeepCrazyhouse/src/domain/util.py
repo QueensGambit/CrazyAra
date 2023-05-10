@@ -184,14 +184,14 @@ def get_numpy_arrays(pgn_dataset):
     except Exception:
         y_policy = np.array(pgn_dataset["y_policy"])
 
-    possible_entries = ["plys_to_end", "y_best_move_q"]
-    entries = [None] * 2
+    possible_entries = ["plys_to_end", "y_best_move_q", "eval_init", "eval_search"]
+    entries = [None] * len(possible_entries)
     for idx, entry in enumerate(possible_entries):
         try:
             entries[idx] = np.array(pgn_dataset[entry])
         except KeyError:
             pass
-    return start_indices, x, y_value, y_policy, entries[0], entries[1]
+    return start_indices, x, y_value, y_policy, entries[0], entries[1], entries[2], entries[3]
 
 
 def get_x_y_and_indices(dataset):

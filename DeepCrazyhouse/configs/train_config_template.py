@@ -107,6 +107,9 @@ class TrainConfig:
     # total of training iterations
     total_it: int = None
 
+    # weight for the uncertainty loss
+    uncertainty_loss_factor: float = 0.01
+
     # adds a small mlp to infer the value loss from wdl and plys_to_end_output
     use_mlp_wdl_ply: bool = False
     # enables training with ply to end head
@@ -116,6 +119,10 @@ class TrainConfig:
 
     # loads a previous checkpoint if the loss increased significantly
     use_spike_recovery: bool = True
+
+    # enables training with uncertainty head and loss
+    use_uncertainty: bool = False
+
     # weight the value loss a lot lower than the policy loss in order to prevent overfitting
     val_loss_factor: float = 0.5  # 0.01
     # weight for the wdl loss

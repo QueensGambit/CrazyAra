@@ -65,6 +65,7 @@ main_config = {
     "auxiliary_output": "auxiliary_out",
     "wdl_output": "wdl_out",
     "plys_to_end_output": "plys_to_end_out",
+    "uncertainty_output": "uncertainty_out",
 
     # Active mode for different input & output representations.
     # Each mode is only compatible with a certain network input-/output representation:
