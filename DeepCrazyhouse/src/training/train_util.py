@@ -24,7 +24,6 @@ def get_metrics(train_config):
     if train_config.framework == 'gluon':
         return _get_gluon_metrics(train_config)
     if train_config.framework == 'pytorch':
-        import DeepCrazyhouse.src.training.metrics_pytorch as pytorch_metrics
         return _get_pytorch_metrics(train_config)
 
 
@@ -71,6 +70,7 @@ def _get_gluon_metrics(train_config):
 
 
 def _get_pytorch_metrics(train_config):
+    import DeepCrazyhouse.src.training.metrics_pytorch as pytorch_metrics
     metrics_pytorch = {
         'value_loss': pytorch_metrics.MSE(),
         'policy_loss': pytorch_metrics.CrossEntropy(train_config.sparse_policy_label),
@@ -82,5 +82,7 @@ def _get_pytorch_metrics(train_config):
         metrics_pytorch['wdl_acc'] = pytorch_metrics.Accuracy(True)
     if train_config.use_plys_to_end:
         metrics_pytorch['plys_to_end_loss'] = pytorch_metrics.MSE()
+    if train_config.use_uncertainty:
+        metrics_pytorch['uncertainty_loss'] = pytorch_metrics.MSE()
 
     return metrics_pytorch

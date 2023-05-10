@@ -389,11 +389,12 @@ class _UncertaintyHead(Module):
         It predicts the difference between the initial value prediction and the prediction after a certain number of playouts.
         """
         super(_UncertaintyHead, self).__init__()
+        self.nb_flatten = board_height*board_width*channels_value_head
 
         self.body = Sequential(Conv2d(in_channels=in_channels, out_channels=channels_value_head, kernel_size=(1, 1), bias=False),
                                BatchNorm2d(num_features=channels_value_head),
                                get_act(act_type))
-        self.nb_flatten = board_height*board_width*channels_value_head
+
 
         self.body_final = Sequential(Linear(in_features=self.nb_flatten, out_features=fc_units),
                                      get_act(act_type),
@@ -406,7 +407,8 @@ class _UncertaintyHead(Module):
         :param x: Input data to the block
         :return: Activation maps of the block
         """
-        return self.body(x)
+        out = self.body(x).view(-1, self.nb_flatten)
+        return self.body_final(out)
 
 
 def process_value_policy_aux_head(x, value_head: _ValueHead, policy_head: _PolicyHead,

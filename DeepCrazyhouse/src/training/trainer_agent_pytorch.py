@@ -307,7 +307,7 @@ class TrainerAgentPytorch:
 
     def train_update(self, batch):
         self.optimizer.zero_grad()
-        data, policy_label, value_label, plys_label, wdl_label, uncertainty_label = _extract_batch(batch, self.tc, self._ctx)
+        data, value_label, policy_label, wdl_label, plys_label, uncertainty_label = _extract_batch(batch, self.tc, self._ctx)
 
         if self.tc.sparse_policy_label:
             policy_label = policy_label.long()
@@ -331,7 +331,7 @@ class TrainerAgentPytorch:
             ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label)
             combined_loss += self.tc.wdl_loss_factor * wdl_loss + self.tc.plys_to_end_loss_factor * ply_loss
         if self.tc.use_uncertainty:
-            uncertainty_loss = self.uncertainty_loss(uncertainty_out, uncertainty_label)
+            uncertainty_loss = self.uncertainty_loss(torch.flatten(uncertainty_out), uncertainty_label)
             combined_loss += self.tc.uncertainty_loss_factor * uncertainty_loss
 
         combined_loss.backward()
@@ -629,7 +629,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, tc: TrainCo
 
     with torch.no_grad():  # operations inside don't track history
         for i, batch in enumerate(data_iterator):
-            data, plys_label, policy_label, value_label, wdl_label = _extract_batch(batch, tc, ctx)
+            data, value_label, policy_label, wdl_label, plys_label, uncertainty_label = _extract_batch(batch, tc, ctx)
             value_out, policy_out, aux_out, wdl_out, plys_out, uncertainty_out = _extract_model_outputs(model, data, tc)
 
             if tc.use_wdl and tc.use_plys_to_end:
@@ -676,7 +676,7 @@ def _extract_batch(batch, tc: TrainConfig, ctx):
     data = data.to(ctx)
     value_label = value_label.to(ctx)
     policy_label = policy_label.to(ctx)
-    return data, policy_label, value_label, plys_label, wdl_label, uncertainty_label
+    return data, value_label, policy_label, wdl_label, plys_label, uncertainty_label
 
 
 def _extract_model_outputs(model, data, tc: TrainConfig):
