@@ -77,9 +77,15 @@ def load_pgn_dataset(
         logging.debug("loading: %s ...", pgn_datasets[part_id])
         logging.debug("")
 
-    pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
-    start_indices, x, y_value, y_policy, plys_to_end, y_best_move_q, eval_init, eval_search = get_numpy_arrays(pgn_dataset)  # Get the data
+    return load_pgn_dataset_file(pgn_datasets[part_id], verbose, normalize, q_value_ratio)
 
+
+def load_pgn_dataset_file(zarr_filename, verbose=True, normalize=False, q_value_ratio=0):
+    """Same as load_pgn_dataset() but takes zarr_filename as input"""
+
+    pgn_dataset = zarr.group(store=zarr.ZipStore(zarr_filename, mode="r"))
+    start_indices, x, y_value, y_policy, plys_to_end, y_best_move_q, eval_single, eval_search = get_numpy_arrays(
+        pgn_dataset)  # Get the data
     if verbose:
         logging.info("STATISTICS:")
         try:
@@ -94,10 +100,8 @@ def load_pgn_dataset(
                 print(member, list(pgn_dataset["parameters"][member]))
         except KeyError:
             logging.warning("no parameters found")
-
     if q_value_ratio != 0:
-        y_value = (1-q_value_ratio) * y_value + q_value_ratio * y_best_move_q
-
+        y_value = (1 - q_value_ratio) * y_value + q_value_ratio * y_best_move_q
     if normalize:
         x = x.astype(np.float32)
         # the y-vectors need to be casted as well in order to be accepted by the network
@@ -105,7 +109,7 @@ def load_pgn_dataset(
         y_policy = y_policy.astype(np.float32)
         # apply rescaling using a predefined scaling constant (this makes use of vectorized operations)
         x *= MATRIX_NORMALIZER
-    return start_indices, x, y_value, y_policy, plys_to_end, eval_init, eval_search, pgn_dataset
+    return start_indices, x, y_value, y_policy, plys_to_end, eval_single, eval_search, pgn_dataset
 
 
 def load_xiangqi_dataset(dataset_type="train", part_id=0, verbose=True, normalize=False):

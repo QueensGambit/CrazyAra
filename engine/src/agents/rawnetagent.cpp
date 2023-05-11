@@ -43,7 +43,7 @@ void RawNetAgent::evaluate_board_state()
     assert(evalInfo->legalMoves.size() >= 1);
 
     // immediately stop the search if there's only one legal move
-    if (evalInfo->legalMoves.size() == 1) {
+    if (false && evalInfo->legalMoves.size() == 1) {
         evalInfo->policyProbSmall.resize(1UL);
         evalInfo->policyProbSmall = 1;
           // a value of 0 is likely a wrong evaluation but won't be written to stdout
@@ -63,6 +63,7 @@ void RawNetAgent::evaluate_board_state()
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];
 
+    evalInfo->value = valueOutputs[0];
     evalInfo->centipawns[0] = value_to_centipawn(valueOutputs[0]);
     evalInfo->movesToMate[0] = 0;
     evalInfo->depth = 1;

@@ -35,6 +35,7 @@ void print_single_pv(std::ostream& os, const EvalInfo& evalInfo, size_t idx, siz
     os << "depth " << evalInfo.depth
        << " seldepth " << evalInfo.selDepth
        << " multipv " << idx+1
+       << " value " << evalInfo.value
        << " score";
 
     if (evalInfo.movesToMate[idx] == 0) {

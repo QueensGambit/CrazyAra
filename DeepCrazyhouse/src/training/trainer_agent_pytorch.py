@@ -262,13 +262,13 @@ class TrainerAgentPytorch:
 
     def _get_train_loader(self, part_id):
         # load one chunk of the dataset from memory
-        _, self.x_train, self.yv_train, self.yp_train, self.plys_to_end, eval_init, eval_search, _ = load_pgn_dataset(dataset_type="train",
+        _, self.x_train, self.yv_train, self.yp_train, self.plys_to_end, eval_single, eval_search, _ = load_pgn_dataset(dataset_type="train",
                                                                                          part_id=part_id,
                                                                                          normalize=self.tc.normalize,
                                                                                          verbose=False,
                                                                                          q_value_ratio=self.tc.q_value_ratio)
 
-        train_dataset = create_tensor_dataset(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, eval_init,
+        train_dataset = create_tensor_dataset(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, eval_single,
                                               eval_search, self.tc)
 
         train_loader = DataLoader(train_dataset, shuffle=True, batch_size=self.tc.batch_size, num_workers=self.tc.cpu_count)
@@ -694,13 +694,13 @@ def _extract_model_outputs(model, data, tc: TrainConfig):
     return value_out, policy_out, aux_out, wdl_out, plys_out, uncertainty_out
 
 
-def create_tensor_dataset(x, y_value, y_policy, plys_to_end, eval_init, eval_search, tc: TrainConfig):
+def create_tensor_dataset(x, y_value, y_policy, plys_to_end, eval_single, eval_search, tc: TrainConfig):
     """Returns a pytorch TensorDataset object given the numpy arrays and train config."""
 
     y_policy = prepare_policy(y_policy=y_policy, select_policy_from_plane=tc.select_policy_from_plane,
                               sparse_policy_label=tc.sparse_policy_label,
                               is_policy_from_plane_data=tc.is_policy_from_plane_data)
-    
+
     # default parameters
     torch_tensor_list = [torch.Tensor(x), torch.Tensor(y_value), torch.Tensor(y_policy)]
     # update the train_data object
@@ -709,7 +709,7 @@ def create_tensor_dataset(x, y_value, y_policy, plys_to_end, eval_init, eval_sea
         torch_tensor_list.append(prepare_plys_label(plys_to_end))
     if tc.use_uncertainty:
         # add the uncertainty target
-        uncertainty_train = np.abs(eval_init - eval_search) * 0.5
+        uncertainty_train = np.abs(eval_single - eval_search) * 0.5
         torch_tensor_list.append(torch.Tensor(uncertainty_train))
     dataset = TensorDataset(*torch_tensor_list)
     return dataset

@@ -57,6 +57,7 @@ struct EvalInfo
     Action bestMove;
     std::vector<int> movesToMate;
     size_t tbHits;
+    float value;
 
     size_t calculate_elapsed_time_ms() const;
     size_t calculate_nps(size_t elapsedTimeMS) const;

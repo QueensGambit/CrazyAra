@@ -184,7 +184,7 @@ def get_numpy_arrays(pgn_dataset):
     except Exception:
         y_policy = np.array(pgn_dataset["y_policy"])
 
-    possible_entries = ["plys_to_end", "y_best_move_q", "eval_init", "eval_search"]
+    possible_entries = ["plys_to_end", "y_best_move_q", "eval_single", "eval_search"]
     entries = [None] * len(possible_entries)
     for idx, entry in enumerate(possible_entries):
         try:
