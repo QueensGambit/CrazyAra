@@ -75,6 +75,8 @@ struct SearchSettings
     bool mctsSolver;
     // Defines the nubmer of players within the MCTS search. Available are MODE_SINGLE_PLAYER and MODE_TWO_PLAYER
     SearchPlayerMode searchPlayerMode;
+    // Decide if to use uncertainty weighted roll-outs given the network supports it
+    bool useUncertainty;
     SearchSettings();
 
 };
