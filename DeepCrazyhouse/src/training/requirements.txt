@@ -18,3 +18,7 @@ torch
 torchsummary
 onnxruntime
 onnxsim
+timm
+einops
+ml_collections
+vit_pytorch
