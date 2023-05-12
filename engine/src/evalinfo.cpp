@@ -138,6 +138,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
     if (nextNode != nullptr) {
         nextNode->get_principal_variation(pv, searchSettings);
         evalInfo.pv[idx] = pv;
+        evalInfo.value = rootNode->get_value_display();
 
         // scores
         // return mate score for known wins and losses
@@ -177,6 +178,7 @@ void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx
     }
     else {
         evalInfo.bestMoveQ[idx] = Q_INIT;
+        evalInfo.value = Q_INIT;
     }
     evalInfo.movesToMate[idx] = 0;
     evalInfo.centipawns[idx] = value_to_centipawn(evalInfo.bestMoveQ[idx]);
