@@ -63,6 +63,7 @@ struct NeuralNetDesign {
     const string policySoftmaxOutputName = "policy_softmax";
     string valueOutputName = "value_out";  // may be adjusted using "valueOutputIdx" if not found
     const string auxiliaryOutputName = "auxiliary_out";
+    const string uncertaintyOutputName = "uncertainty_out";
     const int inputIdx = 0;
     const int valueOutputIdx = 0;
     const int policyOutputIdx = 1;

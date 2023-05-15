@@ -284,6 +284,7 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), mirrorPolicy);
     node_post_process_policy(node, searchSettings->nodePolicyTemperature, searchSettings);
     node_assign_value(node, valueOutputs, tbHits, batchIdx, isRootNodeTB);
+    node_assign_uncertainty_weight(node, auxiliaryOutputs, batchIdx);
 #ifdef MCTS_STORE_STATES
     node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
 #endif
@@ -357,7 +358,7 @@ void SearchThread::create_mini_batch()
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-            backup_value<true>(newNode->get_value(), searchSettings, trajectoryBuffer, searchSettings->mctsSolver);
+            backup_value<true>(newNode->get_value(), searchSettings, trajectoryBuffer, searchSettings->mctsSolver, 10.0f);
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
@@ -403,7 +404,7 @@ void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& 
         const bool solveForTerminal = searchSettings->mctsSolver && node->is_tablebase();
         backup_value<false>(node->get_value(), searchSettings, trajectories[idx], solveForTerminal);
 #else
-        backup_value<false>(node->get_value(), searchSettings, trajectories[idx], false);
+        backup_value<false>(node->get_value(), searchSettings, trajectories[idx], false, node->get_uncertainty_weight());
 #endif
     }
     nodes.reset_idx();
@@ -413,7 +414,7 @@ void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& 
 void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < values->size(); ++idx) {
         const float value = values->get_element(idx);
-        backup_value<true>(value, searchSettings, trajectories[idx], false);
+        backup_value<true>(value, searchSettings, trajectories[idx], false, 1.0f); // TODO: update uncertainty
     }
     values->reset_idx();
     trajectories.clear();
@@ -469,4 +470,11 @@ size_t get_random_depth()
 {
     const int randInt = rand() % 100 + 1;
     return std::ceil(-std::log2(1 - randInt / 100.0) - 1);
+}
+
+void node_assign_uncertainty_weight(Node *node, const float *auxiliaryOutputs, size_t batchIdx)
+{
+    const float eps = 0.005f;
+    const float weighting = 1.0 / ((auxiliaryOutputs[batchIdx] + eps) * 10);
+    node->set_uncertainty_weight(weighting);
 }

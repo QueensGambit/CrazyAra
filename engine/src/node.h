@@ -96,6 +96,7 @@ private:
     // singular values
     // valueSum stores the sum of all incoming value evaluations
     double valueSum;
+    float uncertaintyWeight;
 
     unique_ptr<NodeData> d;
 #ifdef MCTS_STORE_STATES
@@ -187,7 +188,7 @@ public:
      * @param searchSettings Pointer to the search settings struct
      */
     template<bool freeBackup>
-    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, const SearchSettings* searchSettings, bool solveForTerminal)
+    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, const SearchSettings* searchSettings, bool solveForTerminal, float uncertaintyWeight)
     {
         lock();
         // decrement virtual loss counter
@@ -195,6 +196,8 @@ public:
 
         valueSum += value;
         ++realVisitsSum;
+
+        const float weightDiff = uncertaintyWeight - 1.0f;
 
         if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
             // set new Q-value based on return
@@ -204,9 +207,12 @@ public:
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
-            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value * uncertaintyWeight) / (d->childNumberVisits[childIdx] + weightDiff);
             assert(!isnan(d->qValues[childIdx]));
         }
+
+        d->childNumberVisits[childIdx] += weightDiff;
+        d->visitSum += weightDiff;
 
         if (searchSettings->virtualLoss != 1) {
             d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
@@ -331,6 +337,11 @@ public:
     void enhance_moves(const SearchSettings* searchSettings);
 
     void set_value(float value);
+
+    void set_uncertainty_weight(float value);
+
+    float get_uncertainty_weight();
+
     uint16_t main_child_idx_for_parent() const;
 
     /**
@@ -780,10 +791,15 @@ float get_transposition_q_value(uint_fast32_t transposVisits, double transposQVa
  * @param searchSettings Pointer to the search settings struct
  * @param trajectory Trajectory on how to get to the given value eval
  * @param solveForTerminal Decides if the terminal solver will be used
+ * @param uncertaintyWeight Weighting of the rollout
  */
 template <bool freeBackup>
-void backup_value(float value, const SearchSettings* searchSettings, const Trajectory& trajectory, bool solveForTerminal) {
+void backup_value(float value, const SearchSettings* searchSettings, const Trajectory& trajectory, bool solveForTerminal, float uncertaintyWeight) {
     double targetQValue = 0;
+    if (!searchSettings->useUncertainty) {
+        uncertaintyWeight = 1.0f;
+    }
+
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
         if (targetQValue != 0) {
             const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
@@ -798,8 +814,8 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
             break;
         case MODE_SINGLE_PLAYER: ;
         }
-        freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal) :
-                   it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal);
+        freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, uncertaintyWeight) :
+                   it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, uncertaintyWeight);
 
         if (it->node->is_transposition()) {
             targetQValue = it->node->get_value();

@@ -108,6 +108,9 @@ bool TensorrtAPI::retrieve_indices_by_name(bool verbose)
     if (nnDesign.hasAuxiliaryOutputs) {
         idxAuxiliaryOutput = engine->getBindingIndex(nnDesign.auxiliaryOutputName.c_str());
         if (idxAuxiliaryOutput == -1) {
+            idxAuxiliaryOutput = engine->getBindingIndex(nnDesign.uncertaintyOutputName.c_str());
+        }
+        if (idxAuxiliaryOutput == -1) {
             info_string_important("Layer name '" + nnDesign.auxiliaryOutputName + "' not found.");
             return false;
         }

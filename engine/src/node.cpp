@@ -83,6 +83,7 @@ Node::Node(StateObj* state, const SearchSettings* searchSettings):
     legalActions(state->legal_actions()),
     key(state->hash_key()),
     valueSum(0),
+    uncertaintyWeight(1.0f),
     d(nullptr),
     #ifdef MCTS_STORE_STATES
     state(state),
@@ -700,6 +701,16 @@ void Node::set_value(float value)
     this->valueSum = value * this->realVisitsSum;
 }
 
+void Node::set_uncertainty_weight(float value)
+{
+    uncertaintyWeight = value;
+}
+
+float Node::get_uncertainty_weight()
+{
+    return uncertaintyWeight;
+}
+
 Node* Node::add_new_node_to_tree(MapWithMutex* mapWithMutex, StateObj* newState, ChildIdx childIdx, const SearchSettings* searchSettings, bool& transposition)
 {
     if(searchSettings->useMCGS) {
@@ -1214,7 +1225,7 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
          << filler << endl;
     for (size_t idx = 0; idx < get_number_child_nodes(); ++idx) {
         const size_t childIdx = customOrdering.size() == get_number_child_nodes() ? customOrdering[idx] : idx;
-        size_t n = 0;
+        VisitType n = 0;
         double q = Q_INIT;
         if (childIdx < d->noVisitIdx) {
             n = d->childNumberVisits[childIdx];
@@ -1262,7 +1273,8 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
 
 uint32_t Node::get_node_count() const
 {
-    return get_visits() - get_free_visits();
+    //    return get_visits() - get_free_visits();
+    return realVisitsSum;
 }
 
 bool Node::is_transposition_return(double myQvalue) const

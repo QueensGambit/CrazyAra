@@ -51,6 +51,9 @@ enum NodeType : uint8_t {
     UNSOLVED
 };
 
+using VisitType = float; // TODO: make this uint32_t again
+
+
 /**
  * @brief is_loss_node_type Returns true if given node type belongs to a loosing node type
  * @param nodeType
@@ -87,14 +90,14 @@ class Node;
  */
 struct NodeData
 {
-    DynamicVector<uint32_t> childNumberVisits;
+    DynamicVector<VisitType> childNumberVisits;
     DynamicVector<float> qValues;
     vector<shared_ptr<Node>> childNodes;
     DynamicVector<uint8_t> virtualLossCounter;
     DynamicVector<NodeType> nodeTypes;
 
     uint32_t freeVisits;
-    uint32_t visitSum;
+    VisitType visitSum;
 
     uint16_t checkmateIdx;
     uint16_t endInPly;
