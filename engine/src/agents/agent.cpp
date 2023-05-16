@@ -52,9 +52,14 @@ void Agent::set_best_move(size_t moveCounter)
     }
 }
 
+void Agent::set_must_wait(bool value)
+{
+    mustWait = value;
+}
+
 Agent::Agent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose):
     NeuralNetAPIUser(net),
-    playSettings(playSettings), verbose(verbose), isRunning(false)
+    playSettings(playSettings), mustWait(true), verbose(verbose), isRunning(false)
 {
 }
 
@@ -73,14 +78,17 @@ Action Agent::get_best_action()
 void Agent::lock_and_wait()
 {
     unique_lock<mutex> lock(isRunningMutex);
-    isRunningCondition.wait(lock);
+    while(mustWait) {
+        isRunningCondition.wait(lock);
+    }
 }
 
 void Agent::unlock_and_notify()
 {
     // std::lock_guard is deprecated in C++17, therefore we use scoped_lock instead
     scoped_lock<mutex> lock(isRunningMutex);
-    isRunningCondition.notify_all();
+    mustWait = false;
+    isRunningCondition.notify_one();
 }
 
 void Agent::perform_action()

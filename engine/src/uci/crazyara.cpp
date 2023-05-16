@@ -139,7 +139,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
 
         else if (token == "match")   multimodel_arena(is, "", "", true);
         else if (token == "tournament")   roundrobin(is);
-#endif   
+#endif
         else
             cout << "Unknown command: " << cmd << endl;
 
@@ -210,11 +210,13 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
 
     if (useRawNetwork) {
         rawAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        rawAgent->set_must_wait(true);
         mainSearchThread = thread(run_agent_thread, rawAgent.get());
         rawAgent->lock_and_wait();  // wait for the agent to be initalized to allow then stopping it.
     }
     else {
         mctsAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        mctsAgent->set_must_wait(true);
         mainSearchThread = thread(run_agent_thread, mctsAgent.get());
         mctsAgent->lock_and_wait();  // wait for the agent to be initalized to allow then stopping it.
     }
@@ -664,7 +666,7 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
 }
 
 unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type)
-{   
+{
     switch (type) {
     case MCTSAgentType::kDefault:
         return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
@@ -737,6 +739,7 @@ void CrazyAra::init_search_settings()
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
     searchSettings.mctsSolver = Options["MCTS_Solver"];
+    searchSettings.useUncertainty = Options["Use_Uncertainty"];
 }
 
 void CrazyAra::init_play_settings()
@@ -780,7 +783,7 @@ std::vector<std::string> comb(std::vector<int> N, int K)
         {
             if (bitmask[i]){
                 c.append(std::to_string(N[i])+ " ");
-            } 
+            }
         }
         p.push_back(c);
     } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
