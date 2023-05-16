@@ -210,11 +210,13 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
 
     if (useRawNetwork) {
         rawAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        rawAgent->set_must_wait(true);
         mainSearchThread = thread(run_agent_thread, rawAgent.get());
         rawAgent->lock_and_wait();  // wait for the agent to be initalized to allow then stopping it.
     }
     else {
         mctsAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        mctsAgent->set_must_wait(true);
         mainSearchThread = thread(run_agent_thread, mctsAgent.get());
         mctsAgent->lock_and_wait();  // wait for the agent to be initalized to allow then stopping it.
     }
