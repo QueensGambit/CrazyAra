@@ -65,6 +65,8 @@ protected:
     // Reference: https://github.com/dmfrodrigues/GraphViewerCpp/issues/16
     condition_variable isRunningCondition;
     mutex isRunningMutex;
+    // additional boolean variable to control the condition variable
+    bool mustWait;
     bool verbose;
     // boolean which can be triggered by "stop" from std-in to stop the current search
     bool isRunning;
