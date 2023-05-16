@@ -739,7 +739,6 @@ void CrazyAra::init_search_settings()
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
     searchSettings.mctsSolver = Options["MCTS_Solver"];
-    searchSettings.useUncertainty = Options["Use_Uncertainty"];
 }
 
 void CrazyAra::init_play_settings()
