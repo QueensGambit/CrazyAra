@@ -121,6 +121,7 @@ public:
      * @brief unlock_and_notify Unlocks the isRunningMutex and notifies all threads from the isRunningCondition variable.
      */
     void unlock_and_notify();
+    void set_must_wait(bool value);
 };
 }
 
