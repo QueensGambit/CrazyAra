@@ -184,7 +184,8 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
         if (childIdx == uint16_t(-1)) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
-        currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
+        //currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
+        currentNode->apply_virtual_loss_to_child_without_changing_qvalue(childIdx, searchSettings->virtualLoss);
         trajectoryBuffer.emplace_back(NodeAndIdx(currentNode, childIdx));
 
         nextNode = currentNode->get_child_node(childIdx);

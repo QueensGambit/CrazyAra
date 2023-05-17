@@ -196,40 +196,44 @@ public:
         update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
         valueSum += value;
         ++realVisitsSum;
-
-        if (isMaxOperator) {
-            d->qValue_max = max(value, d->qValue_max);
-            if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
-                d->qValues[childIdx] = value;
-            }
-            else {
+        
+        if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
+            // set new Q-value based on return
+            // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
+            d->qValues[childIdx] = value;
+            d->qValue_max = max(d->qValues);
+        }
+        else {
+            float oldQValue = d->qValues[childIdx];
+            float newQValue = 0;
+            if(isMaxOperator) {
                 float tempVal = value;
                 if (d->childNodes[childIdx]->d != nullptr) {
                     tempVal = -d->childNodes[childIdx]->d->qValue_max;
                 }
-                if (searchSettings->minimaxWeight != 1) {
-                    d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) + searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]);
-                }
-                d->qValues[childIdx] = ((1 - searchSettings->minimaxWeight) * d->qValues[childIdx]) + searchSettings->minimaxWeight * tempVal;
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx]) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
+                
+                newQValue = tempVal;
+                d->qValues[childIdx] = tempVal;
                 assert(!isnan(d->qValues[childIdx]));
-            }
-        }
-        else {
-            if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
-                // set new Q-value based on return
-                // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
-                d->qValues[childIdx] = value;
-                d->qValue_max = max(d->qValues);
             }
             else {
+
                 // revert virtual loss and update the Q-value
                 assert(d->childNumberVisits[childIdx] != 0);
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
-                d->qValue_max = max(d->qValue_max, d->qValues[childIdx]);
+                //d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+                newQValue = (double(d->qValues[childIdx]) * (d->childNodes[childIdx]->get_real_visits() - 1) + value) / d->childNodes[childIdx]->get_real_visits();
+                d->qValues[childIdx] = newQValue;
                 assert(!isnan(d->qValues[childIdx]));
             }
+            if (oldQValue > newQValue) {
+                d->qValue_max = max(d->qValues);
+            } 
+            else {
+                d->qValue_max = max(d->qValues[childIdx], d->qValue_max);
+            }
         }
+
+        
         if (searchSettings->virtualLoss != 1) {
             d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
             d->visitSum -= size_t(searchSettings->virtualLoss) - 1;
@@ -283,6 +287,8 @@ public:
     uint32_t get_real_visits() const;
 
     void apply_virtual_loss_to_child(ChildIdx childIdx, uint_fast32_t virtualLoss);
+
+    void apply_virtual_loss_to_child_without_changing_qvalue(ChildIdx childIdx, uint_fast32_t virtualLoss);
 
     void increment_no_visit_idx();
     void fully_expand_node();
