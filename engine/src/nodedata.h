@@ -29,6 +29,7 @@
 #define NODEDATA_H
 
 #include <iostream>
+#include <set>
 #include <mutex>
 #include <unordered_map>
 #include <blaze/Math.h>
