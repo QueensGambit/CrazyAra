@@ -189,7 +189,7 @@ public:
      * @param searchSettings Pointer to the search settings struct
      */
     template<bool freeBackup>
-    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, const SearchSettings* searchSettings, bool solveForTerminal, bool isMaxOperator, float maxValue = 0)
+    void revert_virtual_loss_and_update(ChildIdx childIdx, float value, const SearchSettings* searchSettings, bool solveForTerminal, bool isMaxOperator)
     {
         lock();
         // decrement virtual loss counter
@@ -205,7 +205,8 @@ public:
         else {
             //float oldQValue = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
             if(isMaxOperator) {
-                d->qValues[childIdx] = maxValue;
+                float maxValue = scoreChildQValueMax(get_child_node(childIdx));
+                d->qValues[childIdx] = -maxValue;
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
                 assert(!isnan(d->qValues[childIdx]));
             }
@@ -219,7 +220,6 @@ public:
             }
             
         }
-        d->qValue_max = max(d->qValues);
 
         
         if (searchSettings->virtualLoss != 1) {
@@ -241,6 +241,8 @@ public:
      * @param childIdx Index to the child node to update
      */
     void revert_virtual_loss(ChildIdx childIdx, float virtualLoss);
+
+    float scoreChildQValueMax(Node* node);
 
     bool is_playout_node() const;
 
@@ -808,20 +810,17 @@ float get_transposition_q_value(uint_fast32_t transposVisits, double transposQVa
 template <bool freeBackup>
 void backup_value(float value, const SearchSettings* searchSettings, const Trajectory& trajectory, bool solveForTerminal) {
     double targetQValue = 0;
-    float maxValue = value;
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) { 
         if (targetQValue != 0) {
             const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
             if (transposVisits != 0) {
                 const double transposQValue = -it->node->get_q_sum(it->childIdx, searchSettings->virtualLoss) / transposVisits;
                 value = get_transposition_q_value(transposVisits, transposQValue, targetQValue);
-                maxValue = value;
             }
         }
         switch (searchSettings->searchPlayerMode) {
         case MODE_TWO_PLAYER:
             value = -value;
-            maxValue = -maxValue;
             break;
         case MODE_SINGLE_PLAYER:;
         }
@@ -837,17 +836,14 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
             }
             else {
                 if (it->node->get_child_node(it->childIdx)->get_real_visits() >= searchSettings->switchingMaxOperatorAtNode) {
-                    freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, true, maxValue) :
-                        it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, true, maxValue);
+                    freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, true) :
+                        it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, true);
                 }
                 else {
                     freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, false) :
                         it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, false);
                 }
             }
-            
-            
-            maxValue = it->node->get_max_qValue();
             break;
         }
         

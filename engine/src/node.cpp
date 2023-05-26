@@ -673,6 +673,19 @@ void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
     unlock();
 }
 
+float Node::scoreChildQValueMax(Node* node) {
+    float maxQValue = -2.0;
+    for (int i = 0; i < d->qValues.size(); ++i) {
+        if (node->get_child_node(i) != nullptr) {
+            if (node->get_child_number_visits(i) >= 10) {
+                maxQValue = max(maxQValue, node->d->qValues[i]);
+            }
+        }
+
+    }
+    return maxQValue;
+}
+
 bool Node::is_playout_node() const
 {
     return d != nullptr;
