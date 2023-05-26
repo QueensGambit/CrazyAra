@@ -219,7 +219,7 @@ public:
             }
             
         }
-        d->qValue_max = d->qValues[argmax(d->childNumberVisits)];
+        d->qValue_max = max(d->qValues);
 
         
         if (searchSettings->virtualLoss != 1) {
