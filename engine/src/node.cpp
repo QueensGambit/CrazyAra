@@ -683,6 +683,7 @@ float Node::scoreChildQValueMax(Node* node) {
         }
 
     }
+    assert(maxQValue > -2.0);
     return maxQValue;
 }
 
