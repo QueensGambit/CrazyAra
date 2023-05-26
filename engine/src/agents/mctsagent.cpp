@@ -376,6 +376,13 @@ void MCTSAgent::print_root_node()
     }
     const vector<size_t> customOrdering = sort_permutation(evalInfo->policyProbSmall, std::greater<float>());
     rootNode->print_node_statistics(rootState.get(), customOrdering, searchSettings);
+    Node* node = rootNode.get();
+    for (int i = 0; i< 5; i++) {
+        int idx = argmax(rootNode->get_q_values());
+        node = node->get_child_node(idx);
+        node->print_node_statistics(nullptr, {}, searchSettings);
+        info_string("qMax: ", node->get_max_qValue());
+    }
 }
 
 void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t parentId, size_t& nodeId, ostream& outFile, size_t depth, size_t maxDepth)
