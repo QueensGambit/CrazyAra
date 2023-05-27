@@ -665,7 +665,7 @@ void backup_collision(float virtualLoss, const Trajectory& trajectory) {
 void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
 {
     lock();
-    //d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
+    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
     d->childNumberVisits[childIdx] -= virtualLoss;
     d->visitSum -= virtualLoss;
     // decrement virtual loss counter
@@ -673,22 +673,25 @@ void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
     unlock();
 }
 
-float Node::scoreChildQValueMax(const Node* node, const SearchSettings* searchSettings) {
+float Node::score_child_qValue_max(const Node* node, const SearchSettings* searchSettings) {
     float maxQValue = -2.0;
     for (int i = 0; i < node->d->qValues.size(); ++i) {
         if (node->d->childNodes[i] != nullptr) {
             if (node->get_child_number_visits(i) >= searchSettings->maxAtVisit) {
-                maxQValue = max(maxQValue, node->d->qValues[i]);
+                float orginalQValue = (double(node->d->qValues[i]) * (node->d->childNumberVisits[i] - node->d->virtualLossCounter[i]) + searchSettings->virtualLoss * node->d->virtualLossCounter[i]) / (node->d->childNumberVisits[i] - searchSettings->virtualLoss * node->d->virtualLossCounter[i]);
+                maxQValue = max(maxQValue, compute_original_q_value(node->d->qValues[i], node->d->childNumberVisits[i], node->d->virtualLossCounter[i], searchSettings));
             }
         }
     }
     if (maxQValue == -2.0) {
-        try {
-            maxQValue = node->d->qValues[argmax(node->d->childNumberVisits)];
-        }
-        catch(...){}
+        int most_visit_node_idx = argmax(node->d->childNumberVisits);
+        maxQValue = compute_original_q_value(node->d->qValues[most_visit_node_idx], node->d->childNumberVisits[most_visit_node_idx], node->d->virtualLossCounter[most_visit_node_idx], searchSettings);
     }
     return maxQValue;
+}
+
+float Node::compute_original_q_value(float qValue, int numberVisits, int virtualLossCounter, const SearchSettings* searchSettings) {
+    return (double(qValue) * (numberVisits - virtualLossCounter) + searchSettings->virtualLoss * virtualLossCounter) / (numberVisits - searchSettings->virtualLoss * virtualLossCounter);
 }
 
 bool Node::is_playout_node() const
@@ -1176,8 +1179,7 @@ NodeSplit Node::select_child_nodes(const SearchSettings* searchSettings, uint_fa
         nodeSplit.only_first(d->checkmateIdx, budget);
         return nodeSplit;
     }
-    //DynamicVector<float> q_u_sum = d->qValues + get_current_u_values(searchSettings);
-    DynamicVector<float> q_u_sum = (d->qValues * (d->childNumberVisits - searchSettings->virtualLoss * d->virtualLossCounter) - searchSettings->virtualLoss * d->virtualLossCounter) / d->childNumberVisits + get_current_u_values(searchSettings);
+    DynamicVector<float> q_u_sum = d->qValues + get_current_u_values(searchSettings);
     float firstMax;
     float secondMax;
     assert(q_u_sum.size() > 1);
