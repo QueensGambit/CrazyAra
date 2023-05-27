@@ -83,7 +83,7 @@ struct SearchSettings
     SearchPlayerMode searchPlayerMode;
     // Defines backup operator use for MCTS.
     BackupOperatorType backupOperator;
-    float minimaxWeight;
+    uint32_t maxAtVisit;
     uint32_t switchingMaxOperatorAtNode;
     SearchSettings();
 

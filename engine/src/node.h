@@ -207,7 +207,7 @@ public:
             if(isMaxOperator) {
                 float maxValue = value;
                 if (d->childNodes[childIdx] != nullptr) {
-                    maxValue = -scoreChildQValueMax(get_child_node(childIdx));
+                    maxValue = -scoreChildQValueMax(get_child_node(childIdx), searchSettings);
                 }
                 d->qValues[childIdx] = maxValue;
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
@@ -245,7 +245,7 @@ public:
      */
     void revert_virtual_loss(ChildIdx childIdx, float virtualLoss);
 
-    float scoreChildQValueMax(Node* node);
+    float scoreChildQValueMax(const Node* node, const SearchSettings* searchSettings);
 
     bool is_playout_node() const;
 
