@@ -683,7 +683,9 @@ float Node::scoreChildQValueMax(const Node* node, const SearchSettings* searchSe
         }
 
     }
-    assert(maxQValue > -2.0);
+    if (maxQValue == -2.0) {
+        maxQValue = node->d->qValues[argmax(d->childNumberVisits)];
+    }
     return maxQValue;
 }
 
