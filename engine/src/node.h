@@ -206,7 +206,7 @@ public:
             //float oldQValue = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
             if(isMaxOperator) {
                 float maxValue = value;
-                if (get_child_node(childIdx) != nullptr) {
+                if (d->childNodes[childIdx] != nullptr ) {
                     maxValue = -scoreChildQValueMax(get_child_node(childIdx), searchSettings, -value);
                 }
                 d->qValues[childIdx] = maxValue;

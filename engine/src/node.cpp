@@ -675,21 +675,22 @@ void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
 
 float Node::scoreChildQValueMax(const Node* node, const SearchSettings* searchSettings, float value) {
     float maxQValue = -2.0;
-    for (int i = 0; i < node->d->qValues.size(); ++i) {
-        if (node->get_child_node(i) != nullptr) {
-            if (node->get_child_number_visits(i) >= searchSettings->maxAtVisit) {
-                maxQValue = max(maxQValue, node->d->qValues[i]);
+    try {
+        for (int i = 0; i < node->d->qValues.size(); ++i) {
+            if (node->d->childNodes[i] != nullptr) {
+                if (node->get_child_number_visits(i) >= searchSettings->maxAtVisit) {
+                    maxQValue = max(maxQValue, node->d->qValues[i]);
+                }
             }
         }
-    }
-    if (maxQValue == -2.0) {
-        try {
+        if (maxQValue == -2.0) {
             maxQValue = node->d->qValues[argmax(node->d->childNumberVisits)];
         }
-        catch(...){
-            maxQValue = value;
-        }
     }
+    catch (...) {
+        maxQValue = value;
+    }
+    
     return maxQValue;
 }
 
