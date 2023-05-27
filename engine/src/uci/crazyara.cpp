@@ -718,7 +718,7 @@ void CrazyAra::init_search_settings()
     else {
         searchSettings.backupOperator = BACKUP_MAX;
     }
-    searchSettings.maxAtVisit = Options["Centi_Minimax_Weight"] / 100.0f;
+    searchSettings.maxAtVisit = Options["Max_At_Visits"];
     searchSettings.switchingMaxOperatorAtNode = Options["Switching_Max_Operator_At_Node"];
     
 }
@@ -727,7 +727,7 @@ void CrazyAra::init_play_settings()
 {
     playSettings.initTemperature = Options["Centi_Temperature"] / 100.0f;
     playSettings.temperatureMoves = Options["Temperature_Moves"];
-    playSettings.temperatureDecayFactor = Options["Max_At_Visits"];
+    playSettings.temperatureDecayFactor = Options["Centi_Temperature_Decay"] / 100.0f;
     playSettings.quantileClipping = Options["Centi_Quantile_Clipping"] / 100.0f;
 #ifdef USE_RL
     playSettings.meanInitPly = Options["MeanInitPly"];
