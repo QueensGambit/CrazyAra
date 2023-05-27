@@ -673,7 +673,7 @@ void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
     unlock();
 }
 
-float Node::scoreChildQValueMax(const Node* node, const SearchSettings* searchSettings, float value) {
+float Node::scoreChildQValueMax(const Node* node, const SearchSettings* searchSettings) {
     float maxQValue = -2.0;
     for (int i = 0; i < node->d->qValues.size(); ++i) {
         if (node->d->childNodes[i] != nullptr) {
@@ -686,9 +686,7 @@ float Node::scoreChildQValueMax(const Node* node, const SearchSettings* searchSe
         try {
             maxQValue = node->d->qValues[argmax(node->d->childNumberVisits)];
         }
-        catch(...){
-            maxQValue = value;
-        }
+        catch(...){}
     }
     return maxQValue;
 }
