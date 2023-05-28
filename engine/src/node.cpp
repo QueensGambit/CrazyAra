@@ -683,7 +683,7 @@ float Node::score_child_qValue_max(const Node* node, const SearchSettings* searc
             }
         }
     }
-    if (maxQValue == -2.0) {
+    if (maxQValue < -1.0 || maxQValue > 1) {
         int most_visit_node_idx = argmax(node->d->childNumberVisits);
         maxQValue = compute_original_q_value(node->d->qValues[most_visit_node_idx], node->d->childNumberVisits[most_visit_node_idx], node->d->virtualLossCounter[most_visit_node_idx], searchSettings);
     }

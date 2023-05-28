@@ -835,7 +835,7 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
                 it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, false);
             break;
         case BACKUP_MAX:
-            if (it->node->get_child_node(it->childIdx) == nullptr || it->node->get_child_node(it->childIdx) == NULL) {
+            if (it->node->get_child_node(it->childIdx) == nullptr) {
                 freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal, false) :
                     it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal, false);
             }
