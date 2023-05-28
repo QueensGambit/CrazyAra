@@ -203,14 +203,14 @@ public:
             d->qValues[childIdx] = value;
         }
         else {
-            //float oldQValue = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
             if(isMaxOperator) {
                 float maxValue = value;
                 if (d->childNodes[childIdx] != nullptr ) {
                     maxValue = -score_child_qValue_max(get_child_node(childIdx), searchSettings);
                 }
-                d->qValues[childIdx] = (double(maxValue) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
+                //d->qValues[childIdx] = (double(maxValue) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
+                d->qValues[childIdx] = re_apply_virtual_loss(maxValue, childIdx, searchSettings->virtualLoss);
                 assert(!isnan(d->qValues[childIdx]));
             }
             else {
@@ -246,6 +246,8 @@ public:
     void revert_virtual_loss(ChildIdx childIdx, float virtualLoss);
 
     float score_child_qValue_max(const Node* node, const SearchSettings* searchSettings);
+
+    float re_apply_virtual_loss(float value, ChildIdx childIdx, int virtualLoss);
 
     float compute_original_q_value(float qValue, int numberVisits, int virtualLossCounter, const SearchSettings* searchSettings);
 

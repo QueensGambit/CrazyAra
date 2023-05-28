@@ -694,6 +694,14 @@ float Node::compute_original_q_value(float qValue, int numberVisits, int virtual
     return (double(qValue) * numberVisits + (searchSettings->virtualLoss * (searchSettings->virtualLoss + virtualLossCounter))) / (numberVisits - searchSettings->virtualLoss * (virtualLossCounter + searchSettings->virtualLoss));
 }
 
+float Node::re_apply_virtual_loss(float value, ChildIdx childIdx, int virtualLoss) {
+    float tempValue = value;
+    for (int i = 0; i < d->virtualLossCounter[childIdx]; i++) {
+        tempValue = (double(tempValue) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx] + virtualLoss - i) * virtualLoss) - virtualLoss) / (d->childNumberVisits[childIdx] - i * virtualLoss);
+    }
+    return tempValue;
+}
+
 bool Node::is_playout_node() const
 {
     return d != nullptr;
