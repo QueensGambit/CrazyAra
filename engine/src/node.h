@@ -209,7 +209,7 @@ public:
                 if (d->childNodes[childIdx] != nullptr ) {
                     maxValue = -score_child_qValue_max(get_child_node(childIdx), searchSettings);
                 }
-                d->qValues[childIdx] = (double(maxValue) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx]) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
+                d->qValues[childIdx] = (double(maxValue) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
                 assert(!isnan(d->qValues[childIdx]));
             }

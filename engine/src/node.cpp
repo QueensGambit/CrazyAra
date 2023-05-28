@@ -691,7 +691,7 @@ float Node::score_child_qValue_max(const Node* node, const SearchSettings* searc
 }
 
 float Node::compute_original_q_value(float qValue, int numberVisits, int virtualLossCounter, const SearchSettings* searchSettings) {
-    return (double(qValue) * (numberVisits - virtualLossCounter) + searchSettings->virtualLoss * virtualLossCounter) / (numberVisits - searchSettings->virtualLoss * virtualLossCounter);
+    return (double(qValue) * numberVisits + (searchSettings->virtualLoss * (searchSettings->virtualLoss + virtualLossCounter))) / (numberVisits - searchSettings->virtualLoss * (virtualLossCounter + searchSettings->virtualLoss));
 }
 
 bool Node::is_playout_node() const
