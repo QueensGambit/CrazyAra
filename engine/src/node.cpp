@@ -670,10 +670,7 @@ void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
     unlock();
 }
 
-float Node::score_child_qValue_max(const Node* node, const SearchSettings* searchSettings, float value) {
-    if (node->d == nullptr) {
-        return value;
-    }
+float Node::score_child_qValue_max(const Node* node, const SearchSettings* searchSettings) {
     float maxQValue = -2.0;
     for (uint_fast16_t i = 0; i < node->d->qValues.size(); ++i) {
         if (node->d->childNodes[i] != nullptr) {
@@ -699,7 +696,7 @@ float Node::re_apply_virtual_loss(float value, ChildIdx childIdx, uint_fast32_t 
         tempValue = (double(tempValue) * (d->childNumberVisits[childIdx] - (d->virtualLossCounter[childIdx] + virtualLoss - i) * virtualLoss) - virtualLoss) / (d->childNumberVisits[childIdx] - i * virtualLoss);
     }
     return tempValue;*/
-    return (double(value) * d->childNumberVirtualVisits[childIdx] - d->virtualLossCounter[childIdx] * virtualLoss) / (d->childNumberVirtualVisits[childIdx] + d->virtualLossCounter[childIdx] * virtualLoss);
+    return (double(value) * (d->childNumberVirtualVisits[childIdx] - d->virtualLossCounter[childIdx] * virtualLoss) - d->virtualLossCounter[childIdx] * virtualLoss ) / d->childNumberVirtualVisits[childIdx];
 }
 
 bool Node::is_playout_node() const
