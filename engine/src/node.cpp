@@ -505,7 +505,10 @@ bool Node::has_nn_results() const
 }
 
 void Node::apply_virtual_loss_to_child(ChildIdx childIdx, uint_fast32_t virtualLoss)
-{
+{   
+    if (d->virtualLossCounter[childIdx] == 0) {
+        d->childNumberVirtualVisits = d->childNumberVisits;
+    }
     // update the stats of the parent node
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
     // temporarily reduce the attraction of this node by applying a virtual loss /
