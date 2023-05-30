@@ -287,8 +287,6 @@ public:
 
     void apply_virtual_loss_to_child(ChildIdx childIdx, uint_fast32_t virtualLoss);
 
-    void apply_virtual_loss_to_child_without_changing_qvalue(ChildIdx childIdx, uint_fast32_t virtualLoss);
-
     void increment_no_visit_idx();
     void fully_expand_node();
 
