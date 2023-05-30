@@ -205,7 +205,7 @@ public:
         else {
             if(isMaxOperator) {
                 float maxValue = value;
-                if (d->childNodes[childIdx] != nullptr ) {
+                if (d->childNodes[childIdx] != nullptr && d->childNodes[childIdx]->d != nullptr) {
                     maxValue = -score_child_qValue_max(get_child_node(childIdx), searchSettings);
                 }
                 //d->qValues[childIdx] = (double(maxValue) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
