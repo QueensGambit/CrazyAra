@@ -249,9 +249,9 @@ public:
 
     float score_child_qValue_max(const Node* node, const SearchSettings* searchSettings, float value);
 
-    float re_apply_virtual_loss(float value, ChildIdx childIdx, int virtualLoss);
+    float re_apply_virtual_loss(float value, ChildIdx childIdx, uint_fast32_t virtualLoss);
 
-    float compute_original_q_value(float qValue, int numberVisits, int virtualLossCounter, const SearchSettings* searchSettings);
+    float compute_original_q_value(float qValue, uint32_t numberVisits, uint8_t virtualLossCounter, uint_fast32_t virtualLoss);
 
     bool is_playout_node() const;
 
