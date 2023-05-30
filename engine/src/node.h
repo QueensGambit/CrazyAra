@@ -205,10 +205,12 @@ public:
         else {
             assert(d->childNumberVisits[childIdx] != 0);
             if(isMaxOperator) {
-                float maxValue = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
-                maxValue = compute_original_q_value(maxValue, d->childNumberVisits[childIdx], d->virtualLossCounter[childIdx] + searchSettings->virtualLoss, searchSettings->virtualLoss);
+                float maxValue = value;
+                /*float maxValue = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+                maxValue = compute_original_q_value(maxValue, d->childNumberVisits[childIdx], d->virtualLossCounter[childIdx], searchSettings->virtualLoss);*/
                 if (d->childNodes[childIdx] != nullptr) {
-                    maxValue = max(maxValue, - score_child_qValue_max(get_child_node(childIdx), searchSettings));
+                    /*maxValue = max(maxValue, - score_child_qValue_max(get_child_node(childIdx), searchSettings));*/
+                    maxValue = -score_child_qValue_max(get_child_node(childIdx), searchSettings);
                 }
                 //d->qValues[childIdx] = (double(maxValue) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
