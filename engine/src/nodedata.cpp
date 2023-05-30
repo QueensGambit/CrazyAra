@@ -42,7 +42,7 @@ void NodeData::reserve_initial_space()
 
     // # visit count of all its child nodes
     childNumberVisits.reserve(initSize);
-
+    childNumberVirtualVisits.reserve(initSize);
     // q: combined action value which is calculated by the averaging over all action values
     // u: exploration metric for each child node
     // (the q and u values are stacked into 1 list in order to speed-up the argmax() operation

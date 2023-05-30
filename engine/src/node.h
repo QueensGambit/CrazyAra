@@ -196,7 +196,7 @@ public:
         update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
         valueSum += value;
         ++realVisitsSum;
-        //float newQValue = 0;
+        d->childNumberVirtualVisits[childIdx] -= searchSettings->virtualLoss;
         if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
@@ -221,7 +221,6 @@ public:
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) + value) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx] + 1);
                 assert(!isnan(d->qValues[childIdx]));
             }
-            
         }
 
         
@@ -234,6 +233,9 @@ public:
         }
         if (solveForTerminal) {
             solve_for_terminal(childIdx, searchSettings);
+        }
+        if (d->virtualLossCounter[childIdx] == 0) {
+            d->childNumberVirtualVisits[childIdx] = d->childNumberVisits[childIdx];
         }
         unlock();
     }

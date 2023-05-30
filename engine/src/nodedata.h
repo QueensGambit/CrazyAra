@@ -89,6 +89,7 @@ class Node;
 struct NodeData
 {
     DynamicVector<uint32_t> childNumberVisits;
+    DynamicVector<uint32_t> childNumberVirtualVisits;
     DynamicVector<float> qValues;
     vector<shared_ptr<Node>> childNodes;
     DynamicVector<uint8_t> virtualLossCounter;
