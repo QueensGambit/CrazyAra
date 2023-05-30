@@ -676,7 +676,7 @@ float Node::score_child_qValue_max(const Node* node, const SearchSettings* searc
     }
     float maxQValue = -2.0;
     for (int i = 0; i < node->d->qValues.size(); ++i) {
-        if (node->d->childNodes[i] != nullptr) {
+        if (node->d->childNodes[i] != nullptr && node->d->childNodes[i]->d != nullptr) {
             if (node->get_child_number_visits(i) >= searchSettings->maxAtVisit) {
                 maxQValue = max(maxQValue, compute_original_q_value(node->d->qValues[i], node->d->childNumberVisits[i], node->d->virtualLossCounter[i], searchSettings));
             }

@@ -203,6 +203,7 @@ public:
             d->qValues[childIdx] = value;
         }
         else {
+            assert(d->childNumberVisits[childIdx] != 0);
             if(isMaxOperator) {
                 float maxValue = value;
                 if (d->childNodes[childIdx] != nullptr) {
@@ -211,16 +212,15 @@ public:
                 //d->qValues[childIdx] = (double(maxValue) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
                 d->qValues[childIdx] = re_apply_virtual_loss(maxValue, childIdx, searchSettings->virtualLoss);
-                assert(!isnan(d->qValues[childIdx]));
             }
             else {
 
                 // revert virtual loss and update the Q-value
-                assert(d->childNumberVisits[childIdx] != 0);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx]) + value) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss * d->virtualLossCounter[childIdx] + 1);
-                assert(!isnan(d->qValues[childIdx]));
+                
             }
+            assert(!isnan(d->qValues[childIdx]));
         }
 
         
