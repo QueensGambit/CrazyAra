@@ -673,7 +673,8 @@ void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
     unlock();
 }
 
-float Node::score_child_qValue_max(const Node* node, const SearchSettings* searchSettings) {
+float Node::score_child_qValue_max(Node* node, const SearchSettings* searchSettings) {
+    node->lock();
     float maxQValue = -2.0;
     for (uint_fast16_t i = 0; i < node->d->qValues.size(); ++i) {
         if (node->d != nullptr && node->d->childNumberVirtualVisits[i] >= searchSettings->maxAtVisit) {
@@ -681,6 +682,7 @@ float Node::score_child_qValue_max(const Node* node, const SearchSettings* searc
             maxQValue = max(maxQValue, value); 
         }
     }
+    node->unlock();
     return maxQValue;
 }
 
