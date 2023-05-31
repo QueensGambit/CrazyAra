@@ -211,7 +211,10 @@ public:
                 maxValue = compute_original_q_value(maxValue, d->childNumberVisits[childIdx], d->virtualLossCounter[childIdx], searchSettings->virtualLoss);*/
                 if (d->childNodes[childIdx] != nullptr && d->childNodes[childIdx]->is_playout_node()) {
                     maxValue = -score_child_qValue_max(get_child_node(childIdx), searchSettings);
-                    if (d->virtualLossCounter[childIdx] > 0){
+                    if (maxValue < -1.0) {
+                        maxValue = value;
+                    }
+                    else if (d->virtualLossCounter[childIdx] > 0){
                         maxValue = re_apply_virtual_loss(maxValue, childIdx, searchSettings->virtualLoss);
                     }
                 }
