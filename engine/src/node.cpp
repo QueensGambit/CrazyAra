@@ -677,7 +677,7 @@ float Node::score_child_qValue_max(Node* node, const SearchSettings* searchSetti
     node->lock();
     float maxQValue = -2.0;
     for (uint_fast16_t i = 0; i < node->d->qValues.size(); ++i) {
-        if (node->d != nullptr && node->d->childNumberVirtualVisits[i] >= searchSettings->maxAtVisit) {
+        if (node->d != nullptr && node->d->childNumberVisits[i] >= searchSettings->maxAtVisit) {
             float value = compute_original_q_value(node->d->qValues[i], node->d->childNumberVirtualVisits[i], node->d->virtualLossCounter[i], searchSettings->virtualLoss);
             maxQValue = max(maxQValue, value); 
         }
@@ -687,15 +687,21 @@ float Node::score_child_qValue_max(Node* node, const SearchSettings* searchSetti
 }
 
 float Node::compute_original_q_value(float qValue, uint32_t numberVisits, uint8_t virtualLossCounter, uint_fast32_t virtualLoss) {
-    if (virtualLossCounter < 1)
-        return qValue;
-    return (double(qValue) * (numberVisits + 1) + (virtualLossCounter * virtualLoss + virtualLoss)) / (numberVisits - virtualLoss * virtualLossCounter);
+    mtx.lock();
+    float result = qValue;
+    if (virtualLossCounter > 0)
+      float result = (double(qValue) * (numberVisits + 1) + (virtualLossCounter * virtualLoss + virtualLoss)) / (numberVisits - virtualLoss * virtualLossCounter);
+    mtx.unlock();
+    return result;
 }
 
 float Node::re_apply_virtual_loss(float value, ChildIdx childIdx, uint_fast32_t virtualLoss) {
+    mtx.lock();
+    float result = value;
     if (d->virtualLossCounter[childIdx] < 1)
-        return value;
-    return (double(value) * (d->childNumberVirtualVisits[childIdx] - d->virtualLossCounter[childIdx] * virtualLoss) - d->virtualLossCounter[childIdx] * virtualLoss ) / d->childNumberVirtualVisits[childIdx];
+        result = (double(value) * (d->childNumberVirtualVisits[childIdx] - d->virtualLossCounter[childIdx] * virtualLoss) - d->virtualLossCounter[childIdx] * virtualLoss) / d->childNumberVirtualVisits[childIdx];
+    mtx.unlock();
+    return result;
 }
 
 bool Node::is_playout_node() const
