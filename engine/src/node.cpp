@@ -674,22 +674,20 @@ void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
 }
 
 float Node::score_child_qValue_max(const Node* node, const SearchSettings* searchSettings) {
-    float maxQValue = -2.0;
-    for (uint_fast16_t i = 0; i < node->d->qValues.size(); ++i) {
+    //float maxQValue = -2.0;
+    /*for (uint_fast16_t i = 0; i < node->d->qValues.size(); ++i) {
         if (node->d->childNodes[i] != nullptr) {
             if (node->d->childNumberVisits[i] >= searchSettings->maxAtVisit) {
                 float value = node->d->qValues[i];
                 if (node->d->virtualLossCounter[i] > 0)
-                    value = compute_original_q_value(node->d->qValues[i], node->d->childNumberVirtualVisits[i], node->d->virtualLossCounter[i], searchSettings->virtualLoss);
+                    value = compute_original_q_value(value, node->d->childNumberVirtualVisits[i], node->d->virtualLossCounter[i], searchSettings->virtualLoss);
                 maxQValue = max(maxQValue, value);
                 
             }
         }
-    }
-    if (maxQValue < -1.0 || maxQValue > 1.0) {
-        uint_fast16_t most_visit_node_idx = argmax(node->d->childNumberVisits);
-        maxQValue = compute_original_q_value(node->d->qValues[most_visit_node_idx], node->d->childNumberVirtualVisits[most_visit_node_idx], node->d->virtualLossCounter[most_visit_node_idx], searchSettings->virtualLoss);
-    }
+    }*/
+    uint_fast16_t most_visit_node_idx = argmax(node->d->childNumberVisits);
+    float maxQValue = compute_original_q_value(node->d->qValues[most_visit_node_idx], node->d->childNumberVirtualVisits[most_visit_node_idx], node->d->virtualLossCounter[most_visit_node_idx], searchSettings->virtualLoss);
     return maxQValue;
 }
 
