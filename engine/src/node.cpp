@@ -675,7 +675,7 @@ float Node::score_child_qValue_max(const Node* node, const SearchSettings* searc
     for (uint_fast16_t i = 0; i < node->d->qValues.size(); ++i) {
         if (node->d->childNodes[i] != nullptr) {
             if (node->d->childNumberVisits[i] >= searchSettings->maxAtVisit) {
-                maxQValue = max(maxQValue, compute_original_q_value(node->d->qValues[i], node->d->childNumberVisits[i], node->d->virtualLossCounter[i], searchSettings->virtualLoss));
+                maxQValue = max(maxQValue, compute_original_q_value(node->d->qValues[i], node->d->childNumberVirtualVisits[i], node->d->virtualLossCounter[i], searchSettings->virtualLoss));
             }
         }
     }
@@ -687,7 +687,7 @@ float Node::score_child_qValue_max(const Node* node, const SearchSettings* searc
 }
 
 float Node::compute_original_q_value(float qValue, uint32_t numberVisits, uint8_t virtualLossCounter, uint_fast32_t virtualLoss) {
-    return (double(qValue) * numberVisits + (virtualLoss * (virtualLoss + virtualLossCounter))) / (numberVisits - virtualLoss * (virtualLossCounter + virtualLoss));
+    return (double(qValue) * (numberVisits + 1) + (virtualLossCounter * virtualLoss + virtualLoss)) / (numberVisits - virtualLoss * virtualLossCounter);
 }
 
 float Node::re_apply_virtual_loss(float value, ChildIdx childIdx, uint_fast32_t virtualLoss) {
