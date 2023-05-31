@@ -51,7 +51,7 @@ SearchSettings::SearchSettings() :
     mctsSolver(false),
     searchPlayerMode(MODE_TWO_PLAYER),
     backupOperator(BACKUP_MEAN),
-    maxAtVisit(100),
+    maxAtVisit(20),
     switchingMaxOperatorAtNode(800)
 {
 
