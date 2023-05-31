@@ -687,20 +687,16 @@ float Node::score_child_qValue_max(Node* node, const SearchSettings* searchSetti
 }
 
 float Node::compute_original_q_value(float qValue, uint32_t numberVisits, uint8_t virtualLossCounter, uint_fast32_t virtualLoss) {
-    mtx.lock();
     float result = qValue;
     if (virtualLossCounter > 0)
       float result = (double(qValue) * (numberVisits + 1) + (virtualLossCounter * virtualLoss + virtualLoss)) / (numberVisits - virtualLoss * virtualLossCounter);
-    mtx.unlock();
     return result;
 }
 
 float Node::re_apply_virtual_loss(float value, ChildIdx childIdx, uint_fast32_t virtualLoss) {
-    mtx.lock();
     float result = value;
-    if (d->virtualLossCounter[childIdx] < 1)
+    if (d->virtualLossCounter[childIdx] > 0)
         result = (double(value) * (d->childNumberVirtualVisits[childIdx] - d->virtualLossCounter[childIdx] * virtualLoss) - d->virtualLossCounter[childIdx] * virtualLoss) / d->childNumberVirtualVisits[childIdx];
-    mtx.unlock();
     return result;
 }
 
