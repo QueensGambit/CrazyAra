@@ -210,13 +210,14 @@ public:
                 /*float maxValue = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
                 maxValue = compute_original_q_value(maxValue, d->childNumberVisits[childIdx], d->virtualLossCounter[childIdx], searchSettings->virtualLoss);*/
                 if (d->childNodes[childIdx] != nullptr) {
-                    maxValue = -score_child_qValue_max(get_child_node(childIdx), searchSettings);
-                    if (maxValue < -1.0 || maxValue > 1.0) {
-                        maxValue = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+                    float qMax = -score_child_qValue_max(get_child_node(childIdx), searchSettings);
+                    maxValue = qMax;
+                    if (d->virtualLossCounter[childIdx] > 0){
+                        maxValue = re_apply_virtual_loss(qMax, childIdx, searchSettings->virtualLoss);
                     }
-                    else if (d->virtualLossCounter[childIdx] > 0){
-                        maxValue = re_apply_virtual_loss(maxValue, childIdx, searchSettings->virtualLoss);
-                    }
+                }
+                if (isnan(maxValue) || maxValue < -1.0 || maxValue > 1.0) {
+                    maxValue = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
                 }
                 //d->qValues[childIdx] = (double(maxValue) * (d->childNumberVisits[childIdx] - searchSettings->virtualLoss - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
                 //d->qValues[childIdx] = (double(d->qValues[childIdx]) * (d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss) - (d->virtualLossCounter[childIdx] * searchSettings->virtualLoss)) / double(d->childNumberVisits[childIdx]);
