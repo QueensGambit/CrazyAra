@@ -745,4 +745,4 @@ def value_loss_beta_uncertainty(mu, beta, value_target, nb_rollouts):
     value_target_transform = (value_target + 1) / 2
     nb_wins = value_target_transform * nb_rollouts
     nb_losses = nb_rollouts - nb_wins
-    return 1/nb_rollouts * (beta_func(alpha, beta).log() - beta_func(alpha+nb_wins, beta+nb_losses).log())
+    return (1/nb_rollouts * (beta_func(alpha, beta).log() - beta_func(alpha+nb_wins, beta+nb_losses).log())).mean()
