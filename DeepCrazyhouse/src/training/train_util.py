@@ -84,5 +84,7 @@ def _get_pytorch_metrics(train_config):
         metrics_pytorch['plys_to_end_loss'] = pytorch_metrics.MSE()
     if train_config.use_uncertainty:
         metrics_pytorch['uncertainty_loss'] = pytorch_metrics.MSE()
+    if train_config.use_beta_uncertainty:
+        metrics_pytorch['value_loss'] = pytorch_metrics.BetaLoss()
 
     return metrics_pytorch

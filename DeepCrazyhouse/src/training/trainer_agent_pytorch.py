@@ -31,6 +31,7 @@ from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, return_metrics_and_stop_training,\
     value_to_wdl_label, prepare_plys_label
+from DeepCrazyhouse.src.training.metrics_pytorch import value_loss_beta_uncertainty
 
 
 class TrainerAgentPytorch:
@@ -648,7 +649,11 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, tc: TrainCo
                 metrics["uncertainty_loss"].update(preds=torch.flatten(uncertainty_out), labels=uncertainty_label)
 
             # update the metrics
-            metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label)
+            if tc.use_beta_uncertainty:
+                metrics["value_loss"].update(preds_mu=torch.flatten(value_out), preds_beta=torch.flatten(uncertainty_out),
+                                             labels=value_label, nb_rollouts=800)
+            else:
+                metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label)
             metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
                                           labels=policy_label)
             metrics["value_acc_sign"].update(preds=torch.flatten(value_out), labels=value_label)
@@ -720,29 +725,3 @@ def create_tensor_dataset(x, y_value, y_policy, plys_to_end, eval_single, eval_s
         torch_tensor_list.append(torch.Tensor(uncertainty_train))
     dataset = TensorDataset(*torch_tensor_list)
     return dataset
-
-
-def gamma_func(x):
-    """Returns the gamma function output x: gamma(x) = (x-1)!"""
-    return x.lgamma().exp()
-
-
-def beta_func(x, y):
-    """Returns the beta function output of x: beta(x) = (gamma(x)gamma(y))/gamma(x+y)"""
-    return (gamma_func(x)*gamma_func(y))/gamma_func(x+y)
-
-
-def value_loss_beta_uncertainty(mu, beta, value_target, nb_rollouts):
-    """Computes the loss based on the beta distribution.
-    :param mu: Value output (expected to be in [-1,+1]
-    :param beta: Beta parameter of the beta function
-    :param value_target: Value target to learn from in [-1,+1]
-    :param nb_rollouts: Confidence of how accurate the value_target is. Based on the number of MCTS simulations.
-    :return Returns the joint loss between the value loss and confidence
-    """
-    mu_transform = (mu + 1) / 2
-    alpha = (beta * mu_transform) / (1 - mu_transform)
-    value_target_transform = (value_target + 1) / 2
-    nb_wins = value_target_transform * nb_rollouts
-    nb_losses = nb_rollouts - nb_wins
-    return (1/nb_rollouts * (beta_func(alpha, beta).log() - beta_func(alpha+nb_wins, beta+nb_losses).log())).mean()
