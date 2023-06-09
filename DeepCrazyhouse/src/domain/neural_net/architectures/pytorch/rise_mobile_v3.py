@@ -88,7 +88,7 @@ class RiseV3(Module):
                  use_mlp_wdl_ply=False,
                  use_transformers=None, path_dropout=0, conv_block="mobile_bottlekneck_res_block",
                  kernel_5_channel_ratio=None, round_channels_to_next_32=False,
-                 use_uncertainty=False,
+                 use_uncertainty=False, use_beta_uncertainty=False
                  ):
         """
         RISEv3 architecture
@@ -122,6 +122,7 @@ class RiseV3(Module):
         :param kernel_5_channel_ratio: Downscale factor for channels_operating in case of 5x5 kernels
         :param round_channels_to_next_32: Rounds all number of channels within the network to the closest multiple of 32
         :param use_uncertainty: Decides if an uncertainty head will be used.
+        :param use_beta_uncertainty: Decides if uncertainty presentation using the beta distribution shall be used.
         :return: symbol
         """
         super(RiseV3, self).__init__()
@@ -165,9 +166,9 @@ class RiseV3(Module):
         self.policy_head = _PolicyHead(board_height, board_width, channels, channels_policy_head, n_labels,
                                        act_types[-1], select_policy_from_plane)
 
-        if self.use_uncertainty:
+        if self.use_uncertainty or use_beta_uncertainty:
             self.uncertainty_head = _UncertaintyHead(board_height, board_width, channels, channels_value_head,
-                                                     value_fc_size, act_types[-1])
+                                                     value_fc_size, act_types[-1], use_beta_uncertainty)
         else:
             self.uncertainty_head = None
 
@@ -211,7 +212,7 @@ def get_rise_v33_model(args):
                    dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
                    kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
                    use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
-                   use_uncertainty=args.use_uncertainty,
+                   use_uncertainty=args.use_uncertainty, use_beta_uncertainty=args.use_beta_uncertainty
                    )
     return model
 
@@ -268,4 +269,5 @@ def create_args_by_train_config(input_shape, tc):
     args.use_plys_to_end = tc.use_plys_to_end
     args.use_mlp_wdl_ply = tc.use_mlp_wdl_ply
     args.use_uncertainty = tc.use_uncertainty
+    args.use_beta_uncertainty = tc.use_beta_uncertainty
     return args

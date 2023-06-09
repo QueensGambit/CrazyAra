@@ -11,7 +11,7 @@ import math
 import torch
 from torch import nn
 from torch.nn import Sequential, Conv1d, Conv2d, BatchNorm2d, ReLU, LeakyReLU, Sigmoid, Tanh, Linear, Hardsigmoid, Hardswish,\
-    Module, AdaptiveAvgPool2d, BatchNorm1d
+    Module, AdaptiveAvgPool2d, BatchNorm1d, Softplus
 from timm.models.layers import DropPath
 
 
@@ -34,6 +34,8 @@ def get_act(act_type):
         return Hardsigmoid()
     if act_type == "hard_swish":
         return Hardswish()
+    if act_type == "softplus":
+        return Softplus()
     raise NotImplementedError
 
 
@@ -383,7 +385,8 @@ class _PolicyHeadFlat(Module):
 
 
 class _UncertaintyHead(Module):
-    def __init__(self, board_height=8, board_width=8, in_channels=256, channels_value_head=8, fc_units=256, act_type="relu"):
+    def __init__(self, board_height=8, board_width=8, in_channels=256, channels_value_head=8, fc_units=256,
+                 act_type="relu", use_beta_uncertainty=False):
         """
         Definition of the uncertainty head.
         It predicts the difference between the initial value prediction and the prediction after a certain number of playouts.
@@ -394,12 +397,13 @@ class _UncertaintyHead(Module):
         self.body = Sequential(Conv2d(in_channels=in_channels, out_channels=channels_value_head, kernel_size=(1, 1), bias=False),
                                BatchNorm2d(num_features=channels_value_head),
                                get_act(act_type))
-
-
+        final_act = "sigmoid"
+        if use_beta_uncertainty:
+            final_act = "softplus"
         self.body_final = Sequential(Linear(in_features=self.nb_flatten, out_features=fc_units),
                                      get_act(act_type),
                                      Linear(in_features=fc_units, out_features=1),
-                                     get_act("sigmoid"))
+                                     get_act(final_act))
 
     def forward(self, x):
         """

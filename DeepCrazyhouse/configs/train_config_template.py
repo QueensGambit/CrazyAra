@@ -123,6 +123,9 @@ class TrainConfig:
     # enables training with uncertainty head and loss
     use_uncertainty: bool = False
 
+    # enables training with uncertainty head and loss based on the beta distribution
+    use_beta_uncertainty: bool = False
+
     # weight the value loss a lot lower than the policy loss in order to prevent overfitting
     val_loss_factor: float = 0.5  # 0.01
     # weight for the wdl loss
