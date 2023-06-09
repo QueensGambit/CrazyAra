@@ -695,7 +695,7 @@ def _extract_model_outputs(model, data, tc: TrainConfig):
     aux_out = wdl_out = plys_out = uncertainty_out = None
     if tc.use_wdl and tc.use_plys_to_end:
         aux_out, wdl_out, plys_out = model_out[2:5]
-    if tc.use_uncertainty:
+    if tc.use_uncertainty or tc.use_beta_uncertainty:
         uncertainty_out = model_out[-1]
 
     return value_out, policy_out, aux_out, wdl_out, plys_out, uncertainty_out
@@ -745,4 +745,4 @@ def value_loss_beta_uncertainty(mu, beta, value_target, nb_rollouts):
     value_target_transform = (value_target + 1) / 2
     nb_wins = value_target_transform * nb_rollouts
     nb_losses = nb_rollouts - nb_wins
-    return 1/nb_rollouts * beta_func(alpha, beta).log() - beta_func(alpha+nb_wins, beta+nb_losses).log()
+    return 1/nb_rollouts * (beta_func(alpha, beta).log() - beta_func(alpha+nb_wins, beta+nb_losses).log())
