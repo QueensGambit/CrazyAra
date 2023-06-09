@@ -31,7 +31,6 @@ from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, return_metrics_and_stop_training,\
     value_to_wdl_label, prepare_plys_label
-from DeepCrazyhouse.src.training.metrics_pytorch import value_loss_beta_uncertainty
 
 
 class TrainerAgentPytorch:
