@@ -323,7 +323,7 @@ class TrainerAgentPytorch:
                                                                                                     self.tc)
         # policy_out = policy_out.softmax(dim=1)
         if self.tc.use_beta_uncertainty:
-            value_loss = value_loss_beta_uncertainty(mu=torch.flatten(value_out), beta=torch.flatten(uncertainty_out),
+            value_loss = value_loss_beta_uncertainty(mu=torch.flatten(value_out), alpha_plus_beta=torch.flatten(uncertainty_out),
                                                      value_target=value_label, nb_rollouts=800)
         else:
             value_loss = self.value_loss(torch.flatten(value_out), value_label)
@@ -736,17 +736,23 @@ def beta_func(x, y):
     return (gamma_func(x)*gamma_func(y))/gamma_func(x+y)
 
 
-def value_loss_beta_uncertainty(mu, beta, value_target, nb_rollouts=800):
+def log_beta_func(a, b):
+    """Returns the log beta function output x: beta(x) = lgamma(x)+lgamma(y) - lgamma(x+y)"""
+    return a.lgamma() + b.lgamma() - (a+b).lgamma()
+
+
+def value_loss_beta_uncertainty(mu, alpha_plus_beta, value_target, nb_rollouts=800):
     """Computes the loss based on the beta distribution.
     :param mu: Value output (expected to be in [-1,+1]
-    :param beta: Beta parameter of the beta function
+    :param alpha_plus_beta: Uncertainty estimate based on alpha+beta
     :param value_target: Value target to learn from in [-1,+1]
     :param nb_rollouts: Confidence of how accurate the value_target is. Based on the number of MCTS simulations.
     :return Returns the joint loss between the value loss and confidence
     """
     mu_transform = (mu + 1) / 2
-    alpha = (beta * mu_transform) / (1 - mu_transform)
+    alpha = mu_transform * alpha_plus_beta
+    beta = alpha_plus_beta - mu_transform * alpha_plus_beta
     value_target_transform = (value_target + 1) / 2
     nb_wins = value_target_transform * nb_rollouts
     nb_losses = nb_rollouts - nb_wins
-    return (1/nb_rollouts * (beta_func(alpha, beta).log() - beta_func(alpha+nb_wins, beta+nb_losses).log())).mean()
+    return (log_beta_func(alpha, beta) - log_beta_func(alpha+nb_wins, beta+nb_losses).mean()) / nb_rollouts
