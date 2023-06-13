@@ -747,7 +747,7 @@ def value_loss_beta_uncertainty(mu, alpha_plus_beta, value_target, nb_rollouts=8
     :param alpha_plus_beta: Uncertainty estimate based on alpha+beta
     :param value_target: Value target to learn from in [-1,+1]
     :param nb_rollouts: Confidence of how accurate the value_target is. Based on the number of MCTS simulations.
-    :return Returns the joint loss between the value loss and confidence
+    :return: Returns the joint loss between the value loss and confidence
     """
     mu_transform = (mu + 1) / 2
     alpha = mu_transform * alpha_plus_beta
@@ -755,4 +755,4 @@ def value_loss_beta_uncertainty(mu, alpha_plus_beta, value_target, nb_rollouts=8
     value_target_transform = (value_target + 1) / 2
     nb_wins = value_target_transform * nb_rollouts
     nb_losses = nb_rollouts - nb_wins
-    return (log_beta_func(alpha, beta) - log_beta_func(alpha+nb_wins, beta+nb_losses).mean()) / nb_rollouts
+    return (log_beta_func(alpha, beta) - log_beta_func(alpha+nb_wins, beta+nb_losses)).mean() / nb_rollouts
