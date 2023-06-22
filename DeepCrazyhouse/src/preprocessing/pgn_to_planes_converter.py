@@ -704,6 +704,38 @@ def export_mate_in_one_scenarios():
 
 
 if __name__ == "__main__":
+    
+    import sys, os
+
+    sys.path.insert(0, '../../../')
+    import os
+    import sys
+    #from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesConverter
+    from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
+
+    enable_color_logging()
+    import logging
+    nb_games_per_file = 1000
+    # Rating cap at 90% cumulative rating for all varaints
+    min_elo_both = {
+        #    "Chess": 2200,
+        #    "Crazyhouse": 2000,
+        #    "Chess960": 1950,
+        #    "King of the Hill": 1925,
+        #    "Three-check": 1900,
+        "Atomic": 1900,
+        #    "Horde": 1900,
+        #    "Racing Kings": 1900
+    }  # is ignored if "use_all_games" is True
+    use_all_games = True
+
+    PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
+                        max_nb_files=0, min_elo_both=min_elo_both, termination_conditions=["Normal"],
+                        log_lvl=logging.DEBUG,
+                        compression='lz4', clevel=5, dataset_type='train',
+                        use_all_games=use_all_games).convert_all_pgns_to_planes()
+
+
     ROOT = logging.getLogger()
     ROOT.setLevel(logging.INFO)
     # export_mate_in_one_scenarios()
