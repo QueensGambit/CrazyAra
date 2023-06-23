@@ -755,4 +755,7 @@ def value_loss_beta_uncertainty(mu, alpha_plus_beta, value_target, nb_rollouts=8
     value_target_transform = (value_target + 1) / 2
     nb_wins = value_target_transform * nb_rollouts
     nb_losses = nb_rollouts - nb_wins
-    return (log_beta_func(alpha, beta) - log_beta_func(alpha+nb_wins, beta+nb_losses)).mean() / nb_rollouts
+    eps = 0.000001
+    lowest_possible_loss = -nb_wins*(value_target_transform+eps).log() - nb_losses*(1-value_target_transform+eps).log()
+    return (log_beta_func(alpha, beta) - log_beta_func(alpha+nb_wins, beta+nb_losses) - lowest_possible_loss).mean()
+
