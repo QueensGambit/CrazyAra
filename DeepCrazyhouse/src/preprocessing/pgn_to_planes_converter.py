@@ -514,11 +514,12 @@ class PGN2PlanesConverter:
         # the games occur in random order due to multiprocessing
         # in order to keep structure we store the result in a dictionary first
         for metadata, game_idx, x, y_value, y_policy, plys_to_end in pool.map(get_planes_from_pgn, params_inp):
-            metadata_dic[game_idx] = metadata
-            x_dic[game_idx] = x
-            y_value_dic[game_idx] = y_value
-            y_policy_dic[game_idx] = y_policy
-            plys_to_end_dic[game_idx] = plys_to_end
+            if len(y_value) > 0:  # only add games that had at least one valid move
+                metadata_dic[game_idx] = metadata
+                x_dic[game_idx] = x
+                y_value_dic[game_idx] = y_value
+                y_policy_dic[game_idx] = y_policy
+                plys_to_end_dic[game_idx] = plys_to_end
         pool.close()
         pool.join()
         t_e = time() - t_s
@@ -718,17 +719,17 @@ if __name__ == "__main__":
     nb_games_per_file = 1000
     # Rating cap at 90% cumulative rating for all varaints
     min_elo_both = {
-        #    "Chess": 2200,
+            "Chess": 1000,
         #    "Crazyhouse": 2000,
         #    "Chess960": 1950,
         #    "King of the Hill": 1925,
         #    "Three-check": 1900,
-        "Atomic": 1900,
+        #"Atomic": 1900,
         #    "Horde": 1900,
         #    "Racing Kings": 1900
     }  # is ignored if "use_all_games" is True
     use_all_games = True
-
+    
     PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
                         max_nb_files=0, min_elo_both=min_elo_both, termination_conditions=["Normal"],
                         log_lvl=logging.DEBUG,
@@ -736,7 +737,20 @@ if __name__ == "__main__":
                         use_all_games=use_all_games).convert_all_pgns_to_planes()
 
 
-    ROOT = logging.getLogger()
-    ROOT.setLevel(logging.INFO)
-    # export_mate_in_one_scenarios()
-    export_pgn_to_datasetfile()
+    PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
+                        max_nb_files=1, min_elo_both=min_elo_both, termination_conditions=["Normal"], log_lvl=logging.DEBUG,
+                        compression='lz4', clevel=5, dataset_type='val', use_all_games=use_all_games).convert_all_pgns_to_planes()
+
+    PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
+                        max_nb_files=1, min_elo_both=min_elo_both, termination_conditions=["Normal"], log_lvl=logging.DEBUG,
+                        compression='lz4', clevel=5, dataset_type='test', use_all_games=use_all_games).convert_all_pgns_to_planes()
+    
+    #PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
+    #                    max_nb_files=1, min_elo_both=min_elo_both, termination_conditions=["Normal"], log_lvl=logging.DEBUG,
+    #                    compression='lz4', clevel=5, dataset_type='mate_in_one').convert_all_pgns_to_planes()
+    
+
+    #ROOT = logging.getLogger()
+    #ROOT.setLevel(logging.INFO)
+    ## export_mate_in_one_scenarios()
+    #export_pgn_to_datasetfile()

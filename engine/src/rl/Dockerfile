@@ -197,4 +197,5 @@ RUN apt-get update -y \
 #    && wget https://raw.githubusercontent.com/ianfab/books/master/crazyhouse.epd
 
 CMD cd /root/CrazyAra/engine/build/ \
+    && git pull \
     && /bin/bash
