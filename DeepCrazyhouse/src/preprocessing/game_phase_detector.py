@@ -81,11 +81,11 @@ def get_game_phase(board, definition="lichess"):
         mixedness_score = get_mixedness(board)
 
         if num_majors_and_minors <= 6:
-            return "endgame", num_majors_and_minors, backrank_sparse, mixedness_score, 0
+            return "endgame", num_majors_and_minors, backrank_sparse, mixedness_score, 2
         elif num_majors_and_minors <= 10 or backrank_sparse or (mixedness_score > 150):
             return "midgame", num_majors_and_minors, backrank_sparse, mixedness_score, 1
         else:
-            return "opening", num_majors_and_minors, backrank_sparse, mixedness_score, 2
+            return "opening", num_majors_and_minors, backrank_sparse, mixedness_score, 0
 
     else:
         return "not implemented yet"
