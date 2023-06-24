@@ -15,6 +15,7 @@ from DeepCrazyhouse.src.domain.variants.output_representation import move_to_pol
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.domain.variants.game_state import mirror_policy
+from DeepCrazyhouse.src.preprocessing.game_phase_detector import get_game_phase
 
 
 NB_ITEMS_METADATA = 18  # constant which defines how many meta data items will be stored in a matrix
@@ -125,22 +126,27 @@ def get_planes_from_game(game, mate_in_one=False):
 
         # check if you need to export a mate_in_one_scenario
         if not mate_in_one or plys == len(all_moves) - 1:
-            # build the last move vector by putting the most recent move on top followed by the remaining past moves
-            last_moves = [None] * NB_LAST_MOVES
-            if plys != 0:
-                last_moves[0:min(plys, NB_LAST_MOVES)] = all_moves[max(plys-NB_LAST_MOVES, 0):plys][::-1]
 
-            # receive the board and the evaluation of the current position in plane representation
-            # We don't want to store float values because the integer datatype is cheaper,
-            #  that's why normalize is set to false
-            x_cur = board_to_planes(board, board_occ, normalize=False, mode=main_config["mode"], last_moves=last_moves)
+            # if specified phase is not None
+            # check if the current game phase is the phase the dataset is created for
 
-            # add the evaluation of 1 position to the list
-            x.append(x_cur)
-            y_value.append(y_init)
-            # add the next move defined in policy vector notation to the policy list
-            # the network always sees the board as if he's the white player, that's the move is mirrored fro black
-            y_policy.append(move_to_policy(next_move, mirror_policy=mirror_policy(board)))
+            if main_config["phase"] is None or get_game_phase(board)[4] == main_config["phase"]:
+                # build the last move vector by putting the most recent move on top followed by the remaining past moves
+                last_moves = [None] * NB_LAST_MOVES
+                if plys != 0:
+                    last_moves[0:min(plys, NB_LAST_MOVES)] = all_moves[max(plys-NB_LAST_MOVES, 0):plys][::-1]
+
+                # receive the board and the evaluation of the current position in plane representation
+                # We don't want to store float values because the integer datatype is cheaper,
+                #  that's why normalize is set to false
+                x_cur = board_to_planes(board, board_occ, normalize=False, mode=main_config["mode"], last_moves=last_moves)
+
+                # add the evaluation of 1 position to the list
+                x.append(x_cur)
+                y_value.append(y_init)
+                # add the next move defined in policy vector notation to the policy list
+                # the network always sees the board as if he's the white player, that's the move is mirrored fro black
+                y_policy.append(move_to_policy(next_move, mirror_policy=mirror_policy(board)))
 
         y_init *= -1  # flip the y_init value after each move
         board.push(move)  # push the next move on the board

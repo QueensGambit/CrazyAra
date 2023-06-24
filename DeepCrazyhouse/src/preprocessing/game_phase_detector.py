@@ -1,3 +1,13 @@
+"""
+@file: game_phase_detector.py
+Created on 08.06.2023
+@project: CrazyAra
+@author: HelpstoneX
+
+Analyses a given board state defined by a python-chess object and outputs the game phase according to a given definition
+"""
+
+
 import chess
 import chess.pgn
 import numpy as np
@@ -59,22 +69,23 @@ def get_mixedness(board):
 
 
 def get_game_phase(board, definition="lichess"):
+    """
+    TODO fill docstring
+    """
     if definition == "lichess":
-        """
-        returns the game phase based on the lichess definition implemented in:
-        https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
-        """
+        # returns the game phase based on the lichess definition implemented in:
+        # https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
 
         num_majors_and_minors = get_majors_and_minors_count(board)
         backrank_sparse = is_backrank_sparse(board)
         mixedness_score = get_mixedness(board)
 
         if num_majors_and_minors <= 6:
-            return "endgame", num_majors_and_minors, backrank_sparse, mixedness_score
+            return "endgame", num_majors_and_minors, backrank_sparse, mixedness_score, 0
         elif num_majors_and_minors <= 10 or backrank_sparse or (mixedness_score > 150):
-            return "midgame", num_majors_and_minors, backrank_sparse, mixedness_score
+            return "midgame", num_majors_and_minors, backrank_sparse, mixedness_score, 1
         else:
-            return "opening", num_majors_and_minors, backrank_sparse, mixedness_score
+            return "opening", num_majors_and_minors, backrank_sparse, mixedness_score, 2
 
     else:
         return "not implemented yet"
@@ -118,7 +129,7 @@ if __name__ == "__main__":
 
         for idx, move in enumerate(curr_game.main_line()):
 
-            phase, num_maj_and_min, backrank_sparse, mix_score = get_game_phase(curr_board)
+            phase, num_maj_and_min, backrank_sparse, mix_score, _ = get_game_phase(curr_board)
             print(get_game_phase(curr_board), move)
 
             if curr_phase == "midgame" and phase == "opening":
