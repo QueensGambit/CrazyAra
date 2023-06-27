@@ -165,3 +165,19 @@ class AlphaZeroResnet(torch.nn.Module):
         out = self.body(x)
 
         return process_value_policy_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+
+
+def get_alpha_zero_model(args):
+    """
+    Wrapper definition for AlphaVile models
+    :param args: Argument dictionary
+    :return: pytorch model object
+    """
+
+    model = AlphaZeroResnet(channels=256, channels_value_head=4,
+                            channels_policy_head=args.channels_policy_head,
+                            value_fc_size=256, num_res_blocks=19, act_type='relu',
+                            n_labels=args.n_labels, select_policy_from_plane=args.select_policy_from_plane,
+                            use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end,
+                            use_mlp_wdl_ply=args.use_mlp_wdl_ply)
+    return model
