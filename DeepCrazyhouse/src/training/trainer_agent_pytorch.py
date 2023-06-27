@@ -534,7 +534,7 @@ def export_model(model, batch_sizes, input_shape, dir=Path('.'), torch_cpu=True,
 
 
 def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path, model_prefix: str,
-                   has_auxiliary_output: bool, dynamic_batch_size: bool) -> None:
+                   has_auxiliary_output: bool, dynamic_batch_size: bool, input_version=None) -> None:
     """
     Exports the model to ONNX format to allow later import in TensorRT.
 
@@ -545,6 +545,8 @@ def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path,
     :param model_prefix: Model prefix name
     :param has_auxiliary_output: Determines if the model has an auxiliary output
     :param dynamic_batch_size: Whether to export model with dynamic batch size
+    :param input_version: Can be used to specify the input representation version e.g. "3.0" for chess models.
+    If none, the version will be read from the main_config file instead. It is used for labelling the onnx file.
     :return:
     """
     if has_auxiliary_output:
@@ -562,7 +564,10 @@ def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path,
     else:
         dynamic_axes = None
 
-    onnx_name = f"{model_prefix}-v{main_config['version']}.0"
+    if input_version is None:
+        input_version = f"{main_config['version']}.0"
+
+    onnx_name = f"{model_prefix}-v{input_version}"
     if not dynamic_batch_size:
         onnx_name += f"-bsize-{batch_size}"
     onnx_name += ".onnx"
