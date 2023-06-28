@@ -358,7 +358,7 @@ void SearchThread::create_mini_batch()
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-            backup_value<true>(newNode->get_value(), searchSettings, trajectoryBuffer, searchSettings->mctsSolver, 2.0f);
+            backup_value<true>(newNode->get_value(), searchSettings, trajectoryBuffer, searchSettings->mctsSolver, 4.0f);
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
@@ -475,8 +475,12 @@ size_t get_random_depth()
 void node_assign_uncertainty_weight(Node *node, const float *auxiliaryOutputs, const float *valueOutputs, size_t batchIdx)
 {
     const float alpha_plus_beta = auxiliaryOutputs[batchIdx];
-    const float mean_weighting = 44.90594;
-    const float weighting = alpha_plus_beta / mean_weighting;
+    const float mu_transform = (valueOutputs[batchIdx]+1.0)/2.0;
+    const float alpha = mu_transform * alpha_plus_beta;
+    const float beta = alpha_plus_beta - mu_transform * alpha_plus_beta;
+    float variance = (alpha*beta)/((std::pow(alpha_plus_beta,2)) * (alpha_plus_beta+1));
+    variance += 0.001;
+    const float median_weighting = 206.987;
+    const float weighting = (1.0/variance) / median_weighting;
     node->set_uncertainty_weight(weighting);
-
 }
