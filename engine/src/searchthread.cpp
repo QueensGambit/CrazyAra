@@ -481,6 +481,15 @@ void node_assign_uncertainty_weight(Node *node, const float *auxiliaryOutputs, c
     float variance = (alpha*beta)/((std::pow(alpha_plus_beta,2)) * (alpha_plus_beta+1));
     variance += 0.001;
     const float median_weighting = 206.987;
-    const float weighting = (1.0/variance) / median_weighting;
+    float weighting = (1.0/variance) / median_weighting;
+
+    // use dummy weighting value
+    int randIdx = rand() % 2;
+    if (randIdx == 0) {
+        weighting = 0.99f;
+    }
+    else {
+        weighting = 1.01f;
+    }
     node->set_uncertainty_weight(weighting);
 }
