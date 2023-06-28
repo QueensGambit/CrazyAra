@@ -284,7 +284,7 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
     node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), mirrorPolicy);
     node_post_process_policy(node, searchSettings->nodePolicyTemperature, searchSettings);
     node_assign_value(node, valueOutputs, tbHits, batchIdx, isRootNodeTB);
-    node_assign_uncertainty_weight(node, auxiliaryOutputs, batchIdx);
+    node_assign_uncertainty_weight(node, auxiliaryOutputs, valueOutputs, batchIdx);
 #ifdef MCTS_STORE_STATES
     node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
 #endif
@@ -472,9 +472,11 @@ size_t get_random_depth()
     return std::ceil(-std::log2(1 - randInt / 100.0) - 1);
 }
 
-void node_assign_uncertainty_weight(Node *node, const float *auxiliaryOutputs, size_t batchIdx)
+void node_assign_uncertainty_weight(Node *node, const float *auxiliaryOutputs, const float *valueOutputs, size_t batchIdx)
 {
-    const float eps = 0.005f;
-    const float weighting = 1.0 / ((auxiliaryOutputs[batchIdx] + eps) * 5);
+    const float alpha_plus_beta = auxiliaryOutputs[batchIdx];
+    const float win_prob = (valueOutputs[batchIdx] + 1) / 2.0;
+    const float mean_weighting = 5.4405;
+    const float weighting = (std::log(alpha_plus_beta) - std::log(win_prob) - std::log(1.0-win_prob)) / mean_weighting;
     node->set_uncertainty_weight(weighting);
 }

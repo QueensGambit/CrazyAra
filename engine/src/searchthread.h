@@ -193,7 +193,15 @@ void run_search_thread(SearchThread *t);
 void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB);
 void node_post_process_policy(Node *node, float temperature, const SearchSettings* searchSettings);
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB);
-void node_assign_uncertainty_weight(Node* node, const float* auxiliaryOutputs, size_t batchIdx);
+
+/**
+ * @brief node_assign_uncertainty_weight Calculates a weighting for the value evaluation for the given node and assign it ot it. The value weighting is based on the (un)certainty output of the neural network and the value evaluation.
+ * @param node Node for which the weighting will be set.
+ * @param auxiliaryOutputs (Un)certainty output of the neural network.
+ * @param valueOutputs Value estimations
+ * @param batchIdx Batch index which was used for the particulare node position.
+ */
+void node_assign_uncertainty_weight(Node *node, const float *auxiliaryOutputs, const float *valueOutputs, size_t batchIdx);
 
 /**
  * @brief random_root_playout Uses random move exploration (epsilon greedy) from the given position. The probability for doing a random move decays by depth.
