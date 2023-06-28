@@ -199,8 +199,8 @@ public:
 
         const float weightDiff = uncertaintyWeight - searchSettings->virtualLoss;
 
-        // if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
-        if (d->childNodes[childIdx]->realVisitsSum == 1) { // TODO: Check if this also works for well MCGS
+        if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
+        //if (d->childNodes[childIdx]->realVisitsSum == 1) { // TODO: Check if this also works for well MCGS
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;

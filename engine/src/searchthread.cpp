@@ -475,8 +475,7 @@ size_t get_random_depth()
 void node_assign_uncertainty_weight(Node *node, const float *auxiliaryOutputs, const float *valueOutputs, size_t batchIdx)
 {
     const float alpha_plus_beta = auxiliaryOutputs[batchIdx];
-    const float win_prob = (valueOutputs[batchIdx] + 1) / 2.0;
-    const float mean_weighting = 5.4405;
-    const float weighting = (std::log(alpha_plus_beta) - std::log(win_prob) - std::log(1.0-win_prob)) / mean_weighting;
+    const float mean_weighting = 48.799;
+    const float weighting = alpha_plus_beta / mean_weighting;
     node->set_uncertainty_weight(weighting);
 }
