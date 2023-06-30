@@ -107,10 +107,11 @@ RUN cd /root \
     && cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
     && pip install -r requirements.txt
 
-# prepare setup for pytorch
-RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
-    pip uninstall -y mxboard \
-    && pip install --upgrade onnx ; \
+# prepare setup for mxnet
+RUN if [ "${FRAMEWORK}" = "mxnet" ]; then \
+    pip install -y mxboard \
+    && pip uninstall -y onnx \
+    && pip install onnx==1.3.0; \
 fi
 
 # Install graphviz for plotting NN architectures
@@ -134,10 +135,6 @@ else \
     && make -j8 ; \
 fi
 
-# Rename the config files
-RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
-    && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
-
 # Install debugging utilities for "coredumpctl gdb"
 RUN apt-get update -y \
      && apt-get install -y systemd-coredump \
@@ -145,5 +142,55 @@ RUN apt-get update -y \
      && apt-get clean \
      && rm -rf /var/lib/apt/lists/*
 
+ENV WORK_DIR /root/CrazyAra/engine/build
+RUN echo "WORK_DIR: " ${WORK_DIR}
+
+ENV MODEL_NAME ClassicAra-sl-model-wdlp-rise3.3-input3.0
+ENV RELEASE_VERION 0.9.5
+
+# Download neural network
+# -------------------------------------
+RUN echo "Downloading neural network ..."
+RUN mkdir ${WORK_DIR}/model \
+    && cd ${WORK_DIR}/model \
+    && mkdir ClassicAra \
+    && cd ClassicAra \
+    && mkdir chess \
+    && cd chess \
+    && wget https://github.com/QueensGambit/CrazyAra/releases/download/${RELEASE_VERION}/${MODEL_NAME}.zip \
+    && unzip ${MODEL_NAME}.zip
+
+# Download network for CrazyHouse
+# -------------------------------------
+RUN echo "Downloading network for crazyhouse..."
+RUN cd ${WORK_DIR}/model \
+    && mkdir CrazyAra \
+    && cd CrazyAra \
+    && mkdir crazyhouse \
+    && cd crazyhouse \
+    && wget https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra-rl-model-os-96.zip \
+    && unzip CrazyAra-rl-model-os-96.zip
+
+# Download cutechess-cli
+# -------------------------------------
+RUN echo "Downloading cutechess-cli..."
+RUN cd /root \
+    && wget https://github.com/QueensGambit/cutechess/releases/download/1.0.0/cutechess-cli-1.0.0.zip \
+    && unzip cutechess-cli-1.0.0.zip -d /root \
+    && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/cutechess-cli/lib
+
+# Download opening books for chess # er findet aktuell /root/cutechess-cli nicht!
+# -------------------------------------
+RUN echo "Downloading opening books for chess..."
+RUN cd /root/cutechess-cli \
+    && wget https://raw.githubusercontent.com/ianfab/books/master/chess.epd
+
+# Download opening books for crazyhouse # er findet aktuell /root/cutechess-cli nicht!
+# -------------------------------------
+RUN echo "Downloading opening books for crazyhouse..."
+RUN cd /root/cutechess-cli \
+    && wget https://raw.githubusercontent.com/ianfab/books/master/crazyhouse.epd \
+
 CMD cd /root/CrazyAra/engine/src/rl/ \
+    && git pull \
     && /bin/bash

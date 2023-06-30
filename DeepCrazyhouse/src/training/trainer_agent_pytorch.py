@@ -29,7 +29,7 @@ from onnxsim import simplify
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, return_metrics_and_stop_training,\
+from DeepCrazyhouse.src.training.train_util import prepare_policy, return_metrics_and_stop_training,\
     value_to_wdl_label, prepare_plys_label
 
 
@@ -265,20 +265,8 @@ class TrainerAgentPytorch:
                                                                                          normalize=self.tc.normalize,
                                                                                          verbose=False,
                                                                                          q_value_ratio=self.tc.q_value_ratio)
-        self.yp_train = prepare_policy(y_policy=self.yp_train, select_policy_from_plane=self.tc.select_policy_from_plane,
-                                  sparse_policy_label=self.tc.sparse_policy_label,
-                                  is_policy_from_plane_data=self.tc.is_policy_from_plane_data)
+        train_loader = get_data_loader(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, self.tc)
 
-        # update the train_data object
-        if self.tc.use_wdl and self.tc.use_plys_to_end:
-            train_dataset = TensorDataset(torch.Tensor(self.x_train), torch.Tensor(self.yv_train),
-                                          torch.Tensor(self.yp_train),
-                                          torch.Tensor(value_to_wdl_label(self.yv_train)),
-                                          torch.Tensor(prepare_plys_label(self.plys_to_end)))
-        else:
-            train_dataset = TensorDataset(torch.Tensor(self.x_train), torch.Tensor(self.yv_train),
-                                          torch.Tensor(self.yp_train))
-        train_loader = DataLoader(train_dataset, shuffle=True, batch_size=self.tc.batch_size, num_workers=self.tc.cpu_count)
         return train_loader
 
     def evaluate(self, train_loader):
@@ -685,3 +673,31 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
         metric_values[metric_name] = metrics[metric_name].compute()
     model.train()  # return back to training mode
     return metric_values
+
+
+def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle):
+    """
+    Returns a DataLoader object for the given numpy arrays.
+    !Note: This function modifies the y_policy!
+    :param x: Input planes
+    :param y_value: Value target
+    :param y_policy: Policy target
+    :param plys_to_end: Plys until the game ends
+    :param tc: Training config object
+    :param shuffle: Decide whether to shuffle the dataset or not
+    """
+    y_policy_prep = prepare_policy(y_policy=y_policy, select_policy_from_plane=tc.select_policy_from_plane,
+                                   sparse_policy_label=tc.sparse_policy_label,
+                                   is_policy_from_plane_data=tc.is_policy_from_plane_data)
+
+    # update the train_data object
+    if tc.use_wdl and tc.use_plys_to_end:
+        dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
+                                      torch.Tensor(y_policy_prep),
+                                      torch.Tensor(value_to_wdl_label(y_value)),
+                                      torch.Tensor(prepare_plys_label(plys_to_end)))
+    else:
+        dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
+                                      torch.Tensor(y_policy_prep))
+    train_loader = DataLoader(dataset, shuffle=shuffle, batch_size=tc.batch_size, num_workers=tc.cpu_count)
+    return train_loader, y_policy
