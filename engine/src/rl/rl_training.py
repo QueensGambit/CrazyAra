@@ -15,21 +15,20 @@ try:
     import mxnet.metric as metric
 except ModuleNotFoundError:
     import mxnet.gluon.metric as metric
-from mxnet import nd
-from mxnet import gluon
 from pathlib import Path
+import torch
 
 sys.path.append("../../../")
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, prepare_plys_label, value_to_wdl_label
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import MomentumSchedule, LinearWarmUp,\
     CosineAnnealingSchedule
 from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
 from DeepCrazyhouse.src.training.train_util import get_metrics
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model_by_train_config
 from DeepCrazyhouse.src.training.trainer_agent_gluon import TrainerAgentGluon
-from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch, load_torch_state, save_torch_state, get_context, export_to_onnx
+from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch, load_torch_state, save_torch_state,\
+    get_context, export_to_onnx
 
 
 def update_network(queue, nn_update_idx, symbol_filename, params_filename, tar_filename, convert_to_onnx, main_config, train_config: TrainConfig, model_contender_dir):
@@ -161,26 +160,13 @@ def _get_val_loader(train_config):
                                                                            normalize=train_config.normalize,
                                                                            verbose=False,
                                                                            q_value_ratio=train_config.q_value_ratio)
-    y_val_policy = prepare_policy(y_val_policy, train_config.select_policy_from_plane,
-                                  train_config.sparse_policy_label, train_config.is_policy_from_plane_data)
-    if train_config.framework == 'gluon':
-        if train_config.use_wdl and train_config.use_plys_to_end:
-            val_dataset = gluon.data.ArrayDataset(nd.array(x_val), nd.array(y_val_value), nd.array(y_val_policy),
-                                                  nd.array(value_to_wdl_label(y_val_value)),
-                                                  nd.array(prepare_plys_label(plys_to_end)))
-        else:
-            val_dataset = gluon.data.ArrayDataset(nd.array(x_val), nd.array(y_val_value), nd.array(y_val_policy))
-        val_data = gluon.data.DataLoader(val_dataset, train_config.batch_size, shuffle=False,
-                                         num_workers=train_config.cpu_count)
-    elif train_config.framework == 'pytorch':
-        if train_config.use_wdl and train_config.use_wdl:
-            val_dataset = TensorDataset(torch.Tensor(x_val), torch.Tensor(y_val_value),
-                                        torch.Tensor(y_val_policy),
-                                        torch.Tensor(value_to_wdl_label(y_val_value)),
-                                        torch.Tensor(prepare_plys_label(plys_to_end)))
-        else:
-            val_dataset = TensorDataset(torch.Tensor(x_val), torch.Tensor(y_val_value),
-                                        torch.Tensor(y_val_policy))
-        val_data = DataLoader(val_dataset, shuffle=True, batch_size=train_config.batch_size,
-                              num_workers=train_config.cpu_count)
+
+    if train_config.framework == "pytorch":
+        from DeepCrazyhouse.src.training.trainer_agent_pytorch import get_data_loader
+    elif train_config.framework == "gluon":
+        from DeepCrazyhouse.src.training.trainer_agent_gluon import get_data_loader
+    else:
+        raise Exception('train_config.framework: "' + train_config.framework + '" is not supported.')
+    val_data = get_data_loader(x_val, y_val_value, y_val_policy, plys_to_end, train_config, shuffle=False)
+
     return val_data, x_val

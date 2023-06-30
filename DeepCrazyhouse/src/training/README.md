@@ -2,10 +2,7 @@
 
 ### Prerequisites
 
-Make sure to have a recent [MXNet](https://mxnet.incubator.apache.org/index.html) version with CUDA support installed:
- ```bash
- pip install mxnet-cu<cuda_version>==<version_id>
-```
+Make sure to have a recent [Pytorch](https://pytorch.org/get-started/locally/) version with CUDA support installed.
 
 For supervised training you need the following [additional libraries](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/training/requirements.txt):
 
@@ -13,10 +10,18 @@ For supervised training you need the following [additional libraries](https://gi
 pip install -r requirements.txt
 ```
 
-* zarr (chunked, compressed, N-dimensional array library)
-* numcodecs (compression codec library)
-* tqdm: (progress bar library)
-* MXBoard (logging MXNet data for visualization in TensorBoard)
+#### Training with MXNet or Gluon (deprecated)
+Make sure to have a recent [MXNet](https://mxnet.incubator.apache.org/index.html) version with CUDA support installed:
+ ```bash
+ pip install mxnet-cu<cuda_version>==<version_id>
+```
+
+You need to install the following libraries when training with MXNet:
+```bash
+    pip install -y mxboard
+    pip uninstall -y onnx
+    pip install onnx==1.3.0
+```
 
 ### Training data specification
 Specify the directories `"planes_train_dir"`, `"planes_val_dir"`, `"planes_test_dir"`, `"planes_mate_in_one_dir"` at
@@ -32,7 +37,7 @@ Use `train_cnn.ipynb` to conduct a training run.
 * <https://jupyter.org/install.html>
 
 Jupyter notebooks are displayed in a web-browser and can be launched with `jupyter notebook` from the command line. 
-After a successfull training run you can export the outputs as a html-file:  `File->Download as->Html(.html)`.
+After a successful training run you can export the outputs as a html-file:  `File->Download as->Html(.html)`.
 
 ### Tensorboard
 The [tensorboard](https://github.com/tensorflow/tensorboard) log files will be exported in `./logs` which can be viewed with tensorboard during training.
