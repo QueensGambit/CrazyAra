@@ -265,7 +265,8 @@ class TrainerAgentPytorch:
                                                                                          normalize=self.tc.normalize,
                                                                                          verbose=False,
                                                                                          q_value_ratio=self.tc.q_value_ratio)
-        train_loader = get_data_loader(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, self.tc)
+        train_loader = get_data_loader(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, self.tc,
+                                       shuffle=True)
 
         return train_loader
 
