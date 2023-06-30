@@ -217,7 +217,7 @@ class TrainerAgentPytorch:
                                                        dummy_input,
                                                        Path(self.tc.export_dir) / Path("weights"), model_prefix,
                                                        self.tc.use_wdl and self.tc.use_plys_to_end,
-                                                       self.tc.use_uncertainty,
+                                                       self.tc.use_uncertainty or self.tc.use_beta_uncertainty,
                                                        True)
 
                                 self.patience_cnt = 0  # reset the patience counter
