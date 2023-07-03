@@ -12,7 +12,7 @@ import DeepCrazyhouse.src.domain.variants.input_representation as variants
 from DeepCrazyhouse.src.domain.variants.constants import MODE_CHESS
 
 
-def board_to_planes(board, board_occ=0, normalize=True):
+def board_to_planes(board, board_occ=0, normalize=True, last_moves=None):
     """
     Gets the plane representation of a given board state.
     (No history of past board positions is used.)
@@ -71,11 +71,12 @@ def board_to_planes(board, board_occ=0, normalize=True):
     :param board: Board handle (Python-chess object)
     :param board_occ: Sets how often the board state has occurred before (by default 0)
     :param normalize: True if the inputs shall be normalized to the range [0.-1.]
+    :params last_moves: List of last moves played on the board
     :return: planes - the plane representation of the current board state
     """
 
     # return the plane representation of the given board
-    return variants.board_to_planes(board, board_occ, normalize, mode=MODE_CHESS)
+    return variants.board_to_planes(board, board_occ, normalize, mode=MODE_CHESS, last_moves=last_moves)
 
 
 def planes_to_board(planes, normalized_input=False):

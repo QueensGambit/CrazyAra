@@ -107,12 +107,19 @@ else:
 # Define constants indicating the number of channels for the input plane presentation
 # and the number of channels used for the policy map representation
 if MODE == MODE_CRAZYHOUSE:
-    NB_CHANNELS_POS = 27
-    NB_CHANNELS_CONST = 7
-    NB_CHANNELS_VARIANTS = 0
-    NB_POLICY_MAP_CHANNELS = 81
-    NB_LAST_MOVES = 0
-    NB_CHANNELS_PER_HISTORY_ITEM = 0
+    if VERSION == 1:
+        NB_CHANNELS_POS = 27
+        NB_CHANNELS_CONST = 7
+        NB_CHANNELS_VARIANTS = 0
+        NB_POLICY_MAP_CHANNELS = 81
+        NB_LAST_MOVES = 0
+        NB_CHANNELS_PER_HISTORY_ITEM = 0
+    elif VERSION == 2:
+        NB_CRAZYHOUSE_INFO = 12
+        # TODO: Update variables
+    elif VERSION == 3:
+        NB_CRAZYHOUSE_INFO = 12
+        # TODO: Update variables
 elif MODE == MODE_LICHESS:
     NB_CHANNELS_POS = 27
     NB_CHANNELS_CONST = 11

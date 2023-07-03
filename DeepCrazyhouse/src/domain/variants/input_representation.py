@@ -11,6 +11,8 @@ which is passed to the neural network
 from chess.variant import CrazyhouseBoard
 import DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation as chess_v2
 import DeepCrazyhouse.src.domain.variants.classical_chess.v3.input_representation as chess_v3
+import DeepCrazyhouse.src.domain.variants.crazyhouse.v2.input_representation as crazyhouse_v2
+import DeepCrazyhouse.src.domain.variants.crazyhouse.v3.input_representation as crazyhouse_v3
 from DeepCrazyhouse.src.domain.variants.constants import (
     MODE,
     NB_CHANNELS_TOTAL,
@@ -73,6 +75,19 @@ def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
         if board_occ >= 2:
             planes_pos[channel + 1, :, :] = 1
 
+    _set_crazyhouse_info(board, me, mode, planes_pos, you)
+
+    # (III.2) En Passant Square
+    # mark the square where an en-passant capture is possible
+    channel = CHANNEL_MAPPING_POS["ep_square"]
+    if board.ep_square is not None:
+        row, col = get_row_col(board.ep_square)
+        planes_pos[channel, row, col] = 1
+
+    return planes_pos
+
+
+def _set_crazyhouse_info(board, me, mode, planes_pos, you):
     # Fill in the Prisoners / Pocket Pieces
     if board.uci_variant == "crazyhouse":
         # iterate over all pieces except the king
@@ -83,7 +98,6 @@ def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
             planes_pos[channel, :, :] = board.pockets[me].count(p_type)
             # the prison for black begins 5 channels later
             planes_pos[channel + 5, :, :] = board.pockets[you].count(p_type)
-
     # (III) Fill in the promoted pieces
     # iterate over all promoted pieces according to the mask and set the according bit
     if mode == MODE_CRAZYHOUSE or mode == MODE_LICHESS:
@@ -91,19 +105,10 @@ def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
         for pos in chess.SquareSet(board.promoted):
             row, col = get_row_col(pos)
 
-            if board.piece_at(pos).color == chess.WHITE:
+            if board.piece_at(pos).color == me:
                 planes_pos[channel, row, col] = 1
             else:
                 planes_pos[channel + 1, row, col] = 1
-
-    # (III.2) En Passant Square
-    # mark the square where an en-passant capture is possible
-    channel = CHANNEL_MAPPING_POS["ep_square"]
-    if board.ep_square is not None:
-        row, col = get_row_col(board.ep_square)
-        planes_pos[channel, row, col] = 1
-
-    return planes_pos
 
 
 def _fill_constant_planes(planes_const, board, board_turn):
@@ -216,6 +221,10 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
         return chess_v2.board_to_planes(board, normalize, last_moves)
     if mode == MODE_CHESS and VERSION == 3:
         return chess_v3.board_to_planes(board, board_occ, normalize, last_moves)
+    if mode == MODE_CRAZYHOUSE and VERSION == 2:
+        return crazyhouse_v2.board_to_planes(board, normalize, last_moves)
+    if mode == MODE_CRAZYHOUSE and VERSION == 3:
+        return crazyhouse_v3.board_to_planes(board, normalize, last_moves)
 
     # (I) Define the Input Representation for one position
     planes_pos = np.zeros((NB_CHANNELS_POS, BOARD_HEIGHT, BOARD_WIDTH))
