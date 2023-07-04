@@ -91,6 +91,7 @@ def get_planes_from_game(game, mate_in_one=False):
     x = []
     y_value = []
     y_policy = []
+    plys_to_end = []  # save the number of plys until the end of the game for each position that was considered
     board = game.board()  # get the initial board state
     # update the y value accordingly
     if board.turn == chess.WHITE:
@@ -109,8 +110,7 @@ def get_planes_from_game(game, mate_in_one=False):
     # you don't want to push the last move on the board because you had no movement policy to learn from in this case
     # The moves get pushed at the end of the for-loop and is only used in the next loop.
     # Therefore we can iterate over 'all' moves
-    plys = 0
-    for move in all_moves:
+    for plys, move in enumerate(all_moves):
         board_occ = 0  # by default the positions hasn't occurred before
         fen = board.fen()
         # remove the halfmove counter & move counter from this fen to make repetitions possible
@@ -147,24 +147,15 @@ def get_planes_from_game(game, mate_in_one=False):
                 # add the next move defined in policy vector notation to the policy list
                 # the network always sees the board as if he's the white player, that's the move is mirrored fro black
                 y_policy.append(move_to_policy(next_move, mirror_policy=mirror_policy(board)))
+                plys_to_end.append(len(all_moves) - 1 - plys)
 
         y_init *= -1  # flip the y_init value after each move
         board.push(move)  # push the next move on the board
-        plys += 1
 
-    plys_to_end = np.arange(plys)[::-1]
-
-    # check if there has been any moves
+    # check if there has been any moves and stack the lists
     if x and y_value and y_policy:
         x = np.stack(x, axis=0)
         y_value = np.stack(y_value, axis=0)
         y_policy = np.stack(y_policy, axis=0)
-    else:
-        #print("game.headers:")
-        #print(game.headers)
-        #print("len(all_moves)", len(all_moves))
-        #print("game", game)
-        return x, y_value, y_policy, plys_to_end
-        #raise Exception("The given pgn file's mainline is empty!")
 
     return x, y_value, y_policy, plys_to_end

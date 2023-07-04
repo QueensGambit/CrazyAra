@@ -493,12 +493,13 @@ class PGN2PlanesConverter:
 
         logging.info("starting conversion to planes...")
         t_s = time()
-        pool = Pool()
+        pool = Pool(processes=None)  # If processes is None then the number returned by os.cpu_count() is used
         x_dic = {}
         y_value_dic = {}
         y_policy_dic = {}
         plys_to_end_dic = {}
         metadata_dic = {}
+        num_games_without_fitting_moves = 0
 
         if not os.path.exists(self._export_dir):
             os.makedirs(self._export_dir)
@@ -520,6 +521,8 @@ class PGN2PlanesConverter:
                 y_value_dic[game_idx] = y_value
                 y_policy_dic[game_idx] = y_policy
                 plys_to_end_dic[game_idx] = plys_to_end
+            else:
+                num_games_without_fitting_moves += 1
         pool.close()
         pool.join()
         t_e = time() - t_s
@@ -547,6 +550,9 @@ class PGN2PlanesConverter:
         logging.debug("x.shape %s", x.shape)
         logging.debug("y_value.shape %s", y_value.shape)
         logging.debug("y_policy.shape %s", y_policy.shape)
+        logging.debug("plys_to_end.shape %s", plys_to_end.shape)
+        logging.debug("num_games_without_fitting_moves %s", num_games_without_fitting_moves)
+        assert x.shape[0] == y_value.shape[0] == y_policy.shape[0] == plys_to_end.shape[0]
         # Save the dataset to a file
         logging.info("saving the dataset to a file...")
         # define the compressor object
