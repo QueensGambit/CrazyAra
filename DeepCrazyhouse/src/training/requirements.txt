@@ -16,3 +16,7 @@ torchsummary
 onnxruntime
 onnxsim
 fvcore
+timm
+einops
+ml_collections
+vit_pytorch

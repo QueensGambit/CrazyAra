@@ -11,7 +11,6 @@ https://gitlab.com/jweil/PommerLearn/-/blob/master/pommerlearn/training/train_cn
 
 import random
 import logging
-import numpy as np
 from pathlib import Path
 import torch
 import torch.nn as nn
@@ -632,7 +631,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     :param sparse_policy_label: Should be set to true if the policy uses one-hot encoded targets
      (e.g. supervised learning)
     :param apply_select_policy_from_plane: If true, given policy label is converted to policy map index
-    :return:
+    :return: Metric values
     """
     reset_metrics(metrics)
     model.eval()  # set model to evaluation mode
@@ -686,6 +685,7 @@ def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle)
     :param plys_to_end: Plys until the game ends
     :param tc: Training config object
     :param shuffle: Decide whether to shuffle the dataset or not
+    :return: Returns the data loader object
     """
     y_policy_prep = prepare_policy(y_policy=y_policy, select_policy_from_plane=tc.select_policy_from_plane,
                                    sparse_policy_label=tc.sparse_policy_label,
@@ -701,4 +701,4 @@ def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle)
         dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
                                       torch.Tensor(y_policy_prep))
     train_loader = DataLoader(dataset, shuffle=shuffle, batch_size=tc.batch_size, num_workers=tc.cpu_count)
-    return train_loader, y_policy
+    return train_loader
