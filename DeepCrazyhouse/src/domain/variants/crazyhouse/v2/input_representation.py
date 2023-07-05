@@ -10,6 +10,8 @@ Input representation 2.0 for crazyhouse based on the input representation 1.0 of
 import chess
 from DeepCrazyhouse.src.domain.variants.classical_chess.input_representation import board_to_planes as\
     board_to_planes_chess_v1
+from DeepCrazyhouse.src.domain.variants.constants import MODE_CRAZYHOUSE
+from DeepCrazyhouse.src.domain.variants.input_representation import _set_crazyhouse_info
 
 
 def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=None):
@@ -47,5 +49,5 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     """
 
     planes = board_to_planes_chess_v1(board, board_occ, normalize, last_moves)
-    # TODO: Add crazyhouse info
+    _set_crazyhouse_info(board, MODE_CRAZYHOUSE, planes, normalize)
     return planes

@@ -75,7 +75,7 @@ def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
         if board_occ >= 2:
             planes_pos[channel + 1, :, :] = 1
 
-    _set_crazyhouse_info(board, me, mode, planes_pos, you)
+    _set_crazyhouse_info(board, mode, planes_pos, normalize=False)
 
     # (III.2) En Passant Square
     # mark the square where an en-passant capture is possible
@@ -87,17 +87,24 @@ def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
     return planes_pos
 
 
-def _set_crazyhouse_info(board, me, mode, planes_pos, you):
+def _set_crazyhouse_info(board, mode, planes_pos, normalize: bool):
+    if mode == MODE_CHESS or MODE_XIANGQI:
+        return
+
+    me = board.turn
+    you = ~board.turn
+
     # Fill in the Prisoners / Pocket Pieces
     if board.uci_variant == "crazyhouse":
         # iterate over all pieces except the king
         for p_type in chess.PIECE_TYPES[:-1]:
             # p_type -1 because p_type starts with 1
             channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
-
-            planes_pos[channel, :, :] = board.pockets[me].count(p_type)
+            my_pocket = board.pockets[me].count(p_type)
+            planes_pos[channel, :, :] = my_pocket / MAX_NB_PRISONERS if normalize else my_pocket
+            your_pocket = board.pockets[you].count(p_type)
             # the prison for black begins 5 channels later
-            planes_pos[channel + 5, :, :] = board.pockets[you].count(p_type)
+            planes_pos[channel + 5, :, :] = your_pocket / MAX_NB_PRISONERS if normalize else your_pocket
     # (III) Fill in the promoted pieces
     # iterate over all promoted pieces according to the mask and set the according bit
     if mode == MODE_CRAZYHOUSE or mode == MODE_LICHESS:
@@ -226,58 +233,50 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
     if mode == MODE_CRAZYHOUSE and VERSION == 3:
         return crazyhouse_v3.board_to_planes(board, normalize, last_moves)
 
+    return default_planes(board, board_occ, last_moves, mode, normalize)
+
+
+def default_planes(board, board_occ, last_moves, mode, normalize):
+    """Default plane representation for all varaints. See board_to_planes for details."""
     # (I) Define the Input Representation for one position
     planes_pos = np.zeros((NB_CHANNELS_POS, BOARD_HEIGHT, BOARD_WIDTH))
     planes_const = np.zeros((NB_CHANNELS_CONST, BOARD_HEIGHT, BOARD_WIDTH))
-
-    if mode == MODE_CRAZYHOUSE:
-        # crazyhouse only doesn't contain remaining checks
-        planes_variants = False
-    elif mode == MODE_LICHESS:
+    if NB_CHANNELS_VARIANTS > 0:
         planes_variants = np.zeros((NB_CHANNELS_VARIANTS, BOARD_HEIGHT, BOARD_WIDTH))
-    else:  # mode = MODE_CHESS
-        # chess doesn't contain pocket pieces and remaining checks
-        planes_variants = np.zeros((NB_CHANNELS_VARIANTS, BOARD_HEIGHT, BOARD_WIDTH))
-
+    else:
+        planes_variants = None
     # check who's player turn it is and flip the board if it's black turn (except for racing kings)
     mirror_board = flip_board(board)
-
     if mirror_board:
         board = board.mirror()
-
     _fill_position_planes(planes_pos, board, board_occ, mode)
     _fill_constant_planes(planes_const, board, board.turn)
     if mode == MODE_LICHESS:
         _fill_variants_plane(board, planes_variants)
-    elif mode == MODE_CHESS:
+    elif NB_CHANNELS_VARIANTS > 0:
         if board.chess960 is True:
             planes_variants[:, :, :] = 1
-
     # create the move planes
     planes_moves = np.zeros((NB_CHANNELS_HISTORY, BOARD_HEIGHT, BOARD_WIDTH))
     if last_moves:
-         for i, move in enumerate(last_moves):
-             if move:
-                 from_row, from_col = get_row_col(move.from_square, mirror=mirror_board)
-                 to_row, to_col = get_row_col(move.to_square, mirror=mirror_board)
-                 planes_moves[i*2, from_row, from_col] = 1
-                 planes_moves[i*2+1, to_row, to_col] = 1
-
+        for i, move in enumerate(last_moves):
+            if move:
+                from_row, from_col = get_row_col(move.from_square, mirror=mirror_board)
+                to_row, to_col = get_row_col(move.to_square, mirror=mirror_board)
+                planes_moves[i * 2, from_row, from_col] = 1
+                planes_moves[i * 2 + 1, to_row, to_col] = 1
     # (VI) Merge the Matrix-Stack
-    if mode == MODE_CRAZYHOUSE:
+    if NB_CHANNELS_VARIANTS == 0:  # mode == MODE_CRAZYHOUSE (Version 1)
         planes = np.concatenate((planes_pos, planes_const), axis=0)
     else:  # mode = MODE_LICHESS | mode == MODE_CHESS
         planes = np.concatenate((planes_pos, planes_const, planes_variants, planes_moves), axis=0)
-
     # revert the board if the players turn was black
     # ! DO NOT DELETE OR UNCOMMENT THIS BLOCK BECAUSE THE PARAMETER board IS CHANGED IN PLACE !
     if mirror_board:
         board = board.mirror()
-
     if normalize is True:
         planes *= MATRIX_NORMALIZER
         # planes = normalize_input_planes(planes)
-
     # return the plane representation of the given board
     return planes
 
@@ -304,6 +303,7 @@ def planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
         return chess_v2.planes_to_board(planes)
     if mode == MODE_CHESS and VERSION == 3:
         return chess_v3.planes_to_board(planes)
+    # TODO add versions for crazyhouse
 
     # extract the maps for the board position
     planes_pos = planes[:NB_CHANNELS_POS]

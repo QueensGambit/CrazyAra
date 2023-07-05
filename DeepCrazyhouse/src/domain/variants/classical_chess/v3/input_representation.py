@@ -8,10 +8,11 @@ Input representation 3.0 - No legal move information, but with history again and
 """
 import chess
 from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, NB_CHANNELS_TOTAL,\
-    NB_LAST_MOVES, NB_CHANNELS_PER_HISTORY_ITEM
+    NB_LAST_MOVES, NB_CHANNELS_PER_HISTORY_ITEM, MODE_CHESS
 from DeepCrazyhouse.src.domain.util import opposite_colored_bishops, get_row_col, np, checkerboard, checkers
 from DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation import set_pieces, set_castling_rights,\
     set_ep_square
+from DeepCrazyhouse.configs.main_config import main_config
 
 NORMALIZE_MOBILITY = 64
 NORMALIZE_PIECE_NUMBER = 8
@@ -142,7 +143,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     # Channel: 14
     # En Passant Square
     assert channel == CHANNEL_EN_PASSANT
-    if board.ep_square and board.has_legal_en_passant(): # is not None:
+    if board.ep_square and board.has_legal_en_passant():  # is not None:
         row, col = get_row_col(board.ep_square, mirror=mirror)
         planes[channel, row, col] = 1
     channel += 1
@@ -251,7 +252,8 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
         planes[channel, :, :] = material_count / NORMALIZE_PIECE_NUMBER if normalize else material_count
         channel += 1
 
-    assert channel == NB_CHANNELS_TOTAL
+    if main_config["mode"] == MODE_CHESS:
+        assert channel == NB_CHANNELS_TOTAL
 
     return planes
 
