@@ -493,12 +493,13 @@ class PGN2PlanesConverter:
 
         logging.info("starting conversion to planes...")
         t_s = time()
-        pool = Pool()
+        pool = Pool(processes=None)  # If processes is None then the number returned by os.cpu_count() is used
         x_dic = {}
         y_value_dic = {}
         y_policy_dic = {}
         plys_to_end_dic = {}
         metadata_dic = {}
+        num_games_without_fitting_moves = 0
 
         if not os.path.exists(self._export_dir):
             os.makedirs(self._export_dir)
@@ -514,11 +515,14 @@ class PGN2PlanesConverter:
         # the games occur in random order due to multiprocessing
         # in order to keep structure we store the result in a dictionary first
         for metadata, game_idx, x, y_value, y_policy, plys_to_end in pool.map(get_planes_from_pgn, params_inp):
-            metadata_dic[game_idx] = metadata
-            x_dic[game_idx] = x
-            y_value_dic[game_idx] = y_value
-            y_policy_dic[game_idx] = y_policy
-            plys_to_end_dic[game_idx] = plys_to_end
+            if len(y_value) > 0:  # only add games that had at least one valid move
+                metadata_dic[game_idx] = metadata
+                x_dic[game_idx] = x
+                y_value_dic[game_idx] = y_value
+                y_policy_dic[game_idx] = y_policy
+                plys_to_end_dic[game_idx] = plys_to_end
+            else:
+                num_games_without_fitting_moves += 1
         pool.close()
         pool.join()
         t_e = time() - t_s
@@ -546,6 +550,9 @@ class PGN2PlanesConverter:
         logging.debug("x.shape %s", x.shape)
         logging.debug("y_value.shape %s", y_value.shape)
         logging.debug("y_policy.shape %s", y_policy.shape)
+        logging.debug("plys_to_end.shape %s", plys_to_end.shape)
+        logging.debug("num_games_without_fitting_moves %s", num_games_without_fitting_moves)
+        assert x.shape[0] == y_value.shape[0] == y_policy.shape[0] == plys_to_end.shape[0]
         # Save the dataset to a file
         logging.info("saving the dataset to a file...")
         # define the compressor object
@@ -704,7 +711,52 @@ def export_mate_in_one_scenarios():
 
 
 if __name__ == "__main__":
-    ROOT = logging.getLogger()
-    ROOT.setLevel(logging.INFO)
-    # export_mate_in_one_scenarios()
-    export_pgn_to_datasetfile()
+    
+    import sys, os
+
+    sys.path.insert(0, '../../../')
+    import os
+    import sys
+    #from DeepCrazyhouse.src.preprocessing.pgn_to_planes_converter import PGN2PlanesConverter
+    from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
+
+    enable_color_logging()
+    import logging
+    nb_games_per_file = 1000
+    # Rating cap at 90% cumulative rating for all varaints
+    min_elo_both = {
+            "Chess": 1000,
+        #    "Crazyhouse": 2000,
+        #    "Chess960": 1950,
+        #    "King of the Hill": 1925,
+        #    "Three-check": 1900,
+        #"Atomic": 1900,
+        #    "Horde": 1900,
+        #    "Racing Kings": 1900
+    }  # is ignored if "use_all_games" is True
+    use_all_games = True
+    
+    PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
+                        max_nb_files=0, min_elo_both=min_elo_both, termination_conditions=["Normal"],
+                        log_lvl=logging.DEBUG,
+                        compression='lz4', clevel=5, dataset_type='train',
+                        use_all_games=use_all_games).convert_all_pgns_to_planes()
+
+
+    PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
+                        max_nb_files=1, min_elo_both=min_elo_both, termination_conditions=["Normal"], log_lvl=logging.DEBUG,
+                        compression='lz4', clevel=5, dataset_type='val', use_all_games=use_all_games).convert_all_pgns_to_planes()
+
+    PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
+                        max_nb_files=1, min_elo_both=min_elo_both, termination_conditions=["Normal"], log_lvl=logging.DEBUG,
+                        compression='lz4', clevel=5, dataset_type='test', use_all_games=use_all_games).convert_all_pgns_to_planes()
+    
+    #PGN2PlanesConverter(limit_nb_games_to_analyze=0, nb_games_per_file=nb_games_per_file,
+    #                    max_nb_files=1, min_elo_both=min_elo_both, termination_conditions=["Normal"], log_lvl=logging.DEBUG,
+    #                    compression='lz4', clevel=5, dataset_type='mate_in_one').convert_all_pgns_to_planes()
+    
+
+    #ROOT = logging.getLogger()
+    #ROOT.setLevel(logging.INFO)
+    ## export_mate_in_one_scenarios()
+    #export_pgn_to_datasetfile()
