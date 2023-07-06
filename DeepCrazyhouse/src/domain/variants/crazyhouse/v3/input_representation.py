@@ -9,7 +9,7 @@ Input representation 3.0 for crazyhouse based on the input representation 3.0 of
 import chess
 import DeepCrazyhouse.src.domain.variants.classical_chess.v3.input_representation as chess_v3
 from DeepCrazyhouse.src.domain.variants.constants import MODE_CRAZYHOUSE
-from DeepCrazyhouse.src.domain.variants.input_representation import _set_crazyhouse_info
+from DeepCrazyhouse.src.domain.variants.default_input_representation import _set_crazyhouse_info
 
 
 def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=None):
