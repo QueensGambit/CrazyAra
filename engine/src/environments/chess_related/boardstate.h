@@ -112,12 +112,21 @@ public:
     static uint NB_CHANNELS_VARIANTS() {
         return 0;
     }
+#if VERSION == 1
     static uint NB_LAST_MOVES() {
         return 0;
     }
     static uint NB_CHANNELS_PER_HISTORY() {
         return 0;
     }
+#else  // VERSION == 2 || VERSION == 3
+    static uint NB_LAST_MOVES() {
+        return 8;
+    }
+    static uint NB_CHANNELS_PER_HISTORY() {
+        return 2;
+    }
+#endif
     static uint NB_CHANNELS_AUXILIARY() {
         return 0;
     }
@@ -388,7 +397,7 @@ public:
     bool mirror_policy(SideToMove sideToMove) const;
     vector<Action> legal_actions() const override;
     void set(const string &fenStr, bool isChess960, int variant) override;
-    void get_state_planes(bool normalize, float *inputPlanes, uint_fast32_t size) const override;
+    void get_state_planes(bool normalize, float *inputPlanes, Version version) const override;
     unsigned int steps_from_null() const override;
     bool is_chess960() const override;
     string fen() const override;

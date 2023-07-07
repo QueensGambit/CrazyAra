@@ -40,7 +40,6 @@ using blaze::DynamicVector;
 class Board : public Position
 {
 private:
-#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     // up to NB_LAST_MOVES are stored in a list, most recent moves first
     deque<Move> lastMoves;
     /**
@@ -49,7 +48,7 @@ private:
      * @param m Given Move
      */
     inline void add_move_to_list(Move m);
-#endif
+
 public:
     Board();
     Board(const Board& b);
@@ -119,7 +118,6 @@ public:
      */
     bool draw_by_insufficient_material() const;
 
-#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     // overloaded function which include a last move list update
     void do_move(Move m, StateInfo& newSt);
     void do_move(Move m, StateInfo& newSt, bool givesCheck);
@@ -127,7 +125,6 @@ public:
     void set(const std::string& fenStr, bool isChess960, Variant v, StateInfo* si, Thread* th);
     void set(const std::string& code, Color c, Variant v, StateInfo* si);
     deque<Move> get_last_moves() const;
-#endif
 };
 
 /**

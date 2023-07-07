@@ -263,7 +263,6 @@ inline void set_variant_and_960(PlaneData& p)
 }
 #endif
 
-#if defined(MODE_CHESS) || defined(MODE_LICHESS)
 inline void set_last_moves(PlaneData& p)
 {
     float* preIt = p.curIt;
@@ -275,7 +274,6 @@ inline void set_last_moves(PlaneData& p)
     p.curIt = preIt;
     p.increment_channel_by_x(StateConstants::NB_CHANNELS_HISTORY());
 }
-#endif
 
 inline void set_960(PlaneData& p)
 {
@@ -401,84 +399,8 @@ inline void set_material_count(PlaneData& p)
     p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
 }
 
-#ifdef MODE_CHESS
-inline void board_to_planes_v_2_7(PlaneData& planeData, const vector<Action>& legalMoves)
+inline void default_board_to_planes(PlaneData& planeData, size_t boardRepetition)
 {
-    set_plane_pieces(planeData);
-    set_plane_ep_square(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
-    set_plane_castling_rights(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
-    set_last_moves(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
-    set_960(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
-    set_piece_masks(planeData);
-    set_checkerboard(planeData);
-    set_material_diff(planeData);
-    set_opposite_bishops(planeData);
-    set_checkers(planeData);
-    set_check_moves(planeData, legalMoves);
-    set_mobility(planeData, legalMoves);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
-}
-
-inline void board_to_planes_v_2_8(PlaneData& planeData, const vector<Action>& legalMoves)
-{
-    board_to_planes_v_2_7(planeData, legalMoves);
-    set_material_count(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
-}
-
-inline void board_to_planes_v3(PlaneData& planeData, size_t boardRepetition)
-{
-    set_plane_pieces(planeData);
-    set_plane_repetition(planeData, boardRepetition);
-    set_plane_ep_square(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
-    set_plane_castling_rights(planeData);
-    set_no_progress_counter(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
-    set_last_moves(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
-    set_960(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
-    set_piece_masks(planeData);
-    set_checkerboard(planeData);
-    set_material_diff(planeData);
-    set_opposite_bishops(planeData);
-    set_checkers(planeData);
-    set_material_count(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
-}
-#endif
-
-void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float* inputPlanes, Version version)
-{
-    // Fill in the piece positions
-    // Iterate over both color starting with WHITE
-    PlaneData planeData(pos, inputPlanes, normalize);
-
-#ifdef MODE_CHESS
-    switch (version) {
-        case make_version<0,0,0>():
-        case make_version<1,0,0>():
-            break;
-        case make_version<2,7,0>():
-            board_to_planes_v_2_7(planeData, pos->legal_actions());
-            return;
-        case make_version<2,8,0>():
-            board_to_planes_v_2_8(planeData, pos->legal_actions());
-            return;
-        case  make_version<3,0,0>():
-            board_to_planes_v3(planeData, boardRepetition);
-            return;
-        default:
-            std::cerr << "The given version '" << version_to_string(version) << "' was unexpected and could not be handled" << endl;
-            throw false;
-    }
-#endif
-
     // (I) Set the pieces for both players
     set_plane_pieces(planeData);
 
@@ -542,6 +464,131 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
     set_last_moves(planeData);
 #endif
+}
+
+inline void board_to_planes_chess_v1(PlaneData& planeData, size_t boardRepetition)
+{
+    set_plane_pieces(planeData);
+    set_plane_repetition(planeData, boardRepetition);
+    set_plane_ep_square(planeData);
+    set_plane_color_info(planeData);
+    set_plane_total_move_count(planeData);
+    set_plane_castling_rights(planeData);
+    set_no_progress_counter(planeData);
+    set_960(planeData);
+    set_last_moves(planeData);
+}
+
+inline void board_to_planes_chess_v_2_7(PlaneData& planeData, const vector<Action>& legalMoves)
+{
+    set_plane_pieces(planeData);
+    set_plane_ep_square(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
+    set_plane_castling_rights(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
+    set_last_moves(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
+    set_960(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
+    set_piece_masks(planeData);
+    set_checkerboard(planeData);
+    set_material_diff(planeData);
+    set_opposite_bishops(planeData);
+    set_checkers(planeData);
+    set_check_moves(planeData, legalMoves);
+    set_mobility(planeData, legalMoves);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
+}
+
+inline void board_to_planes_chess_v_2_8(PlaneData& planeData, const vector<Action>& legalMoves)
+{
+    board_to_planes_chess_v_2_7(planeData, legalMoves);
+    set_material_count(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
+}
+
+inline void board_to_planes_chess_v3(PlaneData& planeData, size_t boardRepetition)
+{
+    set_plane_pieces(planeData);
+    set_plane_repetition(planeData, boardRepetition);
+    set_plane_ep_square(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
+    set_plane_castling_rights(planeData);
+    set_no_progress_counter(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
+    set_last_moves(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
+    set_960(planeData);
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
+    set_piece_masks(planeData);
+    set_checkerboard(planeData);
+    set_material_diff(planeData);
+    set_opposite_bishops(planeData);
+    set_checkers(planeData);
+    set_material_count(planeData);
+#ifdef MODE_CHESS
+    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
+#endif
+}
+
+#ifdef MODE_CRAZYHOUSE
+inline void board_to_planes_crazyhouse_v3(PlaneData& planeData, size_t boardRepetition)
+{
+    board_to_planes_chess_v3(planeData, boardRepetition);
+    set_plane_pockets(planeData);
+    set_plane_promoted_pieces(planeData);
+}
+
+inline void board_to_planes_crazyhouse_v2(PlaneData& planeData, size_t boardRepetition)
+{
+    board_to_planes_chess_v1(planeData, boardRepetition);
+    set_plane_pockets(planeData);
+    set_plane_promoted_pieces(planeData);
+}
+#endif
+
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float* inputPlanes, Version version)
+{
+    // Fill in the piece positions
+    // Iterate over both color starting with WHITE
+    PlaneData planeData(pos, inputPlanes, normalize);
+
+#ifdef MODE_CHESS
+    switch (version) {
+        case make_version<0,0,0>():
+        case make_version<1,0,0>():
+            break;
+        case make_version<2,7,0>():
+            board_to_planes_chess_v_2_7(planeData, pos->legal_actions());
+            return;
+        case make_version<2,8,0>():
+            board_to_planes_chess_v_2_8(planeData, pos->legal_actions());
+            return;
+        case  make_version<3,0,0>():
+            board_to_planes_chess_v3(planeData, boardRepetition);
+            return;
+        default:
+            std::cerr << "The given version '" << version_to_string(version) << "' was unexpected and could not be handled" << endl;
+            throw false;
+    }
+#endif
+#ifdef MODE_CRAZYHOUSE
+    switch (version) {
+        case make_version<0,0,0>():
+        case make_version<1,0,0>():
+            break;
+        case make_version<2,0,0>():
+            board_to_planes_crazyhouse_v2(planeData, boardRepetition);
+            return;
+        case make_version<3,0,0>():
+            board_to_planes_crazyhouse_v3(planeData, boardRepetition);
+            return;
+        default:
+            std::cerr << "The given version '" << version_to_string(version) << "' was unexpected and could not be handled" << endl;
+            throw false;
+    }
+#endif
+    default_board_to_planes(planeData, boardRepetition);
     assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
 }
 

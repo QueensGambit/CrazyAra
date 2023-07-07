@@ -220,9 +220,11 @@ bool Board::draw_by_insufficient_material() const
            (this->count<KNIGHT>(WHITE) == 2 || this->count<KNIGHT>(BLACK) == 2));   // 4) KNN vs K
 }
 
-#if defined(MODE_CHESS) || defined(MODE_LICHESS)
 void Board::add_move_to_list(Move m)
 {
+    if (StateConstants::NB_LAST_MOVES() == 0) {
+        return;
+    }
     lastMoves.push_front(m);
     if (lastMoves.size() > StateConstants::NB_LAST_MOVES()) {
         lastMoves.pop_back();
@@ -263,7 +265,6 @@ void Board::set(const string &code, Color c, Variant v, StateInfo *si)
     lastMoves.clear();
     Position::set(code, c, v, si);
 }
-#endif
 
 std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Action>& legalMoves, bool leadsToWin, bool bookMove)
 {
