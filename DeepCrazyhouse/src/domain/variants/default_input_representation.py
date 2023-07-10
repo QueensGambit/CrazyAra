@@ -12,7 +12,6 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     NB_CHANNELS_TOTAL,
     MODES,
     MODE_CRAZYHOUSE,
-    MODE_CHESS,
     MODE_XIANGQI,
     POCKETS_SIZE_PIECE_TYPE,
     BOARD_HEIGHT,
@@ -36,6 +35,7 @@ from DeepCrazyhouse.src.domain.variants.constants import MODE, MODE_LICHESS
 
 def default_board_to_planes(board, board_occ, last_moves, mode, normalize):
     """Default plane representation for all variants. See input_representation/board_to_planes() for details."""
+    # TODO: Remove board.mirror() for black by addressing the according color channel
     # (I) Define the Input Representation for one position
     planes_pos = np.zeros((NB_CHANNELS_POS, BOARD_HEIGHT, BOARD_WIDTH))
     planes_const = np.zeros((NB_CHANNELS_CONST, BOARD_HEIGHT, BOARD_WIDTH))
@@ -120,6 +120,29 @@ def default_normalize_input_planes(x):
     return x
 
 
+def set_pocket_pieces_to_board(board, channel, planes, normalized_input, max_nb_pockets):
+    # Fill in the Prisoners / Pocket Pieces
+    colors = [chess.WHITE, chess.BLACK]
+
+    # iterate over all pieces except the king
+    for p_type in chess.PIECE_TYPES[:-1]:
+        # p_type -1 because p_type starts with 1
+        cur_channel = channel + p_type - 1
+
+        for color in colors:
+            # the full board is filled with the same value
+            # it's sufficient to take only the first value
+            nb_prisoners = planes[cur_channel + 5 * (color == chess.BLACK), 0, 0]
+
+            # add prisoners for the current player
+            # the whole board is set with the same entry, we can just take the first one
+            if normalized_input:
+                nb_prisoners = int(round(nb_prisoners * max_nb_pockets))
+
+            # update the pockets
+            board.pockets[color].update([p_type] * nb_prisoners)
+
+
 def default_planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
     """
     Converts a board in plane representation to the python chess board representation
@@ -171,26 +194,9 @@ def default_planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE
     # clear the full board (the pieces will be set later)
     board.clear()
 
-    # iterate over all piece types
-    for idx, piece in enumerate(PIECES):
-        # iterate over all fields and set the current piece type
-        for row in range(BOARD_HEIGHT):
-            for col in range(BOARD_WIDTH):
-                # check if there's a piece at the current position
-                if planes_pos[idx, row, col] == 1:
-                    # check if the piece was promoted
-                    promoted = False
-                    if mode == MODE_CRAZYHOUSE or mode == MODE_LICHESS:
-                        # promoted pieces are not defined in the chess plane representation
-                        channel = CHANNEL_MAPPING_POS["promo"]
-                        if planes_pos[channel, row, col] == 1 or planes_pos[channel + 1, row, col] == 1:
-                            promoted = True
-
-                    board.set_piece_at(
-                        square=get_board_position_index(row, col),
-                        piece=chess.Piece.from_symbol(piece),
-                        promoted=promoted,
-                    )
+    check_for_promo = (mode == MODE_CRAZYHOUSE or mode == MODE_LICHESS)
+    promo_channel = CHANNEL_MAPPING_POS["promo"] if check_for_promo else None
+    set_pieces_on_board(board, planes_pos, check_for_promo, promo_channel)
 
     # (I) Fill in the Repetition Data
     # check how often the position has already occurred in the game
@@ -201,32 +207,8 @@ def default_planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE
 
     # Fill in the Prisoners / Pocket Pieces
     if mode == MODE_CRAZYHOUSE or board.uci_variant == "crazyhouse":
-        # iterate over all pieces except the king
-        for p_type in chess.PIECE_TYPES[:-1]:
-            # p_type -1 because p_type starts with 1
-            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
-
-            # the full board is filled with the same value
-            # it's sufficient to take only the first value
-            nb_prisoners = planes_pos[channel, 0, 0]
-
-            # add prisoners for the current player
-            # the whole board is set with the same entry, we can just take the first one
-            if normalized_input is True:
-                nb_prisoners *= MAX_NB_PRISONERS
-                nb_prisoners = int(round(nb_prisoners))
-
-            for _ in range(nb_prisoners):
-                board.pockets[chess.WHITE].add(p_type)
-
-            # add prisoners for the opponent
-            nb_prisoners = planes_pos[channel + 5, 0, 0]
-            if normalized_input is True:
-                nb_prisoners *= MAX_NB_PRISONERS
-                nb_prisoners = int(round(nb_prisoners))
-
-            for _ in range(nb_prisoners):
-                board.pockets[chess.BLACK].add(p_type)
+        set_pocket_pieces_to_board(board, CHANNEL_MAPPING_POS["prisoners"], planes_pos, normalized_input,
+                                   MAX_NB_PRISONERS)
 
     # (I.5) En Passant Square
     # mark the square where an en-passant capture is possible
@@ -316,6 +298,27 @@ def default_planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE
     return board
 
 
+def set_pieces_on_board(board, planes, check_for_promo, promo_channel):
+    # iterate over all piece types
+    for idx, piece in enumerate(PIECES):
+        # iterate over all fields and set the current piece type
+        for row in range(BOARD_HEIGHT):
+            for col in range(BOARD_WIDTH):
+                # check if there's a piece at the current position
+                if planes[idx, row, col] == 1:
+                    # check if the piece was promoted
+                    promoted = False
+                    if check_for_promo:
+                        if planes[promo_channel, row, col] == 1 or planes[promo_channel + 1, row, col] == 1:
+                            promoted = True
+
+                    board.set_piece_at(
+                        square=get_board_position_index(row, col),
+                        piece=chess.Piece.from_symbol(piece),
+                        promoted=promoted,
+                    )
+
+
 def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
 
     # Fill in the piece positions
@@ -347,7 +350,11 @@ def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
         if board_occ >= 2:
             planes_pos[channel + 1, :, :] = 1
 
-    _set_crazyhouse_info(board, mode, planes_pos, normalize=False)
+    if mode == MODE_CRAZYHOUSE or mode == MODE_LICHESS:
+        _set_crazyhouse_info(board, planes_pos, normalize=False,
+                             channel_prisoners=CHANNEL_MAPPING_POS["prisoners"],
+                             max_nb_prisoners=MAX_NB_PRISONERS,
+                             channel_promo=CHANNEL_MAPPING_POS["promo"])
 
     # (III.2) En Passant Square
     # mark the square where an en-passant capture is possible
@@ -359,10 +366,12 @@ def _fill_position_planes(planes_pos, board, board_occ=0, mode=MODE_CRAZYHOUSE):
     return planes_pos
 
 
-def _set_crazyhouse_info(board, mode, planes_pos, normalize: bool):
-    if mode == MODE_CHESS or MODE_XIANGQI:
-        return
-
+def _set_crazyhouse_info(board, planes, normalize: bool, channel_prisoners: int, max_nb_prisoners: int,
+                         channel_promo: int):
+    """
+    Sets crazyhouse specific information to the planes. Here pocket/prisoner pieces and the information which piece
+    has been promoted.
+    """
     me = board.turn
     you = ~board.turn
 
@@ -371,23 +380,24 @@ def _set_crazyhouse_info(board, mode, planes_pos, normalize: bool):
         # iterate over all pieces except the king
         for p_type in chess.PIECE_TYPES[:-1]:
             # p_type -1 because p_type starts with 1
-            channel = CHANNEL_MAPPING_POS["prisoners"] + p_type - 1
+            channel = channel_prisoners + p_type - 1
             my_pocket = board.pockets[me].count(p_type)
-            planes_pos[channel, :, :] = my_pocket / MAX_NB_PRISONERS if normalize else my_pocket
+            planes[channel, :, :] = my_pocket / max_nb_prisoners if normalize else my_pocket
             your_pocket = board.pockets[you].count(p_type)
             # the prison for black begins 5 channels later
-            planes_pos[channel + 5, :, :] = your_pocket / MAX_NB_PRISONERS if normalize else your_pocket
+            planes[channel + 5, :, :] = your_pocket / max_nb_prisoners if normalize else your_pocket
     # (III) Fill in the promoted pieces
     # iterate over all promoted pieces according to the mask and set the according bit
-    if mode == MODE_CRAZYHOUSE or mode == MODE_LICHESS:
-        channel = CHANNEL_MAPPING_POS["promo"]
-        for pos in chess.SquareSet(board.promoted):
-            row, col = get_row_col(pos)
+    channel = channel_promo
+    # mirror all bitboard entries for the black player
+    mirror = board.turn == chess.BLACK
+    for pos in chess.SquareSet(board.promoted):
+        row, col = get_row_col(pos, mirror=mirror)
 
-            if board.piece_at(pos).color == me:
-                planes_pos[channel, row, col] = 1
-            else:
-                planes_pos[channel + 1, row, col] = 1
+        if board.piece_at(pos).color == me:
+            planes[channel, row, col] = 1
+        else:
+            planes[channel + 1, row, col] = 1
 
 
 def _fill_constant_planes(planes_const, board, board_turn):

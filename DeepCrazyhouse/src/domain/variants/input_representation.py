@@ -43,9 +43,6 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
     :param last_moves: List of last moves. It is assumed that the most recent move is the first entry !
     :return: planes - the plane representation of the current board state
     """
-
-    # TODO: Remove board.mirror() for black by addressing the according color channel
-
     if mode == MODE_CHESS and VERSION == 2:
         return chess_v2.board_to_planes(board, normalize, last_moves)
     if mode == MODE_CHESS and VERSION == 3:
@@ -79,8 +76,11 @@ def planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
     if mode == MODE_CHESS and VERSION == 2:
         return chess_v2.planes_to_board(planes)
     if mode == MODE_CHESS and VERSION == 3:
-        return chess_v3.planes_to_board(planes)
-    # TODO add versions for crazyhouse
+        return chess_v3.planes_to_board(planes, normalized_input)
+    if mode == MODE_CRAZYHOUSE and VERSION == 2:
+        return crazyhouse_v2.planes_to_board(planes, normalized_input)
+    if mode == MODE_CRAZYHOUSE and VERSION == 3:
+        return crazyhouse_v3.planes_to_board(planes, normalized_input)
 
     return default_planes_to_board(planes, normalized_input, mode)
 
@@ -122,7 +122,8 @@ def get_planes_statistics(board: chess.Board, normalize: bool, last_moves_uci: l
             last_moves.append(None)
     last_moves = last_moves[:NB_LAST_MOVES]
 
-    planes = board_to_planes(board, board_occ=board_occ, normalize=normalize, mode=main_config['mode'], last_moves=last_moves)
+    planes = board_to_planes(board, board_occ=board_occ, normalize=normalize, mode=main_config['mode'],
+                             last_moves=last_moves)
 
     planes = planes.flatten()
     stats = {}

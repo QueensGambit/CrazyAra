@@ -76,11 +76,8 @@ P_MAP = {"P": 0, "N": 1, "B": 2, "R": 3, "Q": 4, "K": 5, "p": 6, "n": 7, "b": 8,
 # each index indicates where each section start
 if MODE == MODE_CRAZYHOUSE or MODE == MODE_LICHESS:
     CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "prisoners": 14, "promo": 24, "ep_square": 26}
-if MODE == MODE_CRAZYHOUSE:
-    if VERSION == 2:
-        CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "ep_square": 14, "prisoners": 39, "promo": 49}
-    elif VERSION == 3:
-        CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "ep_square": 14, "prisoners": 52, "promo": 62}
+if MODE == MODE_CRAZYHOUSE and VERSION == 3:
+    CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "ep_square": 14, "prisoners": 52, "promo": 62}
 elif MODE == MODE_XIANGQI:
     CHANNEL_MAPPING_POS = {"pieces": 0, "prisoners": 14}
 else:  # MODE = MODE_CHESS

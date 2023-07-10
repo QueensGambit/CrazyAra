@@ -258,7 +258,16 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     return planes
 
 
-def planes_to_board(planes):
+def set_no_progress_counter(board, channel, planes, normalized_input, max_nb_no_progress):
+    no_progress_cnt = planes[channel, 0, 0]
+    if normalized_input is True:
+        no_progress_cnt *= max_nb_no_progress
+        no_progress_cnt = int(round(no_progress_cnt))
+
+    board.halfmove_clock = no_progress_cnt
+
+
+def planes_to_board(planes, normalized_input):
     """
     Converts a board in plane representation to the python chess board representation
     see get_planes_of_board() for input encoding description
@@ -280,6 +289,9 @@ def planes_to_board(planes):
 
     # (II.2) Castling Rights
     set_castling_rights(board, CHANNEL_CASTLING, planes, is960)
+
+    # (II.3) No Progress Count
+    set_no_progress_counter(board, CHANNEL_NO_PROGRESS, planes, normalized_input, NORMALIZE_50_MOVE_RULE)
 
     return board
 

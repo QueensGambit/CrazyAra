@@ -7,9 +7,17 @@ Created on 03.07.23
 Input representation 3.0 for crazyhouse based on the input representation 3.0 of chess.
 """
 import chess
+from chess.variant import CrazyhouseBoard
 import DeepCrazyhouse.src.domain.variants.classical_chess.v3.input_representation as chess_v3
-from DeepCrazyhouse.src.domain.variants.constants import MODE_CRAZYHOUSE
-from DeepCrazyhouse.src.domain.variants.default_input_representation import _set_crazyhouse_info
+from DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation import set_ep_square, \
+    set_castling_rights
+from DeepCrazyhouse.src.domain.variants.default_input_representation import _set_crazyhouse_info, set_pieces_on_board, \
+    set_pocket_pieces_to_board
+
+NORMALIZE_POCKETS = 16  # at maximum, you can have only 16 pawns (your own and the ones of the opponent)
+# These constant describe the starting channel for the corresponding info
+CHANNEL_POCKETS = 52
+CHANNEL_PROMO = 62
 
 
 def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=None):
@@ -46,5 +54,32 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
 
     """
     planes = chess_v3.board_to_planes(board, board_occ, normalize, last_moves)
-    _set_crazyhouse_info(board, MODE_CRAZYHOUSE, planes, normalize)
+    _set_crazyhouse_info(board, planes, normalize,
+                         channel_prisoners=CHANNEL_POCKETS,
+                         max_nb_prisoners=NORMALIZE_POCKETS,
+                         channel_promo=CHANNEL_PROMO)
     return planes
+
+
+def planes_to_board(planes, normalized_input):
+    """
+    Converts a board in plane representation to the python chess board representation
+    see get_planes_of_board() for input encoding description
+    ! Board is always returned with WHITE to move and move number and no progress counter = 0 !
+
+    :param planes: Input plane representation
+    :param normalized_input: Defines if the inputs are normalized to [0,1]
+    :return: python chess board object
+    """
+    is960 = planes[chess_v3.CHANNEL_IS_960, 0, 0] == 1
+    board = CrazyhouseBoard(chess960=is960)
+    board.clear()
+
+    set_pieces_on_board(board, planes, check_for_promo=True, promo_channel=CHANNEL_PROMO)
+    set_ep_square(board, chess_v3.CHANNEL_EN_PASSANT, planes)
+    set_castling_rights(board, chess_v3.CHANNEL_CASTLING, planes, is960)
+    set_pocket_pieces_to_board(board, CHANNEL_POCKETS, planes, normalized_input, NORMALIZE_POCKETS)
+    chess_v3.set_no_progress_counter(board, chess_v3.CHANNEL_NO_PROGRESS, planes, normalized_input,
+                                     chess_v3.NORMALIZE_50_MOVE_RULE)
+
+    return board
