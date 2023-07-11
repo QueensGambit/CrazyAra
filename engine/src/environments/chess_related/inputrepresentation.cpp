@@ -268,7 +268,9 @@ inline void set_last_moves(PlaneData& p)
     float* preIt = p.curIt;
     // (VI) Fill the bits of the last move planes
     for (const Move move : p.pos->get_last_moves()) {
-        p.set_single_square_to_one<true>(from_sq(move));
+        if (type_of(move) != DROP) {
+            p.set_single_square_to_one<true>(from_sq(move));
+        }
         p.set_single_square_to_one<true>(to_sq(move));
     }
     p.curIt = preIt;
@@ -466,19 +468,6 @@ inline void default_board_to_planes(PlaneData& planeData, size_t boardRepetition
 #endif
 }
 
-inline void board_to_planes_chess_v1(PlaneData& planeData, size_t boardRepetition)
-{
-    set_plane_pieces(planeData);
-    set_plane_repetition(planeData, boardRepetition);
-    set_plane_ep_square(planeData);
-    set_plane_color_info(planeData);
-    set_plane_total_move_count(planeData);
-    set_plane_castling_rights(planeData);
-    set_no_progress_counter(planeData);
-    set_960(planeData);
-    set_last_moves(planeData);
-}
-
 inline void board_to_planes_chess_v_2_7(PlaneData& planeData, const vector<Action>& legalMoves)
 {
     set_plane_pieces(planeData);
@@ -541,9 +530,17 @@ inline void board_to_planes_crazyhouse_v3(PlaneData& planeData, size_t boardRepe
 
 inline void board_to_planes_crazyhouse_v2(PlaneData& planeData, size_t boardRepetition)
 {
-    board_to_planes_chess_v1(planeData, boardRepetition);
+    set_plane_pieces(planeData);
+    set_plane_repetition(planeData, boardRepetition);
     set_plane_pockets(planeData);
     set_plane_promoted_pieces(planeData);
+    set_plane_ep_square(planeData);
+    set_plane_color_info(planeData);
+    set_plane_total_move_count(planeData);
+    set_plane_castling_rights(planeData);
+    set_no_progress_counter(planeData);
+    set_960(planeData);
+    set_last_moves(planeData);
 }
 #endif
 
