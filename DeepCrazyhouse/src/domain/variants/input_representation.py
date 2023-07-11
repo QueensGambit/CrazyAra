@@ -48,9 +48,9 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
     if mode == MODE_CHESS and VERSION == 3:
         return chess_v3.board_to_planes(board, board_occ, normalize, last_moves)
     if mode == MODE_CRAZYHOUSE and VERSION == 2:
-        return crazyhouse_v2.board_to_planes(board, normalize, last_moves)
+        return crazyhouse_v2.board_to_planes(board, board_occ, normalize, last_moves)
     if mode == MODE_CRAZYHOUSE and VERSION == 3:
-        return crazyhouse_v3.board_to_planes(board, normalize, last_moves)
+        return crazyhouse_v3.board_to_planes(board, board_occ, normalize, last_moves)
 
     return default_board_to_planes(board, board_occ, last_moves, mode, normalize)
 
@@ -124,7 +124,6 @@ def get_planes_statistics(board: chess.Board, normalize: bool, last_moves_uci: l
 
     planes = board_to_planes(board, board_occ=board_occ, normalize=normalize, mode=main_config['mode'],
                              last_moves=last_moves)
-
     planes = planes.flatten()
     stats = {}
     stats['sum'] = planes.sum()

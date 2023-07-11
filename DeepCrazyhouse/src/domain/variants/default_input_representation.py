@@ -45,10 +45,11 @@ def default_board_to_planes(board, board_occ, last_moves, mode, normalize):
         planes_variants = None
     # check who's player turn it is and flip the board if it's black turn (except for racing kings)
     mirror_board = flip_board(board)
+    board_turn = board.turn
     if mirror_board:
         board = board.mirror()
     _fill_position_planes(planes_pos, board, board_occ, mode)
-    _fill_constant_planes(planes_const, board, board.turn)
+    _fill_constant_planes(planes_const, board, board_turn)
     if mode == MODE_LICHESS:
         _fill_variants_plane(board, planes_variants)
     elif NB_CHANNELS_VARIANTS > 0:
@@ -59,9 +60,10 @@ def default_board_to_planes(board, board_occ, last_moves, mode, normalize):
     if last_moves:
         for i, move in enumerate(last_moves):
             if move:
-                from_row, from_col = get_row_col(move.from_square, mirror=mirror_board)
+                if not move.drop:
+                    from_row, from_col = get_row_col(move.from_square, mirror=mirror_board)
+                    planes_moves[i * 2, from_row, from_col] = 1
                 to_row, to_col = get_row_col(move.to_square, mirror=mirror_board)
-                planes_moves[i * 2, from_row, from_col] = 1
                 planes_moves[i * 2 + 1, to_row, to_col] = 1
     # (VI) Merge the Matrix-Stack
     if NB_CHANNELS_VARIANTS == 0:  # mode == MODE_CRAZYHOUSE (Version 1)

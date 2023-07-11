@@ -12,14 +12,15 @@ from chess.variant import CrazyhouseBoard
 
 from DeepCrazyhouse.src.domain.variants.classical_chess.v3.input_representation import set_no_progress_counter
 from DeepCrazyhouse.src.domain.variants.default_input_representation import default_board_to_planes
-from DeepCrazyhouse.src.domain.variants.constants import MODE_CRAZYHOUSE, MAX_NB_MOVES
+from DeepCrazyhouse.src.domain.variants.constants import MODE_CRAZYHOUSE, MAX_NB_MOVES, MAX_NB_PRISONERS, \
+    MAX_NB_NO_PROGRESS
 from DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation import set_ep_square, \
     set_castling_rights
 from DeepCrazyhouse.src.domain.variants.default_input_representation import _set_crazyhouse_info, set_pieces_on_board, \
     set_pocket_pieces_to_board
 
-NORMALIZE_POCKETS = 16  # at maximum, you can have only 16 pawns (your own and the ones of the opponent)
-NORMALIZE_50_MOVE_RULE = 50
+NORMALIZE_POCKETS = MAX_NB_PRISONERS  # at maximum, you can have only 16 pawns (your own and the ones of the opponent)
+NORMALIZE_50_MOVE_RULE = MAX_NB_NO_PROGRESS
 # These constant describe the starting channel for the corresponding info
 CHANNEL_POCKETS = 14
 CHANNEL_PROMO = 24
@@ -78,29 +79,26 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
 
     * * *
 
+    is960 = | 1 (boolean, 1 when active)
+
+    ---
+
+    * * *
+
     Last 8 moves | 16 (indicated by origin and destination square, the most recent move is described by first 2 planes)
 
     ---
     16 planes
 
-    * * *
-
-    is960 = | 1 (boolean, 1 when active)
-
-    ---
 
     The total number of planes is calculated as follows:
     # --------------
-    27 + 7 + 16 + 1
+    27 + 7 + 1 + 16
     = 39 + 12
     Total: 51 planes
 
     """
     planes = default_board_to_planes(board, board_occ, last_moves, MODE_CRAZYHOUSE, normalize)
-    _set_crazyhouse_info(board, planes, normalize,
-                         channel_prisoners=CHANNEL_POCKETS,
-                         max_nb_prisoners=NORMALIZE_POCKETS,
-                         channel_promo=CHANNEL_PROMO)
     return planes
 
 

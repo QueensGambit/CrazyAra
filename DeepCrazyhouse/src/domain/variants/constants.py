@@ -76,7 +76,7 @@ P_MAP = {"P": 0, "N": 1, "B": 2, "R": 3, "Q": 4, "K": 5, "p": 6, "n": 7, "b": 8,
 # each index indicates where each section start
 if MODE == MODE_CRAZYHOUSE or MODE == MODE_LICHESS:
     CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "prisoners": 14, "promo": 24, "ep_square": 26}
-if MODE == MODE_CRAZYHOUSE and VERSION == 3:
+elif MODE == MODE_CRAZYHOUSE and VERSION == 3:
     CHANNEL_MAPPING_POS = {"pieces": 0, "repetitions": 12, "ep_square": 14, "prisoners": 52, "promo": 62}
 elif MODE == MODE_XIANGQI:
     CHANNEL_MAPPING_POS = {"pieces": 0, "prisoners": 14}
@@ -193,9 +193,13 @@ else:
 #  (this used for normalization the input planes and setting an appropriate integer representation (e.g. int16)
 # use a constant matrix for normalization to allow broad cast operations
 if MODE == MODE_CRAZYHOUSE:
-    MAX_NB_PRISONERS = 32  # define the maximum number of pieces of each type in a pocket
     MAX_NB_MOVES = 500  # 500 was set as the max number of total moves
-    MAX_NB_NO_PROGRESS = 40  # originally this was set to 40, but actually it is meant to be 50 move rule
+    if VERSION == 1:
+        MAX_NB_PRISONERS = 32  # define the maximum number of pieces of each type in a pocket
+        MAX_NB_NO_PROGRESS = 40  # originally this was set to 40, but actually it is meant to be 50 move rule
+    else:  # VERSION == 2 or VERSION == 3
+        MAX_NB_PRISONERS = 16  # at maximum you can have only 16 pawns (your own and the ones of the opponent)
+        MAX_NB_NO_PROGRESS = 50  # after 50 moves of no progress the 50 moves rule for draw applies
 elif MODE == MODE_XIANGQI:
     MAX_NB_PRISONERS = 5
     MAX_NB_MOVES = 500
