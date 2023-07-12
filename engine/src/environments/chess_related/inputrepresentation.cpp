@@ -266,11 +266,15 @@ inline void set_variant_and_960(PlaneData& p)
 inline void set_last_moves(PlaneData& p)
 {
     float* preIt = p.curIt;
+
     // (VI) Fill the bits of the last move planes
     for (const Move move : p.pos->get_last_moves()) {
-        if (type_of(move) != DROP) {
+#ifdef CRAZYHOUSE
+        if (type_of(move) == DROP)
+            p.increment_channel();
+         else
+#endif
             p.set_single_square_to_one<true>(from_sq(move));
-        }
         p.set_single_square_to_one<true>(to_sq(move));
     }
     p.curIt = preIt;
@@ -501,14 +505,22 @@ inline void board_to_planes_chess_v3(PlaneData& planeData, size_t boardRepetitio
     set_plane_pieces(planeData);
     set_plane_repetition(planeData, boardRepetition);
     set_plane_ep_square(planeData);
+#ifdef MODE_CHESS
     assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
+#endif
     set_plane_castling_rights(planeData);
     set_no_progress_counter(planeData);
+#ifdef MODE_CHESS
     assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST());
+#endif
     set_last_moves(planeData);
+#ifdef MODE_CHESS
     assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
+#endif
     set_960(planeData);
+#ifdef MODE_CHESS
     assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
+#endif
     set_piece_masks(planeData);
     set_checkerboard(planeData);
     set_material_diff(planeData);

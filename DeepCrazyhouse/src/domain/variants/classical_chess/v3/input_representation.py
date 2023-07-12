@@ -14,7 +14,6 @@ from DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation 
     set_ep_square
 from DeepCrazyhouse.configs.main_config import main_config
 
-NORMALIZE_MOBILITY = 64
 NORMALIZE_PIECE_NUMBER = 8
 NORMALIZE_50_MOVE_RULE = 50
 # These constant describe the starting channel for the corresponding info
@@ -33,7 +32,8 @@ CHANNEL_CHECKERS = 46
 CHANNEL_MATERIAL_COUNT = 47
 
 
-def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=None):
+def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=None,
+                    normalize_50_move_rule=NORMALIZE_50_MOVE_RULE):
     """
     Gets the plane representation of a given board state.
 
@@ -100,6 +100,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     :param board_occ: Number of board occurrences
     :param normalize: True if the inputs shall be normalized to the range [0.-1.]
     :param last_moves: List of last last moves. The most recent move is the first entry.
+    :param normalize_50_move_rule: Normalizing factor for the 50 move rule counter
     :return: planes - the plane representation of the current board state
     """
 
@@ -169,7 +170,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     #  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
     # check how often the position has already occurred in the game
     assert channel == CHANNEL_NO_PROGRESS
-    planes[channel, :, :] = board.halfmove_clock / NORMALIZE_50_MOVE_RULE if normalize else board.halfmove_clock
+    planes[channel, :, :] = board.halfmove_clock / normalize_50_move_rule if normalize else board.halfmove_clock
     channel += 1
 
     # Channel: 20 - 35
@@ -179,10 +180,11 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
         assert(len(last_moves) == NB_LAST_MOVES)
         for move in last_moves:
             if move:
-                from_row, from_col = get_row_col(move.from_square, mirror=mirror)
-                to_row, to_col = get_row_col(move.to_square, mirror=mirror)
-                planes[channel, from_row, from_col] = 1
+                if not move.drop:
+                    from_row, from_col = get_row_col(move.from_square, mirror=mirror)
+                    planes[channel, from_row, from_col] = 1
                 channel += 1
+                to_row, to_col = get_row_col(move.to_square, mirror=mirror)
                 planes[channel, to_row, to_col] = 1
                 channel += 1
             else:

@@ -194,12 +194,8 @@ else:
 # use a constant matrix for normalization to allow broad cast operations
 if MODE == MODE_CRAZYHOUSE:
     MAX_NB_MOVES = 500  # 500 was set as the max number of total moves
-    if VERSION == 1:
-        MAX_NB_PRISONERS = 32  # define the maximum number of pieces of each type in a pocket
-        MAX_NB_NO_PROGRESS = 40  # originally this was set to 40, but actually it is meant to be 50 move rule
-    else:  # VERSION == 2 or VERSION == 3
-        MAX_NB_PRISONERS = 16  # at maximum you can have only 16 pawns (your own and the ones of the opponent)
-        MAX_NB_NO_PROGRESS = 50  # after 50 moves of no progress the 50 moves rule for draw applies
+    MAX_NB_PRISONERS = 32  # define the maximum number of pieces of each type in a pocket
+    MAX_NB_NO_PROGRESS = 40  # originally this was set to 40, but actually it is meant to be 50 move rule
 elif MODE == MODE_XIANGQI:
     MAX_NB_PRISONERS = 5
     MAX_NB_MOVES = 500

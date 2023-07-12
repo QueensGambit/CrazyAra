@@ -1498,9 +1498,47 @@ TEST_CASE("Crazyhouse Input Planes V2") {
     REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
 
     stats = get_planes_statistics(state, true, make_version<2,0,0>(), nbValuesTotal);
-    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(58.552, 0.001));
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(49.512, 0.001));
     REQUIRE(stats.maxNum == 1);
-    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(56116.872, 0.001));
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(46723.632, 0.001));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
+}
+
+
+TEST_CASE("Crazyhouse Input Planes V3") {
+    init();
+    int variant = StateConstants::variant_to_int("crazyhouse");
+    BoardState state;
+    const uint nbValuesTotal = 64 * StateConstants::NB_SQUARES();
+    state.init(variant, false);
+    // starting position test
+    PlaneStatistics stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1312);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3430384);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(state.fen() == string("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1"));
+
+    state.set("5r2/ppp2pkp/3p4/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[PBRQnbb] w - - 0 28", false, variant);
+    string move = "Q@f6";
+    state.do_action(state.uci_to_action(move));
+    move = "g7g8";
+    state.do_action(state.uci_to_action(move));
+    move = "R@h8";
+    state.do_action(state.uci_to_action(move));
+
+    stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1307);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3700213);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
+
+    stats = get_planes_statistics(state, true, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(193.8, 0.001));
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(474696, 0.001));
     REQUIRE(stats.argMax == 8);
     REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
 }

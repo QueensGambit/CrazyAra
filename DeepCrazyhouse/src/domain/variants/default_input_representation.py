@@ -43,7 +43,7 @@ def default_board_to_planes(board, board_occ, last_moves, mode, normalize):
         planes_variants = np.zeros((NB_CHANNELS_VARIANTS, BOARD_HEIGHT, BOARD_WIDTH))
     else:
         planes_variants = None
-    # check who's player turn it is and flip the board if it's black turn (except for racing kings)
+    # check whose player turn it is and flip the board if it's black turn (except for racing kings)
     mirror_board = flip_board(board)
     board_turn = board.turn
     if mirror_board:

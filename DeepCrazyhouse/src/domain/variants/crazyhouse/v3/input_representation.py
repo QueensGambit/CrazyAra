@@ -14,7 +14,8 @@ from DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation 
 from DeepCrazyhouse.src.domain.variants.default_input_representation import _set_crazyhouse_info, set_pieces_on_board, \
     set_pocket_pieces_to_board
 
-NORMALIZE_POCKETS = 16  # at maximum, you can have only 16 pawns (your own and the ones of the opponent)
+NORMALIZE_POCKETS = 32  # at maximum, you can have only 16 pawns (your own and the ones of the opponent)
+NORMALIZE_50_MOVE_RULE = 40  # we choose the older value that was used for crazyhouse
 # These constant describe the starting channel for the corresponding info
 CHANNEL_POCKETS = 52
 CHANNEL_PROMO = 62
@@ -53,7 +54,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     Total: 64 planes
 
     """
-    planes = chess_v3.board_to_planes(board, board_occ, normalize, last_moves)
+    planes = chess_v3.board_to_planes(board, board_occ, normalize, last_moves, NORMALIZE_50_MOVE_RULE)
     _set_crazyhouse_info(board, planes, normalize,
                          channel_prisoners=CHANNEL_POCKETS,
                          max_nb_prisoners=NORMALIZE_POCKETS,
@@ -80,6 +81,6 @@ def planes_to_board(planes, normalized_input):
     set_castling_rights(board, chess_v3.CHANNEL_CASTLING, planes, is960)
     set_pocket_pieces_to_board(board, CHANNEL_POCKETS, planes, normalized_input, NORMALIZE_POCKETS)
     chess_v3.set_no_progress_counter(board, chess_v3.CHANNEL_NO_PROGRESS, planes, normalized_input,
-                                     chess_v3.NORMALIZE_50_MOVE_RULE)
+                                     NORMALIZE_50_MOVE_RULE)
 
     return board
