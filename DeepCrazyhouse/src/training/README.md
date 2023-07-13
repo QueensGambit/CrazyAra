@@ -57,7 +57,7 @@ or the [official NVIDIA MXNet Docker container](https://docs.nvidia.com/deeplear
 and installing the packages in [requirements.txt](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/training/requirements.txt). 
 
 ```bash
-docker run --gpus '"device=0"' -it \
+docker run --gpus '"device=0"' --shm-size 16G --memory 64G -it \
  --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
  --name crazyara_training crazyara_docker:latest
 ```
@@ -73,7 +73,7 @@ and the Tensorboard on:
 
 For older docker versions use:
 ```bash
-nvidia-docker run -it \
+nvidia-docker run --shm-size 16G --memory 64G -it \
  --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
  --name crazyara_training crazyara_docker:latest
 ```
