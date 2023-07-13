@@ -125,6 +125,14 @@ public:
     void set(const std::string& fenStr, bool isChess960, Variant v, StateInfo* si, Thread* th);
     void set(const std::string& code, Color c, Variant v, StateInfo* si);
     deque<Move> get_last_moves() const;
+
+    /**
+     * @brief count_board_piece Counts the number of board pieces of a particular piece of a certain color.
+     * @param color Color
+     * @param pieceType piece type
+     * @return Number of pieces on the board of a given piece type and color
+     */
+    int get_board_piece_count(Color color, PieceType pieceType) const;
 };
 
 /**

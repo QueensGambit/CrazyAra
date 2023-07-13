@@ -53,10 +53,10 @@ struct PlaneData {
     bool normalize;
     PlaneData(const Board* pos, float* inputPlanes, bool normalize):
         pos(pos), inputPlanes(inputPlanes), curIt(inputPlanes),
-        flipBoard(flip_board(*pos, pos->side_to_move())), normalize(normalize)
-    {
-        // intialize the input_planes with 0
-        std::fill_n(curIt, StateConstants::NB_VALUES_TOTAL(), 0.0f);
+        flipBoard(flip_board(*pos, pos->side_to_move())), normalize(normalize) {
+    }
+    inline void set_all_planes_to_zero(uint_fast32_t nbChannelsTotal) {
+        std::fill_n(curIt, nbChannelsTotal, 0.0f);
     }
     inline Color me() {
         return pos->side_to_move();
@@ -315,16 +315,13 @@ inline void set_checkerboard(PlaneData& p)
 
 inline void set_material_diff(PlaneData& p)
 {
-    float relativeCount = p.pos->count<PAWN>(p.me()) - p.pos->count<PAWN>(p.you());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-    relativeCount = p.pos->count<KNIGHT>(p.me()) - p.pos->count<KNIGHT>(p.you());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-    relativeCount = p.pos->count<BISHOP>(p.me()) - p.pos->count<BISHOP>(p.you());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-    relativeCount = p.pos->count<ROOK>(p.me()) - p.pos->count<ROOK>(p.you());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-    relativeCount = p.pos->count<QUEEN>(p.me()) - p.pos->count<QUEEN>(p.you());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+    for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN}) {
+        float relativeCount = p.pos->get_board_piece_count(p.me(), piece) - p.pos->get_board_piece_count(p.you(), piece);
+        if (relativeCount != 0) {
+            p.set_plane_to_value<false>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+        }
+        p.increment_channel();
+    }
 }
 
 inline int count_bits_in_bitboard(int bitboard) {
@@ -393,20 +390,26 @@ inline void set_opposite_bishops(PlaneData& p)
 
 inline void set_material_count(PlaneData& p)
 {
-    float relativeCount = p.pos->count<PAWN>(p.me());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-    relativeCount = p.pos->count<KNIGHT>(p.me());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-    relativeCount = p.pos->count<BISHOP>(p.me());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-    relativeCount = p.pos->count<ROOK>(p.me());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-    relativeCount = p.pos->count<QUEEN>(p.me());
-    p.set_plane_to_value<true>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+    for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN}) {
+        float relativeCount = p.pos->get_board_piece_count(p.me(), piece);
+        if (relativeCount != 0) {
+            p.set_plane_to_value<false>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+        }
+        p.increment_channel();
+    }
 }
 
 inline void default_board_to_planes(PlaneData& planeData, size_t boardRepetition)
 {
+#ifdef MODE_CRAZYHOUSE
+    const uint_fast32_t nbChannelsTotal = 34;
+#elif defined(MODE_CHESS)
+    const uint_fast32_t nbChannelsTotal = 39;
+#else
+    const uint_fast32_t nbChannelsTotal = StateConstants::NB_CHANNELS_TOTAL()
+#endif
+    planeData.set_all_planes_to_zero(nbChannelsTotal);
+
     // (I) Set the pieces for both players
     set_plane_pieces(planeData);
 
@@ -470,10 +473,13 @@ inline void default_board_to_planes(PlaneData& planeData, size_t boardRepetition
 #if defined(MODE_CHESS) || defined(MODE_LICHESS)
     set_last_moves(planeData);
 #endif
+    assert(planeData.current_channel() == nbChannelsTotal);
 }
 
 inline void board_to_planes_chess_v_2_7(PlaneData& planeData, const vector<Action>& legalMoves)
 {
+    const uint_fast32_t nbChannelsTotal = 33;
+    planeData.set_all_planes_to_zero(nbChannelsTotal);
     set_plane_pieces(planeData);
     set_plane_ep_square(planeData);
     assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS());
@@ -490,18 +496,22 @@ inline void board_to_planes_chess_v_2_7(PlaneData& planeData, const vector<Actio
     set_checkers(planeData);
     set_check_moves(planeData, legalMoves);
     set_mobility(planeData, legalMoves);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
+    assert(planeData.current_channel() == nbChannelsTotal);
 }
 
 inline void board_to_planes_chess_v_2_8(PlaneData& planeData, const vector<Action>& legalMoves)
 {
+    const uint_fast32_t nbChannelsTotal = 38;
+    planeData.set_all_planes_to_zero(nbChannelsTotal);
     board_to_planes_chess_v_2_7(planeData, legalMoves);
     set_material_count(planeData);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
+    assert(planeData.current_channel() == nbChannelsTotal);
 }
 
 inline void board_to_planes_chess_v3(PlaneData& planeData, size_t boardRepetition)
 {
+    const uint_fast32_t nbChannelsTotal = 52;
+    planeData.set_all_planes_to_zero(nbChannelsTotal);
     set_plane_pieces(planeData);
     set_plane_repetition(planeData, boardRepetition);
     set_plane_ep_square(planeData);
@@ -527,21 +537,24 @@ inline void board_to_planes_chess_v3(PlaneData& planeData, size_t boardRepetitio
     set_opposite_bishops(planeData);
     set_checkers(planeData);
     set_material_count(planeData);
-#ifdef MODE_CHESS
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
-#endif
+    assert(planeData.current_channel() == nbChannelsTotal);
 }
 
 #ifdef MODE_CRAZYHOUSE
 inline void board_to_planes_crazyhouse_v3(PlaneData& planeData, size_t boardRepetition)
 {
+    const uint_fast32_t nbChannelsTotal = 64;
+    planeData.set_all_planes_to_zero(nbChannelsTotal);
     board_to_planes_chess_v3(planeData, boardRepetition);
     set_plane_pockets(planeData);
     set_plane_promoted_pieces(planeData);
+    assert(planeData.current_channel() == nbChannelsTotal);
 }
 
 inline void board_to_planes_crazyhouse_v2(PlaneData& planeData, size_t boardRepetition)
 {
+    const uint_fast32_t nbChannelsTotal = 51;
+    planeData.set_all_planes_to_zero(nbChannelsTotal);
     set_plane_pieces(planeData);
     set_plane_repetition(planeData, boardRepetition);
     set_plane_pockets(planeData);
@@ -553,6 +566,7 @@ inline void board_to_planes_crazyhouse_v2(PlaneData& planeData, size_t boardRepe
     set_no_progress_counter(planeData);
     set_960(planeData);
     set_last_moves(planeData);
+    assert(planeData.current_channel() == nbChannelsTotal);
 }
 #endif
 
@@ -598,6 +612,5 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
     }
 #endif
     default_board_to_planes(planeData, boardRepetition);
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_TOTAL());
 }
 

@@ -254,6 +254,11 @@ deque<Move> Board::get_last_moves() const
     return lastMoves;
 }
 
+int Board::get_board_piece_count(Color color, PieceType pieceType) const
+{
+    return pieceCount[make_piece(color, pieceType)];
+}
+
 void Board::set(const string &fenStr, bool isChess960, Variant v, StateInfo *si, Thread *th)
 {
     lastMoves.clear();
