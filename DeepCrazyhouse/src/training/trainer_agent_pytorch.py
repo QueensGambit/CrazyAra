@@ -701,4 +701,4 @@ def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle)
         dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
                                       torch.Tensor(y_policy_prep))
     train_loader = DataLoader(dataset, shuffle=shuffle, batch_size=tc.batch_size, num_workers=tc.cpu_count)
-    return train_loader, y_policy
+    return train_loader
