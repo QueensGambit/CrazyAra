@@ -84,3 +84,19 @@ def planes_to_board(planes, normalized_input):
                                      NORMALIZE_50_MOVE_RULE)
 
     return board
+
+
+def normalize_input_planes(planes):
+    """
+    Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
+    :param planes: Input planes representation
+    :return: The normalized planes
+    """
+    chess_v3.normalize_input_planes(planes, NORMALIZE_50_MOVE_RULE)
+    channel = CHANNEL_POCKETS
+    for _ in range(2):  # iterate for player 1 and player 2
+        for _ in chess.PIECE_TYPES[:-1]:
+            planes[channel, :, :] /= NORMALIZE_POCKETS
+            channel += 1
+
+    return planes

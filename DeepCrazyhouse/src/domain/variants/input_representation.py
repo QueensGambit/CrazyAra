@@ -21,7 +21,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     MODE_CRAZYHOUSE,
     MODE_CHESS,
     NB_LAST_MOVES,
-    chess)
+    chess, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.src.domain.variants.constants import MODE
 
@@ -100,6 +100,10 @@ def normalize_input_planes(x):
         return chess_v2.normalize_input_planes(x)
     if MODE == MODE_CHESS and VERSION == 3:
         return chess_v3.normalize_input_planes(x)
+    if MODE == MODE_CRAZYHOUSE and VERSION == 2:
+        return Exception("TODO")
+    if MODE == MODE_CRAZYHOUSE and VERSION == 3:
+        return crazyhouse_v3.normalize_input_planes(x)
 
     return default_normalize_input_planes(x)
 
@@ -133,3 +137,7 @@ def get_planes_statistics(board: chess.Board, normalize: bool, last_moves_uci: l
     for i in range(len(planes)):
         stats['key'] += i * planes[i]
     return stats
+
+
+# use a constant matrix for normalization to allow broadcast operations
+MATRIX_NORMALIZER = normalize_input_planes(np.ones((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)))

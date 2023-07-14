@@ -144,7 +144,7 @@ def load_xiangqi_dataset(dataset_type="train", part_id=0, verbose=True, normaliz
         logging.debug("loading: %s...\n", datasets[part_id])
 
     dataset = zarr.group(store=zarr.ZipStore(datasets[part_id], mode="r"))
-    start_indices, x, y_value, y_policy  = get_x_y_and_indices(dataset)
+    start_indices, x, y_value, y_policy = get_x_y_and_indices(dataset)
 
     if verbose:
         logging.info("STATISTICS:")

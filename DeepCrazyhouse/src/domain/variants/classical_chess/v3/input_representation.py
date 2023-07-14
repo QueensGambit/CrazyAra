@@ -298,17 +298,18 @@ def planes_to_board(planes, normalized_input):
     return board
 
 
-def normalize_input_planes(planes):
+def normalize_input_planes(planes, normalize_50_move_rule=NORMALIZE_50_MOVE_RULE):
     """
     Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
     :param planes: Input planes representation
+    :param normalize_50_move_rule: Normalization constant for 50 move rule counter
     :return: The normalized planes
     """
     channel = CHANNEL_MATERIAL_DIFF
     for _ in chess.PIECE_TYPES[:-1]:
         planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER
         channel += 1
-    planes[CHANNEL_NO_PROGRESS, :, :] /= NORMALIZE_50_MOVE_RULE
+    planes[CHANNEL_NO_PROGRESS, :, :] /= normalize_50_move_rule
     channel = CHANNEL_MATERIAL_COUNT
     for _ in chess.PIECE_TYPES[:-1]:
         planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER

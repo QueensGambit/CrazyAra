@@ -75,7 +75,7 @@ def default_board_to_planes(board, board_occ, last_moves, mode, normalize):
     if mirror_board:
         board = board.mirror()
     if normalize is True:
-        planes *= MATRIX_NORMALIZER
+        planes *= DEFAULT_MATRIX_NORMALIZER
         # planes = normalize_input_planes(planes)
     # return the plane representation of the given board
     return planes
@@ -490,4 +490,4 @@ def flip_board(board) -> bool:
 
 # use a constant matrix for normalization to allow broad cast operations
 # in policy version 2, the king promotion moves were added to support antichess, this deprecates older nets
-MATRIX_NORMALIZER = default_normalize_input_planes(np.ones((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)))
+DEFAULT_MATRIX_NORMALIZER = default_normalize_input_planes(np.ones((NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)))
