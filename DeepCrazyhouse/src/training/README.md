@@ -82,4 +82,7 @@ Then you can start a notebook-server within the NVIDIA-docker container:
 ```bash
 jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root --no-browser .
 ```
-and access the notebook by replacing `127.0.0.1` with the respective IP-address of the server in the URL.
+and access the notebook using `127.0.0.1` or `localhost` on your local machine.
+
+You also need to make sure to open the ssh session with `-L 8888:localhost:8888` or to add `LocalForward 8888 127.0.0.1:8888` in your `~/.ssh/config` file.
+
