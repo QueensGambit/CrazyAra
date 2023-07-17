@@ -406,7 +406,7 @@ inline void default_board_to_planes(PlaneData& planeData, size_t boardRepetition
 #elif defined(MODE_CHESS)
     const uint_fast32_t nbChannelsTotal = 39;
 #else
-    const uint_fast32_t nbChannelsTotal = StateConstants::NB_CHANNELS_TOTAL()
+    const uint_fast32_t nbChannelsTotal = StateConstants::NB_CHANNELS_TOTAL();
 #endif
     planeData.set_all_planes_to_zero(nbChannelsTotal);
 
