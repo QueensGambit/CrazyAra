@@ -31,7 +31,7 @@ FROM nvcr.io/nvidia/pytorch:22.05-py3
 
 Afterwards you can start the container using a specified list of GPUs:
 ```shell script
-docker run --gpus all --shm-size 16G -it \
+docker run --gpus all --shm-size 16G --memory 64G -it \
  --rm -v ~/mnt:/data/RL --name crazyara_rl crazyara_docker:latest
 ```
 If you want to launch the docker using only a subset of available you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.

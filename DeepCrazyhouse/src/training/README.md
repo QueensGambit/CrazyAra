@@ -57,7 +57,7 @@ or the [official NVIDIA MXNet Docker container](https://docs.nvidia.com/deeplear
 and installing the packages in [requirements.txt](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/training/requirements.txt). 
 
 ```bash
-docker run --gpus '"device=0"' -it \
+docker run --gpus '"device=0"' --shm-size 16G --memory 64G -it \
  --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
  --name crazyara_training crazyara_docker:latest
 ```
@@ -73,7 +73,7 @@ and the Tensorboard on:
 
 For older docker versions use:
 ```bash
-nvidia-docker run -it \
+nvidia-docker run --shm-size 16G --memory 64G -it \
  --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
  --name crazyara_training crazyara_docker:latest
 ```
@@ -82,4 +82,7 @@ Then you can start a notebook-server within the NVIDIA-docker container:
 ```bash
 jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root --no-browser .
 ```
-and access the notebook by replacing `127.0.0.1` with the respective IP-address of the server in the URL.
+and access the notebook using `127.0.0.1` or `localhost` on your local machine.
+
+You also need to make sure to open the ssh session with `-L 8888:localhost:8888` or to add `LocalForward 8888 127.0.0.1:8888` in your `~/.ssh/config` file.
+
