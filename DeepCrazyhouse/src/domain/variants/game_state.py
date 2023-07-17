@@ -34,7 +34,7 @@ import chess
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.variants.input_representation import flip_board
+from DeepCrazyhouse.src.domain.variants.default_input_representation import flip_board
 
 
 def mirror_policy(board: chess.Board) -> bool:

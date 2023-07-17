@@ -8,12 +8,12 @@ Input representation 3.0 - No legal move information, but with history again and
 """
 import chess
 from DeepCrazyhouse.src.domain.variants.constants import BOARD_WIDTH, BOARD_HEIGHT, NB_CHANNELS_TOTAL,\
-    NB_LAST_MOVES, NB_CHANNELS_PER_HISTORY_ITEM
+    NB_LAST_MOVES, NB_CHANNELS_PER_HISTORY_ITEM, MODE_CHESS
 from DeepCrazyhouse.src.domain.util import opposite_colored_bishops, get_row_col, np, checkerboard, checkers
 from DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation import set_pieces, set_castling_rights,\
     set_ep_square
+from DeepCrazyhouse.configs.main_config import main_config
 
-NORMALIZE_MOBILITY = 64
 NORMALIZE_PIECE_NUMBER = 8
 NORMALIZE_50_MOVE_RULE = 50
 # These constant describe the starting channel for the corresponding info
@@ -32,7 +32,8 @@ CHANNEL_CHECKERS = 46
 CHANNEL_MATERIAL_COUNT = 47
 
 
-def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=None):
+def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=None,
+                    normalize_50_move_rule=NORMALIZE_50_MOVE_RULE):
     """
     Gets the plane representation of a given board state.
 
@@ -99,6 +100,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     :param board_occ: Number of board occurrences
     :param normalize: True if the inputs shall be normalized to the range [0.-1.]
     :param last_moves: List of last last moves. The most recent move is the first entry.
+    :param normalize_50_move_rule: Normalizing factor for the 50 move rule counter
     :return: planes - the plane representation of the current board state
     """
 
@@ -142,7 +144,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     # Channel: 14
     # En Passant Square
     assert channel == CHANNEL_EN_PASSANT
-    if board.ep_square and board.has_legal_en_passant(): # is not None:
+    if board.ep_square and board.has_legal_en_passant():  # is not None:
         row, col = get_row_col(board.ep_square, mirror=mirror)
         planes[channel, row, col] = 1
     channel += 1
@@ -168,7 +170,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     #  -> see: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
     # check how often the position has already occurred in the game
     assert channel == CHANNEL_NO_PROGRESS
-    planes[channel, :, :] = board.halfmove_clock / NORMALIZE_50_MOVE_RULE if normalize else board.halfmove_clock
+    planes[channel, :, :] = board.halfmove_clock / normalize_50_move_rule if normalize else board.halfmove_clock
     channel += 1
 
     # Channel: 20 - 35
@@ -178,10 +180,11 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
         assert(len(last_moves) == NB_LAST_MOVES)
         for move in last_moves:
             if move:
-                from_row, from_col = get_row_col(move.from_square, mirror=mirror)
-                to_row, to_col = get_row_col(move.to_square, mirror=mirror)
-                planes[channel, from_row, from_col] = 1
+                if not move.drop:
+                    from_row, from_col = get_row_col(move.from_square, mirror=mirror)
+                    planes[channel, from_row, from_col] = 1
                 channel += 1
+                to_row, to_col = get_row_col(move.to_square, mirror=mirror)
                 planes[channel, to_row, to_col] = 1
                 channel += 1
             else:
@@ -251,12 +254,22 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
         planes[channel, :, :] = material_count / NORMALIZE_PIECE_NUMBER if normalize else material_count
         channel += 1
 
-    assert channel == NB_CHANNELS_TOTAL
+    if main_config["mode"] == MODE_CHESS:
+        assert channel == NB_CHANNELS_TOTAL
 
     return planes
 
 
-def planes_to_board(planes):
+def set_no_progress_counter(board, channel, planes, normalized_input, max_nb_no_progress):
+    no_progress_cnt = planes[channel, 0, 0]
+    if normalized_input is True:
+        no_progress_cnt *= max_nb_no_progress
+        no_progress_cnt = int(round(no_progress_cnt))
+
+    board.halfmove_clock = no_progress_cnt
+
+
+def planes_to_board(planes, normalized_input):
     """
     Converts a board in plane representation to the python chess board representation
     see get_planes_of_board() for input encoding description
@@ -279,20 +292,24 @@ def planes_to_board(planes):
     # (II.2) Castling Rights
     set_castling_rights(board, CHANNEL_CASTLING, planes, is960)
 
+    # (II.3) No Progress Count
+    set_no_progress_counter(board, CHANNEL_NO_PROGRESS, planes, normalized_input, NORMALIZE_50_MOVE_RULE)
+
     return board
 
 
-def normalize_input_planes(planes):
+def normalize_input_planes(planes, normalize_50_move_rule=NORMALIZE_50_MOVE_RULE):
     """
     Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
     :param planes: Input planes representation
+    :param normalize_50_move_rule: Normalization constant for 50 move rule counter
     :return: The normalized planes
     """
     channel = CHANNEL_MATERIAL_DIFF
     for _ in chess.PIECE_TYPES[:-1]:
         planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER
         channel += 1
-    planes[CHANNEL_NO_PROGRESS, :, :] /= NORMALIZE_50_MOVE_RULE
+    planes[CHANNEL_NO_PROGRESS, :, :] /= normalize_50_move_rule
     channel = CHANNEL_MATERIAL_COUNT
     for _ in chess.PIECE_TYPES[:-1]:
         planes[channel, :, :] /= NORMALIZE_PIECE_NUMBER

@@ -10,7 +10,9 @@ https://gitlab.com/jweil/PommerLearn/-/blob/master/pommerlearn/training/train_cn
 """
 
 import random
+import os
 import logging
+import glob
 from pathlib import Path
 import torch
 import torch.nn as nn
@@ -203,6 +205,8 @@ class TrainerAgentPytorch:
                                     model_prefix = "model-%.5f-%.3f-%04d"\
                                                    % (self.val_loss_best, self.val_p_acc_best, self.k_steps_best)
                                     filepath = Path(self.tc.export_dir + f"weights/{model_prefix}.tar")
+                                    self.delete_previous_weights()
+
                                     # the export function saves both the architecture and the weights
                                     save_torch_state(self._model, self.optimizer, filepath)
                                     print()
@@ -256,6 +260,15 @@ class TrainerAgentPytorch:
 
                                 return return_metrics_and_stop_training(self.k_steps, val_metric_values, self.k_steps_best,
                                                                         self.val_metric_values_best)
+
+    def delete_previous_weights(self):
+        """
+        Delete previous weights in the "weights" folder to save space.
+        """
+        # delete previous weights to save space
+        files = glob.glob(self.tc.export_dir + 'weights/*')
+        for f in files:
+            os.remove(f)
 
     def _get_train_loader(self, part_id):
         # load one chunk of the dataset from memory

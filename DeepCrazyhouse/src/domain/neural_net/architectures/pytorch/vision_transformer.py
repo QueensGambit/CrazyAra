@@ -246,7 +246,7 @@ class VisionTransformer(nn.Module):
     def forward(self, x, labels=None):
         x = self.transformer(x)  # attn_weights
         # value_out = self.value_head(x[:, 0])
-        value_head_out =self.value_head(x[:, 0])
+        value_head_out = self.value_head(x[:, 0])
         logits = self.policy_head(x[:, 0])
 
         if self.use_plys_to_end and self.use_wdl:
