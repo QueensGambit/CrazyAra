@@ -11,12 +11,13 @@ import chess
 from chess.variant import CrazyhouseBoard
 
 from DeepCrazyhouse.src.domain.variants.classical_chess.v3.input_representation import set_no_progress_counter
-from DeepCrazyhouse.src.domain.variants.default_input_representation import default_board_to_planes
+from DeepCrazyhouse.src.domain.variants.default_input_representation import default_board_to_planes,\
+    default_normalize_input_planes
 from DeepCrazyhouse.src.domain.variants.constants import MODE_CRAZYHOUSE, MAX_NB_MOVES, MAX_NB_PRISONERS, \
     MAX_NB_NO_PROGRESS
 from DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representation import set_ep_square, \
     set_castling_rights
-from DeepCrazyhouse.src.domain.variants.default_input_representation import _set_crazyhouse_info, set_pieces_on_board, \
+from DeepCrazyhouse.src.domain.variants.default_input_representation import set_pieces_on_board, \
     set_pocket_pieces_to_board
 
 NORMALIZE_POCKETS = MAX_NB_PRISONERS  # at maximum, you can have only 16 pawns (your own and the ones of the opponent)
@@ -126,6 +127,15 @@ def planes_to_board(planes, normalized_input):
     board = mirror_board_depending_on_color(board, planes, CHANNEL_COLOR)
 
     return board
+
+
+def normalize_input_planes(planes):
+    """
+    Normalizes input planes to range [0,1]. Works in place / meaning the input parameter x is manipulated
+    :param planes: Input planes representation
+    :return: The normalized planes
+    """
+    return default_normalize_input_planes(planes)
 
 
 def set_total_move_count_to_board(board, planes, normalized_input, channel_mv_cnt, max_nb_moves):

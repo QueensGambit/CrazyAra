@@ -101,7 +101,7 @@ def normalize_input_planes(x):
     if MODE == MODE_CHESS and VERSION == 3:
         return chess_v3.normalize_input_planes(x)
     if MODE == MODE_CRAZYHOUSE and VERSION == 2:
-        return Exception("TODO")
+        return crazyhouse_v2.normalize_input_planes(x)
     if MODE == MODE_CRAZYHOUSE and VERSION == 3:
         return crazyhouse_v3.normalize_input_planes(x)
 
@@ -128,6 +128,7 @@ def get_planes_statistics(board: chess.Board, normalize: bool, last_moves_uci: l
 
     planes = board_to_planes(board, board_occ=board_occ, normalize=normalize, mode=main_config['mode'],
                              last_moves=last_moves)
+    planes = normalize_input_planes(planes)
     planes = planes.flatten()
     stats = {}
     stats['sum'] = planes.sum()
