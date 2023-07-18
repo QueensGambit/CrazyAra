@@ -142,7 +142,8 @@ def set_pocket_pieces_to_board(board, channel, planes, normalized_input, max_nb_
                 nb_prisoners = int(round(nb_prisoners * max_nb_pockets))
 
             # update the pockets
-            board.pockets[color].update([p_type] * nb_prisoners)
+            for _ in range(nb_prisoners):
+                board.pockets[color].add(p_type)
 
 
 def default_planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
