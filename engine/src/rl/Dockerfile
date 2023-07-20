@@ -189,7 +189,7 @@ RUN cd /root/cutechess-cli \
 # -------------------------------------
 RUN echo "Downloading opening books for crazyhouse..."
 RUN cd /root/cutechess-cli \
-    && wget https://raw.githubusercontent.com/ianfab/books/master/crazyhouse.epd \
+    && wget https://raw.githubusercontent.com/ianfab/books/master/crazyhouse.epd
 
 CMD cd /root/CrazyAra/engine/src/rl/ \
     && git pull \
