@@ -135,12 +135,17 @@ else \
     && make -j8 ; \
 fi
 
-# Install debugging utilities for "coredumpctl gdb"
+# Install debugging utilities for to allow creating core-dumps "gdb"
 RUN apt-get update -y \
-     && apt-get install -y systemd-coredump \
-     && apt-get install -y gdb \
+    && apt-get install -y --no-install-recommends \
+    systemd \
+    init \
+    apport \
+    gdb \
+    python3-systemd \
      && apt-get clean \
-     && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+
 
 ENV WORK_DIR /root/CrazyAra/engine/build
 RUN echo "WORK_DIR: " ${WORK_DIR}
@@ -190,6 +195,16 @@ RUN cd /root/cutechess-cli \
 RUN echo "Downloading opening books for crazyhouse..."
 RUN cd /root/cutechess-cli \
     && wget https://raw.githubusercontent.com/ianfab/books/master/crazyhouse.epd
+
+# enable core-dumps and port forwarding
+RUN sed -i "s/enabled=0/enabled=1/g" /etc/default/apport && \
+    sed -i "s/'problem_types'/#'problem_types'/g" /etc/apport/crashdb.conf && \
+    sed -i "s/ConditionVirtualization=container//g" /lib/systemd/system/apport-forward.socket
+RUN systemctl enable apport-forward.socket
+
+EXPOSE 5000
+ENTRYPOINT [ "/sbin/init" ]
+WORKDIR /root/CrazyAra/engine/src/rl/
 
 CMD cd /root/CrazyAra/engine/src/rl/ \
     && git pull \
