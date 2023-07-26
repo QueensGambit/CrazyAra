@@ -56,7 +56,7 @@ struct PlaneData {
         flipBoard(flip_board(*pos, pos->side_to_move())), normalize(normalize) {
     }
     inline void set_all_planes_to_zero(uint_fast32_t nbChannelsTotal) {
-        std::fill_n(curIt, nbChannelsTotal, 0.0f);
+        std::fill_n(curIt, nbChannelsTotal*StateConstants::NB_SQUARES(), 0.0f);
     }
     inline Color me() {
         return pos->side_to_move();
