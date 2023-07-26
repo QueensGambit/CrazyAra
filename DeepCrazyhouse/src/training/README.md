@@ -53,29 +53,26 @@ This will reduce the batch-size and learning rate accordingly.
 ### Start training from a Docker container
 
 The training can also be started from the [crazyara docker container](https://github.com/QueensGambit/CrazyAra/blob/master/engine/src/rl/Dockerfile)
+that is also used for reinforcement learning
 or the [official NVIDIA MXNet Docker container](https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/overview.html#overview)
 and installing the packages in [requirements.txt](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/training/requirements.txt). 
 
+After building the container
 ```bash
-docker run --gpus '"device=0"' --shm-size 16G --memory 64G -it \
+docker build -t crazyara_docker .
+```
+you can start it via the `docker run` command:
+```bash
+docker run --gpus all --privileged --shm-size 16G --memory 128G -it \
  --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
  --name crazyara_training crazyara_docker:latest
 ```
 
-Next, you can access the jupyter notebook in your browser:
+`--privileged` is required to run the Linux-init process to be able to use the apport service for generating core dumps.
 
-`<IP-Address of server>:8888`
-
-and the Tensorboard on:
-
-`<IP-Address of server>:6006`
-
-
-For older docker versions use:
-```bash
-nvidia-docker run --shm-size 16G --memory 64G -it \
- --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
- --name crazyara_training crazyara_docker:latest
+Next, you need to detach from the container using `ctrl+p+q` and start a new docker-session:
+```shell script
+docker exec -it crazyara_training bash
 ```
 
 Then you can start a notebook-server within the NVIDIA-docker container:
@@ -85,4 +82,3 @@ jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root --no-browser .
 and access the notebook using `127.0.0.1` or `localhost` on your local machine.
 
 You also need to make sure to open the ssh session with `-L 8888:localhost:8888` or to add `LocalForward 8888 127.0.0.1:8888` in your `~/.ssh/config` file.
-
