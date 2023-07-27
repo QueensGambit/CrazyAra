@@ -190,8 +190,6 @@ public:
     void revert_virtual_loss_and_update(ChildIdx childIdx, float value, const SearchSettings* searchSettings, bool solveForTerminal)
     {
         lock();
-        // decrement virtual loss counter
-        update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
 
         valueSum += value;
         ++realVisitsSum;
@@ -204,9 +202,20 @@ public:
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
-            d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+            switch(searchSettings->virtualStyle) {
+            case VIRTUAL_LOSS:
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+                break;
+            case VIRTUAL_VISIT:
+                const uint_fast32_t childRealVisit = get_real_visits(childIdx);
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
+            }
+
             assert(!isnan(d->qValues[childIdx]));
         }
+
+        // decrement virtual loss counter
+        update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
 
         if (searchSettings->virtualLoss != 1) {
             d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
@@ -225,7 +234,7 @@ public:
      * @brief revert_virtual_loss Reverts the virtual loss for a target node
      * @param childIdx Index to the child node to update
      */
-    void revert_virtual_loss(ChildIdx childIdx, float virtualLoss);
+    void revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSettings);
 
     bool is_playout_node() const;
 
@@ -259,7 +268,7 @@ public:
     double get_value_sum() const;
     uint32_t get_real_visits() const;
 
-    void apply_virtual_loss_to_child(ChildIdx childIdx, uint_fast32_t virtualLoss);
+    void apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* searchSettings);
 
     void increment_no_visit_idx();
     void fully_expand_node();
@@ -470,7 +479,7 @@ public:
      */
     void decrement_number_parents();
 
-    double get_q_sum(ChildIdx childIdx, float virtualLoss) const;
+    double get_q_sum_virtual_loss(ChildIdx childIdx, float virtualLoss) const;
 
     template<bool increment>
     void update_virtual_loss_counter(ChildIdx childIdx, float virtualLoss)
@@ -514,6 +523,17 @@ public:
 #endif
 
     uint32_t get_number_of_nodes() const;
+
+
+    /**
+     * @brief get_transposition_q_value Returns the Q-value (without virtualLoss) which connects to the transposition node.
+     * The q-Value is also multiplied by -1 if searchSettings->searchPlayerMode == MODE_TWO_PLAYER.
+     * @param currentNode Current node
+     * @param childIdx child index
+     * @param transposVisits Number of visits connecting to the transposition node
+     * @return Q-Value converted to double
+     */
+    double get_transposition_q_value(const SearchSettings* searchSettings, ChildIdx childIdx, uint_fast32_t transposVisits);
 
 private:
     /**
@@ -765,12 +785,12 @@ bool is_terminal_value(float value);
 /**
  * @brief backup_collision Iteratively removes the virtual loss of the collision event that occurred
  * @param rootNode Root node of the tree
- * @param virtualLoss Virtual loss value
+ * @param searchSettings Search settings struct
  * @param trajectory Trajectory on how to get to the given collision
  */
-void backup_collision(float virtualLoss, const Trajectory& trajectory);
+void backup_collision(const SearchSettings* searchSettings, const Trajectory& trajectory);
 
-float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue);
+float get_transposition_backup_value(uint_fast32_t transposVisits, double transposQValue, double masterQValue);
 
 /**
  * @brief backup_value Iteratively backpropagates a value prediction across all of the parents for this node.
@@ -788,15 +808,12 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
         if (targetQValue != 0) {
             const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
             if (transposVisits != 0) {
-                const double transposQValue = -it->node->get_q_sum(it->childIdx, searchSettings->virtualLoss) / transposVisits;
-                value = get_transposition_q_value(transposVisits, transposQValue, targetQValue);
+                const double transposQValue = it->node->get_transposition_q_value(searchSettings, it->childIdx, transposVisits);
+                value = get_transposition_backup_value(transposVisits, transposQValue, targetQValue);
             }
         }
-        switch (searchSettings->searchPlayerMode) {
-            case MODE_TWO_PLAYER:
+        if (searchSettings->searchPlayerMode == MODE_TWO_PLAYER) {
                 value = -value;
-            break;
-        case MODE_SINGLE_PLAYER: ;
         }
         freeBackup ? it->node->revert_virtual_loss_and_update<true>(it->childIdx, value, searchSettings, solveForTerminal) :
                    it->node->revert_virtual_loss_and_update<false>(it->childIdx, value, searchSettings, solveForTerminal);

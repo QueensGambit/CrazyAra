@@ -36,6 +36,11 @@ enum SearchPlayerMode {
     MODE_TWO_PLAYER
 };
 
+enum VirtualStyle {
+    VIRTUAL_LOSS,
+    VIRTUAL_VISIT
+};
+
 struct SearchSettings
 {
     uint16_t multiPV;
@@ -75,6 +80,8 @@ struct SearchSettings
     bool mctsSolver;
     // Defines the nubmer of players within the MCTS search. Available are MODE_SINGLE_PLAYER and MODE_TWO_PLAYER
     SearchPlayerMode searchPlayerMode;
+    // Define the virtual style to avoid conflict between different threads in within the same mini-batch
+    VirtualStyle virtualStyle;
     SearchSettings();
 
 };

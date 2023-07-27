@@ -739,6 +739,12 @@ void CrazyAra::init_search_settings()
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
     searchSettings.mctsSolver = Options["MCTS_Solver"];
+    if (Options["Virtual_Style"] == "virtual_loss") {
+        searchSettings.virtualStyle = VIRTUAL_LOSS;
+    }
+    else {  // Options["Virtual_Style"] == "virtual_visit")
+        searchSettings.virtualStyle = VIRTUAL_VISIT;
+    }
 }
 
 void CrazyAra::init_play_settings()

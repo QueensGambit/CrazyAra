@@ -184,7 +184,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
         if (childIdx == uint16_t(-1)) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
-        currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
+        currentNode->apply_virtual_loss_to_child(childIdx, searchSettings);
         trajectoryBuffer.emplace_back(NodeAndIdx(currentNode, childIdx));
 
         nextNode = currentNode->get_child_node(childIdx);
@@ -242,12 +242,13 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
         if (nextNode->is_transposition()) {
             nextNode->lock();
             const uint_fast32_t transposVisits = currentNode->get_real_visits(childIdx);
-            const double transposQValue = -currentNode->get_q_sum(childIdx, searchSettings->virtualLoss) / transposVisits;
+            const double transposQValue = currentNode->get_transposition_q_value(searchSettings, childIdx, transposVisits);
+
             if (nextNode->is_transposition_return(transposQValue)) {
-                const float qValue = get_transposition_q_value(transposVisits, transposQValue, nextNode->get_value());
+                const float backupValue = get_transposition_backup_value(transposVisits, transposQValue, nextNode->get_value());
                 nextNode->unlock();
                 description.type = NODE_TRANSPOSITION;
-                transpositionValues->add_element(qValue);
+                transpositionValues->add_element(backupValue);
                 currentNode->unlock();
                 return nextNode;
             }
@@ -312,7 +313,7 @@ void SearchThread::backup_value_outputs()
 
 void SearchThread::backup_collisions() {
     for (size_t idx = 0; idx < collisionTrajectories.size(); ++idx) {
-        backup_collision(searchSettings->virtualLoss, collisionTrajectories[idx]);
+        backup_collision(searchSettings, collisionTrajectories[idx]);
     }
     collisionTrajectories.clear();
 }
@@ -320,8 +321,8 @@ void SearchThread::backup_collisions() {
 bool SearchThread::nodes_limits_ok()
 {
     return (searchLimits->nodes == 0 || (rootNode->get_node_count() < searchLimits->nodes)) &&
-            (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations)) &&
-            (searchLimits->nodesLimit == 0 || (rootNode->get_node_count() < searchLimits->nodesLimit));
+           (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations)) &&
+           (searchLimits->nodesLimit == 0 || (rootNode->get_node_count() < searchLimits->nodesLimit));
 }
 
 bool SearchThread::is_root_node_unsolved()

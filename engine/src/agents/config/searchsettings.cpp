@@ -49,7 +49,8 @@ SearchSettings::SearchSettings():
         epsilonGreedyCounter(20),
         reuseTree(true),
         mctsSolver(false),
-        searchPlayerMode(MODE_TWO_PLAYER)
+        searchPlayerMode(MODE_TWO_PLAYER),
+        virtualStyle(VIRTUAL_VISIT)
 {
 
 }
