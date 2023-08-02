@@ -524,7 +524,7 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
         d->childNumberVisits[childIdx] += visitIncrease;
         d->visitSum += visitIncrease;
         break;
-    case VIRTUAL_OFFSET:
+    case VIRTUAL_OFFSET: ;
         // pass
     }
 
@@ -701,7 +701,7 @@ void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSe
             d->childNumberVisits[childIdx] += visitIncrease;
             d->visitSum += visitIncrease;
         }
-    case VIRTUAL_OFFSET:
+    case VIRTUAL_OFFSET: ;
         // pass
     }
 
