@@ -653,20 +653,11 @@ uint32_t Node::get_visits() const
 
 uint32_t Node::get_real_visits(ChildIdx childIdx, const SearchSettings* searchSettings) const
 {
-    uint_fast32_t visitIncrease;
-    uint_fast32_t visits;
-    uint_fast32_t visitAdjustment;
     switch (searchSettings->virtualStyle) {
     case VIRTUAL_LOSS:
         return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss;
     case VIRTUAL_VISIT:
-        visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
-        visits = d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
-        visitAdjustment = visitIncrease - get_virtual_visit_increment(visits, searchSettings);
-        if (visitAdjustment != 0) {
-            return visits + visitAdjustment;
-        }
-        return visits;
+        return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
     case VIRTUAL_OFFSET:
         return d->childNumberVisits[childIdx];
     }
@@ -682,7 +673,6 @@ void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSe
 {
     lock();
     uint_fast32_t visitIncrease;
-    uint_fast32_t visitAdjustment;
     switch (searchSettings->virtualStyle) {
     case VIRTUAL_LOSS:
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
@@ -694,13 +684,6 @@ void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSe
         // virtual decrease the number of visits
         d->childNumberVisits[childIdx] -= visitIncrease;
         d->visitSum -= visitIncrease;
-        // adjust the visits back
-        visitAdjustment = visitIncrease - get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
-        if (visitAdjustment != 0) {
-            // virtual increase by the difference
-            d->childNumberVisits[childIdx] += visitIncrease;
-            d->visitSum += visitIncrease;
-        }
     case VIRTUAL_OFFSET: ;
         // pass
     }

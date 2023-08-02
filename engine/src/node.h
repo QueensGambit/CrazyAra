@@ -221,23 +221,16 @@ public:
             case VIRTUAL_VISIT:
                 childRealVisit = get_real_visits(childIdx, searchSettings);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
-
                 visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
-                // virtual increase the number of visits
-                d->childNumberVisits[childIdx] -= visitIncrease;
-                d->visitSum -= visitIncrease;
-                // adjust the visits back
-                visitAdjustment = visitIncrease - get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
-                if (visitAdjustment != 0) {
-                    // virtual increase by the difference
-                    d->childNumberVisits[childIdx] += visitIncrease;
-                    d->visitSum += visitIncrease;
+                if (visitIncrease != 0) {
+                    // virtual increase the number of visits
+                    d->childNumberVisits[childIdx] -= visitIncrease;
+                    d->visitSum -= visitIncrease;
                 }
                 break;
             case VIRTUAL_OFFSET:
                 childRealVisit = get_real_visits(childIdx, searchSettings);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
-
                 ++d->childNumberVisits[childIdx];
                 ++d->visitSum;
             }
