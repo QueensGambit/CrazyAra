@@ -50,7 +50,8 @@ SearchSettings::SearchSettings():
         reuseTree(true),
         mctsSolver(false),
         searchPlayerMode(MODE_TWO_PLAYER),
-        virtualStyle(VIRTUAL_VISIT)
+        virtualStyle(VIRTUAL_VISIT),
+        virtualVisitIncrement(100)
 {
 
 }

@@ -82,6 +82,8 @@ struct SearchSettings
     SearchPlayerMode searchPlayerMode;
     // Define the virtual style to avoid conflict between different threads in within the same mini-batch
     VirtualStyle virtualStyle;
+    // Defines when the virtualLoss weight is increased by 1 for virtualVisits
+    uint_fast32_t virtualVisitIncrement;
     SearchSettings();
 
 };

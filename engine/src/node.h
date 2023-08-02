@@ -84,6 +84,11 @@ struct NodeAndBudget {
         node(node), budget(budget), curState(state) {}
 };
 
+inline int get_virtual_visit_increment(uint_fast32_t childNumberVisit, const SearchSettings* searchSettings) {
+    return (childNumberVisit / searchSettings->virtualVisitIncrement) + 1;
+}
+
+
 class Node
 {
 private:
@@ -205,22 +210,34 @@ public:
             switch(searchSettings->virtualStyle) {
             case VIRTUAL_LOSS:
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
+                if (searchSettings->virtualLoss != 1) {
+                    d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
+                    d->visitSum -= size_t(searchSettings->virtualLoss) - 1;
+                }
                 break;
             case VIRTUAL_VISIT:
-                const uint_fast32_t childRealVisit = get_real_visits(childIdx);
+                const uint_fast32_t childRealVisit = get_real_visits(childIdx, searchSettings);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
+
+                const uint_fast32_t visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
+                // virtual increase the number of visits
+                d->childNumberVisits[childIdx] -= visitIncrease;
+                d->visitSum -= visitIncrease;
+                // adjust the visits back
+                const uint_fast32_t visitAdjustment = visitIncrease - get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
+                if (visitAdjustment != 0) {
+                    // virtual increase by the difference
+                    d->childNumberVisits[childIdx] += visitIncrease;
+                    d->visitSum += visitIncrease;
+                }
             }
 
             assert(!isnan(d->qValues[childIdx]));
         }
 
         // decrement virtual loss counter
-        update_virtual_loss_counter<false>(childIdx, searchSettings->virtualLoss);
+        update_virtual_loss_counter<false>(childIdx);
 
-        if (searchSettings->virtualLoss != 1) {
-            d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
-            d->visitSum -= size_t(searchSettings->virtualLoss) - 1;
-        }
         if (freeBackup) {
             ++d->freeVisits;
         }
@@ -300,7 +317,7 @@ public:
      * @param childIdx Child index
      * @return uint32_t
      */
-    uint32_t get_real_visits(ChildIdx childIdx) const;
+    uint32_t get_real_visits(ChildIdx childIdx, const SearchSettings* searchSettings) const;
 
     void lock();
     void unlock();
@@ -482,14 +499,14 @@ public:
     double get_q_sum_virtual_loss(ChildIdx childIdx, float virtualLoss) const;
 
     template<bool increment>
-    void update_virtual_loss_counter(ChildIdx childIdx, float virtualLoss)
+    void update_virtual_loss_counter(ChildIdx childIdx)
     {
         if (increment) {
-            d->virtualLossCounter[childIdx] += virtualLoss;
+            ++d->virtualLossCounter[childIdx];
         }
         else {
             assert(d->virtualLossCounter[childIdx] != 0);
-            d->virtualLossCounter[childIdx] -= virtualLoss;
+            --d->virtualLossCounter[childIdx];
         }
     }
 
@@ -806,7 +823,7 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
     double targetQValue = 0;
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
         if (targetQValue != 0) {
-            const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx);
+            const uint_fast32_t transposVisits = it->node->get_real_visits(it->childIdx, searchSettings);
             if (transposVisits != 0) {
                 const double transposQValue = it->node->get_transposition_q_value(searchSettings, it->childIdx, transposVisits);
                 value = get_transposition_backup_value(transposVisits, transposQValue, targetQValue);
@@ -834,6 +851,5 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
  * @return True, for verification, else false
  */
 bool is_transposition_verified(const Node* node, const StateObj* state);
-
 
 #endif // NODE_H
