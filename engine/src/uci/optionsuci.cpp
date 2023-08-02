@@ -193,6 +193,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Use_Raw_Network"]               << Option(false);
     o["Virtual_Style"]                 << Option("virtual_visit", { "virtual_loss", "virtual_visit" });
+    o["Virtual_Visit_Increment"]                    << Option(100, 1, 99999999);
     // additional UCI-Options for RL only
 #ifdef USE_RL
     o["Centi_Node_Random_Factor"]      << Option(10, 0, 100);

@@ -745,6 +745,7 @@ void CrazyAra::init_search_settings()
     else {  // Options["Virtual_Style"] == "virtual_visit")
         searchSettings.virtualStyle = VIRTUAL_VISIT;
     }
+    searchSettings.virtualVisitIncrement = Options["Virtual_Visit_Increment"];
 }
 
 void CrazyAra::init_play_settings()
