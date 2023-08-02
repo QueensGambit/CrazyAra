@@ -742,8 +742,11 @@ void CrazyAra::init_search_settings()
     if (Options["Virtual_Style"] == "virtual_loss") {
         searchSettings.virtualStyle = VIRTUAL_LOSS;
     }
-    else {  // Options["Virtual_Style"] == "virtual_visit")
+    else if (Options["Virtual_Style"] == "virtual_visit") {
         searchSettings.virtualStyle = VIRTUAL_VISIT;
+    }
+    else {  // Options["Virtual_Style"] == "virtual_offset"
+        searchSettings.virtualStyle = VIRTUAL_OFFSET;
     }
     searchSettings.virtualVisitIncrement = Options["Virtual_Visit_Increment"];
 }

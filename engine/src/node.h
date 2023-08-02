@@ -207,6 +207,9 @@ public:
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
+            uint_fast32_t childRealVisit;
+            uint_fast32_t visitIncrease;
+            uint_fast32_t visitAdjustment;
             switch(searchSettings->virtualStyle) {
             case VIRTUAL_LOSS:
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
@@ -216,20 +219,27 @@ public:
                 }
                 break;
             case VIRTUAL_VISIT:
-                const uint_fast32_t childRealVisit = get_real_visits(childIdx, searchSettings);
+                childRealVisit = get_real_visits(childIdx, searchSettings);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
 
-                const uint_fast32_t visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
+                visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
                 // virtual increase the number of visits
                 d->childNumberVisits[childIdx] -= visitIncrease;
                 d->visitSum -= visitIncrease;
                 // adjust the visits back
-                const uint_fast32_t visitAdjustment = visitIncrease - get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
+                visitAdjustment = visitIncrease - get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
                 if (visitAdjustment != 0) {
                     // virtual increase by the difference
                     d->childNumberVisits[childIdx] += visitIncrease;
                     d->visitSum += visitIncrease;
                 }
+                break;
+            case VIRTUAL_OFFSET:
+                childRealVisit = get_real_visits(childIdx, searchSettings);
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
+
+                ++d->childNumberVisits[childIdx];
+                ++d->visitSum;
             }
 
             assert(!isnan(d->qValues[childIdx]));

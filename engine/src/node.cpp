@@ -510,17 +510,23 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
-    if (searchSettings->virtualStyle == VIRTUAL_LOSS) {
+    int visitIncrease;
+    switch (searchSettings->virtualStyle) {
+    case VIRTUAL_LOSS:
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - searchSettings->virtualLoss) / double(d->childNumberVisits[childIdx] + searchSettings->virtualLoss);
         // virtual increase the number of visits
         d->childNumberVisits[childIdx] += searchSettings->virtualLoss;
         d->visitSum += searchSettings->virtualLoss;
+        break;
+    case VIRTUAL_VISIT:
+        visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
+        // virtual increase the number of visits
+        d->childNumberVisits[childIdx] += visitIncrease;
+        d->visitSum += visitIncrease;
+        break;
+    case VIRTUAL_OFFSET:
+        // pass
     }
-
-    const int visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
-    // virtual increase the number of visits
-    d->childNumberVisits[childIdx] += visitIncrease;
-    d->visitSum += visitIncrease;
 
     // increment virtual loss counter
     update_virtual_loss_counter<true>(childIdx);
@@ -647,17 +653,23 @@ uint32_t Node::get_visits() const
 
 uint32_t Node::get_real_visits(ChildIdx childIdx, const SearchSettings* searchSettings) const
 {
-    if (searchSettings->virtualStyle == VIRTUAL_LOSS) {
+    uint_fast32_t visitIncrease;
+    uint_fast32_t visits;
+    uint_fast32_t visitAdjustment;
+    switch (searchSettings->virtualStyle) {
+    case VIRTUAL_LOSS:
         return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualLoss;
+    case VIRTUAL_VISIT:
+        visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
+        visits = d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
+        visitAdjustment = visitIncrease - get_virtual_visit_increment(visits, searchSettings);
+        if (visitAdjustment != 0) {
+            return visits + visitAdjustment;
+        }
+        return visits;
+    case VIRTUAL_OFFSET:
+        return d->childNumberVisits[childIdx];
     }
-    // VIRTUAL_VISIT
-    const uint_fast32_t visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
-    const uint_fast32_t visits = d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
-    const uint_fast32_t visitAdjustment = visitIncrease - get_virtual_visit_increment(visits, searchSettings);
-    if (visitAdjustment != 0) {
-        return visits + visitAdjustment;
-    }
-    return visits;
 }
 
 void backup_collision(const SearchSettings* searchSettings, const Trajectory& trajectory) {
@@ -669,6 +681,8 @@ void backup_collision(const SearchSettings* searchSettings, const Trajectory& tr
 void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSettings)
 {
     lock();
+    uint_fast32_t visitIncrease;
+    uint_fast32_t visitAdjustment;
     switch (searchSettings->virtualStyle) {
     case VIRTUAL_LOSS:
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss) / (d->childNumberVisits[childIdx] - searchSettings->virtualLoss);
@@ -676,17 +690,19 @@ void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSe
         d->visitSum -= searchSettings->virtualLoss;
         break;
     case VIRTUAL_VISIT:
-        const uint_fast32_t visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
+        visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
         // virtual decrease the number of visits
         d->childNumberVisits[childIdx] -= visitIncrease;
         d->visitSum -= visitIncrease;
         // adjust the visits back
-        const uint_fast32_t visitAdjustment = visitIncrease - get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
+        visitAdjustment = visitIncrease - get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
         if (visitAdjustment != 0) {
             // virtual increase by the difference
             d->childNumberVisits[childIdx] += visitIncrease;
             d->visitSum += visitIncrease;
         }
+    case VIRTUAL_OFFSET:
+        // pass
     }
 
     // decrement virtual loss counter
@@ -1174,6 +1190,9 @@ ChildIdx Node::select_child_node(const SearchSettings* searchSettings)
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
+    if (searchSettings->virtualStyle == VIRTUAL_OFFSET) {
+        return argmax(d->qValues - d->virtualLossCounter * searchSettings->virtualLoss + get_current_u_values(searchSettings));
+    }
     return argmax(d->qValues + get_current_u_values(searchSettings));
 }
 

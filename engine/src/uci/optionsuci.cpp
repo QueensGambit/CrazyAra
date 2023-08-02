@@ -192,7 +192,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["UCI_Variant"]                   << Option(StateConstants::DEFAULT_UCI_VARIANT().c_str(), {StateConstants::DEFAULT_UCI_VARIANT().c_str(), StateConstants::DEFAULT_UCI_VARIANT().c_str()});
 #endif
     o["Use_Raw_Network"]               << Option(false);
-    o["Virtual_Style"]                 << Option("virtual_visit", { "virtual_loss", "virtual_visit" });
+    o["Virtual_Style"]                 << Option("virtual_visit", { "virtual_loss", "virtual_visit", "virtual_offset" });
     o["Virtual_Visit_Increment"]                    << Option(100, 1, 99999999);
     // additional UCI-Options for RL only
 #ifdef USE_RL
