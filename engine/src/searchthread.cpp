@@ -91,6 +91,10 @@ Node* SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, C
 {
     bool transposition;
     Node* newNode = parentNode->add_new_node_to_tree(mapWithMutex, newState, childIdx, searchSettings, transposition);
+    if (newNode->is_terminal()) {
+        nodeBackup = NODE_TERMINAL;
+        return newNode;
+    }
     if (transposition) {
         const float qValue =  parentNode->get_child_node(childIdx)->get_value();
         transpositionValues->add_element(qValue);
@@ -294,11 +298,9 @@ void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
-        if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
-                            tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
-                            searchSettings, rootNode->is_tablebase());
-        }
+        fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
+                        tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
+                        searchSettings, rootNode->is_tablebase());
         ++batchIdx;
     }
 }
