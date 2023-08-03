@@ -212,18 +212,20 @@ public:
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
-            const uint_fast32_t childRealVisit = get_real_visits(childIdx);
-            switch(get_virtual_style(searchSettings, childRealVisit)) {
+            uint_fast32_t childRealVisit = get_real_visits(childIdx);
+            switch(get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
             case VIRTUAL_LOSS:
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1 + value) / d->childNumberVisits[childIdx];
                 break;
             case VIRTUAL_VISIT:
+                childRealVisit = get_real_visits(childIdx);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
                 break;
             case VIRTUAL_OFFSET:
-                d->qValues[childIdx] = (double)(d->qValues[childIdx] + d->virtualLossCounter[childIdx] * searchSettings->virtualWeight);
+                childRealVisit = get_real_visits(childIdx);
+                d->qValues[childIdx] = (double)(d->qValues[childIdx] + d->virtualLossCounter[childIdx] * 0.01);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
-                d->qValues[childIdx] = (double)(d->qValues[childIdx] - (d->virtualLossCounter[childIdx]-1) * searchSettings->virtualWeight);
+                d->qValues[childIdx] = (double)(d->qValues[childIdx] - (d->virtualLossCounter[childIdx]-1) * 0.01);
             case VIRTUAL_MIX: ;
                 // unreachable
             }
@@ -231,8 +233,8 @@ public:
             assert(!isnan(d->qValues[childIdx]));
         }
 
-        // decrement virtual loss counter
         update_virtual_loss_counter<false>(childIdx);
+        // decrement virtual loss counter
 
         if (freeBackup) {
             ++d->freeVisits;

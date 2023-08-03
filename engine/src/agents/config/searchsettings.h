@@ -55,7 +55,7 @@ struct SearchSettings
     float qValueWeight;
     // describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
     float qVetoDelta;
-    uint_fast32_t virtualWeight;
+//    uint_fast32_t virtualWeight;
     bool verbose;
     uint_fast8_t epsilonChecksCounter;
 //    bool enhanceCaptures;   currently not support

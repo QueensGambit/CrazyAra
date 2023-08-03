@@ -510,12 +510,12 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
-    switch (get_virtual_style(searchSettings, get_real_visits(childIdx))) {
+    switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
     case VIRTUAL_LOSS:
-        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - searchSettings->virtualWeight) / double(d->childNumberVisits[childIdx] + searchSettings->virtualWeight);
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - 1) / double(d->childNumberVisits[childIdx] + 1);
         break;
     case VIRTUAL_OFFSET:
-        d->qValues[childIdx] = (double)(d->qValues[childIdx] - searchSettings->virtualWeight);
+        d->qValues[childIdx] = (double)(d->qValues[childIdx] - 0.01);
     case VIRTUAL_VISIT: ;  // ignore
     case VIRTUAL_MIX: ;  // unreachable
     }
@@ -661,7 +661,7 @@ void backup_collision(const SearchSettings* searchSettings, const Trajectory& tr
 void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSettings)
 {
     lock();
-    if (get_virtual_style(searchSettings, get_real_visits(childIdx)) == VIRTUAL_LOSS) {
+    if (get_virtual_style(searchSettings, d->childNumberVisits[childIdx]) == VIRTUAL_LOSS) {
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1) / (d->childNumberVisits[childIdx] - 1);
     }
     --d->childNumberVisits[childIdx];
@@ -1006,7 +1006,7 @@ void Node::disable_action(size_t childIdxForParent)
 double Node::get_transposition_q_value(const SearchSettings *searchSettings, ChildIdx childIdx, uint_fast32_t transposVisits)
 {
     double transposQValue;
-    switch(get_virtual_style(searchSettings, transposVisits)) {
+    switch(get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
     case VIRTUAL_LOSS:
         transposQValue = get_q_sum_virtual_loss(childIdx) / transposVisits;
         break;
@@ -1014,7 +1014,7 @@ double Node::get_transposition_q_value(const SearchSettings *searchSettings, Chi
         transposQValue = get_q_value(childIdx);
         break;
     case VIRTUAL_OFFSET:
-        transposQValue = double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * searchSettings->virtualWeight;
+        transposQValue = double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * 0.01;
     case VIRTUAL_MIX: ;
         // unreachable
     }
