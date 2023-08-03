@@ -204,7 +204,7 @@ public:
         valueSum += value;
         ++realVisitsSum;
 
-        if (d->qValues[childIdx] == Q_INIT) {
+        if (d->childNumberVisits[childIdx] == 1) {
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
