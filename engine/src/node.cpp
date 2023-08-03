@@ -515,7 +515,7 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - 1) / double(d->childNumberVisits[childIdx] + 1);
         break;
     case VIRTUAL_OFFSET:
-        d->qValues[childIdx] = double(d->qValues[childIdx]) - searchSettings->virtualOffsetStrenght;
+        d->qValues[childIdx] -= searchSettings->virtualOffsetStrenght;
     case VIRTUAL_VISIT: ;  // ignore
     case VIRTUAL_MIX: ;  // unreachable
     }
@@ -666,7 +666,7 @@ void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSe
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1) / (d->childNumberVisits[childIdx] - 1);
         break;
     case VIRTUAL_OFFSET:
-        d->qValues[childIdx] = double(d->qValues[childIdx]) + searchSettings->virtualOffsetStrenght;
+        d->qValues[childIdx] += searchSettings->virtualOffsetStrenght;
     case VIRTUAL_MIX: ; // ignore
     case VIRTUAL_VISIT: ; // ignore
     }
