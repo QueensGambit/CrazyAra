@@ -215,7 +215,7 @@ public:
             uint_fast32_t childRealVisit;
             uint_fast32_t visitIncrease;
             uint_fast32_t visitAdjustment;
-            switch(get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
+            switch(get_virtual_style(searchSettings, realVisitsSum)) {
             case VIRTUAL_LOSS:
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualWeight + value) / d->childNumberVisits[childIdx];
                 if (searchSettings->virtualWeight != 1) {

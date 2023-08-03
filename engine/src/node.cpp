@@ -510,7 +510,7 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
-    switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
+    switch (get_virtual_style(searchSettings, realVisitsSum)) {
     case VIRTUAL_LOSS:
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - searchSettings->virtualWeight) / double(d->childNumberVisits[childIdx] + searchSettings->virtualWeight);
         // virtual increase the number of visits
@@ -656,7 +656,7 @@ uint32_t Node::get_visits() const
 
 uint32_t Node::get_real_visits(ChildIdx childIdx, const SearchSettings* searchSettings) const
 {
-    switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
+    switch (get_virtual_style(searchSettings, realVisitsSum)) {
     case VIRTUAL_LOSS:
     case VIRTUAL_VISIT:
         return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualWeight;
@@ -676,7 +676,7 @@ void backup_collision(const SearchSettings* searchSettings, const Trajectory& tr
 void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSettings)
 {
     lock();
-    switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
+    switch (get_virtual_style(searchSettings, realVisitsSum)) {
     case VIRTUAL_LOSS:
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualWeight) / (d->childNumberVisits[childIdx] - searchSettings->virtualWeight);
         d->childNumberVisits[childIdx] -= searchSettings->virtualWeight;
@@ -1035,7 +1035,7 @@ void Node::disable_action(size_t childIdxForParent)
 double Node::get_transposition_q_value(const SearchSettings *searchSettings, ChildIdx childIdx, uint_fast32_t transposVisits)
 {
     double transposQValue;
-    switch(get_virtual_style(searchSettings, transposVisits)) {
+    switch(get_virtual_style(searchSettings, realVisitsSum)) {
     case VIRTUAL_LOSS:
         transposQValue = get_q_sum_virtual_loss(childIdx, searchSettings->virtualWeight) / transposVisits;
         break;
