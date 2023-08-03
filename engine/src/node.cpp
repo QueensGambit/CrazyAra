@@ -36,9 +36,9 @@ bool Node::is_sorted() const
     return sorted;
 }
 
-double Node::get_q_sum_virtual_loss(ChildIdx childIdx, float virtualLoss) const
+double Node::get_q_sum_virtual_loss(ChildIdx childIdx) const
 {
-    return get_child_number_visits(childIdx) * double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * virtualLoss;
+    return get_child_number_visits(childIdx) * double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx);
 }
 
 bool Node::is_transposition() const
@@ -510,26 +510,19 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
-    switch (get_virtual_style(searchSettings, realVisitsSum)) {
+    switch (get_virtual_style(searchSettings, get_real_visits(childIdx))) {
     case VIRTUAL_LOSS:
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - searchSettings->virtualWeight) / double(d->childNumberVisits[childIdx] + searchSettings->virtualWeight);
-        // virtual increase the number of visits
-        d->childNumberVisits[childIdx] += searchSettings->virtualWeight;
-        d->visitSum += searchSettings->virtualWeight;
-        break;
-    case VIRTUAL_VISIT:
-        // virtual increase the number of visits
-        d->childNumberVisits[childIdx] += searchSettings->virtualWeight;
-        d->visitSum += searchSettings->virtualWeight;
         break;
     case VIRTUAL_OFFSET:
         d->qValues[childIdx] = (double)(d->qValues[childIdx] - searchSettings->virtualWeight);
-        // virtual increase the number of visits
-        ++d->childNumberVisits[childIdx];
-        ++d->visitSum;
-    case VIRTUAL_MIX: ;
-        // unreachable
+    case VIRTUAL_VISIT: ;  // ignore
+    case VIRTUAL_MIX: ;  // unreachable
     }
+
+    // virtual increase the number of visits
+    ++d->childNumberVisits[childIdx];
+    ++d->visitSum;
 
     // increment virtual loss counter
     update_virtual_loss_counter<true>(childIdx);
@@ -654,17 +647,9 @@ uint32_t Node::get_visits() const
     return d->visitSum;
 }
 
-uint32_t Node::get_real_visits(ChildIdx childIdx, const SearchSettings* searchSettings) const
+uint32_t Node::get_real_visits(ChildIdx childIdx) const
 {
-    switch (get_virtual_style(searchSettings, realVisitsSum)) {
-    case VIRTUAL_LOSS:
-    case VIRTUAL_VISIT:
-        return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * searchSettings->virtualWeight;
-    case VIRTUAL_OFFSET:
-        return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
-    case VIRTUAL_MIX: ;
-        return -1; // unreachable
-    }
+    return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
 }
 
 void backup_collision(const SearchSettings* searchSettings, const Trajectory& trajectory) {
@@ -676,25 +661,11 @@ void backup_collision(const SearchSettings* searchSettings, const Trajectory& tr
 void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSettings)
 {
     lock();
-    switch (get_virtual_style(searchSettings, realVisitsSum)) {
-    case VIRTUAL_LOSS:
-        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualWeight) / (d->childNumberVisits[childIdx] - searchSettings->virtualWeight);
-        d->childNumberVisits[childIdx] -= searchSettings->virtualWeight;
-        d->visitSum -= searchSettings->virtualWeight;
-        break;
-    case VIRTUAL_VISIT:
-        // virtual decrease the number of visits
-        d->childNumberVisits[childIdx] -= searchSettings->virtualWeight;
-        d->visitSum -= searchSettings->virtualWeight;
-        break;
-    case VIRTUAL_OFFSET:
-        d->qValues[childIdx] = (double)(d->qValues[childIdx] + searchSettings->virtualWeight);
-        // virtual decrease the number of visits
-        --d->childNumberVisits[childIdx];
-        --d->visitSum;
-    case VIRTUAL_MIX: ;
-        // unreachable
+    if (get_virtual_style(searchSettings, get_real_visits(childIdx)) == VIRTUAL_LOSS) {
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1) / (d->childNumberVisits[childIdx] - 1);
     }
+    --d->childNumberVisits[childIdx];
+    --d->visitSum;
 
     // decrement virtual loss counter
     update_virtual_loss_counter<false>(childIdx);
@@ -1035,9 +1006,9 @@ void Node::disable_action(size_t childIdxForParent)
 double Node::get_transposition_q_value(const SearchSettings *searchSettings, ChildIdx childIdx, uint_fast32_t transposVisits)
 {
     double transposQValue;
-    switch(get_virtual_style(searchSettings, realVisitsSum)) {
+    switch(get_virtual_style(searchSettings, transposVisits)) {
     case VIRTUAL_LOSS:
-        transposQValue = get_q_sum_virtual_loss(childIdx, searchSettings->virtualWeight) / transposVisits;
+        transposQValue = get_q_sum_virtual_loss(childIdx) / transposVisits;
         break;
     case VIRTUAL_VISIT:
         transposQValue = get_q_value(childIdx);

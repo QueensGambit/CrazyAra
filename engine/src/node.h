@@ -204,7 +204,7 @@ public:
         valueSum += value;
         ++realVisitsSum;
 
-        if (d->childNumberVisits[childIdx] == searchSettings->virtualWeight) {
+        if (d->childNumberVisits[childIdx] == 1) {
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
@@ -212,23 +212,15 @@ public:
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
-            uint_fast32_t childRealVisit;
-            uint_fast32_t visitIncrease;
-            uint_fast32_t visitAdjustment;
-            switch(get_virtual_style(searchSettings, realVisitsSum)) {
+            const uint_fast32_t childRealVisit = get_real_visits(childIdx);
+            switch(get_virtual_style(searchSettings, childRealVisit)) {
             case VIRTUAL_LOSS:
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualWeight + value) / d->childNumberVisits[childIdx];
-                if (searchSettings->virtualWeight != 1) {
-                    d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualWeight) - 1;
-                    d->visitSum -= size_t(searchSettings->virtualWeight) - 1;
-                }
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1 + value) / d->childNumberVisits[childIdx];
                 break;
             case VIRTUAL_VISIT:
-                childRealVisit = get_real_visits(childIdx, searchSettings);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
                 break;
             case VIRTUAL_OFFSET:
-                childRealVisit = get_real_visits(childIdx, searchSettings);
                 d->qValues[childIdx] = (double)(d->qValues[childIdx] + d->virtualLossCounter[childIdx] * searchSettings->virtualWeight);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
                 d->qValues[childIdx] = (double)(d->qValues[childIdx] - (d->virtualLossCounter[childIdx]-1) * searchSettings->virtualWeight);
@@ -321,7 +313,7 @@ public:
      * @param childIdx Child index
      * @return uint32_t
      */
-    uint32_t get_real_visits(ChildIdx childIdx, const SearchSettings* searchSettings) const;
+    uint32_t get_real_visits(ChildIdx childIdx) const;
 
     void lock();
     void unlock();
@@ -500,7 +492,7 @@ public:
      */
     void decrement_number_parents();
 
-    double get_q_sum_virtual_loss(ChildIdx childIdx, float virtualLoss) const;
+    double get_q_sum_virtual_loss(ChildIdx childIdx) const;
 
     template<bool increment>
     void update_virtual_loss_counter(ChildIdx childIdx)
