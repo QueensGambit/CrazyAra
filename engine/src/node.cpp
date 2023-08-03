@@ -1040,6 +1040,9 @@ double Node::get_transposition_q_value(const SearchSettings *searchSettings, Chi
         break;
     case VIRTUAL_VISIT:
         transposQValue = get_q_value(childIdx);
+        break;
+    case VIRTUAL_OFFSET:
+        transposQValue = double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * searchSettings->virtualLoss;
     }
     if (searchSettings->searchPlayerMode == MODE_TWO_PLAYER) {
         return -transposQValue;
