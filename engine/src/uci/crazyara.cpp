@@ -723,7 +723,7 @@ void CrazyAra::init_search_settings()
     searchSettings.dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
     searchSettings.dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
     searchSettings.nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
-    searchSettings.virtualLoss = Options["Milli_Virtual_Loss"] / 1000.0f;
+    searchSettings.virtualLoss = Options["Micro_Virtual_Loss"] / 1000000.0f;
     searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];

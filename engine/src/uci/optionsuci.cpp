@@ -111,7 +111,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
     o["Centi_Temperature_Decay"]       << Option(92, 0, 100);
     o["Centi_U_Init_Divisor"]          << Option(100, 1, 99999);
-    o["Milli_Virtual_Loss"]            << Option(1000, 0, 99999);
+    o["Micro_Virtual_Loss"]            << Option(1000000, 0, 99999);
 #if defined(MXNET) && defined(TENSORRT)
     o["Context"]                       << Option("gpu", {"cpu", "gpu"});
 #elif defined (TORCH)
