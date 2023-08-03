@@ -87,7 +87,7 @@ struct NodeAndBudget {
 inline VirtualStyle get_virtual_style(const SearchSettings* searchSettings, uint_fast32_t visits) {
     if (searchSettings->virtualStyle == VIRTUAL_MIX) {
         if (visits > searchSettings->virtualMixThreshold) {
-            return VIRTUAL_OFFSET;
+            return VIRTUAL_LOSS;
         }
         return VIRTUAL_VISIT;
     }
