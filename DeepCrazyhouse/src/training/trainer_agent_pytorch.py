@@ -304,6 +304,7 @@ class TrainerAgentPytorch:
             use_wdl=self.tc.use_wdl,
             use_plys_to_end=self.tc.use_plys_to_end,
         )
+        self._model.train() # return back to training mode
         return train_metric_values, val_metric_values
 
     def train_update(self, batch):
@@ -671,11 +672,10 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
 
     for metric_name in metrics:
         metric_values[metric_name] = metrics[metric_name].compute()
-    model.train()  # return back to training mode
     return metric_values
 
 
-def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle):
+def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle=True):
     """
     Returns a DataLoader object for the given numpy arrays.
     !Note: This function modifies the y_policy!

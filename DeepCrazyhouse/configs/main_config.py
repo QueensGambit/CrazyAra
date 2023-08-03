@@ -12,7 +12,8 @@ Copy and rename this file to main_config.py and adjust the paths accordingly.
 # define the default dir where the training data in plane representation is located
 # e.g. for supervised learning default_dir = "/data/planes/"
 default_dir = "/data/kingbase2019_lite_pgn_months/"
-phase = 2  # set to None to treat everything as a single phase
+#default_dir = "C:/workspace/Python/CrazyAra/data/kingbase2019_lite_pgn_months/"
+phase = None  # set to None to treat everything as a single phase
 
 if default_dir[-1] != "/":
     default_dir = default_dir + "/"
