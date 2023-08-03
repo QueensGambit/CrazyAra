@@ -204,7 +204,7 @@ public:
         valueSum += value;
         ++realVisitsSum;
 
-        if (d->childNumberVisits[childIdx] == 1) {
+        if (d->qValues[childIdx] == Q_INIT) {
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
@@ -233,8 +233,8 @@ public:
             assert(!isnan(d->qValues[childIdx]));
         }
 
-        update_virtual_loss_counter<false>(childIdx);
         // decrement virtual loss counter
+        update_virtual_loss_counter<false>(childIdx);
 
         if (freeBackup) {
             ++d->freeVisits;
