@@ -230,9 +230,9 @@ public:
                 break;
             case VIRTUAL_OFFSET:
                 childRealVisit = get_real_visits(childIdx, searchSettings);
+                d->qValues[childIdx] = (double)(d->qValues[childIdx] + d->virtualLossCounter[childIdx] * searchSettings->virtualLoss);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
-                ++d->childNumberVisits[childIdx];
-                ++d->visitSum;
+                d->qValues[childIdx] = (double)(d->qValues[childIdx] - (d->virtualLossCounter[childIdx]-1) * searchSettings->virtualLoss);
             }
 
             assert(!isnan(d->qValues[childIdx]));

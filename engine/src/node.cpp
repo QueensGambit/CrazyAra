@@ -524,8 +524,11 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
         d->childNumberVisits[childIdx] += visitIncrease;
         d->visitSum += visitIncrease;
         break;
-    case VIRTUAL_OFFSET: ;
-        // pass
+    case VIRTUAL_OFFSET:
+        d->qValues[childIdx] = (double)(d->qValues[childIdx] - searchSettings->virtualLoss);
+        // virtual increase the number of visits
+        ++d->childNumberVisits[childIdx];
+        ++d->visitSum;
     }
 
     // increment virtual loss counter
@@ -659,7 +662,7 @@ uint32_t Node::get_real_visits(ChildIdx childIdx, const SearchSettings* searchSe
     case VIRTUAL_VISIT:
         return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx] * get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings);
     case VIRTUAL_OFFSET:
-        return d->childNumberVisits[childIdx];
+        return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
     }
 }
 
@@ -684,8 +687,12 @@ void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSe
         // virtual decrease the number of visits
         d->childNumberVisits[childIdx] -= visitIncrease;
         d->visitSum -= visitIncrease;
-    case VIRTUAL_OFFSET: ;
-        // pass
+        break;
+    case VIRTUAL_OFFSET:
+        d->qValues[childIdx] = (double)(d->qValues[childIdx] + searchSettings->virtualLoss);
+        // virtual decrease the number of visits
+        --d->childNumberVisits[childIdx];
+        --d->visitSum;
     }
 
     // decrement virtual loss counter
@@ -1173,9 +1180,6 @@ ChildIdx Node::select_child_node(const SearchSettings* searchSettings)
     // find the move according to the q- and u-values for each move
     // calculate the current u values
     // it's not worth to save the u values as a node attribute because u is updated every time n_sum changes
-    if (searchSettings->virtualStyle == VIRTUAL_OFFSET) {
-        return argmax(d->qValues - d->virtualLossCounter * searchSettings->virtualLoss + get_current_u_values(searchSettings));
-    }
     return argmax(d->qValues + get_current_u_values(searchSettings));
 }
 
