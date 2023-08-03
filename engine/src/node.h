@@ -84,10 +84,15 @@ struct NodeAndBudget {
         node(node), budget(budget), curState(state) {}
 };
 
-inline int get_virtual_visit_increment(uint_fast32_t childNumberVisit, const SearchSettings* searchSettings) {
-    return (childNumberVisit / searchSettings->virtualVisitIncrement) + 1;
+inline VirtualStyle get_virtual_style(const SearchSettings* searchSettings, uint_fast32_t visits) {
+    if (searchSettings->virtualStyle == VIRTUAL_MIX) {
+        if (visits > searchSettings->virtualMixThreshold) {
+            return VIRTUAL_LOSS;
+        }
+        return VIRTUAL_VISIT;
+    }
+    return searchSettings->virtualStyle;
 }
-
 
 class Node
 {
@@ -199,7 +204,7 @@ public:
         valueSum += value;
         ++realVisitsSum;
 
-        if (d->childNumberVisits[childIdx] == searchSettings->virtualLoss) {
+        if (d->childNumberVisits[childIdx] == searchSettings->virtualWeight) {
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
@@ -210,29 +215,25 @@ public:
             uint_fast32_t childRealVisit;
             uint_fast32_t visitIncrease;
             uint_fast32_t visitAdjustment;
-            switch(searchSettings->virtualStyle) {
+            switch(get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
             case VIRTUAL_LOSS:
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualLoss + value) / d->childNumberVisits[childIdx];
-                if (searchSettings->virtualLoss != 1) {
-                    d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualLoss) - 1;
-                    d->visitSum -= size_t(searchSettings->virtualLoss) - 1;
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + searchSettings->virtualWeight + value) / d->childNumberVisits[childIdx];
+                if (searchSettings->virtualWeight != 1) {
+                    d->childNumberVisits[childIdx] -= size_t(searchSettings->virtualWeight) - 1;
+                    d->visitSum -= size_t(searchSettings->virtualWeight) - 1;
                 }
                 break;
             case VIRTUAL_VISIT:
                 childRealVisit = get_real_visits(childIdx, searchSettings);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
-                visitIncrease = get_virtual_visit_increment(d->childNumberVisits[childIdx], searchSettings) - 1;
-                if (visitIncrease != 0) {
-                    // virtual increase the number of visits
-                    d->childNumberVisits[childIdx] -= visitIncrease;
-                    d->visitSum -= visitIncrease;
-                }
                 break;
             case VIRTUAL_OFFSET:
                 childRealVisit = get_real_visits(childIdx, searchSettings);
-                d->qValues[childIdx] = (double)(d->qValues[childIdx] + d->virtualLossCounter[childIdx] * searchSettings->virtualLoss);
+                d->qValues[childIdx] = (double)(d->qValues[childIdx] + d->virtualLossCounter[childIdx] * searchSettings->virtualWeight);
                 d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
-                d->qValues[childIdx] = (double)(d->qValues[childIdx] - (d->virtualLossCounter[childIdx]-1) * searchSettings->virtualLoss);
+                d->qValues[childIdx] = (double)(d->qValues[childIdx] - (d->virtualLossCounter[childIdx]-1) * searchSettings->virtualWeight);
+            case VIRTUAL_MIX: ;
+                // unreachable
             }
 
             assert(!isnan(d->qValues[childIdx]));

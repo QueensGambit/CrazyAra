@@ -33,7 +33,7 @@ SearchSettings::SearchSettings():
         nodePolicyTemperature(1.0f),
         qValueWeight(1.0f),
         qVetoDelta(0.4f),
-        virtualLoss(1.0f),
+        virtualWeight(1.0f),
         verbose(true),
         epsilonChecksCounter(100),
         useMCGS(true),
@@ -51,7 +51,7 @@ SearchSettings::SearchSettings():
         mctsSolver(false),
         searchPlayerMode(MODE_TWO_PLAYER),
         virtualStyle(VIRTUAL_VISIT),
-        virtualVisitIncrement(100)
+        virtualMixThreshold(100)
 {
 
 }

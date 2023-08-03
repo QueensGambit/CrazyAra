@@ -39,7 +39,8 @@ enum SearchPlayerMode {
 enum VirtualStyle {
     VIRTUAL_LOSS,
     VIRTUAL_VISIT,
-    VIRTUAL_OFFSET
+    VIRTUAL_OFFSET,
+    VIRTUAL_MIX
 };
 
 struct SearchSettings
@@ -54,7 +55,7 @@ struct SearchSettings
     float qValueWeight;
     // describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
     float qVetoDelta;
-    double virtualLoss;
+    uint_fast32_t virtualWeight;
     bool verbose;
     uint_fast8_t epsilonChecksCounter;
 //    bool enhanceCaptures;   currently not support
@@ -83,8 +84,8 @@ struct SearchSettings
     SearchPlayerMode searchPlayerMode;
     // Define the virtual style to avoid conflict between different threads in within the same mini-batch
     VirtualStyle virtualStyle;
-    // Defines when the virtualLoss weight is increased by 1 for virtualVisits
-    uint_fast32_t virtualVisitIncrement;
+    // Defines the number of visits to switch from virtual-visit to virtual-loss
+    uint_fast32_t virtualMixThreshold;
     SearchSettings();
 
 };
