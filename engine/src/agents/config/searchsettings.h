@@ -86,6 +86,8 @@ struct SearchSettings
     VirtualStyle virtualStyle;
     // Defines the number of visits to switch from virtual-visit to virtual-loss
     uint_fast32_t virtualMixThreshold;
+    // Defines the strength of the virtual offset
+    double virtualOffsetStrenght;
     SearchSettings();
 
 };

@@ -51,7 +51,8 @@ SearchSettings::SearchSettings():
         mctsSolver(false),
         searchPlayerMode(MODE_TWO_PLAYER),
         virtualStyle(VIRTUAL_VISIT),
-        virtualMixThreshold(100)
+        virtualMixThreshold(1000),
+        virtualOffsetStrenght(0.001)
 {
 
 }

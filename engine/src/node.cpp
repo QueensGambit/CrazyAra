@@ -515,7 +515,7 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - 1) / double(d->childNumberVisits[childIdx] + 1);
         break;
     case VIRTUAL_OFFSET:
-        d->qValues[childIdx] = (double)(d->qValues[childIdx] - 0.01);
+        d->qValues[childIdx] = double(d->qValues[childIdx]) - searchSettings->virtualOffsetStrenght;
     case VIRTUAL_VISIT: ;  // ignore
     case VIRTUAL_MIX: ;  // unreachable
     }
@@ -661,8 +661,14 @@ void backup_collision(const SearchSettings* searchSettings, const Trajectory& tr
 void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSettings)
 {
     lock();
-    if (get_virtual_style(searchSettings, d->childNumberVisits[childIdx]) == VIRTUAL_LOSS) {
+    switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
+    case VIRTUAL_LOSS:
         d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1) / (d->childNumberVisits[childIdx] - 1);
+        break;
+    case VIRTUAL_OFFSET:
+        d->qValues[childIdx] = double(d->qValues[childIdx]) + searchSettings->virtualOffsetStrenght;
+    case VIRTUAL_MIX: ; // ignore
+    case VIRTUAL_VISIT: ; // ignore
     }
     --d->childNumberVisits[childIdx];
     --d->visitSum;
@@ -1014,7 +1020,7 @@ double Node::get_transposition_q_value(const SearchSettings *searchSettings, Chi
         transposQValue = get_q_value(childIdx);
         break;
     case VIRTUAL_OFFSET:
-        transposQValue = double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * 0.01;
+        transposQValue = double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * searchSettings->virtualOffsetStrenght;
     case VIRTUAL_MIX: ;
         // unreachable
     }

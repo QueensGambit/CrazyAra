@@ -87,7 +87,7 @@ struct NodeAndBudget {
 inline VirtualStyle get_virtual_style(const SearchSettings* searchSettings, uint_fast32_t visits) {
     if (searchSettings->virtualStyle == VIRTUAL_MIX) {
         if (visits > searchSettings->virtualMixThreshold) {
-            return VIRTUAL_LOSS;
+            return VIRTUAL_OFFSET;
         }
         return VIRTUAL_VISIT;
     }
@@ -212,20 +212,21 @@ public:
         else {
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
-            uint_fast32_t childRealVisit = get_real_visits(childIdx);
+            uint_fast32_t childRealVisit;
+            double newQVal;
             switch(get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
             case VIRTUAL_LOSS:
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1 + value) / d->childNumberVisits[childIdx];
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1.0 + value) / d->childNumberVisits[childIdx];
                 break;
             case VIRTUAL_VISIT:
                 childRealVisit = get_real_visits(childIdx);
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1.0);
                 break;
             case VIRTUAL_OFFSET:
                 childRealVisit = get_real_visits(childIdx);
-                d->qValues[childIdx] = (double)(d->qValues[childIdx] + d->virtualLossCounter[childIdx] * 0.01);
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * childRealVisit + value) / (childRealVisit + 1);
-                d->qValues[childIdx] = (double)(d->qValues[childIdx] - (d->virtualLossCounter[childIdx]-1) * 0.01);
+                newQVal = double(d->qValues[childIdx]) + d->virtualLossCounter[childIdx] * searchSettings->virtualOffsetStrenght;
+                newQVal = (newQVal * childRealVisit + value) / (childRealVisit + 1.0);
+                d->qValues[childIdx] = newQVal - ((d->virtualLossCounter[childIdx]-1) * searchSettings->virtualOffsetStrenght);
             case VIRTUAL_MIX: ;
                 // unreachable
             }
