@@ -88,6 +88,8 @@ struct SearchSettings
     uint_fast32_t virtualMixThreshold;
     // Defines the strength of the virtual offset
     double virtualOffsetStrenght;
+    // Defines the increment factor on which the strength of the virtual loss is increased
+    uint_fast32_t virtualLossIncrement;
     SearchSettings();
 
 };
