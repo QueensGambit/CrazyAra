@@ -94,10 +94,6 @@ inline VirtualStyle get_virtual_style(const SearchSettings* searchSettings, uint
     return searchSettings->virtualStyle;
 }
 
-inline uint_fast32_t get_virtual_loss_increment(const SearchSettings* searchSettings, uint_fast32_t visits) {
-    return visits / searchSettings->virtualLossIncrement + 1;
-}
-
 class Node
 {
 private:
@@ -220,7 +216,7 @@ public:
             double newQVal;
             switch(get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
             case VIRTUAL_LOSS:
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + get_virtual_loss_increment(searchSettings, d->childNumberVisits[childIdx]) + value) / d->childNumberVisits[childIdx];
+                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1 + value) / d->childNumberVisits[childIdx];
                 break;
             case VIRTUAL_VISIT:
                 childRealVisit = get_real_visits(childIdx);

@@ -53,7 +53,6 @@ SearchSettings::SearchSettings():
         virtualStyle(VIRTUAL_VISIT),
         virtualMixThreshold(1000),
         virtualOffsetStrenght(0.001),
-        virtualLossIncrement(5000)
 {
 
 }

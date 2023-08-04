@@ -512,7 +512,7 @@ void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* 
     // the effect of virtual loss will be undone if the playout is over
     switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
     case VIRTUAL_LOSS:
-        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - get_virtual_loss_increment(searchSettings, d->childNumberVisits[childIdx])) / double(d->childNumberVisits[childIdx] + 1);
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - 1) / double(d->childNumberVisits[childIdx] + 1);
         break;
     case VIRTUAL_OFFSET:
         d->qValues[childIdx] -= searchSettings->virtualOffsetStrenght;
@@ -663,7 +663,7 @@ void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSe
     lock();
     switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
     case VIRTUAL_LOSS:
-        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + get_virtual_loss_increment(searchSettings, d->childNumberVisits[childIdx])) / (d->childNumberVisits[childIdx] - 1);
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1) / (d->childNumberVisits[childIdx] - 1);
         break;
     case VIRTUAL_OFFSET:
         d->qValues[childIdx] += searchSettings->virtualOffsetStrenght;
