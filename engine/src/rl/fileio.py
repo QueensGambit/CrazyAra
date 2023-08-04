@@ -144,7 +144,7 @@ class FileIO:
         folder_names.sort(key=lambda f: time.mktime(time.strptime(f.rsplit('-', 1)[0], f"{self.timestamp_format}")),
                           reverse=True)
 
-        thresh_idx = max(int(len(folder_names) * fraction_for_selection), nb_files)
+        thresh_idx = max(int(len(folder_names) * fraction_for_selection + 0.5), nb_files)
 
         indices = np.arange(0, thresh_idx)
         np.random.shuffle(indices)
@@ -319,3 +319,4 @@ class FileIO:
         """
         move_all_files(self.model_dir, self.model_dir_archive)
         move_all_files(self.model_contender_dir, self.model_dir)
+
