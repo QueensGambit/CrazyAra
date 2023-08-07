@@ -148,7 +148,7 @@ template <typename T, typename U>
 void first_and_second_max(const DynamicVector<T>& v, U endIdx, T& firstMax, T& secondMax, U& firstArg, U& secondArg)
 {
     firstMax = v[0];
-    secondMax = -INT_MAX;
+    secondMax = v[0];
     firstArg = 0;
     secondArg = 0;
     for (size_t idx = 1; idx < endIdx; ++idx) {
