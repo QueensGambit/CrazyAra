@@ -95,9 +95,9 @@ public:
             return OutputRepresentation::MV_LOOKUP[action];
         }
     }
-    static void init(bool isPolicyMap) {
+    static void init(bool isPolicyMap, bool is960) {
         OutputRepresentation::init_labels();
-        OutputRepresentation::init_policy_constants(isPolicyMap);
+        OutputRepresentation::init_policy_constants(isPolicyMap, is960);
     }
     // -------------------------------------------------
     // |           Additional custom methods           |

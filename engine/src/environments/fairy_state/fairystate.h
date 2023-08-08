@@ -111,7 +111,7 @@ public:
                                                     : string{char('a' + file_of(to)), '1', '0'};
         return fromSquare + toSquare;
     }
-    static void init(bool isPolicyMap) {
+    static void init(bool isPolicyMap, bool is960) {
         FairyOutputRepresentation::init_labels();
         FairyOutputRepresentation::init_policy_constants(isPolicyMap);
     }

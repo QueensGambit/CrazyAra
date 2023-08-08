@@ -68,7 +68,7 @@ public:
     static MoveIdx action_to_index(Action action) {
         return action;  // TODO
     }
-    static void init(bool isPolicyMap) {
+    static void init(bool isPolicyMap, bool is960) {
         return; // pass
     }
     static std::vector<std::string> available_variants() {
