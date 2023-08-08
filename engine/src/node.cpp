@@ -1058,7 +1058,10 @@ DynamicVector<float> Node::get_current_u_values(const SearchSettings* searchSett
 #ifdef SEARCH_UCT
     return searchSettings->cpuctInit * (sqrt(log(d->visitSum)) / (d->childNumberVisits + FLT_EPSILON));
 #else
-    return get_current_cput(d->visitSum, searchSettings) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(d->visitSum) / (d->childNumberVisits + 1.0));
+    if (is_root_node()) {
+        return get_current_cput(d->visitSum, searchSettings->cpuctBase, searchSettings->cpuctInitRoot) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(d->visitSum) / (d->childNumberVisits + 1.0));
+    }
+    return get_current_cput(d->visitSum, searchSettings->cpuctBase, searchSettings->uInit) * blaze::subvector(policyProbSmall, 0, d->noVisitIdx) * (sqrt(d->visitSum) / (d->childNumberVisits + 1.0));
 #endif
 }
 
@@ -1240,9 +1243,9 @@ float get_visits(Node* node)
     return node->get_visits();
 }
 
-float get_current_cput(float visits, const SearchSettings* searchSettings)
+float get_current_cput(float visits, float cpuctBase, float cpuctInit)
 {
-    return log((visits + searchSettings->cpuctBase + 1) / searchSettings->cpuctBase) + searchSettings->cpuctInit;
+    return log((visits + cpuctBase + 1) / cpuctBase) + cpuctInit;
 }
 
 void Node::print_node_statistics(const StateObj* state, const vector<size_t>& customOrdering, const SearchSettings* searchSettings) const

@@ -94,6 +94,7 @@ inline VirtualStyle get_virtual_style(const SearchSettings* searchSettings, uint
     return searchSettings->virtualStyle;
 }
 
+
 class Node
 {
 private:
@@ -765,12 +766,6 @@ typedef float (* vFunctionValue)(Node* node);
 DynamicVector<float> retrieve_dynamic_vector(const vector<Node*>& childNodes, vFunctionValue func);
 
 /**
- * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
- * @return float
- */
-float get_current_cput(float visits, const SearchSettings* searchSettings);
-
-/**
  * @brief get_current_u_divisor Calculates the current u-initialization-divisor factor for this node based on the total node visits
  * @return float
  */
@@ -841,6 +836,12 @@ void backup_value(float value, const SearchSettings* searchSettings, const Traje
         }
     }
 }
+
+/**
+ * @brief get_current_cput Calculates the current cpuct value factor for this node based on the total node visits
+ * @return float
+ */
+float get_current_cput(float visits, float cpuctBase, float cpuctInit);
 
 /**
  * @brief is_transposition_verified Checks if the node and state object are a verified position, i.e. same move counter and node has nn results

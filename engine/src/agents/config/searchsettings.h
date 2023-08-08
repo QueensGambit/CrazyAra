@@ -61,6 +61,7 @@ struct SearchSettings
 //    bool useFutureQValues;  currently not supported
     bool useMCGS;
     float cpuctInit;
+    float cpuctInitRoot;
     float cpuctBase;
     float uInit;
     float uMin;

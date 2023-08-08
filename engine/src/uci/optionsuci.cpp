@@ -80,6 +80,7 @@ void OptionsUCI::init(OptionsMap &o)
 #endif
 #endif
     o["Centi_CPuct_Init"]              << Option(250, 1, 99999);
+    o["Centi_CPuct_Init_Root"]         << Option(350, 1, 99999);
 #ifdef USE_RL
     o["Centi_Dirichlet_Epsilon"]       << Option(25, 0, 99999);
 #else

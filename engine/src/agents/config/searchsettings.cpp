@@ -37,6 +37,7 @@ SearchSettings::SearchSettings():
         epsilonChecksCounter(100),
         useMCGS(true),
         cpuctInit(2.5f),
+        cpuctInitRoot(3.5f),
         cpuctBase(19652.0f),
         uInit(1.0f),
         uMin(0.25f),

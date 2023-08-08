@@ -719,6 +719,7 @@ void CrazyAra::init_search_settings()
     searchSettings.epsilonGreedyCounter = round((1.0f / Options["Centi_Epsilon_Greedy"]) * 100.0f);
 //    searchSettings.enhanceCaptures = Options["Enhance_Captures"];               //currently disabled
     searchSettings.cpuctInit = Options["Centi_CPuct_Init"] / 100.0f;
+    searchSettings.cpuctInitRoot = Options["Centi_CPuct_Init_Root"] / 100.0f;
     searchSettings.cpuctBase = Options["CPuct_Base"];
     searchSettings.dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
     searchSettings.dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
