@@ -62,11 +62,7 @@ CrazyAra::CrazyAra():
     useRawNetwork(false),      // will be initialized in init_search_settings()
     networkLoaded(false),
     ongoingSearch(false),
-#ifdef SUPPORT960
-    is960(true),
-#else
     is960(false),
-#endif
     changedUCIoption(false)
 {
 }
@@ -577,7 +573,7 @@ bool CrazyAra::is_ready()
         netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
-        StateConstants::init(mctsAgent->is_policy_map());
+        StateConstants::init(mctsAgent->is_policy_map(), is960);
         timeoutThread.kill();
         if (timeoutMS != 0) {
             tTimeoutThread.join();
@@ -653,12 +649,22 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
     const string prevUciVariant = Options["UCI_Variant"];
     const int prevFirstDeviceID = Options["First_Device_ID"];
     const int prevLastDeviceID = Options["Last_Device_ID"];
+#ifdef SUPPORT960
+    const bool prevIs960 = Options["UCI_Chess960"];
+#else
+    const bool prevIs960 = is960;
+#endif
 
     OptionsUCI::setoption(is, variant, state);
+#ifdef SUPPORT960
+    const bool curIs960 = Options["UCI_Chess960"];
+#else
+    const bool curIs960 = is960;
+#endif
     changedUCIoption = true;
     if (networkLoaded) {
         if (string(Options["Model_Directory"]) != prevModelDir || int(Options["Threads"]) != prevThreads || string(Options["UCI_Variant"]) != prevUciVariant ||
-            int(Options["First_Device_ID"]) != prevFirstDeviceID || int(Options["Last_Device_ID"] != prevLastDeviceID)) {
+            int(Options["First_Device_ID"]) != prevFirstDeviceID || int(Options["Last_Device_ID"] != prevLastDeviceID) || prevIs960 != curIs960) {
             networkLoaded = false;
             is_ready<false>();
         }

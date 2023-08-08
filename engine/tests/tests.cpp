@@ -567,7 +567,7 @@ TEST_CASE("6-Men WDL"){
 #endif
 
 TEST_CASE("LABELS length"){
-    StateConstants::init(true);
+    StateConstants::init(true, false);
     REQUIRE(OutputRepresentation::LABELS.size() == size_t(StateConstants::NB_LABELS()));
     REQUIRE(OutputRepresentation::LABELS_MIRRORED.size() == size_t(StateConstants::NB_LABELS()));
 }
