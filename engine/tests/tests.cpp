@@ -167,7 +167,7 @@ TEST_CASE("Anti-Chess StartFEN"){
     state.set(StateConstants::start_fen(ANTI_VARIANT), false, ANTI_VARIANT);
     PlaneStatistics stats = get_planes_statistics(state, false);
 
-//    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008); // no last move planes
+    // REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008); // no last move planes
     REQUIRE(StateConstants::NB_VALUES_TOTAL() == 4032); // with last move planes
     REQUIRE(stats.maxNum == 1);
     REQUIRE(stats.sum == 224);
@@ -596,6 +596,28 @@ TEST_CASE("Board representation constants"){
 }
 #endif
 
+TEST_CASE("3-fold Repetition"){
+    init();
+    // Blunder by ClassicAra in https://tcec-chess.com/#div=l4&game=100&season=21
+    StateObj state;
+    state.set("1rr3k1/1pp2ppp/p1n5/P2p1b2/3Pn3/R3PNP1/1P3PBP/2R1B1K1 b - - 4 17", false, get_default_variant());
+    string moveB0 = "e4d6";
+    string moveW1 = "f3h4";
+    string moveB1 = "f5e6";
+    string moveW2 = "h4f3";
+    string moveB2 = "e6f5";
+    vector<string> moves = {moveB0, moveW1, moveB1, moveW2, moveB2, moveW1, moveB1, moveW2};
+    float customTerminalValue;
+    TerminalType terminal;
+    for (string move : moves) {
+        state.do_action(state.uci_to_action(move));
+        terminal = state.is_terminal(state.legal_actions().size(), customTerminalValue);
+        REQUIRE(terminal == TERMINAL_NONE);
+    }
+    state.do_action(state.uci_to_action(moveB2));
+    terminal = state.is_terminal(state.legal_actions().size(), customTerminalValue);
+    REQUIRE(terminal == TERMINAL_DRAW);
+}
 
 // ==========================================================================================================
 // ||                                      Blaze-Util Tests                                                ||
