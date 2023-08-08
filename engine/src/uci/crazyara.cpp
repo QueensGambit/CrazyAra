@@ -723,7 +723,6 @@ void CrazyAra::init_search_settings()
     searchSettings.dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
     searchSettings.dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
     searchSettings.nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
-    searchSettings.virtualLoss = Options["Centi_Virtual_Loss"] / 100.0f;
     searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
@@ -739,6 +738,22 @@ void CrazyAra::init_search_settings()
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
     searchSettings.mctsSolver = Options["MCTS_Solver"];
+    if (Options["Virtual_Style"] == "virtual_loss") {
+        searchSettings.virtualStyle = VIRTUAL_LOSS;
+    }
+    else if (Options["Virtual_Style"] == "virtual_visit") {
+        searchSettings.virtualStyle = VIRTUAL_VISIT;
+    }
+    else if (Options["Virtual_Style"] == "virtual_offset") {
+        searchSettings.virtualStyle = VIRTUAL_OFFSET;
+    }
+    else if (Options["Virtual_Style"] == "virtual_mix") {
+        searchSettings.virtualStyle = VIRTUAL_MIX;
+    }
+    else {
+        info_string_important("Unknown option", Options["Virtual_Style"], "for Virtual_Style");
+    }
+    searchSettings.virtualMixThreshold = Options["Virtual_Mix_Threshold"];
 }
 
 void CrazyAra::init_play_settings()

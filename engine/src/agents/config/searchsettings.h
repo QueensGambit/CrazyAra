@@ -36,6 +36,13 @@ enum SearchPlayerMode {
     MODE_TWO_PLAYER
 };
 
+enum VirtualStyle {
+    VIRTUAL_LOSS,
+    VIRTUAL_VISIT,
+    VIRTUAL_OFFSET,
+    VIRTUAL_MIX
+};
+
 struct SearchSettings
 {
     uint16_t multiPV;
@@ -48,7 +55,6 @@ struct SearchSettings
     float qValueWeight;
     // describes how much better the highest Q-Value has to be to replace the candidate move with the highest visit count
     float qVetoDelta;
-    uint_fast32_t virtualLoss;
     bool verbose;
     uint_fast8_t epsilonChecksCounter;
 //    bool enhanceCaptures;   currently not support
@@ -75,6 +81,12 @@ struct SearchSettings
     bool mctsSolver;
     // Defines the nubmer of players within the MCTS search. Available are MODE_SINGLE_PLAYER and MODE_TWO_PLAYER
     SearchPlayerMode searchPlayerMode;
+    // Define the virtual style to avoid conflict between different threads in within the same mini-batch
+    VirtualStyle virtualStyle;
+    // Defines the number of visits to switch from virtual-visit to virtual-loss
+    uint_fast32_t virtualMixThreshold;
+    // Defines the strength of the virtual offset
+    double virtualOffsetStrenght;
     SearchSettings();
 
 };
