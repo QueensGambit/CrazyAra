@@ -2,10 +2,7 @@
 
 ### Prerequisites
 
-Make sure to have a recent [MXNet](https://mxnet.incubator.apache.org/index.html) version with CUDA support installed:
- ```bash
- pip install mxnet-cu<cuda_version>==<version_id>
-```
+Make sure to have a recent [Pytorch](https://pytorch.org/get-started/locally/) version with CUDA support installed.
 
 For supervised training you need the following [additional libraries](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/training/requirements.txt):
 
@@ -13,10 +10,18 @@ For supervised training you need the following [additional libraries](https://gi
 pip install -r requirements.txt
 ```
 
-* zarr (chunked, compressed, N-dimensional array library)
-* numcodecs (compression codec library)
-* tqdm: (progress bar library)
-* MXBoard (logging MXNet data for visualization in TensorBoard)
+#### Training with MXNet or Gluon (deprecated)
+Make sure to have a recent [MXNet](https://mxnet.incubator.apache.org/index.html) version with CUDA support installed:
+ ```bash
+ pip install mxnet-cu<cuda_version>==<version_id>
+```
+
+You need to install the following libraries when training with MXNet:
+```bash
+    pip install -y mxboard
+    pip uninstall -y onnx
+    pip install onnx==1.3.0
+```
 
 ### Training data specification
 Specify the directories `"planes_train_dir"`, `"planes_val_dir"`, `"planes_test_dir"`, `"planes_mate_in_one_dir"` at
@@ -32,7 +37,7 @@ Use `train_cnn.ipynb` to conduct a training run.
 * <https://jupyter.org/install.html>
 
 Jupyter notebooks are displayed in a web-browser and can be launched with `jupyter notebook` from the command line. 
-After a successfull training run you can export the outputs as a html-file:  `File->Download as->Html(.html)`.
+After a successful training run you can export the outputs as a html-file:  `File->Download as->Html(.html)`.
 
 ### Tensorboard
 The [tensorboard](https://github.com/tensorflow/tensorboard) log files will be exported in `./logs` which can be viewed with tensorboard during training.
@@ -48,33 +53,32 @@ This will reduce the batch-size and learning rate accordingly.
 ### Start training from a Docker container
 
 The training can also be started from the [crazyara docker container](https://github.com/QueensGambit/CrazyAra/blob/master/engine/src/rl/Dockerfile)
+that is also used for reinforcement learning
 or the [official NVIDIA MXNet Docker container](https://docs.nvidia.com/deeplearning/frameworks/mxnet-release-notes/overview.html#overview)
 and installing the packages in [requirements.txt](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/training/requirements.txt). 
 
+After building the container
 ```bash
-docker run --gpus '"device=0"' -it \
+docker build -t crazyara_docker .
+```
+you can start it via the `docker run` command:
+```bash
+docker run --gpus all --privileged --shm-size 16G --memory 128G -it \
  --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
  --name crazyara_training crazyara_docker:latest
 ```
 
-Next, you can access the jupyter notebook in your browser:
+`--privileged` is required to run the Linux-init process to be able to use the apport service for generating core dumps.
 
-`<IP-Address of server>:8888`
-
-and the Tensorboard on:
-
-`<IP-Address of server>:6006`
-
-
-For older docker versions use:
-```bash
-nvidia-docker run -it \
- --rm -v ~/data:/data/SL -p "8888:8888" -p "6006:6006" \
- --name crazyara_training crazyara_docker:latest
+Next, you need to detach from the container using `ctrl+p+q` and start a new docker-session:
+```shell script
+docker exec -it crazyara_training bash
 ```
 
 Then you can start a notebook-server within the NVIDIA-docker container:
 ```bash
 jupyter notebook --port=8888 --ip=0.0.0.0 --allow-root --no-browser .
 ```
-and access the notebook by replacing `127.0.0.1` with the respective IP-address of the server in the URL.
+and access the notebook using `127.0.0.1` or `localhost` on your local machine.
+
+You also need to make sure to open the ssh session with `-L 8888:localhost:8888` or to add `LocalForward 8888 127.0.0.1:8888` in your `~/.ssh/config` file.

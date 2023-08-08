@@ -31,19 +31,18 @@
 
 #include "../agents/config/searchlimits.h"
 #include "state.h"
+#include "constants.h"
 
 class TimeManager
 {
 private:
     int curMovetime;
-    int timeBuffer;
 
     float randomMoveFactor;
     int expectedGameLength;
     int threshMove;
-    float moveFactor;
+    int timePropMovesToGo;
     float incrementFactor;
-    int timeBufferFactor;
 
     /**
      * @brief apply_random_factor Applies the current randomly generated move factor on the given movetime.
@@ -66,10 +65,11 @@ public:
      * (e.g. when randomMoveFactor is 0.1, on every move the movtime will be either increased or decreased by a factor of between -10% and +10%)
      * @param expectedGameLength Expected game length for the game in full moves
      * @param threshMove Threshold move on which the constant move regime will switch to a proportional one
-     * @param moveFactor Portion of the current move time which will be used in the proportional movetime regime
+     * @param timePropMovesToGo Expected number moves to go in proportional time regime
      * @param timeBufferFactor Factor which is applied on the moveOverhead to calculate a time buffer for avoiding losing on time
      */
-    TimeManager(float randomMoveFactor=0, int expectedGameLength=40, int threshMove=30, float moveFactor=0.05f, float incrementFactor=0.7f, int timeBufferFactor=30.0f);
+    TimeManager(float randomMoveFactor=0, int expectedGameLength=TIME_EXPECT_GAME_LENGTH, int threshMove=TIME_THRESH_MOVE_PROP_SYSTEM,
+                int timePropMovesToGo=TIME_PROP_MOVES_TO_GO, float incrementFactor=TIME_INCREMENT_FACTOR);
 
     /**
      * @brief get_time_for_move Calculates the movetime based on the searchSettigs
@@ -84,5 +84,16 @@ public:
     int get_thresh_move() const;
 };
 
+/**
+ * @brief get_constant_movetime Returns a constant movetime based on given left time, movesToGo and time increment.
+ * Warning: Due to increment being applied after the move was made and not before, the returned movetime can be greater than left time.
+ * @param searchLimits Search limits struct
+ * @param me Side to move
+ * @param timeBuffer Time buffer to avoid losing due to move overhead
+ * @param movesToGo Expected number of moves remaining
+ * @param incrementFactor Increment factor for increment
+ * @return Movetime
+ */
+inline int get_constant_movetime(const SearchLimits* searchLimits, SideToMove me, int timeBuffer, int movesToGo, float incrementFactor);
 
 #endif // TIMEMANAGER_H

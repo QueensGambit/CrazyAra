@@ -13,7 +13,6 @@ Reference:
 https://mxnet.apache.org/api/python/docs/tutorials/deploy/export/onnx.html
 """
 import os
-import sys
 import shutil
 import argparse
 import mxnet as mx
@@ -22,6 +21,14 @@ import numpy as np
 from mxnet.contrib import onnx as onnx_mxnet
 import logging
 
+from pathlib import Path
+import sys
+sys.path.append("../../../../../")
+from DeepCrazyhouse.configs.train_config import TrainConfig
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import \
+    get_rise_v33_model_by_train_config
+from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state, get_context, export_to_onnx
+
 
 def parse_args(cmd_args: list):
     """
@@ -29,7 +36,7 @@ def parse_args(cmd_args: list):
     :param cmd_args: Command-line arguments (sys.argv[1:])
     :return: Parsed arguments as dictionary object
     """
-    parser = argparse.ArgumentParser(description='MXNet to ONN converter')
+    parser = argparse.ArgumentParser(description='MXNet to ONNX converter')
 
     parser.add_argument("--model-dir", type=str, default="./model",
                         help="model directory which contains the .param and .sym file")
@@ -49,16 +56,27 @@ def parse_args(cmd_args: list):
                              '(default: None)')
     parser.add_argument("--validate", default=False, action="store_true",
                         help="If true, the ONNX model is validated after conversion (default: False)")
+    parser.add_argument("--framework", type=str, default="mxnet",
+                        help="deep learning framework of the corresponding model ['mxnet', 'pytorch']")
 
     args = parser.parse_args(cmd_args)
 
     if not os.path.isdir(args.model_dir):
         raise Exception("The given directory %s does not exist." % args.model_dir)
 
-    args.sym_file = glob(args.model_dir + "/*.json")[0]
-    args.params_file = glob(args.model_dir + "/*.params")[0]
 
-    for file_path in [args.sym_file, args.params_file]:
+    if args.framework == 'mxnet':
+        args.sym_file = glob(args.model_dir + "/*.json")[0]
+        args.params_file = glob(args.model_dir + "/*.params")[0]
+        filepaths = [args.sym_file, args.params_file]
+    elif args.framework == 'pytorch':
+        import torch
+        from DeepCrazyhouse.src.training.trainer_agent_pytorch import load_torch_state, get_context, export_to_onnx
+        from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model_by_train_config
+        args.tar_file = glob(args.model_dir + "/*.tar")[0]
+        filepaths = [args.tar_file]
+
+    for file_path in filepaths:
         if not os.path.isfile(file_path):
             raise Exception("The given file path %s does not exist." % file_path)
 
@@ -132,6 +150,36 @@ def convert_mxnet_model_to_onnx(sym_file, params_file, output_names, input_shape
     os.remove("model-symbol.json")
 
 
+def convert_pytorch_tar_model_to_onnx(tar_file, input_shape, batch_sizes, model_dir):
+    """
+    Converts the given pytorch model specified by the tar file to ONNX format.
+    For parameters see: parse_args.
+    """
+    train_config = TrainConfig()
+
+    # load the model and its parameters
+    net = get_rise_v33_model_by_train_config(input_shape, train_config)
+    if torch.cuda.is_available():
+        net.cuda(torch.device(f"cuda:{train_config.device_id}"))
+    load_torch_state(net, torch.optim.SGD(net.parameters(), lr=train_config.max_lr), tar_file, train_config.device_id)
+
+    onnx_file = tar_file[:-4]
+    with torch.no_grad():
+        ctx = get_context(train_config.context, train_config.device_id)
+        dummy_input = torch.zeros(1, input_shape[0], input_shape[1], input_shape[2]).to(ctx)
+        export_to_onnx(net, 1,
+                       dummy_input,
+                       Path(model_dir), onnx_file,
+                       train_config.use_wdl and train_config.use_plys_to_end,
+                       True)
+        for batch_size in batch_sizes:
+            dummy_input = torch.zeros(batch_size, input_shape[0], input_shape[1], input_shape[2]).to(ctx)
+            export_to_onnx(net, batch_size,
+                           dummy_input,
+                           Path(model_dir), onnx_file,
+                           train_config.use_wdl and train_config.use_plys_to_end, False)
+
+
 def main():
     """
     Main function which is executed on start-up
@@ -143,14 +191,19 @@ def main():
     e.g. chess model for releases >= 0.8.0
     python3 convert_to_onnx.py --model-dir ./model --input-shape 39 8 8 --batch-sizes 1 8 16\
     --onnx-file model-bsize-1.onnx --validate --output-names value_out_output policy_out_output
+
+    e.g. for pytorch rise-3.3 chess-model >= 1.0.0
+    python3 convert_to_onnx.py --model-dir ./model --input-shape 52 8 8 --batch-sizes 1 8 16 64 --framework pytorch
     :return:
     """
 
     args = parse_args(sys.argv[1:])
     logging.basicConfig(level=logging.INFO)
-    convert_mxnet_model_to_onnx(args.sym_file, args.params_file, args.output_names, args.input_shape, args.batch_sizes,
-                                args.validate)
-
+    if args.framework == 'mxnet':
+        convert_mxnet_model_to_onnx(args.sym_file, args.params_file, args.output_names, args.input_shape, args.batch_sizes,
+                                    args.validate)
+    elif args.framework == 'pytorch':
+        convert_pytorch_tar_model_to_onnx(args.tar_file, args.input_shape, args.batch_sizes, args.model_dir)
 
 if __name__ == '__main__':
     main()

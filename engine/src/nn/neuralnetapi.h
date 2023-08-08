@@ -36,7 +36,8 @@
 #include <dirent.h>
 #include <cstring>
 #include "../util/communication.h"
-
+#include "neuralnetdesign.h"
+#include "version.h"
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
@@ -45,8 +46,7 @@ vector<string> get_directory_files(const string& dir) {
     shared_ptr<DIR> directory_ptr(opendir(dir.c_str()), [](DIR* dir){ dir && closedir(dir); });
     struct dirent *dirent_ptr;
     if (!directory_ptr) {
-        info_string("Error opening :", strerror(errno));
-        info_string(dir);
+        info_string_important("Error opening :", dir, "(" + string(strerror(errno)) + ")");
         return files;
     }
 
@@ -90,6 +90,17 @@ vector<string> get_items_by_elment(const vector<string>& stringVector, const str
  */
 string get_file_ending_with(const string& dir, const string& suffix);
 
+/**
+ * @brief read_version_from_string Returns the corresponding version for a given model file name.
+ * The version identifier is expected to come after the substring "-v" in the format "-v<Major>.<Minor>", e.g. "-v1.2.onnx".
+ * If the information is missing or parsing failed, make_version<0,0,0>() will be returned.
+ * Versioning patch information is always set to 0.
+ * The version information is used to decide between different input representations for the neural network.
+ * @param modelFileName
+ * @return Version information
+ */
+Version read_version_from_string(const string& modelFileName);
+
 
 template <typename T>
 /**
@@ -110,43 +121,16 @@ bool check_condition(const T& value, const T& target, const string& valueStr, co
     return true;
 }
 
-namespace nn_api {
-/**
- * @brief The Shape struct is a basic shape container object.
- */
-struct Shape {
-    int nbDims = -1;  // uninitialized
-    int v[8];         // shape dimensions
-
-    /**
-     * @brief flatten Returns the flattened shape dimension
-     * @return -1 if not initialized else product of all dimensions
-     */
-    int flatten() const;
-};
-
-std::ostream& operator<<(std::ostream& os, const Shape& shape);
 
 /**
- * @brief The NeuralNetDesign struct stores information about the neural network design.
- * It is supposed to be loaded dynamically from a neural network architecture file via the method `NeuralNetAPI->init_nn_design()`.
+ * @brief get_onnx_model_name Returns the model name in the given model directory based on the given batch size.
+ * If no file is found, it looks for an onnx file with dynamic shape support.
+ * If this is satisfied neither, an exception is thrown.
+ * @param modelDir Model directory
+ * @param batchSize Batch size
+ * @return model directory as string
  */
-struct NeuralNetDesign {
-    bool isPolicyMap = false;
-    bool hasAuxiliaryOutputs = false;
-    const int valueOutputIdx = 0;
-    const int policyOutputIdx = 1;
-    const int auxiliaryOutputIdx = 2;
-    Shape inputShape;
-    Shape valueOutputShape;
-    Shape policyOutputShape;
-    Shape auxiliaryOutputShape;
-    /**
-     * @brief print Prints the outputs shapes using info_string(...)
-     */
-    void print() const;
-};
-}
+string get_onnx_model_name(const string& modelDir, int batchSize);
 
 
 /**
@@ -170,6 +154,33 @@ protected:
     string parameterFilePath;
 
     nn_api::NeuralNetDesign nnDesign;
+    uint_fast32_t nbNNInputValues;
+    uint_fast32_t nbNNAuxiliaryOutputs;
+    uint_fast32_t nbPolicyValues;
+
+    Version version;
+private:
+    /**
+     * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and
+     * initializes the struct nnDesign.
+     * and sets the selectPolicyFromPlane boolean accordingly
+     */
+    virtual void init_nn_design() = 0;
+
+    /**
+     * @brief load_model Loads the model architecture definition from a json file
+     */
+    virtual void load_model() = 0;
+
+    /**
+     * @brief load_parameters Loads the parameters a.k.a weights of the model given a parameter path
+     */
+    virtual void load_parameters() = 0;
+
+    /**
+     * @brief bind_executor Binds the executor object to the neural network
+     */
+    virtual void bind_executor() = 0;
 public:
     /**
      * @brief NeuralNetAPI
@@ -215,31 +226,59 @@ public:
     void validate_neural_network();
 
     /**
+     * @brief get_policy_output_length Returns the number of policy values for a single batch
+     * @return Vector length
+     */
+    inline uint_fast32_t get_nb_policy_values() const {
+        return nbPolicyValues;
+    }
+
+    /**
      * @brief get_policy_output_length Returns vector length for the policy output as returned by the neural network respecting the batch size
      * @return Vector length
      */
-    unsigned int get_policy_output_length() const;
+    inline uint_fast32_t get_policy_output_length() const {
+        return get_nb_policy_values() * batchSize;
+    }
 
     /**
      * @brief get_nb_input_values_total Returns the total number of input values for a single batch
      * @return uint
      */
-    uint_fast32_t get_nb_input_values_total() const;
+    inline uint_fast32_t get_nb_input_values_total() const {
+        return nbNNInputValues;
+    }
 
     /**
      * @brief get_nb_auxiliary_outputs Returns the total number of auxiliary outputs for a single batch infered form the nnDesign
      * @return uint
      */
-    uint_fast32_t get_nb_auxiliary_outputs() const;
+    inline uint_fast32_t get_nb_auxiliary_outputs() const {
+        return nbNNAuxiliaryOutputs;
+    }
 
     /**
      * @brief has_auxiliary_outputs Returns nnDesign.hasAuxiliaryOutputs
      * @return bool
      */
-    bool has_auxiliary_outputs() const;
+    inline bool has_auxiliary_outputs() const {
+        return nnDesign.hasAuxiliaryOutputs;
+    }
+
+    /**
+     * @brief get_version Returns the loaded version of the neural network.
+     * @return Version
+     */
+    inline Version get_version() const {
+        return version;
+    }
 
     unsigned int get_batch_size() const;
 
+    /**
+     * @brief initialize Initializes the neural net api using the template method pattern
+     */
+    void initialize();
 protected:
     /**
      * @brief FileExists Function to check if a file exists in a given path
@@ -249,26 +288,9 @@ protected:
     bool file_exists(const std::string& name);
 
     /**
-     * @brief load_model Loads the model architecture definition from a json file
+     * @brief initialize_nn_design Template method pattern which calls init_nn_design() and does post processing
      */
-    virtual void load_model() = 0;
-
-    /**
-     * @brief load_parameters Loads the parameters a.k.a weights of the model given a parameter path
-     */
-    virtual void load_parameters() = 0;
-
-    /**
-     * @brief bind_executor Binds the executor object to the neural network
-     */
-    virtual void bind_executor() = 0;
-
-    /**
-     * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and
-     * initializes the struct nnDesign.
-     * and sets the selectPolicyFromPlane boolean accordingly
-     */
-    virtual void init_nn_design() = 0;
+    void initialize_nn_design();
 };
 
 /**
@@ -277,5 +299,15 @@ protected:
  * @return string with "/" as suffix
  */
 string parse_directory(const string& directory);
+
+/**
+ * @brief apply_softmax Applies the softmax activation on a given data array.
+ * This method is based on an implementation by "SlayStudy":
+ * https://slaystudy.com/implementation-of-softmax-activation-function-in-c-c/
+ * @param input Data array
+ * @param size Length on how many values to apply softmax
+ */
+void apply_softmax(float* input, size_t size);
+
 
 #endif // NEURALNETAPI_H

@@ -3,12 +3,13 @@
 
 #include <climits>
 #include <array>
+#include <unordered_map>
 #include <blaze/Math.h>
 #include "state.h"
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
-using action_idx_map = Action[USHRT_MAX];
+using action_idx_map = unordered_map<Action, int_fast32_t>;
 
 using namespace std;
 
@@ -22,6 +23,19 @@ namespace uci_labels {
     vector<tuple<int, int>> get_destinations(int rankIdx, int fileIdx);
 
     vector<string> generate_uci_labels();
+
+    /**
+     * @brief generate_uci_labels_cfour Returns a vector of all possible uci moves for connect four.
+     * {"a10a1", "a10b1", ..., "a10g1"}
+     * @return Vector of UCI-Strings
+     */
+    vector<string> generate_uci_labels_cfour_and_flipello();
+
+    /**
+     * @brief generate_uci_labels_breakthrough_and_clobber Returns a vector of all possible uci moves for breakthrough
+     * @return Vector of UCI-Strings
+     */
+    void generate_uci_labels_breakthrough_and_clobber(vector<string>& labels);
 
     string mirror_move(const string &ucciMove);
 

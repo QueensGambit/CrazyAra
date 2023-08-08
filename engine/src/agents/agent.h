@@ -28,6 +28,7 @@
 #ifndef AGENT_H
 #define AGENT_H
 
+#include <condition_variable>
 #include "../stateobj.h"
 #include "../evalinfo.h"
 #include "config/searchlimits.h"
@@ -58,7 +59,17 @@ protected:
     PlaySettings* playSettings;
     StateObj* state;
     EvalInfo* evalInfo;
+    // Protect the isRunning attribute and makes sure that the stop() command can only be called after the search has actually been started.
+    // Locking a mutex from the main thread and releasing it in a different thread causes problems in Windows.
+    // Therefore, we need to use a condition variable and a mutex here:
+    // Reference: https://github.com/dmfrodrigues/GraphViewerCpp/issues/16
+    condition_variable isRunningCondition;
+    mutex isRunningMutex;
+    // additional boolean variable to control the condition variable
+    bool mustWait;
     bool verbose;
+    // boolean which can be triggered by "stop" from std-in to stop the current search
+    bool isRunning;
 
 public:
     Agent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose);
@@ -66,7 +77,7 @@ public:
     /**
      * @brief perform_action Selects an action based on the evaluation result
      */
-    void perform_action();
+    virtual void perform_action();
 
     /**
      * @brief evalute_board_state Pure virtual method which acts as an interface for all agents
@@ -100,6 +111,17 @@ public:
      * @return Action
      */
     Action get_best_action();
+
+    /**
+     * @brief lock_and_wait Locks the isRunningMutex and waits for it to be released from a different thread.
+     */
+    void lock_and_wait();
+
+    /**
+     * @brief unlock_and_notify Unlocks the isRunningMutex and notifies all threads from the isRunningCondition variable.
+     */
+    void unlock_and_notify();
+    void set_must_wait(bool value);
 };
 }
 

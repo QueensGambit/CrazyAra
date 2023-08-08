@@ -25,6 +25,7 @@
 
 #include "neuralnetapi.h"
 #include <string>
+#include <regex>
 #include "../stateobj.h"
 
 
@@ -51,10 +52,25 @@ vector<string> get_items_by_elment(const vector<string> &stringVector, const str
 string get_file_ending_with(const string& dir, const string& suffix) {
     const vector<string> files = get_directory_files(dir);
     const string retString = get_string_ending_with(files, suffix);
-    if (retString == "") {
-        throw invalid_argument( "The given directory at " + dir + " doesn't contain a file ending with " + suffix);
-    }
     return retString;
+}
+
+string get_onnx_model_name(const string& modelDir, int batchSize)
+{
+    string modelName = get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
+
+    if (modelName  == "") {
+        // check for onnx with dynamic shape
+        modelName = get_file_ending_with(modelDir, ".onnx");
+        if (modelName == "") {
+            throw invalid_argument( "The given directory at " + modelDir + " doesn't contain a file ending with " + ".onnx");
+        }
+        if (modelName.find("-bsize-") != string::npos) {
+            throw invalid_argument( "The given directory at " + modelDir + " should either contain an onnx file supporting the current batch size"
+                                                                           " or an onnx file with dynamic shape support.");
+        }
+    }
+    return modelName;
 }
 
 
@@ -63,23 +79,33 @@ unsigned int NeuralNetAPI::get_batch_size() const
     return batchSize;
 }
 
-int nn_api::Shape::flatten() const
+void NeuralNetAPI::initialize_nn_design()
 {
-    if (nbDims == -1) {
-        return -1;
-    }
-    int product = 1;
-    for (int idx = 0; idx < nbDims; ++idx) {
-        product *= v[idx];
-    }
-    return product;
+    init_nn_design();
+    nbNNInputValues = nnDesign.inputShape.flatten() / batchSize;
+    nbNNAuxiliaryOutputs = nnDesign.auxiliaryOutputShape.flatten() / batchSize;
+    nbPolicyValues = nnDesign.policyOutputShape.v[1];
+    version = read_version_from_string(modelName);
+    info_string("Input representation: ", version_to_string(version));
+}
+
+void NeuralNetAPI::initialize()
+{
+    load_model();
+    initialize_nn_design();
+    load_parameters();
+    bind_executor();
 }
 
 NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
     deviceID(deviceID),
     batchSize(batchSize),
     enableTensorrt(enableTensorrt),
-    modelName("")
+    modelName(""),
+    nbNNInputValues(0),  // will be set dynamically in initialize_nn_design()
+    nbNNAuxiliaryOutputs(0),  // will be set dynamically in initialize_nn_design()
+    nbPolicyValues(0),  // will be set dynamically in initialize_nn_design()
+    version(make_version<0,0,0>())
 {
     modelDir = parse_directory(modelDirectory);
     deviceName = ctx + string("_") + to_string(deviceID);
@@ -103,6 +129,7 @@ string NeuralNetAPI::get_device_name() const
 void NeuralNetAPI::validate_neural_network()
 {
     nnDesign.print();
+    
     check_condition(nnDesign.policyOutputShape.nbDims, 2, "policyOutputShape.nbDims", "2");
     check_condition(nnDesign.valueOutputShape.nbDims, 2, "valueOutputShape.nbDims", "2");
     check_condition(nnDesign.valueOutputShape.v[1], 1, "valueOutputShape.v[1]", "1");
@@ -123,26 +150,7 @@ void NeuralNetAPI::validate_neural_network()
         info_string("No auxiliary outputs detected but auxiliary output was expected.");
         info_string("StateConstants::NB_AUXILIARY_OUTPUTS():", StateConstants::NB_AUXILIARY_OUTPUTS());
     }
-}
-
-unsigned int NeuralNetAPI::get_policy_output_length() const
-{
-    return nnDesign.policyOutputShape.v[1] * batchSize;
-}
-
-uint_fast32_t NeuralNetAPI::get_nb_input_values_total() const
-{
-    return nnDesign.inputShape.flatten() / batchSize;
-}
-
-uint_fast32_t NeuralNetAPI::get_nb_auxiliary_outputs() const
-{
-    return nnDesign.auxiliaryOutputShape.flatten() / batchSize;
-}
-
-bool NeuralNetAPI::has_auxiliary_outputs() const
-{
-    return nnDesign.hasAuxiliaryOutputs;
+    
 }
 
 bool NeuralNetAPI::file_exists(const string& name)
@@ -175,23 +183,58 @@ ostream& nn_api::operator<<(ostream &os, const nn_api::Shape &shape)
     return os;
 }
 
-void nn_api::NeuralNetDesign::print() const
+Version read_version_from_string(const string &modelFileName)
 {
-   std::stringstream ssInputDims;
-   ssInputDims << inputShape;
-   std::stringstream ssValueOutputDims;
-   ssValueOutputDims << valueOutputShape;
-   std::stringstream ssPolicyOutputDims;
-   ssPolicyOutputDims << policyOutputShape;
+    // pattern to detect "-v<major>.<minor>"
+    const string prefix = "-v";
+    const string pattern = "(" + prefix + ")[0-9]+.[0-9]+";
 
-   info_string("inputDims:", ssInputDims.str());
-   info_string("valueOutputDims:", ssValueOutputDims.str());
-   info_string("policyOutputDims:", ssPolicyOutputDims.str());
-   if (hasAuxiliaryOutputs) {
-       std::stringstream ssAuxiliaryOutputDims;
-       ssAuxiliaryOutputDims << auxiliaryOutputShape;
-       info_string("auxiliaryOutputDims:", ssAuxiliaryOutputDims.str());
-       return;
-   }
-   info_string("No auxiliary outputs detected.");
+    // regex expression for pattern to be searched
+    regex regexp(pattern);
+
+    // flag type for determining the matching behavior (in this case on string objects)
+    smatch matches;
+
+    // regex_search that searches pattern regexp in the string
+    regex_search(modelFileName, matches, regexp);
+
+    if (matches.size() > 0) {
+        for (auto match : matches) {
+            if (match.length() > 3) {
+                const string content = match;
+                const size_t pointPos = content.find(".");
+                try {
+                const string versionMajor = content.substr(prefix.size(), pointPos-prefix.size());  // skip "-v"
+                const string versionMinor = content.substr(pointPos+1);     // skip "."
+                    return make_version(std::stoi(versionMajor), std::stoi(versionMinor), 0);
+                } catch (const exception& e) {
+                    info_string(e.what());
+                    break;
+                }
+            }
+        }
+    }
+    // unsuccessfull
+    return make_version<0,0,0>();
+}
+
+void apply_softmax(float* input, size_t size) {
+
+    size_t idx;
+    double maximum = -INFINITY;
+    for (idx = 0; idx < size; ++idx) {
+        if (maximum < input[idx]) {
+            maximum = input[idx];
+        }
+    }
+
+    double sum = 0.0;
+    for (idx = 0; idx < size; ++idx) {
+        sum += exp(input[idx] - maximum);
+    }
+
+    double constant = maximum + log(sum);
+    for (idx = 0; idx < size; ++idx) {
+        input[idx] = exp(input[idx] - constant);
+    }
 }

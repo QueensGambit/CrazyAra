@@ -33,11 +33,11 @@ class NetPredService:  # Too many instance attributes (9/7) - Too few public met
         :param net: Neural Network API object which provides the reference for the neural network.
         :param batch_size: Constant batch_size used for inference.
         :param batch_state_planes: Shared numpy memory in which all threads set their state plane request for the
-                                   prediction service. Each threads has it's own channel.
+                                   prediction service. Each threads has its own channel.
         :param batch_value_results: Shared numpy memory in which the value results of all threads are stored.
-                                    Each threads has it's own channel.
+                                    Each threads has its own channel.
         :param batch_policy_results: Shared numpy memory in which the policy results of all threads are stored.
-                                    Each threads has it's own channel.
+                                    Each threads has its own channel.
         """
         self.net = net
         self.my_pipe_endings = pipe_endings

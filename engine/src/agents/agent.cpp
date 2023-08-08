@@ -52,9 +52,14 @@ void Agent::set_best_move(size_t moveCounter)
     }
 }
 
+void Agent::set_must_wait(bool value)
+{
+    mustWait = value;
+}
+
 Agent::Agent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose):
     NeuralNetAPIUser(net),
-    playSettings(playSettings), verbose(verbose)
+    playSettings(playSettings), mustWait(true), verbose(verbose), isRunning(false)
 {
 }
 
@@ -70,15 +75,37 @@ Action Agent::get_best_action()
     return evalInfo->bestMove;
 }
 
+void Agent::lock_and_wait()
+{
+    unique_lock<mutex> lock(isRunningMutex);
+    while(mustWait) {
+        isRunningCondition.wait(lock);
+    }
+}
+
+void Agent::unlock_and_notify()
+{
+    // std::lock_guard is deprecated in C++17, therefore we use scoped_lock instead
+    scoped_lock<mutex> lock(isRunningMutex);
+    mustWait = false;
+    isRunningCondition.notify_one();
+}
+
 void Agent::perform_action()
 {
+    isRunning = true;
     evalInfo->start = chrono::steady_clock::now();
     this->evaluate_board_state();
     evalInfo->end = chrono::steady_clock::now();
     set_best_move(state->steps_from_null());
     info_msg(*evalInfo);
     info_string(state->fen());
-    info_bestmove(StateConstants::action_to_uci(evalInfo->bestMove, state->is_chess960()));
+    #ifdef MODE_STRATEGO
+        info_bestmove(StateConstants::action_to_uci(evalInfo->bestMove, state->is_chess960()) + " equals " + state->action_to_string(evalInfo->bestMove));
+    #else
+        info_bestmove(StateConstants::action_to_uci(evalInfo->bestMove, state->is_chess960()));
+    #endif
+    isRunning = false;
 }
 
 void run_agent_thread(Agent* agent)

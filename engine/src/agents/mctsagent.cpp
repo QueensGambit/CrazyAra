@@ -45,10 +45,10 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     opponentsNextRoot(nullptr),
     lastValueEval(-1.0f),
     reusedFullTree(false),
-    isRunning(false),
     overallNPS(0.0f),
     nbNPSentries(0),
-    threadManager(nullptr)
+    threadManager(nullptr),
+    reachedTablebases(false)
 {
     mapWithMutex.hashTable.reserve(1e6);
 
@@ -130,6 +130,7 @@ size_t MCTSAgent::init_root_node(StateObj *state)
         create_new_root_node(state);
         nodesPreSearch = 0;
     }
+    reachedTablebases = rootNode->is_tablebase() || reachedTablebases;
     return nodesPreSearch;
 }
 
@@ -163,6 +164,15 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
     return nullptr;
 }
 
+void MCTSAgent::set_root_node_predictions()
+{
+    state->get_state_planes(true, inputPlanes, net->get_version());
+    net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    size_t tbHits = 0;
+    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
+                    rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
+}
+
 void MCTSAgent::create_new_root_node(StateObj* state)
 {
     info_string("create new tree");
@@ -176,10 +186,7 @@ void MCTSAgent::create_new_root_node(StateObj* state)
     rootNode->set_value(newState->random_rollout());
     rootNode->enable_has_nn_results();
 #else
-    state->get_state_planes(true, inputPlanes);
-    net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
-    size_t tbHits = 0;
-    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits, state->side_to_move(), searchSettings, rootNode->is_tablebase());
+    set_root_node_predictions();
 #endif
     rootNode->prepare_node_for_visits();
 }
@@ -244,6 +251,7 @@ void MCTSAgent::clear_game_history()
     lastValueEval = -1.0f;
     nbNPSentries = 0;
     overallNPS = 0;
+    reachedTablebases = false;
 }
 
 bool MCTSAgent::is_policy_map()
@@ -263,20 +271,37 @@ void MCTSAgent::update_stats()
     tbHits = get_tb_hits(searchThreads);
 }
 
+void MCTSAgent::handle_single_move()
+{
+    float targetEval = lastValueEval;
+    switch(searchSettings->searchPlayerMode) {
+    case MODE_TWO_PLAYER:
+        if (lastSideToMove != state->side_to_move()) {
+            targetEval = -lastValueEval;
+        }
+    case MODE_SINGLE_PLAYER: ;
+    }
+    rootNode->set_value(targetEval);
+    rootNode->set_q_value(0, targetEval);
+}
+
 void MCTSAgent::evaluate_board_state()
 {
+    rootState = unique_ptr<StateObj>(state->clone());
     evalInfo->nodesPreSearch = init_root_node(state);
     thread tGCThread = thread(run_gc_thread, &gcThread);
 #ifdef USE_RL
     tGCThread.join();
 #endif
     evalInfo->isChess960 = state->is_chess960();
-    rootState = unique_ptr<StateObj>(state->clone());
     if (rootNode->get_number_child_nodes() == 1) {
         info_string("Only single move available -> early stopping");
+        handle_single_move();
+        unlock_and_notify();
     }
     else if (rootNode->get_number_child_nodes() == 0) {
         info_string("The given position has no legal moves");
+        unlock_and_notify();
     }
     else {
         if (searchSettings->dirichletEpsilon > 0.009f) {
@@ -300,6 +325,7 @@ void MCTSAgent::evaluate_board_state()
     }
     update_eval_info(*evalInfo, rootNode.get(), tbHits, maxDepth, searchSettings);
     lastValueEval = evalInfo->bestMoveQ[0];
+    lastSideToMove = state->side_to_move();
     update_nps_measurement(evalInfo->calculate_nps());
 #ifndef USE_RL
     tGCThread.join();
@@ -313,30 +339,33 @@ void MCTSAgent::run_mcts_search()
         searchThreads[i]->set_root_node(rootNode.get());
         searchThreads[i]->set_root_state(rootState.get());
         searchThreads[i]->set_search_limits(searchLimits);
+        searchThreads[i]->set_reached_tablebases(reachedTablebases);
         threads[i] = new thread(run_search_thread, searchThreads[i]);
     }
     int curMovetime = timeManager->get_time_for_move(searchLimits, rootState->side_to_move(), rootNode->plies_from_null()/2);
-    threadManager = make_unique<ThreadManager>(rootNode.get(), evalInfo, searchThreads, curMovetime, 250, searchLimits->moveOverhead, searchSettings, overallNPS, lastValueEval,
-                                               is_game_sceneario(searchLimits),
-                                               can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
+    ThreadManagerData tData(rootNode.get(), searchThreads, evalInfo, lastValueEval);
+    ThreadManagerInfo tInfo(searchSettings, searchLimits, overallNPS, rootState->side_to_move());
+    ThreadManagerParams tParams(curMovetime, 250, is_game_sceneario(searchLimits), can_prolong_search(rootNode->plies_from_null()/2, timeManager->get_thresh_move()));
+    threadManager = make_unique<ThreadManager>(&tData, &tInfo, &tParams);
     unique_ptr<thread> tManager = make_unique<thread>(run_thread_manager, threadManager.get());
-    isRunning = true;
-
+    unlock_and_notify();
     for (size_t i = 0; i < searchSettings->threads; ++i) {
         threads[i]->join();
     }
     threadManager->kill();
     tManager->join();
     delete[] threads;
-    isRunning = false;
 }
 
 void MCTSAgent::stop()
 {
-    isRunning = false;
+    if (!isRunning) {
+        return;
+    }
     if (threadManager != nullptr) {
         threadManager->stop_search();
     }
+    isRunning = false;
 }
 
 void MCTSAgent::print_root_node()
@@ -346,7 +375,7 @@ void MCTSAgent::print_root_node()
         return;
     }
     const vector<size_t> customOrdering = sort_permutation(evalInfo->policyProbSmall, std::greater<float>());
-    rootNode->print_node_statistics(rootState.get(), customOrdering);
+    rootNode->print_node_statistics(rootState.get(), customOrdering, searchSettings);
 }
 
 void print_child_nodes_to_file(const Node* parentNode, StateObj* state, size_t parentId, size_t& nodeId, ostream& outFile, size_t depth, size_t maxDepth)

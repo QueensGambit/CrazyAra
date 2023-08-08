@@ -59,6 +59,7 @@ Result State::check_result() const
         }
         return DRAWN;
     }
+    return NO_RESULT;
 }
 
 TerminalType State::random_rollout(float& customValueTerminal)
@@ -98,6 +99,11 @@ float State::random_rollout()
     default: ; // TERMINAL_CUSTOM
     }
     return customEval;
+}
+
+bool State::mirror_policy(SideToMove sideToMove) const
+{
+    return sideToMove != FIRST_PLAYER_IDX;
 }
 
 bool is_win(Result res)

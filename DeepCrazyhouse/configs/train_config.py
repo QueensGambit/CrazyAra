@@ -45,6 +45,10 @@ class TrainConfig:
 
     export_grad_histograms: bool = True
 
+    # Decide between 'pytorch', 'mxnet' and 'gluon' style for training
+    # Reinforcement Learning only works with gluon and pytorch atm
+    framework: str = 'pytorch'
+
     # Boolean if the policy data is also defined in select_policy_from_plane representation
     is_policy_from_plane_data: bool = False
 
@@ -79,7 +83,10 @@ class TrainConfig:
     # how many epochs the network will be trained each time there is enough new data available
     nb_training_epochs: int = 1
 
-    policy_loss_factor: float = 1  # 0.99
+    policy_loss_factor: float = 0.5  # 0.99
+
+    # gradient scaling for the plys to end output
+    plys_to_end_loss_factor: float = 0.1
 
     # ratio for mixing the value return with the corresponding q-value
     # for a ratio of 0 no q-value information will be used
@@ -100,14 +107,19 @@ class TrainConfig:
     # total of training iterations
     total_it: int = None
 
-    # Decide between mxnet and gluon style for training
-    # Reinforcement Learning only works with gluon (== False) atm
-    use_mxnet_style: bool = True
+    # adds a small mlp to infer the value loss from wdl and plys_to_end_output
+    use_mlp_wdl_ply: bool = False
+    # enables training with ply to end head
+    use_plys_to_end: bool = False
+    # enables training with a wdl head as intermediate target (mainly useful for environments with 3 outcomes)
+    use_wdl: bool = False
 
     # loads a previous checkpoint if the loss increased significantly
     use_spike_recovery: bool = True
     # weight the value loss a lot lower than the policy loss in order to prevent overfitting
     val_loss_factor: float = 0.5  # 0.01
+    # weight for the wdl loss
+    wdl_loss_factor: float = 0.4
 
     # weight decay
     wd: float = 1e-4
@@ -120,3 +132,4 @@ class TrainObjects:
     momentum_schedule = None
     metrics = None
     variant_metrics = None
+

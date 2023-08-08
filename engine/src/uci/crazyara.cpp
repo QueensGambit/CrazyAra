@@ -26,29 +26,24 @@
 #include "crazyara.h"
 
 #include <thread>
-#include "bitboard.h"
-#include "position.h"
-#include "search.h"
-#include "thread.h"
-#include "tt.h"
-#include "uci.h"
-#include "syzygy/tbprobe.h"
-#include "movegen.h"
+#include <fstream>
+#include "mctsagent.h"
 #include "search.h"
 #include "evalinfo.h"
 #include "constants.h"
 #include "state.h"
-#include "variants.h"
 #include "optionsuci.h"
 #include "../tests/benchmarkpositions.h"
 #include "util/communication.h"
-#ifdef MODE_XIANGQI
-    #include "piece.h"
+#if defined(MODE_XIANGQI) || defined(MODE_BOARDGAMES)
+#include "piece.h"
 #endif
 #ifdef MXNET
 #include "nn/mxnetapi.h"
 #elif defined TENSORRT
 #include "nn/tensorrtapi.h"
+#elif defined OPENVINO
+#include "nn/openvinoapi.h"
 #endif
 
 
@@ -63,13 +58,7 @@ CrazyAra::CrazyAra():
     searchSettings(SearchSettings()),
     searchLimits(SearchLimits()),
     playSettings(PlaySettings()),
-#ifdef MODE_CRAZYHOUSE
-    variant(CRAZYHOUSE_VARIANT),
-#elif defined(MODE_XIANGQI)
-    variant(*variants.find("xiangqi")->second),
-#else
-    variant(CHESS_VARIANT),
-#endif
+    variant(StateConstants::DEFAULT_VARIANT()),
     useRawNetwork(false),      // will be initialized in init_search_settings()
     networkLoaded(false),
     ongoingSearch(false),
@@ -96,14 +85,9 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
     EvalInfo evalInfo;
-#ifndef MODE_XIANGQI
-    auto uiThread = make_shared<Thread>(0);
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    state->set(StartFENs[variant], is960, variant);
-#endif
-#ifdef MODE_XIANGQI
-    state->set(variant.startFen, is960, 0);
-#endif
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
+    state->set(StateConstants::start_fen(variant), is960, variant);
+
     for (int i = 1; i < argc; ++i)
         cmd += string(argv[i]) + " ";
 
@@ -147,9 +131,14 @@ void CrazyAra::uci_loop(int argc, char *argv[])
         else if (token == "flip")       state->flip();
         else if (token == "d")          cout << *(state.get()) << endl;
         else if (token == "activeuci") activeuci();
+        else if (token == "inference") inference(is);
 #ifdef USE_RL
         else if (token == "selfplay")   selfplay(is);
         else if (token == "arena")      arena(is);
+        // Test if the new modes are also usable for chess and others
+
+        else if (token == "match")   multimodel_arena(is, "", "", true);
+        else if (token == "tournament")   roundrobin(is);
 #endif
         else
             cout << "Unknown command: " << cmd << endl;
@@ -171,8 +160,37 @@ void CrazyAra::prepare_search_config_structs()
     }
 }
 
-void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
+void CrazyAra::inference(istringstream &is)
+{
+    size_t warmupIterations = 100;
+    size_t iterations = 3000;
+    string token;
+    while (is >> token) {
+        if (token == "warmup") {
+            is >> warmupIterations;
+        }
+        if (token == "iterations") {
+            is >> iterations;
+        }
+    }
+    info_string("running", warmupIterations, "warmup iteration...");
+    info_string("running", iterations, "iterations...");
+    info_string("batch-size:", searchSettings.batchSize);
+    mctsAgent->run_inference(warmupIterations);
+    const chrono::steady_clock::time_point start = chrono::steady_clock::now();
+    mctsAgent->searchThreads.front()->run_inference(iterations);
+    const chrono::steady_clock::time_point end = chrono::steady_clock::now();
+    const size_t elapsedMS = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    info_string("Inference results");
+    info_string("-----------------");
+    info_string("Elapsed time:", elapsedMS/1000.0, "s");
+    info_string("Evaluations per second:", (iterations/double(elapsedMS))*1000*searchSettings.batchSize, "nps");
+}
 
+void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
+{
+    wait_to_finish_last_search();
+    ongoingSearch = true;
     prepare_search_config_structs();
 
     string token;
@@ -189,16 +207,18 @@ void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo) {
         else if (token == "movetime")  is >> searchLimits.movetime;
         else if (token == "infinite")  searchLimits.infinite = true;
     }
-    wait_to_finish_last_search();
 
-    ongoingSearch = true;
     if (useRawNetwork) {
         rawAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        rawAgent->set_must_wait(true);
         mainSearchThread = thread(run_agent_thread, rawAgent.get());
+        rawAgent->lock_and_wait();  // wait for the agent to be initalized to allow then stopping it.
     }
     else {
         mctsAgent->set_search_settings(state, &searchLimits, &evalInfo);
+        mctsAgent->set_must_wait(true);
         mainSearchThread = thread(run_agent_thread, mctsAgent.get());
+        mctsAgent->lock_and_wait();  // wait for the agent to be initalized to allow then stopping it.
     }
 }
 
@@ -207,18 +227,14 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     unique_ptr<StateObj> state = make_unique<StateObj>();
     string token, cmd;
 
-#ifndef MODE_XIANGQI
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-    state->set(StartFENs[variant], is960, variant);
-#else
-    state->set(variant.startFen, is960, 0);
-#endif
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
+    state->set(StateConstants::start_fen(variant), is960, variant);
 
     istringstream is("fen " + fen);
+
     position(state.get(), is);
     istringstream isGoCommand(goCommand);
     go(state.get(), isGoCommand, evalInfo);
-    wait_to_finish_last_search();
 }
 
 void CrazyAra::wait_to_finish_last_search()
@@ -233,6 +249,7 @@ void CrazyAra::stop_search()
 {
     if (mctsAgent != nullptr) {
         mctsAgent->stop();
+        wait_to_finish_last_search();
     }
 }
 
@@ -242,17 +259,12 @@ void CrazyAra::position(StateObj* state, istringstream& is)
 
     Action action;
     string token, fen;
-#ifndef MODE_XIANGQI
-    variant = UCI::variant_from_name(Options["UCI_Variant"]);
-#endif
+    variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
+
     is >> token;
     if (token == "startpos")
     {
-#ifndef MODE_XIANGQI
-        fen = StartFENs[variant];
-#else
-        fen = variant.startFen;
-#endif
+        fen = StateConstants::start_fen(variant);
         is >> token; // Consume "moves" token if any
     }
     else if (token == "fen") {
@@ -263,11 +275,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     else
         return;
 
-#ifndef MODE_XIANGQI
-        state->set(fen, is960, variant);
-#else
-        state->set(fen, is960, 0);
-#endif
+    state->set(fen, is960, variant);
     Action lastMove = ACTION_NONE;
 
     // Parse move list (if any)
@@ -384,6 +392,101 @@ void CrazyAra::arena(istringstream &is)
     write_tournament_result_to_csv(tournamentResult, "arena_results.csv");
 }
 
+void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1, const string &modelDirectory2, bool isModelInInputStream)
+{
+    SearchLimits searchLimits;
+    searchLimits.nodes = size_t(Options["Nodes"]);
+
+    // create two MCTS agents
+    int type;
+    int folder;
+    is >> type;
+    string modelDir1 = modelDirectory1;
+    if (isModelInInputStream)
+    {
+        is >> folder;
+        modelDir1 = "m" + std::to_string(folder) + "/";
+    }
+    auto mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+    if (modelDir1 != "")
+    {
+        netSingle = create_new_net_single(modelDir1);
+        netBatches = create_new_net_batches(modelDir1);
+        mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+    }
+
+    is >> type;
+    string modelDir2 = modelDirectory2;
+    if (isModelInInputStream)
+    {
+        is >> folder;
+        modelDir2 = "m" + std::to_string(folder) + "/";
+    }
+    auto mcts2 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+    if (modelDir2 != "")
+    {
+        netSingleContender = create_new_net_single(modelDir2);
+        netBatchesContender = create_new_net_batches(modelDir2);
+        mcts2 = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings, static_cast<MCTSAgentType>(type));
+    }
+
+    SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchLimits, &playSettings, &rlSettings, Options);
+    size_t numberOfGames;
+    is >> numberOfGames;
+    TournamentResult tournamentResult = selfPlay.go_arena(mcts2.get(), numberOfGames, variant);
+
+    cout << "Arena summary" << endl;
+    cout << "Score of Agent1 vs Agent2: " << tournamentResult << endl;
+    write_tournament_result_to_csv(tournamentResult, "mcts_arena_results.csv");
+}
+
+void CrazyAra::roundrobin(istringstream &is)
+{
+    int type;
+    int numberofgames;
+    is >> numberofgames;
+    struct modelstring
+    {
+        int number_of_mcts_agent;
+        int number_of_model_folder;
+    };
+
+    int i = 0;
+    std::vector<modelstring> agents;
+    std::vector<int> numbers;
+    while (!is.eof())
+    {
+        is >> type;
+        int tmp1 = type;
+        is >> type;
+
+        modelstring tmp;
+        tmp.number_of_mcts_agent = tmp1;
+        tmp.number_of_model_folder = type;
+        std::cout << "ini " << tmp1 << " " << type << std::endl;
+        agents.push_back(tmp);
+        numbers.push_back(i);
+        i++;
+    }
+
+    std::vector<std::string> combinations = comb(numbers, 2);
+    std::string delimiter = " ";
+    for (int i = 0; i < combinations.size(); i++)
+    {
+        std::string s = combinations[i];
+
+        int token1 = std::stoi(s.substr(0, s.find(delimiter)));
+        int token2 = std::stoi(s.substr(2, s.find(delimiter)));
+        std::string comb = std::to_string(agents[token1].number_of_mcts_agent) + " " + std::to_string(agents[token2].number_of_mcts_agent);
+        std::string m1 = "m" + std::to_string(agents[token1].number_of_model_folder) + "/";
+        std::string m2 = "m" + std::to_string(agents[token2].number_of_model_folder) + "/";
+        std::istringstream iss(comb + " " + std::to_string(numberofgames));
+        multimodel_arena(iss, m1, m2, false);
+    }
+
+    exit(0);
+}
+
 void CrazyAra::init_rl_settings()
 {
     rlSettings.numberChunks = Options["Selfplay_Number_Chunks"];
@@ -398,31 +501,57 @@ void CrazyAra::init_rl_settings()
     rlSettings.resignProbability = Options["Centi_Resign_Probability"] / 100.0f;
     rlSettings.resignThreshold = Options["Centi_Resign_Threshold"] / 100.0f;
     rlSettings.reuseTreeForSelpay = Options["Reuse_Tree"];
+    rlSettings.epdFilePath = string(Options["EPD_File_Path"]);
+    if (rlSettings.epdFilePath != "<empty>" and rlSettings.epdFilePath != "") {
+        std::ifstream epdFile (rlSettings.epdFilePath);
+        if (!epdFile.is_open()) {
+            throw invalid_argument("Given epd file: " + rlSettings.epdFilePath + " could not be opened.");
+        }
+    }
 }
 #endif
 
+std::string read_string_from_file(const std::string &file_path){
+    const std::ifstream input_stream(file_path, std::ios_base::binary);
+
+    if (input_stream.fail()) {
+        throw std::runtime_error("Failed to open file");
+    }
+
+    std::stringstream buffer;
+    buffer << input_stream.rdbuf();
+
+    return buffer.str();
+}
+
 void CrazyAra::init()
 {
-#ifndef MODE_XIANGQI
     OptionsUCI::init(Options);
+#ifdef MODE_XIANGQI
+    UCI::init(Options);
+    pieceMap.init();
+#endif
+#ifdef MODE_BOARDGAMES
+    UCI::init(Options);
+    pieceMap.init();
+    fstream variantIni;
+    const string file_path = "variants.ini";
+    string variantInitContent = read_string_from_file(file_path);
+    std::stringstream ss(variantInitContent);
+    variants.parse_istream<false>(ss);
+    Options["UCI_Variant"].set_combo(variants.get_keys());
+#endif
+#ifdef SF_DEPENDENCY
     Bitboards::init();
     Position::init();
     Bitbases::init();
     Search::init();
 #endif
-#ifdef MODE_XIANGQI
-    pieceMap.init();
-    OptionsUCI::init(Options);
-    UCI::init(Options);
-    Bitboards::init();
-    Position::init();
-    Bitbases::init();
-    Search::init();
-    Tablebases::init("");
-
+#if defined(MODE_XIANGQI) || defined(MODE_BOARDGAMES)
     // This is a workaround for compatibility with Fairy-Stockfish
     // Option with key "Threads" is also removed. (See /3rdparty/Fairy-Stockfish/src/ucioption.cpp)
     Options.erase("Hash");
+    Options.erase("Use NNUE");
 #endif
 }
 
@@ -442,9 +571,9 @@ bool CrazyAra::is_ready()
 #ifdef USE_RL
         init_rl_settings();
 #endif
-        netSingle = create_new_net_single(Options["Model_Directory"]);
+        netSingle = create_new_net_single(string(Options["Model_Directory"]));
         netSingle->validate_neural_network();
-        netBatches = create_new_net_batches(Options["Model_Directory"]);
+        netBatches = create_new_net_batches(string(Options["Model_Directory"]));
         netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
@@ -486,6 +615,8 @@ unique_ptr<NeuralNetAPI> CrazyAra::create_new_net_single(const string& modelDire
     return make_unique<MXNetAPI>(Options["Context"], int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"], false);
 #elif defined TENSORRT
     return make_unique<TensorrtAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
+#elif defined OPENVINO
+    return make_unique<OpenVinoAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Threads_NN_Inference"]);
 #endif
     return nullptr;
 }
@@ -506,6 +637,8 @@ vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& 
             netBatches.push_back(make_unique<MXNetAPI>(Options["Context"], deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"], useTensorRT));
     #elif defined TENSORRT
             netBatches.push_back(make_unique<TensorrtAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"]));
+    #elif defined OPENVINO
+            netBatches.push_back(make_unique<OpenVinoAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Threads_NN_Inference"]));
     #endif
         }
     }
@@ -532,9 +665,36 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
     }
 }
 
-unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings)
+unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type)
 {
-    return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
+    switch (type) {
+    case MCTSAgentType::kDefault:
+        return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
+    case MCTSAgentType::kBatch1:
+        info_string("TYP 1 -> Batch 1");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 1, false);
+    case MCTSAgentType::kBatch3:
+        info_string("TYP 2 -> Batch 3");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 3, false);
+    case MCTSAgentType::kBatch5:
+        info_string("TYP 3 -> Batch 5");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 5, false);
+    case MCTSAgentType::kBatch3_reducedNodes:
+        info_string("TYP 4 -> Batch 3 Split");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 3, true);
+    case MCTSAgentType::kBatch5_reducedNodes:
+        info_string("TYP 5 -> Batch 5 Split");
+        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 5, true);
+    case MCTSAgentType::kTrueSight:
+        info_string("TYP 6 -> TrueSight");
+        return make_unique<MCTSAgentTrueSight>(netSingle, netBatches, searchSettings, &playSettings);
+    case MCTSAgentType::kRandom:
+        info_string("TYP 7 -> Random");
+        return make_unique<MCTSAgentRandom>(netSingle, netBatches, searchSettings, &playSettings);
+    default:
+      info_string("Unknown MCTSAgentType");
+      return nullptr;
+  }
 }
 
 void CrazyAra::init_search_settings()
@@ -544,6 +704,12 @@ void CrazyAra::init_search_settings()
     searchSettings.threads = Options["Threads"] * get_num_gpus(Options);
     searchSettings.batchSize = Options["Batch_Size"];
     searchSettings.useMCGS = Options["Search_Type"] == "mcgs";
+    if (Options["Search_Player_Mode"] == "two_player") {
+        searchSettings.searchPlayerMode = MODE_TWO_PLAYER;
+    }
+    else if (Options["Search_Player_Mode"] == "single_player") {
+        searchSettings.searchPlayerMode = MODE_SINGLE_PLAYER;
+    }
 //    searchSettings.uInit = float(Options["Centi_U_Init_Divisor"]) / 100.0f;     currently disabled
 //    searchSettings.uMin = Options["Centi_U_Min"] / 100.0f;                      currently disabled
 //    searchSettings.uBase = Options["U_Base"];                                   currently disabled
@@ -557,7 +723,6 @@ void CrazyAra::init_search_settings()
     searchSettings.dirichletEpsilon = Options["Centi_Dirichlet_Epsilon"] / 100.0f;
     searchSettings.dirichletAlpha = Options["Centi_Dirichlet_Alpha"] / 100.0f;
     searchSettings.nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
-    searchSettings.virtualLoss = Options["Centi_Virtual_Loss"] / 100.0f;
     searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
@@ -573,6 +738,22 @@ void CrazyAra::init_search_settings()
     }
     searchSettings.reuseTree = Options["Reuse_Tree"];
     searchSettings.mctsSolver = Options["MCTS_Solver"];
+    if (Options["Virtual_Style"] == "virtual_loss") {
+        searchSettings.virtualStyle = VIRTUAL_LOSS;
+    }
+    else if (Options["Virtual_Style"] == "virtual_visit") {
+        searchSettings.virtualStyle = VIRTUAL_VISIT;
+    }
+    else if (Options["Virtual_Style"] == "virtual_offset") {
+        searchSettings.virtualStyle = VIRTUAL_OFFSET;
+    }
+    else if (Options["Virtual_Style"] == "virtual_mix") {
+        searchSettings.virtualStyle = VIRTUAL_MIX;
+    }
+    else {
+        info_string_important("Unknown option", Options["Virtual_Style"], "for Virtual_Style");
+    }
+    searchSettings.virtualMixThreshold = Options["Virtual_Mix_Threshold"];
 }
 
 void CrazyAra::init_play_settings()
@@ -601,4 +782,25 @@ void validate_device_indices(OptionsMap& option)
         info_string("Last_Device_ID will be set to ", option["First_Device_ID"]);
         option["Last_Device_ID"] = option["First_Device_ID"];
     }
+}
+
+std::vector<std::string> comb(std::vector<int> N, int K)
+{
+    std::string bitmask(K, 1); // K leading 1's
+    bitmask.resize(N.size(), 0); // N-K trailing 0's
+    std::vector<std::string> p ;
+    // print integers and permute bitmask
+
+    do {
+        std::string c = "";
+        for (int i = 0; i < N.size(); ++i) // [0..N-1] integers
+        {
+            if (bitmask[i]){
+                c.append(std::to_string(N[i])+ " ");
+            }
+        }
+        p.push_back(c);
+    } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+
+    return p;
 }

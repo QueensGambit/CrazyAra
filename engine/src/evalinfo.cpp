@@ -109,55 +109,70 @@ int value_to_centipawn(float value)
     return int(-(sgn(value) * std::log(1.0f - std::abs(value)) / std::log(VALUE_TO_CENTI_PARAM)) * 100.0f);
 }
 
-float get_best_move_q(const SearchSettings* searchSettings, const Node* nextNode)
+float get_best_move_q(const Node* nextNode, const SearchSettings* searchSettings)
 {
-#ifdef MCTS_TB_SUPPORT
-    // set eval to 0 for TB draw
-    if (searchSettings->useTablebase && nextNode->is_tablebase() && nextNode->get_node_type() == TB_DRAW) {
-        return DRAW_VALUE;
+    switch(searchSettings->searchPlayerMode) {
+    case MODE_TWO_PLAYER:
+        return -nextNode->get_value_display();
+    case MODE_SINGLE_PLAYER:
+    default:
+        return nextNode->get_value_display();
     }
-#endif
-#ifndef MCTS_SINGLE_PLAYER
-    return -nextNode->get_value();
-#else
-    return nextNode->get_value();
-#endif
 }
 
-void set_eval_for_single_pv(EvalInfo& evalInfo, Node* rootNode, size_t idx, vector<size_t>& indices, const SearchSettings* searchSettings)
+void set_eval_for_single_pv(EvalInfo& evalInfo, const Node* rootNode, size_t idx, vector<size_t>& indices, const SearchSettings* searchSettings)
 {
     vector<Action> pv;
     size_t childIdx;
     if (idx == 0) {
-        childIdx = get_best_action_index(rootNode, false, searchSettings->qValueWeight, searchSettings->qVetoDelta);
+        childIdx = get_best_action_index(rootNode, false, searchSettings);
     }
     else {
         childIdx = indices[idx];
     }
     pv.push_back(rootNode->get_action(childIdx));
 
-    const Node* nextNode = rootNode->get_child_node(childIdx);
+    Node* nextNode = rootNode->get_child_node(childIdx);
     // make sure the nextNode has been expanded (e.g. when inference of the NN is too slow on the given hardware to evaluate the next node in time)
     if (nextNode != nullptr) {
-        nextNode->get_principal_variation(pv, searchSettings->qValueWeight, searchSettings->qVetoDelta);
+        nextNode->get_principal_variation(pv, searchSettings);
         evalInfo.pv[idx] = pv;
 
         // scores
         // return mate score for known wins and losses
         if (nextNode->is_playout_node()) {
+            evalInfo.bestMoveQ[idx] = get_best_move_q(nextNode, searchSettings);
+
             if (nextNode->get_node_type() == LOSS) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = (int(pv.size())+1) / 2;
+                switch (searchSettings->searchPlayerMode) {
+                case MODE_SINGLE_PLAYER:
+                    evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
+                case MODE_TWO_PLAYER: ;
+                }
                 return;
             }
             if (nextNode->get_node_type() == WIN) {
                 // always round up the ply counter
                 evalInfo.movesToMate[idx] = -(int(pv.size())+1) / 2;
+                switch (searchSettings->searchPlayerMode) {
+                case MODE_SINGLE_PLAYER:
+                    evalInfo.movesToMate[idx] = -evalInfo.movesToMate[idx];
+                case MODE_TWO_PLAYER: ;
+                }
                 return;
             }
         }
-
-    evalInfo.bestMoveQ[idx] = get_best_move_q(searchSettings, nextNode);
+        else {
+            switch (searchSettings->searchPlayerMode) {
+            case MODE_TWO_PLAYER:
+                evalInfo.bestMoveQ[idx] = -nextNode->get_value();
+            break;
+            case MODE_SINGLE_PLAYER:
+                evalInfo.bestMoveQ[idx] = nextNode->get_value();
+            }
+        }
     }
     else {
         evalInfo.bestMoveQ[idx] = Q_INIT;
@@ -177,7 +192,7 @@ void sort_eval_lists(EvalInfo& evalInfo, vector<size_t>& indices)
     apply_permutation_in_place(indices, p);
 }
 
-void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t selDepth, const SearchSettings* searchSettings)
+void update_eval_info(EvalInfo& evalInfo, const Node* rootNode, size_t tbHits, size_t selDepth, const SearchSettings* searchSettings)
 {
     const size_t targetLength = rootNode->get_number_child_nodes();
     evalInfo.childNumberVisits = rootNode->get_child_number_visits();
@@ -187,8 +202,8 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
         evalInfo.policyProbSmall[0] = 1.0f;
     }
     else {
-        size_t bestMoveIdx;
-        rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, searchSettings->qValueWeight, searchSettings->qVetoDelta);
+        ChildIdx bestMoveIdx;
+        rootNode->get_mcts_policy(evalInfo.policyProbSmall, bestMoveIdx, searchSettings);
     }
     // ensure the policy has the correct length even if some child nodes have not been visited
     if (evalInfo.policyProbSmall.size() != targetLength) {
@@ -212,7 +227,7 @@ void update_eval_info(EvalInfo& evalInfo, Node* rootNode, size_t tbHits, size_t 
         // single move with no tree reuse
         evalInfo.pv[0] = {rootNode->get_action(0)};
         // there are no q-values available, therefore use the state value evaluation as bestMoveQ
-        evalInfo.bestMoveQ[0] = rootNode->get_value();
+        evalInfo.bestMoveQ[0] = rootNode->get_value_display();
         evalInfo.centipawns[0] = value_to_centipawn(evalInfo.bestMoveQ[0]);
     }
     else {

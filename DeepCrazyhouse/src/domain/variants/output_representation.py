@@ -18,19 +18,19 @@ from DeepCrazyhouse.src.domain.variants.constants import (
 )
 
 
-def move_to_policy(move, is_white_to_move=True):
+def move_to_policy(move, mirror_policy: bool = False):
     """
     Returns a numpy vector with the bit set to 1 a the according index (one hot encoding)
 
     :param move Python chess obj. defining a move
-    :param is_white_to_move: Define the current player turn
+    :param mirror_policy: Decides if the policy should be mirrored
     :return: Policy numpy vector in boolean format
     """
 
-    if is_white_to_move is True:
-        mv_idx = MV_LOOKUP[move.uci()]
-    else:
+    if mirror_policy is True:
         mv_idx = MV_LOOKUP_MIRRORED[move.uci()]
+    else:
+        mv_idx = MV_LOOKUP[move.uci()]
 
     policy_vec = np.zeros(NB_LABELS, dtype=np.bool)
     # set the bit to 1 at the according move index
@@ -39,12 +39,12 @@ def move_to_policy(move, is_white_to_move=True):
     return policy_vec
 
 
-def policy_to_move(policy_vec_clean, is_white_to_move=True):
+def policy_to_move(policy_vec_clean, mirror_policy: bool = False):
     """
     Returns a python-chess move object based on the given move index
 
     :param policy_vec_clean: Numpy array which represents the moves
-    :param is_white_to_move: Define the current player turn
+    :param mirror_policy: Decides if policy should be mirrored
     :return: single move - Python chess move object
     """
 
@@ -53,10 +53,10 @@ def policy_to_move(policy_vec_clean, is_white_to_move=True):
     # ensure that the provided mv_idx is legal
     assert 0 <= mv_idx < NB_LABELS
 
-    if is_white_to_move is True:
-        mv_uci = LABELS[mv_idx]
-    else:
+    if mirror_policy is True:
         mv_uci = LABELS_MIRRORED[mv_idx]
+    else:
+        mv_uci = LABELS[mv_idx]
 
     move = chess.Move.from_uci(mv_uci)
 
@@ -174,13 +174,13 @@ def set_illegal_moves_to_zero(board: chess.variant.CrazyhouseBoard, policy_vec, 
     return policy_vec_out, nb_legal_moves
 
 
-def get_probs_of_move_list(policy_vec: np.ndarray, mv_list: [chess.Move], is_white_to_move, normalize=True):
+def get_probs_of_move_list(policy_vec: np.ndarray, mv_list: [chess.Move], mirror_policy: bool, normalize: bool = True):
     """
     Returns an array in which entry relates to the probability for the given move list.
-    Its assumed that the moves in the move list are legal and shouldn't be mirrored.
+    It's assumed that the moves in the move list are legal and shouldn't be mirrored.
     :param policy_vec: Policy vector from the neural net prediction
     :param mv_list: List of legal moves for a specific board position
-    :param is_white_to_move: Determine if it's white's or black's turn to move
+    :param mirror_policy: Decides if the current policy shall be mirrored
     :param normalize: True, if the probability should be normalized
     :return: p_vec_small - A numpy vector which stores the probabilities for the given move list
     """
@@ -190,12 +190,12 @@ def get_probs_of_move_list(policy_vec: np.ndarray, mv_list: [chess.Move], is_whi
 
     for mv_idx, move in enumerate(mv_list):
 
-        if is_white_to_move is True:
-            # find the according index in the vector
-            idx = MV_LOOKUP[move.uci()]
-        else:
-            # use the mirrored look-up table instead
+        if mirror_policy is True:
+            # find the according index in the mirrored vector
             idx = MV_LOOKUP_MIRRORED[move.uci()]
+        else:
+            # use the non-mirrored look-up table instead
+            idx = MV_LOOKUP[move.uci()]
 
         # set the right prob value
         p_vec_small[mv_idx] = policy_vec[idx]

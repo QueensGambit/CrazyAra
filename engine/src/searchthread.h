@@ -51,7 +51,7 @@ struct NodeDescription
     size_t depth;
 };
 
-class SearchThread : NeuralNetAPIUser
+class SearchThread : public NeuralNetAPIUser
 {
 private:
     Node* rootNode;
@@ -75,11 +75,12 @@ private:
     MapWithMutex* mapWithMutex;
     const SearchSettings* searchSettings;
     SearchLimits* searchLimits;
-    uint_fast32_t nbNNInputValues;
     size_t tbHits;
     size_t depthSum;
     size_t depthMax;
     size_t visitsPreSearch;
+    uint_fast32_t terminalNodeCache;  // TODO: better add "const" classifier here is possible
+    bool reachedTablebases;
 public:
     /**
      * @brief SearchThread
@@ -127,6 +128,7 @@ public:
     void set_root_node(Node *value);
     bool is_running() const;
     void set_is_running(bool value);
+    void set_reached_tablebases(bool value);
 
     /**
      * @brief add_new_node_to_tree Adds a new node to the search by either creating a new node or duplicating an exisiting node in case of transposition usage
@@ -184,12 +186,21 @@ private:
      * @return uint_16_t(-1) for no action else custom idx
      */
     ChildIdx select_enhanced_move(Node* currentNode) const;
+
+    /**
+     * @brief get_current_transposition_q_value Returns the Q-value which connects to the transposition node
+     * @param currentNode Current node
+     * @param childIdx child index
+     * @param transposVisits Number of visits connecting to the transposition node
+     * @return Q-Value converted to double
+     */
+    double get_current_transposition_q_value(const Node* currentNode, ChildIdx childIdx, uint_fast32_t transposVisits);
 };
 
 void run_search_thread(SearchThread *t);
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings, bool isRootNodeTB);
-void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings);
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB);
+void node_post_process_policy(Node *node, float temperature, const SearchSettings* searchSettings);
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB);
 
 /**

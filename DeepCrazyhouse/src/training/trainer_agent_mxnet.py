@@ -6,21 +6,25 @@ Created on 18.05.19
 
 Definition of the main training loop done in mxnet.
 """
-import os
 import datetime
 import logging
 import random
+import mxnet as mx
 from time import time
 import numpy as np
-from mxboard import SummaryWriter
+try:
+    from mxboard import SummaryWriter
+except Exception:
+    pass
 from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.domain.util import augment
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset, load_xiangqi_dataset
-from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS_POLICY_MAP, MODE, MODE_XIANGQI
-from DeepCrazyhouse.src.training.crossentropy import *
+from DeepCrazyhouse.src.domain.variants.constants import MODE, MODE_XIANGQI
+from DeepCrazyhouse.src.training.train_util import prepare_policy, return_metrics_and_stop_training,\
+    value_to_wdl_label, prepare_plys_label
 
 
 def fill_up_batch(x, batch_size):
@@ -42,10 +46,7 @@ def evaluate_metrics(metrics, data_iterator, model):
     names ['value_loss', 'policy_loss', 'value_acc_sign', 'policy_acc']
     :param data_iterator: Gluon data iterator object
     :param model: Gluon network handle
-    :param nb_batches: Number of batches to evaluate (early stopping).
      If set to None all batches of the data_iterator will be evaluated
-    :param ctx: MXNET data context
-    :param select_policy_from_plane: Boolean if potential legal moves will be selected from final policy output
     :return:
     """
     reset_metrics(metrics)
@@ -110,29 +111,6 @@ def remove_no_sparse_cross_entropy(symbol, grad_scale_value=1.0, value_output_na
     return mx.symbol.Group([value_out, policy_out])
 
 
-def prepare_policy(y_policy, select_policy_from_plane, sparse_policy_label, is_policy_from_plane_data):
-    """
-    Modifies the layout of the policy vector in place according to the given definitions
-    :param y_policy: Target policy vector
-    :param select_policy_from_plane: If policy map representation shall be applied
-    :param sparse_policy_label: True, if the labels are sparse (one-hot-encoded)
-    :param is_policy_from_plane_data: True, if the policy representation is already in
-     "select_policy_from_plane" representation
-    :return: modified y_policy
-    """
-    if sparse_policy_label:
-        y_policy = y_policy.argmax(axis=1)
-
-        if select_policy_from_plane:
-            y_policy[:] = FLAT_PLANE_IDX[y_policy]
-    else:
-        if select_policy_from_plane and not is_policy_from_plane_data:
-            tmp = np.zeros((len(y_policy), NB_LABELS_POLICY_MAP), np.float32)
-            tmp[:, FLAT_PLANE_IDX] = y_policy[:, :]
-            y_policy = tmp
-    return y_policy
-
-
 def get_context(context: str, device_id: int):
     """
     Returns the computation context as an MXNet object
@@ -144,13 +122,6 @@ def get_context(context: str, device_id: int):
         return mx.gpu(device_id)
     else:
         return mx.cpu()
-
-
-def return_metrics_and_stop_training(k_steps, val_metric_values, k_steps_best, val_metric_values_best):
-    return (k_steps,
-            val_metric_values["value_loss"], val_metric_values["policy_loss"],
-            val_metric_values["value_acc_sign"], val_metric_values["policy_acc"]), \
-           (k_steps_best, val_metric_values_best)
 
 
 class TrainerAgentMXNET:  # Probably needs refactoring
@@ -336,10 +307,18 @@ class TrainerAgentMXNET:  # Probably needs refactoring
                 self.yp_train = prepare_policy(self.yp_train, self.tc.select_policy_from_plane,
                                                self.tc.sparse_policy_label, self.tc.is_policy_from_plane_data)
 
-                self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
-                                                     {'value_label': self.yv_train, 'policy_label': self.yp_train},
-                                                     self.tc.batch_size,
-                                                     shuffle=True)
+                if self.tc.use_wdl and self.tc.use_plys_to_end:
+                    self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
+                                                         {'value_label': self.yv_train, 'policy_label': self.yp_train,
+                                                         'wdl_label': value_to_wdl_label(self.yv_train),
+                                                          'plys_to_end_label': prepare_plys_label(plys_to_end)},
+                                                         self.tc.batch_size,
+                                                         shuffle=True)
+                else:
+                    self._train_iter = mx.io.NDArrayIter({'data': self.x_train},
+                                                         {'value_label': self.yv_train, 'policy_label': self.yp_train},
+                                                         self.tc.batch_size,
+                                                         shuffle=True)
 
                 # avoid memory leaks by adding synchronization
                 mx.nd.waitall()
@@ -383,7 +362,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
     def recompute_eval(self):
         """
-        Recomputes the score on the validataion data
+        Recomputes the score on the validation data
         :return:
         """
         ms_step = ((time() - self.t_s_steps) / self.tc.batch_steps) * 1000
@@ -416,7 +395,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
 
     def handle_spike(self):
         """
-        Handles the occurence of a spike during training, in the case validation loss increased dramatically.
+        Handles the occurrence of a spike during training, in the case validation loss increased dramatically.
         :return: self._return_metrics_and_stop_training()
         """
         self.nb_spikes += 1
@@ -527,7 +506,7 @@ class TrainerAgentMXNET:  # Probably needs refactoring
         self.cur_it += 1
         self.batch_proc_tmp += 1
 
-        if self.batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+        if self.batch_proc_tmp >= self.tc.batch_steps or self.cur_it >= self.tc.total_it:  # show metrics every thousands steps
             self.batch_proc_tmp = self.batch_proc_tmp - self.tc.batch_steps
             # update the counters
             self.k_steps += 1

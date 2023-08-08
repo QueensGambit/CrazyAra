@@ -40,9 +40,11 @@ using blaze::DynamicVector;
 #include "pommermanstate.h"
 #elif MODE_OPEN_SPIEL
 #include "environments/open_spiel/openspielstate.h"
-#elif MODE_XIANGQI
+#elif defined (MODE_XIANGQI) || defined (MODE_BOARDGAMES)
 #include "environments/fairy_state/fairystate.h"
 #include "environments/fairy_state/fairyoutputrepresentation.h"
+#elif MODE_STRATEGO
+#include "environments/stratego_related/strategostate.h"
 #else
 #include "environments/chess_related/boardstate.h"
 #include "environments/chess_related/outputrepresentation.h"
@@ -54,9 +56,12 @@ using blaze::DynamicVector;
 #elif MODE_OPEN_SPIEL
     using StateObj = OpenSpielState;
     using StateConstants = StateConstantsOpenSpiel;
-#elif MODE_XIANGQI
+#elif defined (MODE_XIANGQI) || defined (MODE_BOARDGAMES)
     using StateObj = FairyState;
     using StateConstants = StateConstantsFairy;
+#elif MODE_STRATEGO
+    using StateObj = StrategoState;
+    using StateConstants = StateConstantsStratego;
 #else
     using StateObj = BoardState;
     using StateConstants = StateConstantsBoard;
@@ -70,12 +75,12 @@ using blaze::DynamicVector;
  * @param policyProb Policy array from the neural net prediction
  * @param legalMoves List of legal moves for a specific board position
  * @param lastLegalMove Pointer to the last legal move
- * @param sideToMove Determine if it's white's or black's turn to move
+ * @param mirrorPolicy Determines if the policy should be mirrored
  * @param normalize True, if the probability should be normalized
  * @param selectPolicyFromPlane Sets if the policy is encoded in policy map representation
  * @return policyProbSmall - A hybrid blaze vector which stores the probabilities for the given move list
  */
-void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, SideToMove sideToMove,
+void get_probs_of_move_list(const size_t batchIdx, const float* policyProb, const std::vector<Action>& legalMoves, bool mirrorPolicy,
                             bool normalize, DynamicVector<double> &policyProbSmall, bool selectPolicyFromPlane);
 
 /**

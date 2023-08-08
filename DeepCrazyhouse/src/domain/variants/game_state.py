@@ -34,6 +34,15 @@ import chess
 from DeepCrazyhouse.src.domain.variants.input_representation import board_to_planes
 from DeepCrazyhouse.src.domain.abstract_cls.abs_game_state import AbsGameState
 from DeepCrazyhouse.configs.main_config import main_config
+from DeepCrazyhouse.src.domain.variants.default_input_representation import flip_board
+
+
+def mirror_policy(board: chess.Board) -> bool:
+    """
+    Decides if the policy should be mirrored.
+    :param board: Chess board object
+    """
+    return flip_board(board)
 
 
 class GameState(AbsGameState):
@@ -55,7 +64,7 @@ class GameState(AbsGameState):
         return self.board
 
     def is_draw(self):
-        """ Check if you can claim a draw - its assumed that the draw is always claimed """
+        """ Check if you can claim a draw - it's assumed that the draw is always claimed """
         return self.board.is_variant_draw() or self.can_claim_threefold_repetition() or self.board.can_claim_fifty_moves()
         # return self.board.can_claim_draw()
 
@@ -93,8 +102,12 @@ class GameState(AbsGameState):
         return [*self.board.legal_moves]  # is same as list(self.board.legal_moves)
 
     def is_white_to_move(self):
-        """ Returns true if its whites turn"""
+        """ Returns true if it's white's turn"""
         return self.board.turn
+
+    def mirror_policy(self) -> bool:
+        """Decides if the policy should be mirrored."""
+        return mirror_policy(self.board)
 
     def __str__(self):
         return self.board.fen()

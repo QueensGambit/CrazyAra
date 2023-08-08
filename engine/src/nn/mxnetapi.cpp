@@ -44,16 +44,20 @@ MXNetAPI::MXNetAPI(const string& ctx, int deviceID, unsigned int miniBatchSize, 
     } else {
         throw "unsupported context " + ctx + " given";
     }
-
-    load_model();
-    load_parameters();
-    bind_executor();
-    init_nn_design();
+    custom_initialize();
 }
 
 MXNetAPI::~MXNetAPI()
 {
     delete executor;
+}
+
+void MXNetAPI::custom_initialize()
+{
+    load_model();
+    load_parameters();
+    bind_executor();
+    initialize_nn_design();
 }
 
 void MXNetAPI::load_model()
@@ -153,7 +157,7 @@ void MXNetAPI::init_nn_design()
     set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.valueOutputIdx].GetShape());
     nnDesign.hasAuxiliaryOutputs = executor->outputs.size() > 2;
     if (nnDesign.hasAuxiliaryOutputs) {
-        set_shape(nnDesign.valueOutputShape, executor->outputs[nnDesign.auxiliaryOutputIdx].GetShape());
+        set_shape(nnDesign.auxiliaryOutputShape, executor->outputs[nnDesign.auxiliaryOutputIdx].GetShape());
     }
 
     float* inputPlanes = new float[batchSize*StateConstants::NB_VALUES_TOTAL()];

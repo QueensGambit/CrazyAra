@@ -33,12 +33,14 @@
 #include <vector>
 #include <string>
 #include "stateobj.h"
+#ifdef SF_DEPENDENCY
 #include "environments/chess_related/board.h"
+#endif
 
 using namespace std;
 
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
-
+#ifndef MODE_STRATEGO
 /**
  * @brief init Initializes bitboards, bitbases and position arrays
  */
@@ -92,11 +94,20 @@ struct GameInfo {
 GameInfo apply_random_moves(StateObj& state, uint movesToApply);
 
 /**
+ * @brief apply_given_moves Applies a given set of uci-moves to the states
+ * @param state State object
+ * @param uciMoves Move to apply
+ */
+void apply_given_moves(StateObj& state, const std::vector<string>& uciMoves);
+
+/**
  * @brief get_default_variant Returns the default variant for the used build mode
  * @return Variant
  */
 Variant get_default_variant();
 
+#ifdef SF_DEPENDENCY
+#if !defined(MODE_XIANGQI) && !defined(MODE_BOARDGAMES)
 /**
  * @brief is_uci_move_legal Check if a uci move, given as a string, is legal at a specific position
  * @return bool True, if the engine thinks the move is legal
@@ -114,7 +125,10 @@ bool are_uci_moves_legal_bool(const BoardState& pos, const vector<string>& uciMo
  * @brief legal_actions_equal_ucimoves Checks if the given uci moves is a permutation of the legal actions
  */
 bool legal_actions_equal_ucimoves(const BoardState& pos, const vector<string>& uciMoves, bool is960);
+#endif
+#endif
 
+#endif
 #endif
 
 #endif // TESTS_H

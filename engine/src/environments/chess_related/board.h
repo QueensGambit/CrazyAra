@@ -40,7 +40,6 @@ using blaze::DynamicVector;
 class Board : public Position
 {
 private:
-#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     // up to NB_LAST_MOVES are stored in a list, most recent moves first
     deque<Move> lastMoves;
     /**
@@ -49,7 +48,7 @@ private:
      * @param m Given Move
      */
     inline void add_move_to_list(Move m);
-#endif
+
 public:
     Board();
     Board(const Board& b);
@@ -67,6 +66,12 @@ public:
     int plies_from_null() const;
 
     /**
+     * @brief legal_moves Return all legal moves
+     * @return  Legal moves
+     */
+    vector<Action> legal_actions() const;
+
+    /**
      * @brief total_move_cout Returns the current full move counter.
      * In the initial starting position and after first half move of whites, it returns 0
      * @return Total move number
@@ -74,7 +79,7 @@ public:
     size_t total_move_cout() const;
 
     /**
-     * @brief number_repetitions Returns how often the position has already occured.
+     * @brief number_repetitions Returns how often the position has already occurred.
      * Only possible returned values are 0, 1, 2
      * @return number of repetitions
      */
@@ -109,11 +114,10 @@ public:
      * Other draws which are highly likely such as (KN vs KN, KB vs KN, KNN vs KB, KBN vs KB, KBN vs KR, ...)
      * are expected to be handled by tablebases.
      * Reference: https://www.chessprogramming.org/Material
-     * @return True, if draws by insufficient material occured
+     * @return True, if draws by insufficient material occurred
      */
     bool draw_by_insufficient_material() const;
 
-#if defined(MODE_CHESS) || defined(MODE_LICHESS)
     // overloaded function which include a last move list update
     void do_move(Move m, StateInfo& newSt);
     void do_move(Move m, StateInfo& newSt, bool givesCheck);
@@ -121,7 +125,14 @@ public:
     void set(const std::string& fenStr, bool isChess960, Variant v, StateInfo* si, Thread* th);
     void set(const std::string& code, Color c, Variant v, StateInfo* si);
     deque<Move> get_last_moves() const;
-#endif
+
+    /**
+     * @brief count_board_piece Counts the number of board pieces of a particular piece of a certain color.
+     * @param color Color
+     * @param pieceType piece type
+     * @return Number of pieces on the board of a given piece type and color
+     */
+    int get_board_piece_count(Color color, PieceType pieceType) const;
 };
 
 /**
@@ -149,7 +160,7 @@ bool is_pgn_move_ambiguous(Move m, const Board& pos, const std::vector<Action>& 
  * @param m Move
  * @param chess960 True if 960 mode
  * @param pos Board position
- * @param legalMoves List of legal moves in the position (avoid regneration in case it has already been done)
+ * @param legalMoves List of legal moves in the position (avoid regeneration in case it has already been done)
  * @param leadsToWin True if the given move leads to a lost terminal state for the opponent
  * @param bookMove Appends " {book}" in case the move was a book move
  * @return String representation of move in PGN format

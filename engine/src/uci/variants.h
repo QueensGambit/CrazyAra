@@ -47,12 +47,28 @@ const static vector<string> availableVariants = {
 #ifdef MODE_LICHESS
     "kingofthehill",
     "atomic",
-    "giveaway",
+    "antichess",
     "horde",
     "racingkings",
     "3check",
-    "antichess", // giveaway
-    "losers", // giveaway
+    "threecheck", // 3check
+#endif
+#ifdef MODE_XIANGQI
+    "xiangqi",
+#endif
+#ifdef MODE_BOARDGAMES
+    "tictactoe",
+    "cfour",
+    "flipello",
+    "clobber",
+    "breakthrough",
+#endif
+#ifdef MODE_STRATEGO
+    "stratego",
+#endif
+#ifdef MODE_OPEN_SPIEL
+    "hex",
+    "darkhex",
 #endif
 };
 
@@ -60,8 +76,13 @@ const static vector<string> availableVariants = {
 #ifdef XIANGQI
 const int SUBVARIANT_NB = 20; // Thats high quality code
 #endif
+
 const static string StartFENs[SUBVARIANT_NB] = {
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    
+    #ifdef MODE_OPEN_SPIEL
+    ". . . . . . . . . . .  . . . . . . . . . . .   . . . . . . . . . . .    . . . . . . . . . . .     . . . . . . . . . . .      . . . . . . . . . . .       . . . . . . . . . . .        . . . . . . . . . . .         . . . . . . . . . . .          . . . . . . . . . . .           . . . . . . . . . . .",    
+    #endif
+
     #ifdef ANTI
     // "The king has no royal power and accordingly:
     // it may be captured like any other piece
@@ -123,6 +144,10 @@ const static string StartFENs[SUBVARIANT_NB] = {
     #ifdef XIANGQI
     "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     #endif
+    #ifdef MODE_STRATEGO
+    "MBCaaaaaaaKaaaaaaaaaaaaaaDaaaaaaEaDaaaLaaa__aa__aaaa__aa__aaPaaaWNaOXaQPaaaYaaaaaaaaaaaaaaaaaaaaaaaa r 0",
+    #endif
+       
 };
 
 #endif // VARIANTS_H

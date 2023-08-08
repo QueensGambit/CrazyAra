@@ -12,6 +12,7 @@ import sys
 import logging
 import argparse
 from rtpt import RTPT
+import dataclasses
 from multiprocessing import Process, Queue
 
 assert os.getcwd().endswith(f'engine/src/rl'), f'Please change working directory'
@@ -47,7 +48,8 @@ class RLLoop:
         self.tc = TrainConfig()
         self.rl_config = rl_config
 
-        self.file_io = FileIO(binary_dir=self.rl_config.binary_dir, uci_variant=self.rl_config.uci_variant)
+        self.file_io = FileIO(orig_binary_name=self.rl_config.binary_name, binary_dir=self.rl_config.binary_dir,
+                              uci_variant=self.rl_config.uci_variant, framework=self.tc.framework)
         self.binary_io = None
 
         if nb_arena_games % 2 == 1:
@@ -57,6 +59,7 @@ class RLLoop:
         self.tc.k_steps = k_steps
         self.device_name = f'{args.context}_{args.device_id}'
         self.model_name = ""  # will be set in initialize()
+        self.did_contender_win = False
 
         # change working directory (otherwise binary would generate .zip files at .py location)
         os.chdir(self.file_io.binary_dir)
@@ -114,17 +117,19 @@ class RLLoop:
         """
         Checks if enough training games have been generated to trigger training a new network
         :param number_files_to_update: Number of newly generated files needed to trigger a new NN update
-        :return: True, if enough training data was availble and a training run has been executed.
+        :return: True, if enough training data was available and a training run has been executed.
         """
         if self.file_io.get_number_generated_files() >= number_files_to_update:
             self.binary_io.stop_process()
-            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection)
+            self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection,
+                                                   self.did_contender_win)
             # start training using a process to ensure memory clearing afterwards
             queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
             process = Process(target=update_network, args=(queue, self.nn_update_index,
                                                            self.file_io.get_current_model_arch_file(),
                                                            self.file_io.get_current_model_weight_file(),
+                                                           self.file_io.get_current_model_tar_file(),
                                                            not self.args.no_onnx_export,
                                                            main_config, self.tc,
                                                            self.file_io.model_contender_dir))
@@ -142,15 +147,17 @@ class RLLoop:
 
             self.initialize()
             logging.info(f'Start arena tournament ({self.nb_arena_games} rounds)')
-            did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
-            if did_contender_win is True:
+            self.did_contender_win = self.binary_io.compare_new_weights(self.nb_arena_games)
+            if self.did_contender_win is True:
                 logging.info("REPLACING current generator with contender")
                 self.file_io.replace_current_model_with_contender()
             else:
                 logging.info("KEEPING current generator")
 
+            self.file_io.remove_intermediate_weight_files()
+
             self.binary_io.stop_process()
-            self.rtpt.step()  # BUG: process changes it's name 1 iteration too late, fix?
+            self.rtpt.step()  # BUG: process changes its name 1 iteration too late, fix?
             self.current_binary_name = change_binary_name(self.file_io.binary_dir, self.current_binary_name,
                                                           self.rtpt._get_title(), self.nn_update_index)
             self.initialize()
@@ -213,11 +220,18 @@ def main():
                                                          rl_loop.rtpt._get_title(), rl_loop.nn_update_index)
     rl_loop.initialize()
 
-    logging.info(f'Command line parameters: {str(args)}')
-    logging.info(f'RL Options: {rl_config}')
-    logging.info(f'UCI Options: {rl_loop.binary_io.get_uci_options()}')
-    logging.info(f'UCI changes for arena: {UCIConfigArena()}')
-    logging.info(rl_loop.tc)
+    logging.info(f'--------------- CONFIG SETTINGS ---------------')
+    for key, value in sorted(vars(args).items()):
+        logging.info(f'CMD line args:      {key} = {value}')
+    for key, value in sorted(dataclasses.asdict(rl_loop.tc).items()):
+        logging.info(f'Train Config:       {key} = {value}')
+    for key, value in sorted(dataclasses.asdict(rl_config).items()):
+        logging.info(f'RL Options:         {key} = {value}')
+    for key, value in rl_loop.binary_io.get_uci_options().items():
+        logging.info(f'UCI Options:        {key} = {value}')
+    for key, value in sorted(dataclasses.asdict(UCIConfigArena()).items()):
+        logging.info(f'UCI Options Arena:  {key} = {value}')
+    logging.info(f'-----------------------------------------------')
 
     while True:
         if args.trainer:

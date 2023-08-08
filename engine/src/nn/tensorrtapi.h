@@ -37,7 +37,6 @@
 #ifdef TENSORRT
 #include "neuralnetapi.h"
 #include "argsParser.h"
-#include "buffers.h"
 #include "parserOnnxConfig.h"
 
 #include "NvInfer.h"
@@ -62,10 +61,10 @@ class TensorrtAPI : public NeuralNetAPI
 {
 private:
     // binding indices for the input, value and policy data
-    const int idxInput = 0;
-    const int idxValueOutput = 1;
-    const int idxPolicyOutput = 2;
-    const int idxAuxiliaryOutput = 3;
+    int idxInput;
+    int idxValueOutput;
+    int idxPolicyOutput;
+    int idxAuxiliaryOutput;
 
     // device memory, for input, value output and policy output, auxiliary outputs
     void* deviceMemory[4];
@@ -79,7 +78,7 @@ private:
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
     SampleUniquePtr<nvinfer1::IExecutionContext> context;
     cudaStream_t stream;
-
+    bool generatedTrtFromONNX;
 public:
     /**
      * @brief TensorrtAPI
@@ -93,6 +92,13 @@ public:
     ~TensorrtAPI();
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
+
+    /**
+     * @brief retrieve_indices_by_name Sets the layer name indices by names.
+     * @param verbose If true debug info will be shown
+     * @return True if all layer names were found, else false
+     */
+    bool retrieve_indices_by_name(bool verbose);
 
 private:
     void load_model() override;
@@ -117,13 +123,11 @@ private:
     /**
      * @brief set_config_settings Sets the configuration object which will be later used to build the engine
      * @param config Configuration object
-     * @param network ONNX network object
      * @param maxWorkspace Maximum allowable GPU work space for TensorRT tactic selection (e.g. 16_MiB, 1_GiB)
      * @param calibrator INT8 calibration object
      * @param calibrationStream Calibration stream used for INT8 calibration
      */
     void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-                             SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
                              size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
                              unique_ptr<IBatchStream>& calibrationStream);
 
@@ -189,6 +193,13 @@ string generate_trt_file_path(const string &modelDirectory, unsigned int batchSi
  * @param dims Target object
  */
 void set_shape(nn_api::Shape& shape, const nvinfer1::Dims& dims);
+
+/**
+ * @brief set_dims Converter function from nn_api::Shape to nvinfer1::Dims
+ * @param dims Dims object to be set
+ * @param shape Target object
+ */
+void set_dims(Dims &dims, const nn_api::Shape &shape);
 
 #endif
 

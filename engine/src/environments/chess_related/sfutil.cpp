@@ -31,6 +31,39 @@
 #include "types.h"
 #include "uci.h"
 
+// https://stackoverflow.com/questions/41770887/cross-platform-definition-of-byteswap-uint64-and-byteswap-ulong
+#ifdef _MSC_VER
+#include <stdlib.h>
+#define bswap_32(x) _byteswap_ulong(x)
+#define bswap_64(x) _byteswap_uint64(x)
+#elif defined(__APPLE__)
+// Mac OS X / Darwin features
+#include <libkern/OSByteOrder.h>
+#define bswap_32(x) OSSwapInt32(x)
+#define bswap_64(x) OSSwapInt64(x)
+#elif defined(__sun) || defined(sun)
+#include <sys/byteorder.h>
+#define bswap_32(x) BSWAP_32(x)
+#define bswap_64(x) BSWAP_64(x)
+#elif defined(__FreeBSD__)
+#include <sys/endian.h>
+#define bswap_32(x) bswap32(x)
+#define bswap_64(x) bswap64(x)
+#elif defined(__OpenBSD__)
+#include <sys/types.h>
+#define bswap_32(x) swap32(x)
+#define bswap_64(x) swap64(x)
+#elif defined(__NetBSD__)
+#include <sys/types.h>
+#include <machine/bswap.h>
+#if defined(__BSWAP_RENAME) && !defined(__bswap_32)
+#define bswap_32(x) bswap32(x)
+#define bswap_64(x) bswap64(x)
+#endif
+#else
+#include <byteswap.h>
+#endif
+
 const unordered_map<char, File> FILE_LOOKUP = {
     {'a', FILE_A},
     {'b', FILE_B},
@@ -144,14 +177,7 @@ bool is_en_passent_candidate(Square origin, Square destination)
 
 Bitboard flip_vertical(Bitboard x)
 {
-    return  ( (x << 56)                           ) |
-            ( (x << 40) & 0x00ff000000000000 ) |
-            ( (x << 24) & 0x0000ff0000000000 ) |
-            ( (x <<  8) & 0x000000ff00000000 ) |
-            ( (x >>  8) & 0x00000000ff000000 ) |
-            ( (x >> 24) & 0x0000000000ff0000 ) |
-            ( (x >> 40) & 0x000000000000ff00 ) |
-            ( (x >> 56) );
+    return bswap_64(x);
 }
 
 string mirror_move(const string& uciMove)

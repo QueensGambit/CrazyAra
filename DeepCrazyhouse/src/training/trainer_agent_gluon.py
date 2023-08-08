@@ -13,12 +13,16 @@ from time import time
 import mxnet as mx
 from mxnet import autograd, gluon, nd
 import numpy as np
-from mxboard import SummaryWriter
+try:
+    from mxboard import SummaryWriter
+except Exception:
+    pass
 from tqdm import tqdm_notebook
 from rtpt import RTPT
 from DeepCrazyhouse.src.domain.variants.plane_policy_representation import FLAT_PLANE_IDX
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
-from DeepCrazyhouse.src.training.trainer_agent_mxnet import prepare_policy, return_metrics_and_stop_training
+from DeepCrazyhouse.src.training.train_util import prepare_policy, return_metrics_and_stop_training, value_to_wdl_label,\
+    prepare_plys_label
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.training.trainer_agent_mxnet import get_context
 
@@ -112,7 +116,7 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-class TrainerAgent:  # Probably needs refactoring
+class TrainerAgentGluon:  # Probably needs refactoring
     """Main training loop"""
 
     def __init__(
@@ -161,6 +165,7 @@ class TrainerAgent:  # Probably needs refactoring
 
         # collect parameter names for logging the gradients of parameters in each epoch
         self._params = self._net.collect_params()
+        self.cur_it = None
         self._param_names = self._params.keys()
         self.ordering = list(range(self.tc.nb_parts))  # define a list which describes the order of the processed batches
 
@@ -236,6 +241,9 @@ class TrainerAgent:  # Probably needs refactoring
                              max_iterations=k_steps_end-self.tc.k_steps_initial)
         if cur_it is None:
             cur_it = self.tc.k_steps_initial * 1000
+        else:
+            self.cur_it = cur_it
+
         nb_spikes = 0  # count the number of spikes that have been detected
         # initialize the loss to compare with, with a very high value
         old_val_loss = np.inf
@@ -311,7 +319,7 @@ class TrainerAgent:  # Probably needs refactoring
                         self.sum_writer.add_graph(self._net)
                         graph_exported = True
 
-                    if batch_proc_tmp >= self.tc.batch_steps:  # show metrics every thousands steps
+                    if batch_proc_tmp >= self.tc.batch_steps or self.cur_it >= self.tc.total_it:  # show metrics every thousands steps
                         # log the current learning rate
                         # update batch_proc_tmp counter by subtracting the batch_steps
                         batch_proc_tmp = batch_proc_tmp - self.tc.batch_steps
@@ -456,3 +464,28 @@ class TrainerAgent:  # Probably needs refactoring
                                 return return_metrics_and_stop_training(k_steps, val_metric_values, k_steps_best,
                                                                         val_metric_values_best)
 
+
+def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle: bool):
+    """
+    Returns a DataLoader object for the given numpy arrays.
+    !Note: This function modifies the y_policy!
+    :param x: Input planes
+    :param y_value: Value target
+    :param y_policy: Policy target
+    :param plys_to_end: Plys until the game ends
+    :param tc: Training config object
+    :param shuffle: Decide whether to shuffle the dataset or not
+    """
+    y_policy_prep = prepare_policy(y_policy=y_policy, select_policy_from_plane=tc.select_policy_from_plane,
+                              sparse_policy_label=tc.sparse_policy_label,
+                              is_policy_from_plane_data=tc.is_policy_from_plane_data)
+
+    # update the train_data object
+    if tc.use_wdl and tc.use_plys_to_end:
+        dataset = gluon.data.ArrayDataset(nd.array(x), nd.array(y_value), nd.array(y_policy_prep),
+                                          nd.array(value_to_wdl_label(y_value)),
+                                          nd.array(prepare_plys_label(plys_to_end)))
+    else:
+        dataset = gluon.data.ArrayDataset(nd.array(x), nd.array(y_value), nd.array(y_policy_prep))
+
+    return gluon.data.DataLoader(dataset, tc.batch_size, shuffle=shuffle, num_workers=tc.cpu_count)

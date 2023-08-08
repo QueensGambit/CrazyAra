@@ -165,7 +165,7 @@ def rise_mobile_v2_symbol(channels=256, channels_operating_init=128, channel_exp
                             (They used 1.0 for default and 0.01 in the supervised setting)
     :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
                             (They used 1.0 for default and 0.99 in the supervised setting)
-    :param dropout_rate: Applies optionally droput during learning with a given factor on the last feature space before
+    :param dropout_rate: Applies optionally dropout during learning with a given factor on the last feature space before
     :param use_extra_variant_input: If true, the last 9 channel which represent the active variant are passed to each
     residual block separately and concatenated at the end of the final feature representation
     branching into value and policy head
@@ -222,6 +222,24 @@ def rise_mobile_v2_symbol(channels=256, channels_operating_init=128, channel_exp
     sym = mx.symbol.Group([value_out, policy_out])
 
     return sym
+
+
+def get_rise_v2_symbol(args):
+    """
+    Wrapper definition for RISEv2.0.
+    :return: symbol
+    """
+    bc_res_blocks = [3] * 13
+    symbol = rise_mobile_v2_symbol(channels=256, channels_operating_init=128, channel_expansion=64,
+                                   channels_value_head=8,
+                                   channels_policy_head=args.channels_policy_head, value_fc_size=256,
+                                   bc_res_blocks=bc_res_blocks, res_blocks=[], act_type='relu',
+                                   n_labels=args.n_labels, grad_scale_value=args.val_loss_factor,
+                                   grad_scale_policy=args.policy_loss_factor,
+                                   select_policy_from_plane=args.select_policy_from_plane,
+                                   use_se=True, dropout_rate=0,
+                                   use_extra_variant_input=False)
+    return symbol
 
 
 def preact_resnet_symbol(channels=256, channels_value_head=8,

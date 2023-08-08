@@ -28,13 +28,19 @@
 #ifndef OPTIONSUCI_H
 #define OPTIONSUCI_H
 
+#ifndef SF_DEPENDENCY
+#include "customuci.h"
+#else
 #include "uci.h"
-#include "misc.h"
-#include "variants.h"
+#endif
 #include "stateobj.h"
 #include "agents/config/searchlimits.h"
 
+#ifndef SF_DEPENDENCY
+using namespace CUSTOM_UCI;
+#else
 using namespace UCI;
+#endif
 
 namespace OptionsUCI {
 
@@ -51,7 +57,7 @@ namespace OptionsUCI {
      * @param variant Active variant
      * @param state Active state object
      */
-    void setoption(istringstream& is, Variant& variant, StateObj& state);
+    void setoption(istringstream& is, int& variant, StateObj& state);
 
 
     /**
@@ -62,6 +68,13 @@ namespace OptionsUCI {
      * @return string The uci variant string that we use internally to represent the variant.
      */
     string check_uci_variant_input(const string &value, bool *is960);
+
+    /**
+     * @brief get_first_variant_with_model Return the name of the first variant in the vector
+     * of available variants that has a model saved in 'model/<variant_name>'.
+     * @return string UCI variant name.
+     */
+    const string get_first_variant_with_model();
 
     /**
      * @brief init_new_search Initializes the struct according to the given OptionsMap for a new search

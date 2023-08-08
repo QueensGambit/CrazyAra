@@ -29,6 +29,7 @@
 #define RLSETTINGS_H
 
 #include <stddef.h>
+#include <string>
 
 struct RLSettings
 {
@@ -60,6 +61,8 @@ struct RLSettings
     float resignThreshold;
     // boolean indicating if the search tree is reused during selfplay game generation
     bool reuseTreeForSelpay;
+    // string indicating the file path to an epd file which is used to initialize the rl games
+    std::string epdFilePath;
 };
 
 #endif // RLSETTINGS_H

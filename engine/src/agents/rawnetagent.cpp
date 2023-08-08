@@ -53,12 +53,12 @@ void RawNetAgent::evaluate_board_state()
         evalInfo->pv[0] = {evalInfo->legalMoves[0]};
         return;
     }
-    state->get_state_planes(true, inputPlanes);
+    state->get_state_planes(true, inputPlanes, net->get_version());
     net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
-    get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->side_to_move(),
+    get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->mirror_policy(state->side_to_move()),
                            !net->is_policy_map(), evalInfo->policyProbSmall, net->is_policy_map());
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];
@@ -71,6 +71,7 @@ void RawNetAgent::evaluate_board_state()
     evalInfo->nodes = 1;
     evalInfo->isChess960 = state->is_chess960();
     evalInfo->pv[0] = { bestmove };
+    unlock_and_notify();
 }
 
 void RawNetAgent::stop()

@@ -29,6 +29,7 @@ Influenced by the following papers:
 import mxnet as mx
 from DeepCrazyhouse.src.domain.neural_net.architectures.builder_util_symbol import get_act, \
     get_stem, value_head, policy_head, get_norm_layer, get_se_layer
+from DeepCrazyhouse.configs.main_config import main_config
 
 
 def bottleneck_residual_block_v2(data, channels, channels_operating, name, kernel, act_type='relu', norm_type="bn", se_type=None):
@@ -93,9 +94,11 @@ def sandglass_block(data, channels, channels_reduced, name, kernel, act_type='re
 
 def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
                           channels_value_head=8, channels_policy_head=81, value_fc_size=256, dropout_rate=0.15,
-                          grad_scale_value=0.01, grad_scale_policy=0.99,
+                          grad_scale_value=0.01, grad_scale_policy=0.99, grad_scale_wdl=None, grad_scale_ply=None,
                           select_policy_from_plane=True, kernels=None, n_labels=4992,
-                          se_types=None, use_avg_features=False):
+                          se_types=None, use_avg_features=False, use_wdl=False, use_plys_to_end=False,
+                          use_mlp_wdl_ply=False,
+                          ):
     """
     RISEv3 architecture
     :param channels: Main number of channels
@@ -105,7 +108,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     :param channels_value_head: Number of channels for the value head
     :param value_fc_size: Number of units in the fully connected layer of the value head
     :param channels_policy_head: Number of channels for the policy head
-    :param dropout_rate: Droput factor to use. If 0, no dropout will be applied. Value must be in [0,1]
+    :param dropout_rate: Dropout factor to use. If 0, no dropout will be applied. Value must be in [0,1]
     :param grad_scale_value: Constant scalar which the gradient for the value outputs are being scaled width.
                             (0.01 is recommended for supervised learning with little data)
     :param grad_scale_policy: Constant scalar which the gradient for the policy outputs are being scaled width.
@@ -114,7 +117,7 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     of residual blocks.
     :param n_labels: Number of policy target labels (used for select_policy_from_plane=False)
     :param se_ratio: Reduction ration used in the squeeze excitation module
-    :param se_types: List of squeeze exciation modules to use for each residual layer.
+    :param se_types: List of squeeze excitation modules to use for each residual layer.
      The length of this list must be the same as len(kernels). Available types:
     - "se": Squeeze excitation block - Hu et al. - https://arxiv.org/abs/1709.01507
     - "cbam": Convolutional Block Attention Module (CBAM) - Woo et al. - https://arxiv.org/pdf/1807.06521.pdf
@@ -122,6 +125,9 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     - "cm_se": Squeeze excitation with max operator
     - "sa_se": Spatial excitation with average operator
     - "sm_se": Spatial excitation with max operator
+    :param use_wdl: If a win draw loss head shall be used
+    :param use_plys_to_end: If a plys to end prediction head shall be used
+    :param use_mlp_wdl_ply: If a small mlp with value output for the wdl and ply head shall be used
     :return: symbol
     """
     if len(kernels) != len(se_types):
@@ -154,13 +160,54 @@ def rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_exp
     if dropout_rate != 0:
         data = mx.sym.Dropout(data, p=dropout_rate)
 
-    value_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
-                           value_fc_size=value_fc_size, use_mix_conv=False, grad_scale_value=grad_scale_value,
-                           orig_data=orig_data, use_avg_features=use_avg_features)
+    value_head_out = value_head(data=data, act_type=act_type, use_se=False, channels_value_head=channels_value_head,
+                                value_fc_size=value_fc_size, use_mix_conv=False,
+                                grad_scale_value=grad_scale_value,
+                                grad_scale_ply=grad_scale_ply, grad_scale_wdl=grad_scale_wdl,
+                                orig_data=orig_data, use_avg_features=use_avg_features, use_wdl=use_wdl,
+                                use_plys_to_end=use_plys_to_end, use_mlp_wdl_ply=use_mlp_wdl_ply)
+    if use_plys_to_end and use_wdl:
+        value_out, wdl_out, plys_to_end_out = value_head_out
+    else:
+        value_out = value_head_out
+        wdl_out = None
+        plys_to_end_out = None
+
     policy_out = policy_head(data=data, act_type=act_type, channels_policy_head=channels_policy_head, n_labels=n_labels,
                              select_policy_from_plane=select_policy_from_plane, use_se=False, channels=channels,
                              grad_scale_policy=grad_scale_policy)
     # group value_out and policy_out together
-    sym = mx.symbol.Group([value_out, policy_out])
+    if use_plys_to_end and use_wdl:
+        auxiliary_out = mx.sym.Concat(wdl_out, plys_to_end_out, dim=1, name=main_config["auxiliary_output"])
+        sym = mx.symbol.Group([value_out, policy_out, auxiliary_out, wdl_out, plys_to_end_out])
+    else:
+        sym = mx.symbol.Group([value_out, policy_out])
 
     return sym
+
+
+def get_rise_v33_symbol(args):
+    """
+    Wrapper definition for RISEv3.3.
+    :return: symbol
+    """
+    kernels = [3] * 15
+    kernels[7] = 5
+    kernels[11] = 5
+    kernels[12] = 5
+    kernels[13] = 5
+
+    se_types = [None] * len(kernels)
+    se_types[5] = "eca_se"
+    se_types[8] = "eca_se"
+    se_types[12] = "eca_se"
+    se_types[13] = "eca_se"
+    se_types[14] = "eca_se"
+
+    symbol = rise_mobile_v3_symbol(channels=256, channels_operating_init=224, channel_expansion=32, act_type='relu',
+                                   channels_value_head=8, value_fc_size=256,
+                                   channels_policy_head=args.channels_policy_head,
+                                   grad_scale_value=args.val_loss_factor, grad_scale_policy=args.policy_loss_factor,
+                                   dropout_rate=0, select_policy_from_plane=args.select_policy_from_plane,
+                                   kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels)
+    return symbol

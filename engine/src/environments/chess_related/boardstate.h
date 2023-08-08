@@ -46,7 +46,7 @@ public:
         return 8;
     }
     static uint NB_CHANNELS_TOTAL() {
-        return NB_CHANNELS_POS() + NB_CHANNELS_CONST() + NB_CHANNELS_VARIANTS() + NB_CHANNELS_HISTORY();
+        return NB_CHANNELS_POS() + NB_CHANNELS_CONST() + NB_CHANNELS_VARIANTS() + NB_CHANNELS_HISTORY() + NB_CHANNELS_AUXILIARY();
     }
     static uint NB_LABELS() {
         // legal moves total which are represented in the NN
@@ -112,10 +112,22 @@ public:
     static uint NB_CHANNELS_VARIANTS() {
         return 0;
     }
+#if VERSION == 1
     static uint NB_LAST_MOVES() {
         return 0;
     }
     static uint NB_CHANNELS_PER_HISTORY() {
+        return 0;
+    }
+#else  // VERSION == 2 || VERSION == 3
+    static uint NB_LAST_MOVES() {
+        return 8;
+    }
+    static uint NB_CHANNELS_PER_HISTORY() {
+        return 2;
+    }
+#endif
+    static uint NB_CHANNELS_AUXILIARY() {
         return 0;
     }
 #elif defined MODE_LICHESS
@@ -134,21 +146,49 @@ public:
     static uint NB_CHANNELS_PER_HISTORY() {
         return 2;
     }
+    static uint NB_CHANNELS_AUXILIARY() {
+        return 0;
+    }
 #elif defined MODE_CHESS
     static uint NB_CHANNELS_POS() {
-        return 15;
+#if VERSION == 2
+        return 13;
+#endif
+        return 15;  // VERSION == 1 || VERSION == 3
     }
     static uint NB_CHANNELS_CONST() {
+#if VERSION == 1
         return 7;
+#endif
+#if VERSION == 2
+        return 4;
+#endif
+        return 5;  // VERSION == 3
     }
     static uint NB_CHANNELS_VARIANTS() {
         return 1;
     }
     static uint NB_LAST_MOVES() {
-        return 8;
+#if VERSION == 2
+        return 1;
+#endif
+        return 8;  // VERSION == 1 or VERSION == 3
     }
     static uint NB_CHANNELS_PER_HISTORY() {
         return 2;
+    }
+    static uint NB_CHANNELS_AUXILIARY() {
+#if VERSION == 1
+        return 0;
+#endif
+#if VERSION == 2
+#if SUB_VERSION == 7
+    return 13;
+#elif SUB_VERSION == 8
+    return 18;
+#endif
+#endif
+    return 15;  // VERSION == 3
     }
 #endif
     static uint NB_CHANNELS_HISTORY() {
@@ -191,6 +231,18 @@ public:
         return 50;
     }
 #endif
+    // normalize the relative material by 8
+    static float NORMALIZE_PIECE_NUMBER() {
+        return 8;
+    }
+    // normalize the nubmer of attackers by 4
+    static float NORMALIZE_ATTACKERS() {
+        return 4;
+    }
+    // normalize the number of legal moves
+    static float NORMALIZE_MOBILITY() {
+        return 64;
+    }
     static uint NB_CHANNELS_POLICY_MAP() {
 #ifdef MODE_CRAZYHOUSE
         return 81;
@@ -199,6 +251,19 @@ public:
 #else  // MODE = MODE_CHESS
         return 76;
 #endif
+    }
+inline static constexpr Version CURRENT_VERSION() {
+#if VERSION == 2
+#if SUBVERSION == 7
+    return make_version<2,7,0>();
+#elif SUB_VERSION == 8
+    return make_version<2,8,0>();
+#endif
+#endif
+#if VERSION == 3
+    return make_version<3,0,0>();
+#endif
+    return make_version<0,0,0>();
     }
 #ifdef MODE_LICHESS
     static std::unordered_map<Variant, int> CHANNEL_MAPPING_VARIANTS() {
@@ -213,6 +278,110 @@ public:
         };
     }
 #endif
+
+    static std::vector<std::string> available_variants() {
+        // list of all current available variants for MultiAra
+        return {
+        #if defined(MODE_CHESS) || defined(MODE_LICHESS)
+            "chess",
+            "standard",
+        #if defined(SUPPORT960)
+            "fischerandom",
+            "chess960",
+        #endif // SUPPORT960
+        #endif // MODE_CHESS && MODE_LICHESS
+        #if defined(MODE_CRAZYHOUSE) || defined(MODE_LICHESS)
+            "crazyhouse",
+        #endif
+        #ifdef MODE_LICHESS
+            "kingofthehill",
+            "atomic",
+            "antichess",
+            "horde",
+            "racingkings",
+            "3check",
+            "threecheck", // 3check
+        #endif
+        };
+    }
+
+    static int variant_to_int(const std::string& variant) {
+        return UCI::variant_from_name(variant);
+    }
+
+    static std::string start_fen(int variant) {
+        const static string startFENs[SUBVARIANT_NB] = {
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            #ifdef ANTI
+            // "The king has no royal power and accordingly:
+            // it may be captured like any other piece
+            // there is no check or checkmate there is no castling"
+            // -- https://en.wikipedia.org/wiki/Losing_chess
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+            #endif
+            #ifdef ATOMIC
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            #endif
+            #ifdef CRAZYHOUSE
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1",
+            #endif
+            #ifdef EXTINCTION
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            #endif
+            #ifdef GRID
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            #endif
+            #ifdef HORDE
+            "rnbqkbnr/pppppppp/8/1PP2PP1/PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP w kq - 0 1",
+            #endif
+            #ifdef KOTH
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            #endif
+            #ifdef LOSERS
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            #endif
+            #ifdef RACE
+            "8/8/8/8/8/8/krbnNBRK/qrbnNBRQ w - - 0 1",
+            #endif
+            #ifdef THREECHECK
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 3+3 0 1",
+            #endif
+            #ifdef TWOKINGS
+            "rnbqkknr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKKNR w KQkq - 0 1",
+            #endif
+            #ifdef SUICIDE
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+            #endif
+            #ifdef BUGHOUSE
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1",
+            #endif
+            #ifdef DISPLACEDGRID
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            #endif
+            #ifdef LOOP
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1",
+            #endif
+            #ifdef PLACEMENT
+            "8/pppppppp/8/8/8/8/PPPPPPPP/8[KQRRBBNNkqrrbbnn] w - -",
+            #endif
+            #ifdef SLIPPEDGRID
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            #endif
+            #ifdef TWOKINGSSYMMETRIC
+            "rnbqkknr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKKNR w KQkq - 0 1",
+            #endif
+        };
+        return startFENs[variant];
+    }
+
+    static int DEFAULT_VARIANT() {
+#ifdef MODE_CRAZYHOUSE
+        return CRAZYHOUSE_VARIANT;  // == 1
+#else
+        return CHESS_VARIANT;  // == 0
+#endif
+    }
+
 };
 
 class BoardState : public State
@@ -220,15 +389,15 @@ class BoardState : public State
 private:
     Board board;
     StateListPtr states;
-
 public:
     BoardState();
     BoardState(const BoardState& b);
 
     // State interface
+    bool mirror_policy(SideToMove sideToMove) const;
     vector<Action> legal_actions() const override;
     void set(const string &fenStr, bool isChess960, int variant) override;
-    void get_state_planes(bool normalize, float *inputPlanes) const override;
+    void get_state_planes(bool normalize, float *inputPlanes, Version version) const override;
     unsigned int steps_from_null() const override;
     bool is_chess960() const override;
     string fen() const override;

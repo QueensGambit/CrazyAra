@@ -50,7 +50,7 @@ using namespace crazyara;
 
 class MCTSAgent : public Agent
 {
-private:
+public:
     SearchSettings* searchSettings;  // TODO: add "const" to searchSetting
     vector<SearchThread*> searchThreads;
     unique_ptr<TimeManager> timeManager;
@@ -65,12 +65,10 @@ private:
 
     MapWithMutex mapWithMutex;
     float lastValueEval;
+    SideToMove lastSideToMove;
 
     // boolean which indicates if the same node was requested twice for analysis
     bool reusedFullTree;
-
-    // boolean which can be triggered by "stop" from std-in to stop the current search
-    bool isRunning;
 
     // saves the overall nps for each move during the game
     float overallNPS;
@@ -82,7 +80,7 @@ private:
     GCThread gcThread;
 
     unique_ptr<ThreadManager> threadManager;
-
+    bool reachedTablebases;
 public:
     MCTSAgent(NeuralNetAPI* netSingle,
               vector<unique_ptr<NeuralNetAPI>>& netBatches,
@@ -133,7 +131,7 @@ public:
      * @brief get_name Returns the name specification of the MCTSAgent using the CrazyAra version ID and loaded neural net
      * @return
      */
-    string get_name() const;
+    virtual string get_name() const;
 
     Node *get_opponents_next_root() const;
 
@@ -164,14 +162,19 @@ public:
      */
     void update_stats();
 
-private:
+    /**
+     * @brief handle_single_move Sets the value evaluation for a single move based on the last value evaluation.
+     * This is needed in cases the the tree is not reused for the next search to avoid artificats for the "bestQValue" feature.
+     */
+    void handle_single_move();
+
     /**
      * @brief reuse_tree Checks if the postion is know and if the tree or parts of the tree can be reused.
      * The old tree or former subtrees will be freed from memory.
      * @param pos Requested board position
      * @return Number of nodes that have already been explored before the serach
      */
-    inline size_t init_root_node(StateObj* state);
+    size_t init_root_node(StateObj* state);
 
     /**
      * @brief get_new_root_node Returns the pointer of the new root node for the given position in the case
@@ -180,7 +183,7 @@ private:
      * @param pos Requested board position
      * @return Pointer to root node or nullptr
      */
-    inline shared_ptr<Node> get_root_node_from_tree(StateObj* state);
+    shared_ptr<Node> get_root_node_from_tree(StateObj* state);
 
     /**
      * @brief create_new_root_node Creates a new root node for the given board position and requests the neural network for evaluation
@@ -205,6 +208,8 @@ private:
      * @param curNPS New NPS measurement
      */
     void update_nps_measurement(float curNPS);
+private:
+    void set_root_node_predictions();
 };
 
 /**

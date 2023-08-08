@@ -22,7 +22,6 @@
 #include "chessbatchstream.h"
 #include "uci.h"
 #include "stateobj.h"
-#include "uci/variants.h"
 
 ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
     mBatchSize{batchSize},
@@ -100,7 +99,7 @@ ChessBatchStream::ChessBatchStream(int batchSize, int maxBatches):
 
     for (size_t idx = 0; idx < size_t(batchSize * maxBatches); ++idx) {
         states->emplace_back();
-        board_to_planes(&pos, pos.number_repetitions(), true, mData.data() + StateConstants::NB_VALUES_TOTAL() * idx);
+        board_to_planes(&pos, pos.number_repetitions(), true, mData.data() + StateConstants::NB_VALUES_TOTAL() * idx, StateConstants::NB_VALUES_TOTAL());
         if (idx == curUciMoves.size()) {
             reset_to_startpos(pos, uiThread.get(), states);
             offset = curUciMoves.size();
@@ -153,17 +152,19 @@ int ChessBatchStream::getBatchSize() const
 
 nvinfer1::Dims ChessBatchStream::getDims() const
 {
-    return Dims{4, {mBatchSize, mDims.d[0], mDims.d[1], mDims.d[2]}, {}};
+    Dims dims;
+    dims.nbDims = 4;
+    dims.d[0] = mBatchSize;
+    dims.d[1] = mDims.d[0];
+    dims.d[2] = mDims.d[1];
+    dims.d[3] = mDims.d[2];
+    return dims;
 }
 
 void reset_to_startpos(Board& pos, Thread* uiThread, StateListPtr& states)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-#ifdef MODE_CHESS
-    pos.set(StartFENs[CHESS_VARIANT], false, CHESS_VARIANT, &states->back(), uiThread);
-#elif defined MODE_CRAZYHOUSE
-    pos.set(StartFENs[CRAZYHOUSE_VARIANT], false, CRAZYHOUSE_VARIANT, &states->back(), uiThread);
-#endif
+    pos.set(StateConstants::start_fen(StateConstants::DEFAULT_VARIANT()), false, Variant(StateConstants::DEFAULT_VARIANT()), &states->back(), uiThread);
 }
 #endif
 #endif

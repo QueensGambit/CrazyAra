@@ -27,6 +27,7 @@
 
 #include <chrono>
 #include <ostream>
+#include "state.h"
 
 #ifndef SEARCHLIMITS_H
 #define SEARCHLIMITS_H
@@ -57,6 +58,14 @@ public:
      * @brief reset Resets all search limits
      */
     void reset();
+
+    /**
+     * @brief get_safe_remaining_time Leaves an additional time buffer to avoid losing on time
+     *  Factor which is applied on the moveOverhead to calculate a time buffer for avoiding losing on time
+     * @param sideToMove
+     * @return Total movetime in milli-seconds
+     */
+    int get_safe_remaining_time(SideToMove sideToMove) const;
 };
 
 /**

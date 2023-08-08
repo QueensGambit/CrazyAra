@@ -1,8 +1,8 @@
 # Crazy House Project Source
 
 ## Setup
-This project uses MXNet. To install MXNet look at
-[https://mxnet.incubator.apache.org/install/index.html](https://mxnet.incubator.apache.org/install/index.html)
+The former python MCTS version of this project uses MXNet. To install MXNet look at
+[https://mxnet.apache.org/](https://mxnet.apache.org/)
 
 Copy and rename `DeepCrazyhouse/configs/main_config_sample.py` to `DeepCrazyhouse/configs/main_config.py`. Adjust the paths
  to the correct location on your file system. The most important entries to change are `model_architecture_dir` and `model_weights_dir`.

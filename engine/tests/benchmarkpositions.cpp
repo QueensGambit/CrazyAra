@@ -24,7 +24,6 @@
  */
 
 #include "benchmarkpositions.h"
-#include "uci.h"
 
 BenchmarkPositions::BenchmarkPositions():
     goCommand("movetime 3000"),

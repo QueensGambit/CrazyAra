@@ -34,7 +34,7 @@
 #include "EntropyCalibrator.h"
 #include "stateobj.h"
 #include "../util/communication.h"
-#if !defined(MODE_POMMERMAN) && !defined(MODE_XIANGQI)
+#ifdef SF_DEPENDENCY
 #include "environments/chess_related/chessbatchstream.h"
 #endif
 
@@ -42,20 +42,24 @@ using namespace sample;
 
 TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
     NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
-    precision(str_to_precision(strPrecision))
+    idxInput(nnDesign.inputIdx),
+    idxValueOutput(nnDesign.valueOutputIdx + nnDesign.nbInputs),
+    idxPolicyOutput(nnDesign.policyOutputIdx + nnDesign.nbInputs),
+    idxAuxiliaryOutput(nnDesign.auxiliaryOutputIdx + nnDesign.nbInputs),
+    precision(str_to_precision(strPrecision)),
+    generatedTrtFromONNX(false)
 {
     // select the requested device
     cudaSetDevice(deviceID);
     // in ONNX, the model architecture and parameters are in the same file
-    modelName = get_file_ending_with(modelDir, "-bsize-" + to_string(batchSize) + ".onnx");
+    modelName = get_onnx_model_name(modelDir, batchSize);
+
     modelFilePath = modelDir + modelName;
     info_string("onnx file:", modelFilePath);
     trtFilePath = generate_trt_file_path(modelDir, batchSize, precision, deviceID);
     gLogger.setReportableSeverity(nvinfer1::ILogger::Severity::kERROR);
 
-    load_model();
-    init_nn_design();
-    bind_executor();
+    initialize();
 }
 
 TensorrtAPI::~TensorrtAPI()
@@ -84,12 +88,57 @@ void TensorrtAPI::load_parameters()
     // do nothing
 }
 
-void TensorrtAPI:: init_nn_design()
+bool TensorrtAPI::retrieve_indices_by_name(bool verbose)
 {
+    idxInput = engine->getBindingIndex(nnDesign.inputLayerName.c_str());
+    if (idxInput == -1) {
+        info_string_important("Layer name '" + nnDesign.inputLayerName + "' not found.");
+        return false;
+    }
+    idxValueOutput = engine->getBindingIndex(nnDesign.valueOutputName.c_str());
+    if (idxValueOutput == -1) {
+        info_string_important("Layer name '" + nnDesign.valueOutputName + "' not found.");
+        return false;
+    }
+    idxPolicyOutput = engine->getBindingIndex(nnDesign.policySoftmaxOutputName.c_str());
+    if (idxPolicyOutput == -1) {
+        info_string_important("Layer name '" + nnDesign.policySoftmaxOutputName + "' not found.");
+        return false;
+    }
+    if (nnDesign.hasAuxiliaryOutputs) {
+        idxAuxiliaryOutput = engine->getBindingIndex(nnDesign.auxiliaryOutputName.c_str());
+        if (idxAuxiliaryOutput == -1) {
+            info_string_important("Layer name '" + nnDesign.auxiliaryOutputName + "' not found.");
+            return false;
+        }
+    }
+    if (verbose) {
+        info_string("Found 'idxInput' at index", idxInput);
+        info_string("Found 'idxValueOutput' at index", idxValueOutput);
+        info_string("Found 'idxPolicyOutput' at index", idxPolicyOutput);
+        if (nnDesign.hasAuxiliaryOutputs) {
+            info_string("Found 'idxAuxiliaryOutput' at index", idxAuxiliaryOutput);
+        }
+    }
+    return true;
+}
+
+void TensorrtAPI::init_nn_design()
+{
+    nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
+    if (!retrieve_indices_by_name(generatedTrtFromONNX)) {
+        info_string_important("Fallback to default indices.");
+        idxInput = nnDesign.inputIdx;
+        idxValueOutput = nnDesign.valueOutputIdx + nnDesign.nbInputs;
+        idxPolicyOutput = nnDesign.policyOutputIdx + nnDesign.nbInputs;
+        idxAuxiliaryOutput = nnDesign.auxiliaryOutputIdx + nnDesign.nbInputs;
+    }
+
     set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
+    // make sure that the first dimension is the batch size, otherwise '-1' could cause problems
+    nnDesign.inputShape.v[0] = batchSize;
     set_shape(nnDesign.valueOutputShape, engine->getBindingDimensions(idxValueOutput));
     set_shape(nnDesign.policyOutputShape, engine->getBindingDimensions(idxPolicyOutput));
-    nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
     if (nnDesign.hasAuxiliaryOutputs) {
         set_shape(nnDesign.auxiliaryOutputShape, engine->getBindingDimensions(idxAuxiliaryOutput));
     }
@@ -100,6 +149,10 @@ void TensorrtAPI::bind_executor()
 {
     // create an exectution context for applying inference
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
+    Dims inputDims;
+    set_dims(inputDims, nnDesign.inputShape);
+    context->setBindingDimensions(0, inputDims);
+
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
 #ifdef DYNAMIC_NN_ARCH
@@ -108,7 +161,7 @@ void TensorrtAPI::bind_executor()
     memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
 #endif
     memorySizes[idxValueOutput] = batchSize * sizeof(float);
-    memorySizes[idxPolicyOutput] = get_policy_output_length() * sizeof(float);
+    memorySizes[idxPolicyOutput] = batchSize * get_nb_policy_values() * sizeof(float);
 #ifdef DYNAMIC_NN_ARCH
     if (nnDesign.hasAuxiliaryOutputs) {
         memorySizes[idxAuxiliaryOutput] = batchSize * get_nb_auxiliary_outputs() * sizeof (float);
@@ -155,31 +208,51 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     info_string("Building TensorRT engine...");
     info_string("This may take a few minutes...");
     // create an engine builder
-    IBuilder* builder = createInferBuilder(gLogger.getTRTLogger());
+    SampleUniquePtr<IBuilder> builder = SampleUniquePtr<IBuilder>(createInferBuilder(gLogger.getTRTLogger()));
     builder->setMaxBatchSize(int(batchSize));
 
     // create an ONNX network object
-    const auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+    const uint32_t explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
     auto network = SampleUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
-
-    SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
-    unique_ptr<IInt8Calibrator> calibrator;
-    unique_ptr<IBatchStream> calibrationStream;
-    set_config_settings(config, network, 1_GiB, calibrator, calibrationStream);
 
     // conversion of ONNX model to TensorRT
     // parse the ONNX model file along with logger object for reporting info
-    auto parser = nvonnxparser::createParser(*network, gLogger.getTRTLogger());
+    SampleUniquePtr<nvonnxparser::IParser> parser = SampleUniquePtr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, gLogger.getTRTLogger()));
     if (!parser->parseFromFile(modelFilePath.c_str(), static_cast<int>(gLogger.getReportableSeverity())))
     {
         gLogger.log(nvinfer1::ILogger::Severity::kERROR, "failed to parse onnx file");
+        for (int32_t idx = 0; idx < parser->getNbErrors(); ++idx) {
+            std::cout << parser->getError(idx)->desc() << std::endl;
+        }
         exit(EXIT_FAILURE);
         return nullptr;
     }
     configure_network(network);
+    
+    SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
+    unique_ptr<IInt8Calibrator> calibrator;
+    unique_ptr<IBatchStream> calibrationStream;
+    set_config_settings(config, 1_GiB, calibrator, calibrationStream);
+
+    IOptimizationProfile* profile = builder->createOptimizationProfile();
+
+    Dims inputDims = network->getInput(0)->getDimensions();
+    inputDims.d[0] = batchSize;
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMIN, inputDims);
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kOPT, inputDims);
+    profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMAX, inputDims);
+    config->addOptimizationProfile(profile);
 
     // build an engine from the TensorRT network with a given configuration struct
+#ifdef TENSORRT7
     return builder->buildEngineWithConfig(*network, *config);
+#else
+    SampleUniquePtr<IHostMemory> serializedModel{builder->buildSerializedNetwork(*network, *config)};
+    SampleUniquePtr<IRuntime> runtime{createInferRuntime(sample::gLogger.getTRTLogger())};
+
+    // build an engine from the serialized model
+    return runtime->deserializeCudaEngine(serializedModel->data(), serializedModel->size());;
+#endif
 }
 
 ICudaEngine* TensorrtAPI::get_cuda_engine() {
@@ -191,7 +264,11 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
     if (buffer) {
         info_string("deserialize engine:", trtFilePath);
         unique_ptr<IRuntime, samplesCommon::InferDeleter> runtime{createInferRuntime(gLogger)};
+#ifdef TENSORRT7
         engine = runtime->deserializeCudaEngine(buffer, bufferSize, nullptr);
+#else
+        engine = runtime->deserializeCudaEngine(buffer, bufferSize);
+#endif
     }
 
     if (!engine) {
@@ -200,24 +277,22 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
         engine = create_cuda_engine_from_onnx();
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         info_elapsed_time("Elapsed time for building TensorRT engine:", begin, end);
+        generatedTrtFromONNX = true;
 
         if (engine) {
             info_string("serialize engine:", trtFilePath);
             // serialized engines are not portable across platforms or TensorRT versions
             // engines are specific to the exact GPU model they were built on
-            IHostMemory *serializedModel = engine->serialize();
             unique_ptr<IHostMemory, samplesCommon::InferDeleter> enginePlan{engine->serialize()};
             // export engine for future uses
             // write engine to file
             write_buffer(enginePlan->data(), enginePlan->size(), trtFilePath);
-            serializedModel->destroy();
         }
     }
     return engine;
 }
 
 void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-                                      SampleUniquePtr<nvinfer1::INetworkDefinition>& network,
                                       size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
                                       unique_ptr<IBatchStream>& calibrationStream)
 {
@@ -237,11 +312,11 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 #elif defined MODE_CRAZYHOUSE
         calibrationStream.reset(new ChessBatchStream(1, 232));
 #endif
-#if !defined(MODE_POMMERMAN) && !defined(MODE_OPEN_SPIEL) && !defined(MODE_XIANGQI)
+#if !defined(MODE_POMMERMAN) && !defined(MODE_OPEN_SPIEL) && !defined(MODE_XIANGQI) && !defined(MODE_STRATEGO) && !defined (MODE_BOARDGAMES)
         calibrator.reset(new Int8EntropyCalibrator2<ChessBatchStream>(*(dynamic_cast<ChessBatchStream*>(calibrationStream.get())), 0, "model", "data"));
 #endif
         config->setInt8Calibrator(calibrator.get());
-        samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f);
+        // samplesCommon::setAllTensorScales(network.get(), 127.0f, 127.0f); -> unavailable for TensorRT >= 8.2.0.6
         break;
     }
 }
@@ -249,7 +324,20 @@ void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>&
 void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition> &network)
 {
     // add a softmax layer to the ONNX model
-    ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(1));
+    int policyOutputIdx = -1;
+    for (int idx = 0; idx < network->getNbOutputs(); ++idx) {
+        if (string(network->getOutput(idx)->getName()) == nnDesign.policyOutputName) {
+            policyOutputIdx = idx;
+            break;
+        }
+    }
+    if (policyOutputIdx == -1) {
+        info_string("Did not find policy output with name '" + nnDesign.policyOutputName + "'");
+        info_string("Setting policyOutputIdx to:", nnDesign.policyOutputIdx);
+        policyOutputIdx = nnDesign.policyOutputIdx;
+    }
+
+    ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(policyOutputIdx));
     // set the softmax axis to 1
     softmaxLayer->setAxes(1 << 1);
 
@@ -261,9 +349,9 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
 //    fix_layer_precision(network->getLayer(2), nvinfer1::DataType::kFLOAT);
 
     // set the softmax layer output as the new output
-    network->unmarkOutput(*network->getOutput(nnDesign.policyOutputIdx));
+    network->unmarkOutput(*network->getOutput(policyOutputIdx));
     network->markOutput(*softmaxLayer->getOutput(0));
-    softmaxLayer->getOutput(0)->setName("policy_softmax");
+    softmaxLayer->getOutput(0)->setName(nnDesign.policySoftmaxOutputName.c_str());
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {
@@ -345,6 +433,14 @@ void set_shape(nn_api::Shape &shape, const Dims &dims)
     shape.nbDims = dims.nbDims;
     for (int idx = 0; idx < shape.nbDims; ++idx) {
         shape.v[idx] = dims.d[idx];
+    }
+}
+
+void set_dims(Dims &dims, const nn_api::Shape &shape)
+{
+    dims.nbDims = shape.nbDims;
+    for (int idx = 0; idx < shape.nbDims; ++idx) {
+        dims.d[idx] = shape.v[idx];
     }
 }
 

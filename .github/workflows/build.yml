@@ -1,0 +1,60 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    env:
+      COMPILER: ${{ matrix.config.compiler }}
+      COMP: ${{ matrix.config.comp }}
+      CXXFLAGS: "-Werror"
+      # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+      BUILD_TYPE: Debug
+      
+    strategy:
+      matrix:
+        config:
+          - name: "Ubuntu-Latest-GCC"
+            os: ubuntu-latest
+            compiler: g++
+            comp: gcc
+          - name: "Ubuntu-Latest-Clang"
+            os: ubuntu-latest
+            compiler: clang++
+            comp: clang
+            
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      working-directory: ${{github.workspace}}/engine/3rdparty/blaze
+      run: |
+        # install blaze
+        cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
+        sudo make install
+      
+    - name: Configure CMake
+      working-directory: ${{github.workspace}}/engine
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: cmake -B ./build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DUSE_PROFILING=0 -DUSE_RL=0 -DBACKEND_TENSORRT=0 -DBACKEND_MXNET=0 -DBACKEND_TORCH=0 -DUSE_960=0 -DBUILD_TESTS=1 -DMODE_CRAZYHOUSE=1 -DMODE_CHESS=0 -DMODE_LICHESS=0 .
+
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/engine/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/engine/build
+      # Execute tests defined by the CMake configuration.  
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: ./CrazyAra

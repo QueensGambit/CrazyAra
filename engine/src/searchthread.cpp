@@ -48,12 +48,14 @@ SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchS
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
-#ifdef DYNAMIC_NN_ARCH
-    nbNNInputValues(net->get_nb_input_values_total())
-#else
-    nbNNInputValues(StateConstants::NB_VALUES_TOTAL())
-#endif
+    terminalNodeCache(searchSettings->batchSize*2),
+    reachedTablebases(false)
 {
+    switch (searchSettings->searchPlayerMode) {
+    case MODE_SINGLE_PLAYER:
+        terminalNodeCache = 1;  // TODO: Check if this is really needed
+    case MODE_TWO_PLAYER: ;
+    }
     searchLimits = nullptr;  // will be set by set_search_limits() every time before go()
     trajectoryBuffer.reserve(DEPTH_INIT);
     actionsBuffer.reserve(DEPTH_INIT);
@@ -80,10 +82,19 @@ void SearchThread::set_is_running(bool value)
     isRunning = value;
 }
 
+void SearchThread::set_reached_tablebases(bool value)
+{
+    reachedTablebases = value;
+}
+
 Node* SearchThread::add_new_node_to_tree(StateObj* newState, Node* parentNode, ChildIdx childIdx, NodeBackup& nodeBackup)
 {
     bool transposition;
     Node* newNode = parentNode->add_new_node_to_tree(mapWithMutex, newState, childIdx, searchSettings, transposition);
+    if (newNode->is_terminal()) {
+        nodeBackup = NODE_TERMINAL;
+        return newNode;
+    }
     if (transposition) {
         const float qValue =  parentNode->get_child_node(childIdx)->get_value();
         transpositionValues->add_element(qValue);
@@ -135,7 +146,7 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     size_t depth = get_random_depth();
     for (uint curDepth = 0; curDepth < depth; ++curDepth) {
         currentNode->lock();
-        childIdx = get_best_action_index(currentNode, true, 0, 0);
+        childIdx = get_best_action_index(currentNode, true, searchSettings);
         Node* nextNode = currentNode->get_child_node(childIdx);
         if (nextNode == nullptr || !nextNode->is_playout_node() || nextNode->get_visits() < searchSettings->epsilonGreedyCounter || nextNode->get_node_type() != UNSOLVED) {
             currentNode->unlock();
@@ -177,7 +188,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
         if (childIdx == uint16_t(-1)) {
             childIdx = currentNode->select_child_node(searchSettings);
         }
-        currentNode->apply_virtual_loss_to_child(childIdx, searchSettings->virtualLoss);
+        currentNode->apply_virtual_loss_to_child(childIdx, searchSettings);
         trajectoryBuffer.emplace_back(NodeAndIdx(currentNode, childIdx));
 
         nextNode = currentNode->get_child_node(childIdx);
@@ -214,7 +225,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * nbNNInputValues);
+                newState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_version());
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
@@ -222,7 +233,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
             }
             return nextNode;
         }
-        if (nextNode->is_playout_node() && nextNode->is_solved()) {
+        if (nextNode->is_terminal()) {
             description.type = NODE_TERMINAL;
             currentNode->unlock();
             return nextNode;
@@ -235,12 +246,13 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
         if (nextNode->is_transposition()) {
             nextNode->lock();
             const uint_fast32_t transposVisits = currentNode->get_real_visits(childIdx);
-            const double transposQValue = -currentNode->get_q_sum(childIdx, searchSettings->virtualLoss) / transposVisits;
+            const double transposQValue = currentNode->get_transposition_q_value(searchSettings, childIdx, transposVisits);
+
             if (nextNode->is_transposition_return(transposQValue)) {
-                const float qValue = get_transposition_q_value(transposVisits, transposQValue, nextNode->get_value());
+                const float backupValue = get_transposition_backup_value(transposVisits, transposQValue, nextNode->get_value());
                 nextNode->unlock();
                 description.type = NODE_TRANSPOSITION;
-                transpositionValues->add_element(qValue);
+                transpositionValues->add_element(backupValue);
                 currentNode->unlock();
                 return nextNode;
             }
@@ -272,10 +284,10 @@ void SearchThread::reset_stats()
     depthSum = 0;
 }
 
-void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, SideToMove sideToMove, const SearchSettings* searchSettings, bool isRootNodeTB)
+void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutputs, const float* probOutputs, const float* auxiliaryOutputs, Node *node, size_t& tbHits, bool mirrorPolicy, const SearchSettings* searchSettings, bool isRootNodeTB)
 {
-    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), sideToMove);
-    node_post_process_policy(node, searchSettings->nodePolicyTemperature, isPolicyMap, searchSettings);
+    node->set_probabilities_for_moves(get_policy_data_batch(batchIdx, probOutputs, isPolicyMap), mirrorPolicy);
+    node_post_process_policy(node, searchSettings->nodePolicyTemperature, searchSettings);
     node_assign_value(node, valueOutputs, tbHits, batchIdx, isRootNodeTB);
 #ifdef MCTS_STORE_STATES
     node->set_auxiliary_outputs(get_auxiliary_data_batch(batchIdx, auxiliaryOutputs));
@@ -287,9 +299,9 @@ void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
-        if (!node->is_terminal()) {
-            fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node, tbHits, newNodeSideToMove->get_element(batchIdx), searchSettings, rootNode->is_tablebase());
-        }
+        fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
+                        tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
+                        searchSettings, rootNode->is_tablebase());
         ++batchIdx;
     }
 }
@@ -303,7 +315,7 @@ void SearchThread::backup_value_outputs()
 
 void SearchThread::backup_collisions() {
     for (size_t idx = 0; idx < collisionTrajectories.size(); ++idx) {
-        backup_collision(searchSettings->virtualLoss, collisionTrajectories[idx]);
+        backup_collision(searchSettings, collisionTrajectories[idx]);
     }
     collisionTrajectories.clear();
 }
@@ -311,8 +323,8 @@ void SearchThread::backup_collisions() {
 bool SearchThread::nodes_limits_ok()
 {
     return (searchLimits->nodes == 0 || (rootNode->get_node_count() < searchLimits->nodes)) &&
-            (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations)) &&
-            (searchLimits->nodesLimit == 0 || (rootNode->get_node_count() < searchLimits->nodesLimit));
+           (searchLimits->simulations == 0 || (rootNode->get_visits() < searchLimits->simulations)) &&
+           (searchLimits->nodesLimit == 0 || (rootNode->get_node_count() < searchLimits->nodesLimit));
 }
 
 bool SearchThread::is_root_node_unsolved()
@@ -338,7 +350,7 @@ void SearchThread::create_mini_batch()
     while (!newNodes->is_full() &&
            collisionTrajectories.size() != searchSettings->batchSize &&
            !transpositionValues->is_full() &&
-           numTerminalNodes < TERMINAL_NODE_CACHE) {
+           numTerminalNodes < terminalNodeCache) {
 
         trajectoryBuffer.clear();
         actionsBuffer.clear();
@@ -348,7 +360,7 @@ void SearchThread::create_mini_batch()
 
         if(description.type == NODE_TERMINAL) {
             ++numTerminalNodes;
-            backup_value<true>(newNode->get_value(), searchSettings->virtualLoss, trajectoryBuffer, searchSettings->mctsSolver);
+            backup_value<true>(newNode->get_value(), searchSettings, trajectoryBuffer, searchSettings->mctsSolver);
         }
         else if (description.type == NODE_COLLISION) {
             // store a pointer to the collision node in order to revert the virtual loss of the forward propagation
@@ -392,9 +404,9 @@ void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& 
         Node* node = nodes.get_element(idx);
 #ifdef MCTS_TB_SUPPORT
         const bool solveForTerminal = searchSettings->mctsSolver && node->is_tablebase();
-        backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], solveForTerminal);
+        backup_value<false>(node->get_value(), searchSettings, trajectories[idx], solveForTerminal);
 #else
-        backup_value<false>(node->get_value(), searchSettings->virtualLoss, trajectories[idx], false);
+        backup_value<false>(node->get_value(), searchSettings, trajectories[idx], false);
 #endif
     }
     nodes.reset_idx();
@@ -404,7 +416,7 @@ void SearchThread::backup_values(FixedVector<Node*>& nodes, vector<Trajectory>& 
 void SearchThread::backup_values(FixedVector<float>* values, vector<Trajectory>& trajectories) {
     for (size_t idx = 0; idx < values->size(); ++idx) {
         const float value = values->get_element(idx);
-        backup_value<true>(value, searchSettings->virtualLoss, trajectories[idx], false);
+        backup_value<true>(value, searchSettings, trajectories[idx], false);
     }
     values->reset_idx();
     trajectories.clear();
@@ -450,11 +462,8 @@ void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, si
     node->set_value(valueOutputs[batchIdx]);
 }
 
-void node_post_process_policy(Node *node, float temperature, bool isPolicyMap, const SearchSettings* searchSettings)
+void node_post_process_policy(Node *node, float temperature, const SearchSettings* searchSettings)
 {
-    if (!isPolicyMap) {
-        node->apply_softmax_to_policy();
-    }
     node->enhance_moves(searchSettings);
     node->apply_temperature_to_prior_policy(temperature);
 }

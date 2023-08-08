@@ -7,15 +7,16 @@
 
 <div id="badges" align="center">
 
-[![Build Status](https://travis-ci.org/QueensGambit/CrazyAra.svg?branch=master)](https://travis-ci.org/QueensGambit/CrazyAra)
+[![Build Status](https://github.com/QueensGambit/CrazyAra/workflows/build/badge.svg?branch=master)](https://github.com/QueensGambit/CrazyAra/actions?query=workflow%3Abuild)
+[![Variants Status](https://github.com/QueensGambit/CrazyAra/workflows/variants/badge.svg)](https://github.com/QueensGambit/CrazyAra/actions?query=workflow%3Avariants)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 &nbsp; 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/39c3329d0cea4186b5e4d32cfb6a4d5d)](https://www.codacy.com/manual/QueensGambit/CrazyAra?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=QueensGambit/CrazyAra&amp;utm_campaign=Badge_Grade)
+[![ICAPS Badge](https://img.shields.io/badge/Conference-ICAPS-green.svg)](https://ojs.aaai.org/index.php/ICAPS/article/view/15952)
+[![Journal Badge](https://img.shields.io/badge/Journal-Frontiers-green.svg)](https://www.frontiersin.org/articles/10.3389/frai.2020.00024/full)
+[![Thesis Badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
 [![ArXiv Badge2](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/2012.11045)
 [![ArXiv Badge](https://img.shields.io/badge/Paper-arXiv-blue.svg)](https://arxiv.org/abs/1908.06660)
-[![Thesis Badge](https://img.shields.io/badge/Thesis-M.Sc.-orange.svg)](https://ml-research.github.io/papers/czech2019deep.pdf)
-[![Journal Badge](https://img.shields.io/badge/Journal-Frontiers-green.svg)](https://www.frontiersin.org/articles/10.3389/frai.2020.00024/full)
-
 
 </div>
 
@@ -73,19 +74,18 @@ We provide binary releases for the following plattforms:
 
 Operating System | Backend                                                                                                                                                               | Compatible with
 ---              | ---                                                                                                                                                                   | --- 
-Linux            | [**CUDA 11.2, cuDNN 8.1.1.33, TensorRT-7.2.3.4**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Linux_TensorRT.zip) | NVIDIA GPUs
-Linux            | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Linux_MKL.zip)                                               | Intel CPUs
-Windows          | [**CUDA 11.2, cuDNN 8.1.1.33, TensorRT-7.2.3.4**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Win_TensorRT.zip)                              | NVIDIA GPUs
-Windows          | [**MXNet-20190919, Intel MKL 20190502**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Win_MKL.zip )                                                 | Intel CPUs
-Mac              | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.0/CrazyAra_ClassicAra_0.9.0_Mac_MKL_post1.zip) | Mac-Books
+Linux            | [**CUDA 11.3, cuDNN 8.2.1, TensorRT-8.0.1**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Linux_TensorRT.zip) | NVIDIA GPUs
+Linux            | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Linux_MKL.zip)                                               | Intel CPUs
+Windows          | [**CUDA 11.3, cuDNN 8.2.1, TensorRT-8.0.1**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Win_TensorRT.zip)                              | NVIDIA GPUs
+Windows          | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Win_MKL.zip )                                                 | Intel CPUs
+Mac              | [**MXNet 1.8.0, Intel oneAPI MKL 2021.2.0**](https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra_ClassicAra_MultiAra_0.9.5_Mac_MKL_post1.zip) | Mac-Books
 
 The current _CrazyAra_ release and all its previous versions can also be found at [releases](https://github.com/QueensGambit/CrazyAra/releases).
 
 ### Models
 
-The extracted model should be placed in the same directory as the engine executable.
-The directory can be changed by adjusting the UCI-parameter `Model_Directory`.
-A default model is included for [**releases >= 0.8.0**](https://github.com/QueensGambit/CrazyAra/releases/).
+The extracted model should be placed in the directory reltative to the engine executable.
+The default directory is indicated and can be changed by adjusting the UCI-parameter `Model_Directory`.
 
 More information about the different models can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Model-description).
 
@@ -175,15 +175,20 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 ## Publications
 
-*   J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero Using Monte-Carlo Graph Search**, [preprint](https://arxiv.org/abs/2012.11045)
+*   J. Czech, P. Korus, and K. Kersting: **Improving AlphaZero Using Monte-Carlo Graph Search**, [link](https://ojs.aaai.org/index.php/ICAPS/article/view/15952)
 
 ```latex
 @inproceedings{czech2021icaps_mcgs,
-               crossref = { https://github.com/QueensGambit/CrazyAra },
-	       year = { 2021 },
-	       author = { Johannes Czech and Patrick Korus and Kristian Kersting },
-	       booktitle = { Proceedings of the 31st International Conference on Automated Planning and Scheduling (ICAPS) },
-	       title = { Improving {AlphaZero} Using {Monte-Carlo} {Graph} {Search} } }
+               title={Improving AlphaZero Using Monte-Carlo Graph Search},
+	       volume={31},
+	       url={https://ojs.aaai.org/index.php/ICAPS/article/view/15952},
+	       number={1},
+	       journal={Proceedings of the International Conference on Automated Planning and Scheduling},
+	       author={Czech, Johannes and Korus, Patrick and Kersting, Kristian},
+	       year={2021},
+	       month={May},
+	       pages={103-111}
+	       }
 ```
 
 *   J. Czech, M. Willig, A. Beyer, K. Kersting and J. Fürnkranz: **Learning to play the Chess Variant Crazyhouse above World Champion Level with Deep Neural Networks and Human Data**, [link](https://www.frontiersin.org/article/10.3389/frai.2020.00024)
@@ -192,14 +197,29 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 	 AUTHOR={Czech, Johannes and Willig, Moritz and Beyer, Alena and Kersting, Kristian and Fürnkranz, Johannes},   
 	 TITLE={Learning to Play the Chess Variant Crazyhouse Above World Champion Level With Deep Neural Networks and Human Data},      
 	 JOURNAL={Frontiers in Artificial Intelligence},      
-	 VOLUME={3},      
-	 PAGES={24},     
-	 YEAR={2020},      
+	 VOLUME={3},
+	 PAGES={24},
+	 YEAR={2020},
 	 URL={https://www.frontiersin.org/article/10.3389/frai.2020.00024},       
 	 DOI={10.3389/frai.2020.00024},      
-	 ISSN={2624-8212},   
-	 ABSTRACT={Deep neural networks have been successfully applied in learning the board games Go, chess, and shogi without prior knowledge by making use of reinforcement learning. Although starting from zero knowledge has been shown to yield impressive results, it is associated with high computationally costs especially for complex games. With this paper, we present CrazyAra which is a neural network based engine solely trained in supervised manner for the chess variant crazyhouse. Crazyhouse is a game with a higher branching factor than chess and there is only limited data of lower quality available compared to AlphaGo. Therefore, we focus on improving efficiency in multiple aspects while relying on low computational resources. These improvements include modifications in the neural network design and training configuration, the introduction of a data normalization step and a more sample efficient Monte-Carlo tree search which has a lower chance to blunder. After training on 569537 human games for 1.5 days we achieve a move prediction accuracy of 60.4%. During development, versions of CrazyAra played professional human players. Most notably, CrazyAra achieved a four to one win over 2017 crazyhouse world champion Justin Tan (aka LM Jann Lee) who is more than 400 Elo higher rated compared to the average player in our training set. Furthermore, we test the playing strength of CrazyAra on CPU against all participants of the second Crazyhouse Computer Championships 2017, winning against twelve of the thirteen participants. Finally, for CrazyAraFish we continue training our model on generated engine games. In 10 long-time control matches playing Stockfish 10, CrazyAraFish wins three games and draws one out of 10 matches.}
-}
+	 ISSN={2624-8212}
+	 }
+```
+
+## M.Sc. Thesis
+
+* M. Gehrke: **Assessing Popular Chess Variants Using Deep Reinforcement Learning**, [pdf](https://ml-research.github.io/papers/gehrke2021assessing.pdf)
+```latex
+@mastersthesis{gehrke2021assessing,
+	       title = { Assessing Popular Chess Variants Using Deep Reinforcement Learning },
+	       author = { Maximilian Alexander Gehrke },
+               year = { 2021 },
+               type = { M.Sc. },
+	       crossref = { https://github.com/QueensGambit/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 94 },
+	       month = { jul }
+	       }
 ```
 
 * J. Czech: **Deep Reinforcement Learning for Crazyhouse**, [pdf](https://ml-research.github.io/papers/czech2019deep.pdf)
@@ -213,5 +233,65 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 	       school = { TU Darmstadt },
 	       pages = { 54 },
 	       month = { dec }
+	       }
+```
+
+
+
+## B.Sc. Thesis
+
+* M. Ruzicka: **Utilizing Variance and Uncertainty in Monte-Carlo Tree Search**, [pdf](https://ml-research.github.io/papers/ruzicka2023utilizing.pdf)
+```latex
+@bachelorthesis{ruzicka2023utilizing,
+	       title = { Utilizing Variance and Uncertainty in Monte-Carlo Tree Search },
+	       author = { Martin Ruzicka },
+               year = { 2023 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/MartinRuz/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 40 },
+	       month = { april }
+	       }
+```
+
+* M. Reuter: **Nutzung der Neuartigkeit von Zuständen in Suchgraphen von AlphaZero**, (German) [pdf](https://ml-research.github.io/papers/reuter2023nutzung.pdf)
+```latex
+@bachelorthesis{reuter2023nutzung,
+	       title = { Stochastic Exploration in Minimax Search by Using a Policy Predictor Network },
+	       author = { Markus Reuter },
+               year = { 2023 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/KingEsel1/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 58 },
+	       month = { march }
+	       }
+```
+
+* J. Holmer: **Stochastic Exploration in Minimax Search by Using a Policy Predictor Network**, [pdf](https://ml-research.github.io/papers/holmer2022stochastic.pdf)
+```latex
+@bachelorthesis{holmer2022eval,
+	       title = { Stochastic Exploration in Minimax Search by Using a Policy Predictor Network },
+	       author = { Jannik Holmer },
+               year = { 2022 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/QueensGambit/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 49 },
+	       month = { may }
+	       }
+```
+
+* M. Langer: **Evaluation of Monte-Carlo Tree Search for Xiangqi**, [pdf](https://ml-research.github.io/papers/langer2021xiangqi.pdf)
+```latex
+@bachelorthesis{langer2021eval,
+	       title = { Evaluation of Monte-Carlo Tree Search for Xiangqi },
+	       author = { Maximilian Langer },
+               year = { 2021 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/QueensGambit/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 45 },
+	       month = { apr }
 	       }
 ```

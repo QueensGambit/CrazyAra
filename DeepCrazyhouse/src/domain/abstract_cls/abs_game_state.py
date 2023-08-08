@@ -34,7 +34,7 @@ class AbsGameState(ABC):
         """ Force the child to implement get_pythonchess_board method"""
 
     def is_draw(self):
-        """ Check if you can claim a draw - its assumed that the draw is always claimed """
+        """ Check if you can claim a draw - it's assumed that the draw is always claimed """
         return self.board.can_claim_draw()
 
     @abstractmethod
@@ -52,6 +52,10 @@ class AbsGameState(ABC):
     @abstractmethod
     def is_white_to_move(self):
         """Force the child to implement is_white_to_move method"""
+
+    @abstractmethod
+    def mirror_policy(self) -> bool:
+        """Force the child to implement mirror_policy method"""
 
     def __str__(self):
         return self.board.fen()

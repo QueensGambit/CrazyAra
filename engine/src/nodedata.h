@@ -52,6 +52,27 @@ enum NodeType : uint8_t {
 };
 
 /**
+ * @brief is_loss_node_type Returns true if given node type belongs to a loosing node type
+ * @param nodeType
+ * @return bool
+ */
+bool is_loss_node_type(NodeType nodeType);
+
+/**
+ * @brief is_win_node_type Returns true if given node type belongs to a win node type
+ * @param nodeType
+ * @return bool
+ */
+bool is_win_node_type(NodeType nodeType);
+
+/**
+ * @brief is_draw_node_type Returns true if given node type belongs to a drawubg node type
+ * @param nodeType
+ * @return  bool
+ */
+bool is_draw_node_type(NodeType nodeType);
+
+/**
  * @brief is_unsolved_or_tablebase Checks if the given node type is a win, draw, loss or a different type.
  * @param nodeType given node type
  * @return bool

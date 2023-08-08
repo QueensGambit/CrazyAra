@@ -23,6 +23,7 @@
  * @author: queensgambit
  */
 
+#include <algorithm>
 #include "timemanager.h"
 #include "../util/communication.h"
 #include <cassert>
@@ -30,19 +31,21 @@
 using namespace std;
 
 
-TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int threshMove, float moveFactor, float incrementFactor, int timeBufferFactor):
+TimeManager::TimeManager(float randomMoveFactor, int expectedGameLength, int threshMove, int timePropMovesToGo, float incrementFactor):
     curMovetime(0),  // will be updated later
-    timeBuffer(0),   // will be updated later
     randomMoveFactor(randomMoveFactor),
     expectedGameLength(expectedGameLength),
     threshMove(threshMove),
-    moveFactor(moveFactor),
-    incrementFactor(incrementFactor),
-    timeBufferFactor(timeBufferFactor)
+    timePropMovesToGo(timePropMovesToGo),
+    incrementFactor(incrementFactor)
 {
     auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     srand(unsigned(int(seed)));
     assert(threshMove < expectedGameLength);
+}
+
+inline int get_constant_movetime(const SearchLimits* searchLimits, SideToMove me, int movesToGo, float incrementFactor) {
+    return searchLimits->get_safe_remaining_time(me) / movesToGo + incrementFactor * searchLimits->inc[me];
 }
 
 int TimeManager::get_time_for_move(const SearchLimits* searchLimits, SideToMove me, int moveNumber)
@@ -56,38 +59,42 @@ int TimeManager::get_time_for_move(const SearchLimits* searchLimits, SideToMove 
         }
     }
 
-    // leave an additional time buffer to avoid losing on time
-    timeBuffer = searchLimits->moveOverhead * timeBufferFactor;
-
     if (searchLimits->movetime != 0) {
         // only return the plain move time substracted by the move overhead
-        curMovetime = searchLimits->movetime - searchLimits->moveOverhead;
+        curMovetime = searchLimits->movetime;
     }
     else if (searchLimits->movestogo != 0) {
         // calculate a constant move time based on increment and moves left
-        curMovetime = int(((searchLimits->time[me] - timeBuffer) / float(searchLimits->movestogo) + 0.5f)
-                + searchLimits->inc[me] - searchLimits->moveOverhead);
+        curMovetime = get_constant_movetime(searchLimits, me, searchLimits->movestogo, incrementFactor);
     }
     else if (searchLimits->time[me] != 0) {
         // calculate a movetime in sudden death mode
         if (moveNumber < threshMove) {
-            curMovetime = int((searchLimits->time[me] - timeBuffer) / float(expectedGameLength-moveNumber) + 0.5f)
-                    + int(searchLimits->inc[me] * incrementFactor) - searchLimits->moveOverhead;
+            curMovetime = get_constant_movetime(searchLimits, me, expectedGameLength-moveNumber, incrementFactor);
         }
         else {
-            curMovetime = int((searchLimits->time[me] - timeBuffer) * moveFactor + 0.5f)
-                    + int(searchLimits->inc[me] * incrementFactor) - searchLimits->moveOverhead;
+            curMovetime = get_constant_movetime(searchLimits, me, timePropMovesToGo, incrementFactor);
         }
     }
     else {
-        curMovetime = 1000 - searchLimits->moveOverhead;
+        curMovetime = 1000;
         info_string("No limit specification given, setting movetime[ms] to", curMovetime);
     }
+
+    // substract the move overhead
+    curMovetime -= searchLimits->moveOverhead;
 
     if (curMovetime <= 0) {
         curMovetime = searchLimits->moveOverhead * 2;
     }
-    return apply_random_factor(curMovetime);
+
+    curMovetime = apply_random_factor(curMovetime);
+
+    if (searchLimits->time[me] != 0) {
+        // make sure the returned movetime is within bounds
+        return std::min(searchLimits->get_safe_remaining_time(me), curMovetime);
+    }
+    return curMovetime;
 }
 
 int TimeManager::get_thresh_move() const
@@ -105,5 +112,5 @@ int TimeManager::apply_random_factor(int curMovetime)
 
 float TimeManager::get_current_random_factor()
 {
-    return (float(rand()) / RAND_MAX) * randomMoveFactor * 2 - randomMoveFactor;
+    return (double(rand()) / RAND_MAX) * randomMoveFactor * 2 - randomMoveFactor;
 }

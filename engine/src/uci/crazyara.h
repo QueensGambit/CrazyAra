@@ -32,16 +32,25 @@
 
 #include "agents/rawnetagent.h"
 #include "agents/mctsagent.h"
+#include "agents/mctsagentbatch.h"
+#include "agents/randomagent.h"
+#include "agents/mctsagenttruesight.h"
 #include "nn/neuralnetapi.h"
 #include "agents/config/searchsettings.h"
 #include "agents/config/searchlimits.h"
 #include "agents/config/playsettings.h"
 #include "node.h"
-#include "uci.h"
 #include "timeoutreadythread.h"
 #ifdef USE_RL
 #include "rl/selfplay.h"
 #include "agents/config/rlsettings.h"
+#endif
+#ifdef SF_DEPENDENCY
+#include "uci.h"
+using namespace UCI;
+#else
+#include "customuci.h"
+using namespace CUSTOM_UCI;
 #endif
 
 using namespace crazyara;
@@ -83,8 +92,7 @@ private:
     SearchLimits searchLimits;
     PlaySettings playSettings;
     thread mainSearchThread;
-
-    Variant variant;
+    int variant;
 
     bool useRawNetwork;
     bool networkLoaded;
@@ -186,6 +194,24 @@ public:
      */
     void arena(istringstream &is);
 
+   /**
+     * @brief multimodel_arena Alternative to the arena method which enables us to define two different models to use in the match and also define the mctsagent types to use.
+     * @param is Input string representing both agent types and the number of games to play
+     * @param modelDirectory1 name of the model directory of agent 1
+     * @param modelDirectory2 name of the model directory of agent 2
+     * @param isModelInInputStream boolean that informs the program if the modeldirectory are part of the input string or not
+     */
+    void multimodel_arena(istringstream &is, const string &modelDirectory1, const string &modelDirectory2, bool isModelInInputStream);
+
+    /**
+     * @brief roundrobin is an extension to the multimodel_arena method,
+     * enabling the user to additionally define a model directory for each agent.
+     * @param is Input string with the information about the number of games per match as well as tuples of agent types
+     * and model directories. To increase usability the model directories are represented by numbers.
+     * The folders with the models should be named m1,m2,...
+     */
+    void roundrobin(istringstream &is);
+
     /**
      * @brief init_rl_settings Initializes the rl settings used for the mcts agent with the current UCI parameters
      */
@@ -217,12 +243,28 @@ public:
      */
     void prepare_search_config_structs();
 
+    /**
+     * @brief inference Runs nn inference for X number times with Y warmups and reports the results.
+     */
+    void inference(istringstream &is);
 private:
     /**
      * @brief engine_info Returns a string about the engine version and authors
      * @return string
      */
     string engine_info();
+
+    // All possible MCTS Agenttypes
+    enum class MCTSAgentType : int8_t {
+    kDefault = 0,               // Default agent, used within CrazyAra
+    kBatch1 = 1,                // The reimplementation of the default agent (batch size = 1)
+    kBatch3 = 2,                // 3 MCTS agents with majority vote at the end
+    kBatch5 = 3,                // 5 MCTS agents with majority vote at the end
+    kBatch3_reducedNodes = 4,   // 3 MCTS agents with majority vote at the end. The amount of nodes are splitted between all agents
+    kBatch5_reducedNodes = 5,   // 5 MCTS agents with majority vote at the end. The amount of nodes are splitted between all agents
+    kTrueSight = 6,             // True Sight Agent, which uses the perfect information state instead of the imperfect information state
+    kRandom = 7,                // plays random legal moves
+};
 
     /**
      * @brief create_new_mcts_agent Factory method to create a new MCTSAgent when loading new neural network weights
@@ -231,9 +273,10 @@ private:
      * @param netSingle Neural net with batch-size 1. It will be loaded from file.
      * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
      * @param searchSettings Search settings object
+     * @param type Which type of agent should be used, default is 0. 
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type = MCTSAgentType::kDefault);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory
@@ -262,12 +305,19 @@ private:
  * @brief get_num_gpus Returns the number of GPU based on the UCI settings "First_Device_ID" and "Last_Device_ID"
  * @return number of gpus
  */
-size_t get_num_gpus(UCI::OptionsMap& option);
+size_t get_num_gpus(OptionsMap& option);
 
 /**
  * @brief validate_device_indices Valdiates if the "Last_Device_ID" >= "First_Device_ID"
  * @param option
  */
-void validate_device_indices(UCI::OptionsMap& option);
+void validate_device_indices(OptionsMap& option);
+
+/**
+* @brief Calculates all combinations of size K out of set N
+* @param N a set of numbers
+* @param K the size of the combination tuples (2 results in all possible number combinations)
+*/
+std::vector<std::string> comb(std::vector<int> N, int K);
 
 #endif // CRAZYARA_H

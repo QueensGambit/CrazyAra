@@ -38,9 +38,6 @@
 #include <unordered_map>
 #include <iostream>
 #include "state.h"
-#ifndef MODE_POMMERMAN
-#include "types.h"
-#endif
 
 using namespace std;
 
@@ -49,12 +46,34 @@ using namespace std;
 const string engineName = "CrazyAra";
 #elif defined MODE_LICHESS
 const string engineName = "MultiAra";
+#elif defined MODE_XIANGQI
+const string engineName = "XiangqiAra";
+#elif defined MODE_BOARDGAMES
+const string engineName = "BoardAra";
+#elif defined MODE_STRATEGO
+const string engineName = "StrategoAra";
+#elif defined MODE_OPEN_SPIEL
+const string engineName = "OpenSpielAra";
 #else  // MODE_CHESS
 const string engineName = "ClassicAra";
 #endif
 
-const string engineVersion = "0.9.3-Dev";
-const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al.";
+const string engineVersion = "1.0.3";
+#ifdef MODE_CRAZYHOUSE
+const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_LICHESS
+const string engineAuthors = "Johannes Czech, Maximilian Alexander Gehrke and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_XIANGQI
+const string engineAuthors = "Johannes Czech, Maximilian Langer and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_BOARDGAMES
+const string engineAuthors = "Johannes Czech, Rumei Ma and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_STRATEGO
+const string engineAuthors = "Johannes Czech, Jannis Blüml and CrazyAra developers (see AUTHORS file)";
+#elif defined MODE_OPEN_SPIEL
+const string engineAuthors = "Johannes Czech and CrazyAra developers (see AUTHORS file)";
+#else  // MODE_CHESS
+const string engineAuthors = "Johannes Czech and CrazyAra developers (see AUTHORS file)";
+#endif
 
 #define LOSS_VALUE -1
 #define DRAW_VALUE 0
@@ -72,6 +91,12 @@ const string engineAuthors = "Johannes Czech, Moritz Willig, Alena Beyer et al."
 #else
 #define VALUE_TO_CENTI_PARAM 1.2f
 #endif
+#define TIME_EXPECT_GAME_LENGTH 38
+#define TIME_THRESH_MOVE_PROP_SYSTEM 35
+#define TIME_PROP_MOVES_TO_GO 14
+#define TIME_INCREMENT_FACTOR 0.7f
+#define TIME_BUFFER_FACTOR 30
+#define NONE_IDX uint16_t(-1)
 
 #ifndef MODE_POMMERMAN
 #define TERMINAL_NODE_CACHE 8192

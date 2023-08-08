@@ -114,6 +114,16 @@ int Board::plies_from_null() const
     return st->pliesFromNull;
 }
 
+vector<Action> Board::legal_actions() const
+{
+    vector<Action> legalMoves;
+    // generate the legal moves and save them in the list
+    for (const ExtMove& move : MoveList<LEGAL>(*this)) {
+        legalMoves.push_back(move.move);
+    }
+    return legalMoves;
+}
+
 size_t Board::total_move_cout() const
 {
     return size_t(gamePly / 2);
@@ -210,9 +220,11 @@ bool Board::draw_by_insufficient_material() const
            (this->count<KNIGHT>(WHITE) == 2 || this->count<KNIGHT>(BLACK) == 2));   // 4) KNN vs K
 }
 
-#if defined(MODE_CHESS) || defined(MODE_LICHESS)
 void Board::add_move_to_list(Move m)
 {
+    if (StateConstants::NB_LAST_MOVES() == 0) {
+        return;
+    }
     lastMoves.push_front(m);
     if (lastMoves.size() > StateConstants::NB_LAST_MOVES()) {
         lastMoves.pop_back();
@@ -233,13 +245,21 @@ void Board::do_move(Move m, StateInfo &newSt, bool givesCheck)
 
 void Board::undo_move(Move m)
 {
-    lastMoves.pop_front();
+    if (!lastMoves.empty()) {
+        // make sure the lastMoves deque is not empty, otherwise crash will occur
+        lastMoves.pop_front();
+    }
     Position::undo_move(m);
 }
 
 deque<Move> Board::get_last_moves() const
 {
     return lastMoves;
+}
+
+int Board::get_board_piece_count(Color color, PieceType pieceType) const
+{
+    return pieceCount[make_piece(color, pieceType)];
 }
 
 void Board::set(const string &fenStr, bool isChess960, Variant v, StateInfo *si, Thread *th)
@@ -253,7 +273,6 @@ void Board::set(const string &code, Color c, Variant v, StateInfo *si)
     lastMoves.clear();
     Position::set(code, c, v, si);
 }
-#endif
 
 std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<Action>& legalMoves, bool leadsToWin, bool bookMove)
 {
@@ -289,11 +308,10 @@ std::string pgn_move(Move m, bool chess960, const Board& pos, const std::vector<
         ambiguous = "";
     }
 
-    if (type_of(m) == CASTLING && !chess960) {
-        if (file_of(to) == FILE_G || file_of(to) == FILE_H) {
+    if (type_of(m) == CASTLING) {
+        if (file_of(from) < file_of(to)) {
             move = "O-O";
-        }
-        else {
+        } else {
             move = "O-O-O";
         }
     }

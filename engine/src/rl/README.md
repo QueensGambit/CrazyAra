@@ -14,25 +14,34 @@ installs all additional libraries for reinforcement learning.
 Lastly, it compiles the CrazyAra executable from the C++ source code using the current repository state.
 :warning: NVIDIA Docker [does not work on Windows](https://github.com/NVIDIA/nvidia-docker/wiki/Frequently-Asked-Questions#is-microsoft-windows-supported).
 
-In order to build the docker container, use the following command:
+In order to build the docker container with pytorch support, use the following command:
  
 ```shell script
  docker build -t crazyara_docker .
 ```
+if you want to use mxnet instead, uncomment the following lines in the Dockerfile before building:
+```shell script
+# FROM nvcr.io/nvidia/mxnet:20.09-py3
+# ENV FRAMEWORK="mxnet"
+```
+and comment the line:
+```shell script
+FROM nvcr.io/nvidia/pytorch:22.05-py3
+```
 
 Afterwards you can start the container using a specified list of GPUs:
 ```shell script
-docker run --gpus '"device=10,11,12"' -it \
- --rm -v local_dir:/data/RL crazyara_docker:latest
+docker run --gpus all --shm-size 16G --memory 64G -it --privileged \
+ --rm -v ~/mnt:/data/RL --name crazyara_rl crazyara_docker:latest
 ```
-If you want to use all available gpu, use `-gpus all` instead.
+If you want to launch the docker using only a subset of available you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.
 
 The parameter `-v` describes the mount directory, where the selfplay data will be stored.
+`--privileged` is required to run the Linux-init process to be able to use the apport service for generating core dumps.
 
-For older docker version you can use the `nvidia-docker run` command instead:
+Next, you need to detach from the container using `ctrl+p+q` and start a new docker-session:
 ```shell script
-nvidia-docker run -it --rm \
- -v <local_dir>:/data/RL crazyara_docker:latest
+docker exec -it crazyara_rl bash
 ```
 
 ---
@@ -52,8 +61,8 @@ You can download a network which was trained via
 
 ```shell script
 cd /data/RL
-wget https://github.com/QueensGambit/CrazyAra/releases/download/0.6.0/RISEv2-mobile.zip
-unzip RISEv2-mobile.zip
+wget https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/ClassicAra-sl-model-wdlp-rise3.3-input3.0.zip
+unzip ClassicAra-sl-model-wdlp-rise3.3-input3.0.zip
 ```
 
 Alternatively, if a model file is already available on the host machine, you can move the model directory into the mounted docker directory.
@@ -92,6 +101,15 @@ python rl_loop.py --device-id 1 &
 The main configuration files for reinforcement learning can be found at `/root/CrazyAra/DeepCrazyhouse/configs/`:
 *   https://github.com/QueensGambit/CrazyAra/tree/master/DeepCrazyhouse/configs
 
+
+#### Trouble Shooting
+
+The docker container comes with automatic core dump generation by default.
+If you encounter a crash of the executable, you can find the corresponding core dump in `/var/lib/apport/coredump/`.
+In order to analyze the core dump you can use `gdb`:
+`gdb path/to/the/binary path/to/the/core/dump/file`
+
+
 ---
 
 #### Useful commands
@@ -100,6 +118,11 @@ The main configuration files for reinforcement learning can be found at `/root/C
 *   `docker images`: Lists all availabe docker images
 *   `docker ps`: List all running docker containers
 *   `Ctrl-p + Ctrl-q`: To detach the tty without exiting the shell. Processes will continue running in daemon mode.
-*   `docker exec -it [container-id] bash`: Enter a running docker container in shell mode
+*   `docker attach [container-id]`: Attach to a running docker container session
+*   `docker exec -it [container-id] bash`: Enter a running docker container in shell mode and create a new session
 *   `docker kill [OPTIONS] CONTAINER [CONTAINER...]`: Kill one or more running containers
 *   `docker image rm [OPTIONS] IMAGE [IMAGE...]`: Remove one or more images
+
+* `tmux`: Start a new tmux session
+* `tmux detach`: Detach from a tmux session
+* `tmux attach -t <id>`: Attach to a tmux session

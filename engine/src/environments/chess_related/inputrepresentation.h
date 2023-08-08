@@ -39,16 +39,15 @@
  * @param normalize Flag, telling if the representation should be rescaled into the [0,1] range using the scaling constants from "constants.h"
  * @param input_planes Output where the plane representation will be stored.
  */
-void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float *inputPlanes);
+void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float* inputPlanes, Version version);
 
 /**
  * @brief set_bits_from_bitmap Sets the individual bits from a given bitboard on the given channel for the inputPlanes
  * @param bitboard Bitboard of a single 8x8 plane
- * @param channel Channel index on where to set the bits
- * @param input_planes Input planes encoded as flat vector
- * @param color Color of the side to move
+ * @param curIt Current iterator on the input planes encoded as flat vector
+ * @param flipBoard Decides if bitboard should be flipped
  */
-inline void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *inputPlanes, Color color);
+inline void set_bits_from_bitmap(Bitboard bitboard, float *curIt, bool flipBoard);
 
 /**
  * @brief flip_board Decides whether to flip the board based on the side to move.
@@ -56,7 +55,15 @@ inline void set_bits_from_bitmap(Bitboard bitboard, size_t channel, float *input
  * @param pos Board object
  * @return bool
  */
-bool flip_board(const Board *pos);
+inline bool flip_board(const Board& pos, SideToMove sideToMove)
+{
+#ifdef MODE_LICHESS
+    if (pos.is_race()) {
+        return false;
+    }
+#endif
+    return sideToMove != FIRST_PLAYER_IDX;
+}
 
 
 #endif // INPUTREPRESENTATION_H

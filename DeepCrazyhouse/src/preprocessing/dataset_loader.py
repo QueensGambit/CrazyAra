@@ -11,7 +11,8 @@ import logging
 import numpy as np
 import zarr
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.src.domain.util import get_numpy_arrays, get_x_y_and_indices, MATRIX_NORMALIZER
+from DeepCrazyhouse.src.domain.util import get_numpy_arrays, get_x_y_and_indices
+from DeepCrazyhouse.src.domain.variants.input_representation import MATRIX_NORMALIZER
 
 
 def _load_dataset_file(dataset_filepath):
@@ -123,19 +124,20 @@ def load_xiangqi_dataset(dataset_type="train", part_id=0, verbose=True, normaliz
         dataset - the dataset file handle (you can use .tree() to show the file structure)
     """
     if dataset_type == "train":
-        zarr_filepaths = glob.glob(main_config["planes_train_dir"] + "**/*.zip")
+        directory = main_config["planes_train_dir"]
     elif dataset_type == "val":
-        zarr_filepaths = glob.glob(main_config["planes_val_dir"] + "**/*.zip")
+        directory = main_config["planes_val_dir"]
     elif dataset_type == "test":
-        zarr_filepaths = glob.glob(main_config["planes_test_dir"] + "**/*.zip")
+        directory = main_config["planes_test_dir"]
     else:
         raise Exception(
             'Invalid dataset type "%s" given. It must be either "train", "val" or "test"' % dataset_type
         )
 
+    zarr_filepaths = glob.glob(directory + "**/*.zip")
     if part_id >= len(zarr_filepaths):
-        raise Exception("There aren't enough parts available (%d parts) in the given directory for part_id=%d"
-                        % (len(zarr_filepaths), part_id))
+        raise Exception('There are not enough parts available (%d parts) in the given directory "%s" for part_id=%d'
+                        % (len(zarr_filepaths), directory, part_id))
 
     # load zarr-files
     datasets = zarr_filepaths
@@ -143,7 +145,7 @@ def load_xiangqi_dataset(dataset_type="train", part_id=0, verbose=True, normaliz
         logging.debug("loading: %s...\n", datasets[part_id])
 
     dataset = zarr.group(store=zarr.ZipStore(datasets[part_id], mode="r"))
-    start_indices, x, y_value, y_policy  = get_x_y_and_indices(dataset)
+    start_indices, x, y_value, y_policy = get_x_y_and_indices(dataset)
 
     if verbose:
         logging.info("STATISTICS:")

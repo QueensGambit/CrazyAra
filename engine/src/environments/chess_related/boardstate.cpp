@@ -27,7 +27,6 @@
 #include "boardstate.h"
 #include "inputrepresentation.h"
 #include "syzygy/tbprobe.h"
-#include "uci/variants.h"
 #include "chess960position.h"
 #include "../util/communication.h"
 
@@ -54,6 +53,11 @@ BoardState::BoardState(const BoardState &b) :
     states->emplace_back(b.states->back());
 }
 
+bool BoardState::mirror_policy(SideToMove sideToMove) const
+{
+    return flip_board(board, sideToMove);
+}
+
 vector<Action> BoardState::legal_actions() const
 {
     vector<Action> legalMoves;
@@ -70,9 +74,9 @@ void BoardState::set(const string &fenStr, bool isChess960, int variant)
     board.set(fenStr, isChess960, Variant(variant), &states->back(), nullptr);
 }
 
-void BoardState::get_state_planes(bool normalize, float *inputPlanes) const
+void BoardState::get_state_planes(bool normalize, float *inputPlanes, Version version) const
 {
-    board_to_planes(&board, board.number_repetitions(), normalize, inputPlanes);
+    board_to_planes(&board, board.number_repetitions(), normalize, inputPlanes, version);
 }
 
 unsigned int BoardState::steps_from_null() const
@@ -256,7 +260,7 @@ BoardState* BoardState::clone() const
 void BoardState::init(int variant, bool is960)
 {
     states = StateListPtr(new std::deque<StateInfo>(1));
-    string start_fen = StartFENs[variant];
+    string start_fen = StateConstantsBoard::start_fen(variant);
     if(is960 && variant == CHESS_VARIANT) {
         start_fen = chess960fen();
     } else if (is960) {
