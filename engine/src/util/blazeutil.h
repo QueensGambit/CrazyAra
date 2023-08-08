@@ -28,6 +28,12 @@
 #ifndef BLAZEUTIL_H
 #define BLAZEUTIL_H
 
+// remove MSVC min/max macro definitions
+#ifdef WIN32
+   #undef min
+   #undef max
+#endif
+
 #include <cfloat>
 #include <blaze/Math.h>
 #include <limits>
