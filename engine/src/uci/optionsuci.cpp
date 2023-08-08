@@ -193,7 +193,6 @@ void OptionsUCI::init(OptionsMap &o)
     o["Use_Raw_Network"]               << Option(false);
     o["Virtual_Style"]                 << Option("virtual_mix", { "virtual_loss", "virtual_visit", "virtual_offset", "virtual_mix" });
     o["Virtual_Mix_Threshold"]         << Option(1000, 1, 99999999);
-    o["Virtual_Weight"]                << Option(1, 0, 99999);
     // additional UCI-Options for RL only
 #ifdef USE_RL
     o["Centi_Node_Random_Factor"]      << Option(10, 0, 100);

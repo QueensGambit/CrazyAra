@@ -33,7 +33,6 @@ SearchSettings::SearchSettings():
         nodePolicyTemperature(1.0f),
         qValueWeight(1.0f),
         qVetoDelta(0.4f),
-//        virtualWeight(1.0f),
         verbose(true),
         epsilonChecksCounter(100),
         useMCGS(true),
