@@ -31,17 +31,17 @@ FROM nvcr.io/nvidia/pytorch:22.05-py3
 
 Afterwards you can start the container using a specified list of GPUs:
 ```shell script
-docker run --gpus all --shm-size 16G -it \
+docker run --gpus all --shm-size 16G --memory 64G -it --privileged \
  --rm -v ~/mnt:/data/RL --name crazyara_rl crazyara_docker:latest
 ```
 If you want to launch the docker using only a subset of available you can specify them by e.g. `--gpus '"device=10,11,12"'` instead.
 
 The parameter `-v` describes the mount directory, where the selfplay data will be stored.
+`--privileged` is required to run the Linux-init process to be able to use the apport service for generating core dumps.
 
-For older docker version you can use the `nvidia-docker run` command instead:
+Next, you need to detach from the container using `ctrl+p+q` and start a new docker-session:
 ```shell script
-nvidia-docker run -it --rm \
- -v <local_dir>:/data/RL --name crazyara_rl crazyara_docker:latest
+docker exec -it crazyara_rl bash
 ```
 
 ---
@@ -100,6 +100,15 @@ python rl_loop.py --device-id 1 &
 #### Configuration
 The main configuration files for reinforcement learning can be found at `/root/CrazyAra/DeepCrazyhouse/configs/`:
 *   https://github.com/QueensGambit/CrazyAra/tree/master/DeepCrazyhouse/configs
+
+
+#### Trouble Shooting
+
+The docker container comes with automatic core dump generation by default.
+If you encounter a crash of the executable, you can find the corresponding core dump in `/var/lib/apport/coredump/`.
+In order to analyze the core dump you can use `gdb`:
+`gdb path/to/the/binary path/to/the/core/dump/file`
+
 
 ---
 

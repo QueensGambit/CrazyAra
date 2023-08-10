@@ -5,7 +5,7 @@ Created on 01.04.2021
 @author: queensgambit, maxalexger
 
 Contains the main class to handle files and directories during Reinforcement Learning.
-Additionally a function to compress zarr datasets is provided.
+Additionally, a function to compress zarr datasets is provided.
 """
 import os
 import glob
@@ -99,6 +99,8 @@ class FileIO:
         self.logs_dir_archive = binary_dir + "export/logs/" + variant_suffix
         self.logs_dir = binary_dir + "logs"
 
+        self.timestamp_format = "%Y-%m-%d-%H-%M-%S"
+
         self._create_directories()
 
         # Adjust paths in main_config
@@ -129,16 +131,20 @@ class FileIO:
         :param fraction_for_selection: Proportion for selecting files from the replay memory
         :return:
         """
-        file_names = os.listdir(self.train_dir_archive)
+        # get all file/folder names ignoring hidden files
+        folder_names = [folder_name for folder_name in os.listdir(self.train_dir_archive)
+                        if not folder_name.startswith('.')]
 
-        # invert ordering (most recent files are on top)
-        file_names = file_names[::-1]
-
-        if len(file_names) < nb_files:
+        if len(folder_names) < nb_files:
             logging.info("Not enough replay memory available. Only current data will be used")
             return
 
-        thresh_idx = max(int(len(file_names) * fraction_for_selection), nb_files)
+        # sort files according to timestamp, ignoring the last device-id
+        # invert ordering (most recent files are on top)
+        folder_names.sort(key=lambda f: time.mktime(time.strptime(f.rsplit('-', 1)[0], f"{self.timestamp_format}")),
+                          reverse=True)
+
+        thresh_idx = max(int(len(folder_names) * fraction_for_selection + 0.5), nb_files)
 
         indices = np.arange(0, thresh_idx)
         np.random.shuffle(indices)
@@ -148,7 +154,7 @@ class FileIO:
 
         # move selected files into train dir
         for index in list(indices):
-            os.rename(self.train_dir_archive + file_names[index], self.train_dir + file_names[index])
+            os.rename(self.train_dir_archive + folder_names[index], self.train_dir + folder_names[index])
 
     def _move_generated_data_to_train_val(self):
         """
@@ -209,7 +215,7 @@ class FileIO:
         :return: Path of the created directory; Time stamp used while creating
         """
         # include current timestamp in dataset export file
-        time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M-%S")
+        time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime(self.timestamp_format)
         time_stamp_dir = f'{self.export_dir_gen_data}{time_stamp}-{device_name}/'
         # create a directory of the current time_stamp
         if not os.path.exists(time_stamp_dir):
@@ -273,7 +279,7 @@ class FileIO:
         """
         Rename logs and move it from /logs to /export/logs/
         """
-        time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M-%S")
+        time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime(self.timestamp_format)
         dir_name = f'logs-{self.uci_variant}-update{nn_update_index}-{time_stamp}'
         os.rename(self.logs_dir, os.path.join(self.logs_dir_archive, dir_name))
         create_dir(self.logs_dir)
@@ -313,3 +319,4 @@ class FileIO:
         """
         move_all_files(self.model_dir, self.model_dir_archive)
         move_all_files(self.model_contender_dir, self.model_dir)
+

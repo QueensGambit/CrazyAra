@@ -207,9 +207,10 @@ public:
     /**
      * @brief init Init function which is called after a neural network has been loaded and can be used to initialize static variables.
      * @param isPolicyMap Boolean indicating if the neural network uses a policy map representation
+     * @param is960 Boolean indicating if the 960 variant shall be used for initialization
      */
-    static void init(bool isPolicyMap) {
-        return T::init(isPolicyMap);
+    static void init(bool isPolicyMap, bool is960) {
+        return T::init(isPolicyMap, is960);
     }
 
     /**

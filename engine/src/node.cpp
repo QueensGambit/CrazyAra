@@ -36,9 +36,9 @@ bool Node::is_sorted() const
     return sorted;
 }
 
-double Node::get_q_sum(ChildIdx childIdx, float virtualLoss) const
+double Node::get_q_sum_virtual_loss(ChildIdx childIdx) const
 {
-    return get_child_number_visits(childIdx) * double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * virtualLoss;
+    return get_child_number_visits(childIdx) * double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx);
 }
 
 bool Node::is_transposition() const
@@ -504,18 +504,28 @@ bool Node::has_nn_results() const
     return hasNNResults;
 }
 
-void Node::apply_virtual_loss_to_child(ChildIdx childIdx, uint_fast32_t virtualLoss)
+void Node::apply_virtual_loss_to_child(ChildIdx childIdx, const SearchSettings* searchSettings)
 {
     // update the stats of the parent node
     // make it look like if one has lost X games from this node forward where X is the virtual loss value
     // temporarily reduce the attraction of this node by applying a virtual loss /
     // the effect of virtual loss will be undone if the playout is over
-    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - virtualLoss) / double(d->childNumberVisits[childIdx] + virtualLoss);
+    switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
+    case VIRTUAL_LOSS:
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] - 1) / double(d->childNumberVisits[childIdx] + 1);
+        break;
+    case VIRTUAL_OFFSET:
+        d->qValues[childIdx] -= searchSettings->virtualOffsetStrenght;
+    case VIRTUAL_VISIT: ;  // ignore
+    case VIRTUAL_MIX: ;  // unreachable
+    }
+
     // virtual increase the number of visits
-    d->childNumberVisits[childIdx] += virtualLoss;
-    d->visitSum += virtualLoss;
+    ++d->childNumberVisits[childIdx];
+    ++d->visitSum;
+
     // increment virtual loss counter
-    update_virtual_loss_counter<true>(childIdx, virtualLoss);
+    update_virtual_loss_counter<true>(childIdx);
 }
 
 float Node::get_q_value(ChildIdx childIdx) const
@@ -642,20 +652,29 @@ uint32_t Node::get_real_visits(ChildIdx childIdx) const
     return d->childNumberVisits[childIdx] - d->virtualLossCounter[childIdx];
 }
 
-void backup_collision(float virtualLoss, const Trajectory& trajectory) {
+void backup_collision(const SearchSettings* searchSettings, const Trajectory& trajectory) {
     for (auto it = trajectory.rbegin(); it != trajectory.rend(); ++it) {
-        it->node->revert_virtual_loss(it->childIdx, virtualLoss);
+        it->node->revert_virtual_loss(it->childIdx, searchSettings);
     }
 }
 
-void Node::revert_virtual_loss(ChildIdx childIdx, float virtualLoss)
+void Node::revert_virtual_loss(ChildIdx childIdx, const SearchSettings* searchSettings)
 {
     lock();
-    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + virtualLoss) / (d->childNumberVisits[childIdx] - virtualLoss);
-    d->childNumberVisits[childIdx] -= virtualLoss;
-    d->visitSum -= virtualLoss;
+    switch (get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
+    case VIRTUAL_LOSS:
+        d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1) / (d->childNumberVisits[childIdx] - 1);
+        break;
+    case VIRTUAL_OFFSET:
+        d->qValues[childIdx] += searchSettings->virtualOffsetStrenght;
+    case VIRTUAL_MIX: ; // ignore
+    case VIRTUAL_VISIT: ; // ignore
+    }
+    --d->childNumberVisits[childIdx];
+    --d->visitSum;
+
     // decrement virtual loss counter
-    update_virtual_loss_counter<false>(childIdx, virtualLoss);
+    update_virtual_loss_counter<false>(childIdx);
     unlock();
 }
 
@@ -990,6 +1009,27 @@ void Node::disable_action(size_t childIdxForParent)
     d->qValues[childIdxForParent] = -INT_MAX;
 }
 
+double Node::get_transposition_q_value(const SearchSettings *searchSettings, ChildIdx childIdx, uint_fast32_t transposVisits)
+{
+    double transposQValue;
+    switch(get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
+    case VIRTUAL_LOSS:
+        transposQValue = get_q_sum_virtual_loss(childIdx) / transposVisits;
+        break;
+    case VIRTUAL_VISIT:
+        transposQValue = get_q_value(childIdx);
+        break;
+    case VIRTUAL_OFFSET:
+        transposQValue = double(get_q_value(childIdx)) + get_virtual_loss_counter(childIdx) * searchSettings->virtualOffsetStrenght;
+    case VIRTUAL_MIX: ;
+        // unreachable
+    }
+    if (searchSettings->searchPlayerMode == MODE_TWO_PLAYER) {
+        return -transposQValue;
+    }
+    return transposQValue;
+}
+
 void Node::enhance_moves(const SearchSettings* searchSettings)
 {
     //    if (!searchSettings->enhanceChecks && !searchSettings->enhanceCaptures) {
@@ -1295,7 +1335,7 @@ bool is_terminal_value(float value)
     return (value == WIN_VALUE || value == DRAW_VALUE || value == LOSS_VALUE);
 }
 
-float get_transposition_q_value(uint_fast32_t transposVisits, double transposQValue, double targetQValue)
+float get_transposition_backup_value(uint_fast32_t transposVisits, double transposQValue, double targetQValue)
 {
     return std::clamp(transposVisits * (targetQValue - transposQValue) + targetQValue, double(LOSS_VALUE), double(WIN_VALUE));
 }

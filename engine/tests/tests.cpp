@@ -64,10 +64,10 @@ struct PlaneStatistics {
         sum(0), maxNum(0), key(0), argMax(0) {}
 };
 
-PlaneStatistics get_stats_from_input_planes(const float* inputPlanes)
+PlaneStatistics get_stats_from_input_planes(const float* inputPlanes, uint nbValuesTotal)
 {
     PlaneStatistics stats;
-    for (uint i = 0; i < StateConstants::NB_VALUES_TOTAL(); ++i) {
+    for (uint i = 0; i < nbValuesTotal; ++i) {
         const float val = inputPlanes[i];
         stats.sum += val;
         if (inputPlanes[i] > stats.maxNum) {
@@ -79,16 +79,16 @@ PlaneStatistics get_stats_from_input_planes(const float* inputPlanes)
     return stats;
 }
 
-PlaneStatistics get_planes_statistics(const StateObj& state, bool normalize) {
-    float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
-    state.get_state_planes(normalize, inputPlanes, StateConstants::CURRENT_VERSION());
-    return get_stats_from_input_planes(inputPlanes);
+PlaneStatistics get_planes_statistics(const StateObj& state, bool normalize, Version version=StateConstants::CURRENT_VERSION(), uint nbValuesTotal=StateConstants::NB_VALUES_TOTAL()) {
+    vector<float> inputPlanes(nbValuesTotal);
+    state.get_state_planes(normalize, inputPlanes.data(), version);
+    return get_stats_from_input_planes(inputPlanes.data(), nbValuesTotal);
 }
 
-PlaneStatistics get_planes_statistics(const Board& pos, bool normalize) {
-    float inputPlanes[StateConstants::NB_VALUES_TOTAL()];
-    board_to_planes(&pos, pos.number_repetitions(), normalize, inputPlanes, StateConstants::CURRENT_VERSION());
-    return get_stats_from_input_planes(inputPlanes);
+PlaneStatistics get_planes_statistics(const Board& pos, bool normalize, Version version=StateConstants::CURRENT_VERSION(), uint nbValuesTotal=StateConstants::NB_VALUES_TOTAL()) {
+    vector<float> inputPlanes(nbValuesTotal);
+    board_to_planes(&pos, pos.number_repetitions(), normalize, inputPlanes.data(), version);
+    return get_stats_from_input_planes(inputPlanes.data(), nbValuesTotal);
 }
 
 void get_planes_statistics(const Board* pos, bool normalize, double& sum, double& maxNum, double& key, size_t& argMax) {
@@ -167,7 +167,7 @@ TEST_CASE("Anti-Chess StartFEN"){
     state.set(StateConstants::start_fen(ANTI_VARIANT), false, ANTI_VARIANT);
     PlaneStatistics stats = get_planes_statistics(state, false);
 
-//    REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008); // no last move planes
+    // REQUIRE(StateConstants::NB_VALUES_TOTAL() == 3008); // no last move planes
     REQUIRE(StateConstants::NB_VALUES_TOTAL() == 4032); // with last move planes
     REQUIRE(stats.maxNum == 1);
     REQUIRE(stats.sum == 224);
@@ -567,7 +567,7 @@ TEST_CASE("6-Men WDL"){
 #endif
 
 TEST_CASE("LABELS length"){
-    StateConstants::init(true);
+    StateConstants::init(true, false);
     REQUIRE(OutputRepresentation::LABELS.size() == size_t(StateConstants::NB_LABELS()));
     REQUIRE(OutputRepresentation::LABELS_MIRRORED.size() == size_t(StateConstants::NB_LABELS()));
 }
@@ -596,6 +596,28 @@ TEST_CASE("Board representation constants"){
 }
 #endif
 
+TEST_CASE("3-fold Repetition"){
+    init();
+    // Blunder by ClassicAra in https://tcec-chess.com/#div=l4&game=100&season=21
+    StateObj state;
+    state.set("1rr3k1/1pp2ppp/p1n5/P2p1b2/3Pn3/R3PNP1/1P3PBP/2R1B1K1 b - - 4 17", false, get_default_variant());
+    string moveB0 = "e4d6";
+    string moveW1 = "f3h4";
+    string moveB1 = "f5e6";
+    string moveW2 = "h4f3";
+    string moveB2 = "e6f5";
+    vector<string> moves = {moveB0, moveW1, moveB1, moveW2, moveB2, moveW1, moveB1, moveW2};
+    float customTerminalValue;
+    TerminalType terminal;
+    for (string move : moves) {
+        state.do_action(state.uci_to_action(move));
+        terminal = state.is_terminal(state.legal_actions().size(), customTerminalValue);
+        REQUIRE(terminal == TERMINAL_NONE);
+    }
+    state.do_action(state.uci_to_action(moveB2));
+    terminal = state.is_terminal(state.legal_actions().size(), customTerminalValue);
+    REQUIRE(terminal == TERMINAL_DRAW);
+}
 
 // ==========================================================================================================
 // ||                                      Blaze-Util Tests                                                ||
@@ -1464,6 +1486,119 @@ TEST_CASE("Lichess Crazyhouse") {
 #else // MODE_STRATEGO
 TEST_CASE("Build tests") {
     REQUIRE(true);
+}
+#endif
+
+#ifdef MODE_CRAZYHOUSE
+TEST_CASE("Crazyhouse Input Planes V1") {
+    init();
+    int variant = StateConstants::variant_to_int("crazyhouse");
+    BoardState state;
+    const uint nbValuesTotal = 34 * StateConstants::NB_SQUARES();
+    state.init(variant, false);
+    // starting position test
+    PlaneStatistics stats = get_planes_statistics(state, false, make_version<1,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 416);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 746928);
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1"));
+
+    state.set("5r2/ppp2pkp/3p4/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[PBRQnbb] w - - 0 28", false, variant);
+    string move = "Q@f6";
+    state.do_action(state.uci_to_action(move));
+    move = "g7g8";
+    state.do_action(state.uci_to_action(move));
+    move = "R@h8";
+    state.do_action(state.uci_to_action(move));
+
+    stats = get_planes_statistics(state, false, make_version<1,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 2395);
+    REQUIRE(stats.maxNum == 29);
+    REQUIRE(stats.key == 4170903);
+    REQUIRE(stats.argMax == 1792);
+    REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
+
+    stats = get_planes_statistics(state, true, make_version<1,0,0>(), nbValuesTotal);
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(45.512, 0.001));
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(37011.632, 0.001));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
+}
+
+TEST_CASE("Crazyhouse Input Planes V2") {
+    init();
+    int variant = StateConstants::variant_to_int("crazyhouse");
+    BoardState state;
+    const uint nbValuesTotal = 51 * StateConstants::NB_SQUARES();
+    state.init(variant, false);
+    // starting position test
+    PlaneStatistics stats = get_planes_statistics(state, false, make_version<2,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 416);
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE(stats.key == 746928);
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1"));
+
+    state.set("5r2/ppp2pkp/3p4/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[PBRQnbb] w - - 0 28", false, variant);
+    string move = "Q@f6";
+    state.do_action(state.uci_to_action(move));
+    move = "g7g8";
+    state.do_action(state.uci_to_action(move));
+    move = "R@h8";
+    state.do_action(state.uci_to_action(move));
+
+    stats = get_planes_statistics(state, false, make_version<2,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 2399);
+    REQUIRE(stats.maxNum == 29);
+    REQUIRE(stats.key == 4180615);
+    REQUIRE(stats.argMax == 1792);
+    REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
+
+    stats = get_planes_statistics(state, true, make_version<2,0,0>(), nbValuesTotal);
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(49.512, 0.001));
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(46723.632, 0.001));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
+}
+
+TEST_CASE("Crazyhouse Input Planes V3") {
+    init();
+    int variant = StateConstants::variant_to_int("crazyhouse");
+    BoardState state;
+    const uint nbValuesTotal = 64 * StateConstants::NB_SQUARES();
+    state.init(variant, false);
+    // starting position test
+    PlaneStatistics stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1312);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3430384);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(state.fen() == string("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1"));
+
+    state.set("5r2/ppp2pkp/3p4/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[PBRQnbb] w - - 0 28", false, variant);
+    string move = "Q@f6";
+    state.do_action(state.uci_to_action(move));
+    move = "g7g8";
+    state.do_action(state.uci_to_action(move));
+    move = "R@h8";
+    state.do_action(state.uci_to_action(move));
+
+    stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1307);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3700213);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
+
+    stats = get_planes_statistics(state, true, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(193.8, 0.001));
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(474696, 0.001));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("5rkR/ppp2p1p/3p1Q2/2bP4/2Pnp1N1/3P2pP/PP2n1P1/R2Q1R1K[BPbbn] b - - 3 29"));
 }
 #endif
 

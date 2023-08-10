@@ -87,8 +87,9 @@ struct OutputRepresentation{
     /**
      * @brief init_policy_constants Fills the hash maps for a action to nn index binding.
      * @param isPolicyMap describes if a policy map head is used for the NN.
+     * @param is960 defines if 960 variant should be supported
      */
-    static void init_policy_constants(bool isPolicyMap);
+    static void init_policy_constants(bool isPolicyMap, bool is960);
 
 
 };

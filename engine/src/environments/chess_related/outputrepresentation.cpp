@@ -36,13 +36,8 @@ void apply_softmax(DynamicVector<float> &policyProbSmall)
     policyProbSmall = softmax(policyProbSmall);
 }
 
-void OutputRepresentation::init_policy_constants(bool isPolicyMap)
+void OutputRepresentation::init_policy_constants(bool isPolicyMap, bool is960)
 {
-#ifdef SUPPORT960
-    const bool is960 = true;
-#else
-    const bool is960 = false;
-#endif
     // fill mirrored label list and look-up table
     for (size_t mvIdx = 0; mvIdx < StateConstants::NB_LABELS(); mvIdx++) {
         LABELS_MIRRORED[mvIdx] = mirror_move(LABELS[mvIdx]);

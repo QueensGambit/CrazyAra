@@ -28,8 +28,15 @@
 #ifndef BLAZEUTIL_H
 #define BLAZEUTIL_H
 
+// remove MSVC min/max macro definitions
+#ifdef WIN32
+   #undef min
+   #undef max
+#endif
+
 #include <cfloat>
 #include <blaze/Math.h>
+#include <limits>
 #include<climits>
 #include "randomgen.h"
 
@@ -148,7 +155,7 @@ template <typename T, typename U>
 void first_and_second_max(const DynamicVector<T>& v, U endIdx, T& firstMax, T& secondMax, U& firstArg, U& secondArg)
 {
     firstMax = v[0];
-    secondMax = -INT_MAX;
+    secondMax = std::numeric_limits<T>::min();
     firstArg = 0;
     secondArg = 0;
     for (size_t idx = 1; idx < endIdx; ++idx) {

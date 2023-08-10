@@ -98,7 +98,7 @@ private:
     bool networkLoaded;
     bool ongoingSearch;
     bool is960;
-    bool changedUCIoption = false;
+    bool changedUCIoption;
 
 public:
     CrazyAra();
