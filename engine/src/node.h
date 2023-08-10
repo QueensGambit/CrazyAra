@@ -216,7 +216,12 @@ public:
             double newQVal;
             switch(get_virtual_style(searchSettings, d->childNumberVisits[childIdx])) {
             case VIRTUAL_LOSS:
-                d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1 + value) / d->childNumberVisits[childIdx];
+                if (d->childNumberVisits[childIdx] < 100 && d->childNodes[childIdx]->d != nullptr) {
+                    d->qValues[childIdx] = -max(d->childNodes[childIdx]->d->qValues);
+                }
+                else {
+                    d->qValues[childIdx] = (double(d->qValues[childIdx]) * d->childNumberVisits[childIdx] + 1 + value) / d->childNumberVisits[childIdx];
+                }
                 break;
             case VIRTUAL_VISIT:
                 childRealVisit = get_real_visits(childIdx);
