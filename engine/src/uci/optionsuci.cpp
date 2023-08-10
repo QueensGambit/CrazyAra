@@ -66,6 +66,7 @@ void on_tb_path(const Option& o) {
 void OptionsUCI::init(OptionsMap &o)
 {
     o["Allow_Early_Stopping"]          << Option(true);
+    o["Milli_Alpha_EMA"]               << Option(10, 1, 1000);
 #ifdef USE_RL
     o["Batch_Size"]                    << Option(8, 1, 8192);
 #else
@@ -127,6 +128,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Last_Device_ID"]                << Option(0, 0, 99999);
     o["Log_File"]                      << Option("", on_logger);
     o["MCTS_Solver"]                   << Option(true);
+    o["Momentum_Threshold"]            << Option(200, 1, 99999999);
 #if defined(MODE_LICHESS) || defined(MODE_BOARDGAMES)
     o["Model_Directory"]               << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
 #else

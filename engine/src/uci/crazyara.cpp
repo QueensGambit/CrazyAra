@@ -760,6 +760,8 @@ void CrazyAra::init_search_settings()
         info_string_important("Unknown option", Options["Virtual_Style"], "for Virtual_Style");
     }
     searchSettings.virtualMixThreshold = Options["Virtual_Mix_Threshold"];
+    searchSettings.alphaEMA = Options["Milli_Alpha_EMA"] / 1000.0f;
+    searchSettings.momentumThreshold = Options["Momentum_Threshold"];
 }
 
 void CrazyAra::init_play_settings()

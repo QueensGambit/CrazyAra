@@ -211,9 +211,9 @@ public:
             d->qValuesEMA[childIdx] = value;
         }
         else {
-            d->qValuesEMA[childIdx] = 0.9 * d->qValuesEMA[childIdx] + 0.1 * value;
+            d->qValuesEMA[childIdx] = (1.0f-searchSettings->alphaEMA) * d->qValuesEMA[childIdx] + searchSettings->alphaEMA * value;
 
-            if (d->childNumberVisits[childIdx] > 20) {
+            if (d->childNumberVisits[childIdx] > searchSettings->momentumThreshold) {
                 const double realQValue = get_transposition_q_value(searchSettings, childIdx, get_real_visits(childIdx));
                 value += d->qValuesEMA[childIdx] - realQValue;
             }

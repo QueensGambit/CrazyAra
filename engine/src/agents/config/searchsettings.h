@@ -87,6 +87,10 @@ struct SearchSettings
     uint_fast32_t virtualMixThreshold;
     // Defines the strength of the virtual offset
     double virtualOffsetStrenght;
+    // alpha value for exponetial moving average
+    float alphaEMA;
+    // theshold when momentum will be used
+    uint_fast32_t momentumThreshold;
     SearchSettings();
 
 };
