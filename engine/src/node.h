@@ -208,8 +208,16 @@ public:
             // set new Q-value based on return
             // (the initialization of the Q-value was by Q_INIT which we don't want to recover.)
             d->qValues[childIdx] = value;
+            d->qValuesEMA[childIdx] = value;
         }
         else {
+            d->qValuesEMA[childIdx] = 0.9 * d->qValuesEMA[childIdx] + 0.1 * value;
+
+            if (d->childNumberVisits[childIdx] > 100) {
+                const double realQValue = get_transposition_q_value(searchSettings, childIdx, get_real_visits(childIdx));
+                value += realQValue - d->qValuesEMA[childIdx];
+            }
+
             // revert virtual loss and update the Q-value
             assert(d->childNumberVisits[childIdx] != 0);
             uint_fast32_t childRealVisit;
