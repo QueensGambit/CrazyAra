@@ -215,7 +215,7 @@ public:
 
             if (d->childNumberVisits[childIdx] > searchSettings->momentumThreshold) {
                 const double realQValue = get_transposition_q_value(searchSettings, childIdx, get_real_visits(childIdx));
-                value += d->qValuesEMA[childIdx] - realQValue;
+                value += std::clamp(d->qValuesEMA[childIdx] - realQValue, -0.2, 0.2);
             }
 
             // revert virtual loss and update the Q-value
