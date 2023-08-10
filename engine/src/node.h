@@ -213,9 +213,9 @@ public:
         else {
             d->qValuesEMA[childIdx] = 0.9 * d->qValuesEMA[childIdx] + 0.1 * value;
 
-            if (d->childNumberVisits[childIdx] > 100) {
+            if (d->childNumberVisits[childIdx] > 20) {
                 const double realQValue = get_transposition_q_value(searchSettings, childIdx, get_real_visits(childIdx));
-                value += realQValue - d->qValuesEMA[childIdx];
+                value += d->qValuesEMA[childIdx] - realQValue;
             }
 
             // revert virtual loss and update the Q-value
