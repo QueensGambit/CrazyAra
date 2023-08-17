@@ -107,4 +107,4 @@ def board_to_planes(board, board_occ=0, normalize=True):
     """
 
     # return the plane representation of the given board
-    return variants.board_to_planes(board, board_occ, normalize, mode=MODE_LICHESS)
+    return variants.board_to_planes(board, board_occ, normalize, mode=MODE_LICHESS, last_moves=None)

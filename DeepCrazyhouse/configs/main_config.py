@@ -69,7 +69,7 @@ main_config = {
     # Active mode for different input & output representations.
     # Each mode is only compatible with a certain network input-/output representation:
     # Available modes:  0: MODE_CRAZYHOUSE    (crazyhouse only mode, no 960) available versions [1, 2, 3]
-    #                   1: MODE_LICHESS       (all available lichess variants) available versions [1, 2 (last_moves)]
+    #                   1: MODE_LICHESS       (all available lichess variants) available versions [1, 2 (last_moves), 3 (last_moves+fx-features)]
     #                   2: MODE_CHESS         (chess only mode, with 960) available versions [1, 2, 3]
     "mode": 0,
     "version": 1,
