@@ -240,6 +240,20 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 ## B.Sc. Thesis
 
+* T. Truong: **Utilizing Variance and Uncertainty in Monte-Carlo Tree Search**, [pdf](https://ml-research.github.io/papers/truong2023monte.pdf)
+```latex
+@bachelorthesis{truong2023monte,
+	       title = { Monte Carlo Tree Search - Minimax Hybrid in AlphaZero },
+	       author = { Tam Truong },
+               year = { 2023 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/tam201197/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 48 },
+	       month = { september }
+	       }
+```
+
 * M. Ruzicka: **Utilizing Variance and Uncertainty in Monte-Carlo Tree Search**, [pdf](https://ml-research.github.io/papers/ruzicka2023utilizing.pdf)
 ```latex
 @bachelorthesis{ruzicka2023utilizing,
