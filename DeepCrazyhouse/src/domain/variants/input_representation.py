@@ -13,6 +13,7 @@ import DeepCrazyhouse.src.domain.variants.classical_chess.v2.input_representatio
 import DeepCrazyhouse.src.domain.variants.classical_chess.v3.input_representation as chess_v3
 import DeepCrazyhouse.src.domain.variants.crazyhouse.v2.input_representation as crazyhouse_v2
 import DeepCrazyhouse.src.domain.variants.crazyhouse.v3.input_representation as crazyhouse_v3
+import DeepCrazyhouse.src.domain.variants.lichess.v3.input_representation as lichess_v3
 from DeepCrazyhouse.src.domain.variants.default_input_representation import default_board_to_planes,\
     default_normalize_input_planes, default_planes_to_board
 from DeepCrazyhouse.src.domain.variants.constants import (
@@ -20,6 +21,7 @@ from DeepCrazyhouse.src.domain.variants.constants import (
     VERSION,
     MODE_CRAZYHOUSE,
     MODE_CHESS,
+    MODE_LICHESS,
     NB_LAST_MOVES,
     chess, NB_CHANNELS_TOTAL, BOARD_HEIGHT, BOARD_WIDTH)
 from DeepCrazyhouse.configs.main_config import main_config
@@ -51,6 +53,8 @@ def board_to_planes(board, board_occ=0, normalize=True, mode=MODE_CRAZYHOUSE, la
         return crazyhouse_v2.board_to_planes(board, board_occ, normalize, last_moves)
     if mode == MODE_CRAZYHOUSE and VERSION == 3:
         return crazyhouse_v3.board_to_planes(board, board_occ, normalize, last_moves)
+    if mode == MODE_LICHESS and VERSION == 3:
+        return lichess_v3.board_to_planes(board, board_occ, normalize, last_moves)
 
     return default_board_to_planes(board, board_occ, last_moves, mode, normalize)
 
@@ -81,6 +85,8 @@ def planes_to_board(planes, normalized_input=False, mode=MODE_CRAZYHOUSE):
         return crazyhouse_v2.planes_to_board(planes, normalized_input)
     if mode == MODE_CRAZYHOUSE and VERSION == 3:
         return crazyhouse_v3.planes_to_board(planes, normalized_input)
+    if mode == MODE_LICHESS and VERSION == 3:
+        return lichess_v3.planes_to_board(planes, normalized_input)
 
     return default_planes_to_board(planes, normalized_input, mode)
 
@@ -104,6 +110,8 @@ def normalize_input_planes(x):
         return crazyhouse_v2.normalize_input_planes(x)
     if MODE == MODE_CRAZYHOUSE and VERSION == 3:
         return crazyhouse_v3.normalize_input_planes(x)
+    if MODE == MODE_LICHESS and VERSION == 3:
+        return lichess_v3.normalize_input_planes(x)
 
     return default_normalize_input_planes(x)
 
@@ -128,7 +136,6 @@ def get_planes_statistics(board: chess.Board, normalize: bool, last_moves_uci: l
 
     planes = board_to_planes(board, board_occ=board_occ, normalize=normalize, mode=main_config['mode'],
                              last_moves=last_moves)
-    planes = normalize_input_planes(planes)
     planes = planes.flatten()
     stats = {}
     stats['sum'] = planes.sum()

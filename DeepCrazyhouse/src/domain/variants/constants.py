@@ -138,12 +138,16 @@ elif MODE == MODE_LICHESS:
     NB_POLICY_MAP_CHANNELS = 84
     if VERSION == 1:
         NB_LAST_MOVES = 0
-    else:
+    else:  # VERSION == 2 or VERSION == 3
         NB_LAST_MOVES = 8
     if VERSION == 1:
         NB_CHANNELS_PER_HISTORY_ITEM = 0
-    else:
+    else:  # VERSION == 2 or VERSION == 3
         NB_CHANNELS_PER_HISTORY_ITEM = 2
+    if VERSION == 3:
+        NB_CHANNELS_FX = 17
+    else:
+        NB_CHANNELS_FX = 0
 elif MODE == MODE_XIANGQI:
     NB_CHANNELS_POS = 26
     NB_CHANNELS_CONST = 2
@@ -183,6 +187,8 @@ else:
     NB_LABELS_POLICY_MAP = NB_POLICY_MAP_CHANNELS * BOARD_HEIGHT * BOARD_WIDTH
 NB_CHANNELS_HISTORY = NB_LAST_MOVES * NB_CHANNELS_PER_HISTORY_ITEM
 NB_CHANNELS_TOTAL = NB_CHANNELS_POS + NB_CHANNELS_CONST + NB_CHANNELS_VARIANTS + NB_CHANNELS_HISTORY
+if MODE == MODE_LICHESS:
+    NB_CHANNELS_TOTAL += NB_CHANNELS_FX
 
 # define the number of different pieces one can have in his pocket (the king/general is excluded)
 if MODE == MODE_XIANGQI:

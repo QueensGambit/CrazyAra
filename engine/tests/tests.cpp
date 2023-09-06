@@ -1602,5 +1602,22 @@ TEST_CASE("Crazyhouse Input Planes V3") {
 }
 #endif
 
+#ifdef MODE_LICHESS
+TEST_CASE("Atomic Input Planes V3") {
+    init();
+    int variant = StateConstants::variant_to_int("atomic");
+    BoardState state;
+    const uint nbValuesTotal = 80 * StateConstants::NB_SQUARES();
+    state.init(variant, false);
+    // starting position test
+    PlaneStatistics stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1440);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 5932976);
+    REQUIRE(stats.argMax == 4736);
+    REQUIRE(state.fen() == string("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
+}
+#endif
+
 #endif
 

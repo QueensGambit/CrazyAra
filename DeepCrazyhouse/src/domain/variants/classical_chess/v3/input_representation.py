@@ -199,9 +199,36 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
         planes[channel + 1, :, :] = 1
     channel += 1
 
+    channel = set_additional_custom_features(planes, board, channel, mirror, normalize, include_king=False)
+
+    if main_config["mode"] == MODE_CHESS:
+        assert channel == NB_CHANNELS_TOTAL
+
+    return planes
+
+
+def set_additional_custom_features(planes, board, channel: int, mirror: bool, normalize: bool, include_king: bool,
+                                   channel_piece_mask=CHANNEL_PIECE_MASK, channel_checkerboard=CHANNEL_CHECKERBOARD,
+                                   channel_material_diff=CHANNEL_MATERIAL_DIFF, channel_opp_bishops=CHANNEL_OPP_BISHOPS,
+                                   channel_checkers=CHANNEL_CHECKERS, channel_material_count=CHANNEL_MATERIAL_COUNT):
+    """
+    Sets additional custom features also called FX-features.
+    :param planes: Planes that will be modified in place
+    :param board: Board object
+    :param channel: Starting channel
+    :param mirror: If the planes should be mirrored
+    :param normalize: Decides if the planes shoudl be normalized
+    :param include_king: Decides if the king should be included in the material features (necessary for e.g. anti-chess)
+    :return none
+    """
+
+    me = board.turn
+    you = not board.turn
+    colors = [me, you]
+
     # Channel: 37 - 38
     # All white pieces and black pieces in a single map
-    assert channel == CHANNEL_PIECE_MASK
+    assert channel == channel_piece_mask
     for color in colors:
         # the PIECE_TYPE is an integer list in python-chess
         for piece_type in chess.PIECE_TYPES:
@@ -211,32 +238,34 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
                 # set the bit at the right position
                 planes[channel, row, col] = 1
         channel += 1
-
     # Channel: 39
     # Checkerboard
-    assert(channel == CHANNEL_CHECKERBOARD)
+    assert (channel == channel_checkerboard)
     planes[channel, :, :] = checkerboard()
     channel += 1
-
     # Channel: 40 - 44
     # Relative material difference (negative if less pieces than opponent and positive if more)
     # iterate over all pieces except the king
-    assert channel == CHANNEL_MATERIAL_DIFF
-    for piece_type in chess.PIECE_TYPES[:-1]:
+
+    assert channel == channel_material_diff
+    if include_king:
+        piece_types = chess.PIECE_TYPES
+    else:
+        piece_types = chess.PIECE_TYPES[:-1]
+
+    for piece_type in piece_types:
         material_count = len(board.pieces(piece_type, me)) - len(board.pieces(piece_type, you))
         planes[channel, :, :] = material_count / NORMALIZE_PIECE_NUMBER if normalize else material_count
         channel += 1
-
     # Channel: 45
     # Opposite color bishops
-    assert (channel == CHANNEL_OPP_BISHOPS)
+    assert (channel == channel_opp_bishops)
     if opposite_colored_bishops(board):
         planes[channel, :, :] = 1
     channel += 1
-
     # Channel: 46
     # Checkers
-    assert channel == CHANNEL_CHECKERS
+    assert channel == channel_checkers
     board_checkers = checkers(board)
     if board_checkers:
         # iterate over the piece mask and receive every position square of it
@@ -245,19 +274,14 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
             # set the bit at the right position
             planes[channel, row, col] = 1
     channel += 1
-
     # Channel: 47 - 51
     # Material
-    assert channel == CHANNEL_MATERIAL_COUNT
-    for piece_type in chess.PIECE_TYPES[:-1]:
+    assert channel == channel_material_count
+    for piece_type in piece_types:
         material_count = len(board.pieces(piece_type, me))
         planes[channel, :, :] = material_count / NORMALIZE_PIECE_NUMBER if normalize else material_count
         channel += 1
-
-    if main_config["mode"] == MODE_CHESS:
-        assert channel == NB_CHANNELS_TOTAL
-
-    return planes
+    return channel
 
 
 def set_no_progress_counter(board, channel, planes, normalized_input, max_nb_no_progress):
