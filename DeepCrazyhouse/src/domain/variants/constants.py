@@ -106,6 +106,7 @@ else:
     BOARD_WIDTH = 8
     BOARD_HEIGHT = 8
 
+NB_CHANNELS_FX = None
 # Define constants indicating the number of channels for the input plane presentation
 # and the number of channels used for the policy map representation
 if MODE == MODE_CRAZYHOUSE:
