@@ -82,8 +82,8 @@ public:
     unique_ptr<ThreadManager> threadManager;
     bool reachedTablebases;
 public:
-    MCTSAgent(NeuralNetAPI* netSingle,
-              vector<unique_ptr<NeuralNetAPI>>& netBatches,
+    MCTSAgent(vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
+              vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
               SearchSettings* searchSettings,
               PlaySettings* playSettings);
     ~MCTSAgent();

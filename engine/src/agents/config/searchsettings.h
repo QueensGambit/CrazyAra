@@ -67,6 +67,12 @@ struct SearchSettings
     float uBase;
     float randomMoveFactor;
 
+    // split the game in phases and use a separate model for each of them
+    bool use_phases;
+    
+    // the id of the latest phase (total phases = max_phase + 1)
+    unsigned int max_phase;
+
     // If true, the exact given node count doesn't need to reached, but search can be stopped earlier
     bool allowEarlyStopping;
     // early break out based on max node visits in tree; increases time for falling eval

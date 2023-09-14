@@ -38,6 +38,7 @@
 #include "../util/communication.h"
 #include "neuralnetdesign.h"
 #include "version.h"
+#include "../stateobj.h"
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
@@ -101,6 +102,9 @@ string get_file_ending_with(const string& dir, const string& suffix);
  */
 Version read_version_from_string(const string& modelFileName);
 
+// TODO add documentation
+GamePhase read_game_phase_from_string(const string& modelDir);
+
 
 template <typename T>
 /**
@@ -159,6 +163,7 @@ protected:
     uint_fast32_t nbPolicyValues;
 
     Version version;
+    GamePhase game_phase;
 private:
     /**
      * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and

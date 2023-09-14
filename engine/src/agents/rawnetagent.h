@@ -42,7 +42,7 @@ using namespace crazyara;
 class RawNetAgent: public Agent
 {
 public:
-    RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose);
+    RawNetAgent(vector<unique_ptr<NeuralNetAPI>>& nets, PlaySettings* playSettings, bool verbose);
     RawNetAgent(const RawNetAgent&) = delete;
     RawNetAgent& operator=(RawNetAgent const&) = delete;
 

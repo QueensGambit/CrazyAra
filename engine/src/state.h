@@ -45,6 +45,7 @@ typedef int32_t Action;
 typedef uint16_t MoveIdx;
 typedef unsigned int uint;
 typedef int SideToMove;
+typedef unsigned int GamePhase;
 #define FIRST_PLAYER_IDX 0
 const int ACTION_NONE = 0;
 

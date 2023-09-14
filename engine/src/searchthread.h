@@ -61,6 +61,7 @@ private:
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
+    unique_ptr<FixedVector<unsigned int>> newPhases;
     unique_ptr<FixedVector<float>> transpositionValues;
 
     vector<Trajectory> newTrajectories;
@@ -84,11 +85,11 @@ private:
 public:
     /**
      * @brief SearchThread
-     * @param netBatch Network API object which provides the prediction of the neural network
+     * @param netBatchVector vector of Network API objects which provide the prediction of the neural network
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(NeuralNetAPI* netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

@@ -442,3 +442,123 @@ bool is_capture(const Board* pos, Move move)
 }
 
 #endif
+
+unsigned int get_majors_and_minors_count(const Board& pos)
+{
+    return pos.count<QUEEN>() + pos.count<ROOK>() + pos.count<KNIGHT>() + pos.count<BISHOP>();
+}
+
+bool is_backrank_sparse(const Board& pos)
+{
+    Bitboard backrank_pieces_white_bb = pos.pieces(WHITE, ALL_PIECES) & rank_bb(Rank(0));
+    Bitboard backrank_pieces_black_bb = pos.pieces(BLACK, ALL_PIECES) & rank_bb(Rank(7));
+
+    // True if either white or black backrank is sparse (three or less pieces)
+    return (popcount(backrank_pieces_white_bb) <= 3) || (popcount(backrank_pieces_black_bb) <= 3);
+}
+
+int score_region(int num_white_pieces_in_region, int num_black_pieces_in_region, int rank)
+{
+    if (num_white_pieces_in_region == 1 && num_black_pieces_in_region == 0) {
+        return 1 + (8 - rank);
+    }
+    else if (num_white_pieces_in_region == 2 && num_black_pieces_in_region == 0) {
+        return 2 + ((rank > 2) ? (rank - 2) : 0);
+    }
+    else if (num_white_pieces_in_region == 3 && num_black_pieces_in_region == 0) {
+        return 3 + ((rank > 1) ? (rank - 1) : 0);
+    }
+    else if (num_white_pieces_in_region == 4 && num_black_pieces_in_region == 0) {
+        return 3 + ((rank > 1) ? (rank - 1) : 0);
+    }
+    else if (num_white_pieces_in_region == 0 && num_black_pieces_in_region == 1) {
+        return 1 + rank;
+    }
+    else if (num_white_pieces_in_region == 1 && num_black_pieces_in_region == 1) {
+        return 5 + abs(3 - rank);
+    }
+    else if (num_white_pieces_in_region == 2 && num_black_pieces_in_region == 1) {
+        return 4 + rank;
+    }
+    else if (num_white_pieces_in_region == 3 && num_black_pieces_in_region == 1) {
+        return 5 + rank;
+    }
+    else if (num_white_pieces_in_region == 0 && num_black_pieces_in_region == 2) {
+        return 2 + ((rank < 6) ? (6 - rank) : 0);
+    }
+    else if (num_white_pieces_in_region == 1 && num_black_pieces_in_region == 2) {
+        return 4 + (6 - rank);
+    }
+    else if (num_white_pieces_in_region == 2 && num_black_pieces_in_region == 2) {
+        return 7;
+    }
+    else if (num_white_pieces_in_region == 0 && num_black_pieces_in_region == 3) {
+        return 3 + ((rank < 7) ? (7 - rank) : 0);
+    }
+    else if (num_white_pieces_in_region == 1 && num_black_pieces_in_region == 3) {
+        return 5 + (6 - rank);
+    }
+    else if (num_white_pieces_in_region == 0 && num_black_pieces_in_region == 4) {
+        return 3 + ((rank < 7) ? (7 - rank) : 0);
+    }
+
+    return 0;  // for 0 white and 0 black and all other (incorrect) options with a sum that is bigger than 4
+
+}
+
+int get_mixedness(const Board& pos)
+{
+    int mix = 0;
+
+    for (int rank_idx = 0; rank_idx < 7; ++rank_idx) { // use ranks 1 to 7 (indices 0 to 6)
+        for (int file_idx = 0; file_idx < 7; ++file_idx) { // use files A to G (indices 0 to 6)
+            int num_white_pieces_in_region = 0;
+            int num_black_pieces_in_region = 0;
+            for (int dx = 0; dx < 2; ++dx) {
+                for (int dy = 0; dy < 2; ++dy) {
+                    Square curr_square = make_square(File(file_idx + dx), Rank(rank_idx + dy));
+                    Piece curr_piece = pos.piece_on(curr_square);
+
+                    if (curr_piece != NO_PIECE) {
+                        if (color_of(curr_piece) == WHITE)
+                        {
+                            num_white_pieces_in_region++;
+                        }
+                        else {
+                            num_black_pieces_in_region++;
+                        }
+                    }
+                }
+            }
+            mix += score_region(num_white_pieces_in_region, num_black_pieces_in_region, rank_idx + 1);
+        }
+    }
+
+    return mix;
+}
+
+GamePhase Board::get_phase() const
+// returns the game phase based on the lichess definition implemented in:
+// https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
+{
+    unsigned int num_majors_and_minors = get_majors_and_minors_count(*this);
+
+    if (num_majors_and_minors <= 6)
+    {
+        return GamePhase(2);
+    }
+    else
+    {
+        bool backrank_sparse = is_backrank_sparse(*this);
+        int mixedness_score = get_mixedness(*this);
+
+        if (num_majors_and_minors <= 10 || backrank_sparse || mixedness_score > 150)
+        {
+            return GamePhase(1);
+        }
+        else
+        {
+            return GamePhase(0);
+        }
+    }
+}

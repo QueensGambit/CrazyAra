@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <climits>
 #include "util/blazeutil.h"
+#include <fstream>
 
 
 size_t SearchThread::get_max_depth() const
@@ -40,10 +41,11 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    NeuralNetAPIUser(netBatch),
+SearchThread::SearchThread(vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+    NeuralNetAPIUser(netBatchVector),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
+    newPhases(make_unique<FixedVector<GamePhase>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
@@ -225,7 +227,8 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_version());
+                newState->get_state_planes(true, inputPlanes + newNodes->size() * nets.front()->get_nb_input_values_total(), nets.front()->get_version());
+                newPhases->add_element(newState->get_phase());
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
@@ -299,7 +302,7 @@ void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
-        fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
+        fill_nn_results(batchIdx, nets.front()->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
                         tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
                         searchSettings, rootNode->is_tablebase());
         ++batchIdx;
@@ -381,7 +384,35 @@ void SearchThread::thread_iteration()
     create_mini_batch();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-        net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+        // Saving all the elements of newPhases
+        //std::ofstream csvFile("batch_phase_data.csv", std::ios_base::app);
+        std::map<GamePhase, size_t> phaseCountMap; // saves counts of all phases in current batch
+        using pair_type = decltype(phaseCountMap)::value_type;
+        
+        for (const GamePhase& phase : *newPhases) {
+            //csvFile << phase << ",";
+            phaseCountMap[phase]++;
+        }
+
+        // determine majority class in current batch
+        auto pr = std::max_element
+        (
+            std::begin(phaseCountMap), std::end(phaseCountMap),
+            [](const pair_type& p1, const pair_type& p2) {
+                return p1.second < p2.second;
+            }
+        );
+
+        GamePhase majorityPhase = pr->first;
+
+        //csvFile << std::endl;
+        //csvFile << "phase" << majorityPhase << ",";
+        //csvFile << std::endl;
+        //csvFile.close();
+
+        newPhases->reset_idx();
+
+        nets[majorityPhase]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
         set_nn_results_to_child_nodes();
     }
 #endif

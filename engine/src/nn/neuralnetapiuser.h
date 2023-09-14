@@ -37,7 +37,8 @@
 class NeuralNetAPIUser
 {
 protected:
-    NeuralNetAPI* net;
+    vector<unique_ptr<NeuralNetAPI>> nets;
+    // vector of net objects 
 
     // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
     float* inputPlanes;
@@ -48,7 +49,7 @@ protected:
     float* auxiliaryOutputs;
 
 public:
-    NeuralNetAPIUser(NeuralNetAPI* net);
+    NeuralNetAPIUser(vector<unique_ptr<NeuralNetAPI>>& nets_new);
     ~NeuralNetAPIUser();
     NeuralNetAPIUser(NeuralNetAPIUser&) = delete;
 

@@ -38,9 +38,9 @@
 #include "util/gcthread.h"
 
 
-MCTSAgentBatch::MCTSAgentBatch(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches,
+MCTSAgentBatch::MCTSAgentBatch(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, 
                      SearchSettings* searchSettings, PlaySettings* playSettings, int noa, bool sN):
-    MCTSAgent(netSingle, netBatches, searchSettings, playSettings)
+    MCTSAgent(netSingleVector, netBatchesVector, searchSettings, playSettings)
     {
         numberOfAgents = noa;
         splitNodes = sN;
@@ -55,9 +55,9 @@ MCTSAgentBatch::~MCTSAgentBatch()
 
 string MCTSAgentBatch::get_name() const
 {   
-    string ret = "MCTSBatch-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + net->get_model_name();
+    string ret = "MCTSBatch-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + nets.front()->get_model_name();
     if(splitNodes){
-        ret = "MCTSBatch-Split-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + net->get_model_name();
+        ret = "MCTSBatch-Split-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + nets.front()->get_model_name();
     }
     return ret;
 }

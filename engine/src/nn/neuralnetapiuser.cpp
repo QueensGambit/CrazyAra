@@ -31,33 +31,33 @@
 #include "common.h"
 #endif
 
-NeuralNetAPIUser::NeuralNetAPIUser(NeuralNetAPI *net):
-    net(net),
+NeuralNetAPIUser::NeuralNetAPIUser(vector<unique_ptr<NeuralNetAPI>>& nets_new) :
     auxiliaryOutputs(nullptr)
 {
+    nets = std::move(nets_new);
     // allocate memory for all predictions and results
 #ifdef TENSORRT
 #ifdef DYNAMIC_NN_ARCH
-    CHECK(cudaMallocHost((void**) &inputPlanes, net->get_batch_size() * net->get_nb_input_values_total() * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &inputPlanes, nets.front()->get_batch_size() * nets.front()->get_nb_input_values_total() * sizeof(float)));
 #else
-     CHECK(cudaMallocHost((void**) &inputPlanes, net->get_batch_size() * StateConstants::NB_VALUES_TOTAL() * sizeof(float)));
+     CHECK(cudaMallocHost((void**) &inputPlanes, nets.front()->get_batch_size() * StateConstants::NB_VALUES_TOTAL() * sizeof(float)));
 #endif
-    CHECK(cudaMallocHost((void**) &valueOutputs, net->get_batch_size() * sizeof(float)));
-    CHECK(cudaMallocHost((void**) &probOutputs, net->get_batch_size() * net->get_nb_policy_values() * sizeof(float)));
-    if (net->has_auxiliary_outputs()) {
-        CHECK(cudaMallocHost((void**) &auxiliaryOutputs, net->get_batch_size() * net->get_nb_auxiliary_outputs() * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &valueOutputs, nets.front()->get_batch_size() * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &probOutputs, nets.front()->get_batch_size() * nets.front()->get_nb_policy_values() * sizeof(float)));
+    if (nets.front()->has_auxiliary_outputs()) {
+        CHECK(cudaMallocHost((void**) &auxiliaryOutputs, nets.front()->get_batch_size() * nets.front()->get_nb_auxiliary_outputs() * sizeof(float)));
     }
 #else
-    inputPlanes = new float[net->get_batch_size() * net->get_nb_input_values_total()];
-    valueOutputs = new float[net->get_batch_size()];
-    probOutputs = new float[net->get_batch_size() * net->get_nb_policy_values()];
+    inputPlanes = new float[nets.front()->get_batch_size() * nets.front()->get_nb_input_values_total()];
+    valueOutputs = new float[nets.front()->get_batch_size()];
+    probOutputs = new float[nets.front()->get_batch_size() * nets.front()->get_nb_policy_values()];
 #ifdef DYNAMIC_NN_ARCH
-    if (net->has_auxiliary_outputs()) {
-        auxiliaryOutputs = new float[net->get_batch_size() * net->get_nb_auxiliary_outputs()];
+    if (nets.front()->has_auxiliary_outputs()) {
+        auxiliaryOutputs = new float[nets.front()->get_batch_size() * nets.front()->get_nb_auxiliary_outputs()];
     }
 #else
     if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
-         auxiliaryOutputs = new float[net->get_batch_size() * StateConstants::NB_AUXILIARY_OUTPUTS()];
+         auxiliaryOutputs = new float[nets.front()->get_batch_size() * StateConstants::NB_AUXILIARY_OUTPUTS()];
     }
 #endif
 #endif
@@ -70,7 +70,7 @@ NeuralNetAPIUser::~NeuralNetAPIUser()
     CHECK(cudaFreeHost(valueOutputs));
     CHECK(cudaFreeHost(probOutputs));
 #ifdef DYNAMIC_NN_ARCH
-    if (net->has_auxiliary_outputs()) {
+    if (nets.front()->has_auxiliary_outputs()) {
 #else
     if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
 #endif
@@ -81,7 +81,7 @@ NeuralNetAPIUser::~NeuralNetAPIUser()
     delete [] valueOutputs;
     delete [] probOutputs;
 #ifdef DYNAMIC_NN_ARCH
-    if (net->has_auxiliary_outputs()) {
+    if (nets.front()->has_auxiliary_outputs()) {
 #else
     if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
 #endif
@@ -93,7 +93,7 @@ NeuralNetAPIUser::~NeuralNetAPIUser()
 void NeuralNetAPIUser::run_inference(uint_fast16_t iterations)
 {
     for (uint_fast16_t it = 0; it < iterations; ++it) {
-        net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+        nets.front()->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     }
 }
 

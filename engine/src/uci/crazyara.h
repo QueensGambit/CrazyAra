@@ -41,6 +41,8 @@
 #include "agents/config/playsettings.h"
 #include "node.h"
 #include "timeoutreadythread.h"
+#include <filesystem>
+namespace fs = std::filesystem;
 #ifdef USE_RL
 #include "rl/selfplay.h"
 #include "agents/config/rlsettings.h"
@@ -80,8 +82,8 @@ private:
                     string("              ASCII-Art: Joan G. Stark, Chappell, Burton                      \n");
     unique_ptr<RawNetAgent> rawAgent;
     unique_ptr<MCTSAgent> mctsAgent;
-    unique_ptr<NeuralNetAPI> netSingle;
-    vector<unique_ptr<NeuralNetAPI>> netBatches;
+    vector<unique_ptr<NeuralNetAPI>> netSingleVector;
+    vector<vector<unique_ptr<NeuralNetAPI>>> netBatchesVector;
 #ifdef USE_RL
     unique_ptr<NeuralNetAPI> netSingleContender;
     unique_ptr<MCTSAgent> mctsAgentContender;
@@ -270,13 +272,13 @@ private:
      * @brief create_new_mcts_agent Factory method to create a new MCTSAgent when loading new neural network weights
      * @param modelDirectory Directory where the .params and .json files are stored
      * @param states State-Manager, needed to keep track of 3-fold-repetition
-     * @param netSingle Neural net with batch-size 1. It will be loaded from file.
-     * @param netBatches Neural net handes with a batch-size defined by the uci options. It will be loaded from file.
+     * @param netSingleVector Neural networks with batch-size 1. They will be loaded from file.
+     * @param netBatchesVector Neural networks handes with a batch-size defined by the uci options. They will be loaded from file.
      * @param searchSettings Search settings object
      * @param type Which type of agent should be used, default is 0. 
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type = MCTSAgentType::kDefault);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, SearchSettings* searchSettings, MCTSAgentType type = MCTSAgentType::kDefault);
 
     /**
      * @brief create_new_net_single Factory to create and load a new model from a given directory

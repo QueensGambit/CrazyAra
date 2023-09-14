@@ -271,3 +271,8 @@ void BoardState::init(int variant, bool is960)
 }
 
 #endif
+
+GamePhase BoardState::get_phase() const
+{
+    return board.get_phase();
+}
