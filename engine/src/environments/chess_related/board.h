@@ -119,11 +119,12 @@ public:
     bool draw_by_insufficient_material() const;
 
     /**
-     * @brief get_phase Returns the game phase of the current board state
-     * Possible returned values are all integers from 0 to max phases - 1
+     * @brief get_phase Returns the game phase of the current board state based on the total amount of phases
+     * Possible returned values are all integers from 0 to num_phases - 1
+     * @param unsigned int num_phases
      * @return Game phase as unsigned int
      */
-    GamePhase get_phase() const;
+    GamePhase get_phase(unsigned int num_phases) const;
 
     // overloaded function which include a last move list update
     void do_move(Move m, StateInfo& newSt);

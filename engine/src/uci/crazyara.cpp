@@ -566,9 +566,8 @@ bool CrazyAra::is_ready()
 #ifdef USE_RL
         init_rl_settings();
 #endif
+
         // analyse directory to get num phases
-
-
         for (const auto& entry : fs::directory_iterator(string(Options["Model_Directory"]))) {
             std::cout << entry.path().generic_string() << std::endl;
 

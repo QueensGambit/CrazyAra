@@ -215,6 +215,13 @@ public:
      */
     string get_device_name() const;
 
+
+    /**
+    * @brief get_game_phase Returns the game phase of this NeuralNetAPI
+    * @return GamePhase
+    */
+    GamePhase get_game_phase() const;
+
     /**
      * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number
      * @param inputPlanes Pointer to the input planes of a single board position

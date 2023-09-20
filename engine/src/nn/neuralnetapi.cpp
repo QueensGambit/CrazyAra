@@ -118,6 +118,12 @@ bool NeuralNetAPI::is_policy_map() const
     return nnDesign.isPolicyMap;
 }
 
+
+GamePhase NeuralNetAPI::get_game_phase() const
+{
+    return game_phase;
+}
+
 string NeuralNetAPI::get_model_name() const
 {
     return modelName;

@@ -537,28 +537,33 @@ int get_mixedness(const Board& pos)
     return mix;
 }
 
-GamePhase Board::get_phase() const
-// returns the game phase based on the lichess definition implemented in:
-// https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
+GamePhase Board::get_phase(unsigned int num_phases) const
 {
-    unsigned int num_majors_and_minors = get_majors_and_minors_count(*this);
+    if (num_phases == 3) {
+        // returns the game phase based on the lichess definition implemented in:
+        // https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
+        unsigned int num_majors_and_minors = get_majors_and_minors_count(*this);
 
-    if (num_majors_and_minors <= 6)
-    {
-        return GamePhase(2);
-    }
-    else
-    {
-        bool backrank_sparse = is_backrank_sparse(*this);
-        int mixedness_score = get_mixedness(*this);
-
-        if (num_majors_and_minors <= 10 || backrank_sparse || mixedness_score > 150)
+        if (num_majors_and_minors <= 6)
         {
-            return GamePhase(1);
+            return GamePhase(2);
         }
         else
         {
-            return GamePhase(0);
+            bool backrank_sparse = is_backrank_sparse(*this);
+            int mixedness_score = get_mixedness(*this);
+
+            if (num_majors_and_minors <= 10 || backrank_sparse || mixedness_score > 150)
+            {
+                return GamePhase(1);
+            }
+            else
+            {
+                return GamePhase(0);
+            }
         }
+    }
+    if (num_phases == 1) {
+        return GamePhase(0);
     }
 }
