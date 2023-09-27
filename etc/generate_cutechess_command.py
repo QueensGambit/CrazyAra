@@ -7,8 +7,8 @@ Created on 21.09.2023
 Generates the command for running a cutechess experiment based on the given parameters
 """
 
-device = 4
-batch_size = 32
+device = 2
+batch_size = 8
 nodes = 0
 movetime = 1600
 player_a = "correct_phases"

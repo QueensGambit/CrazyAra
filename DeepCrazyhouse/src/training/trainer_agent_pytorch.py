@@ -342,7 +342,7 @@ class TrainerAgentPytorch:
         data = data.to(self._ctx)
         value_label = value_label.to(self._ctx)
         policy_label = policy_label.to(self._ctx)
-        sample_weights = torch.Tensor([self.to.phase_weights[phase] for phase in phase_vector])
+        sample_weights = torch.Tensor([self.to.phase_weights[phase.item()] for phase in phase_vector])
         sample_weights = sample_weights.to(self._ctx)
         if self.tc.sparse_policy_label:
             policy_label = policy_label.long()
@@ -685,7 +685,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
             data = data.to(ctx)
             value_label = value_label.to(ctx)
             policy_label = policy_label.to(ctx)
-            sample_weights = torch.Tensor([phase_weights[phase] for phase in phase_vector])
+            sample_weights = torch.Tensor([phase_weights[phase.item()] for phase in phase_vector])
             sample_weights = sample_weights.to(ctx)
 
             if use_wdl and use_plys_to_end:

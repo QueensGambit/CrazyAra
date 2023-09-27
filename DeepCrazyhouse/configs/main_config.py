@@ -44,11 +44,10 @@ main_config = {
     # The plane directories contain the plane representation of the converted board state
     #  (.zip files which have been compressed by  the python zarr library)
 
-    "planes_train_dir": default_dir + (f"planes/phase{phase}/train/" if phase is not None else "planes/train/"),
-    "planes_val_dir": default_dir + (f"planes/phase{phase}/val/" if phase is not None else "planes/val/"),
-    "planes_test_dir": default_dir + (f"planes/phase{phase}/test/" if phase is not None else "planes/test/"),
-    "planes_mate_in_one_dir": default_dir + (f"planes/phase{phase}/mate_in_one/" if phase is not None
-                                             else "planes/mate_in_one/"),
+    "planes_train_dir": default_dir + f"planes/phase{phase}/train/",
+    "planes_val_dir": default_dir + f"planes/phase{phase}/val/",
+    "planes_test_dir": default_dir + f"planes/phase{phase}/test/",
+    "planes_mate_in_one_dir": default_dir + f"planes/phase{phase}/mate_in_one/",
 
     # The rec directory contains the plane representation which are used in the training loop of the network
     # use the the notebook create_rec_dataset to generate the .rec files:
