@@ -34,6 +34,7 @@ def get_planes_from_pgn(params):
              y_policy: nd.array - Numpy matrix defining the policy distribution for each board state
              plys_to_end - array of how many plys to the end of the game for each position.
              This can be used to apply discounting
+             phase_vector - array of the game phase of each position
     """
     (pgn, game_idx, mate_in_one) = params
 
@@ -65,7 +66,7 @@ def get_planes_from_pgn(params):
 
     results = get_planes_from_game(game, mate_in_one)
 
-    return metadata, game_idx, results[0], results[1], results[2], results[3]
+    return metadata, game_idx, results[0], results[1], results[2], results[3], results[4]
 
 
 def get_planes_from_game(game, mate_in_one=False):
@@ -85,6 +86,7 @@ def get_planes_from_game(game, mate_in_one=False):
               in this position
              plys_to_end - array of how many plys to the end of the game for each position.
               This can be used to apply discounting
+             phase_vector - array of the game phase of each position
     """
 
     fen_dic = {}  # A dictionary which maps the fen description to its number of occurrences
@@ -92,6 +94,7 @@ def get_planes_from_game(game, mate_in_one=False):
     y_value = []
     y_policy = []
     plys_to_end = []  # save the number of plys until the end of the game for each position that was considered
+    phase_vector = []  # save all phases that occurred during the game
     board = game.board()  # get the initial board state
     # update the y value accordingly
     if board.turn == chess.WHITE:
@@ -130,7 +133,9 @@ def get_planes_from_game(game, mate_in_one=False):
             # if specified phase is not None
             # check if the current game phase is the phase the dataset is created for
 
-            if main_config["phase"] is None or get_game_phase(board)[4] == main_config["phase"]:
+            curr_phase = get_game_phase(board)[4]
+
+            if main_config["phase"] is None or curr_phase == main_config["phase"]:
                 # build the last move vector by putting the most recent move on top followed by the remaining past moves
                 last_moves = [None] * NB_LAST_MOVES
                 if plys != 0:
@@ -149,6 +154,8 @@ def get_planes_from_game(game, mate_in_one=False):
                 y_policy.append(move_to_policy(next_move, mirror_policy=mirror_policy(board)))
                 plys_to_end.append(len(all_moves) - 1 - plys)
 
+                phase_vector.append(curr_phase)
+
         y_init *= -1  # flip the y_init value after each move
         board.push(move)  # push the next move on the board
 
@@ -158,4 +165,4 @@ def get_planes_from_game(game, mate_in_one=False):
         y_value = np.stack(y_value, axis=0)
         y_policy = np.stack(y_policy, axis=0)
 
-    return x, y_value, y_policy, plys_to_end
+    return x, y_value, y_policy, plys_to_end, phase_vector

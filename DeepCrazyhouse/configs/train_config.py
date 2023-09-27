@@ -132,4 +132,5 @@ class TrainObjects:
     momentum_schedule = None
     metrics = None
     variant_metrics = None
+    phase_weights = {0: 1., 1: 1., 2: 1.}
 

@@ -68,12 +68,12 @@ class TrainerAgentPytorch:
             self.sum_writer = SummaryWriter(log_dir=self.tc.export_dir+"logs", flush_secs=5)
         # Define the two loss functions
         if train_config.sparse_policy_label:
-            self.policy_loss = nn.CrossEntropyLoss()
+            self.policy_loss = SampleWeightedLoss(nn.CrossEntropyLoss)
         else:
-            self.policy_loss = SoftCrossEntropyLoss()
-        self.value_loss = nn.MSELoss()
-        self.wdl_loss = nn.CrossEntropyLoss()
-        self.ply_loss = nn.MSELoss()
+            self.policy_loss = SampleWeightedLoss(SoftCrossEntropyLoss)
+        self.value_loss = SampleWeightedLoss(nn.MSELoss)
+        self.wdl_loss = SampleWeightedLoss(nn.CrossEntropyLoss)
+        self.ply_loss = SampleWeightedLoss(nn.MSELoss)
 
         # Define the optimizer
         self.optimizer = create_optimizer(self._model, self.tc)
@@ -272,13 +272,22 @@ class TrainerAgentPytorch:
 
     def _get_train_loader(self, part_id):
         # load one chunk of the dataset from memory
-        _, self.x_train, self.yv_train, self.yp_train, self.plys_to_end, _ = load_pgn_dataset(dataset_type="train",
-                                                                                         part_id=part_id,
-                                                                                         normalize=self.tc.normalize,
-                                                                                         verbose=False,
-                                                                                         q_value_ratio=self.tc.q_value_ratio)
-        train_loader = get_data_loader(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, self.tc,
-                                       shuffle=True)
+
+        pgn_dataset_arrays_dict = load_pgn_dataset(
+            dataset_type="train",
+            part_id=part_id,
+            normalize=self.tc.normalize,
+            verbose=False,
+            q_value_ratio=self.tc.q_value_ratio)
+
+        self.x_train = pgn_dataset_arrays_dict["x"]
+        self.yv_train = pgn_dataset_arrays_dict["y_value"]
+        self.yp_train = pgn_dataset_arrays_dict["y_policy"]
+        self.plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
+        self.phase_vector = pgn_dataset_arrays_dict["phase_vector"]
+
+        train_loader = get_data_loader(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, self.phase_vector,
+                                       self.tc, shuffle=True)
 
         return train_loader
 
@@ -301,6 +310,7 @@ class TrainerAgentPytorch:
             self._model,
             nb_batches=25,
             ctx=self._ctx,
+            phase_weights=self.to.phase_weights,
             sparse_policy_label=self.tc.sparse_policy_label,
             apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
             use_wdl=self.tc.use_wdl,
@@ -312,6 +322,7 @@ class TrainerAgentPytorch:
             self._model,
             nb_batches=None,
             ctx=self._ctx,
+            phase_weights=self.to.phase_weights,
             sparse_policy_label=self.tc.sparse_policy_label,
             apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
             use_wdl=self.tc.use_wdl,
@@ -323,14 +334,16 @@ class TrainerAgentPytorch:
     def train_update(self, batch):
         self.optimizer.zero_grad()
         if self.tc.use_wdl and self.tc.use_plys_to_end:
-            data, value_label, policy_label, wdl_label, plys_label = batch
+            data, value_label, policy_label, wdl_label, plys_label, phase_vector = batch
             plys_label = plys_label.to(self._ctx)
             wdl_label = wdl_label.to(self._ctx).long()
         else:
-            data, value_label, policy_label = batch
+            data, value_label, policy_label, phase_vector = batch
         data = data.to(self._ctx)
         value_label = value_label.to(self._ctx)
         policy_label = policy_label.to(self._ctx)
+        sample_weights = torch.Tensor([self.to.phase_weights[phase] for phase in phase_vector])
+        sample_weights = sample_weights.to(self._ctx)
         if self.tc.sparse_policy_label:
             policy_label = policy_label.long()
         # update a dummy metric to see a proper progress bar
@@ -340,13 +353,13 @@ class TrainerAgentPytorch:
         self.old_label = value_label
         if self.tc.use_wdl and self.tc.use_plys_to_end:
             value_out, policy_out, _, wdl_out, plys_out = self._model(data)
-            wdl_loss = self.wdl_loss(wdl_out, wdl_label)
-            ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label)
+            wdl_loss = self.wdl_loss(wdl_out, wdl_label, sample_weights)
+            ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label, sample_weights)
         else:
             value_out, policy_out = self._model(data)
         # policy_out = policy_out.softmax(dim=1)
-        value_loss = self.value_loss(torch.flatten(value_out), value_label)
-        policy_loss = self.policy_loss(policy_out, policy_label)
+        value_loss = self.value_loss(torch.flatten(value_out), value_label, sample_weights)
+        policy_loss = self.policy_loss(policy_out, policy_label, sample_weights)
         # weight the components of the combined loss
         if self.tc.use_wdl and self.tc.use_wdl:
             combined_loss = (
@@ -435,6 +448,17 @@ class SoftCrossEntropyLoss(_Loss):
     def forward(self, input: Tensor, target: Tensor) -> Tensor:
         log_softmax = torch.nn.LogSoftmax(dim=1)
         return torch.mean(torch.sum(-target * log_softmax(input), 1))
+
+
+class SampleWeightedLoss(nn.Module):
+    def __init__(self, loss_module):
+        super(SampleWeightedLoss, self).__init__()
+        self.criterion = loss_module(reduction="none")
+
+    def forward(self, input: Tensor, target: Tensor, sample_weights: Tensor) -> Tensor:
+        losses = self.criterion(input, target)
+        weighted_losses = losses * sample_weights
+        return torch.mean(weighted_losses)
 
 
 def get_context(context: str, device_id: int):
@@ -629,7 +653,7 @@ def reset_metrics(metrics):
         metric.reset()
 
 
-def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_policy_label=False,
+def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weights, sparse_policy_label=False,
                      apply_select_policy_from_plane=True, use_wdl=False, use_plys_to_end=False):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
@@ -642,6 +666,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     :param nb_batches: Number of batches to evaluate (early stopping).
      If set to None all batches of the data_iterator will be evaluated
     :param ctx: Pytorch data context
+    :param phase_weights: dictionary with the weights of each phase as phase: weight kv pairs
     :param sparse_policy_label: Should be set to true if the policy uses one-hot encoded targets
      (e.g. supervised learning)
     :param apply_select_policy_from_plane: If true, given policy label is converted to policy map index
@@ -652,30 +677,35 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     with torch.no_grad():  # operations inside don't track history
         for i, batch in enumerate(data_iterator):
             if use_wdl and use_plys_to_end:
-                data, value_label, policy_label, wdl_label, plys_label = batch
+                data, value_label, policy_label, wdl_label, plys_label, phase_vector = batch
                 plys_label = plys_label.to(ctx)
                 wdl_label = wdl_label.to(ctx).long()
             else:
-                data, value_label, policy_label = batch
+                data, value_label, policy_label, phase_vector = batch
             data = data.to(ctx)
             value_label = value_label.to(ctx)
             policy_label = policy_label.to(ctx)
+            sample_weights = torch.Tensor([phase_weights[phase] for phase in phase_vector])
+            sample_weights = sample_weights.to(ctx)
 
             if use_wdl and use_plys_to_end:
                 value_out, policy_out, _, wdl_out, plys_out = model(data)
-                metrics["wdl_loss"].update(preds=wdl_out, labels=wdl_label)
-                metrics["wdl_acc"].update(preds=wdl_out.argmax(axis=1), labels=wdl_label)
-                metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out), labels=plys_label)
+                metrics["wdl_loss"].update(preds=wdl_out, labels=wdl_label, sample_weights=sample_weights)
+                metrics["wdl_acc"].update(preds=wdl_out.argmax(axis=1), labels=wdl_label, sample_weights=sample_weights)
+                metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out), labels=plys_label,
+                                                   sample_weights=sample_weights)
             else:
                 value_out, policy_out = model(data)
 
             # update the metrics
-            metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label)
+            metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label,
+                                         sample_weights=sample_weights)
             metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
-                                          labels=policy_label)
-            metrics["value_acc_sign"].update(preds=torch.flatten(value_out), labels=value_label)
+                                          labels=policy_label, sample_weights=sample_weights)
+            metrics["value_acc_sign"].update(preds=torch.flatten(value_out), labels=value_label,
+                                             sample_weights=sample_weights)
             metrics["policy_acc"].update(preds=policy_out.argmax(axis=1),
-                                         labels=policy_label)
+                                         labels=policy_label, sample_weights=sample_weights)
 
             # stop after evaluating x batches (only recommended to use this for the train set evaluation)
             if nb_batches and i+1 == nb_batches:
@@ -688,7 +718,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, sparse_poli
     return metric_values
 
 
-def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle=True):
+def get_data_loader(x, y_value, y_policy, plys_to_end, phase_vector, tc: TrainConfig, shuffle=True):
     """
     Returns a DataLoader object for the given numpy arrays.
     !Note: This function modifies the y_policy!
@@ -696,6 +726,7 @@ def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle=
     :param y_value: Value target
     :param y_policy: Policy target
     :param plys_to_end: Plys until the game ends
+    :param phase_vector: array of the game phase of each position
     :param tc: Training config object
     :param shuffle: Decide whether to shuffle the dataset or not
     :return: Returns the data loader object
@@ -707,11 +738,12 @@ def get_data_loader(x, y_value, y_policy, plys_to_end, tc: TrainConfig, shuffle=
     # update the train_data object
     if tc.use_wdl and tc.use_plys_to_end:
         dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
-                                      torch.Tensor(y_policy_prep),
-                                      torch.Tensor(value_to_wdl_label(y_value)),
-                                      torch.Tensor(prepare_plys_label(plys_to_end)))
+                                torch.Tensor(y_policy_prep),
+                                torch.Tensor(value_to_wdl_label(y_value)),
+                                torch.Tensor(prepare_plys_label(plys_to_end)),
+                                torch.Tensor(phase_vector))
     else:
         dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
-                                      torch.Tensor(y_policy_prep))
+                                torch.Tensor(y_policy_prep), torch.Tensor(phase_vector))
     train_loader = DataLoader(dataset, shuffle=shuffle, batch_size=tc.batch_size, num_workers=tc.cpu_count)
     return train_loader

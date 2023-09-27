@@ -19,13 +19,17 @@ def _load_dataset_file(dataset_filepath):
     """
     Loads a single dataset file give by its path
     :param dataset_filepath: path where the file is located
-    :return:starting_idx: [int] - List of indices where ech game starts
+    :return: pgn_dataset_arrays_dict: dict of {specific dataset part: numpy-array} with the following keys
+            starting_idx: [int] - List of indices where ech game starts
             x: nd.array - Numpy array which contains the game positions
             y_value: nd.array - Numpy array which describes the winner for each board position
             y_policy: nd.array - Numpy array which describes the policy distribution for each board state
                                  (in case of a pgn dataset the move is one hot encoded)
             plys_to_end - array of how many plys to the end of the game for each position.
              This can be used to apply discounting
+            y_best_move_q - Q-value for the position of the selected move
+             (this information is only available for generated data during selfplay)
+            phase_vector - array of the game phase of each position
     """
     return get_numpy_arrays(zarr.group(store=zarr.ZipStore(dataset_filepath, mode="r")))
 
@@ -44,7 +48,7 @@ def load_pgn_dataset(
     ! Note this only supported for hist-length=1 at the moment
     :param q_value_ratio: Ratio for mixing the value return with the corresponding q-value
     For a ratio of 0 no q-value information will be used. Value must be in [0, 1]
-    :return: numpy-arrays:
+    :return: pgn_dataset_arrays_dict: dict of {specific dataset part: numpy-array} with the following keys
             start_indices - defines the index where each game starts
             x - the board representation for all games
             y_value - the game outcome (-1,0,1) for each board position
@@ -52,6 +56,7 @@ def load_pgn_dataset(
             plys_to_end - array of how many plys to the end of the game for each position.
              This can be used to apply discounting
             pgn_datasets - the dataset file handle (you can use .tree() to show the file structure)
+            phase_vector - array of the game phase of each position
     """
 
     if dataset_type == "train":
@@ -78,7 +83,15 @@ def load_pgn_dataset(
         logging.debug("")
 
     pgn_dataset = zarr.group(store=zarr.ZipStore(pgn_datasets[part_id], mode="r"))
-    start_indices, x, y_value, y_policy, plys_to_end, y_best_move_q = get_numpy_arrays(pgn_dataset)  # Get the data
+    # Get the data
+    pgn_dataset_arrays_dict = get_numpy_arrays(pgn_dataset)
+    start_indices = pgn_dataset_arrays_dict["start_indices"]
+    x = pgn_dataset_arrays_dict["x"]
+    y_value = pgn_dataset_arrays_dict["y_value"]
+    y_policy = pgn_dataset_arrays_dict["y_policy"]
+    plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
+    y_best_move_q = pgn_dataset_arrays_dict["y_best_move_q"]
+    phase_vector = pgn_dataset_arrays_dict["phase_vector"]
 
     if verbose:
         logging.info("STATISTICS:")
@@ -105,7 +118,15 @@ def load_pgn_dataset(
         y_policy = y_policy.astype(np.float32)
         # apply rescaling using a predefined scaling constant (this makes use of vectorized operations)
         x *= MATRIX_NORMALIZER
-    return start_indices, x, y_value, y_policy, plys_to_end, pgn_dataset
+
+    pgn_dataset_arrays_dict = {"start_indices": start_indices,
+                               "x": x,
+                               "y_value": y_value,
+                               "y_policy": y_policy,
+                               "plys_to_end": plys_to_end,
+                               "pgn_dataset": pgn_dataset,
+                               "phase_vector": phase_vector}
+    return pgn_dataset_arrays_dict
 
 
 def load_xiangqi_dataset(dataset_type="train", part_id=0, verbose=True, normalize=False):
