@@ -17,7 +17,7 @@ if __name__ == "__main__":
     batch_sizes = [1, 8, 16, 32, 64]
     matchups = [("correct_phases", "no_phases"),]
                 #("specific_opening", "no_phases"),
-                #("specific_midgame", "no_phases"),
+                #("no_phases", "specific_endgame"),]
                 #("specific_endgame", "no_phases")]
     y_lim = (-10, 175)
     plys_ylim = (70, 140)
@@ -33,6 +33,8 @@ if __name__ == "__main__":
         for batch_size in batch_sizes:
             curr_bs_df = nodes_experiments_df[nodes_experiments_df["bsize"] == batch_size]
             plt.plot(curr_bs_df["nodes"], curr_bs_df["A_elo_diff"], label=f"Batch Size: {batch_size}", marker=".")
+            plt.fill_between(x=curr_bs_df["nodes"], y1=curr_bs_df["A_elo_diff"] + curr_bs_df["A_elo_err"],
+                             y2=curr_bs_df["A_elo_diff"] - curr_bs_df["A_elo_err"], alpha=0.2)
         plt.axhline(y=0, color="black", linestyle="-")
         plt.xlabel("Number of Nodes")
         plt.ylabel("Relative Elo")
@@ -49,6 +51,8 @@ if __name__ == "__main__":
         for batch_size in batch_sizes:
             curr_movetime_df = movetime_experiments_df[movetime_experiments_df["bsize"] == batch_size]
             plt.plot(curr_movetime_df["movetime"], curr_movetime_df["A_elo_diff"], label=f"Batch Size: {batch_size}", marker=".")
+            plt.fill_between(x=curr_movetime_df["movetime"], y1=curr_movetime_df["A_elo_diff"] + curr_movetime_df["A_elo_err"],
+                             y2=curr_movetime_df["A_elo_diff"] - curr_movetime_df["A_elo_err"], alpha=0.2)
         plt.axhline(y=0, color="black", linestyle="-")
         plt.xlabel("Movetime [ms]")
         plt.ylabel("Relative Elo")

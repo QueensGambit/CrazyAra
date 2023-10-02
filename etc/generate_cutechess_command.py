@@ -7,11 +7,11 @@ Created on 21.09.2023
 Generates the command for running a cutechess experiment based on the given parameters
 """
 
-device = 4
-batch_size = 16
+device = 1
+batch_size = 64
 nodes = 800
 movetime = 0
-player_a = "specific_opening"
+player_a = "correct_phases_weighted"
 player_b = "no_phases"
 
 pgnout = f"/data/cutechess_results/{player_a}_vs_{player_b}_movetime{movetime}_nodes{nodes}_bs{batch_size}.pgn"

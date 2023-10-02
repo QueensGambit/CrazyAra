@@ -59,9 +59,9 @@ class TrainConfig:
     k_steps_initial: int = 0
     # these are the weights to continue training with
     # symbol_file = 'model_init-symbol.json' # model-1.19246-0.603-symbol.json'
-    # params_file = 'model_init-0000.params' # model-1.19246-0.603-0223.params'
+    # tar_file = 'model_init-0000.params' # model-1.19246-0.603-0223.params'
     symbol_file: str = ''
-    params_file: str = ''
+    tar_file: str = ''
 
     # # optimization parameters
     optimizer_name: str = "nag"
