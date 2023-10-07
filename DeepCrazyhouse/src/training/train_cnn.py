@@ -118,17 +118,17 @@ tc.context = "gpu"
 tc.device_id = 10
 
 # set a specific seed value for reproducibility
-tc.seed = 17 # 42
+tc.seed = 9 # 42
 
 tc.export_weights = True
 tc.log_metrics_to_tensorboard = True
 tc.export_grad_histograms = False
 
-phase_weights = {0: 0.25, 1: 0.25, 2: 1}  # specify the sample weight for each phase (will be normalized afterwards)
+phase_weights = {0: 1.0, 1: 1.0, 2: 1.0}  # specify the sample weight for each phase (will be normalized afterwards)
 
 # directory to write and read weights, logs, onnx and other export files
 #tc.export_dir = "C:/workspace/Python/CrazyAra/data/train_phase2/"
-tc.export_dir = f"/data/train_phase_None_0_25_0_25_1_0_cont/"
+tc.export_dir = f"/data/run_model_exports/train_phase_None_0_25_0_25_1_0_cont/"
 
 tc.div_factor = 0.5  # div factor is a constant which can be used to reduce the batch size and learning rate respectively
 # use a value greater 1 if you encounter memory allocation errors
@@ -140,7 +140,7 @@ tc.batch_steps = 1000 * tc.div_factor # this defines how often a new checkpoint 
 tc.k_steps_initial = 0
 # these are the weights to continue training with
 tc.symbol_file = None # 'model-0.81901-0.713-symbol.json'
-tc.tar_file = f"/data/train_phase_None_0_25_0_25_1_0/best-model/model-1.25307-0.567-0529.tar" #'model-0.81901-0.713-0498.params'  # used to continue training from model params checkpoint
+tc.tar_file = None # f"/data/run_model_exports/train_phase_None_0_25_0_25_1_0/best-model/model-1.25307-0.567-0529.tar" #'model-0.81901-0.713-0498.params'  # used to continue training from model params checkpoint
 
 tc.batch_size = int(1024 / tc.div_factor) # 1024 # the batch_size needed to be reduced to 1024 in order to fit in the GPU 1080Ti
 #4096 was originally used in the paper -> works slower for current GPU
