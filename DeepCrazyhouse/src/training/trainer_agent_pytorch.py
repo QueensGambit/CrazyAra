@@ -310,6 +310,7 @@ class TrainerAgentPytorch:
         logging.debug("Iteration %d/%d", self.cur_it, self.tc.total_it)
         logging.debug("lr: %.7f - momentum: %.7f", self.to.lr_schedule(self.cur_it),
                       self.to.momentum_schedule(self.cur_it))
+        print("starting train eval")
         train_metric_values = evaluate_metrics(
             self.to.metrics,
             train_loader,
@@ -322,6 +323,8 @@ class TrainerAgentPytorch:
             use_wdl=self.tc.use_wdl,
             use_plys_to_end=self.tc.use_plys_to_end,
         )
+
+        print("starting val eval")
         val_metric_values = evaluate_metrics(
             self.to.metrics,
             self._val_loader,
@@ -338,6 +341,7 @@ class TrainerAgentPytorch:
         # do additional evaluations based on self.additional_loaders
         additional_metric_values = dict()
         for dataset_name, dataloader in self.additional_loaders.items():
+            print(f"starting {dataset_name} eval")
             metric_values = evaluate_metrics(
                 self.to.metrics,
                 dataloader,
@@ -699,6 +703,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
     reset_metrics(metrics)
     model.eval()  # set model to evaluation mode
     with torch.no_grad():  # operations inside don't track history
+        print("eval iterator length:", len(data_iterator), "eval phase weights:", phase_weights)
         for i, batch in enumerate(data_iterator):
             if use_wdl and use_plys_to_end:
                 data, value_label, policy_label, wdl_label, plys_label, phase_vector = batch
