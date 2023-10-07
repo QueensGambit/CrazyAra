@@ -274,6 +274,26 @@ plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
 pgn_datasets_val = pgn_dataset_arrays_dict["pgn_dataset"]
 phase_vector = pgn_dataset_arrays_dict["phase_vector"]
 
+# fill additional loaders that should be used for additional evaluations during training
+if tc.framework == 'pytorch':
+    additional_data_loaders = dict()
+    for phase in ["0", "1", "2", "None"]:
+        pgn_dataset_arrays_dict = load_pgn_dataset(dataset_type='test', part_id=0,
+                                                   verbose=True, normalize=tc.normalize, phase=phase)
+        s_idcs_val = pgn_dataset_arrays_dict["start_indices"]
+        x_val = pgn_dataset_arrays_dict["x"]
+        yv_val = pgn_dataset_arrays_dict["y_value"]
+        yp_val = pgn_dataset_arrays_dict["y_policy"]
+        plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
+        pgn_datasets_val = pgn_dataset_arrays_dict["pgn_dataset"]
+        phase_vector = pgn_dataset_arrays_dict["phase_vector"]
+
+        if tc.discount != 1:
+            yv_val *= tc.discount**plys_to_end
+
+        data_loader = get_data_loader(x_val, yv_val, yp_val, plys_to_end, phase_vector, tc, shuffle=False)
+        additional_data_loaders[f"Phase{phase}Test"] = data_loader
+
 if tc.discount != 1:
     yv_val *= tc.discount**plys_to_end
     
@@ -309,7 +329,7 @@ tc.nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
 nb_it_per_epoch = (len(x_val) * tc.nb_parts) // tc.batch_size # calculate how many iterations per epoch exist
 # one iteration is defined by passing 1 batch and doing backprop
 tc.total_it = int(nb_it_per_epoch * tc.nb_training_epochs)
-tc.total_it
+print(tc.total_it)
 
 
 # ### Define a Learning Rate schedule
@@ -343,7 +363,7 @@ plot_schedule(to.momentum_schedule, iterations=tc.total_it, ylabel='Momentum')
 
 
 input_shape = x_val[0].shape
-input_shape
+print(input_shape)
 
 
 # In[ ]:
@@ -614,7 +634,7 @@ elif tc.framework == 'gluon':
     shape={'data':(1, input_shape[0], input_shape[1], input_shape[2])},
     ) 
 elif tc.framework == 'pytorch':
-    summary(model, (input_shape[0], input_shape[1], input_shape[2]), device="cpu")
+    print(summary(model, (input_shape[0], input_shape[1], input_shape[2]), device="cpu"))
 
 
 # ## Analyze the Flops
@@ -693,7 +713,8 @@ if tc.framework == 'mxnet':
 elif tc.framework == 'gluon':
     train_agent = TrainerAgentGluon(net, val_data, tc, to, use_rtpt=True)
 elif tc.framework == 'pytorch':
-    train_agent = TrainerAgentPytorch(model, val_data, tc, to, use_rtpt=True)
+    train_agent = TrainerAgentPytorch(model, val_data, tc, to, use_rtpt=True,
+                                      additional_loaders=additional_data_loaders)
 
 
 # ## Performance Pre-Training
@@ -916,7 +937,7 @@ policy_to_best_move(board, yp_val[idx])
 
 opts = 5
 selected_moves, probs = policy_to_moves(board, pred[1][0])
-selected_moves[:opts]
+print(selected_moves[:opts])
 
 
 # In[ ]:
@@ -938,7 +959,7 @@ board.push_uci('f1c4')
 board.push_uci('b8c6')
 board.push_uci('d1h5')
 x_scholar_atck = board_to_planes(board, normalize=tc.normalize, mode=mode)
-board
+print(board)
 
 
 # In[ ]:
@@ -957,7 +978,7 @@ ax.set_yticklabels(selected_moves[:opts])
 
 
 board.push(selected_moves[0])
-board
+print(board)
 
 
 # ### Performance on test dataset
@@ -985,9 +1006,9 @@ test_data = get_data_loader(x_test, yv_test, yp_test, yplys_test, phase_vector_t
 if tc.framework == 'mxnet':
     metrics = metrics_gluon
 
-evaluate_metrics(to.metrics, test_data, net, nb_batches=None, sparse_policy_label=tc.sparse_policy_label, ctx=ctx,
+print(evaluate_metrics(to.metrics, test_data, net, nb_batches=None, sparse_policy_label=tc.sparse_policy_label, ctx=ctx,
                  phase_weights=to.phase_weights, apply_select_policy_from_plane=tc.select_policy_from_plane,
-                 use_wdl=tc.use_wdl, use_plys_to_end=tc.use_plys_to_end)
+                 use_wdl=tc.use_wdl, use_plys_to_end=tc.use_plys_to_end))
 
 
 # ### Show result on mate-in-one problems
@@ -1015,9 +1036,9 @@ mate_data = get_data_loader(x_mate, yv_mate, yp_mate, yplys_mate, phase_vector_m
 # In[ ]:
 
 
-evaluate_metrics(to.metrics, mate_data, net, nb_batches=None, sparse_policy_label=tc.sparse_policy_label, ctx=ctx,
+print(evaluate_metrics(to.metrics, mate_data, net, nb_batches=None, sparse_policy_label=tc.sparse_policy_label, ctx=ctx,
                  phase_weights=to.phase_weights, apply_select_policy_from_plane=tc.select_policy_from_plane,
-                 use_wdl=tc.use_wdl, use_plys_to_end=tc.use_plys_to_end)
+                 use_wdl=tc.use_wdl, use_plys_to_end=tc.use_plys_to_end))
 
 
 # ### Show some example mate problems
@@ -1101,13 +1122,13 @@ for i in range(nb_pos):
 # In[ ]:
 
 
-np.array(mate_mv_cnts).mean()
+print(np.array(mate_mv_cnts).mean())
 
 
 # In[ ]:
 
 
-np.array(legal_mv_cnts).mean()
+print(np.array(legal_mv_cnts).mean())
 
 
 # ### Random Guessing Baseline
@@ -1115,7 +1136,7 @@ np.array(legal_mv_cnts).mean()
 # In[ ]:
 
 
-np.array(mate_mv_cnts).mean() / np.array(legal_mv_cnts).mean()
+print(np.array(mate_mv_cnts).mean() / np.array(legal_mv_cnts).mean())
 
 
 # ### Prediciton Performance
@@ -1129,21 +1150,21 @@ print('mate_in_one_acc:', sum(mates_found) / nb_pos)
 # In[ ]:
 
 
-sum(mates_5_top_found) / nb_pos
+print(sum(mates_5_top_found) / nb_pos)
 
 
 # In[ ]:
 
 
-pgn_dataset_mate.tree()
+print(pgn_dataset_mate.tree())
 
 
 # In[ ]:
 
 
 metadata = np.array(pgn_dataset_mate['metadata'])
-metadata[0, :]
-metadata[1, :]
+print(metadata[0, :])
+print(metadata[1, :])
 
 
 # In[ ]:

@@ -35,7 +35,7 @@ def _load_dataset_file(dataset_filepath):
 
 
 def load_pgn_dataset(
-    dataset_type="train", part_id=0, verbose=True, normalize=False, q_value_ratio=0,
+    dataset_type="train", part_id=0, verbose=True, normalize=False, q_value_ratio=0, phase=None
 ):
     """
     Loads one part of the pgn dataset in form of planes / multidimensional numpy array.
@@ -47,6 +47,7 @@ def load_pgn_dataset(
     :param normalize: True if the inputs shall be normalized to 0-1
     ! Note this only supported for hist-length=1 at the moment
     :param q_value_ratio: Ratio for mixing the value return with the corresponding q-value
+    :param phase: if specified use planes dataset of this phase. If None, the phase specified in main_config is used
     For a ratio of 0 no q-value information will be used. Value must be in [0, 1]
     :return: pgn_dataset_arrays_dict: dict of {specific dataset part: numpy-array} with the following keys
             start_indices - defines the index where each game starts
@@ -59,14 +60,11 @@ def load_pgn_dataset(
             phase_vector - array of the game phase of each position
     """
 
-    if dataset_type == "train":
-        zarr_filepaths = glob.glob(main_config["planes_train_dir"] + "**/*.zip")
-    elif dataset_type == "val":
-        zarr_filepaths = glob.glob(main_config["planes_val_dir"] + "**/*.zip")
-    elif dataset_type == "test":
-        zarr_filepaths = glob.glob(main_config["planes_test_dir"] + "**/*.zip")
-    elif dataset_type == "mate_in_one":
-        zarr_filepaths = glob.glob(main_config["planes_mate_in_one_dir"] + "**/*.zip")
+    if dataset_type in ["train", "val", "test", "mate_in_one"]:
+        if phase is None:
+            zarr_filepaths = glob.glob(main_config[f"planes_{dataset_type}_dir"] + "**/*.zip")
+        else:
+            zarr_filepaths = glob.glob(main_config["default_dir"] + f"planes/phase{phase}/{dataset_type}/" + "**/*.zip")
     else:
         raise Exception(
             'Invalid dataset type "%s" given. It must be either "train", "val", "test" or "mate_in_one"' % dataset_type

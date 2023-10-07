@@ -35,6 +35,7 @@ main_config = {
     # The mate_in_one directory includes games from the month:      lichess_db_standard_rated_2015-08.pgn
 
     "phase": phase,
+    "default_dir": default_dir,
 
     # The pgn directories contain all files which are converted to plane representation
     "pgn_train_dir": default_dir + "pgn/train/",

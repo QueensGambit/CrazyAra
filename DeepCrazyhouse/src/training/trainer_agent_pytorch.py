@@ -44,6 +44,7 @@ class TrainerAgentPytorch:
         train_config: TrainConfig,
         train_objects: TrainObjects,
         use_rtpt: bool,
+        additional_loaders=None
     ):
         """
         Class for training the neural network.
@@ -52,7 +53,10 @@ class TrainerAgentPytorch:
         :param train_config: An instance of the TrainConfig data class.
         :param train_objects: Am instance pf the TrainObject data class.
         :param use_rtpt: If True, an RTPT object will be created and modified within this class.
+        :param additional_loaders: optional dictionary of {dataset_name: DataLoader} whose dataloaders will also be
+         used for evaluation (only used for informative purposes)
         """
+        self.additional_loaders = additional_loaders
         self.tc = train_config
         self.to = train_objects
         if self.to.metrics is None:
@@ -131,7 +135,7 @@ class TrainerAgentPytorch:
                         self.graph_exported = True
 
                     if self.batch_proc_tmp >= self.tc.batch_steps or self.cur_it >= self.tc.total_it:  # show metrics every thousands steps
-                        train_metric_values, val_metric_values = self.evaluate(train_loader)
+                        train_metric_values, val_metric_values, additional_metric_values = self.evaluate(train_loader)
 
                         if self.use_rtpt:
                             # update process title according to loss
@@ -183,6 +187,8 @@ class TrainerAgentPytorch:
                             # log the metric values to tensorboard
                             self._log_metrics(train_metric_values, global_step=self.k_steps, prefix="train_")
                             self._log_metrics(val_metric_values, global_step=self.k_steps, prefix="val_")
+                            for dataset_name, metric_values in additional_metric_values.items():
+                                self._log_metrics(metric_values, global_step=self.k_steps, prefix=f"{dataset_name}_")
 
                             if self.tc.log_metrics_to_tensorboard and self.tc.export_grad_histograms:
                                 grads = []
@@ -328,8 +334,26 @@ class TrainerAgentPytorch:
             use_wdl=self.tc.use_wdl,
             use_plys_to_end=self.tc.use_plys_to_end,
         )
+
+        # do additional evaluations based on self.additional_loaders
+        additional_metric_values = dict()
+        for dataset_name, dataloader in self.additional_loaders.items():
+            metric_values = evaluate_metrics(
+                self.to.metrics,
+                dataloader,
+                self._model,
+                nb_batches=None,
+                ctx=self._ctx,
+                phase_weights={k: 1.0 for k, v in self.to.phase_weights.items()},  # use no weighting
+                sparse_policy_label=self.tc.sparse_policy_label,
+                apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
+                use_wdl=self.tc.use_wdl,
+                use_plys_to_end=self.tc.use_plys_to_end,
+            )
+            additional_metric_values[dataset_name] = metric_values
+
         self._model.train()  # return back to training mode
-        return train_metric_values, val_metric_values
+        return train_metric_values, val_metric_values, additional_metric_values
 
     def train_update(self, batch):
         self.optimizer.zero_grad()
