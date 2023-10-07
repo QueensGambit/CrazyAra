@@ -274,26 +274,6 @@ plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
 pgn_datasets_val = pgn_dataset_arrays_dict["pgn_dataset"]
 phase_vector = pgn_dataset_arrays_dict["phase_vector"]
 
-# fill additional loaders that should be used for additional evaluations during training
-if tc.framework == 'pytorch':
-    additional_data_loaders = dict()
-    for phase in ["0", "1", "2", "None"]:
-        pgn_dataset_arrays_dict = load_pgn_dataset(dataset_type='test', part_id=0,
-                                                   verbose=True, normalize=tc.normalize, phase=phase)
-        s_idcs_val = pgn_dataset_arrays_dict["start_indices"]
-        x_val = pgn_dataset_arrays_dict["x"]
-        yv_val = pgn_dataset_arrays_dict["y_value"]
-        yp_val = pgn_dataset_arrays_dict["y_policy"]
-        plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
-        pgn_datasets_val = pgn_dataset_arrays_dict["pgn_dataset"]
-        phase_vector = pgn_dataset_arrays_dict["phase_vector"]
-
-        if tc.discount != 1:
-            yv_val *= tc.discount**plys_to_end
-
-        data_loader = get_data_loader(x_val, yv_val, yp_val, plys_to_end, phase_vector, tc, shuffle=False)
-        additional_data_loaders[f"Phase{phase}Test"] = data_loader
-
 if tc.discount != 1:
     yv_val *= tc.discount**plys_to_end
     
@@ -316,6 +296,26 @@ if tc.framework == 'mxnet':
 elif tc.framework == 'gluon' or tc.framework == 'pytorch':
     val_data = get_data_loader(x_val, yv_val, yp_val, plys_to_end, phase_vector, tc, shuffle=False)
 
+
+# fill additional loaders that should be used for additional evaluations during training
+if tc.framework == 'pytorch':
+    additional_data_loaders = dict()
+    for phase in ["0", "1", "2", "None"]:
+        pgn_dataset_arrays_dict = load_pgn_dataset(dataset_type='test', part_id=0,
+                                                   verbose=True, normalize=tc.normalize, phase=phase)
+        s_idcs_val = pgn_dataset_arrays_dict["start_indices"]
+        x_val = pgn_dataset_arrays_dict["x"]
+        yv_val = pgn_dataset_arrays_dict["y_value"]
+        yp_val = pgn_dataset_arrays_dict["y_policy"]
+        plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
+        pgn_datasets_val = pgn_dataset_arrays_dict["pgn_dataset"]
+        phase_vector = pgn_dataset_arrays_dict["phase_vector"]
+
+        if tc.discount != 1:
+            yv_val *= tc.discount**plys_to_end
+
+        data_loader = get_data_loader(x_val, yv_val, yp_val, plys_to_end, phase_vector, tc, shuffle=False)
+        additional_data_loaders[f"Phase{phase}Test"] = data_loader
 
 # In[ ]:
 
