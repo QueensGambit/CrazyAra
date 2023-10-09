@@ -98,7 +98,7 @@ def load_pgn_dataset(
                 print(member, list(pgn_dataset["statistics"][member]))
         except KeyError:
             logging.warning("no statistics found")
-
+        print("total_positions", f"[{len(y_value)}]")
         logging.info("PARAMETERS:")
         try:
             for member in pgn_dataset["parameters"]:

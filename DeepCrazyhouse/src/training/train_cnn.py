@@ -115,7 +115,7 @@ if tc.framework == 'mxnet' or tc.framework == 'gluon':
 
 # set the context on CPU, switch to GPU if there is one available (strongly recommended for training)
 tc.context = "gpu"
-tc.device_id = 10
+tc.device_id = 0
 
 # set a specific seed value for reproducibility
 tc.seed = 9 # 42
@@ -303,18 +303,18 @@ if tc.framework == 'pytorch':
     for phase in ["0", "1", "2", "None"]:
         pgn_dataset_arrays_dict = load_pgn_dataset(dataset_type='test', part_id=0,
                                                    verbose=True, normalize=tc.normalize, phase=phase)
-        s_idcs_val = pgn_dataset_arrays_dict["start_indices"]
-        x_val = pgn_dataset_arrays_dict["x"]
-        yv_val = pgn_dataset_arrays_dict["y_value"]
-        yp_val = pgn_dataset_arrays_dict["y_policy"]
-        plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
-        pgn_datasets_val = pgn_dataset_arrays_dict["pgn_dataset"]
-        phase_vector = pgn_dataset_arrays_dict["phase_vector"]
+        s_idcs_val_tmp = pgn_dataset_arrays_dict["start_indices"]
+        x_val_tmp = pgn_dataset_arrays_dict["x"]
+        yv_val_tmp = pgn_dataset_arrays_dict["y_value"]
+        yp_val_tmp = pgn_dataset_arrays_dict["y_policy"]
+        plys_to_end_tmp = pgn_dataset_arrays_dict["plys_to_end"]
+        pgn_datasets_val_tmp = pgn_dataset_arrays_dict["pgn_dataset"]
+        phase_vector_tmp = pgn_dataset_arrays_dict["phase_vector"]
 
         if tc.discount != 1:
-            yv_val *= tc.discount**plys_to_end
+            yv_val_tmp *= tc.discount**plys_to_end_tmp
 
-        data_loader = get_data_loader(x_val, yv_val, yp_val, plys_to_end, phase_vector, tc, shuffle=False)
+        data_loader = get_data_loader(x_val_tmp, yv_val_tmp, yp_val_tmp, plys_to_end_tmp, phase_vector_tmp, tc, shuffle=False)
         additional_data_loaders[f"Phase{phase}Test"] = data_loader
 
 # In[ ]:
