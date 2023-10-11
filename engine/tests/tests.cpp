@@ -1616,6 +1616,26 @@ TEST_CASE("Atomic Input Planes V3") {
     REQUIRE(stats.key == 5932976);
     REQUIRE(stats.argMax == 4736);
     REQUIRE(state.fen() == string("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
+
+    state.set("r2qk2r/p6p/3p1ppb/3Pp1BP/1p2P1b1/3Q1P2/PPP3P1/R3K2R b KQkq - 1 14", false, variant);
+    string move = "d8b6";
+    state.do_action(state.uci_to_action(move));
+    move = "d3b5";
+    state.do_action(state.uci_to_action(move));
+
+    stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1433);
+    REQUIRE(stats.maxNum == 7);
+    REQUIRE(stats.key == 5420051);
+    REQUIRE(stats.argMax == 4736);
+    REQUIRE(state.fen() == string("r3k2r/p6p/1q1p1ppb/1Q1Pp1BP/1p2P1b1/5P2/PPP3P1/R3K2R b KQkq - 3 15"));
+
+    stats = get_planes_statistics(state, true, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(516.84, 0.001));
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(1470726.04, 0.001));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("r3k2r/p6p/1q1p1ppb/1Q1Pp1BP/1p2P1b1/5P2/PPP3P1/R3K2R b KQkq - 3 15"));
 }
 #endif
 
