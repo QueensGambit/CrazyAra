@@ -11,7 +11,7 @@ Copy and rename this file to main_config.py and adjust the paths accordingly.
 
 # define the default dir where the training data in plane representation is located
 # e.g. for supervised learning default_dir = "/data/planes/"
-default_dir = "/data/kingbase2019_lite_pgn_months/"
+default_dir = "/data/chess960_pgns/"
 #default_dir = "C:/workspace/Python/CrazyAra/data/kingbase2019_lite_pgn_months/"
 phase = None  # set to None to treat everything as a single phase
 
@@ -81,6 +81,6 @@ main_config = {
     # Available modes:  0: MODE_CRAZYHOUSE    (crazyhouse only mode, no 960) available versions [1, 2, 3]
     #                   1: MODE_LICHESS       (all available lichess variants) available versions [1, 2 (last_moves)]
     #                   2: MODE_CHESS         (chess only mode, with 960) available versions [1, 2, 3]
-    "mode": 2,
-    "version": 3,
+    "mode": 1,
+    "version": 2,
 }
