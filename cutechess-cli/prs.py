@@ -431,9 +431,9 @@ if __name__ == "__main__":
         if os.path.isfile(f) and filename[-4:] == ".pgn":
             print(filename, f)
             numbers_in_filename = re.findall(r'\d+', filename)
-            bsize = int(numbers_in_filename[2])
-            movetime = int(numbers_in_filename[0])
-            nodes = int(numbers_in_filename[1])
+            bsize = int(numbers_in_filename[-1])
+            movetime = int(numbers_in_filename[-3])
+            nodes = int(numbers_in_filename[-2])
             simuls = nodes*2
 
             data, summary_table_content, plys_agg_info, color_agg_info = process_pgn(f)
