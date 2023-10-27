@@ -555,9 +555,8 @@ bool CrazyAra::is_ready()
 {
     bool hasReplied = false;
     if (!networkLoaded) {
-        // clear existing NeuralNetAPI vectors by swapping with an empty vector
-        netSingleVector.swap(vector<unique_ptr<NeuralNetAPI>>());
-        netBatchesVector.swap(vector<vector<unique_ptr<NeuralNetAPI>>>());
+        netSingleVector.clear();
+        netBatchesVector.clear();
         const size_t timeoutMS = Options["Timeout_MS"];
         TimeOutReadyThread timeoutThread(timeoutMS);
         thread tTimeoutThread;
