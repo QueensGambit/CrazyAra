@@ -1639,5 +1639,31 @@ TEST_CASE("Atomic Input Planes V3") {
 }
 #endif
 
+TEST_CASE("Chess960 Input Planes V3") {
+    init();
+    int variant = StateConstants::variant_to_int("chess");
+    BoardState state;
+    state.set("b1qnrnkr/p2ppppp/1p6/2p1b3/2P5/4N1P1/PP1PPP1P/BBQNRK1R b he - 1 4", true, variant);
+    const uint nbValuesTotal = 52 * StateConstants::NB_SQUARES();
+
+    vector<float> planes(nbValuesTotal);
+    state.get_state_planes(false, planes.data(), make_version<3,0,0>());
+
+    // starting position test
+    PlaneStatistics stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1312);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3512322);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(state.fen() == string("b1qnrnkr/p2ppppp/1p6/2p1b3/2P5/4N1P1/PP1PPP1P/BBQNRK1R b he - 1 4"));
+
+    stats = get_planes_statistics(state, true, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(409.28, 0.001));
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(823554.8, 0.001));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("b1qnrnkr/p2ppppp/1p6/2p1b3/2P5/4N1P1/PP1PPP1P/BBQNRK1R b he - 1 4"));
+}
+
 #endif
 
