@@ -1649,7 +1649,7 @@ TEST_CASE("Chess960 Input Planes V3") {
     vector<float> planes(nbValuesTotal);
     state.get_state_planes(false, planes.data(), make_version<3,0,0>());
 
-    // starting position test
+    // custom position test
     PlaneStatistics stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
     REQUIRE(stats.sum == 1312);
     REQUIRE(stats.maxNum == 8);
@@ -1657,6 +1657,7 @@ TEST_CASE("Chess960 Input Planes V3") {
     REQUIRE(stats.argMax == 3008);
     REQUIRE(state.fen() == string("b1qnrnkr/p2ppppp/1p6/2p1b3/2P5/4N1P1/PP1PPP1P/BBQNRK1R b he - 1 4"));
 
+    // normalize = true test
     stats = get_planes_statistics(state, true, make_version<3,0,0>(), nbValuesTotal);
     REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(409.28, 0.001));
     REQUIRE(stats.maxNum == 1);
