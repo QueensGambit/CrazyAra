@@ -1291,7 +1291,7 @@ void Node::print_node_statistics(const StateObj* state, const vector<size_t>& cu
         cout << endl;
     }
     cout << filler << endl
-         << "initial value:\t" << get_value() << endl
+         << "value:\t" << get_value() << endl
          << "nodeType:\t" << node_type_to_string(NodeType(d->nodeType)) << endl
          << "isTerminal:\t" << is_terminal() << endl
          << "isTablebase:\t" << is_tablebase() << endl
