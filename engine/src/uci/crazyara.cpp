@@ -62,7 +62,6 @@ CrazyAra::CrazyAra():
     useRawNetwork(false),      // will be initialized in init_search_settings()
     networkLoaded(false),
     ongoingSearch(false),
-    is960(false),
     changedUCIoption(false)
 {
 }
@@ -82,7 +81,7 @@ void CrazyAra::uci_loop(int argc, char *argv[])
     string token, cmd;
     EvalInfo evalInfo;
     variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
-    state->set(StateConstants::start_fen(variant), is960, variant);
+    state->set(StateConstants::start_fen(variant), Options["UCI_Chess960"], variant);
 
     for (int i = 1; i < argc; ++i)
         cmd += string(argv[i]) + " ";
@@ -224,7 +223,7 @@ void CrazyAra::go(const string& fen, string goCommand, EvalInfo& evalInfo)
     string token, cmd;
 
     variant = StateConstants::variant_to_int(Options["UCI_Variant"]);
-    state->set(StateConstants::start_fen(variant), is960, variant);
+    state->set(StateConstants::start_fen(variant), Options["UCI_Chess960"], variant);
 
     istringstream is("fen " + fen);
 
@@ -271,7 +270,7 @@ void CrazyAra::position(StateObj* state, istringstream& is)
     else
         return;
 
-    state->set(fen, is960, variant);
+    state->set(fen, Options["UCI_Chess960"], variant);
     Action lastMove = ACTION_NONE;
 
     // Parse move list (if any)
@@ -573,7 +572,7 @@ bool CrazyAra::is_ready()
         netBatches.front()->validate_neural_network();
         mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
-        StateConstants::init(mctsAgent->is_policy_map(), is960);
+        StateConstants::init(mctsAgent->is_policy_map(), Options["UCI_Chess960"]);
         timeoutThread.kill();
         if (timeoutMS != 0) {
             tTimeoutThread.join();
@@ -652,14 +651,14 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
 #ifdef SUPPORT960
     const bool prevIs960 = Options["UCI_Chess960"];
 #else
-    const bool prevIs960 = is960;
+    const bool prevIs960 = false;
 #endif
 
     OptionsUCI::setoption(is, variant, state);
 #ifdef SUPPORT960
     const bool curIs960 = Options["UCI_Chess960"];
 #else
-    const bool curIs960 = is960;
+    const bool curIs960 = false;
 #endif
     changedUCIoption = true;
     if (networkLoaded) {
@@ -732,9 +731,6 @@ void CrazyAra::init_search_settings()
     searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
-#ifdef SUPPORT960
-    is960 = Options["UCI_Chess960"];
-#endif
     searchSettings.useNPSTimemanager = Options["Use_NPS_Time_Manager"];
     if (string(Options["SyzygyPath"]).empty() || string(Options["SyzygyPath"]) == "<empty>") {
         searchSettings.useTablebase = false;
