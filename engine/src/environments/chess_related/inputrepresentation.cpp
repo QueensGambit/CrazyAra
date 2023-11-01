@@ -508,6 +508,17 @@ inline void board_to_planes_chess_v_2_8(PlaneData& planeData, const vector<Actio
     assert(planeData.current_channel() == nbChannelsTotal);
 }
 
+inline void chess960_broken(PlaneData& p) {
+    p.increment_channel();
+    set_960(p);
+    for (Color color : {p.you()}) {
+        const Bitboard pieces = p.pos->pieces(color, ALL_PIECES);
+        // set the individual bits for the pieces
+        // https://lemire.me/blog/2018/02/21/iterating-over-set-bits-quickly/value
+        p.set_plane_to_bitboard(pieces);
+    }
+}
+
 inline void board_to_planes_chess_v3(PlaneData& planeData, size_t boardRepetition)
 {
     const uint_fast32_t nbChannelsTotal = 52;
@@ -527,11 +538,12 @@ inline void board_to_planes_chess_v3(PlaneData& planeData, size_t boardRepetitio
 #ifdef MODE_CHESS
     assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY());
 #endif
-    set_960(planeData);
+    //set_960(planeData);
 #ifdef MODE_CHESS
-    assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
+    //assert(planeData.current_channel() == StateConstants::NB_CHANNELS_POS() + StateConstants::NB_CHANNELS_CONST() + StateConstants::NB_LAST_MOVES() * StateConstants::NB_CHANNELS_PER_HISTORY() + StateConstants::NB_CHANNELS_VARIANTS());
 #endif
-    set_piece_masks(planeData);
+    //set_piece_masks(planeData);
+    chess960_broken(planeData);
     set_checkerboard(planeData);
     set_material_diff(planeData);
     set_opposite_bishops(planeData);
