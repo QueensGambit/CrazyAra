@@ -23,6 +23,7 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.mobile_vit impor
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.trt_vit import TrtViT
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official import NextVit
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.a0_resnet import AlphaZeroResnet, get_alpha_zero_model
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.alpha_vile import get_alpha_vile_model
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import plot_schedule, ConstantSchedule, OneCycleSchedule,\
@@ -63,6 +64,16 @@ def create_pytorch_model(model_type: str, input_shape: tuple, train_config: Trai
         return get_rise_v2_model(args)
     elif model_type == 'risev3':
         return get_rise_v33_model(args)
+    elif model_type == 'alphavile':
+        return get_alpha_vile_model(args)
+    elif model_type == 'alphavile-tiny':
+        return get_alpha_vile_model(args, model_size='tiny')
+    elif model_type == 'alphavile-small':
+        return get_alpha_vile_model(args, model_size='small')
+    elif model_type == 'alphavile-normal':
+        return get_alpha_vile_model(args, model_size='normal')
+    elif model_type == 'alphavile-large':
+        return get_alpha_vile_model(args, model_size='large')
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
