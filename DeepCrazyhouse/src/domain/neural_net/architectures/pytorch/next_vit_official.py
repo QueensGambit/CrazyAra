@@ -8,9 +8,9 @@ Created on 11.08.22
 https://github.com/bytedance/Next-ViT/blob/main/classification/nextvit.py
 """
 from torch import nn
-from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
+from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB, NCB, ConvBNReLU
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead, get_se, process_value_policy_head
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import _ValueHead, _PolicyHead, process_value_policy_head
 
 
 class Block(nn.Module):
@@ -84,3 +84,24 @@ class NextVit(nn.Module):
         x = self.stage3(x)
 
         return process_value_policy_head(x, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+
+
+def get_next_vit_model(args):
+    """
+    Wrapper definition for NextViT model.
+    :return: pytorch model object
+    """
+    model = NextVit(
+         image_size=args.input_shape[1],
+         in_channels=args.input_shape[0],
+         channels_policy_head=args.channels_policy_head,
+         stage3_repeat=1,
+         channels=256,
+         select_policy_from_plane=args.select_policy_from_plane,
+         use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end,
+         use_mlp_wdl_ply=args.use_mlp_wdl_ply,
+         se_type=None,
+         use_simple_transformer_blocks=False,
+         )
+    # -> 19 pool blocks
+    return model
