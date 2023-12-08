@@ -20,7 +20,7 @@ sys.path.insert(0, '../../../')
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.training.train_cli_util import create_pytorch_model, create_validation_data, fill_train_objects,\
-    print_model_summary, export_best_model_state
+    print_model_summary, export_best_model_state, fill_train_config
 from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch
 
 
@@ -63,6 +63,7 @@ def main():
 
     val_data, x_val, _ = create_validation_data(train_config)
     input_shape = x_val[0].shape
+    fill_train_config(train_config, x_val)
 
     model = create_pytorch_model(args.model_type, input_shape, train_config, args.use_custom_architecture)
 

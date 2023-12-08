@@ -11,6 +11,7 @@ import os
 import shutil
 import numpy as np
 from pathlib import Path
+import glob
 
 # Pytorch imports
 import torch
@@ -19,7 +20,7 @@ from torchsummary import summary
 from fvcore.nn import FlopCountAnalysis
 
 from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
-
+from DeepCrazyhouse.configs.main_config import main_config
 # architectures
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import RiseV3, \
     get_rise_v2_model, get_rise_v33_model
@@ -61,6 +62,14 @@ def create_args_by_train_config(input_shape: tuple, tc: TrainConfig):
     args.use_plys_to_end = tc.use_plys_to_end
     args.use_mlp_wdl_ply = tc.use_mlp_wdl_ply
     return args
+
+
+def fill_train_config(train_config, x_val):
+    train_config.nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
+    nb_it_per_epoch = (len(
+        x_val) * train_config.nb_parts) // train_config.batch_size  # calculate how many iterations per epoch exist
+    # one iteration is defined by passing 1 batch and doing backprop
+    train_config.total_it = int(nb_it_per_epoch * train_config.nb_training_epochs)
 
 
 def get_custom_model(model_type: str, args: Args):
