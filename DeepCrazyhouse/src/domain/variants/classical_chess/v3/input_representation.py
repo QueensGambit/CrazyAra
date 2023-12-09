@@ -196,7 +196,7 @@ def board_to_planes(board: chess.Board, board_occ, normalize=True, last_moves=No
     # Chess960
     assert channel == CHANNEL_IS_960
     if board.chess960:
-        planes[channel + 1, :, :] = 1
+        planes[channel, :, :] = 1
     channel += 1
 
     # Channel: 37 - 38
