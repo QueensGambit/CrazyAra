@@ -13,6 +13,7 @@ Copy and rename this file to main_config.py and adjust the paths accordingly.
 # e.g. for supervised learning default_dir = "/data/planes/"
 default_dir = "/data/chess960_pgns/"
 #default_dir = "C:/workspace/Python/CrazyAra/data/kingbase2019_lite_pgn_months/"
+#default_dir = "C:/workspace/Python/CrazyAra/data/chess960_pgns/"
 phase = None  # set to None to treat everything as a single phase
 
 if default_dir[-1] != "/":

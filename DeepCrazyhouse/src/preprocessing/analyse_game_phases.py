@@ -110,6 +110,10 @@ if __name__ == "__main__":
             if game.find(f"{5:d}. ") != -1:
                 game_start_char = game.find("1. ")
                 if game_start_char != -1:
+                    if game[:game_start_char].find('Variant "Chess960"'):
+                        # 2019-09-28: fix for chess960 because in the default position lichess denotes FEN as "?"
+                        game = game.replace('[FEN "?"]',
+                                            '[FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]')
                     pgns.append(io.StringIO(game))
 
         all_pgn_sel = []
@@ -130,17 +134,23 @@ if __name__ == "__main__":
                     black_elo = "?"
 
                 if headers["Result"] != "*":
-                    if headers["Result"] == "1-0":
-                        all_game_outcomes.append(1)
-                    elif headers["Result"] == "0-1":
-                        all_game_outcomes.append(-1)
-                    elif headers["Result"] == "1/2-1/2":
-                        all_game_outcomes.append(0)
-                    else:
-                        raise Exception("Illegal Game Result: ", headers["Result"])
 
-                    all_pgn_sel.append(game_pgn)
-                    all_game_elos.append((white_elo, black_elo))
+                    if (white_elo != "?" and
+                                 black_elo != "?" and
+                                 int(white_elo) >= 1950
+                                 and int(black_elo) >= 1950):
+
+                        if headers["Result"] == "1-0":
+                            all_game_outcomes.append(1)
+                        elif headers["Result"] == "0-1":
+                            all_game_outcomes.append(-1)
+                        elif headers["Result"] == "1/2-1/2":
+                            all_game_outcomes.append(0)
+                        else:
+                            raise Exception("Illegal Game Result: ", headers["Result"])
+
+                        all_pgn_sel.append(game_pgn)
+                        all_game_elos.append((white_elo, black_elo))
 
         all_pgns_all_files.append(all_pgn_sel)
         all_game_outcomes_all_files.append(all_game_outcomes)
@@ -163,7 +173,7 @@ if __name__ == "__main__":
     processes = mp.cpu_count()
     results = do_parallel_processing(all_pgns_flattened_copy, processes)
 
-    with open("analyse_game_phase_data.json", 'w') as f:
+    with open("analyse_game_phase_data_train_960.json", 'w') as f:
         json.dump((results, all_outcomes_flattened, all_elos_flattened), f)
 
     print("done")

@@ -12,21 +12,99 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-if __name__ == "__main__":
+def phase_importance():
+
+    use960 = True
+    prefix_960 = "960_" if use960 else ""
     all_match_info_df = pd.read_csv("all_matches_outcomes.csv", index_col=0)
-    batch_sizes = [1, 8, 16, 32, 64]
-    matchups = [("correct_phases", "no_phases"),]
-                #("specific_opening", "no_phases"),
-                #("no_phases", "specific_endgame"),]
+    batch_sizes = [64]
+    metric = "nodes"
+    matchups = [(f"{prefix_960}correct_opening", f"{prefix_960}no_phases"),
+                (f"{prefix_960}correct_midgame", f"{prefix_960}no_phases"),
+                (f"{prefix_960}correct_endgame", f"{prefix_960}no_phases"),]
                 #("specific_endgame", "no_phases")]
-    y_lim = (-10, 175)
+
+    translation_dict = {f"{prefix_960}correct_opening": "opening expert",
+                        f"{prefix_960}correct_midgame": "midgame expert",
+                        f"{prefix_960}correct_endgame": "endgame expert"}
+    y_lim = (-175, 75)
     plys_ylim = (70, 140)
     all_match_info_df = all_match_info_df.sort_values(by=["playerA", "bsize", "nodes", "movetime"])
 
+    plt.rc('axes', titlesize=15)  # fontsize of the axes title
+    plt.rc('axes', labelsize=15)  # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=12)  # fontsize of the tick labels
+    plt.rc('ytick', labelsize=12)  # fontsize of the tick labels
+    plt.rc('legend', fontsize=12)  # legend fontsize
+    plt.rc('figure', titlesize=40)  # fontsize of the figure title
+    #N_colors = 7
+    #plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.hot(np.linspace(0, 1, N_colors)))
+
+    fig, ax = plt.subplots()
+
     for playerA, playerB in matchups:
         # batch sizes by nodes
-        matchup_df = all_match_info_df[(all_match_info_df["playerA"] == f"ClassicAra_{playerA}") &
-                                       (all_match_info_df["playerB"] == f"ClassicAra_{playerB}")]
+        matchup_df = all_match_info_df[(all_match_info_df["playerA"] == f"{prefix_960}ClassicAra_{playerA}") &
+                                       (all_match_info_df["playerB"] == f"{prefix_960}ClassicAra_{playerB}")]
+        nodes_experiments_df = matchup_df[matchup_df[metric] != 0]
+
+
+        for batch_size in batch_sizes:
+            curr_bs_df = nodes_experiments_df[nodes_experiments_df["bsize"] == batch_size]
+            plt.plot(curr_bs_df[metric], curr_bs_df["A_elo_diff"], label=translation_dict[playerA], marker=".")
+            plt.fill_between(x=curr_bs_df[metric], y1=curr_bs_df["A_elo_diff"] + curr_bs_df["A_elo_err"],
+                             y2=curr_bs_df["A_elo_diff"] - curr_bs_df["A_elo_err"], alpha=0.2)
+
+    plt.axhline(y=0, color="black", linestyle="-")
+    if metric == "nodes":
+        plt.xlabel("Number of Nodes")
+    elif metric == "movetime":
+        plt.xlabel("Movetime [ms]")
+    plt.ylabel("Relative Elo")
+    plt.ylim(*y_lim)
+    #ax.set_xticks(curr_bs_df["nodes"])
+    plt.legend(loc="upper left")
+    ax.grid(axis='y')
+    #plt.title(f"{playerA} vs {playerB}")
+
+    if metric == "nodes":
+        plt.savefig(f'{prefix_960}specific_phases_nodes.pdf', bbox_inches='tight')
+    elif metric == "movetime":
+        plt.savefig(f'{prefix_960}specific_phases_movetime.pdf', bbox_inches='tight')
+
+    plt.show()
+
+
+if __name__ == "__main__":
+
+    phase_importance()
+
+    all_match_info_df = pd.read_csv("all_matches_outcomes.csv", index_col=0)
+    batch_sizes = [1, 16,  64]
+    use960 = True
+    prefix_960 = "960_" if use960 else ""
+    matchups = [("960_cont_learning", "960_no_phases"),]
+                #("specific_opening", "no_phases"),
+                #("no_phases", "specific_endgame"),]
+                #("specific_endgame", "no_phases")]
+    y_lim = (-260, -80)
+    plys_ylim = (70, 140)
+
+    all_match_info_df = all_match_info_df.sort_values(by=["playerA", "bsize", "nodes", "movetime"])
+
+    plt.rc('axes', titlesize=15)  # fontsize of the axes title
+    plt.rc('axes', labelsize=15)  # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=12)  # fontsize of the tick labels
+    plt.rc('ytick', labelsize=12)  # fontsize of the tick labels
+    plt.rc('legend', fontsize=12)  # legend fontsize
+    plt.rc('figure', titlesize=40)  # fontsize of the figure title
+    N_colors = 4
+    plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.hot(np.linspace(0, 1, N_colors)))
+
+    for playerA, playerB in matchups:
+        # batch sizes by nodes
+        matchup_df = all_match_info_df[(all_match_info_df["playerA"] == f"{prefix_960}ClassicAra_{playerA}") &
+                                       (all_match_info_df["playerB"] == f"{prefix_960}ClassicAra_{playerB}")]
         nodes_experiments_df = matchup_df[matchup_df["nodes"] != 0]
         fig, ax = plt.subplots()
 
@@ -39,9 +117,11 @@ if __name__ == "__main__":
         plt.xlabel("Number of Nodes")
         plt.ylabel("Relative Elo")
         plt.ylim(*y_lim)
-        plt.legend()
+        #ax.set_xticks(curr_bs_df["nodes"])
+        plt.legend(loc="lower right")
         ax.grid(axis='y')
-        plt.title(f"{playerA} vs {playerB}")
+        #plt.title(f"{playerA} vs {playerB}")
+        plt.savefig(f'{prefix_960}{playerA}_vs_{playerB}.pdf', bbox_inches='tight')
         plt.show()
 
         # batch sizes by movetime
@@ -57,9 +137,10 @@ if __name__ == "__main__":
         plt.xlabel("Movetime [ms]")
         plt.ylabel("Relative Elo")
         plt.ylim(*y_lim)
-        plt.legend()
+        plt.legend(loc="lower right")
         ax2.grid(axis='y')
-        plt.title(f"{playerA} vs {playerB}")
+        #plt.title(f"{playerA} vs {playerB}")
+        plt.savefig(f'{prefix_960}{playerA}_vs_{playerB}_movetime.pdf', bbox_inches='tight')
         plt.show()
 
         # p_a_win_plys_mean by movetime
