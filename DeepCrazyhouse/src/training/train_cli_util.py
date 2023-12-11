@@ -169,6 +169,33 @@ def create_pytorch_model(model_type: str, input_shape: tuple, train_config: Trai
     return get_default_model(model_type, args)
 
 
+def create_export_dirs(train_config: TrainConfig):
+    if not os.path.exists(Path(train_config.export_dir, "best-model")):
+        os.mkdir(Path(train_config.export_dir, "best-model"))
+    if not os.path.exists(Path(train_config.export_dir, "configs")):
+        os.mkdir(Path(train_config.export_dir, "configs"))
+
+
+def export_configs(args, train_config):
+    logging.info("Main Config:")
+    print(main_config)
+    logging.info("Train Config:")
+    print(train_config)
+    if args.use_custom_architecture:
+        logging.info("Model Config:")
+        print(ModelConfig())
+        export_config(train_config, "model_config.py")
+
+    export_config(train_config, "main_config.py")
+    export_config(train_config, "train_config.py")
+
+
+def export_config(train_config: TrainConfig, config_file: str):
+    config_src_path = Path('../../../DeepCrazyhouse/configs', config_file)
+    config_dst_path = Path(train_config.export_dir, 'configs', config_file)
+    shutil.copy(config_src_path, config_dst_path)
+
+
 def export_best_model_state(k_steps_best: int, k_steps_final: int, model, policy_loss_final: float, input_shape: tuple,
                             train_config: TrainConfig, val_metric_values_best: dict, val_p_acc_final: float) -> None:
     prefix = train_config.export_dir + "weights/model-%.5f-%.3f" % (policy_loss_final, val_p_acc_final)
@@ -223,7 +250,7 @@ def fill_train_objects(train_config: TrainConfig, train_objects: TrainObjects) -
                                                        train_config.max_momentum)
     plot_schedule(train_objects.momentum_schedule, iterations=train_config.total_it, ylabel='Momentum')
 
-    # ## Define the metrics to use
+    # Define the metrics to use
     train_objects.metrics = get_metrics(train_config)
 
 

@@ -14,13 +14,15 @@ A decision was made to only support the Pytorch framework.
 
 import argparse
 import sys
+import torch
+import logging
 
 sys.path.insert(0, '../../../')
 
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.training.train_cli_util import create_pytorch_model, create_validation_data, fill_train_objects,\
-    print_model_summary, export_best_model_state, fill_train_config
+    print_model_summary, export_best_model_state, fill_train_config, export_configs, create_export_dirs
 from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch
 
 
@@ -53,24 +55,26 @@ def update_train_config_via_args(args, train_config):
 
 def main():
     args = parse_args()
+    enable_color_logging()
 
     # Create an instance of the TrainConfig class
     train_config = TrainConfig()
-
     update_train_config_via_args(args, train_config)
-
-    enable_color_logging()
 
     val_data, x_val, _ = create_validation_data(train_config)
     input_shape = x_val[0].shape
     fill_train_config(train_config, x_val)
 
     model = create_pytorch_model(args.model_type, input_shape, train_config, args.use_custom_architecture)
+    print_model_summary(input_shape, model, x_val)
+    if torch.cuda.is_available():
+        model.cuda(torch.device(f"cuda:{train_config.device_id}"))
 
     train_objects = TrainObjects()
     fill_train_objects(train_config, train_objects)
 
-    print_model_summary(input_shape, model, x_val)
+    create_export_dirs(train_config)
+    export_configs(args, train_config)
 
     train_agent = TrainerAgentPytorch(model, val_data, train_config, train_objects, use_rtpt=True)
 
@@ -81,7 +85,7 @@ def main():
 
     val_loss_best = val_metric_values_best["loss"]
     val_p_acc_best = val_metric_values_best["policy_acc"]
-    print('best val_loss: %.5f with v_policy_acc: %.5f at k_steps_best %d' % (val_loss_best, val_p_acc_best, k_steps_best))
+    logging.info('best val_loss: %.5f with v_policy_acc: %.5f at k_steps_best %d' % (val_loss_best, val_p_acc_best, k_steps_best))
 
     export_best_model_state(k_steps_best, k_steps_final, model, policy_loss_final, input_shape, train_config,
                             val_metric_values_best, val_p_acc_final)
