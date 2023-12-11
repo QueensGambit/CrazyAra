@@ -4,15 +4,15 @@
 The former python MCTS version of this project uses MXNet. To install MXNet look at
 [https://mxnet.apache.org/](https://mxnet.apache.org/)
 
-Copy and rename `DeepCrazyhouse/configs/main_config_sample.py` to `DeepCrazyhouse/configs/main_config.py`. Adjust the paths
- to the correct location on your file system. The most important entries to change are `model_architecture_dir` and `model_weights_dir`.
+ Adjust the paths in `DeepCrazyhouse/configs/main_config.py` to the correct location on your file system.
+ The most important entries to change are `model_architecture_dir` and `model_weights_dir`.
 
 ## General project structure
 The source code is divided into four main parts: model, training, experiments and
 samples. The different parts are located in identically named folders.
 
 The `domain` folder contains domain classes, which present the problem domain of Crazyhouse.
-We define 'domain' in the sence of a data class (as it is commonly defined as
+We define 'domain' in the sense of a data class (as it is commonly defined as
 e.g. in the Model-View-Controller pattern).
 This includes classes to load, store and (pre)process game data, as well as
 classes to analyse, evaluate, or modify board positions.
