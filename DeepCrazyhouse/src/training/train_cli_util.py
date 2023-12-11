@@ -36,8 +36,6 @@ from DeepCrazyhouse.src.preprocessing.dataset_loader import load_pgn_dataset
 from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import plot_schedule, ConstantSchedule, OneCycleSchedule,\
     LinearWarmUp, MomentumSchedule
 from DeepCrazyhouse.src.training.train_util import get_metrics
-
-
 from DeepCrazyhouse.src.training.trainer_agent_pytorch import save_torch_state, export_to_onnx, get_context,\
     get_data_loader
 
@@ -52,7 +50,7 @@ class Args:
     use_mlp_wdl_ply = None
 
 
-def create_args_by_train_config(input_shape: tuple, tc: TrainConfig):
+def create_args_by_train_config(input_shape: tuple, tc: TrainConfig) -> None:
     args = Args()
     args.input_shape = input_shape
     args.channels_policy_head = NB_POLICY_MAP_CHANNELS
@@ -64,7 +62,7 @@ def create_args_by_train_config(input_shape: tuple, tc: TrainConfig):
     return args
 
 
-def fill_train_config(train_config, x_val):
+def fill_train_config(train_config: TrainConfig, x_val) -> None:
     train_config.nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
     nb_it_per_epoch = (len(
         x_val) * train_config.nb_parts) // train_config.batch_size  # calculate how many iterations per epoch exist
@@ -169,14 +167,14 @@ def create_pytorch_model(model_type: str, input_shape: tuple, train_config: Trai
     return get_default_model(model_type, args)
 
 
-def create_export_dirs(train_config: TrainConfig):
+def create_export_dirs(train_config: TrainConfig) -> None:
     if not os.path.exists(Path(train_config.export_dir, "best-model")):
         os.mkdir(Path(train_config.export_dir, "best-model"))
     if not os.path.exists(Path(train_config.export_dir, "configs")):
         os.mkdir(Path(train_config.export_dir, "configs"))
 
 
-def export_configs(args, train_config):
+def export_configs(args, train_config: TrainConfig) -> None:
     logging.info("Main Config:")
     print(main_config)
     logging.info("Train Config:")
@@ -190,7 +188,7 @@ def export_configs(args, train_config):
     export_config(train_config, "train_config.py")
 
 
-def export_config(train_config: TrainConfig, config_file: str):
+def export_config(train_config: TrainConfig, config_file: str) -> None:
     config_src_path = Path('../../../DeepCrazyhouse/configs', config_file)
     config_dst_path = Path(train_config.export_dir, 'configs', config_file)
     shutil.copy(config_src_path, config_dst_path)
@@ -262,7 +260,7 @@ def create_validation_data(train_config: TrainConfig):
     return val_data, x_val, yp_val
 
 
-def print_model_summary(input_shape: tuple, model, x_val):
+def print_model_summary(input_shape: tuple, model, x_val) -> None:
     summary(model, (input_shape[0], input_shape[1], input_shape[2]), device="cpu")
     # Analyze the Flops
     dummy_input = torch.Tensor(np.expand_dims(x_val[0], axis=0)).to('cpu')
