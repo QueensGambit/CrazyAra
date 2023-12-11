@@ -1639,6 +1639,7 @@ TEST_CASE("Atomic Input Planes V3") {
 }
 #endif
 
+#ifdef MODE_CHESS
 TEST_CASE("Chess960 Input Planes V3") {
     init();
     int variant = StateConstants::variant_to_int("chess");
@@ -1665,6 +1666,7 @@ TEST_CASE("Chess960 Input Planes V3") {
     REQUIRE(stats.argMax == 8);
     REQUIRE(state.fen() == string("b1qnrnkr/p2ppppp/1p6/2p1b3/2P5/4N1P1/PP1PPP1P/BBQNRK1R b he - 1 4"));
 }
+#endif
 
 #endif
 
