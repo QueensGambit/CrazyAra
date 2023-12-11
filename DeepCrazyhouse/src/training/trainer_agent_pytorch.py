@@ -453,13 +453,13 @@ def get_context(context: str, device_id: int):
         return torch.device("cpu")
 
 
-def load_torch_state(model: nn.Module, optimizer: Optimizer, path: str, device_id: int):
+def load_torch_state(model: nn.Module, optimizer: Optimizer, path: Path, device_id: int):
     checkpoint = torch.load(path, map_location=f"cuda:{device_id}")
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 
-def save_torch_state(model: nn.Module, optimizer: Optimizer, path):
+def save_torch_state(model: nn.Module, optimizer: Optimizer, path: Path):
     torch.save({
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),

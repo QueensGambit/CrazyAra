@@ -41,6 +41,7 @@ from DeepCrazyhouse.src.training.trainer_agent_pytorch import save_torch_state, 
 
 
 class Args:
+    """Dummy class to mimic command-line arguments."""
     input_shape = None
     channels_policy_head = None
     n_labels = None
@@ -50,7 +51,8 @@ class Args:
     use_mlp_wdl_ply = None
 
 
-def create_args_by_train_config(input_shape: tuple, tc: TrainConfig) -> None:
+def create_args_by_train_config(input_shape: tuple, tc: TrainConfig) -> Args:
+    """Creates an Args objects and fills it with the train config."""
     args = Args()
     args.input_shape = input_shape
     args.channels_policy_head = NB_POLICY_MAP_CHANNELS
@@ -63,6 +65,7 @@ def create_args_by_train_config(input_shape: tuple, tc: TrainConfig) -> None:
 
 
 def fill_train_config(train_config: TrainConfig, x_val) -> None:
+    """Fills train config items based on other items."""
     train_config.nb_parts = len(glob.glob(main_config['planes_train_dir'] + '**/*'))
     nb_it_per_epoch = (len(
         x_val) * train_config.nb_parts) // train_config.batch_size  # calculate how many iterations per epoch exist
@@ -71,6 +74,7 @@ def fill_train_config(train_config: TrainConfig, x_val) -> None:
 
 
 def get_custom_model(model_type: str, args: Args):
+    """Returns a custom pytorch model based on the model_config.py settings."""
     mc = ModelConfig()
     if model_type == 'resnet':
         model = AlphaZeroResnet(channels=mc.channels, channels_value_head=mc.channels_value_head,
@@ -133,6 +137,7 @@ def get_custom_model(model_type: str, args: Args):
 
 
 def get_default_model(model_type: str, args: Args):
+    """Returns a pytorch object based on the given model_type."""
     if model_type == 'resnet':
         return get_alpha_zero_model(args)
     elif model_type == 'vit':
@@ -157,17 +162,18 @@ def get_default_model(model_type: str, args: Args):
         raise ValueError(f"Unsupported model type: {model_type}")
 
 
-def create_pytorch_model(model_type: str, input_shape: tuple, train_config: TrainConfig, use_custom_architecture: bool):
+def create_pytorch_model(input_shape: tuple, train_config: TrainConfig):
     """Implement logic to create a PyTorch model based on model_type."""
     args = create_args_by_train_config(input_shape, train_config)
 
-    if use_custom_architecture:
-        return get_custom_model(model_type, args)
+    if train_config.use_custom_architecture:
+        return get_custom_model(train_config.model_type, args)
 
-    return get_default_model(model_type, args)
+    return get_default_model(train_config.model_type, args)
 
 
 def create_export_dirs(train_config: TrainConfig) -> None:
+    """Creates export directories for 'best-model' and 'configs' if they don't exist already."""
     if not os.path.exists(Path(train_config.export_dir, "best-model")):
         os.mkdir(Path(train_config.export_dir, "best-model"))
     if not os.path.exists(Path(train_config.export_dir, "configs")):
@@ -175,6 +181,7 @@ def create_export_dirs(train_config: TrainConfig) -> None:
 
 
 def export_configs(args, train_config: TrainConfig) -> None:
+    """Copies the main_config.py, train_config.py and model_config.py file to the export config directory."""
     logging.info("Main Config:")
     print(main_config)
     logging.info("Train Config:")
@@ -189,6 +196,7 @@ def export_configs(args, train_config: TrainConfig) -> None:
 
 
 def export_config(train_config: TrainConfig, config_file: str) -> None:
+    """Exports a given config file."""
     config_src_path = Path('../../../DeepCrazyhouse/configs', config_file)
     config_dst_path = Path(train_config.export_dir, 'configs', config_file)
     shutil.copy(config_src_path, config_dst_path)
@@ -196,6 +204,8 @@ def export_config(train_config: TrainConfig, config_file: str) -> None:
 
 def export_best_model_state(k_steps_best: int, k_steps_final: int, model, policy_loss_final: float, input_shape: tuple,
                             train_config: TrainConfig, val_metric_values_best: dict, val_p_acc_final: float) -> None:
+    """Copies the best model checkpoint file achieved during training to the 'train_config.export_dir/best-model'
+     directory."""
     prefix = train_config.export_dir + "weights/model-%.5f-%.3f" % (policy_loss_final, val_p_acc_final)
     # the export function saves both the architecture and the weights
     save_torch_state(model, torch.optim.SGD(model.parameters(), lr=train_config.max_lr), '%s-%04d.tar' % (prefix,
@@ -220,6 +230,7 @@ def export_best_model_state(k_steps_best: int, k_steps_final: int, model, policy
 
 
 def convert_model_to_onnx(input_shape, k_steps_best, model, model_name, train_config):
+    """Converts a given model to onnx and saves the files in the 'train_config.export_dir/best-model' directory."""
     model_prefix = "%s-%04d" % (model_name, k_steps_best)
     with torch.no_grad():
         ctx = get_context(train_config.context, train_config.device_id)
@@ -230,6 +241,7 @@ def convert_model_to_onnx(input_shape, k_steps_best, model, model_name, train_co
 
 
 def fill_train_objects(train_config: TrainConfig, train_objects: TrainObjects) -> None:
+    """Fills the train objects with a learning rate schedule, momentum schedule and metrics."""
     if "adam" in train_config.optimizer_name:
         train_objects.lr_schedule = ConstantSchedule(train_config.min_lr)
     else:
@@ -252,7 +264,10 @@ def fill_train_objects(train_config: TrainConfig, train_objects: TrainObjects) -
     train_objects.metrics = get_metrics(train_config)
 
 
-def create_validation_data(train_config: TrainConfig):
+def get_validation_data(train_config: TrainConfig):
+    """
+    Returns the validation loader, x-Data and target-Policy object.
+    """
     s_idcs_val, x_val, yv_val, yp_val, plys_to_end, pgn_datasets_val = load_pgn_dataset(dataset_type='val', part_id=0,
                                                                                         verbose=True,
                                                                                         normalize=train_config.normalize)
@@ -261,6 +276,7 @@ def create_validation_data(train_config: TrainConfig):
 
 
 def print_model_summary(input_shape: tuple, model, x_val) -> None:
+    """Prints the model summary."""
     summary(model, (input_shape[0], input_shape[1], input_shape[2]), device="cpu")
     # Analyze the Flops
     dummy_input = torch.Tensor(np.expand_dims(x_val[0], axis=0)).to('cpu')

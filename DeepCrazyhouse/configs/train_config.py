@@ -54,6 +54,10 @@ class TrainConfig:
 
     log_metrics_to_tensorboard: bool = True
 
+    # Model type that used during training (e.g. resnet, vit, risev2, risev3, alphavile, alphavile-tiny,
+    # alphavile-small, alphavile-normal, alphavile-large, NextViT)
+    model_type: str = "resnet"
+
     # k_steps_initial defines how many steps have been trained before
     # (k_steps_initial != 0 if you continue training from a checkpoint)
     k_steps_initial: int = 0
@@ -109,6 +113,9 @@ class TrainConfig:
 
     # total of training iterations
     total_it: int = None
+
+    # decides if a custom network architecture should be used, defined in the model_config.py file
+    use_custom_architecture: bool = False
 
     # adds a small mlp to infer the value loss from wdl and plys_to_end_output
     use_mlp_wdl_ply: bool = False
