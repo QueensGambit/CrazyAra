@@ -154,3 +154,7 @@ build-engine-Desktop_Qt*/
 /DeepCrazyhouse/src/samples/batch_phase_data.csv
 /DeepCrazyhouse/src/samples/batch_phase_data_berlin.csv
 /phase_models
+/cutechess-cli/cutechess_results/
+/cutechess-cli/excluded/
+/etc/train_logs/
+/etc/plots/

@@ -128,7 +128,7 @@ phase_weights = {0: 1.0, 1: 1.0, 2: 1.0}  # specify the sample weight for each p
 
 # directory to write and read weights, logs, onnx and other export files
 #tc.export_dir = "C:/workspace/Python/CrazyAra/data/train_phase2/"
-tc.export_dir = f"/data/run_model_exports/train_phase_None_0_25_0_25_1_0_cont/"
+tc.export_dir = f"/data/run_model_exports_960/960_train_phase_None/"
 
 tc.div_factor = 0.5  # div factor is a constant which can be used to reduce the batch size and learning rate respectively
 # use a value greater 1 if you encounter memory allocation errors
@@ -187,7 +187,7 @@ tc.wdl_loss_factor = 0.01
 tc.discount = 1.0
 
 tc.normalize = True # define whether to normalize input data to [0,1]
-tc.nb_training_epochs = 7 # define how many epochs the network will be trained
+tc.nb_training_epochs = 40 # define how many epochs the network will be trained
 tc.select_policy_from_plane = True # Boolean if potential legal moves will be selected from final policy output
         
 # additional custom validation set files which will be logged to tensorboard
