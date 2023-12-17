@@ -64,7 +64,9 @@ def load_pgn_dataset(
         if phase is None:
             zarr_filepaths = glob.glob(main_config[f"planes_{dataset_type}_dir"] + "**/*.zip")
         else:
-            zarr_filepaths = glob.glob(main_config["default_dir"] + f"planes/phase{phase}/{dataset_type}/" + "**/*.zip")
+            zarr_filepaths = glob.glob(main_config["default_dir"] +
+                                       f"planes/{main_config['phase_definition']}/phase{phase}/{dataset_type}/" +
+                                       "**/*.zip")
     else:
         raise Exception(
             'Invalid dataset type "%s" given. It must be either "train", "val", "test" or "mate_in_one"' % dataset_type
