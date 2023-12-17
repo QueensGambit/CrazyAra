@@ -11,10 +11,12 @@ Copy and rename this file to main_config.py and adjust the paths accordingly.
 
 # define the default dir where the training data in plane representation is located
 # e.g. for supervised learning default_dir = "/data/planes/"
-default_dir = "/data/chess960_pgns/"
+default_dir = "/data/kingbase2019_lite_pgn_months/"
 #default_dir = "C:/workspace/Python/CrazyAra/data/kingbase2019_lite_pgn_months/"
 #default_dir = "C:/workspace/Python/CrazyAra/data/chess960_pgns/"
-phase = None  # set to None to treat everything as a single phase
+phase = None  # current phase to use, set to None to treat everything as a single phase
+# type of phase definition, either "lichess" or "movecountX" with X determining the number of phases
+phase_definition = "movecount3"
 
 if default_dir[-1] != "/":
     default_dir = default_dir + "/"
@@ -36,6 +38,7 @@ main_config = {
     # The mate_in_one directory includes games from the month:      lichess_db_standard_rated_2015-08.pgn
 
     "phase": phase,
+    "phase_definition": phase_definition,
     "default_dir": default_dir,
 
     # The pgn directories contain all files which are converted to plane representation
@@ -46,10 +49,10 @@ main_config = {
     # The plane directories contain the plane representation of the converted board state
     #  (.zip files which have been compressed by  the python zarr library)
 
-    "planes_train_dir": default_dir + f"planes/phase{phase}/train/",
-    "planes_val_dir": default_dir + f"planes/phase{phase}/val/",
-    "planes_test_dir": default_dir + f"planes/phase{phase}/test/",
-    "planes_mate_in_one_dir": default_dir + f"planes/phase{phase}/mate_in_one/",
+    "planes_train_dir": default_dir + f"planes/{phase_definition}/phase{phase}/train/",
+    "planes_val_dir": default_dir + f"planes/{phase_definition}/phase{phase}/val/",
+    "planes_test_dir": default_dir + f"planes/{phase_definition}/phase{phase}/test/",
+    "planes_mate_in_one_dir": default_dir + f"planes/{phase_definition}/phase{phase}/mate_in_one/",
 
     # The rec directory contains the plane representation which are used in the training loop of the network
     # use the the notebook create_rec_dataset to generate the .rec files:

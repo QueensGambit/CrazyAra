@@ -16,6 +16,7 @@ import io
 from DeepCrazyhouse.configs.main_config import main_config
 import os
 from DeepCrazyhouse.src.preprocessing.game_phase_detector import get_game_phase
+import math
 
 if __name__ == "__main__":
     print(get_game_phase(chess.Board()))
@@ -45,69 +46,76 @@ if __name__ == "__main__":
     end_to_mid_per_game = list()
     end_to_open_per_game = list()
     all_prev_switch_per_game = list()
+    game_movecounts = list()
 
     while True:
         curr_game = chess.pgn.read_game(pgn)
-        games_parsed += 1
-        if games_parsed % 100 == 0:
-            print(games_parsed)
         if curr_game is None or games_parsed > 1000:
             break
+        if curr_game.__str__().find(f"5. ") != -1:  # if game is at least 5 moves long
+            games_parsed += 1
+            if games_parsed % 100 == 0:
+                print(games_parsed)
 
-        if curr_game.headers.get("FEN", "?") == "?":  # to fix lichess using "?" as FEN for the default position
-            curr_game.headers["FEN"] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+            if curr_game.headers.get("FEN", "?") == "?":  # to fix lichess using "?" as FEN for the default position
+                curr_game.headers["FEN"] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-        curr_board = curr_game.board()
-        midgame_started = False
-        endgame_started = False
+            curr_board = curr_game.board()
+            midgame_started = False
+            endgame_started = False
 
-        curr_phase = "opening"
-        mid_to_open_counter = 0
-        end_to_mid_counter = 0
-        end_to_open_counter = 0
-        all_prev_switch_counter = 0
+            curr_phase = "opening"
+            mid_to_open_counter = 0
+            end_to_mid_counter = 0
+            end_to_open_counter = 0
+            all_prev_switch_counter = 0
+            curr_game_moves = 0
 
-        for idx, move in enumerate(curr_game.main_line()):
+            for idx, move in enumerate(curr_game.main_line()):
+                assert math.floor(0.5*curr_game_moves) == (curr_board.fullmove_number - 1)
+                phase, num_maj_and_min, backrank_sparse, mix_score, _ = get_game_phase(curr_board, phase_definition="movecount3")
+                #print(get_game_phase(curr_board), move)
 
-            phase, num_maj_and_min, backrank_sparse, mix_score, _ = get_game_phase(curr_board)
-            #print(get_game_phase(curr_board), move)
+                if curr_phase == "midgame" and phase == "opening":
+                    mid_to_open_counter += 1
+                    all_prev_switch_counter += 1
 
-            if curr_phase == "midgame" and phase == "opening":
-                mid_to_open_counter += 1
-                all_prev_switch_counter += 1
+                if curr_phase == "endgame" and phase == "midgame":
+                    end_to_mid_counter += 1
+                    all_prev_switch_counter += 1
 
-            if curr_phase == "endgame" and phase == "midgame":
-                end_to_mid_counter += 1
-                all_prev_switch_counter += 1
+                if curr_phase == "endgame" and phase == "opening":
+                    end_to_open_counter += 1
+                    all_prev_switch_counter += 1
 
-            if curr_phase == "endgame" and phase == "opening":
-                end_to_open_counter += 1
-                all_prev_switch_counter += 1
+                if not midgame_started and phase == "midgame":
+                    midgame_started = True
+                    midgame_start_moves.append(idx)
+                    midgame_start_moves_games.append(curr_game.__str__())
 
-            if not midgame_started and phase == "midgame":
-                midgame_started = True
-                midgame_start_moves.append(idx)
-                midgame_start_moves_games.append(curr_game.__str__())
+                if not endgame_started and phase == "endgame":
+                    endgame_started = True
+                    endgame_start_moves.append(idx)
+                    endgame_start_moves_games.append(curr_game.__str__())
 
-            if not endgame_started and phase == "endgame":
-                endgame_started = True
-                endgame_start_moves.append(idx)
-                endgame_start_moves_games.append(curr_game.__str__())
+                if idx not in stats_by_move_idx:
+                    stats_by_move_idx[idx] = [[phase_to_phase_id[phase], num_maj_and_min, int(backrank_sparse),
+                                               mix_score, int(num_maj_and_min <= 10), int(mix_score > 150)]]
+                else:
+                    stats_by_move_idx[idx].append([phase_to_phase_id[phase], num_maj_and_min, int(backrank_sparse),
+                                                   mix_score, int(num_maj_and_min <= 10), int(mix_score > 150)])
+                curr_board.push(move)
+                moves_parsed += 1
+                curr_phase = phase
+                curr_game_moves += 1
 
-            if idx not in stats_by_move_idx:
-                stats_by_move_idx[idx] = [[phase_to_phase_id[phase], num_maj_and_min, int(backrank_sparse),
-                                           mix_score, int(num_maj_and_min <= 10), int(mix_score > 150)]]
-            else:
-                stats_by_move_idx[idx].append([phase_to_phase_id[phase], num_maj_and_min, int(backrank_sparse),
-                                               mix_score, int(num_maj_and_min <= 10), int(mix_score > 150)])
-            curr_board.push(move)
-            moves_parsed += 1
-            curr_phase = phase
-
-        mid_to_open_per_game.append((mid_to_open_counter, curr_game.__str__()))
-        end_to_mid_per_game.append((end_to_mid_counter, curr_game.__str__()))
-        end_to_open_per_game.append((end_to_open_counter, curr_game.__str__()))
-        all_prev_switch_per_game.append((all_prev_switch_counter, curr_game.__str__()))
+            mid_to_open_per_game.append((mid_to_open_counter, curr_game.__str__()))
+            end_to_mid_per_game.append((end_to_mid_counter, curr_game.__str__()))
+            end_to_open_per_game.append((end_to_open_counter, curr_game.__str__()))
+            all_prev_switch_per_game.append((all_prev_switch_counter, curr_game.__str__()))
+            game_movecounts.append(curr_game_moves)
+        else:
+            print(curr_game.__str__())
 
     plt.rc('axes', titlesize=15)  # fontsize of the axes title
     plt.rc('axes', labelsize=15)  # fontsize of the x and y labels
@@ -140,7 +148,7 @@ if __name__ == "__main__":
                  weight='bold')
         i += 1
 
-    plt.savefig(f'{prefix}prev_phase_jumps.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}prev_phase_jumps.pdf', bbox_inches='tight')
     plt.show()
 
     mid_trans_list = [x for x, _ in mid_to_open_per_game]
@@ -209,7 +217,7 @@ if __name__ == "__main__":
     plt.ylabel("Positions")
     plt.xlabel("Move")
     #plt.title("game phase distribution")
-    plt.savefig(f'{prefix}positions_by_move_ungrouped.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}positions_by_move_ungrouped.pdf', bbox_inches='tight')
     plt.show()
 
     plt.boxplot(num_maj_and_min_data)
@@ -217,14 +225,14 @@ if __name__ == "__main__":
     #plt.title("Major and minor pieces left")
     plt.ylabel("Major and minor pieces left")
     plt.xlabel("Move")
-    plt.savefig(f'{prefix}maj_min_pieces.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}maj_min_pieces.pdf', bbox_inches='tight')
     plt.show()
 
     plt.plot(np.array(list(range(len(backrank_sparses_data))))/2, backrank_sparses_data)
     #plt.title()
     plt.ylabel("Chance of backrank sparseness")
     plt.xlabel("Move")
-    plt.savefig(f'{prefix}backrank.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}backrank.pdf', bbox_inches='tight')
     plt.show()
 
     plt.boxplot(mix_score_data)
@@ -232,7 +240,7 @@ if __name__ == "__main__":
     #plt.title("Board mixedness")
     plt.ylabel("Mixedness")
     plt.xlabel("Move")
-    plt.savefig(f'{prefix}mixedness.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}mixedness.pdf', bbox_inches='tight')
     plt.show()
 
     graph = plt.bar(list(range(len(num_samples_data))), np.array(num_samples_data))
@@ -254,7 +262,7 @@ if __name__ == "__main__":
     #plt.title("num_samples")
     plt.ylabel("Positions")
     plt.xlabel("Move")
-    plt.savefig(f'{prefix}positions_by_movecount.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}positions_by_movecount.pdf', bbox_inches='tight')
     plt.show()
 
     bins = np.linspace(0, 50, 100)
@@ -267,7 +275,7 @@ if __name__ == "__main__":
     plt.legend()
     plt.axvline(np.mean(midgame_start_moves)/2, 0, 1, color="black")
     plt.axvline(np.mean(endgame_start_moves)/2, 0, 1, color="black")
-    plt.savefig(f'{prefix}game_phase_distribution.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}game_phase_distribution.pdf', bbox_inches='tight')
     plt.show()
 
     plt.hist([opening_moves, midgame_moves, endgame_moves], bins, stacked=True, density=False, alpha=0.5, label=['opening', 'midgame', 'endgame'])
@@ -276,7 +284,7 @@ if __name__ == "__main__":
     plt.legend()
     plt.axvline(np.mean(midgame_start_moves)/2, 0, 1, color="black")
     plt.axvline(np.mean(endgame_start_moves)/2, 0, 1, color="black")
-    plt.savefig(f'{prefix}positions_stacked.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}positions_stacked.pdf', bbox_inches='tight')
     plt.show()
 
     bins = np.linspace(0, 50, 50)
@@ -288,7 +296,7 @@ if __name__ == "__main__":
     plt.legend()
     plt.axvline(np.mean(midgame_start_moves)/2, 0, 1, color="black")
     plt.axvline(np.mean(endgame_start_moves)/2, 0, 1, color="black")
-    plt.savefig(f'{prefix}phase_start_distribution.pdf', bbox_inches='tight')
+    #plt.savefig(f'{prefix}phase_start_distribution.pdf', bbox_inches='tight')
     plt.show()
 
     print("mean midgame start:", np.mean(np.array(midgame_start_moves)) / 2)
@@ -308,6 +316,27 @@ if __name__ == "__main__":
 
     plt.bar(["opening_positions", "midgame_positions", "endgame_positions"], [num_opening_moves, num_midgame_moves, num_endgame_moves])
     plt.title("game phase position counts")
+    plt.show()
+
+    labels = ["opening_positions", "midgame_positions", "endgame_positions"]
+    counts = [num_opening_moves, num_midgame_moves, num_endgame_moves]
+    percentages = [count*100/sum(counts) for count in counts]
+    graph = plt.bar(labels, counts, align='center')
+    plt.gca().set_xticks(labels)
+    plt.title("game phase position counts")
+    plt.ylabel("Positions")
+
+    i = 0
+    for p in graph:
+        width = p.get_width()
+        height = p.get_height()
+        x, y = p.get_xy()
+        plt.text(x + width / 2,
+                 y + height * 1.01,
+                 str(percentages[i]) + '%',
+                 ha='center',
+                 weight='bold')
+        i += 1
     plt.show()
 
     print("end")

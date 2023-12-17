@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import io
 from DeepCrazyhouse.configs.main_config import main_config
 import os
+import re
 
 
 def get_majors_and_minors_count(board):
@@ -70,11 +71,12 @@ def get_mixedness(board):
     return mix
 
 
-def get_game_phase(board, definition="lichess"):
+def get_game_phase(board, phase_definition="lichess", average_movecount_per_game=42.85):
     """
     TODO fill docstring
     """
-    if definition == "lichess":
+
+    if phase_definition == "lichess":
         # returns the game phase based on the lichess definition implemented in:
         # https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
 
@@ -89,5 +91,21 @@ def get_game_phase(board, definition="lichess"):
         else:
             return "opening", num_majors_and_minors, backrank_sparse, mixedness_score, 0
 
+    # matches "movecount" directly followed by a number
+    pattern_match_result = re.match(r"\bmovecount(\d+)", phase_definition)
+
+    if pattern_match_result:  # if it is a valid match
+        # use number at the end of the string to determine the number of phases to be used
+        num_phases = int(pattern_match_result.group(1))
+        phase_length = round(average_movecount_per_game/num_phases)
+
+        # board.fullmove_number describes the move number of the next move that happens in the game,
+        # e.g., after 8 half moves board.fullmove_number is 5
+        # so we use board.fullmove_number -1 to get the current full moves played
+        moves_completed = board.fullmove_number - 1
+        phase = int(moves_completed/phase_length)  # determine phase by rounding down to the next integer
+        phase = min(phase, num_phases-1)  # ensure that all higher results are attributed to the last phase
+        return "", 0, 0, 0, phase
+
     else:
-        return "not implemented yet"
+        return "Phase definition not supported or wrongly formatted. Should be 'movecountX' or 'lichess'"

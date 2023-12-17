@@ -133,7 +133,7 @@ def get_planes_from_game(game, mate_in_one=False):
             # if specified phase is not None
             # check if the current game phase is the phase the dataset is created for
 
-            curr_phase = get_game_phase(board)[4]
+            curr_phase = get_game_phase(board, phase_definition=main_config["phase_definition"])[4]
 
             if main_config["phase"] is None or curr_phase == main_config["phase"]:
                 # build the last move vector by putting the most recent move on top followed by the remaining past moves
