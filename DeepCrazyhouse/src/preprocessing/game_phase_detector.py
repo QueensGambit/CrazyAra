@@ -109,3 +109,8 @@ def get_game_phase(board, phase_definition="lichess", average_movecount_per_game
 
     else:
         return "Phase definition not supported or wrongly formatted. Should be 'movecountX' or 'lichess'"
+
+
+if __name__ == "__main__":
+    print(get_game_phase(chess.Board("q6k/P1P5/3p2Q1/5p1p/3N4/3b3P/5KP1/R3R3 w - - 1 36"), "movecount4"))
+    print("done")

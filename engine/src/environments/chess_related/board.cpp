@@ -539,7 +539,7 @@ int get_mixedness(const Board& pos)
 
 GamePhase Board::get_phase(unsigned int num_phases) const
 {
-    if (num_phases == 3) {
+    if (num_phases == 3 && false) {
         // returns the game phase based on the lichess definition implemented in:
         // https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
         unsigned int num_majors_and_minors = get_majors_and_minors_count(*this);
@@ -565,5 +565,17 @@ GamePhase Board::get_phase(unsigned int num_phases) const
     }
     if (num_phases == 1) {
         return GamePhase(0);
+    }
+    else {  // use naive phases by move count
+        double average_movecount_per_game = 42.85;
+        double phase_length = std::round(average_movecount_per_game / num_phases);
+        size_t moves_completed = this->total_move_cout();
+        double game_phase_double = moves_completed / phase_length;
+        if (game_phase_double > num_phases - 1){ // ensure that all higher results are attributed to the last phase
+            return GamePhase(num_phases - 1);
+        }
+        else {
+            return GamePhase(game_phase_double); // truncated to Integer value
+        }
     }
 }

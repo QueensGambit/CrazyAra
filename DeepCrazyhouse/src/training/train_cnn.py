@@ -125,11 +125,11 @@ tc.log_metrics_to_tensorboard = True
 tc.export_grad_histograms = False
 
 phase_weights = {0: 1.0, 1: 1.0, 2: 1.0}  # specify the sample weight for each phase (will be normalized afterwards)
-assert len(phase_weights) == main_config["phase_definition"][-1]
+assert len(phase_weights) == int(main_config["phase_definition"][-1])
 
 # directory to write and read weights, logs, onnx and other export files
 #tc.export_dir = "C:/workspace/Python/CrazyAra/data/train_phase2/"
-tc.export_dir = f"/data/run_model_exports_960/960_train_phase_None/"
+tc.export_dir = f"/data/run_model_exports_movecount/movecount4_train_phase_0/"
 
 tc.div_factor = 0.5  # div factor is a constant which can be used to reduce the batch size and learning rate respectively
 # use a value greater 1 if you encounter memory allocation errors
@@ -188,7 +188,7 @@ tc.wdl_loss_factor = 0.01
 tc.discount = 1.0
 
 tc.normalize = True # define whether to normalize input data to [0,1]
-tc.nb_training_epochs = 40 # define how many epochs the network will be trained
+tc.nb_training_epochs = 7 # define how many epochs the network will be trained
 tc.select_policy_from_plane = True # Boolean if potential legal moves will be selected from final policy output
         
 # additional custom validation set files which will be logged to tensorboard
@@ -301,7 +301,7 @@ elif tc.framework == 'gluon' or tc.framework == 'pytorch':
 # fill additional loaders that should be used for additional evaluations during training
 if tc.framework == 'pytorch':
     additional_data_loaders = dict()
-    for phase in ["0", "1", "2", "None"]:
+    for phase in [str(phase) for phase in to.phase_weights.keys()] + ["None"]:
         pgn_dataset_arrays_dict = load_pgn_dataset(dataset_type='test', part_id=0,
                                                    verbose=True, normalize=tc.normalize, phase=phase)
         s_idcs_val_tmp = pgn_dataset_arrays_dict["start_indices"]

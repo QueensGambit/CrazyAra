@@ -714,7 +714,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
             data = data.to(ctx)
             value_label = value_label.to(ctx)
             policy_label = policy_label.to(ctx)
-            sample_weights = torch.Tensor([phase_weights[phase.item()] for phase in phase_vector])
+            sample_weights = torch.Tensor([phase_weights.get(phase.item(), 1.0) for phase in phase_vector])
             sample_weights = sample_weights.to(ctx)
 
             if use_wdl and use_plys_to_end:

@@ -160,7 +160,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Use_TensorRT"]                  << Option(true);
 #endif
 #ifdef SUPPORT960
-    o["UCI_Chess960"]                  << Option(true);
+    o["UCI_Chess960"]                  << Option(false);
 #endif
     o["Search_Type"]                   << Option("mcgs", {"mcgs", "mcts"});
     o["Search_Player_Mode"]            << Option("two_player", {"two_player", "single_player"});
