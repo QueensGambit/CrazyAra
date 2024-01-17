@@ -459,7 +459,7 @@ if __name__ == "__main__":
                                                               "wwin_pct", "bwin_pct", "draws_pct", "white_pct",
                                                               "black_pct", "f_games", "u_games"])
 
-    all_match_info_df.to_csv("all_matches_outcomes.csv")
+    all_match_info_df.to_csv("all_matches_outcomes_new.csv")
 
     print("done")
     #main()

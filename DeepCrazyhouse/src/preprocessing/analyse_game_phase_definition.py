@@ -17,6 +17,7 @@ from DeepCrazyhouse.configs.main_config import main_config
 import os
 from DeepCrazyhouse.src.preprocessing.game_phase_detector import get_game_phase
 import math
+import seaborn as sns
 
 if __name__ == "__main__":
     print(get_game_phase(chess.Board()))
@@ -73,7 +74,7 @@ if __name__ == "__main__":
 
             for idx, move in enumerate(curr_game.main_line()):
                 assert math.floor(0.5*curr_game_moves) == (curr_board.fullmove_number - 1)
-                phase, num_maj_and_min, backrank_sparse, mix_score, _ = get_game_phase(curr_board, phase_definition="movecount3")
+                phase, num_maj_and_min, backrank_sparse, mix_score, _ = get_game_phase(curr_board, phase_definition="lichess")
                 #print(get_game_phase(curr_board), move)
 
                 if curr_phase == "midgame" and phase == "opening":
@@ -266,16 +267,17 @@ if __name__ == "__main__":
     plt.show()
 
     bins = np.linspace(0, 50, 100)
-    plt.hist(opening_moves, bins, alpha=0.5, label="opening")
-    plt.hist(midgame_moves, bins, alpha=0.5, label="midgame")
-    plt.hist(endgame_moves, bins, alpha=0.5, label="endgame")
+    sns_color_cmap = sns.color_palette("colorblind", as_cmap=True)
+    plt.hist(opening_moves, bins, alpha=0.5, label="Opening", color=sns_color_cmap[0])
+    plt.hist(midgame_moves, bins, alpha=0.5, label="Middlegame", color=sns_color_cmap[1])
+    plt.hist(endgame_moves, bins, alpha=0.5, label="Endgame", color=sns_color_cmap[2])
     plt.ylabel("Positions")
     plt.xlabel("Move")
     #plt.title("game phase distribution")
     plt.legend()
     plt.axvline(np.mean(midgame_start_moves)/2, 0, 1, color="black")
     plt.axvline(np.mean(endgame_start_moves)/2, 0, 1, color="black")
-    #plt.savefig(f'{prefix}game_phase_distribution.pdf', bbox_inches='tight')
+    plt.savefig(f'{prefix}game_phase_distribution.pdf', bbox_inches='tight')
     plt.show()
 
     plt.hist([opening_moves, midgame_moves, endgame_moves], bins, stacked=True, density=False, alpha=0.5, label=['opening', 'midgame', 'endgame'])

@@ -10,13 +10,14 @@ creates plots based on the results of different cutechess match configurations
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def phase_importance():
 
-    use960 = True
+    use960 = False
     prefix_960 = "960_" if use960 else ""
-    all_match_info_df = pd.read_csv("all_matches_outcomes.csv", index_col=0)
+    all_match_info_df = pd.read_csv("all_matches_outcomes_new.csv", index_col=0)
     batch_sizes = [64]
     metric = "nodes"
     matchups = [(f"{prefix_960}correct_opening", f"{prefix_960}no_phases"),
@@ -24,12 +25,13 @@ def phase_importance():
                 (f"{prefix_960}correct_endgame", f"{prefix_960}no_phases"),]
                 #("specific_endgame", "no_phases")]
 
-    translation_dict = {f"{prefix_960}correct_opening": "opening expert",
-                        f"{prefix_960}correct_midgame": "midgame expert",
-                        f"{prefix_960}correct_endgame": "endgame expert"}
-    y_lim = (-175, 75)
+    translation_dict = {f"{prefix_960}correct_opening": "Opening Expert",
+                        f"{prefix_960}correct_midgame": "Middlegame Expert",
+                        f"{prefix_960}correct_endgame": "Endgame Expert"}
+    y_lim = (-40, 120)
     plys_ylim = (70, 140)
     all_match_info_df = all_match_info_df.sort_values(by=["playerA", "bsize", "nodes", "movetime"])
+    sns_color_cmap = sns.color_palette("colorblind", as_cmap=True)
 
     plt.rc('axes', titlesize=15)  # fontsize of the axes title
     plt.rc('axes', labelsize=15)  # fontsize of the x and y labels
@@ -41,6 +43,7 @@ def phase_importance():
     #plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.hot(np.linspace(0, 1, N_colors)))
 
     fig, ax = plt.subplots()
+    idx = 0
 
     for playerA, playerB in matchups:
         # batch sizes by nodes
@@ -51,9 +54,12 @@ def phase_importance():
 
         for batch_size in batch_sizes:
             curr_bs_df = nodes_experiments_df[nodes_experiments_df["bsize"] == batch_size]
-            plt.plot(curr_bs_df[metric], curr_bs_df["A_elo_diff"], label=translation_dict[playerA], marker=".")
+            plt.plot(curr_bs_df[metric], curr_bs_df["A_elo_diff"], label=translation_dict[playerA], marker=".",
+                     color=sns_color_cmap[idx])
             plt.fill_between(x=curr_bs_df[metric], y1=curr_bs_df["A_elo_diff"] + curr_bs_df["A_elo_err"],
-                             y2=curr_bs_df["A_elo_diff"] - curr_bs_df["A_elo_err"], alpha=0.2)
+                             y2=curr_bs_df["A_elo_diff"] - curr_bs_df["A_elo_err"], alpha=0.2,
+                             color=sns_color_cmap[idx])
+        idx += 1
 
     plt.axhline(y=0, color="black", linestyle="-")
     if metric == "nodes":
@@ -79,15 +85,15 @@ if __name__ == "__main__":
 
     phase_importance()
 
-    all_match_info_df = pd.read_csv("all_matches_outcomes.csv", index_col=0)
-    batch_sizes = [1, 16,  64]
+    all_match_info_df = pd.read_csv("all_matches_outcomes_new.csv", index_col=0)
+    batch_sizes = [1, 16, 64]
     use960 = True
     prefix_960 = "960_" if use960 else ""
-    matchups = [("960_cont_learning", "960_no_phases"),]
+    matchups = [("960_correct_phases_20epochs_spike115", "960_no_phases_20epochs_spike115"),]
                 #("specific_opening", "no_phases"),
                 #("no_phases", "specific_endgame"),]
                 #("specific_endgame", "no_phases")]
-    y_lim = (-260, -80)
+    y_lim = (-50, 50)
     plys_ylim = (70, 140)
 
     all_match_info_df = all_match_info_df.sort_values(by=["playerA", "bsize", "nodes", "movetime"])
