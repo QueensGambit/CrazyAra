@@ -8,6 +8,7 @@ Provides utility functions for train_cli.py.
 """
 import logging
 import os
+import sys
 import shutil
 import numpy as np
 from pathlib import Path
@@ -200,6 +201,13 @@ def export_config(train_config: TrainConfig, config_file: str) -> None:
     config_src_path = Path('../../../DeepCrazyhouse/configs', config_file)
     config_dst_path = Path(train_config.export_dir, 'configs', config_file)
     shutil.copy(config_src_path, config_dst_path)
+
+
+def export_cmd_args(train_config: TrainConfig):
+    """Exports all given command line arguments of the python script to a separate file."""
+    with open(Path(train_config.export_dir, "configs", 'cmd_arguments.txt'), 'w') as file:
+        for arg in sys.argv:
+            file.write(arg + '\n')
 
 
 def export_best_model_state(k_steps_best: int, k_steps_final: int, model, policy_loss_final: float, input_shape: tuple,

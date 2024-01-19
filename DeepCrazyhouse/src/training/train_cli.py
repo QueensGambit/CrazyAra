@@ -22,27 +22,47 @@ sys.path.insert(0, '../../../')
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.training.train_cli_util import create_pytorch_model, get_validation_data, fill_train_objects,\
-    print_model_summary, export_best_model_state, fill_train_config, export_configs, create_export_dirs
+    print_model_summary, export_best_model_state, fill_train_config, export_configs, create_export_dirs, export_cmd_args
 from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch
 
 
-def parse_args():
+def parse_args(train_config: TrainConfig):
     """Defines the command-line arguments and parses them."""
     parser = argparse.ArgumentParser(description="Training script for training CNNs or Transformer networks."
                                                  "For all remaining configuration options, please refer to:"
                                                  "CrazyAra/configs/train_config.py")
-    parser.add_argument("--model-type", type=str,
-                        help="Type of neural network architecture (resnet, vit, risev2, risev3, alphavile,"
-                             "alphavile-tiny, alphavile-small, alphavile-normal, alphavile-large, NextViT)",
-                        default="resnet")
-    parser.add_argument("--name-initials", type=str, help="Name initials which are used to identify running training "
-                                                          "processes with the rtpt library", default="XX")
-    parser.add_argument("--export-dir", type=str, help="Export directory where the model files and tensorboard logs"
-                                                       "will be saved.", default="./")
-    parser.add_argument("--use-custom-architecture", type=bool, help="Decides if a custom network architecture should be"
-                                                                     "used, defined in the model_config.py file.", default=False)
+
+    info_prefix, info_str_dict = extract_info_strings(train_config)
+    fill_parser(info_prefix, info_str_dict, parser, train_config)
 
     return parser.parse_args()
+
+
+def fill_parser(info_prefix: str, info_str_dict: dict, parser, train_config: TrainConfig):
+    """Fills the parser object with member and help information."""
+    for member in vars(train_config):
+        member_str = member.replace("_", "-")
+        if not member_str.startswith(info_prefix):
+            default_value = vars(train_config)[member]
+            if member_str in info_str_dict:
+                help_str = info_str_dict[member_str]
+            else:
+                help_str = "?"
+            parser.add_argument(f"--{member_str}", type=type(default_value),
+                                help=f"{help_str} (default: {default_value})",
+                                default=default_value)
+
+
+def extract_info_strings(train_config: TrainConfig):
+    """Extract info strings from the train_config.py file amd returns a dictionary object."""
+    info_prefix = "info-"
+    info_str_dict = {}
+    for member in vars(train_config):
+        member_str = member.replace("_", "-")
+        default_value = vars(train_config)[member]
+        if member_str.startswith(info_prefix):
+            info_str_dict[member_str.replace(info_prefix, "")] = default_value
+    return info_prefix, info_str_dict
 
 
 def update_train_config_via_args(args, train_config):
@@ -53,11 +73,11 @@ def update_train_config_via_args(args, train_config):
 
 
 def main():
-    args = parse_args()
-    enable_color_logging()
-
     # Create an instance of the TrainConfig class
     train_config = TrainConfig()
+    args = parse_args(train_config)
+    enable_color_logging()
+
     update_train_config_via_args(args, train_config)
 
     val_data, x_val, _ = get_validation_data(train_config)
@@ -74,6 +94,7 @@ def main():
 
     create_export_dirs(train_config)
     export_configs(args, train_config)
+    export_cmd_args(train_config)
 
     train_agent = TrainerAgentPytorch(model, val_data, train_config, train_objects, use_rtpt=True)
 
