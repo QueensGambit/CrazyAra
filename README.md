@@ -26,6 +26,7 @@
 *   [Download](#download)
     *   [Binaries](#binaries)
     *   [Models](#models)
+*   [Artworks](#arworks)
 *   [Variants](#variants)
 *   [Documentation](#documentation)
 *   [Compilation](#compilation)
@@ -88,6 +89,11 @@ The extracted model should be placed in the directory reltative to the engine ex
 The default directory is indicated and can be changed by adjusting the UCI-parameter `Model_Directory`.
 
 More information about the different models can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Model-description).
+
+## Artworks
+
+![CrazyAra_Hanna_Czech_2023](https://github.com/QueensGambit/CrazyAra/assets/15967624/652954ea-90be-45e2-94ea-2dd1f6b7b14b)
+![Kristian_and_CrazyAra_2022](https://github.com/QueensGambit/CrazyAra/assets/15967624/9ab40f2c-d701-4b5c-877d-a480e30f64ec)
 
 ## Variants
 Binaries and models are available for the following chess variants:
