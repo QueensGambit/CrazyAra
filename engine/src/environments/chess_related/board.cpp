@@ -539,8 +539,8 @@ int get_mixedness(const Board& pos)
 
 GamePhase Board::get_phase(unsigned int num_phases) const
 {
-    if (num_phases == 3 && false) {
-        // currently disabled so that trivial phases by move count are used if num_phases == 3
+    if (num_phases == 3 && true) {
+        // currently enabled so that trivial phases by move count are not used if num_phases == 3
         // returns the game phase based on the lichess definition implemented in:
         // https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
         unsigned int num_majors_and_minors = get_majors_and_minors_count(*this);
