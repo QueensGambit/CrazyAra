@@ -125,7 +125,8 @@ tc.log_metrics_to_tensorboard = True
 tc.export_grad_histograms = False
 
 phase_weights = {0: 1.0, 1: 1.0, 2: 1.0}  # specify the sample weight for each phase (will be normalized afterwards)
-assert len(phase_weights) == int(main_config["phase_definition"][-1])
+if "movecount" in main_config["phase_definition"]:
+    assert len(phase_weights) == int(main_config["phase_definition"][-1])
 
 # directory to write and read weights, logs, onnx and other export files
 #tc.export_dir = "C:/workspace/Python/CrazyAra/data/train_phase2/"
