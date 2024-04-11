@@ -102,7 +102,12 @@ string get_file_ending_with(const string& dir, const string& suffix);
  */
 Version read_version_from_string(const string& modelFileName);
 
-// TODO add documentation
+/**
+ * @brief read_game_phase_from_string Returns the GamePhase a given model directory belongs to based on its last character
+ * e.g. "/model/ClassicAra/chess/separated_learning/phase0" indicates that the model in this directory belongs to phase 0
+ * @param modelDir Model directory
+ * @return GamePhase
+ */
 GamePhase read_game_phase_from_string(const string& modelDir);
 
 

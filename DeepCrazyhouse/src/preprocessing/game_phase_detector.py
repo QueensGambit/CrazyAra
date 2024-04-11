@@ -19,17 +19,40 @@ import re
 
 
 def get_majors_and_minors_count(board):
+    """
+    Returns the number of major and minor pieces (not including king) currently present on the board (either color)
+
+    :param board:  python-chess board object
+    :return: pieces_left - integer representing how many pieces are left
+    """
     pieces_left = bin(board.queens | board.rooks | board.knights | board.bishops).count("1")
     return pieces_left
 
 
 def is_backrank_sparse(board, max_pieces_allowed=3):
+    """
+    Determines whether the backrank of either player is sparse
+    where sparseness is defined by the amount of pieces on the first (for white) or last (for black) rank
+
+    :param board:  python-chess board object
+    :param max_pieces_allowed: integer representing the maximum pieces (including the king) allowed on the backrank
+                               for it to be considered sparse
+    :return: backrank_sparseness - boolean representing whether either backrank is currently sparse
+    """
     white_backrank_sparse = bin(board.occupied_co[chess.WHITE] & chess.BB_RANK_1).count("1") <= max_pieces_allowed
     black_backrank_sparse = bin(board.occupied_co[chess.BLACK] & chess.BB_RANK_8).count("1") <= max_pieces_allowed
     return white_backrank_sparse or black_backrank_sparse
 
 
 def score(num_white_pieces_in_region, num_black_pieces_in_region, rank):
+    """
+    Calculates the mixedness contribution of a particular 2x2 square/region
+
+    :param num_white_pieces_in_region: integer representing the amount of white pieces in the current 2x2 region
+    :param num_black_pieces_in_region: integer representing the amount of black pieces in the current 2x2 region
+    :param rank: rank of the current 2x2 region
+    :return: mixedness_score - integer representing the mixedness score of the current 2x2 square
+    """
     score_map = {
         (0, 0): 0,
         (1, 0): 1 + (8 - rank),
@@ -51,7 +74,15 @@ def score(num_white_pieces_in_region, num_black_pieces_in_region, rank):
 
 
 def get_mixedness(board):
+    """
+    Calculates the mixedness of a position based on the lichess definition of mixedness,
+    which is roughly speaking the amount of intertwining of black and white pieces in all 2x2 squares of the board
+    more info: https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
 
+    :param board: python-chess board object
+    :return: mixedness_score - integer representing the current mixedness score of the position
+                               (according to the lichess definition)
+    """
     mix = 0
 
     for rank_idx in range(7):  # use ranks 1 to 7 (indices 0 to 6)
@@ -73,7 +104,20 @@ def get_mixedness(board):
 
 def get_game_phase(board, phase_definition="lichess", average_movecount_per_game=42.85):
     """
-    TODO fill docstring
+    Determines the game phase based on the current board state and the given phase definition type
+
+    :param board: python-chess board object
+    :param phase_definition: determines, which phase definition type to use,
+                             either "lichess"
+                             or "movecountX" where X describes the amount of phases
+                             (separated by equidistant move count buckets)
+    :param average_movecount_per_game: specifies the average movecount per game
+                                       (used to determine phase borders when using phases by movecount)
+    :return: str - str representation of the phase (for lichess definition) or empty str
+             num_majors_and_minors - the amount of major and minor pieces left (for lichess phase EDA purposes)
+             backrank_sparse - whether the backrank of either player is sparse (for lichess phase EDA purposes)
+             mixedness_score - current mixedness score of the position (for lichess phase EDA purposes)
+             phase - integer from 0 to num_phases-1 representing the phase the current position belongs to
     """
 
     if phase_definition == "lichess":

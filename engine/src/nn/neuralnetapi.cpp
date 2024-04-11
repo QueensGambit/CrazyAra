@@ -229,7 +229,7 @@ Version read_version_from_string(const string &modelFileName)
 GamePhase read_game_phase_from_string(const string& modelDir)
 {
     // use last char of modelDir and convert to int by subtracting '0'
-    // TODO throw errors if necessary (if game_phase is smaller than 0)
+    // TODO throw errors if necessary (if last letter is not a digit)
 
     int game_phase = (modelDir[modelDir.length() - 2]) - '0';
     return GamePhase(game_phase);
