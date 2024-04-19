@@ -30,6 +30,7 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util imp
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NCB
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
+from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 
 
 def _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32):
@@ -214,6 +215,22 @@ def get_rise_v33_model(args):
                    kernels=kernels, se_types=se_types, use_avg_features=False, n_labels=args.n_labels,
                    use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
                    )
+    return model
+
+
+def get_rise_v33_model_by_train_config(input_shape, tc: TrainConfig):
+    class Args:
+        pass
+
+    args = Args()
+    args.input_shape = input_shape
+    args.channels_policy_head = NB_POLICY_MAP_CHANNELS
+    args.n_labels = NB_LABELS
+    args.select_policy_from_plane = tc.select_policy_from_plane
+    args.use_wdl = tc.use_wdl
+    args.use_plys_to_end = tc.use_plys_to_end
+    args.use_mlp_wdl_ply = tc.use_mlp_wdl_ply
+    model = get_rise_v33_model(args)
     return model
 
 
