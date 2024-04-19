@@ -453,7 +453,7 @@ class NestedBottleneckResidualBlock(torch.nn.Module):
             groups = channels_operating
         else:
             groups = 1
-        self.body = Sequential(BatchNorm2d(num_features=channels_operating),
+        self.body = Sequential(BatchNorm2d(num_features=channels),
                                get_act(act_type),
                                Conv2d(in_channels=channels, out_channels=channels_operating, kernel_size=(1, 1), bias=False),
                                BatchNorm2d(num_features=channels_operating),
