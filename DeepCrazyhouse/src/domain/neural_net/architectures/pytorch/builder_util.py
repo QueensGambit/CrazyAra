@@ -434,6 +434,111 @@ class ClassicalResidualBlock(torch.nn.Module):
         return x + self.path_dropout(self.body(x))
 
 
+class NestedBottleneckResidualBlock(torch.nn.Module):
+    def __init__(self, channels, channels_operating, use_depthwise_conv=True, kernel=3, act_type='relu', se_type=None, path_dropout=0):
+        """
+        Returns a residual block without any max pooling operation
+        Source: https://github.com/lightvector/KataGo/blob/master/docs/KataGoMethods.md#nested-bottleneck-residual-nets
+        :param channels: Number of filters for all CNN-layers
+        :param act_type: Activation function to use
+        :param se_type: Squeeze excitation module that will be used
+        :return: torch.nn.Module
+        """
+        super(NestedBottleneckResidualBlock, self).__init__()
+
+        self.se_type = se_type
+        if se_type:
+            self.se = get_se(se_type=se_type, channels=channels, use_hard_sigmoid=True)
+        if use_depthwise_conv:
+            groups = channels_operating
+        else:
+            groups = 1
+        self.body = Sequential(BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels, out_channels=channels_operating, kernel_size=(1, 1), bias=False),
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=groups),
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=groups),
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels, kernel_size=(1, 1), bias=False))
+        self.path_dropout = DropPath(path_dropout)
+
+    def forward(self, x):
+        """
+        Compute forward pass
+        :param x: Input data to the block
+        :return: Activation maps of the block
+        """
+        if self.se_type:
+            x = self.se(x)
+        return x + self.path_dropout(self.body(x))
+
+
+class NestedSkipBottleneckResidualBlock(torch.nn.Module):
+    def __init__(self, channels, channels_operating, use_depthwise_conv=True, kernel=3, act_type='relu', se_type=None,
+                 path_dropout=0):
+
+        """
+        Returns a residual block without any max pooling operation with additional skip connections.
+        Source: https://github.com/lightvector/KataGo/blob/master/docs/KataGoMethods.md#nested-bottleneck-residual-nets
+        :param channels: Number of filters for all CNN-layers
+        :param act_type: Activation function to use
+        :param se_type: Squeeze excitation module that will be used
+        :return: torch.nn.Module
+        """
+        super(NestedSkipBottleneckResidualBlock, self).__init__()
+
+        self.se_type = se_type
+        if se_type:
+            self.se = get_se(se_type=se_type, channels=channels, use_hard_sigmoid=True)
+        if use_depthwise_conv:
+            groups = channels_operating
+        else:
+            groups = 1
+        self.body_reduction = Sequential(BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels, out_channels=channels_operating, kernel_size=(1, 1), bias=False))
+
+        self.body_first_conv = Sequential(
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=groups),
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=groups))
+
+        self.body_second_conv = Sequential(
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=groups),
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels_operating, kernel_size=(kernel, kernel), padding=(kernel // 2, kernel // 2), bias=False, groups=groups))
+
+        self.body_expansion = Sequential(
+                               BatchNorm2d(num_features=channels_operating),
+                               get_act(act_type),
+                               Conv2d(in_channels=channels_operating, out_channels=channels, kernel_size=(1, 1), bias=False))
+        self.path_dropout = DropPath(path_dropout)
+
+    def forward(self, x):
+        """
+        Compute forward pass
+        :param x: Input data to the block
+        :return: Activation maps of the block
+        """
+        if self.se_type:
+            x = self.se(x)
+        x_1 = self.body_reduction(x)
+        x_2 = x_1 + self.body_first_conv(x_1)
+        x_3 = x_2 + self.body_second_conv(x_2)
+        return x + self.path_dropout(self.body_expansion(x_3))
+
+
 class _BottlekneckResidualBlock(Module):
 
     def __init__(self, channels, channels_operating, use_depthwise_conv=True, kernel=3, act_type='relu', se_type=None, path_dropout=0):
@@ -443,7 +548,7 @@ class _BottlekneckResidualBlock(Module):
         :param name: Name for the residual block
         :param act_type: Activation function to use
         :param se_type: Squeeze excitation module that will be used
-        :return: symbol
+        :return: torch.nn.Module
         """
         super(_BottlekneckResidualBlock, self).__init__()
 

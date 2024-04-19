@@ -25,7 +25,8 @@ from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
 from timm.models.layers import DropPath
 
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import get_act, _ValueHead, _PolicyHead,\
-    _Stem, get_se, process_value_policy_head, _BottlekneckResidualBlock, ClassicalResidualBlock, round_to_next_multiple_of_32
+    _Stem, get_se, process_value_policy_head, _BottlekneckResidualBlock, ClassicalResidualBlock,\
+    round_to_next_multiple_of_32, NestedBottleneckResidualBlock, NestedSkipBottleneckResidualBlock
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NCB
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
@@ -70,7 +71,20 @@ def _get_res_blocks(act_types, channels, channels_operating_init, channel_expans
             res_blocks.append(ClassicalResidualBlock(channels, act_types[idx], se_type=se_types[idx], path_dropout=path_dropout_rates[idx]))
         elif conv_block == "next_conv_block":
             res_blocks.append(NCB(channels, channels, stride=1, se_type=se_types[idx], path_dropout=path_dropout_rates[idx]))
-
+        elif conv_block == "nested_bottleneck_residual_block":
+            res_blocks.append(NestedBottleneckResidualBlock(channels=channels,
+                                                            channels_operating=channels_operating_active,
+                                                            use_depthwise_conv=False,
+                                                            kernel=kernel, act_type=act_types[idx],
+                                                            se_type=se_types[idx],
+                                                            path_dropout=path_dropout_rates[idx]))
+        elif conv_block == "nested_skip_bottleneck_residual_block":
+            res_blocks.append(NestedSkipBottleneckResidualBlock(channels=channels,
+                                                                channels_operating=channels_operating_active,
+                                                                use_depthwise_conv=False,
+                                                                kernel=kernel, act_type=act_types[idx],
+                                                                se_type=se_types[idx],
+                                                                path_dropout=path_dropout_rates[idx]))
         channels_operating += channel_expansion
 
     return res_blocks
