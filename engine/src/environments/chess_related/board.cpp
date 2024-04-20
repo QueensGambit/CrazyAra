@@ -537,10 +537,12 @@ int get_mixedness(const Board& pos)
     return mix;
 }
 
-GamePhase Board::get_phase(unsigned int numPhases) const
+GamePhase Board::get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const
 {
-    if (numPhases == 3 && true) {
-        // currently enabled so that trivial phases by move count are not used if numPhases == 3
+    if (gamePhaseDefinition == LICHESS) {
+
+        assert(numPhases == 3);  // lichess definition requires three models to be loaded
+
         // returns the game phase based on the lichess definition implemented in:
         // https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
         unsigned int numMajorsAndMinors = get_majors_and_minors_count(*this);
@@ -564,19 +566,21 @@ GamePhase Board::get_phase(unsigned int numPhases) const
             }
         }
     }
-    if (numPhases == 1) {
-        return GamePhase(0);
-    }
-    else {  // use naive phases by move count
-        double averageMovecountPerGame = 42.85;
-        double phaseLength = std::round(averageMovecountPerGame / numPhases);
-        size_t movesCompleted = this->total_move_cout();
-        double gamePhaseDouble = movesCompleted / phaseLength;
-        if (gamePhaseDouble > numPhases - 1){ // ensure that all higher results are attributed to the last phase
-            return GamePhase(numPhases - 1);
+    else if (gamePhaseDefinition == MOVECOUNT) {
+        if (numPhases == 1) { // directly return phase 0 if there is only a single network loaded
+            return GamePhase(0);
         }
-        else {
-            return GamePhase(gamePhaseDouble); // truncated to Integer value
+        else {  // use naive phases by move count
+            double averageMovecountPerGame = 42.85;
+            double phaseLength = std::round(averageMovecountPerGame / numPhases);
+            size_t movesCompleted = this->total_move_cout();
+            double gamePhaseDouble = movesCompleted / phaseLength;
+            if (gamePhaseDouble > numPhases - 1) { // ensure that all higher results are attributed to the last phase
+                return GamePhase(numPhases - 1);
+            }
+            else {
+                return GamePhase(gamePhaseDouble); // truncated to Integer value
+            }
         }
     }
 }

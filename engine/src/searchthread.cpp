@@ -227,7 +227,7 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
                 newState->get_state_planes(true, inputPlanes + newNodes->size() * nets.front()->get_nb_input_values_total(), nets.front()->get_version());
-                GamePhase currPhase = newState->get_phase(numPhases);
+                GamePhase currPhase = newState->get_phase(numPhases, searchSettings->gamePhaseDefinition);
                 phaseCountMap[currPhase]++;
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN

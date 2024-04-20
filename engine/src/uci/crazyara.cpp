@@ -773,6 +773,15 @@ void CrazyAra::init_search_settings()
         info_string_important("Unknown option", Options["Virtual_Style"], "for Virtual_Style");
     }
     searchSettings.virtualMixThreshold = Options["Virtual_Mix_Threshold"];
+    if (Options["Game_Phase_Definition"] == "lichess") {
+        searchSettings.gamePhaseDefinition = LICHESS;
+    }
+    else if (Options["Game_Phase_Definition"] == "movecount") {
+        searchSettings.gamePhaseDefinition = MOVECOUNT;
+    }
+    else {
+        info_string_important("Unknown option", Options["Game_Phase_Definition"], "for Game_Phase_Definition");
+    }
 }
 
 void CrazyAra::init_play_settings()

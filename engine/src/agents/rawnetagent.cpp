@@ -54,7 +54,8 @@ void RawNetAgent::evaluate_board_state()
         return;
     }
     state->get_state_planes(true, inputPlanes, nets.front()->get_version());
-    nets[phaseToNetsIndex.at(state->get_phase(numPhases))]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    // TODO: currently always uses MOVECOUNT as GamePhaseDefinition because RawNetAgent has no SearchSettings available
+    nets[phaseToNetsIndex.at(state->get_phase(numPhases, MOVECOUNT))]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());

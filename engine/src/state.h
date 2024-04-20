@@ -35,6 +35,7 @@
 #include <memory>
 #include "version.h"
 #include "util/communication.h"
+#include "agents/config/searchsettings.h"
 
 typedef uint64_t Key;
 #ifdef ACTION_64_BIT
