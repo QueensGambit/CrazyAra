@@ -45,7 +45,6 @@ SearchThread::SearchThread(vector<unique_ptr<NeuralNetAPI>>& netBatchVector, con
     NeuralNetAPIUser(netBatchVector),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
-    //newPhases(make_unique<FixedVector<GamePhase>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
@@ -228,9 +227,8 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
                 newState->get_state_planes(true, inputPlanes + newNodes->size() * nets.front()->get_nb_input_values_total(), nets.front()->get_version());
-                GamePhase curr_phase = newState->get_phase(num_phases);
-                //newPhases->add_element(curr_phase);
-                phaseCountMap[curr_phase]++;
+                GamePhase currPhase = newState->get_phase(numPhases);
+                phaseCountMap[currPhase]++;
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
@@ -402,7 +400,7 @@ void SearchThread::thread_iteration()
         phaseCountMap.clear();
 
         // query the network that corresponds to the majority phase
-        nets[phase_to_nets_index.at(majorityPhase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+        nets[phaseToNetsIndex.at(majorityPhase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
         set_nn_results_to_child_nodes();
     }
 #endif

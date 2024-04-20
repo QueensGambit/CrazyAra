@@ -168,7 +168,7 @@ protected:
     uint_fast32_t nbPolicyValues;
 
     Version version;
-    GamePhase game_phase;
+    GamePhase gamePhase;
 private:
     /**
      * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and

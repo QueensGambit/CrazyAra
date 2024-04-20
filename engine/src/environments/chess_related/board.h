@@ -120,11 +120,11 @@ public:
 
     /**
      * @brief get_phase Returns the game phase of the current board state based on the total amount of phases
-     * Possible returned values are all integers from 0 to num_phases - 1
-     * @param unsigned int num_phases
+     * Possible returned values are all integers from 0 to numPhases - 1
+     * @param unsigned int numPhases
      * @return Game phase as unsigned int
      */
-    GamePhase get_phase(unsigned int num_phases) const;
+    GamePhase get_phase(unsigned int numPhases) const;
 
     // overloaded function which include a last move list update
     void do_move(Move m, StateInfo& newSt);
@@ -240,12 +240,12 @@ bool is_backrank_sparse(const Board& pos);
 
 /**
  * @brief score_region Calculates a mixedness score for a 2x2 subregion of the board
- * @param num_white_pieces_in_region Amount of white pieces in the current region
- * @param num_black_pieces_in_region Amount of black pieces in the current region
+ * @param numWhitePiecesInRegion Amount of white pieces in the current region
+ * @param numBlackPiecesInRegion Amount of black pieces in the current region
  * @param rank Rank of the current region
  * @return Integer representing the mixedness of the region
  */
-int score_region(int num_white_pieces_in_region, int num_black_pieces_in_region, int rank);
+int score_region(int numWhitePiecesInRegion, int numBlackPiecesInRegion, int rank);
 
 /**
  * @brief get_mixedness Returns the mixedness of the given position as defined in https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala

@@ -31,18 +31,18 @@
 #include "common.h"
 #endif
 
-NeuralNetAPIUser::NeuralNetAPIUser(vector<unique_ptr<NeuralNetAPI>>& nets_new) :
+NeuralNetAPIUser::NeuralNetAPIUser(vector<unique_ptr<NeuralNetAPI>>& netsNew) :
     auxiliaryOutputs(nullptr)
 {
-    nets = std::move(nets_new);
-    num_phases = nets.size();
+    nets = std::move(netsNew);
+    numPhases = nets.size();
     
-    for (unsigned int i = 0; i < num_phases; i++)
+    for (unsigned int i = 0; i < numPhases; i++)
     {
-        GamePhase phase_of_net_i = nets[i]->get_game_phase();
-        assert(phase_of_net_i < num_phases); // no net should have a phase greater or equal to the total amount of nets (assumes that only phases from 0 to num_phases -1 are possible)
-        assert(phase_to_nets_index.count(phase_of_net_i) == 0); // no net should have the same phase as another net
-        phase_to_nets_index[phase_of_net_i] = i;
+        GamePhase phaseOfNetI = nets[i]->get_game_phase();
+        assert(phaseOfNetI < numPhases); // no net should have a phase greater or equal to the total amount of nets (assumes that only phases from 0 to numPhases -1 are possible)
+        assert(phaseToNetsIndex.count(phaseOfNetI) == 0); // no net should have the same phase as another net
+        phaseToNetsIndex[phaseOfNetI] = i;
     }
     
     // allocate memory for all predictions and results

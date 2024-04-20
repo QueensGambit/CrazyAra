@@ -272,7 +272,7 @@ void BoardState::init(int variant, bool is960)
 
 #endif
 
-GamePhase BoardState::get_phase(unsigned int num_phases) const
+GamePhase BoardState::get_phase(unsigned int numPhases) const
 {
-    return board.get_phase(num_phases);
+    return board.get_phase(numPhases);
 }

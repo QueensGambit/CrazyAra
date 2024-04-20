@@ -54,7 +54,7 @@ void RawNetAgent::evaluate_board_state()
         return;
     }
     state->get_state_planes(true, inputPlanes, nets.front()->get_version());
-    nets[phase_to_nets_index.at(state->get_phase(num_phases))]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    nets[phaseToNetsIndex.at(state->get_phase(numPhases))]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());

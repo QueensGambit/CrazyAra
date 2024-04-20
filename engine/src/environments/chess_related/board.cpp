@@ -450,55 +450,55 @@ unsigned int get_majors_and_minors_count(const Board& pos)
 
 bool is_backrank_sparse(const Board& pos)
 {
-    Bitboard backrank_pieces_white_bb = pos.pieces(WHITE, ALL_PIECES) & rank_bb(Rank(0));
-    Bitboard backrank_pieces_black_bb = pos.pieces(BLACK, ALL_PIECES) & rank_bb(Rank(7));
+    Bitboard backrankPiecesWhiteBb = pos.pieces(WHITE, ALL_PIECES) & rank_bb(Rank(0));
+    Bitboard backrankPiecesBlackBb = pos.pieces(BLACK, ALL_PIECES) & rank_bb(Rank(7));
 
     // True if either white or black backrank is sparse (three or less pieces)
-    return (popcount(backrank_pieces_white_bb) <= 3) || (popcount(backrank_pieces_black_bb) <= 3);
+    return (popcount(backrankPiecesWhiteBb) <= 3) || (popcount(backrankPiecesBlackBb) <= 3);
 }
 
-int score_region(int num_white_pieces_in_region, int num_black_pieces_in_region, int rank)
+int score_region(int numWhitePiecesInRegion, int numBlackPiecesInRegion, int rank)
 {
-    if (num_white_pieces_in_region == 1 && num_black_pieces_in_region == 0) {
+    if (numWhitePiecesInRegion == 1 && numBlackPiecesInRegion == 0) {
         return 1 + (8 - rank);
     }
-    else if (num_white_pieces_in_region == 2 && num_black_pieces_in_region == 0) {
+    else if (numWhitePiecesInRegion == 2 && numBlackPiecesInRegion == 0) {
         return 2 + ((rank > 2) ? (rank - 2) : 0);
     }
-    else if (num_white_pieces_in_region == 3 && num_black_pieces_in_region == 0) {
+    else if (numWhitePiecesInRegion == 3 && numBlackPiecesInRegion == 0) {
         return 3 + ((rank > 1) ? (rank - 1) : 0);
     }
-    else if (num_white_pieces_in_region == 4 && num_black_pieces_in_region == 0) {
+    else if (numWhitePiecesInRegion == 4 && numBlackPiecesInRegion == 0) {
         return 3 + ((rank > 1) ? (rank - 1) : 0);
     }
-    else if (num_white_pieces_in_region == 0 && num_black_pieces_in_region == 1) {
+    else if (numWhitePiecesInRegion == 0 && numBlackPiecesInRegion == 1) {
         return 1 + rank;
     }
-    else if (num_white_pieces_in_region == 1 && num_black_pieces_in_region == 1) {
+    else if (numWhitePiecesInRegion == 1 && numBlackPiecesInRegion == 1) {
         return 5 + abs(3 - rank);
     }
-    else if (num_white_pieces_in_region == 2 && num_black_pieces_in_region == 1) {
+    else if (numWhitePiecesInRegion == 2 && numBlackPiecesInRegion == 1) {
         return 4 + rank;
     }
-    else if (num_white_pieces_in_region == 3 && num_black_pieces_in_region == 1) {
+    else if (numWhitePiecesInRegion == 3 && numBlackPiecesInRegion == 1) {
         return 5 + rank;
     }
-    else if (num_white_pieces_in_region == 0 && num_black_pieces_in_region == 2) {
+    else if (numWhitePiecesInRegion == 0 && numBlackPiecesInRegion == 2) {
         return 2 + ((rank < 6) ? (6 - rank) : 0);
     }
-    else if (num_white_pieces_in_region == 1 && num_black_pieces_in_region == 2) {
+    else if (numWhitePiecesInRegion == 1 && numBlackPiecesInRegion == 2) {
         return 4 + (6 - rank);
     }
-    else if (num_white_pieces_in_region == 2 && num_black_pieces_in_region == 2) {
+    else if (numWhitePiecesInRegion == 2 && numBlackPiecesInRegion == 2) {
         return 7;
     }
-    else if (num_white_pieces_in_region == 0 && num_black_pieces_in_region == 3) {
+    else if (numWhitePiecesInRegion == 0 && numBlackPiecesInRegion == 3) {
         return 3 + ((rank < 7) ? (7 - rank) : 0);
     }
-    else if (num_white_pieces_in_region == 1 && num_black_pieces_in_region == 3) {
+    else if (numWhitePiecesInRegion == 1 && numBlackPiecesInRegion == 3) {
         return 5 + (6 - rank);
     }
-    else if (num_white_pieces_in_region == 0 && num_black_pieces_in_region == 4) {
+    else if (numWhitePiecesInRegion == 0 && numBlackPiecesInRegion == 4) {
         return 3 + ((rank < 7) ? (7 - rank) : 0);
     }
 
@@ -510,51 +510,51 @@ int get_mixedness(const Board& pos)
 {
     int mix = 0;
 
-    for (int rank_idx = 0; rank_idx < 7; ++rank_idx) { // use ranks 1 to 7 (indices 0 to 6)
-        for (int file_idx = 0; file_idx < 7; ++file_idx) { // use files A to G (indices 0 to 6)
-            int num_white_pieces_in_region = 0;
-            int num_black_pieces_in_region = 0;
+    for (int rankIdx = 0; rankIdx < 7; ++rankIdx) { // use ranks 1 to 7 (indices 0 to 6)
+        for (int fileIdx = 0; fileIdx < 7; ++fileIdx) { // use files A to G (indices 0 to 6)
+            int numWhitePiecesInRegion = 0;
+            int numBlackPiecesInRegion = 0;
             for (int dx = 0; dx < 2; ++dx) {
                 for (int dy = 0; dy < 2; ++dy) {
-                    Square curr_square = make_square(File(file_idx + dx), Rank(rank_idx + dy));
-                    Piece curr_piece = pos.piece_on(curr_square);
+                    Square currSquare = make_square(File(fileIdx + dx), Rank(rankIdx + dy));
+                    Piece currPiece = pos.piece_on(currSquare);
 
-                    if (curr_piece != NO_PIECE) {
-                        if (color_of(curr_piece) == WHITE)
+                    if (currPiece != NO_PIECE) {
+                        if (color_of(currPiece) == WHITE)
                         {
-                            num_white_pieces_in_region++;
+                            numWhitePiecesInRegion++;
                         }
                         else {
-                            num_black_pieces_in_region++;
+                            numBlackPiecesInRegion++;
                         }
                     }
                 }
             }
-            mix += score_region(num_white_pieces_in_region, num_black_pieces_in_region, rank_idx + 1);
+            mix += score_region(numWhitePiecesInRegion, numBlackPiecesInRegion, rankIdx + 1);
         }
     }
 
     return mix;
 }
 
-GamePhase Board::get_phase(unsigned int num_phases) const
+GamePhase Board::get_phase(unsigned int numPhases) const
 {
-    if (num_phases == 3 && true) {
-        // currently enabled so that trivial phases by move count are not used if num_phases == 3
+    if (numPhases == 3 && true) {
+        // currently enabled so that trivial phases by move count are not used if numPhases == 3
         // returns the game phase based on the lichess definition implemented in:
         // https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
-        unsigned int num_majors_and_minors = get_majors_and_minors_count(*this);
+        unsigned int numMajorsAndMinors = get_majors_and_minors_count(*this);
 
-        if (num_majors_and_minors <= 6)
+        if (numMajorsAndMinors <= 6)
         {
             return GamePhase(2);
         }
         else
         {
-            bool backrank_sparse = is_backrank_sparse(*this);
-            int mixedness_score = get_mixedness(*this);
+            bool backrankSparse = is_backrank_sparse(*this);
+            int mixednessScore = get_mixedness(*this);
 
-            if (num_majors_and_minors <= 10 || backrank_sparse || mixedness_score > 150)
+            if (numMajorsAndMinors <= 10 || backrankSparse || mixednessScore > 150)
             {
                 return GamePhase(1);
             }
@@ -564,19 +564,19 @@ GamePhase Board::get_phase(unsigned int num_phases) const
             }
         }
     }
-    if (num_phases == 1) {
+    if (numPhases == 1) {
         return GamePhase(0);
     }
     else {  // use naive phases by move count
-        double average_movecount_per_game = 42.85;
-        double phase_length = std::round(average_movecount_per_game / num_phases);
-        size_t moves_completed = this->total_move_cout();
-        double game_phase_double = moves_completed / phase_length;
-        if (game_phase_double > num_phases - 1){ // ensure that all higher results are attributed to the last phase
-            return GamePhase(num_phases - 1);
+        double averageMovecountPerGame = 42.85;
+        double phaseLength = std::round(averageMovecountPerGame / numPhases);
+        size_t movesCompleted = this->total_move_cout();
+        double gamePhaseDouble = movesCompleted / phaseLength;
+        if (gamePhaseDouble > numPhases - 1){ // ensure that all higher results are attributed to the last phase
+            return GamePhase(numPhases - 1);
         }
         else {
-            return GamePhase(game_phase_double); // truncated to Integer value
+            return GamePhase(gamePhaseDouble); // truncated to Integer value
         }
     }
 }

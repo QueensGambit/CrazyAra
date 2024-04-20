@@ -573,13 +573,13 @@ bool CrazyAra::is_ready()
         for (const auto& entry : fs::directory_iterator(string(Options["Model_Directory"]))) {
             std::cout << entry.path().generic_string() << std::endl;
 
-            unique_ptr<NeuralNetAPI> netSingle_tmp = create_new_net_single(entry.path().generic_string());
-            netSingle_tmp->validate_neural_network();
-            vector<unique_ptr<NeuralNetAPI>> netBatches_tmp = create_new_net_batches(entry.path().generic_string());
-            netBatches_tmp.front()->validate_neural_network();
+            unique_ptr<NeuralNetAPI> netSingleTmp = create_new_net_single(entry.path().generic_string());
+            netSingleTmp->validate_neural_network();
+            vector<unique_ptr<NeuralNetAPI>> netBatchesTmp = create_new_net_batches(entry.path().generic_string());
+            netBatchesTmp.front()->validate_neural_network();
 
-            netSingleVector.push_back(std::move(netSingle_tmp));
-            netBatchesVector.push_back(std::move(netBatches_tmp));
+            netSingleVector.push_back(std::move(netSingleTmp));
+            netBatchesVector.push_back(std::move(netBatchesTmp));
         }
 
         mctsAgent = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings);

@@ -38,8 +38,8 @@ class NeuralNetAPIUser
 {
 protected:
     vector<unique_ptr<NeuralNetAPI>> nets; // vector of net objects 
-    unsigned int num_phases;
-    std::map<GamePhase, int> phase_to_nets_index;  // maps a GamePhase to the index of the net that should be used
+    unsigned int numPhases;
+    std::map<GamePhase, int> phaseToNetsIndex;  // maps a GamePhase to the index of the net that should be used
 
     // inputPlanes stores the plane representation of all newly expanded nodes of a single mini-batch
     float* inputPlanes;
@@ -50,7 +50,7 @@ protected:
     float* auxiliaryOutputs;
 
 public:
-    NeuralNetAPIUser(vector<unique_ptr<NeuralNetAPI>>& nets_new);
+    NeuralNetAPIUser(vector<unique_ptr<NeuralNetAPI>>& netsNew);
     ~NeuralNetAPIUser();
     NeuralNetAPIUser(NeuralNetAPIUser&) = delete;
 

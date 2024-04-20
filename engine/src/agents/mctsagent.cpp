@@ -170,10 +170,10 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
 void MCTSAgent::set_root_node_predictions()
 {
     state->get_state_planes(true, inputPlanes, nets.front()->get_version());
-    GamePhase current_phase = state->get_phase(num_phases);
-    nets[phase_to_nets_index.at(current_phase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    GamePhase currentPhase = state->get_phase(numPhases);
+    nets[phaseToNetsIndex.at(currentPhase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     size_t tbHits = 0;
-    fill_nn_results(0, nets[phase_to_nets_index.at(current_phase)]->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
+    fill_nn_results(0, nets[phaseToNetsIndex.at(currentPhase)]->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
                     rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
 }
 
