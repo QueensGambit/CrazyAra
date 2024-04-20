@@ -61,7 +61,6 @@ private:
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
     unique_ptr<FixedVector<SideToMove>> newNodeSideToMove;
-    //unique_ptr<FixedVector<GamePhase>> newPhases;
     std::map<GamePhase, size_t> phaseCountMap; // saves counts of all phases in current batch
     unique_ptr<FixedVector<float>> transpositionValues;
 

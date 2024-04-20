@@ -51,9 +51,7 @@ SearchSettings::SearchSettings():
         searchPlayerMode(MODE_TWO_PLAYER),
         virtualStyle(VIRTUAL_VISIT),
         virtualMixThreshold(1000),
-        virtualOffsetStrenght(0.001),
-        use_phases(true),
-        max_phase(2)
+        virtualOffsetStrenght(0.001)
 {
 
 }

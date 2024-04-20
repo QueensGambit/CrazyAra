@@ -386,26 +386,7 @@ void SearchThread::thread_iteration()
     create_mini_batch();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-        
-        //std::ofstream csvFile("batch_phase_data_map_only.csv", std::ios_base::app);
-        //std::map<GamePhase, size_t> phaseCountMap; // saves counts of all phases in current batch
-        
-        /*
-        for (const GamePhase& phase : *newPhases) {
-            //csvFile << phase << ",";
-            phaseCountMap[phase]++;
-        }*/
-        /*
-        csvFile << std::endl;
-
-        for (auto const& pair : phaseCountMap) {
-            csvFile << "{" << pair.first << ": " << pair.second << "}";
-            //std::cout << "{" << pair.first << ": " << pair.second << "}";
-        }
-        csvFile << std::endl;
-        */
-
-        
+   
         // determine majority class in current batch
         using pair_type = decltype(phaseCountMap)::value_type;
         auto pr = std::max_element
@@ -418,14 +399,7 @@ void SearchThread::thread_iteration()
 
         GamePhase majorityPhase = pr->first;
 
-        /*
-        csvFile << "majPhase:" << majorityPhase << ",";
-        csvFile << std::endl;
-        csvFile.close();
-        */
-
         phaseCountMap.clear();
-        //newPhases->reset_idx();
 
         // query the network that corresponds to the majority phase
         nets[phase_to_nets_index.at(majorityPhase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
