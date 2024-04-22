@@ -29,8 +29,9 @@
 
 using blaze::HybridVector;
 
-RawNetAgent::RawNetAgent(vector<unique_ptr<NeuralNetAPI>>& nets, PlaySettings* playSettings, bool verbose):
-    Agent(nets, playSettings, verbose)
+RawNetAgent::RawNetAgent(vector<unique_ptr<NeuralNetAPI>>& nets, PlaySettings* playSettings, bool verbose, SearchSettings* searchSettings):
+    Agent(nets, playSettings, verbose),
+    searchSettings(searchSettings)
 {
 }
 
@@ -54,8 +55,7 @@ void RawNetAgent::evaluate_board_state()
         return;
     }
     state->get_state_planes(true, inputPlanes, nets.front()->get_version());
-    // TODO: currently always uses MOVECOUNT as GamePhaseDefinition because RawNetAgent has no SearchSettings available
-    nets[phaseToNetsIndex.at(state->get_phase(numPhases, MOVECOUNT))]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    nets[phaseToNetsIndex.at(state->get_phase(numPhases, searchSettings->gamePhaseDefinition))]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
