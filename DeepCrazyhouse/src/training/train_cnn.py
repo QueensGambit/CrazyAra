@@ -888,7 +888,7 @@ board = start_board
 print(chess.COLOR_NAMES[board.turn])
 if board.uci_variant == "crazyhouse":
     print(board.pockets)
-board
+print(board)
 
 
 # In[ ]:
@@ -925,7 +925,7 @@ if tc.framework == 'pytorch':
 
 x_start_pos = board_to_planes(board, normalize=tc.normalize, mode=mode)
 pred = predict_single(net, x_start_pos, tc.select_policy_from_plane)
-pred
+print(pred)
 
 
 # In[ ]:
