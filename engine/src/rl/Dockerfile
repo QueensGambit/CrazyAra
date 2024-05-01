@@ -70,12 +70,12 @@ ENV CUDA_PATH /usr/local/cuda/
 # Additional dependencies for reinforcement learning
 # ---------------------------------------------------
 # Install boost library (dependecy of z5 library, preinstalled on normal Debian systems)
-#RUN cd /root \
-#    && wget https://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.bz2 \
-#    && tar --bzip2 -xf boost_1_70_0.tar.bz2 \
-#    && cd boost_1_70_0 \
-#    && ./bootstrap.sh \
-#    && ./b2 install
+RUN cd /root \
+    && wget https://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.bz2 \
+    && tar --bzip2 -xf boost_1_70_0.tar.bz2 \
+    && cd boost_1_70_0 \
+    && ./bootstrap.sh \
+    && ./b2 install
 
 # Install XTL (dependency for XTensor)
 RUN cd /root \
@@ -103,7 +103,7 @@ ENV Z5_PATH /root/z5/
 # Clone the CrazyAra repository
 # Install python dependencies for training the neural network
 RUN cd /root \
-    && git clone -b master https://github.com/HelpstoneX/CrazyAra.git --recursive \
+    && git clone https://github.com/QueensGambit/CrazyAra.git --recursive \
     && cd /root/CrazyAra/DeepCrazyhouse/src/training/ \
     && pip install -r requirements.txt
 
@@ -119,91 +119,31 @@ RUN apt-get update -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Build CrazyAra executable
-# -------------------------
+# Build CrazyAra executable with reinforcement learning support
+# --------------------------------------------------------------
 RUN cd /root/CrazyAra/engine \
     && mkdir build \
     && cd build
 RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
     cd /root/CrazyAra/engine/build \
-    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBACKEND_TENSORRT=ON -DBACKEND_OPENVINO=OFF -DUSE_RL=OFF -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 .. \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 .. \
     && make -j8 ; \
 else \
     cd /root/CrazyAra/engine/build \
-    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=OFF -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 -DBACKEND_TENSORRT_7=ON .. \
+    && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_RL=ON -DMODE_CRAZYHOUSE=0 -DMODE_CHESS=1 -DMODE_LICHESS=0 -DBACKEND_TENSORRT_7=ON .. \
     && make -j8 ; \
 fi
 
-ENV WORK_DIR /root/CrazyAra/engine/build
-RUN echo "WORK_DIR: " ${WORK_DIR}
+# Rename the config files
+RUN mv /root/CrazyAra/DeepCrazyhouse/configs/main_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/main_config.py \
+    && mv /root/CrazyAra/DeepCrazyhouse/configs/train_config_template.py /root/CrazyAra/DeepCrazyhouse/configs/train_config.py
 
-ENV MODEL_NAME ClassicAra-sl-model-wdlp-rise3.3-input3.0
-ENV RELEASE_VERION 0.9.5
-
-# Download neural network
-# -------------------------------------
-RUN echo "Downloading neural network ..."
-RUN mkdir ${WORK_DIR}/model \
-    && cd ${WORK_DIR}/model \
-    && mkdir ClassicAra \
-    && cd ClassicAra \
-    && mkdir chess \
-    && cd chess \
-    && wget https://github.com/QueensGambit/CrazyAra/releases/download/${RELEASE_VERION}/${MODEL_NAME}.zip \
-    && unzip ${MODEL_NAME}.zip
-
-# Download network for CrazyHouse
-# -------------------------------------
-RUN echo "Downloading network for crazyhouse..."
-RUN cd ${WORK_DIR}/model \
-    && mkdir CrazyAra \
-    && cd CrazyAra \
-    && mkdir crazyhouse \
-    && cd crazyhouse \
-    && wget https://github.com/QueensGambit/CrazyAra/releases/download/0.9.5/CrazyAra-rl-model-os-96.zip \
-    && unzip CrazyAra-rl-model-os-96.zip
-
-# Download cutechess-cli
-# -------------------------------------
-RUN echo "Downloading cutechess-cli..."
-RUN cd /root \
-    && wget https://github.com/QueensGambit/cutechess/releases/download/1.0.0/cutechess-cli-1.0.0.zip \
-    && unzip cutechess-cli-1.0.0.zip -d /root \
-    && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/cutechess-cli/lib
-
-# Download opening books for chess # er findet aktuell /root/cutechess-cli nicht!
-# -------------------------------------
-RUN echo "Downloading opening books for chess..."
-RUN cd /root/cutechess-cli \
-    && wget https://raw.githubusercontent.com/ianfab/books/master/chess.epd
-
-# Download opening books for crazyhouse # er findet aktuell /root/cutechess-cli nicht!
-# -------------------------------------
-RUN echo "Downloading opening books for crazyhouse..."
-RUN cd /root/cutechess-cli \
-    && wget https://raw.githubusercontent.com/ianfab/books/master/crazyhouse.epd
-
-# Install debugging utilities for to allow creating core-dumps "gdb"
+# Install debugging utilities for "coredumpctl gdb"
 RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends \
-    systemd \
-    init \
-    apport \
-    gdb \
-    python3-systemd \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+     && apt-get install -y systemd-coredump \
+     && apt-get install -y gdb \
+     && apt-get clean \
+     && rm -rf /var/lib/apt/lists/*
 
-# enable core-dumps and port forwarding
-RUN sed -i "s/enabled=0/enabled=1/g" /etc/default/apport && \
-    sed -i "s/'problem_types'/#'problem_types'/g" /etc/apport/crashdb.conf && \
-    sed -i "s/ConditionVirtualization=container//g" /lib/systemd/system/apport-forward.socket
-RUN systemctl enable apport-forward.socket
-
-EXPOSE 5000
-ENTRYPOINT [ "/sbin/init" ]
-WORKDIR ${WORK_DIR}
-
-CMD cd ${WORK_DIR} \
-    && git pull \
+CMD cd /root/CrazyAra/engine/src/rl/ \
     && /bin/bash
