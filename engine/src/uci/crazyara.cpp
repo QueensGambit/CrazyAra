@@ -583,7 +583,7 @@ bool CrazyAra::is_ready()
         }
 
         mctsAgent = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings);
-        //rawAgent = make_unique<RawNetAgent>(netSingleVector, &playSettings, false);
+        //rawAgent = make_unique<RawNetAgent>(netSingleVector, &playSettings, false, &searchSettings);
         // TODO: rawAgent currently doesn't work (netSingleVector somehow doesn't contain any nets)
         StateConstants::init(mctsAgent->is_policy_map(), is960);
         timeoutThread.kill();
