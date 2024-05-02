@@ -583,4 +583,5 @@ GamePhase Board::get_phase(unsigned int numPhases, GamePhaseDefinition gamePhase
             }
         }
     }
+  return GamePhase(0);
 }
