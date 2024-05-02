@@ -313,14 +313,30 @@ inline void set_checkerboard(PlaneData& p)
     }
 }
 
+inline void set_single_relative_count(PlaneData& p, const float relativeCount)
+{
+    if (relativeCount != 0) {
+        p.set_plane_to_value<false>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
+    }
+    p.increment_channel();
+}
+
+inline void set_single_piece_material_diff(PlaneData& p, PieceType piece)
+{
+    set_single_relative_count(p, p.pos->get_board_piece_count(p.me(), piece) - p.pos->get_board_piece_count(p.you(), piece));
+}
+
 inline void set_material_diff(PlaneData& p)
 {
     for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN}) {
-        float relativeCount = p.pos->get_board_piece_count(p.me(), piece) - p.pos->get_board_piece_count(p.you(), piece);
-        if (relativeCount != 0) {
-            p.set_plane_to_value<false>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-        }
-        p.increment_channel();
+        set_single_piece_material_diff(p, piece);
+    }
+}
+
+inline void set_material_diff_with_king(PlaneData& p)
+{
+    for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
+        set_single_piece_material_diff(p, piece);
     }
 }
 
@@ -388,14 +404,22 @@ inline void set_opposite_bishops(PlaneData& p)
     p.increment_channel();
 }
 
+inline void set_single_piece_material_count(PlaneData& p, PieceType piece)
+{
+    set_single_relative_count(p, p.pos->get_board_piece_count(p.me(), piece));
+}
+
 inline void set_material_count(PlaneData& p)
 {
     for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN}) {
-        float relativeCount = p.pos->get_board_piece_count(p.me(), piece);
-        if (relativeCount != 0) {
-            p.set_plane_to_value<false>(p.normalize ? relativeCount / StateConstants::NORMALIZE_PIECE_NUMBER() : relativeCount);
-        }
-        p.increment_channel();
+        set_single_piece_material_count(p, piece);
+    }
+}
+
+inline void set_material_count_with_king(PlaneData& p)
+{
+    for (PieceType piece: {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING}) {
+        set_single_piece_material_count(p, piece);
     }
 }
 
@@ -571,6 +595,36 @@ inline void board_to_planes_crazyhouse_v2(PlaneData& planeData, size_t boardRepe
 }
 #endif
 
+#ifdef MODE_LICHESS
+inline void board_to_planes_lichess_v3(PlaneData& planeData, size_t boardRepetition)
+{
+    const uint_fast32_t nbChannelsTotal = 80;
+    // default features
+    planeData.set_all_planes_to_zero(nbChannelsTotal);
+    set_plane_pieces(planeData);
+    set_plane_repetition(planeData, boardRepetition);
+    set_plane_pockets(planeData);
+    set_plane_promoted_pieces(planeData);
+    set_plane_ep_square(planeData);
+    planeData.increment_channel();  // skip color info
+    planeData.increment_channel();  // skip total move count
+    set_plane_castling_rights(planeData);
+    set_no_progress_counter(planeData);
+    set_remaining_checks(planeData);
+    set_variant_and_960(planeData);
+    set_last_moves(planeData);
+    // fx features
+    set_piece_masks(planeData);
+    set_checkerboard(planeData);
+    set_material_diff_with_king(planeData);
+    set_opposite_bishops(planeData);
+    set_checkers(planeData);
+    set_material_count_with_king(planeData);
+    assert(planeData.current_channel() == nbChannelsTotal);
+}
+#endif
+
+
 void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, float* inputPlanes, Version version)
 {
     // Fill in the piece positions
@@ -610,6 +664,16 @@ void board_to_planes(const Board *pos, size_t boardRepetition, bool normalize, f
         default:
             std::cerr << "The given version '" << version_to_string(version) << "' was unexpected and could not be handled" << endl;
             throw false;
+    }
+#endif
+#ifdef MODE_LICHESS
+    switch (version) {
+    case make_version<0,0,0>():
+    case make_version<1,0,0>():
+    case make_version<2,0,0>():
+            break;
+    case make_version<3,0,0>():
+            return board_to_planes_lichess_v3(planeData, boardRepetition);
     }
 #endif
     default_board_to_planes(planeData, boardRepetition);

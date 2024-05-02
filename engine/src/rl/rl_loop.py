@@ -23,7 +23,7 @@ from engine.src.rl.rl_utils import enable_logging, get_log_filename, get_current
 from engine.src.rl.binaryio import BinaryIO
 from engine.src.rl.fileio import FileIO
 from DeepCrazyhouse.configs.main_config import main_config
-from DeepCrazyhouse.configs.train_config import TrainConfig
+from DeepCrazyhouse.configs.train_config import rl_train_config
 from DeepCrazyhouse.configs.rl_config import RLConfig, UCIConfigArena
 from engine.src.rl.rl_training import update_network
 
@@ -45,7 +45,7 @@ class RLLoop:
         """
         self.args = args
 
-        self.tc = TrainConfig()
+        self.tc = rl_train_config()
         self.rl_config = rl_config
 
         self.file_io = FileIO(orig_binary_name=self.rl_config.binary_name, binary_dir=self.rl_config.binary_dir,
@@ -127,12 +127,11 @@ class RLLoop:
             queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
             process = Process(target=update_network, args=(queue, self.nn_update_index,
-                                                           self.file_io.get_current_model_arch_file(),
-                                                           self.file_io.get_current_model_weight_file(),
                                                            self.file_io.get_current_model_tar_file(),
                                                            not self.args.no_onnx_export,
                                                            main_config, self.tc,
                                                            self.file_io.model_contender_dir))
+
             logging.info("Start Training")
             process.start()
             self.tc.k_steps = queue.get() + 1

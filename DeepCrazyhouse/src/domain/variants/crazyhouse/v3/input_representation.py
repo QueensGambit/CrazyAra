@@ -66,7 +66,7 @@ def planes_to_board(planes, normalized_input):
     """
     Converts a board in plane representation to the python chess board representation
     see get_planes_of_board() for input encoding description
-    ! Board is always returned with WHITE to move and move number and no progress counter = 0 !
+    ! Board is always returned with WHITE to move and move number = 0 !
 
     :param planes: Input plane representation
     :param normalized_input: Defines if the inputs are normalized to [0,1]

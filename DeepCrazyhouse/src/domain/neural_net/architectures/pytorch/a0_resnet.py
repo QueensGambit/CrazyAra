@@ -169,7 +169,7 @@ class AlphaZeroResnet(torch.nn.Module):
 
 def get_alpha_zero_model(args):
     """
-    Wrapper definition for AlphaVile models
+    Wrapper definition for the AlphaZero model
     :param args: Argument dictionary
     :return: pytorch model object
     """

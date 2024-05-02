@@ -25,7 +25,7 @@ from torch.nn.modules.utils import _pair
 
 import DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vit_configs as configs
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util import _ValueHead
-
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vit_configs import get_b8_config
 
 logger = logging.getLogger(__name__)
 
@@ -271,3 +271,13 @@ CONFIGS = {
     'R50-ViT-B_16': configs.get_r50_b16_config(),
     'testing': configs.get_testing(),
 }
+
+
+def get_vision_transformer_model(args):
+
+    num_classes = args.channels_policy_head * 64 if args.select_policy_from_plane else args.n_labels
+    model = VisionTransformer(get_b8_config(), img_size=8, in_channels=args.input_shape[0], num_classes=num_classes,
+                               use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end,
+                              use_mlp_wdl_ply=args.use_mlp_wdl_ply,)
+    return model
+
