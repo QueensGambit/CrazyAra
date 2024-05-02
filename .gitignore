@@ -139,22 +139,3 @@ build-engine-Desktop_Qt*/
 
 # user
 *.txt.user
-/.vs
-/.vscode
-/data
-/engine/cmake-build-debug
-/model
-/DeepCrazyhouse/src/preprocessing/data.json
-/DeepCrazyhouse/src/preprocessing/results.json
-/engine/3rdparty/blaze-3.6
-/DeepCrazyhouse/data
-/DeepCrazyhouse/src/preprocessing/download_pgns
-/engine/CMakeSettings.json
-/DeepCrazyhouse/src/preprocessing/analyse_game_phase_data.json
-/DeepCrazyhouse/src/samples/batch_phase_data.csv
-/DeepCrazyhouse/src/samples/batch_phase_data_berlin.csv
-/phase_models
-/cutechess-cli/cutechess_results/
-/cutechess-cli/excluded/
-/etc/train_logs/
-/etc/plots/
