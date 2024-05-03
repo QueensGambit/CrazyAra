@@ -26,7 +26,6 @@
 #include "neuralnetapi.h"
 #include <string>
 #include <regex>
-#include "../stateobj.h"
 
 
 string get_string_ending_with(const vector<string>& stringVector, const string& suffix) {
@@ -86,7 +85,9 @@ void NeuralNetAPI::initialize_nn_design()
     nbNNAuxiliaryOutputs = nnDesign.auxiliaryOutputShape.flatten() / batchSize;
     nbPolicyValues = nnDesign.policyOutputShape.v[1];
     version = read_version_from_string(modelName);
+    gamePhase = read_game_phase_from_string(modelDir);
     info_string("Input representation: ", version_to_string(version));
+    info_string("Game Phase: ", std::to_string(gamePhase));
 }
 
 void NeuralNetAPI::initialize()
@@ -105,7 +106,8 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
     nbNNInputValues(0),  // will be set dynamically in initialize_nn_design()
     nbNNAuxiliaryOutputs(0),  // will be set dynamically in initialize_nn_design()
     nbPolicyValues(0),  // will be set dynamically in initialize_nn_design()
-    version(make_version<0,0,0>())
+    version(make_version<0,0,0>()),
+    gamePhase(0)
 {
     modelDir = parse_directory(modelDirectory);
     deviceName = ctx + string("_") + to_string(deviceID);
@@ -114,6 +116,12 @@ NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSi
 bool NeuralNetAPI::is_policy_map() const
 {
     return nnDesign.isPolicyMap;
+}
+
+
+GamePhase NeuralNetAPI::get_game_phase() const
+{
+    return gamePhase;
 }
 
 string NeuralNetAPI::get_model_name() const
@@ -216,6 +224,15 @@ Version read_version_from_string(const string &modelFileName)
     }
     // unsuccessfull
     return make_version<0,0,0>();
+}
+
+GamePhase read_game_phase_from_string(const string& modelDir)
+{
+    // use last char of modelDir and convert to int by subtracting '0'
+    // TODO throw errors if necessary (if last letter is not a digit)
+
+    int gamePhase = (modelDir[modelDir.length() - 2]) - '0';
+    return GamePhase(gamePhase);
 }
 
 void apply_softmax(float* input, size_t size) {

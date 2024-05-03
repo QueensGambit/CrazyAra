@@ -48,8 +48,8 @@ using namespace crazyara;
 class MCTSAgentTrueSight : public MCTSAgent
 {
 public:
-    MCTSAgentTrueSight(NeuralNetAPI* netSingle,
-              vector<unique_ptr<NeuralNetAPI>>& netBatches,
+    MCTSAgentTrueSight(vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
+              vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
               SearchSettings* searchSettings,
               PlaySettings* playSettings
               );

@@ -50,8 +50,8 @@ class MCTSAgentRandom : public MCTSAgent
 public:
 
 public:
-    MCTSAgentRandom(NeuralNetAPI* netSingle,
-              vector<unique_ptr<NeuralNetAPI>>& netBatches,
+    MCTSAgentRandom(vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
+              vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
               SearchSettings* searchSettings,
               PlaySettings* playSettings);
     ~MCTSAgentRandom();

@@ -79,12 +79,8 @@ class TrainConfig:
                            " pytorch training loop.)"
     k_steps_initial: int = 0
 
-    info_symbol_file: str = "symbol_file is the neural network architecture file to continue training with (deprecated)" \
-                            "(e.g. 'model_init-symbol.json', model-1.19246-0.603-symbol.json')"
-    symbol_file: str = ''
-    info_params_file: str = "params_file is the neural network weight file to continue training with (deprecated)" \
-                            "(e.g. 'model_init-0000.params' # model-1.19246-0.603-0223.params')"
-    params_file: str = ''
+    info_tar_file: str = "tar_file is the neural network weight file to continue training with" \
+    tar_file: str = ''
 
     info_optimizer_name: str = "optimizer_name is the optimizer that used in the training loop to update the weights." \
                                "(e.g. nag, sgd, adam, adamw)"
@@ -214,4 +210,5 @@ class TrainObjects:
     momentum_schedule = None
     metrics = None
     variant_metrics = None
+    phase_weights = {0: 1., 1: 1., 2: 1.}
 

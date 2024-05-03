@@ -38,6 +38,7 @@
 #include "../util/communication.h"
 #include "neuralnetdesign.h"
 #include "version.h"
+#include "../stateobj.h"
 
 // http://www.codebind.com/cpp-tutorial/cpp-program-list-files-directory-windows-linux/
 namespace {
@@ -101,6 +102,14 @@ string get_file_ending_with(const string& dir, const string& suffix);
  */
 Version read_version_from_string(const string& modelFileName);
 
+/**
+ * @brief read_game_phase_from_string Returns the GamePhase a given model directory belongs to based on its last character
+ * e.g. "/model/ClassicAra/chess/separated_learning/phase0" indicates that the model in this directory belongs to phase 0
+ * @param modelDir Model directory
+ * @return GamePhase
+ */
+GamePhase read_game_phase_from_string(const string& modelDir);
+
 
 template <typename T>
 /**
@@ -159,6 +168,7 @@ protected:
     uint_fast32_t nbPolicyValues;
 
     Version version;
+    GamePhase gamePhase;
 private:
     /**
      * @brief init_nn_design Infers the input and output shapes of the loaded neural network architectures and
@@ -209,6 +219,13 @@ public:
      * @return string
      */
     string get_device_name() const;
+
+
+    /**
+    * @brief get_game_phase Returns the game phase of this NeuralNetAPI
+    * @return GamePhase
+    */
+    GamePhase get_game_phase() const;
 
     /**
      * @brief predict Runs a prediction on the given inputPlanes and returns the policy vector in form of a NDArray and the value as a float number

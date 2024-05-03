@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <climits>
 #include "util/blazeutil.h"
+#include <fstream>
 
 
 size_t SearchThread::get_max_depth() const
@@ -40,8 +41,8 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(NeuralNetAPI *netBatch, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    NeuralNetAPIUser(netBatch),
+SearchThread::SearchThread(vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+    NeuralNetAPIUser(netBatchVector),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
@@ -225,7 +226,9 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * net->get_nb_input_values_total(), net->get_version());
+                newState->get_state_planes(true, inputPlanes + newNodes->size() * nets.front()->get_nb_input_values_total(), nets.front()->get_version());
+                GamePhase currPhase = newState->get_phase(numPhases, searchSettings->gamePhaseDefinition);
+                phaseCountMap[currPhase]++;
                 // save a reference newly created list in the temporary list for node creation
                 // it will later be updated with the evaluation of the NN
                 newNodeSideToMove->add_element(newState->side_to_move());
@@ -299,7 +302,7 @@ void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
-        fill_nn_results(batchIdx, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
+        fill_nn_results(batchIdx, nets.front()->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
                         tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
                         searchSettings, rootNode->is_tablebase());
         ++batchIdx;
@@ -381,7 +384,23 @@ void SearchThread::thread_iteration()
     create_mini_batch();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-        net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+   
+        // determine majority class in current batch
+        using pair_type = decltype(phaseCountMap)::value_type;
+        auto pr = std::max_element
+        (
+            std::begin(phaseCountMap), std::end(phaseCountMap),
+            [](const pair_type& p1, const pair_type& p2) {
+                return p1.second < p2.second;
+            }
+        );
+
+        GamePhase majorityPhase = pr->first;
+
+        phaseCountMap.clear();
+
+        // query the network that corresponds to the majority phase
+        nets[phaseToNetsIndex.at(majorityPhase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
         set_nn_results_to_child_nodes();
     }
 #endif

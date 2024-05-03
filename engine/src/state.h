@@ -35,6 +35,7 @@
 #include <memory>
 #include "version.h"
 #include "util/communication.h"
+#include "agents/config/searchsettings.h"
 
 typedef uint64_t Key;
 #ifdef ACTION_64_BIT
@@ -45,6 +46,7 @@ typedef int32_t Action;
 typedef uint16_t MoveIdx;
 typedef unsigned int uint;
 typedef int SideToMove;
+typedef unsigned int GamePhase;
 #define FIRST_PLAYER_IDX 0
 const int ACTION_NONE = 0;
 
@@ -495,6 +497,15 @@ public:
      * @param variant Variant which the position corresponds to
      */
     virtual void init(int variant, bool isChess960) = 0;
+
+    /**
+     * @brief get_phase Returns the current game phase of the state
+     * @param numPhases Number of phases in total
+     * @param gamePhaseDefinition Game phase definition to use (e.g. MOVECOUNT, LICHESS)
+     * @return Game phase (uint)
+     */
+    virtual GamePhase get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const = 0;
+
 };
 
 #endif // GAMESTATE_H

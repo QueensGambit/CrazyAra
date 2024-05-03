@@ -117,6 +117,7 @@ public:
     StrategoState *clone() const;
     StrategoState *openBoard() const;
     void init(int variant, bool isChess960) override;
+    GamePhase get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const override;
 };
 
 #endif // STRATEGOSTATE_H

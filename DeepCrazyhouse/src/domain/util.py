@@ -165,7 +165,7 @@ def get_numpy_arrays(pgn_dataset):
     Loads the content of the dataset file into numpy arrays
 
     :param pgn_dataset: dataset file handle
-    :return: numpy-arrays:
+    :return: pgn_dataset_arrays_dict: dict of {specific dataset part: numpy-array} with the following keys
             starting_idx - defines the index where each game starts
             x - the board representation for all games
             y_value - the game outcome (-1,0,1) for each board position
@@ -174,6 +174,7 @@ def get_numpy_arrays(pgn_dataset):
              This can be used to apply discounting
             y_best_move_q - Q-value for the position of the selected move
              (this information is only available for generated data during selfplay)
+            phase_vector - array of the game phase of each position
     """
     # Get the data
     start_indices = np.array(pgn_dataset["start_indices"])
@@ -184,14 +185,22 @@ def get_numpy_arrays(pgn_dataset):
     except Exception:
         y_policy = np.array(pgn_dataset["y_policy"])
 
-    possible_entries = ["plys_to_end", "y_best_move_q"]
-    entries = [None] * 2
+    possible_entries = ["plys_to_end", "y_best_move_q", "phase_vector"]
+    entries = [None] * 3
     for idx, entry in enumerate(possible_entries):
         try:
             entries[idx] = np.array(pgn_dataset[entry])
         except KeyError:
             pass
-    return start_indices, x, y_value, y_policy, entries[0], entries[1]
+
+    pgn_dataset_arrays_dict = {"start_indices": start_indices,
+                               "x": x,
+                               "y_value": y_value,
+                               "y_policy": y_policy,
+                               "plys_to_end": entries[0],
+                               "y_best_move_q": entries[1],
+                               "phase_vector": entries[2]}
+    return pgn_dataset_arrays_dict
 
 
 def get_x_y_and_indices(dataset):

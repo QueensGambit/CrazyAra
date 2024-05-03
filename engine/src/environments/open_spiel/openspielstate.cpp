@@ -193,3 +193,9 @@ void OpenSpielState::init(int variant, bool isChess960) {
     check_variant(variant);
     spielState = spielGame->NewInitialState();
 }
+
+GamePhase OpenSpielState::get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const {
+    // TODO: Implement game phases
+    return GamePhase(0);
+}
+

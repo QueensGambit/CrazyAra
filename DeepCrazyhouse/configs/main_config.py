@@ -11,7 +11,12 @@ Adjust the paths accordingly.
 
 # define the default dir where the training data in plane representation is located
 # e.g. for supervised learning default_dir = "/data/planes/"
-default_dir = "/data/RL/export/"
+default_dir = "/data/kingbase2019_lite_pgn_months/"
+#default_dir = "C:/workspace/Python/CrazyAra/data/kingbase2019_lite_pgn_months/"
+#default_dir = "C:/workspace/Python/CrazyAra/data/chess960_pgns/"
+phase = None  # current phase to use, set to None to treat everything as a single phase
+# type of phase definition, either "lichess" or "movecountX" with X determining the number of phases
+phase_definition = "movecount3"
 
 if default_dir[-1] != "/":
     default_dir = default_dir + "/"
@@ -30,29 +35,38 @@ main_config = {
     # The test directory includes games from the month:             2017-05
     # The mate_in_one directory includes games from the month:      lichess_db_standard_rated_2015-08.pgn
 
+    "phase": phase,
+    "phase_definition": phase_definition,
+    "default_dir": default_dir,
+
     # The pgn directories contain all files which are converted to plane representation
-    "pgn_train_dir": "/home/demo_user/datasets/lichess/Crazyhouse/pgn/train/",
-    "pgn_val_dir": "/home/demo_user/datasets/lichess/Crazyhouse/pgn/val/",
-    "pgn_test_dir": "/home/demo_user/datasets/lichess/Crazyhouse/pgn/test/",
-    "pgn_mate_in_one_dir": "/home/demo_user/datasets/lichess/Crazyhouse/pgn/mate_in_one/",
+    "pgn_train_dir": default_dir + "pgn/train/",
+    "pgn_val_dir": default_dir + "pgn/val/",
+    "pgn_test_dir": default_dir + "pgn/test/",
+    "pgn_mate_in_one_dir": default_dir + "pgn/mate_in_one/",
     # The plane directories contain the plane representation of the converted board state
     #  (.zip files which have been compressed by  the python zarr library)
-    "planes_train_dir": default_dir + "train/",
-    "planes_val_dir": default_dir + "val/",
-    "planes_test_dir": default_dir + "test/",
-    "planes_mate_in_one_dir": default_dir + "mate_in_one/",
+
+    "planes_train_dir": default_dir + f"planes/{phase_definition}/phase{phase}/train/",
+    "planes_val_dir": default_dir + f"planes/{phase_definition}/phase{phase}/val/",
+    "planes_test_dir": default_dir + f"planes/{phase_definition}/phase{phase}/test/",
+    "planes_mate_in_one_dir": default_dir + f"planes/{phase_definition}/phase{phase}/mate_in_one/",
 
     # The rec directory contains the plane representation which are used in the training loop of the network
     # use the notebook create_rec_dataset to generate the .rec files:
     # (Unfortunately when trying to start training with the big dataset a memory overflow occurred.
     # therefore the old working solution was used to train the latest model by loading the dataset via batch files)
     #  "train.idx", "val.idx", "test.idx", "mate_in_one.idx", "train.rec", "val.rec", "test.rec", "mate_in_one.rec"
-    "rec_dir": "/home/demo_user/datasets/lichess/Crazyhouse/rec/",
+
+    "rec_dir": default_dir + "rec/",
     # The architecture dir contains the architecture definition of the network in mxnet .symbol format
     # These directories are used for inference
-    "model_architecture_dir": "/home/demo_user/models/Crazyhouse/symbol/",
+    #"model_architecture_dir": "/home/demo_user/models/Crazyhouse/symbol/",
+    "model_architecture_dir": "/DeepCrazyhouse/models/Classic/symbol/",
+
     # the weight directory contains the of the network in mxnet .params format
-    "model_weights_dir": "/home/demo_user/models/Crazyhouse/params/",
+    #"model_weights_dir": "/home/demo_user/models/Crazyhouse/params/",
+    "model_weights_dir": "/DeepCrazyhouse/models/Classic/params/",
 
     # layer name of the value output layer (e.g. value_tanh0 for legacy crazyhouse networks and value_out for newer
     # networks)

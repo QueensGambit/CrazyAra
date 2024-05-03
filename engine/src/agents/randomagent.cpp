@@ -37,9 +37,9 @@
 #include "util/gcthread.h"
 
 
-MCTSAgentRandom::MCTSAgentRandom(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches,
+MCTSAgentRandom::MCTSAgentRandom(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
                      SearchSettings* searchSettings, PlaySettings* playSettings):
-    MCTSAgent(netSingle, netBatches, searchSettings, playSettings)
+    MCTSAgent(netSingleVector, netBatchesVector, searchSettings, playSettings)
     {
 
     }

@@ -29,8 +29,9 @@
 
 using blaze::HybridVector;
 
-RawNetAgent::RawNetAgent(NeuralNetAPI* net, PlaySettings* playSettings, bool verbose):
-    Agent(net, playSettings, verbose)
+RawNetAgent::RawNetAgent(vector<unique_ptr<NeuralNetAPI>>& nets, PlaySettings* playSettings, bool verbose, SearchSettings* searchSettings):
+    Agent(nets, playSettings, verbose),
+    searchSettings(searchSettings)
 {
 }
 
@@ -53,13 +54,13 @@ void RawNetAgent::evaluate_board_state()
         evalInfo->pv[0] = {evalInfo->legalMoves[0]};
         return;
     }
-    state->get_state_planes(true, inputPlanes, net->get_version());
-    net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    state->get_state_planes(true, inputPlanes, nets.front()->get_version());
+    nets[phaseToNetsIndex.at(state->get_phase(numPhases, searchSettings->gamePhaseDefinition))]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
     get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->mirror_policy(state->side_to_move()),
-                           !net->is_policy_map(), evalInfo->policyProbSmall, net->is_policy_map());
+                           !nets.front()->is_policy_map(), evalInfo->policyProbSmall, nets.front()->is_policy_map());
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];
 

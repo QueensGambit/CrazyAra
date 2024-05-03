@@ -532,6 +532,7 @@ inline void board_to_planes_chess_v_2_8(PlaneData& planeData, const vector<Actio
     assert(planeData.current_channel() == nbChannelsTotal);
 }
 
+
 inline void board_to_planes_chess_v3(PlaneData& planeData, size_t boardRepetition)
 {
     const uint_fast32_t nbChannelsTotal = 52;

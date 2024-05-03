@@ -442,3 +442,146 @@ bool is_capture(const Board* pos, Move move)
 }
 
 #endif
+
+unsigned int get_majors_and_minors_count(const Board& pos)
+{
+    return pos.count<QUEEN>() + pos.count<ROOK>() + pos.count<KNIGHT>() + pos.count<BISHOP>();
+}
+
+bool is_backrank_sparse(const Board& pos)
+{
+    Bitboard backrankPiecesWhiteBb = pos.pieces(WHITE, ALL_PIECES) & rank_bb(Rank(0));
+    Bitboard backrankPiecesBlackBb = pos.pieces(BLACK, ALL_PIECES) & rank_bb(Rank(7));
+
+    // True if either white or black backrank is sparse (three or less pieces)
+    return (popcount(backrankPiecesWhiteBb) <= 3) || (popcount(backrankPiecesBlackBb) <= 3);
+}
+
+int score_region(int numWhitePiecesInRegion, int numBlackPiecesInRegion, int rank)
+{
+    if (numWhitePiecesInRegion == 1 && numBlackPiecesInRegion == 0) {
+        return 1 + (8 - rank);
+    }
+    else if (numWhitePiecesInRegion == 2 && numBlackPiecesInRegion == 0) {
+        return 2 + ((rank > 2) ? (rank - 2) : 0);
+    }
+    else if (numWhitePiecesInRegion == 3 && numBlackPiecesInRegion == 0) {
+        return 3 + ((rank > 1) ? (rank - 1) : 0);
+    }
+    else if (numWhitePiecesInRegion == 4 && numBlackPiecesInRegion == 0) {
+        return 3 + ((rank > 1) ? (rank - 1) : 0);
+    }
+    else if (numWhitePiecesInRegion == 0 && numBlackPiecesInRegion == 1) {
+        return 1 + rank;
+    }
+    else if (numWhitePiecesInRegion == 1 && numBlackPiecesInRegion == 1) {
+        return 5 + abs(3 - rank);
+    }
+    else if (numWhitePiecesInRegion == 2 && numBlackPiecesInRegion == 1) {
+        return 4 + rank;
+    }
+    else if (numWhitePiecesInRegion == 3 && numBlackPiecesInRegion == 1) {
+        return 5 + rank;
+    }
+    else if (numWhitePiecesInRegion == 0 && numBlackPiecesInRegion == 2) {
+        return 2 + ((rank < 6) ? (6 - rank) : 0);
+    }
+    else if (numWhitePiecesInRegion == 1 && numBlackPiecesInRegion == 2) {
+        return 4 + (6 - rank);
+    }
+    else if (numWhitePiecesInRegion == 2 && numBlackPiecesInRegion == 2) {
+        return 7;
+    }
+    else if (numWhitePiecesInRegion == 0 && numBlackPiecesInRegion == 3) {
+        return 3 + ((rank < 7) ? (7 - rank) : 0);
+    }
+    else if (numWhitePiecesInRegion == 1 && numBlackPiecesInRegion == 3) {
+        return 5 + (6 - rank);
+    }
+    else if (numWhitePiecesInRegion == 0 && numBlackPiecesInRegion == 4) {
+        return 3 + ((rank < 7) ? (7 - rank) : 0);
+    }
+
+    return 0;  // for 0 white and 0 black and all other (incorrect) options with a sum that is bigger than 4
+
+}
+
+int get_mixedness(const Board& pos)
+{
+    int mix = 0;
+
+    for (int rankIdx = 0; rankIdx < 7; ++rankIdx) { // use ranks 1 to 7 (indices 0 to 6)
+        for (int fileIdx = 0; fileIdx < 7; ++fileIdx) { // use files A to G (indices 0 to 6)
+            int numWhitePiecesInRegion = 0;
+            int numBlackPiecesInRegion = 0;
+            for (int dx = 0; dx < 2; ++dx) {
+                for (int dy = 0; dy < 2; ++dy) {
+                    Square currSquare = make_square(File(fileIdx + dx), Rank(rankIdx + dy));
+                    Piece currPiece = pos.piece_on(currSquare);
+
+                    if (currPiece != NO_PIECE) {
+                        if (color_of(currPiece) == WHITE)
+                        {
+                            numWhitePiecesInRegion++;
+                        }
+                        else {
+                            numBlackPiecesInRegion++;
+                        }
+                    }
+                }
+            }
+            mix += score_region(numWhitePiecesInRegion, numBlackPiecesInRegion, rankIdx + 1);
+        }
+    }
+
+    return mix;
+}
+
+GamePhase Board::get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const
+{
+    if (gamePhaseDefinition == LICHESS) {
+
+        assert(numPhases == 3);  // lichess definition requires three models to be loaded
+
+        // returns the game phase based on the lichess definition implemented in:
+        // https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
+        unsigned int numMajorsAndMinors = get_majors_and_minors_count(*this);
+
+        if (numMajorsAndMinors <= 6)
+        {
+            return GamePhase(2);
+        }
+        else
+        {
+            bool backrankSparse = is_backrank_sparse(*this);
+            int mixednessScore = get_mixedness(*this);
+
+            if (numMajorsAndMinors <= 10 || backrankSparse || mixednessScore > 150)
+            {
+                return GamePhase(1);
+            }
+            else
+            {
+                return GamePhase(0);
+            }
+        }
+    }
+    else if (gamePhaseDefinition == MOVECOUNT) {
+        if (numPhases == 1) { // directly return phase 0 if there is only a single network loaded
+            return GamePhase(0);
+        }
+        else {  // use naive phases by move count
+            double averageMovecountPerGame = 42.85;
+            double phaseLength = std::round(averageMovecountPerGame / numPhases);
+            size_t movesCompleted = this->total_move_cout();
+            double gamePhaseDouble = movesCompleted / phaseLength;
+            if (gamePhaseDouble > numPhases - 1) { // ensure that all higher results are attributed to the last phase
+                return GamePhase(numPhases - 1);
+            }
+            else {
+                return GamePhase(gamePhaseDouble); // truncated to Integer value
+            }
+        }
+    }
+  return GamePhase(0);
+}

@@ -50,7 +50,6 @@
 CrazyAra::CrazyAra():
     rawAgent(nullptr),
     mctsAgent(nullptr),
-    netSingle(nullptr),         // will be initialized in is_ready()
 #ifdef USE_RL
     netSingleContender(nullptr),
     mctsAgentContender(nullptr),
@@ -555,6 +554,8 @@ bool CrazyAra::is_ready()
 {
     bool hasReplied = false;
     if (!networkLoaded) {
+        netSingleVector.clear();
+        netBatchesVector.clear();
         const size_t timeoutMS = Options["Timeout_MS"];
         TimeOutReadyThread timeoutThread(timeoutMS);
         thread tTimeoutThread;
@@ -566,13 +567,25 @@ bool CrazyAra::is_ready()
 #ifdef USE_RL
         init_rl_settings();
 #endif
-        netSingle = create_new_net_single(string(Options["Model_Directory"]));
-        netSingle->validate_neural_network();
-        netBatches = create_new_net_batches(string(Options["Model_Directory"]));
-        netBatches.front()->validate_neural_network();
-        mctsAgent = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings);
-        rawAgent = make_unique<RawNetAgent>(netSingle.get(), &playSettings, false);
+
+        // analyse directory to get num phases
+        for (const auto& entry : fs::directory_iterator(string(Options["Model_Directory"]))) {
+            std::cout << entry.path().generic_string() << std::endl;
+
+            unique_ptr<NeuralNetAPI> netSingleTmp = create_new_net_single(entry.path().generic_string());
+            netSingleTmp->validate_neural_network();
+            vector<unique_ptr<NeuralNetAPI>> netBatchesTmp = create_new_net_batches(entry.path().generic_string());
+            netBatchesTmp.front()->validate_neural_network();
+
+            netSingleVector.push_back(std::move(netSingleTmp));
+            netBatchesVector.push_back(std::move(netBatchesTmp));
+        }
+
+        mctsAgent = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings);
+        //rawAgent = make_unique<RawNetAgent>(netSingleVector, &playSettings, false, &searchSettings);
+        // TODO: rawAgent currently doesn't work (netSingleVector somehow doesn't contain any nets)
         StateConstants::init(mctsAgent->is_policy_map(), Options["UCI_Chess960"]);
+
         timeoutThread.kill();
         if (timeoutMS != 0) {
             tTimeoutThread.join();
@@ -670,32 +683,33 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
     }
 }
 
-unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches, SearchSettings* searchSettings, MCTSAgentType type)
+unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, SearchSettings* searchSettings, MCTSAgentType type)
 {
     switch (type) {
     case MCTSAgentType::kDefault:
-        return make_unique<MCTSAgent>(netSingle, netBatches, searchSettings, &playSettings);
+        return make_unique<MCTSAgent>(netSingleVector, netBatchesVector, searchSettings, &playSettings);
     case MCTSAgentType::kBatch1:
         info_string("TYP 1 -> Batch 1");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 1, false);
+        return make_unique<MCTSAgentBatch>(netSingleVector, netBatchesVector, searchSettings, &playSettings , 1, false);
     case MCTSAgentType::kBatch3:
         info_string("TYP 2 -> Batch 3");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 3, false);
+        return make_unique<MCTSAgentBatch>(netSingleVector, netBatchesVector, searchSettings, &playSettings , 3, false);
     case MCTSAgentType::kBatch5:
         info_string("TYP 3 -> Batch 5");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 5, false);
+        return make_unique<MCTSAgentBatch>(netSingleVector, netBatchesVector, searchSettings, &playSettings , 5, false);
     case MCTSAgentType::kBatch3_reducedNodes:
         info_string("TYP 4 -> Batch 3 Split");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 3, true);
+        return make_unique<MCTSAgentBatch>(netSingleVector, netBatchesVector, searchSettings, &playSettings , 3, true);
     case MCTSAgentType::kBatch5_reducedNodes:
         info_string("TYP 5 -> Batch 5 Split");
-        return make_unique<MCTSAgentBatch>(netSingle, netBatches, searchSettings, &playSettings , 5, true);
+        return make_unique<MCTSAgentBatch>(netSingleVector, netBatchesVector, searchSettings, &playSettings , 5, true);
     case MCTSAgentType::kTrueSight:
         info_string("TYP 6 -> TrueSight");
-        return make_unique<MCTSAgentTrueSight>(netSingle, netBatches, searchSettings, &playSettings);
+        return make_unique<MCTSAgentTrueSight>(netSingleVector, netBatchesVector, searchSettings, &playSettings);
     case MCTSAgentType::kRandom:
         info_string("TYP 7 -> Random");
-        return make_unique<MCTSAgentRandom>(netSingle, netBatches, searchSettings, &playSettings);
+        return make_unique<MCTSAgentRandom>(netSingleVector, netBatchesVector, searchSettings, &playSettings);
+    
     default:
       info_string("Unknown MCTSAgentType");
       return nullptr;
@@ -756,6 +770,15 @@ void CrazyAra::init_search_settings()
         info_string_important("Unknown option", Options["Virtual_Style"], "for Virtual_Style");
     }
     searchSettings.virtualMixThreshold = Options["Virtual_Mix_Threshold"];
+    if (Options["Game_Phase_Definition"] == "lichess") {
+        searchSettings.gamePhaseDefinition = LICHESS;
+    }
+    else if (Options["Game_Phase_Definition"] == "movecount") {
+        searchSettings.gamePhaseDefinition = MOVECOUNT;
+    }
+    else {
+        info_string_important("Unknown option", Options["Game_Phase_Definition"], "for Game_Phase_Definition");
+    }
 }
 
 void CrazyAra::init_play_settings()

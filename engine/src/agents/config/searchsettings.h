@@ -43,6 +43,11 @@ enum VirtualStyle {
     VIRTUAL_MIX
 };
 
+enum GamePhaseDefinition {
+    LICHESS,
+    MOVECOUNT
+};
+
 struct SearchSettings
 {
     uint16_t multiPV;
@@ -87,6 +92,8 @@ struct SearchSettings
     uint_fast32_t virtualMixThreshold;
     // Defines the strength of the virtual offset
     double virtualOffsetStrenght;
+    // Defines the type of game phase definition to be used
+    GamePhaseDefinition gamePhaseDefinition;
     SearchSettings();
 
 };

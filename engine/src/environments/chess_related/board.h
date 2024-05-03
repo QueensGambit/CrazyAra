@@ -118,6 +118,15 @@ public:
      */
     bool draw_by_insufficient_material() const;
 
+    /**
+     * @brief get_phase Returns the game phase of the current board state based on the total amount of phases and the chosen GamePhaseDefinition
+     * Possible returned values are all integers from 0 to numPhases - 1
+     * @param unsigned int numPhases
+     * @param GamePhaseDefinition gamePhaseDefinition
+     * @return Game phase as unsigned int
+     */
+    GamePhase get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const;
+
     // overloaded function which include a last move list update
     void do_move(Move m, StateInfo& newSt);
     void do_move(Move m, StateInfo& newSt, bool givesCheck);
@@ -216,6 +225,35 @@ inline bool is_capture(const Board* pos, Move move);
 */
 inline bool enhance_move_type(float increment, float thresh, const vector<Move>& legalMoves,
                               const DynamicVector<bool>& moveType, DynamicVector<float>& policyProbSmall);
+/**
+ * @brief get_majors_and_minors_count Returns the amount of majors and minors currently still on the board (both sides)
+ * @param pos Given board position
+ * @return Unsigned integer representing the amount of majors and minors left
+ */
+unsigned int get_majors_and_minors_count(const Board& pos);
+
+/**
+ * @brief is_backrank_sparse Checks whether the backrank of either side is sparse (three or less pieces)
+ * @param pos Given board position
+ * @return True if either the white or the black backrank is sparse
+ */
+bool is_backrank_sparse(const Board& pos);
+
+/**
+ * @brief score_region Calculates a mixedness score for a 2x2 subregion of the board
+ * @param numWhitePiecesInRegion Amount of white pieces in the current region
+ * @param numBlackPiecesInRegion Amount of black pieces in the current region
+ * @param rank Rank of the current region
+ * @return Integer representing the mixedness of the region
+ */
+int score_region(int numWhitePiecesInRegion, int numBlackPiecesInRegion, int rank);
+
+/**
+ * @brief get_mixedness Returns the mixedness of the given position as defined in https://github.com/lichess-org/scalachess/blob/master/src/main/scala/Divider.scala
+ * @param pos Given board position
+ * @return Integer representing the mixedness of the given position
+ */
+int get_mixedness(const Board& pos);
 
 #endif // BOARD_H
 #endif

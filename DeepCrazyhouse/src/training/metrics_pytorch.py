@@ -7,7 +7,7 @@ Created on 13.06.22
 Metric definitions for Pytorch
 """
 import torch
-from DeepCrazyhouse.src.training.trainer_agent_pytorch import SoftCrossEntropyLoss
+from DeepCrazyhouse.src.training.trainer_agent_pytorch import SoftCrossEntropyLoss, SampleWeightedLoss
 
 
 class Metric:
@@ -17,7 +17,7 @@ class Metric:
     def reset(self) -> None:
         pass
 
-    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
+    def update(self, preds: torch.Tensor, labels: torch.Tensor, sample_weights: torch.Tensor) -> None:
         pass
 
     def compute(self) -> float:
@@ -35,7 +35,7 @@ class Accuracy(Metric):
         self.correct_cnt = 0
         self.total_cnt = 0
 
-    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
+    def update(self, preds: torch.Tensor, labels: torch.Tensor, sample_weights: torch.Tensor = None) -> None:
         if self.sparse_policy_label:
             self.correct_cnt += float((preds == labels.data).sum())
         else:
@@ -49,7 +49,7 @@ class Accuracy(Metric):
 class MSE(Metric):
     def __init__(self):
         super().__init__()
-        self.loss = torch.nn.MSELoss()
+        self.loss = SampleWeightedLoss(torch.nn.MSELoss)
         self.loss_sum = 0
         self.nb_batches = 0
 
@@ -57,8 +57,8 @@ class MSE(Metric):
         self.loss_sum = 0
         self.nb_batches = 0
 
-    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
-        self.loss_sum += self.loss(preds, labels)
+    def update(self, preds: torch.Tensor, labels: torch.Tensor, sample_weights: torch.Tensor) -> None:
+        self.loss_sum += self.loss(preds, labels, sample_weights)
         self.nb_batches += 1
 
     def compute(self) -> float:
@@ -72,9 +72,9 @@ class CrossEntropy(Metric):
         """
         super().__init__()
         if sparse_policy_label:
-            self.loss = torch.nn.CrossEntropyLoss()
+            self.loss = SampleWeightedLoss(torch.nn.CrossEntropyLoss)
         else:
-            self.loss = SoftCrossEntropyLoss()
+            self.loss = SampleWeightedLoss(SoftCrossEntropyLoss)
         self.loss_sum = 0
         self.nb_batches = 0
         self.sparse_policy_label = sparse_policy_label
@@ -83,11 +83,11 @@ class CrossEntropy(Metric):
         self.loss_sum = 0
         self.nb_batches = 0
 
-    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
+    def update(self, preds: torch.Tensor, labels: torch.Tensor, sample_weights: torch.Tensor) -> None:
         if self.sparse_policy_label:
-            self.loss_sum += self.loss(preds, labels.long())
+            self.loss_sum += self.loss(preds, labels.long(), sample_weights)
         else:
-            self.loss_sum += self.loss(preds, labels)
+            self.loss_sum += self.loss(preds, labels, sample_weights)
         self.nb_batches += 1
 
     def compute(self) -> float:
@@ -104,7 +104,7 @@ class AccuracySign(Metric):
         self.correct_cnt = 0
         self.denominator = 0
 
-    def update(self, preds: torch.Tensor, labels: torch.Tensor) -> None:
+    def update(self, preds: torch.Tensor, labels: torch.Tensor, sample_weights: torch.Tensor = None) -> None:
         self.correct_cnt += float((preds.sign() == labels.data.sign()).sum())
         self.denominator += labels.shape[0] - (labels == 0).sum()
 

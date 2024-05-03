@@ -34,10 +34,9 @@
 #include "../node.h"
 #include "../util/communication.h"
 
-
-MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& netBatches,
+MCTSAgent::MCTSAgent(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
                      SearchSettings* searchSettings, PlaySettings* playSettings):
-    Agent(netSingle, playSettings, true),
+    Agent(netSingleVector, playSettings, true),
     searchSettings(searchSettings),
     rootNode(nullptr),
     rootState(nullptr),
@@ -53,7 +52,11 @@ MCTSAgent::MCTSAgent(NeuralNetAPI *netSingle, vector<unique_ptr<NeuralNetAPI>>& 
     mapWithMutex.hashTable.reserve(1e6);
 
     for (auto i = 0; i < searchSettings->threads; ++i) {
-        searchThreads.emplace_back(new SearchThread(netBatches[i].get(), searchSettings, &mapWithMutex));
+        vector<unique_ptr<NeuralNetAPI>> netBatchVector; // stores the ith element of all netBatches in netBatchesVector
+        for (auto& netBatches : netBatchesVector) {
+            netBatchVector.push_back(std::move(netBatches[i]));
+        }
+        searchThreads.emplace_back(new SearchThread(netBatchVector, searchSettings, &mapWithMutex));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
@@ -78,7 +81,7 @@ Node* MCTSAgent::get_root_node() const
 
 string MCTSAgent::get_device_name() const
 {
-    return net->get_device_name();
+    return nets.front()->get_device_name();
 }
 
 float MCTSAgent::get_dirichlet_noise() const
@@ -166,10 +169,11 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
 
 void MCTSAgent::set_root_node_predictions()
 {
-    state->get_state_planes(true, inputPlanes, net->get_version());
-    net->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    state->get_state_planes(true, inputPlanes, nets.front()->get_version());
+    GamePhase currentPhase = state->get_phase(numPhases, searchSettings->gamePhaseDefinition);
+    nets[phaseToNetsIndex.at(currentPhase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     size_t tbHits = 0;
-    fill_nn_results(0, net->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
+    fill_nn_results(0, nets[phaseToNetsIndex.at(currentPhase)]->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
                     rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
 }
 
@@ -256,12 +260,12 @@ void MCTSAgent::clear_game_history()
 
 bool MCTSAgent::is_policy_map()
 {
-    return net->is_policy_map();
+    return nets.front()->is_policy_map();
 }
 
 string MCTSAgent::get_name() const
 {
-    return engineName + "-" + engineVersion + "-" + net->get_model_name();
+    return engineName + "-" + engineVersion + "-" + nets.front()->get_model_name();
 }
 
 void MCTSAgent::update_stats()
