@@ -219,3 +219,9 @@ void StrategoState::init(int variant, bool isChess960) {
         spielState = spielGame->NewInitialState();
     }
 }
+
+GamePhase StrategoState::get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const
+{
+    // TODO: Implement phase definition here
+    return GamePhase(0);
+}

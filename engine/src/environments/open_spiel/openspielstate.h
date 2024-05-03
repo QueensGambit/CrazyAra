@@ -143,6 +143,7 @@ public:
     void set_auxiliary_outputs(const float* auxiliaryOutputs);
     OpenSpielState *clone() const;
     void init(int variant, bool isChess960);
+    GamePhase get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const override;
 };
 
 #endif // OPENSPIELSTATE_H

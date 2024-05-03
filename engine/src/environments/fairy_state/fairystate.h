@@ -227,6 +227,7 @@ public:
     Tablebase::WDLScore check_for_tablebase_wdl(Tablebase::ProbeState &result) override;
     void set_auxiliary_outputs(const float* auxiliaryOutputs) override;
     void init(int variant, bool isChess960);
+    GamePhase get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const override;
 };
 
 #endif // FAIRYSTATE_H
