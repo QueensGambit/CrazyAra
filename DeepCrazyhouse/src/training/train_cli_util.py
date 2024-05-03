@@ -276,10 +276,8 @@ def get_validation_data(train_config: TrainConfig):
     """
     Returns the validation loader, x-Data and target-Policy object.
     """
-    s_idcs_val, x_val, yv_val, yp_val, plys_to_end, pgn_datasets_val = load_pgn_dataset(dataset_type='val', part_id=0,
-                                                                                        verbose=True,
-                                                                                        normalize=train_config.normalize)
-    val_data = get_data_loader(x_val, yv_val, yp_val, plys_to_end, train_config, shuffle=False)
+    pgn_dataset_arrays_dict = load_pgn_dataset(dataset_type='val', part_id=0, verbose=True, normalize=train_config.normalize)
+    val_data = get_data_loader(pgn_dataset_arrays_dict, train_config, shuffle=False)
     return val_data, x_val, yp_val
 
 

@@ -63,7 +63,6 @@ class TrainerAgentPytorch:
             self.to.metrics = {}
         self._model = model
         self._val_loader = val_loader
-        self.x_train = self.yv_train = self.yp_train = None
         self._ctx = get_context(train_config.context, train_config.device_id)
 
         # define a summary writer that logs data and flushes to the file every 5 seconds
@@ -286,14 +285,7 @@ class TrainerAgentPytorch:
             verbose=False,
             q_value_ratio=self.tc.q_value_ratio)
 
-        self.x_train = pgn_dataset_arrays_dict["x"]
-        self.yv_train = pgn_dataset_arrays_dict["y_value"]
-        self.yp_train = pgn_dataset_arrays_dict["y_policy"]
-        self.plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
-        self.phase_vector = pgn_dataset_arrays_dict["phase_vector"]
-
-        train_loader = get_data_loader(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, self.phase_vector,
-                                       self.tc, shuffle=True)
+        train_loader = get_data_loader(pgn_dataset_arrays_dict, self.tc, shuffle=True)
 
         return train_loader
 
@@ -747,32 +739,29 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
     return metric_values
 
 
-def get_data_loader(x, y_value, y_policy, plys_to_end, phase_vector, tc: TrainConfig, shuffle=True):
+def get_data_loader(pgn_dataset_arrays_dict: dict, tc: TrainConfig, shuffle=True):
     """
     Returns a DataLoader object for the given numpy arrays.
     !Note: This function modifies the y_policy!
-    :param x: Input planes
-    :param y_value: Value target
-    :param y_policy: Policy target
-    :param plys_to_end: Plys until the game ends
-    :param phase_vector: array of the game phase of each position
+    :param pgn_dataset_arrays_dict: Dict object containing the numpy arrays of load_pgn_dataset
     :param tc: Training config object
     :param shuffle: Decide whether to shuffle the dataset or not
     :return: Returns the data loader object
     """
-    y_policy_prep = prepare_policy(y_policy=y_policy, select_policy_from_plane=tc.select_policy_from_plane,
+    d = pgn_dataset_arrays_dict
+    y_policy_prep = prepare_policy(y_policy=d['y_policy'], select_policy_from_plane=tc.select_policy_from_plane,
                                    sparse_policy_label=tc.sparse_policy_label,
                                    is_policy_from_plane_data=tc.is_policy_from_plane_data)
 
     # update the train_data object
     if tc.use_wdl and tc.use_plys_to_end:
-        dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
+        dataset = TensorDataset(torch.Tensor(d['x']), torch.Tensor(d['y_value']),
                                 torch.Tensor(y_policy_prep),
-                                torch.Tensor(value_to_wdl_label(y_value)),
-                                torch.Tensor(prepare_plys_label(plys_to_end)),
-                                torch.Tensor(phase_vector))
+                                torch.Tensor(value_to_wdl_label(d['y_value'])),
+                                torch.Tensor(prepare_plys_label(d['plys_to_end'])),
+                                torch.Tensor(d['phase_vector']))
     else:
-        dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
-                                torch.Tensor(y_policy_prep), torch.Tensor(phase_vector))
+        dataset = TensorDataset(torch.Tensor(d['x']), torch.Tensor(d['y_value']),
+                                torch.Tensor(y_policy_prep), torch.Tensor(d['phase_vector']))
     train_loader = DataLoader(dataset, shuffle=shuffle, batch_size=tc.batch_size, num_workers=tc.cpu_count)
     return train_loader
