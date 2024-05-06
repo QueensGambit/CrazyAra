@@ -79,7 +79,7 @@ class TrainConfig:
                            " pytorch training loop.)"
     k_steps_initial: int = 0
 
-    info_tar_file: str = "tar_file is the neural network weight file to continue training with" \
+    info_tar_file: str = "tar_file is the neural network weight file to continue training with"
     tar_file: str = ''
 
     info_optimizer_name: str = "optimizer_name is the optimizer that used in the training loop to update the weights." \
