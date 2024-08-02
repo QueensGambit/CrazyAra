@@ -571,51 +571,8 @@ class PGN2PlanesConverter:
             synchronizer=zarr.ThreadSynchronizer(),
             compression=compressor,
         )
-        # export the images
-        zarr_file.create_dataset(
-            name="x",
-            data=x,
-            shape=x.shape,
-            dtype=np.int16,
-            chunks=(128, x.shape[1], x.shape[2], x.shape[3]),
-            synchronizer=zarr.ThreadSynchronizer(),
-            compression=compressor,
-        )
-        # create the label arrays and copy the labels data in them
-        zarr_file.create_dataset(
-            name="y_value", shape=y_value.shape, dtype=np.int16, data=y_value, synchronizer=zarr.ThreadSynchronizer()
-        )
-        zarr_file.create_dataset(
-            name="y_policy",
-            shape=y_policy.shape,
-            dtype=np.int16,
-            data=y_policy,
-            chunks=(128, y_policy.shape[1]),
-            synchronizer=zarr.ThreadSynchronizer(),
-            compression=compressor,
-        )
-        zarr_file.create_dataset(
-            name="plys_to_end",
-            shape=plys_to_end.shape,
-            dtype=np.int16,
-            data=plys_to_end,
-            synchronizer=zarr.ThreadSynchronizer()
-        )
-        zarr_file.create_dataset(
-            name="phase_vector",
-            shape=phase_vector.shape,
-            dtype=np.int16,
-            data=phase_vector,
-            synchronizer=zarr.ThreadSynchronizer()
-        )
-        zarr_file.create_dataset(
-            name="start_indices",
-            shape=start_indices.shape,
-            dtype=np.int32,
-            data=start_indices,
-            synchronizer=zarr.ThreadSynchronizer(),
-            compression=compressor,
-        )
+        export_main_data(zarr_file, compressor, start_indices, x, y_value, y_policy, plys_to_end, phase_vector)
+
         zarr_file.create_group("/parameters")  # export the parameter settings and statistics of the file
         zarr_file.create_dataset(
             name="/parameters/pgn_name",
@@ -690,6 +647,55 @@ class PGN2PlanesConverter:
         store.close()
         logging.debug("dataset was exported to: %s", zarr_path)
         return True
+
+
+def export_main_data(zarr_file, compressor, start_indices, x, y_value, y_policy, plys_to_end, phase_vector):
+    """Exports the main data entries into the zarr-file."""
+    # export the images
+    zarr_file.create_dataset(
+        name="x",
+        data=x,
+        shape=x.shape,
+        dtype=np.int16,
+        chunks=(128, x.shape[1], x.shape[2], x.shape[3]),
+        synchronizer=zarr.ThreadSynchronizer(),
+        compression=compressor,
+    )
+    # create the label arrays and copy the labels data in them
+    zarr_file.create_dataset(
+        name="y_value", shape=y_value.shape, dtype=np.int16, data=y_value, synchronizer=zarr.ThreadSynchronizer()
+    )
+    zarr_file.create_dataset(
+        name="y_policy",
+        shape=y_policy.shape,
+        dtype=np.int16,
+        data=y_policy,
+        chunks=(128, y_policy.shape[1]),
+        synchronizer=zarr.ThreadSynchronizer(),
+        compression=compressor,
+    )
+    zarr_file.create_dataset(
+        name="plys_to_end",
+        shape=plys_to_end.shape,
+        dtype=np.int16,
+        data=plys_to_end,
+        synchronizer=zarr.ThreadSynchronizer()
+    )
+    zarr_file.create_dataset(
+        name="phase_vector",
+        shape=phase_vector.shape,
+        dtype=np.int16,
+        data=phase_vector,
+        synchronizer=zarr.ThreadSynchronizer()
+    )
+    zarr_file.create_dataset(
+        name="start_indices",
+        shape=start_indices.shape,
+        dtype=np.int32,
+        data=start_indices,
+        synchronizer=zarr.ThreadSynchronizer(),
+        compression=compressor,
+    )
 
 
 def export_pgn_to_datasetfile():
