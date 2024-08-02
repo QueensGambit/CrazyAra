@@ -23,6 +23,9 @@ We can use all moves except the first move as our training samples.
 """
 from pathlib import Path
 
+import sys
+
+sys.path.insert(0, '../../../../')
 import pandas as pd
 import chess
 import chess.engine
