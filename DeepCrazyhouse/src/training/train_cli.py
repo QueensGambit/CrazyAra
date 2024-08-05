@@ -81,7 +81,7 @@ def main():
 
     update_train_config_via_args(args, train_config)
 
-    val_data, x_val, _ = get_validation_data(train_config)
+    val_data, x_val = get_validation_data(train_config)
     input_shape = x_val[0].shape
     fill_train_config(train_config, x_val)
 

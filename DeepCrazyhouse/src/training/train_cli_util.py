@@ -284,7 +284,7 @@ def get_validation_data(train_config: TrainConfig):
     """
     pgn_dataset_arrays_dict = load_pgn_dataset(dataset_type='val', part_id=0, verbose=True, normalize=train_config.normalize)
     val_data = get_data_loader(pgn_dataset_arrays_dict, train_config, shuffle=False)
-    return val_data, x_val, yp_val
+    return val_data, pgn_dataset_arrays_dict["x"]
 
 
 def print_model_summary(input_shape: tuple, model, x_val) -> None:
