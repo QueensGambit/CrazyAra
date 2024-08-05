@@ -78,20 +78,21 @@ def sort_concat_data(data_dic: dict):
     return np.concatenate(data, axis=0)
 
 
-def process_chunk(chunk_id: int, chunksize: int, df_chunk: pd.DataFrame, export_dir: Path):
+def process_chunk(chunk_id: int, chunksize: int, df_chunk: pd.DataFrame, export_dir: Path, processes: int):
     """
     Processes a data frame chunk by exporting all chess puzzle positions in this chunk.
     :param chunk_id: Unique id of the data chunk
     :param chunksize: Size of each chunk
     :param df_chunk: Data frame chunk
     :param export_dir: Export directory where the .zip files will be stored
+    :param processes: Number of processes
     return: None
     """
 
     # engine = chess.engine.SimpleEngine.popen_uci(r"stockfish")
 
     logging.info("starting conversion to planes...")
-    pool = Pool()
+    pool = Pool(processes=processes)
     x_dic = {}
     y_value_dic = {}
     y_policy_dic = {}
@@ -168,6 +169,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--puzzle-csv-dir', type=str, default='./', help='Directory where the puzzle csv file is stored.')
     parser.add_argument('--export-dir', type=str, default='./', help='Directory where the .zip files will be exported to.')
+    parser.add_argument('--processes', type=int, default='4', help='Number of parallel processes.')
 
     args = parser.parse_args()
 
@@ -199,4 +201,4 @@ if __name__ == '__main__':
     with pd.read_csv(puzzle_file_path, chunksize=chunksize) as reader:
         for chunk_id, df_chunk in enumerate(reader):
             print('chunk:', df_chunk)
-            process_chunk(chunk_id, chunksize, df_chunk, export_dir)
+            process_chunk(chunk_id, chunksize, df_chunk, export_dir, args.processes)
