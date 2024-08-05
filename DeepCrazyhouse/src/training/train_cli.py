@@ -16,6 +16,7 @@ import argparse
 import sys
 import torch
 import logging
+from pathlib import Path
 
 sys.path.insert(0, '../../../')
 
@@ -23,7 +24,7 @@ from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.src.training.train_cli_util import create_pytorch_model, get_validation_data, fill_train_objects,\
     print_model_summary, export_best_model_state, fill_train_config, export_configs, create_export_dirs, export_cmd_args
-from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch
+from DeepCrazyhouse.src.training.trainer_agent_pytorch import TrainerAgentPytorch, load_torch_state
 
 
 def parse_args(train_config: TrainConfig):
@@ -91,6 +92,10 @@ def main():
 
     train_objects = TrainObjects()
     fill_train_objects(train_config, train_objects)
+    if train_config.tar_file != "":
+        print("load model weights")
+        load_torch_state(model, torch.optim.SGD(model.parameters(), lr=train_config.max_lr), Path(train_config.tar_file),
+                         train_config.device_id)
 
     create_export_dirs(train_config)
     export_configs(args, train_config)

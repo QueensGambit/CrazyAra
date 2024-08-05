@@ -38,7 +38,7 @@ from DeepCrazyhouse.src.training.lr_schedules.lr_schedules import plot_schedule,
     LinearWarmUp, MomentumSchedule
 from DeepCrazyhouse.src.training.train_util import get_metrics
 from DeepCrazyhouse.src.training.trainer_agent_pytorch import save_torch_state, export_to_onnx, get_context,\
-    get_data_loader
+    get_data_loader, load_torch_state
 
 
 class Args:
@@ -232,6 +232,12 @@ def export_best_model_state(k_steps_best: int, k_steps_final: int, model, policy
     shutil.copy(model_tar_path, best_model_tar_path)
 
     # ## Convert to onnx
+    print("load current best model")
+    load_torch_state(model, torch.optim.SGD(model.parameters(), lr=train_config.max_lr), Path(model_tar_path),
+                     train_config.device_id)
+
+    if hasattr(model, "merge_bn"):
+        model.merge_bn()
     convert_model_to_onnx(input_shape, k_steps_best, model, model_name, train_config)
 
     print("Saved weight & onnx files of the best model to %s" % (train_config.export_dir + "best-model"))
