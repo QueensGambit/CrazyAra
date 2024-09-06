@@ -29,7 +29,7 @@
 
 using blaze::HybridVector;
 
-RawNetAgent::RawNetAgent(vector<unique_ptr<NeuralNetAPI>>& nets, PlaySettings* playSettings, bool verbose, SearchSettings* searchSettings):
+RawNetAgent::RawNetAgent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose, const SearchSettings* searchSettings):
     Agent(nets, playSettings, verbose),
     searchSettings(searchSettings)
 {

@@ -37,7 +37,7 @@
 class NeuralNetAPIUser
 {
 protected:
-    vector<unique_ptr<NeuralNetAPI>> nets; // vector of net objects 
+    vector<NeuralNetAPI*> nets; // vector of net objects
     unsigned int numPhases;
     std::map<GamePhase, int> phaseToNetsIndex;  // maps a GamePhase to the index of the net that should be used
 
@@ -50,7 +50,7 @@ protected:
     float* auxiliaryOutputs;
 
 public:
-    NeuralNetAPIUser(vector<unique_ptr<NeuralNetAPI>>& netsNew);
+    NeuralNetAPIUser(const vector<unique_ptr<NeuralNetAPI>>& netsNew);
     ~NeuralNetAPIUser();
     NeuralNetAPIUser(NeuralNetAPIUser&) = delete;
 

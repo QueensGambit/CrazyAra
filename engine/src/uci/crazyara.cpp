@@ -51,7 +51,6 @@ CrazyAra::CrazyAra():
     rawAgent(nullptr),
     mctsAgent(nullptr),
 #ifdef USE_RL
-    netSingleContender(nullptr),
     mctsAgentContender(nullptr),
 #endif
     searchSettings(SearchSettings()),
@@ -368,9 +367,8 @@ void CrazyAra::arena(istringstream &is)
 {
     prepare_search_config_structs();
     SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchLimits, &playSettings, &rlSettings, Options);
-    netSingleContender = create_new_net_single(Options["Model_Directory_Contender"]);
-    netBatchesContender = create_new_net_batches(Options["Model_Directory_Contender"]);
-    mctsAgentContender = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings);
+    fill_nn_vectors(Options["Model_Directory_Contender"], netSingleContenderVector, netBatchesContenderVector);
+    mctsAgentContender = create_new_mcts_agent(netSingleContenderVector, netBatchesContenderVector, &searchSettings);
     size_t numberOfGames;
     is >> numberOfGames;
     TournamentResult tournamentResult = selfPlay.go_arena(mctsAgentContender.get(), numberOfGames, variant);
@@ -401,12 +399,11 @@ void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1
         is >> folder;
         modelDir1 = "m" + std::to_string(folder) + "/";
     }
-    auto mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+    auto mcts1 = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings, static_cast<MCTSAgentType>(type));
     if (modelDir1 != "")
     {
-        netSingle = create_new_net_single(modelDir1);
-        netBatches = create_new_net_batches(modelDir1);
-        mcts1 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+        fill_nn_vectors(modelDir1, netSingleVector, netBatchesVector);
+        mcts1 = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings, static_cast<MCTSAgentType>(type));
     }
 
     is >> type;
@@ -416,12 +413,11 @@ void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1
         is >> folder;
         modelDir2 = "m" + std::to_string(folder) + "/";
     }
-    auto mcts2 = create_new_mcts_agent(netSingle.get(), netBatches, &searchSettings, static_cast<MCTSAgentType>(type));
+    auto mcts2 = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings, static_cast<MCTSAgentType>(type));
     if (modelDir2 != "")
     {
-        netSingleContender = create_new_net_single(modelDir2);
-        netBatchesContender = create_new_net_batches(modelDir2);
-        mcts2 = create_new_mcts_agent(netSingleContender.get(), netBatchesContender, &searchSettings, static_cast<MCTSAgentType>(type));
+        fill_nn_vectors(modelDir2, netSingleContenderVector, netBatchesContenderVector);
+        mcts2 = create_new_mcts_agent(netSingleContenderVector, netBatchesContenderVector, &searchSettings, static_cast<MCTSAgentType>(type));
     }
 
     SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchLimits, &playSettings, &rlSettings, Options);
@@ -549,13 +545,55 @@ void CrazyAra::init()
 #endif
 }
 
+void CrazyAra::fill_single_nn_vector(const string& modelDirectory, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector)
+{
+    unique_ptr<NeuralNetAPI> netSingleTmp = create_new_net(modelDirectory, int(Options["First_Device_ID"]), 1);
+    netSingleTmp->validate_neural_network();
+    netSingleVector.push_back(std::move(netSingleTmp));
+
+    size_t idx = 0;
+    for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
+        for (size_t i = 0; i < size_t(Options["Threads"]); ++i) {
+            unique_ptr<NeuralNetAPI> netBatchesTmp = create_new_net(modelDirectory, deviceId, searchSettings.batchSize);
+            netBatchesTmp->validate_neural_network();
+            netBatchesVector[idx].push_back(std::move(netBatchesTmp));
+            ++idx;
+        }
+    }
+}
+
+void CrazyAra::fill_nn_vectors(const string& modelDirectory, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector)
+{
+    netSingleVector.clear();
+    netBatchesVector.clear();
+    // threads is the first dimension, the phase are the 2nd dimension
+    netBatchesVector.resize(Options["Threads"] * get_num_gpus(Options));
+
+    // early return if no phases are used
+    for (const auto& entry : fs::directory_iterator(modelDirectory)) {
+        if (!fs::is_directory(entry.path())) {
+            fill_single_nn_vector(modelDirectory, netSingleVector, netBatchesVector);
+            return;
+        }
+        else {
+            break;
+        }
+    }
+
+    // analyse directory to get num phases
+    for (const auto& entry : fs::directory_iterator(modelDirectory)) {
+        std::cout << entry.path().generic_string() << std::endl;
+
+        fill_single_nn_vector(entry.path().generic_string(), netSingleVector, netBatchesVector);
+    }
+}
+
+
 template<bool verbose>
 bool CrazyAra::is_ready()
 {
     bool hasReplied = false;
     if (!networkLoaded) {
-        netSingleVector.clear();
-        netBatchesVector.clear();
         const size_t timeoutMS = Options["Timeout_MS"];
         TimeOutReadyThread timeoutThread(timeoutMS);
         thread tTimeoutThread;
@@ -568,22 +606,10 @@ bool CrazyAra::is_ready()
         init_rl_settings();
 #endif
 
-        // analyse directory to get num phases
-        for (const auto& entry : fs::directory_iterator(string(Options["Model_Directory"]))) {
-            std::cout << entry.path().generic_string() << std::endl;
-
-            unique_ptr<NeuralNetAPI> netSingleTmp = create_new_net_single(entry.path().generic_string());
-            netSingleTmp->validate_neural_network();
-            vector<unique_ptr<NeuralNetAPI>> netBatchesTmp = create_new_net_batches(entry.path().generic_string());
-            netBatchesTmp.front()->validate_neural_network();
-
-            netSingleVector.push_back(std::move(netSingleTmp));
-            netBatchesVector.push_back(std::move(netBatchesTmp));
-        }
+        fill_nn_vectors(Options["Model_Directory"], netSingleVector, netBatchesVector);
 
         mctsAgent = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings);
-        //rawAgent = make_unique<RawNetAgent>(netSingleVector, &playSettings, false, &searchSettings);
-        // TODO: rawAgent currently doesn't work (netSingleVector somehow doesn't contain any nets)
+        rawAgent = make_unique<RawNetAgent>(netSingleVector, &playSettings, false, &searchSettings);
         StateConstants::init(mctsAgent->is_policy_map(), Options["UCI_Chess960"]);
 
         timeoutThread.kill();
@@ -617,40 +643,21 @@ string CrazyAra::engine_info()
     return ss.str();
 }
 
-unique_ptr<NeuralNetAPI> CrazyAra::create_new_net_single(const string& modelDirectory)
+unique_ptr<NeuralNetAPI> CrazyAra::create_new_net(const string& modelDirectory, int deviceId, unsigned int batchSize)
 {
-#ifdef MXNET
-    return make_unique<MXNetAPI>(Options["Context"], int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"], false);
-#elif defined TENSORRT
-    return make_unique<TensorrtAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Precision"]);
-#elif defined OPENVINO
-    return make_unique<OpenVinoAPI>(int(Options["First_Device_ID"]), 1, modelDirectory, Options["Threads_NN_Inference"]);
-#endif
-    return nullptr;
-}
-
-vector<unique_ptr<NeuralNetAPI>> CrazyAra::create_new_net_batches(const string& modelDirectory)
-{
-    vector<unique_ptr<NeuralNetAPI>> netBatches;
 #ifdef MXNET
     #ifdef TENSORRT
         const bool useTensorRT = bool(Options["Use_TensorRT"]);
     #else
         const bool useTensorRT = false;
     #endif
+    return make_unique<MXNetAPI>(Options["Context"], deviceId, batchSize, modelDirectory, Options["Precision"], useTensorRT);
+#elif defined TENSORRT
+    return make_unique<TensorrtAPI>(deviceId, batchSize, modelDirectory, Options["Precision"]);
+#elif defined OPENVINO
+    return make_unique<OpenVinoAPI>(deviceId, batchSize, modelDirectory, Options["Threads_NN_Inference"]);
 #endif
-    for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
-        for (size_t i = 0; i < size_t(Options["Threads"]); ++i) {
-    #ifdef MXNET
-            netBatches.push_back(make_unique<MXNetAPI>(Options["Context"], deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"], useTensorRT));
-    #elif defined TENSORRT
-            netBatches.push_back(make_unique<TensorrtAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Precision"]));
-    #elif defined OPENVINO
-            netBatches.push_back(make_unique<OpenVinoAPI>(deviceId, searchSettings.batchSize, modelDirectory, Options["Threads_NN_Inference"]));
-    #endif
-        }
-    }
-    return netBatches;
+    return nullptr;
 }
 
 void CrazyAra::set_uci_option(istringstream &is, StateObj& state)

@@ -41,7 +41,7 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+SearchThread::SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
     NeuralNetAPIUser(netBatchVector),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
@@ -68,7 +68,7 @@ void SearchThread::set_root_node(Node *value)
     visitsPreSearch = rootNode->get_visits();
 }
 
-void SearchThread::set_search_limits(SearchLimits *s)
+void SearchThread::set_search_limits(const SearchLimits *s)
 {
     searchLimits = s;
 }
@@ -116,7 +116,7 @@ Node *SearchThread::get_root_node() const
     return rootNode;
 }
 
-SearchLimits *SearchThread::get_search_limits() const
+const SearchLimits *SearchThread::get_search_limits() const
 {
     return searchLimits;
 }
@@ -398,7 +398,6 @@ void SearchThread::thread_iteration()
         GamePhase majorityPhase = pr->first;
 
         phaseCountMap.clear();
-
         // query the network that corresponds to the majority phase
         nets[phaseToNetsIndex.at(majorityPhase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
         set_nn_results_to_child_nodes();

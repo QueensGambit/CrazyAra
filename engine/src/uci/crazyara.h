@@ -85,9 +85,9 @@ private:
     vector<unique_ptr<NeuralNetAPI>> netSingleVector;
     vector<vector<unique_ptr<NeuralNetAPI>>> netBatchesVector;
 #ifdef USE_RL
-    unique_ptr<NeuralNetAPI> netSingleContender;
+    vector<unique_ptr<NeuralNetAPI>> netSingleContenderVector;
     unique_ptr<MCTSAgent> mctsAgentContender;
-    vector<unique_ptr<NeuralNetAPI>> netBatchesContender;
+    vector<vector<unique_ptr<NeuralNetAPI>>> netBatchesContenderVector;
     RLSettings rlSettings;
 #endif
     SearchSettings searchSettings;
@@ -280,18 +280,29 @@ private:
     unique_ptr<MCTSAgent> create_new_mcts_agent(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, SearchSettings* searchSettings, MCTSAgentType type = MCTSAgentType::kDefault);
 
     /**
-     * @brief create_new_net_single Factory to create and load a new model from a given directory
-     * @param modelDirectory Model directory where the .params and .json files are stored
+     * @brief create_new_net Factory to create and load a new model from a given directory
+     * @param modelDirectory Model directory where the .onnx file is stored.
+     * @param deviceId Device index that will be used for inference.
+     * @param batchSize Mini batch size used for inference.
      * @return Pointer to the newly created object
      */
-    unique_ptr<NeuralNetAPI> create_new_net_single(const string& modelDirectory);
+    unique_ptr<NeuralNetAPI> create_new_net(const string& modelDirectory, int deviceId, unsigned int batchSize);
 
     /**
-     * @brief create_new_net_batches Factory to create and load a new model for batch-size access
-     * @param modelDirectory Model directory where the .params and .json files are stored
-     * @return Vector of pointers to the newly createded objects. For every thread a sepreate net.
+     * @brief fill_single_nn_vector Fills a single phase in netSingleVector and netBatchesVector with a loaded neural network.
+     * @param modelDirectory Model directory where the .onnx file is stored.
+     * @param netSingleVector Vector of neural networks with batch-size 1
+     * @param netBatchesVector Vector of neural networks with batch-size > 1
      */
-    vector<unique_ptr<NeuralNetAPI>> create_new_net_batches(const string& modelDirectory);
+    void fill_single_nn_vector(const string& modelDirectory, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector);
+
+    /**
+     * @brief fill_nn_vectors Fills the given neural network vectors with loaded neural network models.
+     * @param modelDirectory Model directory where the .onnx file is stored.
+     * @param netSingleVector Vector of neural networks with batch-size 1
+     * @param netBatchesVector Vector of neural networks with batch-size > 1
+     */
+    void fill_nn_vectors(const string& modelDirectory, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector);
 
     /**
      * @brief set_uci_option Updates an UCI option using the given input stream and set changedUCIoption to true.
