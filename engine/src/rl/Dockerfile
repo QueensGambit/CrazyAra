@@ -123,6 +123,7 @@ RUN apt-get update -y \
 # Build CrazyAra executable with reinforcement learning support
 # --------------------------------------------------------------
 RUN cd /root/CrazyAra/engine \
+    && git pull \
     && mkdir build \
     && cd build
 RUN if [ "${FRAMEWORK}" = "pytorch" ]; then \
