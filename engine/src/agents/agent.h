@@ -56,7 +56,7 @@ private:
 
 protected:
     SearchLimits* searchLimits;
-    PlaySettings* playSettings;
+    const PlaySettings* playSettings;
     StateObj* state;
     EvalInfo* evalInfo;
     // Protect the isRunning attribute and makes sure that the stop() command can only be called after the search has actually been started.
@@ -72,7 +72,7 @@ protected:
     bool isRunning;
 
 public:
-    Agent(vector<unique_ptr<NeuralNetAPI>>& nets, PlaySettings* playSettings, bool verbose);
+    Agent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose);
 
     /**
      * @brief perform_action Selects an action based on the evaluation result
