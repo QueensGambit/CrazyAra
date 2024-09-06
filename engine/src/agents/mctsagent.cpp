@@ -52,10 +52,6 @@ MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, co
     mapWithMutex.hashTable.reserve(1e6);
 
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
-//        vector<unique_ptr<NeuralNetAPI>> netBatchVector; // stores the ith element of all netBatches in netBatchesVector
-//        for (auto& netBatches : netBatchesVector) {
-//            netBatchVector.push_back(std::move(netBatches[idx]));
-//        }
         searchThreads.emplace_back(new SearchThread(netBatchesVector[idx], searchSettings, &mapWithMutex));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
