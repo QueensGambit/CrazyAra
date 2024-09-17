@@ -65,6 +65,40 @@ def get_alpha_vile_model(args, model_size='normal'):
         kernels[33] = 5
         kernels[34] = 5
         kernels[35] = 5
+    elif model_size == 'normal':
+        kernels[0] = 5
+        kernels[4] = 5
+        kernels[5] = 5
+        kernels[7] = 5
+        kernels[10] = 5
+        kernels[12] = 5
+        kernels[15] = 5
+        kernels[16] = 5
+        kernels[20] = 5
+        kernels[21] = 5
+        kernels[22] = 5
+        kernels[23] = 5
+        kernels[24] = 5
+        kernels[25] = 5
+    elif model_size == 'small':
+        kernels[0] = 5
+        kernels[4] = 5
+        kernels[5] = 5
+        kernels[6] = 5
+        kernels[10] = 5
+        kernels[11] = 5
+        kernels[13] = 5
+        kernels[15] = 5
+        kernels[17] = 5
+        kernels[20] = 5
+    elif model_size == 'tiny':
+        kernels[1] = 5
+        kernels[2] = 5
+        kernels[6] = 5
+        kernels[7] = 5
+        kernels[8] = 5
+        kernels[9] = 5
+        kernels[10] = 5
     else:
         for idx in range(end_idx):
             kernels[idx] = 5
