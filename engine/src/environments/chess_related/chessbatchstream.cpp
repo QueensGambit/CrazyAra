@@ -152,7 +152,7 @@ int ChessBatchStream::getBatchSize() const
 
 nvinfer1::Dims ChessBatchStream::getDims() const
 {
-    Dims dims;
+    nvinfer1::Dims dims;
     dims.nbDims = 4;
     dims.d[0] = mBatchSize;
     dims.d[1] = mDims.d[0];

@@ -68,7 +68,7 @@ private:
     int mBatchSize{0};
     int mBatchCount{0};
     int mMaxBatches{0};
-    Dims mDims{};
+    nvinfer1::Dims mDims{};
     std::vector<float> mData;
     std::vector<float> mLabels{};
 };

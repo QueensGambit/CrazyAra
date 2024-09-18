@@ -402,7 +402,7 @@ include_directories("src/domain/crazyhouse")
 include_directories("src/agents")
 include_directories("src/agents/config")
 include_directories("src/nn")
-
+link_libraries(stdc++fs)
 
 if (BACKEND_MXNET)
     IF(DEFINED ENV{MXNET_PATH})
@@ -487,6 +487,7 @@ if (BACKEND_TENSORRT)
     endif()
     include_directories("$ENV{TENSORRT_PATH}/include")
     include_directories("$ENV{TENSORRT_PATH}/samples/common/")
+    include_directories("$ENV{TENSORRT_PATH}/samples/")
     add_definitions(-DTENSORRT)
 endif()
 

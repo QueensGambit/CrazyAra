@@ -88,59 +88,15 @@ void TensorrtAPI::load_parameters()
     // do nothing
 }
 
-bool TensorrtAPI::retrieve_indices_by_name(bool verbose)
-{
-    idxInput = engine->getBindingIndex(nnDesign.inputLayerName.c_str());
-    if (idxInput == -1) {
-        info_string_important("Layer name '" + nnDesign.inputLayerName + "' not found.");
-        return false;
-    }
-    idxValueOutput = engine->getBindingIndex(nnDesign.valueOutputName.c_str());
-    if (idxValueOutput == -1) {
-        info_string_important("Layer name '" + nnDesign.valueOutputName + "' not found.");
-        return false;
-    }
-    idxPolicyOutput = engine->getBindingIndex(nnDesign.policySoftmaxOutputName.c_str());
-    if (idxPolicyOutput == -1) {
-        info_string_important("Layer name '" + nnDesign.policySoftmaxOutputName + "' not found.");
-        return false;
-    }
-    if (nnDesign.hasAuxiliaryOutputs) {
-        idxAuxiliaryOutput = engine->getBindingIndex(nnDesign.auxiliaryOutputName.c_str());
-        if (idxAuxiliaryOutput == -1) {
-            info_string_important("Layer name '" + nnDesign.auxiliaryOutputName + "' not found.");
-            return false;
-        }
-    }
-    if (verbose) {
-        info_string("Found 'idxInput' at index", idxInput);
-        info_string("Found 'idxValueOutput' at index", idxValueOutput);
-        info_string("Found 'idxPolicyOutput' at index", idxPolicyOutput);
-        if (nnDesign.hasAuxiliaryOutputs) {
-            info_string("Found 'idxAuxiliaryOutput' at index", idxAuxiliaryOutput);
-        }
-    }
-    return true;
-}
-
 void TensorrtAPI::init_nn_design()
 {
-    nnDesign.hasAuxiliaryOutputs = engine->getNbBindings() > 3;
-    if (!retrieve_indices_by_name(generatedTrtFromONNX)) {
-        info_string_important("Fallback to default indices.");
-        idxInput = nnDesign.inputIdx;
-        idxValueOutput = nnDesign.valueOutputIdx + nnDesign.nbInputs;
-        idxPolicyOutput = nnDesign.policyOutputIdx + nnDesign.nbInputs;
-        idxAuxiliaryOutput = nnDesign.auxiliaryOutputIdx + nnDesign.nbInputs;
-    }
-
-    set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
+    set_shape(nnDesign.inputShape, engine->getTensorShape(nnDesign.inputLayerName.c_str()));
     // make sure that the first dimension is the batch size, otherwise '-1' could cause problems
     nnDesign.inputShape.v[0] = batchSize;
-    set_shape(nnDesign.valueOutputShape, engine->getBindingDimensions(idxValueOutput));
-    set_shape(nnDesign.policyOutputShape, engine->getBindingDimensions(idxPolicyOutput));
+    set_shape(nnDesign.valueOutputShape, engine->getTensorShape(nnDesign.valueOutputName.c_str()));
+    set_shape(nnDesign.policyOutputShape, engine->getTensorShape(nnDesign.policySoftmaxOutputName.c_str()));
     if (nnDesign.hasAuxiliaryOutputs) {
-        set_shape(nnDesign.auxiliaryOutputShape, engine->getBindingDimensions(idxAuxiliaryOutput));
+        set_shape(nnDesign.auxiliaryOutputShape, engine->getTensorShape(nnDesign.auxiliaryOutputName.c_str()));
     }
     nnDesign.isPolicyMap = unsigned(nnDesign.policyOutputShape.v[1]) != StateConstants::NB_LABELS();
 }
@@ -151,7 +107,7 @@ void TensorrtAPI::bind_executor()
     context = SampleUniquePtr<nvinfer1::IExecutionContext>(engine->createExecutionContext());
     Dims inputDims;
     set_dims(inputDims, nnDesign.inputShape);
-    context->setBindingDimensions(0, inputDims);
+    context->setInputShape(nnDesign.inputLayerName.c_str(), inputDims);
 
     // create buffers object with respect to the engine and batch size
     CHECK(cudaStreamCreate(&stream));
@@ -184,8 +140,19 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
     CHECK(cudaMemcpyAsync(deviceMemory[idxInput], inputPlanes, memorySizes[idxInput],
                           cudaMemcpyHostToDevice, stream));
 
+    context->setTensorAddress(nnDesign.inputLayerName.c_str(), deviceMemory[idxInput]);
+    context->setTensorAddress(nnDesign.valueOutputName.c_str(), deviceMemory[idxValueOutput]);
+    context->setTensorAddress(nnDesign.policySoftmaxOutputName.c_str(), deviceMemory[idxPolicyOutput]);
+#ifdef DYNAMIC_NN_ARCH
+    if (has_auxiliary_outputs()) {
+#else
+    if (StateConstants::NB_AUXILIARY_OUTPUTS()) {
+#endif
+        context->setTensorAddress(nnDesign.auxiliaryOutputName.c_str(), deviceMemory[idxAuxiliaryOutput]);
+    }
+
     // run inference for given data
-    context->enqueueV2(deviceMemory, stream, nullptr);
+    context->enqueueV3(stream);
 
     // copy output from device back to host
     CHECK(cudaMemcpyAsync(valueOutput, deviceMemory[idxValueOutput],
@@ -209,7 +176,6 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     info_string("This may take a few minutes...");
     // create an engine builder
     SampleUniquePtr<IBuilder> builder = SampleUniquePtr<IBuilder>(createInferBuilder(gLogger.getTRTLogger()));
-    builder->setMaxBatchSize(int(batchSize));
 
     // create an ONNX network object
     const uint32_t explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
@@ -232,7 +198,7 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     SampleUniquePtr<nvinfer1::IBuilderConfig> config = SampleUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
     unique_ptr<IInt8Calibrator> calibrator;
     unique_ptr<IBatchStream> calibrationStream;
-    set_config_settings(config, 1_GiB, calibrator, calibrationStream);
+    set_config_settings(config, calibrator, calibrationStream);
 
     IOptimizationProfile* profile = builder->createOptimizationProfile();
 
@@ -243,12 +209,14 @@ ICudaEngine* TensorrtAPI::create_cuda_engine_from_onnx()
     profile->setDimensions(nnDesign.inputLayerName.c_str(), OptProfileSelector::kMAX, inputDims);
     config->addOptimizationProfile(profile);
 
+    nnDesign.hasAuxiliaryOutputs = network->getNbOutputs() > 2;
+
     // build an engine from the TensorRT network with a given configuration struct
 #ifdef TENSORRT7
     return builder->buildEngineWithConfig(*network, *config);
 #else
     SampleUniquePtr<IHostMemory> serializedModel{builder->buildSerializedNetwork(*network, *config)};
-    SampleUniquePtr<IRuntime> runtime{createInferRuntime(sample::gLogger.getTRTLogger())};
+    runtime = SampleUniquePtr<IRuntime>(createInferRuntime(sample::gLogger.getTRTLogger()));
 
     // build an engine from the serialized model
     return runtime->deserializeCudaEngine(serializedModel->data(), serializedModel->size());;
@@ -263,7 +231,7 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
     const char* buffer = read_buffer(trtFilePath, bufferSize);
     if (buffer) {
         info_string("deserialize engine:", trtFilePath);
-        unique_ptr<IRuntime, samplesCommon::InferDeleter> runtime{createInferRuntime(gLogger)};
+        runtime = unique_ptr<IRuntime, samplesCommon::InferDeleter>{createInferRuntime(gLogger)};
 #ifdef TENSORRT7
         engine = runtime->deserializeCudaEngine(buffer, bufferSize, nullptr);
 #else
@@ -293,10 +261,9 @@ ICudaEngine* TensorrtAPI::get_cuda_engine() {
 }
 
 void TensorrtAPI::set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-                                      size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
+                                      unique_ptr<IInt8Calibrator>& calibrator,
                                       unique_ptr<IBatchStream>& calibrationStream)
 {
-    config->setMaxWorkspaceSize(maxWorkspace);
     switch (precision) {
     case float32:
         // default: do nothing
