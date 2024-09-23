@@ -417,7 +417,7 @@ public:
     void set_auxiliary_outputs(const float* auxiliaryOutputs) override;
     BoardState* clone() const override;
     void init(int variant, bool isChess960) override;
-    GamePhase get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const;
+    GamePhase get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const override;
 };
 
 #endif // BOARTSTATE_H

@@ -46,9 +46,63 @@ def get_alpha_vile_model(args, model_size='normal'):
 
     kernels = [3] * depth
     end_idx = int(len(kernels) * kernel_5_ratio + 0.5)
-    for idx in range(end_idx):
-        kernels[idx] = 5
-    random.shuffle(kernels)
+
+    if model_size == 'large':
+        kernels[1] = 5
+        kernels[6] = 5
+        kernels[7] = 5
+        kernels[9] = 5
+        kernels[10] = 5
+        kernels[14] = 5
+        kernels[18] = 5
+        kernels[19] = 5
+        kernels[23] = 5
+        kernels[25] = 5
+        kernels[26] = 5
+        kernels[27] = 5
+        kernels[28] = 5
+        kernels[29] = 5
+        kernels[33] = 5
+        kernels[34] = 5
+        kernels[35] = 5
+    elif model_size == 'normal':
+        kernels[0] = 5
+        kernels[4] = 5
+        kernels[5] = 5
+        kernels[7] = 5
+        kernels[10] = 5
+        kernels[12] = 5
+        kernels[15] = 5
+        kernels[16] = 5
+        kernels[20] = 5
+        kernels[21] = 5
+        kernels[22] = 5
+        kernels[23] = 5
+        kernels[24] = 5
+        kernels[25] = 5
+    elif model_size == 'small':
+        kernels[0] = 5
+        kernels[4] = 5
+        kernels[5] = 5
+        kernels[6] = 5
+        kernels[10] = 5
+        kernels[11] = 5
+        kernels[13] = 5
+        kernels[15] = 5
+        kernels[17] = 5
+        kernels[20] = 5
+    elif model_size == 'tiny':
+        kernels[1] = 5
+        kernels[2] = 5
+        kernels[6] = 5
+        kernels[7] = 5
+        kernels[8] = 5
+        kernels[9] = 5
+        kernels[10] = 5
+    else:
+        for idx in range(end_idx):
+            kernels[idx] = 5
+        random.shuffle(kernels)
 
     use_transformers = [False] * len(kernels)
     if nb_transformers > 0:

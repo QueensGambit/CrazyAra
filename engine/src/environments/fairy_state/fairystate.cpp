@@ -159,3 +159,9 @@ void FairyState::init(int variant, bool isChess960)
     board.set(variants.find(StateConstantsFairy::available_variants()[variant])->second, variants.find(StateConstantsFairy::available_variants()[variant])->second->startFen, isChess960, &states->back(), nullptr, false);
     variantNumber = variant;
 }
+
+GamePhase FairyState::get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const
+{
+    // TODO: Implement phase definition here
+    return GamePhase(0);
+}

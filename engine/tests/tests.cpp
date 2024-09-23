@@ -1602,5 +1602,71 @@ TEST_CASE("Crazyhouse Input Planes V3") {
 }
 #endif
 
+#ifdef MODE_LICHESS
+TEST_CASE("Atomic Input Planes V3") {
+    init();
+    int variant = StateConstants::variant_to_int("atomic");
+    BoardState state;
+    const uint nbValuesTotal = 80 * StateConstants::NB_SQUARES();
+    state.init(variant, false);
+    // starting position test
+    PlaneStatistics stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1440);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 5932976);
+    REQUIRE(stats.argMax == 4736);
+    REQUIRE(state.fen() == string("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
+
+    state.set("r2qk2r/p6p/3p1ppb/3Pp1BP/1p2P1b1/3Q1P2/PPP3P1/R3K2R b KQkq - 1 14", false, variant);
+    string move = "d8b6";
+    state.do_action(state.uci_to_action(move));
+    move = "d3b5";
+    state.do_action(state.uci_to_action(move));
+
+    stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1433);
+    REQUIRE(stats.maxNum == 7);
+    REQUIRE(stats.key == 5420051);
+    REQUIRE(stats.argMax == 4736);
+    REQUIRE(state.fen() == string("r3k2r/p6p/1q1p1ppb/1Q1Pp1BP/1p2P1b1/5P2/PPP3P1/R3K2R b KQkq - 3 15"));
+
+    stats = get_planes_statistics(state, true, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(516.84, 0.001));
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(1470726.04, 0.001));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("r3k2r/p6p/1q1p1ppb/1Q1Pp1BP/1p2P1b1/5P2/PPP3P1/R3K2R b KQkq - 3 15"));
+}
+#endif
+
+#ifdef MODE_CHESS
+TEST_CASE("Chess960 Input Planes V3") {
+    init();
+    int variant = StateConstants::variant_to_int("chess");
+    BoardState state;
+    state.set("b1qnrnkr/p2ppppp/1p6/2p1b3/2P5/4N1P1/PP1PPP1P/BBQNRK1R b he - 1 4", true, variant);
+    const uint nbValuesTotal = 52 * StateConstants::NB_SQUARES();
+
+    vector<float> planes(nbValuesTotal);
+    state.get_state_planes(false, planes.data(), make_version<3,0,0>());
+
+    // custom position test
+    PlaneStatistics stats = get_planes_statistics(state, false, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE(stats.sum == 1312);
+    REQUIRE(stats.maxNum == 8);
+    REQUIRE(stats.key == 3512322);
+    REQUIRE(stats.argMax == 3008);
+    REQUIRE(state.fen() == string("b1qnrnkr/p2ppppp/1p6/2p1b3/2P5/4N1P1/PP1PPP1P/BBQNRK1R b he - 1 4"));
+
+    // normalize = true test
+    stats = get_planes_statistics(state, true, make_version<3,0,0>(), nbValuesTotal);
+    REQUIRE_THAT(stats.sum, Catch::Matchers::WithinRel(409.28, 0.001));
+    REQUIRE(stats.maxNum == 1);
+    REQUIRE_THAT(stats.key, Catch::Matchers::WithinRel(823554.8, 0.001));
+    REQUIRE(stats.argMax == 8);
+    REQUIRE(state.fen() == string("b1qnrnkr/p2ppppp/1p6/2p1b3/2P5/4N1P1/PP1PPP1P/BBQNRK1R b he - 1 4"));
+}
+#endif
+
 #endif
 

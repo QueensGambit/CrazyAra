@@ -63,7 +63,6 @@ class TrainerAgentPytorch:
             self.to.metrics = {}
         self._model = model
         self._val_loader = val_loader
-        self.x_train = self.yv_train = self.yp_train = None
         self._ctx = get_context(train_config.context, train_config.device_id)
 
         # define a summary writer that logs data and flushes to the file every 5 seconds
@@ -187,8 +186,9 @@ class TrainerAgentPytorch:
                             # log the metric values to tensorboard
                             self._log_metrics(train_metric_values, global_step=self.k_steps, prefix="train_")
                             self._log_metrics(val_metric_values, global_step=self.k_steps, prefix="val_")
-                            for dataset_name, metric_values in additional_metric_values.items():
-                                self._log_metrics(metric_values, global_step=self.k_steps, prefix=f"{dataset_name}_")
+                            if self.additional_loaders is not None:
+                                for dataset_name, metric_values in additional_metric_values.items():
+                                    self._log_metrics(metric_values, global_step=self.k_steps, prefix=f"{dataset_name}_")
 
                             if self.tc.log_metrics_to_tensorboard and self.tc.export_grad_histograms:
                                 grads = []
@@ -286,14 +286,7 @@ class TrainerAgentPytorch:
             verbose=False,
             q_value_ratio=self.tc.q_value_ratio)
 
-        self.x_train = pgn_dataset_arrays_dict["x"]
-        self.yv_train = pgn_dataset_arrays_dict["y_value"]
-        self.yp_train = pgn_dataset_arrays_dict["y_policy"]
-        self.plys_to_end = pgn_dataset_arrays_dict["plys_to_end"]
-        self.phase_vector = pgn_dataset_arrays_dict["phase_vector"]
-
-        train_loader = get_data_loader(self.x_train, self.yv_train, self.yp_train, self.plys_to_end, self.phase_vector,
-                                       self.tc, shuffle=True)
+        train_loader = get_data_loader(pgn_dataset_arrays_dict, self.tc, shuffle=True)
 
         return train_loader
 
@@ -340,21 +333,22 @@ class TrainerAgentPytorch:
 
         # do additional evaluations based on self.additional_loaders
         additional_metric_values = dict()
-        for dataset_name, dataloader in self.additional_loaders.items():
-            print(f"starting {dataset_name} eval")
-            metric_values = evaluate_metrics(
-                self.to.metrics,
-                dataloader,
-                self._model,
-                nb_batches=None,
-                ctx=self._ctx,
-                phase_weights={k: 1.0 for k, v in self.to.phase_weights.items()},  # use no weighting
-                sparse_policy_label=self.tc.sparse_policy_label,
-                apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
-                use_wdl=self.tc.use_wdl,
-                use_plys_to_end=self.tc.use_plys_to_end,
-            )
-            additional_metric_values[dataset_name] = metric_values
+        if self.additional_loaders is not None:
+            for dataset_name, dataloader in self.additional_loaders.items():
+                print(f"starting {dataset_name} eval")
+                metric_values = evaluate_metrics(
+                    self.to.metrics,
+                    dataloader,
+                    self._model,
+                    nb_batches=None,
+                    ctx=self._ctx,
+                    phase_weights={k: 1.0 for k, v in self.to.phase_weights.items()},  # use no weighting
+                    sparse_policy_label=self.tc.sparse_policy_label,
+                    apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
+                    use_wdl=self.tc.use_wdl,
+                    use_plys_to_end=self.tc.use_plys_to_end,
+                )
+                additional_metric_values[dataset_name] = metric_values
 
         self._model.train()  # return back to training mode
         return train_metric_values, val_metric_values, additional_metric_values
@@ -505,13 +499,13 @@ def get_context(context: str, device_id: int):
         return torch.device("cpu")
 
 
-def load_torch_state(model: nn.Module, optimizer: Optimizer, path: str, device_id: int):
+def load_torch_state(model: nn.Module, optimizer: Optimizer, path: Path, device_id: int):
     checkpoint = torch.load(path, map_location=f"cuda:{device_id}")
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 
-def save_torch_state(model: nn.Module, optimizer: Optimizer, path):
+def save_torch_state(model: nn.Module, optimizer: Optimizer, path: Path):
     torch.save({
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
@@ -747,32 +741,29 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
     return metric_values
 
 
-def get_data_loader(x, y_value, y_policy, plys_to_end, phase_vector, tc: TrainConfig, shuffle=True):
+def get_data_loader(pgn_dataset_arrays_dict: dict, tc: TrainConfig, shuffle=True):
     """
     Returns a DataLoader object for the given numpy arrays.
     !Note: This function modifies the y_policy!
-    :param x: Input planes
-    :param y_value: Value target
-    :param y_policy: Policy target
-    :param plys_to_end: Plys until the game ends
-    :param phase_vector: array of the game phase of each position
+    :param pgn_dataset_arrays_dict: Dict object containing the numpy arrays of load_pgn_dataset
     :param tc: Training config object
     :param shuffle: Decide whether to shuffle the dataset or not
     :return: Returns the data loader object
     """
-    y_policy_prep = prepare_policy(y_policy=y_policy, select_policy_from_plane=tc.select_policy_from_plane,
+    d = pgn_dataset_arrays_dict
+    y_policy_prep = prepare_policy(y_policy=d['y_policy'], select_policy_from_plane=tc.select_policy_from_plane,
                                    sparse_policy_label=tc.sparse_policy_label,
                                    is_policy_from_plane_data=tc.is_policy_from_plane_data)
 
     # update the train_data object
     if tc.use_wdl and tc.use_plys_to_end:
-        dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
+        dataset = TensorDataset(torch.Tensor(d['x']), torch.Tensor(d['y_value']),
                                 torch.Tensor(y_policy_prep),
-                                torch.Tensor(value_to_wdl_label(y_value)),
-                                torch.Tensor(prepare_plys_label(plys_to_end)),
-                                torch.Tensor(phase_vector))
+                                torch.Tensor(value_to_wdl_label(d['y_value'])),
+                                torch.Tensor(prepare_plys_label(d['plys_to_end'])),
+                                torch.Tensor(d['phase_vector']))
     else:
-        dataset = TensorDataset(torch.Tensor(x), torch.Tensor(y_value),
-                                torch.Tensor(y_policy_prep), torch.Tensor(phase_vector))
+        dataset = TensorDataset(torch.Tensor(d['x']), torch.Tensor(d['y_value']),
+                                torch.Tensor(y_policy_prep), torch.Tensor(d['phase_vector']))
     train_loader = DataLoader(dataset, shuffle=shuffle, batch_size=tc.batch_size, num_workers=tc.cpu_count)
     return train_loader

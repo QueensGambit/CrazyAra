@@ -26,6 +26,7 @@
 *   [Download](#download)
     *   [Binaries](#binaries)
     *   [Models](#models)
+*   [Artworks](#artworks)
 *   [Variants](#variants)
 *   [Documentation](#documentation)
 *   [Compilation](#compilation)
@@ -88,6 +89,16 @@ The extracted model should be placed in the directory reltative to the engine ex
 The default directory is indicated and can be changed by adjusting the UCI-parameter `Model_Directory`.
 
 More information about the different models can be found in the [wiki](https://github.com/QueensGambit/CrazyAra-Engine/wiki/Model-description).
+
+## Artworks
+
+![CrazyAra_Hanna_Czech_2023](https://github.com/QueensGambit/CrazyAra/assets/15967624/652954ea-90be-45e2-94ea-2dd1f6b7b14b)
+Drawn by Hanna Czech (2023).
+
+
+
+![Kristian_and_CrazyAra_2022](https://github.com/QueensGambit/CrazyAra/assets/15967624/9ab40f2c-d701-4b5c-877d-a480e30f64ec)
+Generated with custom stable diffusion model of professor Kristian Kersting.
 
 ## Variants
 Binaries and models are available for the following chess variants:
@@ -239,6 +250,20 @@ For details about the GPL v3 license, refer to the file [LICENSE](https://github
 
 
 ## B.Sc. Thesis
+
+* T. Truong: **Monte Carlo Tree Search-Minimax Hybrid in AlphaZero**, [pdf](https://ml-research.github.io/papers/truong2023monte.pdf)
+```latex
+@bachelorthesis{truong2023monte,
+	       title = { Monte Carlo Tree Search-Minimax Hybrid in AlphaZero },
+	       author = { Tam Truong },
+               year = { 2023 },
+               type = { B.Sc. },
+	       crossref = { https://github.com/tam201197/CrazyAra },
+	       school = { TU Darmstadt },
+	       pages = { 48 },
+	       month = { september }
+	       }
+```
 
 * M. Ruzicka: **Utilizing Variance and Uncertainty in Monte-Carlo Tree Search**, [pdf](https://ml-research.github.io/papers/ruzicka2023utilizing.pdf)
 ```latex

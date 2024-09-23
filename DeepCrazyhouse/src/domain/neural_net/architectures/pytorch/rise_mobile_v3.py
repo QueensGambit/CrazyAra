@@ -20,6 +20,8 @@ Influenced by the following papers:
     https://arxiv.org/pdf/1807.06521.pdf
 
 """
+import logging
+
 import torch
 from torch.nn import Sequential, Conv2d, BatchNorm2d, Module
 from timm.models.layers import DropPath
@@ -28,7 +30,6 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.builder_util imp
     _Stem, get_se, process_value_policy_head, _BottlekneckResidualBlock, ClassicalResidualBlock, round_to_next_multiple_of_32
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NCB
 from DeepCrazyhouse.configs.train_config import TrainConfig
-from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS, NB_LABELS
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official_modules import NTB
 
 
@@ -146,11 +147,11 @@ class RiseV3(Module):
                 raise Exception(f"Unavailable se_type: {se_type}. Available se_types include {se_types}")
 
         path_dropout_rates = [x.item() for x in torch.linspace(0, path_dropout, len(kernels))]  # stochastic depth decay rule
-        res_blocks = _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32)
+        self.res_blocks = _get_res_blocks(act_types, channels, channels_operating_init, channel_expansion, kernels, se_types, use_transformers, path_dropout_rates, conv_block, kernel_5_channel_ratio, round_channels_to_next_32)
 
         self.body_spatial = Sequential(
             _Stem(channels=channels, act_type=act_types[0], nb_input_channels=nb_input_channels),
-            *res_blocks,
+            *self.res_blocks,
         )
         self.nb_body_spatial_out = channels * board_height * board_width
 
@@ -171,6 +172,15 @@ class RiseV3(Module):
         out = self.body_spatial(x)
 
         return process_value_policy_head(out, self.value_head, self.policy_head, self.use_plys_to_end, self.use_wdl)
+
+    def merge_bn(self):
+        """
+        Calls the merge_bn() function for the NTB blocks
+        """
+        for res_block in self.res_blocks:
+            if isinstance(res_block, NTB):
+                res_block.merge_bn()
+                logging.info("Called merge_bn()")
 
 
 def get_rise_v33_model(args):
@@ -229,30 +239,3 @@ def get_rise_v2_model(args):
                    use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end, use_mlp_wdl_ply=args.use_mlp_wdl_ply,
                    )
     return model
-
-
-def get_rise_v2_model_by_train_config(input_shape, tc: TrainConfig):
-    args = create_args_by_train_config(input_shape, tc)
-    model = get_rise_v2_model(args)
-    return model
-
-
-def get_rise_v33_model_by_train_config(input_shape, tc: TrainConfig):
-    args = create_args_by_train_config(input_shape, tc)
-    model = get_rise_v33_model(args)
-    return model
-
-
-def create_args_by_train_config(input_shape, tc):
-    class Args:
-        pass
-
-    args = Args()
-    args.input_shape = input_shape
-    args.channels_policy_head = NB_POLICY_MAP_CHANNELS
-    args.n_labels = NB_LABELS
-    args.select_policy_from_plane = tc.select_policy_from_plane
-    args.use_wdl = tc.use_wdl
-    args.use_plys_to_end = tc.use_plys_to_end
-    args.use_mlp_wdl_ply = tc.use_mlp_wdl_ply
-    return args

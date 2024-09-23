@@ -31,12 +31,13 @@
 #include "common.h"
 #endif
 
-NeuralNetAPIUser::NeuralNetAPIUser(vector<unique_ptr<NeuralNetAPI>>& netsNew) :
+NeuralNetAPIUser::NeuralNetAPIUser(const vector<unique_ptr<NeuralNetAPI>>& netsNew) :
     auxiliaryOutputs(nullptr)
 {
-    nets = std::move(netsNew);
+    for (size_t idx = 0; idx < netsNew.size(); idx++) {
+        nets.push_back(netsNew[idx].get());
+    }
     numPhases = nets.size();
-    
     for (unsigned int i = 0; i < numPhases; i++)
     {
         GamePhase phaseOfNetI = nets[i]->get_game_phase();

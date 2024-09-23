@@ -75,7 +75,7 @@ private:
 
     MapWithMutex* mapWithMutex;
     const SearchSettings* searchSettings;
-    SearchLimits* searchLimits;
+    const SearchLimits* searchLimits;
     size_t tbHits;
     size_t depthSum;
     size_t depthMax;
@@ -89,7 +89,7 @@ public:
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
@@ -123,9 +123,9 @@ public:
     void stop();
 
     // Getter, setter functions
-    void set_search_limits(SearchLimits *s);
+    void set_search_limits(const SearchLimits *s);
     Node* get_root_node() const;
-    SearchLimits *get_search_limits() const;
+    const SearchLimits *get_search_limits() const;
     void set_root_node(Node *value);
     bool is_running() const;
     void set_is_running(bool value);

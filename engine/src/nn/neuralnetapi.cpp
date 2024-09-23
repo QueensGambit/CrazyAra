@@ -229,9 +229,12 @@ Version read_version_from_string(const string &modelFileName)
 GamePhase read_game_phase_from_string(const string& modelDir)
 {
     // use last char of modelDir and convert to int by subtracting '0'
-    // TODO throw errors if necessary (if last letter is not a digit)
-
-    int gamePhase = (modelDir[modelDir.length() - 2]) - '0';
+    // assume phase 0 if last character is not a digit
+    char phaseChar = modelDir[modelDir.length() - 2];
+    if (!std::isdigit(phaseChar)) {
+        return GamePhase(0);
+    }
+    int gamePhase = phaseChar - '0';
     return GamePhase(gamePhase);
 }
 

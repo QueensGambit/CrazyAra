@@ -10,19 +10,6 @@ For supervised training you need the following [additional libraries](https://gi
 pip install -r requirements.txt
 ```
 
-#### Training with MXNet or Gluon (deprecated)
-Make sure to have a recent [MXNet](https://mxnet.incubator.apache.org/index.html) version with CUDA support installed:
- ```bash
- pip install mxnet-cu<cuda_version>==<version_id>
-```
-
-You need to install the following libraries when training with MXNet:
-```bash
-    pip install -y mxboard
-    pip uninstall -y onnx
-    pip install onnx==1.3.0
-```
-
 ### Training data specification
 Specify the directories `"planes_train_dir"`, `"planes_val_dir"`, `"planes_test_dir"`, `"planes_mate_in_one_dir"` at
 [main_config_template.py](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/configs/main_config_template.py)
@@ -31,13 +18,13 @@ Then copy the configuration file and rename it to `main_config.py`.
 
 You can create the plane representation from chess pgn-files using [convert_pgn_to_planes.ipynb](https://github.com/QueensGambit/CrazyAra/blob/master/DeepCrazyhouse/src/preprocessing/convert_pgn_to_planes.ipynb).
 
-### Jupyter notebooks
-Use `train_cnn.ipynb` to conduct a training run.
-`train_cnn.ipynb` is a jupyter notebook file which can be opened with jupyter and installed using `pip` or anaconda: 
-* <https://jupyter.org/install.html>
+### Command line script
+Use `train_cli.py` to conduct a training run.
 
-Jupyter notebooks are displayed in a web-browser and can be launched with `jupyter notebook` from the command line. 
-After a successful training run you can export the outputs as a html-file:  `File->Download as->Html(.html)`.
+An example call is:
+```
+$ train_cli.py --model-type resnet --name-initials XY --use-custom-architecture False --export-dir /data/training_run
+```
 
 ### Tensorboard
 The [tensorboard](https://github.com/tensorflow/tensorboard) log files will be exported in `./logs` which can be viewed with tensorboard during training.

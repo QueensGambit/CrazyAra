@@ -69,14 +69,15 @@ def get_planes_from_pgn(params):
     return metadata, game_idx, results[0], results[1], results[2], results[3], results[4]
 
 
-def get_planes_from_game(game, mate_in_one=False):
+def get_planes_from_move_sequence(board: chess.Board, y_init, all_moves, mate_in_one=False):
     """
     Returns all plane descriptions of a given game and their corresponding target values:
     - the game outcome (-1, 0, 1)
     - the next move which will be played in each position
 
-    :param game: Game handle which is a python-chess object
-    (e.g. mv_hist_len = 8 means that the current position and the 7 previous positions are exported)
+    :param board: Board object which is a python-chess object
+    :param y_init: Evaluation of the initial board position
+    :param all_moves: List of all moves to be applied to the position
     :param mate_in_one: Decide weather only to export the position before the last mate-in-one move
                         (this option is for evaluation and DEBUG purposes)
     :return: x - the position description of all moves in the game
@@ -95,24 +96,11 @@ def get_planes_from_game(game, mate_in_one=False):
     y_policy = []
     plys_to_end = []  # save the number of plys until the end of the game for each position that was considered
     phase_vector = []  # save all phases that occurred during the game
-    board = game.board()  # get the initial board state
-    # update the y value accordingly
-    if board.turn == chess.WHITE:
-        y_init = 1
-    else:
-        y_init = -1
-    if game.headers["Result"] == "0-1":
-        y_init *= -1
-    elif game.headers["Result"] == "1/2-1/2":
-        y_init = 0
 
-    all_moves = []  # Extract all moves first and save them into a list
-    for move in game.main_line():
-        all_moves.append(move)
     # Iterate through all moves (except the last one) and play them on a board.
     # you don't want to push the last move on the board because you had no movement policy to learn from in this case
     # The moves get pushed at the end of the for-loop and is only used in the next loop.
-    # Therefore we can iterate over 'all' moves
+    # Therefore, we can iterate over 'all' moves
     for plys, move in enumerate(all_moves):
         board_occ = 0  # by default the positions hasn't occurred before
         fen = board.fen()
@@ -166,3 +154,47 @@ def get_planes_from_game(game, mate_in_one=False):
         y_policy = np.stack(y_policy, axis=0)
 
     return x, y_value, y_policy, plys_to_end, phase_vector
+
+
+def get_planes_from_game(game, mate_in_one=False):
+    """
+    Returns all plane descriptions of a given game and their corresponding target values:
+    - the game outcome (-1, 0, 1)
+    - the next move which will be played in each position
+
+    :param game: Game handle which is a python-chess object
+    (e.g. mv_hist_len = 8 means that the current position and the 7 previous positions are exported)
+    :param mate_in_one: Decide weather only to export the position before the last mate-in-one move
+                        (this option is for evaluation and DEBUG purposes)
+    :return: x - the position description of all moves in the game
+             y_value - the target values of the scene description. Here the game outcome.
+                  returns -1 if the current player lost, +1 if the current player won, 0 for draw
+             y_policy - the policy vector one-hot encoded indicating the next move the player current player chose
+              in this position
+             plys_to_end - array of how many plys to the end of the game for each position.
+              This can be used to apply discounting
+             phase_vector - array of the game phase of each position
+    """
+
+    board = game.board()  # get the initial board state
+    # update the y value accordingly
+    if board.turn == chess.WHITE:
+        y_init = 1
+    else:
+        y_init = -1
+    if game.headers["Result"] == "0-1":
+        y_init *= -1
+    elif game.headers["Result"] == "1/2-1/2":
+        y_init = 0
+
+    all_moves = []  # Extract all moves first and save them into a list
+    for move in game.main_line():
+        all_moves.append(move)
+
+    try:
+        return get_planes_from_move_sequence(board, y_init, all_moves, mate_in_one)
+    except Exception:
+        print("game.headers:")
+        print(game.headers)
+        print("game", game)
+

@@ -34,7 +34,7 @@
 #include "../node.h"
 #include "../util/communication.h"
 
-MCTSAgent::MCTSAgent(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
+MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
                      SearchSettings* searchSettings, PlaySettings* playSettings):
     Agent(netSingleVector, playSettings, true),
     searchSettings(searchSettings),
@@ -51,12 +51,8 @@ MCTSAgent::MCTSAgent(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<v
 {
     mapWithMutex.hashTable.reserve(1e6);
 
-    for (auto i = 0; i < searchSettings->threads; ++i) {
-        vector<unique_ptr<NeuralNetAPI>> netBatchVector; // stores the ith element of all netBatches in netBatchesVector
-        for (auto& netBatches : netBatchesVector) {
-            netBatchVector.push_back(std::move(netBatches[i]));
-        }
-        searchThreads.emplace_back(new SearchThread(netBatchVector, searchSettings, &mapWithMutex));
+    for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
+        searchThreads.emplace_back(new SearchThread(netBatchesVector[idx], searchSettings, &mapWithMutex));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());

@@ -497,6 +497,15 @@ public:
      * @param variant Variant which the position corresponds to
      */
     virtual void init(int variant, bool isChess960) = 0;
+
+    /**
+     * @brief get_phase Returns the current game phase of the state
+     * @param numPhases Number of phases in total
+     * @param gamePhaseDefinition Game phase definition to use (e.g. MOVECOUNT, LICHESS)
+     * @return Game phase (uint)
+     */
+    virtual GamePhase get_phase(unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition) const = 0;
+
 };
 
 #endif // GAMESTATE_H
