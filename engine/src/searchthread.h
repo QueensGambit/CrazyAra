@@ -196,6 +196,13 @@ private:
      * @return Q-Value converted to double
      */
     double get_current_transposition_q_value(const Node* currentNode, ChildIdx childIdx, uint_fast32_t transposVisits);
+
+    /**
+     * @brief select_nn_index Returns the index according to the majority phase in the current batch.
+     * If no phases is enabled, 0 will be returned.
+     * @return Majority phase index or 0
+     */
+    size_t select_nn_index();
 };
 
 void run_search_thread(SearchThread *t);

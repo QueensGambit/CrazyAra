@@ -379,27 +379,35 @@ void SearchThread::create_mini_batch()
     }
 }
 
+size_t SearchThread::select_nn_index()
+{
+    if (nets.size() == 1) {
+        return 0;
+    }
+    // determine majority class in current batch
+    using pair_type = decltype(phaseCountMap)::value_type;
+    auto pr = std::max_element
+    (
+        std::begin(phaseCountMap), std::end(phaseCountMap),
+        [](const pair_type& p1, const pair_type& p2) {
+            return p1.second < p2.second;
+        }
+    );
+
+    GamePhase majorityPhase = pr->first;
+
+    phaseCountMap.clear();
+    return phaseToNetsIndex.at(majorityPhase);
+}
+
 void SearchThread::thread_iteration()
 {
     create_mini_batch();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-   
-        // determine majority class in current batch
-        using pair_type = decltype(phaseCountMap)::value_type;
-        auto pr = std::max_element
-        (
-            std::begin(phaseCountMap), std::end(phaseCountMap),
-            [](const pair_type& p1, const pair_type& p2) {
-                return p1.second < p2.second;
-            }
-        );
 
-        GamePhase majorityPhase = pr->first;
-
-        phaseCountMap.clear();
         // query the network that corresponds to the majority phase
-        nets[phaseToNetsIndex.at(majorityPhase)]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+        nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
         set_nn_results_to_child_nodes();
     }
 #endif
