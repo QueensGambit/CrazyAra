@@ -69,7 +69,7 @@ private:
     RawNetAgent* rawAgent;
     MCTSAgent* mctsAgent;
     const SearchSettings* searchSettings;
-    const SearchLimits* searchLimits;
+    SearchLimits* searchLimits;
     const PlaySettings* playSettings;
     RLSettings* rlSettings;
     OptionsMap& options;
@@ -97,7 +97,7 @@ public:
      * @param RLSettings Additional settings for reinforcement learning usage
      * @param options Object holding all UCI options
      */
-    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, const SearchLimits* searchLimits, const PlaySettings* playSettings,
+    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
         RLSettings* rlSettings, OptionsMap& options);
     ~SelfPlay();
 

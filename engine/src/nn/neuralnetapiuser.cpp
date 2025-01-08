@@ -108,7 +108,7 @@ void NeuralNetAPIUser::run_inference(uint_fast16_t iterations)
     }
 }
 
-unsigned int NeuralNetAPIUser::get_num_phases()
+unsigned int NeuralNetAPIUser::get_num_phases() const
 {
     return numPhases;
 }

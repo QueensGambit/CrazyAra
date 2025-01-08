@@ -65,7 +65,7 @@ public:
      * @brief get_num_phases Returns the number of phases
      * @return numPhases
      */
-    unsigned int get_num_phases();
+    unsigned int get_num_phases() const;
 };
 
 #endif // NEURALNETAPIUSER_H
