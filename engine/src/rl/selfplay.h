@@ -71,7 +71,7 @@ private:
     const SearchSettings* searchSettings;
     SearchLimits* searchLimits;
     const PlaySettings* playSettings;
-    RLSettings* rlSettings;
+    const RLSettings* rlSettings;
     OptionsMap& options;
     GamePGN gamePGN;
     TrainDataExporter* exporter;
