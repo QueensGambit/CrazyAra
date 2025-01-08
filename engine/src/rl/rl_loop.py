@@ -49,7 +49,7 @@ class RLLoop:
         self.rl_config = rl_config
 
         self.file_io = FileIO(orig_binary_name=self.rl_config.binary_name, binary_dir=self.rl_config.binary_dir,
-                              uci_variant=self.rl_config.uci_variant, framework=self.tc.framework)
+                              uci_variant=self.rl_config.uci_variant)
         self.binary_io = None
 
         if nb_arena_games % 2 == 1:
@@ -85,7 +85,7 @@ class RLLoop:
         is_arena: Signals that UCI option should be set for arena comparison
         :return:
         """
-        self.model_name = self.file_io.get_current_model_weight_file()
+        self.model_name = self.file_io.get_current_model_tar_file()
         self.binary_io = BinaryIO(binary_path=self.file_io.binary_dir+self.current_binary_name)
         self.binary_io.set_uci_options(self.rl_config.uci_variant, self.args.context, self.args.device_id,
                                        self.rl_config.precision, self.file_io.model_dir,
@@ -105,7 +105,7 @@ class RLLoop:
             self.nn_update_index = extract_nn_update_idx_from_binary_name(self.current_binary_name)
 
             # If a new model is available, the binary name has also changed
-            model_name = self.file_io.get_current_model_weight_file()
+            model_name = self.file_io.get_current_model_tar_file()
             if model_name != "" and model_name != self.model_name:
                 logging.info("Loading new model: %s" % model_name)
 
