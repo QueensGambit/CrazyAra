@@ -111,6 +111,12 @@ private:
     void save_cur_sample_index();
 
     /**
+     * @brief save_cur_phase Saves the current phase id for the current position.
+     * @param pos Current position
+     */
+    void save_cur_phase(const StateObj* pos);
+
+    /**
      * @brief save_start_idx Saves the current starting index where the next game starts to the game array
      */
     void save_start_idx();

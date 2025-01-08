@@ -98,7 +98,7 @@ public:
      * @param options Object holding all UCI options
      */
     SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
-        RLSettings* rlSettings, OptionsMap& options);
+             const RLSettings* rlSettings, OptionsMap& options);
     ~SelfPlay();
 
     /**

@@ -87,7 +87,7 @@ void TrainDataExporter::save_cur_sample_index()
     }
 }
 
-void TrainDataExporter::save_cur_phase(const StateObj *pos)
+void TrainDataExporter::save_cur_phase(const StateObj* pos)
 {
     // curGamePhase, starting from 0
     xt::xarray<int16_t> phaseArray({ 1 }, pos->get_phase(numPhases, gamePhaseDefinition);
