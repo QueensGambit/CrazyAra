@@ -48,6 +48,8 @@
 class TrainDataExporter
 {
 private:
+    unsigned int numPhases;
+    GamePhaseDefinition gamePhaseDefinition;
     size_t numberChunks;
     size_t chunkSize;
     size_t numberSamples;
@@ -57,12 +59,14 @@ private:
     std::unique_ptr<z5::Dataset> dPolicy;
     std::unique_ptr<z5::Dataset> dbestMoveQ;
     std::unique_ptr<z5::Dataset> dPlysToEnd;
+    std::unique_ptr<z5::Dataset> dPhaseVector;
 
     xt::xarray<int16_t> gameX;
     xt::xarray<int16_t> gameValue;
     xt::xarray<float> gamePolicy;
     xt::xarray<float> gameBestMoveQ;
     xt::xarray<int16_t> gamePlysToEnd;
+    xt::xarray<int16_t> gamePhaseVector;
     bool firstMove;
 
     // current number of games - 1
@@ -140,11 +144,13 @@ public:
     /**
      * @brief TrainDataExporter
      * @param fileNameExport File name of the uncompressed data to be exported in (e.g. "data.zarr")
+     * @param numPhases Number of game phases to support for exporting
+     * @param gamePhaseDefinition Game phase definition to use
      * @param numberChunks Defines how many chunks a single file should contain.
      * The product of the number of chunks and its chunk size yields the total number of samples of a file.
      * @param chunkSize Defines the chunk size of a single chunk
      */
-    TrainDataExporter(const string& fileNameExport, size_t numberChunks=200, size_t chunkSize=128);
+    TrainDataExporter(const string& fileNameExport, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t numberChunks=200, size_t chunkSize=128);
 
     /**
      * @brief export_pos Saves a given board position, policy and Q-value to the specific game arrays

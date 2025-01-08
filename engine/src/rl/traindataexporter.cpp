@@ -87,6 +87,20 @@ void TrainDataExporter::save_cur_sample_index()
     }
 }
 
+void TrainDataExporter::save_cur_phase(const StateObj *pos)
+{
+    // curGamePhase, starting from 0
+    xt::xarray<int16_t> phaseArray({ 1 }, pos->get_phase(numPhases, gamePhaseDefinition);
+
+    if (firstMove) {
+        gamePhaseVector = phaseArray;
+    }
+    else {
+        // concatenate the sample to array for the current game
+        gamePhaseVector = xt::concatenate(xtuple(gamePhaseVector, phaseArray));
+    }
+}
+
 void TrainDataExporter::export_game_samples(Result result) {
     if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
@@ -112,7 +126,9 @@ void TrainDataExporter::export_game_samples(Result result) {
     save_start_idx();
 }
 
-TrainDataExporter::TrainDataExporter(const string& fileName, size_t numberChunks, size_t chunkSize):
+TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t numberChunks, size_t chunkSize):
+    numPhases(numPhases),
+    gamePhaseDefinition(gamePhaseDefinition),
     numberChunks(numberChunks),
     chunkSize(chunkSize),
     numberSamples(numberChunks * chunkSize),

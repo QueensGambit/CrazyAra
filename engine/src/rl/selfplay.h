@@ -68,6 +68,7 @@ class SelfPlay
 private:
     RawNetAgent* rawAgent;
     MCTSAgent* mctsAgent;
+    SearchSettings* searchSettings;
     SearchLimits* searchLimits;
     PlaySettings* playSettings;
     RLSettings* rlSettings;
