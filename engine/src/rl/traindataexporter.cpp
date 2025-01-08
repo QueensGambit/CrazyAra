@@ -40,6 +40,7 @@ void TrainDataExporter::save_sample(const StateObj* pos, const EvalInfo& eval)
     save_best_move_q(eval);
     save_side_to_move(Color(pos->side_to_move()));
     save_cur_sample_index();
+    save_cur_phase(pos);
     ++curSampleIdx;
     // value will be set later in export_game_result()
     firstMove = false;
