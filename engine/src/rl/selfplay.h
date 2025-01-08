@@ -68,9 +68,9 @@ class SelfPlay
 private:
     RawNetAgent* rawAgent;
     MCTSAgent* mctsAgent;
-    SearchSettings* searchSettings;
-    SearchLimits* searchLimits;
-    PlaySettings* playSettings;
+    const SearchSettings* searchSettings;
+    const SearchLimits* searchLimits;
+    const PlaySettings* playSettings;
     RLSettings* rlSettings;
     OptionsMap& options;
     GamePGN gamePGN;
@@ -91,12 +91,13 @@ public:
      * @brief SelfPlay
      * @param rawAgent Raw network agent which uses the raw network policy for e.g. game initiliation
      * @param mctsAgent MCTSAgent which is used during selfplay for game generation
+     * @param searchSettings Search settings configuration struct
      * @param searchLimits Search limit configuration struct
      * @param playSettings Playing setting configuration struct
      * @param RLSettings Additional settings for reinforcement learning usage
      * @param options Object holding all UCI options
      */
-    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent,  SearchLimits* searchLimits, PlaySettings* playSettings,
+    SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, const SearchLimits* searchLimits, const PlaySettings* playSettings,
         RLSettings* rlSettings, OptionsMap& options);
     ~SelfPlay();
 
