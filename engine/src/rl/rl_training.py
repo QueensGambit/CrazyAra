@@ -49,7 +49,7 @@ def update_network(queue, nn_update_idx: int, tar_filename: Path, convert_to_onn
         raise Exception('No .zip files for training available. Check the path in main_config["planes_train_dir"]:'
                         ' %s' % main_config["planes_train_dir"])
 
-    val_data, x_val, _ = get_validation_data(train_config)
+    val_data, x_val = get_validation_data(train_config)
 
     input_shape = x_val[0].shape
     # calculate how many iterations per epoch exist
