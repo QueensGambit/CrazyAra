@@ -40,6 +40,7 @@ void TrainDataExporter::save_sample(const StateObj* pos, const EvalInfo& eval)
     save_best_move_q(eval);
     save_side_to_move(Color(pos->side_to_move()));
     save_cur_sample_index();
+    save_cur_phase(pos);
     ++curSampleIdx;
     // value will be set later in export_game_result()
     firstMove = false;
@@ -87,6 +88,20 @@ void TrainDataExporter::save_cur_sample_index()
     }
 }
 
+void TrainDataExporter::save_cur_phase(const StateObj* pos)
+{
+    // curGamePhase, starting from 0
+    xt::xarray<int16_t> phaseArray({ 1 }, pos->get_phase(numPhases, gamePhaseDefinition));
+
+    if (firstMove) {
+        gamePhaseVector = phaseArray;
+    }
+    else {
+        // concatenate the sample to array for the current game
+        gamePhaseVector = xt::concatenate(xtuple(gamePhaseVector, phaseArray));
+    }
+}
+
 void TrainDataExporter::export_game_samples(Result result) {
     if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
@@ -106,13 +121,16 @@ void TrainDataExporter::export_game_samples(Result result) {
     z5::types::ShapeType offsetPolicy = { startIdx, 0 };
     z5::multiarray::writeSubarray<float>(dPolicy, gamePolicy, offsetPolicy.begin());
     z5::multiarray::writeSubarray<int16_t>(dPlysToEnd, gamePlysToEnd, offset.begin());
+    z5::multiarray::writeSubarray<int16_t>(dPhaseVector, gamePhaseVector, offset.begin());
 
     startIdx += curSampleIdx;
     gameIdx++;
     save_start_idx();
 }
 
-TrainDataExporter::TrainDataExporter(const string& fileName, size_t numberChunks, size_t chunkSize):
+TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t numberChunks, size_t chunkSize):
+    numPhases(numPhases),
+    gamePhaseDefinition(gamePhaseDefinition),
     numberChunks(numberChunks),
     chunkSize(chunkSize),
     numberSamples(numberChunks * chunkSize),
@@ -214,6 +232,7 @@ void TrainDataExporter::open_dataset_from_file(const z5::filesystem::handle::Fil
     dPolicy = z5::openDataset(file, "y_policy");
     dbestMoveQ = z5::openDataset(file, "y_best_move_q");
     dPlysToEnd = z5::openDataset(file, "plys_to_end");
+    dPhaseVector = z5::openDataset(file, "phase_vector");
 }
 
 void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::File &file)
@@ -231,6 +250,7 @@ void TrainDataExporter::create_new_dataset_file(const z5::filesystem::handle::Fi
     dPolicy = z5::createDataset(file, "y_policy", "float32", { numberSamples, StateConstants::NB_LABELS() }, { chunkSize, StateConstants::NB_LABELS() });
     dbestMoveQ = z5::createDataset(file, "y_best_move_q", "float32", { numberSamples }, { chunkSize });
     dPlysToEnd = z5::createDataset(file, "plys_to_end", "int16", { numberSamples }, { chunkSize });
+    dPhaseVector = z5::createDataset(file, "phase_vector", "int16", { numberSamples }, { chunkSize });
 
     save_start_idx();
 }

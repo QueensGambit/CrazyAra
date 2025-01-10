@@ -79,9 +79,9 @@ string load_random_fen(string filepath)
 }
 
 
-SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* searchLimits, PlaySettings* playSettings,
-                   RLSettings* rlSettings, OptionsMap& options):
-    rawAgent(rawAgent), mctsAgent(mctsAgent), searchLimits(searchLimits), playSettings(playSettings),
+SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
+                   const RLSettings* rlSettings, OptionsMap& options):
+    rawAgent(rawAgent), mctsAgent(mctsAgent), searchSettings(searchSettings), searchLimits(searchLimits), playSettings(playSettings),
     rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
 {
     is960 = options["UCI_Chess960"];
@@ -113,6 +113,8 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, SearchLimits* se
     gamePGN.round = "?";
     gamePGN.is960 = is960;
     this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
+                                           mctsAgent->get_num_phases(),
+                                           searchSettings->gamePhaseDefinition,
                                            rlSettings->numberChunks, rlSettings->chunkSize);
     filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");
     filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");

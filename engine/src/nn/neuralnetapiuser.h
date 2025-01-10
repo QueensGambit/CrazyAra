@@ -60,6 +60,12 @@ public:
      * @param iterations Number of iterations to run
      */
     void run_inference(uint_fast16_t iterations);
+
+    /**
+     * @brief get_num_phases Returns the number of phases
+     * @return numPhases
+     */
+    unsigned int get_num_phases() const;
 };
 
 #endif // NEURALNETAPIUSER_H
