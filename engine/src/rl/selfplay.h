@@ -74,7 +74,8 @@ private:
     const RLSettings* rlSettings;
     OptionsMap& options;
     GamePGN gamePGN;
-    TrainDataExporter* exporter;
+    // possibly multiple exporter objects, one for each phase
+    vector<unqiue_ptr TrainDataExporter> exporters;
     string filenamePGNSelfplay;
     string filenamePGNArena;
     string fileNameGameIdx;
