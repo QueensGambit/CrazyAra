@@ -274,7 +274,8 @@ class TrainerAgentPytorch:
         # delete previous weights to save space
         files = glob.glob(self.tc.export_dir + 'weights/*')
         for f in files:
-            os.remove(f)
+            if os.path.isfile(f):
+                os.remove(f)
 
     def _get_train_loader(self, part_id):
         # load one chunk of the dataset from memory
