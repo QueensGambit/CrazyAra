@@ -113,7 +113,7 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSett
     gamePGN.round = "?";
     gamePGN.is960 = is960;
     for (size_t idx = 0; idx < mctsAgent->get_num_phases(); ++idx) {
-        this->exporters.push_back(make_unique<TrainDataExporter>(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
+        this->exporters.push_back(make_unique<TrainDataExporter>(string("phase") + std::stoi( idx ) + string("/data_") + mctsAgent->get_device_name() + string(".zarr"),
                                                                  mctsAgent->get_num_phases(),
                                                                  searchSettings->gamePhaseDefinition,
                                                                  rlSettings->numberChunks, rlSettings->chunkSize));
@@ -226,8 +226,12 @@ void SelfPlay::generate_game(int variant, bool verbose)
             if (rlSettings->lowPolicyClipThreshold > 0) {
                 sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
             }
+            size_t idx = 0;
+            if (mctsAgent->get_num_phases() > 0) {
+                idx = pos->get_phase(numPhases, gamePhaseDefinition);
+            }
             // TODO: Only let the appropriate exporter save the current sample
-            exporters[0]->save_sample(state.get(), evalInfo);
+            exporters[idx]->save_sample(state.get(), evalInfo);
             ++generatedSamples;
         }
         play_move_and_update(evalInfo, state.get(), gamePGN, gameResult);
