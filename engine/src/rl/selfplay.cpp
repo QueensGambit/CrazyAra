@@ -82,7 +82,7 @@ string load_random_fen(string filepath)
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
                    const RLSettings* rlSettings, OptionsMap& options):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchSettings(searchSettings), searchLimits(searchLimits), playSettings(playSettings),
-    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
+    rlSettings(rlSettings), gameIdx(0), maxSamplesPerIteration(0), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
 {
     is960 = options["UCI_Chess960"];
     string suffix960 = "";
@@ -202,7 +202,7 @@ void SelfPlay::generate_game(int variant, bool verbose)
         exporters[idx]->new_game();
     }
 
-    size_t generatedSamples = 0;
+    generatedSamples = 0;
     const bool allowResignation = is_resignation_allowed();
     do {
         searchLimits->startTime = now();
@@ -222,7 +222,7 @@ void SelfPlay::generate_game(int variant, bool verbose)
         }
 
         // TODO: decide externally when to start the export
-        if (!isQuickSearch && !exporters[0]->is_file_full()) {
+        if (!isQuickSearch && generatedSamples < max_samples_per_iteration()) {
             if (rlSettings->lowPolicyClipThreshold > 0) {
                 sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
             }
@@ -356,6 +356,11 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
+size_t Selfplay::max_samples_per_iteration() const
+{
+    return rlSettings->numberChunks * rlSettings->chunkSize;
+}
+
 void SelfPlay::go(size_t numberOfGames, int variant)
 {
     reset_speed_statistics();
@@ -364,7 +369,7 @@ void SelfPlay::go(size_t numberOfGames, int variant)
 
     if (numberOfGames == 0) {
         // TODO: decide externally when to stop generating games and when the sample size is filled
-        while(!exporters[0]->is_file_full()) {
+        while(generatedSamples < max_samples_per_iteration()) {
             generate_game(variant, true);
         }
     }

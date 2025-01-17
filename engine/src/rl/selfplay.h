@@ -83,9 +83,17 @@ private:
     float gamesPerMin;
     float samplesPerMin;
     size_t backupNodes;
+    size_t generatedSamples;
     float backupDirichletEpsilon;
     float backupQValueWeight;
     bool is960;
+
+    /**
+     * @brief max_samples_per_iteration Returns the maximum number of samples per iteration.
+     * This is used to end the generation for the mixture of experts setup and for a single network.
+     * @return maximum number of samples per iteration
+     */
+    size_t max_samples_per_iteration() const;
 
 public:
     /**
