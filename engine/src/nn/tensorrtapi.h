@@ -44,6 +44,7 @@
 #include "BatchStream.h"
 
 using namespace std;
+using namespace nvinfer1;
 
 enum Precision {
     float32,
@@ -77,6 +78,7 @@ private:
     string trtFilePath;
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
     SampleUniquePtr<nvinfer1::IExecutionContext> context;
+    SampleUniquePtr<IRuntime> runtime;
     cudaStream_t stream;
     bool generatedTrtFromONNX;
 public:
@@ -93,12 +95,14 @@ public:
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
 
+#ifndef TENSORRT10
     /**
      * @brief retrieve_indices_by_name Sets the layer name indices by names.
      * @param verbose If true debug info will be shown
      * @return True if all layer names were found, else false
      */
     bool retrieve_indices_by_name(bool verbose);
+#endif
 
 private:
     void load_model() override;
@@ -123,12 +127,11 @@ private:
     /**
      * @brief set_config_settings Sets the configuration object which will be later used to build the engine
      * @param config Configuration object
-     * @param maxWorkspace Maximum allowable GPU work space for TensorRT tactic selection (e.g. 16_MiB, 1_GiB)
      * @param calibrator INT8 calibration object
      * @param calibrationStream Calibration stream used for INT8 calibration
      */
     void set_config_settings(SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-                             size_t maxWorkspace, unique_ptr<IInt8Calibrator>& calibrator,
+                             unique_ptr<IInt8Calibrator>& calibrator,
                              unique_ptr<IBatchStream>& calibrationStream);
 
 
