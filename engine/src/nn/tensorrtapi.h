@@ -95,6 +95,15 @@ public:
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
 
+#ifndef TENSORRT10
+    /**
+     * @brief retrieve_indices_by_name Sets the layer name indices by names.
+     * @param verbose If true debug info will be shown
+     * @return True if all layer names were found, else false
+     */
+    bool retrieve_indices_by_name(bool verbose);
+#endif
+
 private:
     void load_model() override;
     void load_parameters() override;

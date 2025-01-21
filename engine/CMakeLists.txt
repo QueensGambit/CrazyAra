@@ -4,7 +4,8 @@ set (CMAKE_CXX_STANDARD 17)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
-option(BACKEND_TENSORRT          "Build with TensorRT support"  ON)
+option(BACKEND_TENSORRT_10       "Build with TensorRT 10 support"  OFF)
+option(BACKEND_TENSORRT_8        "Build with TensorRT 8 support"  ON)
 option(BACKEND_TENSORRT_7        "Build with deprecated TensorRT 7 support"  OFF)
 option(BACKEND_MXNET             "Build with MXNet backend (Blas/IntelMKL/CUDA/TensorRT) support"  OFF)
 option(BACKEND_TORCH             "Build with Torch backend (CPU/GPU) support" OFF)
@@ -459,11 +460,18 @@ if (USE_RL)
 endif()
 
 if(BACKEND_TENSORRT_7)
-    set(BACKEND_TENSORRT ON)
     add_definitions(-DTENSORRT7)
 endif()
 
-if (BACKEND_TENSORRT)
+if (BACKEND_TENSORRT_8)
+    add_definitions(-DTENSORRT8)
+endif()
+
+if (BACKEND_TENSORRT_10)
+    add_definitions(-DTENSORRT10)
+endif()
+
+if (BACKEND_TENSORRT_7 OR BACKEND_TENSORRT_8 OR BACKEND_TENSORRT_10)
     # build CrazyAra with TensorRT support, requires a working TensorRT-MXNet library package
     message(STATUS "Enabled TensorRT support")
     message(STATUS "TensorRT path: $ENV{TENSORRT_PATH}")
@@ -493,7 +501,7 @@ endif()
 
 add_executable(${PROJECT_NAME} ${source_files})
 
-if (BACKEND_TENSORRT)
+if (BACKEND_TENSORRT_7 OR BACKEND_TENSORRT_8 OR BACKEND_TENSORRT_10)
     target_link_libraries(${PROJECT_NAME} nvonnxparser nvinfer cudart ${CUDART_LIB} ${CUBLAS_LIB} ${CUDNN_LIB})
     if(BACKEND_TENSORRT_7)
         target_link_libraries(${PROJECT_NAME} myelin)
