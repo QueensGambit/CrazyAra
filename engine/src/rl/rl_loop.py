@@ -126,16 +126,26 @@ class RLLoop:
             # start training using a process to ensure memory clearing afterwards
             queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
-            process = Process(target=update_network, args=(queue, self.nn_update_index,
-                                                           self.file_io.get_current_model_tar_file(),
-                                                           not self.args.no_onnx_export,
-                                                           main_config, self.tc,
-                                                           self.file_io.model_contender_dir))
 
-            logging.info("Start Training")
-            process.start()
-            self.tc.k_steps = queue.get() + 1
-            process.join()  # this blocks until the process terminates
+            nb_train_iterations = 1 if self.file_io.number_phases is None else self.file_io.number_phases
+            for phase_idx in range(nb_train_iterations):
+
+                if self.file_io.is_moe:
+                    model_export_dir = self.file_io.model_contender_dir + f"/phase{phase_idx}"
+                else:
+                    model_export_dir = self.file_io.model_contender_dir
+                process = Process(target=update_network, args=(queue, self.nn_update_index,
+                                                               self.file_io.get_current_model_tar_file(),
+                                                               not self.args.no_onnx_export,
+                                                               main_config, self.tc,
+                                                               model_export_dir))
+
+                logging.info("Start Training")
+                if self.file_io.is_moe:
+                    logging.info(f"Phase {phase_idx}")
+                process.start()
+                self.tc.k_steps = queue.get() + 1
+                process.join()  # this blocks until the process terminates
 
             if self.tc.max_lr > self.tc.min_lr:
                 self.tc.max_lr = max(self.tc.max_lr - self.lr_reduction, self.tc.min_lr * 10)
