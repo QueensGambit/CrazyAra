@@ -144,6 +144,12 @@ class FileIO:
         create_dir(self.model_dir_archive)
         create_dir(self.logs_dir_archive)
 
+        if self.is_moe:
+            for directory in [self.export_dir_gen_data, self.train_dir, self.val_dir, self.train_dir_archive,
+                              self.val_dir_archive, self.model_contender_dir, self.model_dir_archive]:
+                for phase_idx in range(self.number_phases):
+                    create_dir(directory + f"/phase{phase_idx}")
+
     def _include_data_from_replay_memory(self, nb_files: int, fraction_for_selection: float):
         """
         :param nb_files: Number of files to include from replay memory into training
