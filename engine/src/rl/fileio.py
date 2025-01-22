@@ -65,6 +65,25 @@ def compress_zarr_dataset(data, file_path, compression='lz4', clevel=5, start_id
     return nan_detected
 
 
+def check_for_moe(model_dir: str):
+    """
+    Extracts the number of phases from the given model directory.
+    Returns true if mixture of experts is used.
+    The second return argument is the number of phases.
+    :param model_dir: Model directory, where either the model directly is stored or the number of phase directories.
+    :return: is_moe: bool, number_phases: int or None
+    """
+    number_phases = 0
+    is_moe = False
+    for entry in os.listdir(model_dir):
+        if entry.startswith("phase"):
+            number_phases += 1
+            is_moe = True
+    if not is_moe:
+        number_phases = None
+    return is_moe, number_phases
+
+
 class FileIO:
     """
     Class to facilitate creation of directories, reading of file
@@ -100,6 +119,7 @@ class FileIO:
 
         self.timestamp_format = "%Y-%m-%d-%H-%M-%S"
 
+        self.is_moe, self.number_phases = check_for_moe(self.model_dir)
         self._create_directories()
 
         # Adjust paths in main_config
@@ -294,4 +314,3 @@ class FileIO:
         """
         move_all_files(self.model_dir, self.model_dir_archive)
         move_all_files(self.model_contender_dir, self.model_dir)
-
