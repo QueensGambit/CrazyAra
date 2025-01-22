@@ -218,13 +218,8 @@ class FileIO:
         Moves files from training, validation dir into archive directory
         :return:
         """
-        if not self.is_moe:
-            move_all_files(self.train_dir, self.train_dir_archive)
-            move_all_files(self.val_dir, self.val_dir_archive)
-        else:
-            for phase_idx in range(self.number_phases):
-                move_all_files(self.train_dir + f"/phase{phase_idx}", self.train_dir_archive + f"/phase{phase_idx}")
-                move_all_files(self.val_dir + f"/phase{phase_idx}", self.val_dir_archive + f"/phase{phase_idx}")
+        self._move_all_files_wrapper(self.train_dir, self.train_dir_archive)
+        self._move_all_files_wrapper(self.val_dir, self.val_dir_archive)
 
     def _remove_files_in_weight_dir(self):
         """
@@ -342,9 +337,23 @@ class FileIO:
         for f in files:
             os.remove(f)
 
+    def _move_all_files_wrapper(self, from_dir, to_dir):
+        """
+        Wrapper function for move_all_files(from_dir, to_dir).
+        In case of self.is_moe, all phases directories are moved as well.
+        :param from_dir: Origin directory where the files are located
+        :param to_dir: Destination directory where all files (including subdirectories directories) will be moved
+        :return:
+        """
+        if not self.is_moe:
+            move_all_files(from_dir, to_dir)
+        else:
+            for phase_idx in range(self.number_phases):
+                move_all_files(from_dir + f"/phase{phase_idx}", to_dir + f"/phase{phase_idx}")
+
     def replace_current_model_with_contender(self):
         """
         Moves the previous model into archive directory and the model-contender into the model directory
         """
-        move_all_files(self.model_dir, self.model_dir_archive)
-        move_all_files(self.model_contender_dir, self.model_dir)
+        self._move_all_files_wrapper(self.model_dir, self.model_dir_archive)
+        self._move_all_files_wrapper(self.model_contender_dir, self.model_dir)
