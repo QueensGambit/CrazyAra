@@ -283,7 +283,7 @@ class FileIO:
     def get_number_generated_files(self) -> int:
         """
         Returns the amount of file that have been generated since the last training run.
-        :return:
+        :return: nb_training_files: int
         """
         return len(glob.glob(self.export_dir_gen_data + "**/*.zip"))
 
