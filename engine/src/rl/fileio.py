@@ -120,6 +120,10 @@ class FileIO:
         self.timestamp_format = "%Y-%m-%d-%H-%M-%S"
 
         self.is_moe, self.number_phases = check_for_moe(self.model_dir)
+        if self.is_moe:
+            logging.info(f"Mixture of experts detected with {self.number_phases} phases.")
+        else:
+            logging.info("No mixture of experts detected.")
         self._create_directories()
 
         # Adjust paths in main_config
