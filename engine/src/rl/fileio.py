@@ -191,31 +191,55 @@ class FileIO:
         training and validation directory
         :return:
         """
-        file_names = os.listdir(self.export_dir_gen_data)
+        if not self.is_moe:
+            file_names = os.listdir(self.export_dir_gen_data)
 
-        # move the last file into the validation directory
-        os.rename(self.export_dir_gen_data + file_names[-1], self.val_dir + file_names[-1])
+            # move the last file into the validation directory
+            os.rename(self.export_dir_gen_data + file_names[-1], self.val_dir + file_names[-1])
 
-        # move the rest into the training directory
-        for file_name in file_names[:-1]:
-            os.rename(self.export_dir_gen_data + file_name, self.train_dir + file_name)
+            # move the rest into the training directory
+            for file_name in file_names[:-1]:
+                os.rename(self.export_dir_gen_data + file_name, self.train_dir + file_name)
+        else:
+            for phase_idx in range(self.number_phases):
+                file_names = os.listdir(self.export_dir_gen_data + f"/phase{phase_idx}")
+
+                # move the last file into the validation directory
+                os.rename(self.export_dir_gen_data + f"/phase{phase_idx}/" + file_names[-1],
+                          self.val_dir + f"/phase{phase_idx}/" + file_names[-1])
+
+                # move the rest into the training directory
+                for file_name in file_names[:-1]:
+                    os.rename(self.export_dir_gen_data + f"/phase{phase_idx}/" + file_name,
+                              self.train_dir + f"/phase{phase_idx}/" + file_name)
 
     def _move_train_val_data_into_archive(self):
         """
         Moves files from training, validation dir into archive directory
         :return:
         """
-        move_all_files(self.train_dir, self.train_dir_archive)
-        move_all_files(self.val_dir, self.val_dir_archive)
+        if not self.is_moe:
+            move_all_files(self.train_dir, self.train_dir_archive)
+            move_all_files(self.val_dir, self.val_dir_archive)
+        else:
+            for phase_idx in range(self.number_phases):
+                move_all_files(self.train_dir + f"/phase{phase_idx}", self.train_dir_archive + f"/phase{phase_idx}")
+                move_all_files(self.val_dir + f"/phase{phase_idx}", self.val_dir_archive + f"/phase{phase_idx}")
 
     def _remove_files_in_weight_dir(self):
         """
         Removes all files in the weight directory.
         :return:
         """
-        file_list = glob.glob(os.path.join(self.weight_dir, "model-*"))
-        for file in file_list:
-            os.remove(file)
+        if not self.is_moe:
+            file_list = glob.glob(os.path.join(self.weight_dir, "model-*"))
+            for file in file_list:
+                os.remove(file)
+        else:
+            for phase_idx in range(self.number_phases):
+                file_list = glob.glob(os.path.join(self.weight_dir, f"/phase{phase_idx}/model-*"))
+                for file in file_list:
+                    os.remove(file)
 
     def compress_dataset(self, device_name: str):
         """
