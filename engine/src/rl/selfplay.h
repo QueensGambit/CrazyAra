@@ -75,7 +75,7 @@ private:
     OptionsMap& options;
     GamePGN gamePGN;
     // possibly multiple exporter objects, one for each phase
-    vector<unqiue_ptr TrainDataExporter> exporters;
+    vector<unique_ptr <TrainDataExporter>> exporters;
     string filenamePGNSelfplay;
     string filenamePGNArena;
     string fileNameGameIdx;

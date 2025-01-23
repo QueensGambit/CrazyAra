@@ -82,7 +82,7 @@ string load_random_fen(string filepath)
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
                    const RLSettings* rlSettings, OptionsMap& options):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchSettings(searchSettings), searchLimits(searchLimits), playSettings(playSettings),
-    rlSettings(rlSettings), gameIdx(0), maxSamplesPerIteration(0), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
+    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
 {
     is960 = options["UCI_Chess960"];
     string suffix960 = "";
@@ -113,7 +113,7 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSett
     gamePGN.round = "?";
     gamePGN.is960 = is960;
     for (size_t idx = 0; idx < mctsAgent->get_num_phases(); ++idx) {
-        this->exporters.push_back(make_unique<TrainDataExporter>(string("phase") + std::stoi( idx ) + string("/data_") + mctsAgent->get_device_name() + string(".zarr"),
+        this->exporters.push_back(make_unique<TrainDataExporter>(string("phase") + std::to_string( idx ) + string("/data_") + mctsAgent->get_device_name() + string(".zarr"),
                                                                  mctsAgent->get_num_phases(),
                                                                  searchSettings->gamePhaseDefinition,
                                                                  rlSettings->numberChunks, rlSettings->chunkSize));
@@ -228,7 +228,7 @@ void SelfPlay::generate_game(int variant, bool verbose)
             }
             size_t idx = 0;
             if (mctsAgent->get_num_phases() > 0) {
-                idx = pos->get_phase(numPhases, gamePhaseDefinition);
+                idx = state->get_phase(mctsAgent->get_num_phases(), searchSettings->gamePhaseDefinition);
             }
             // TODO: Only let the appropriate exporter save the current sample
             exporters[idx]->save_sample(state.get(), evalInfo);
@@ -356,7 +356,7 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
-size_t Selfplay::max_samples_per_iteration() const
+size_t SelfPlay::max_samples_per_iteration() const
 {
     return rlSettings->numberChunks * rlSettings->chunkSize;
 }
