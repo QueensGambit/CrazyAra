@@ -227,10 +227,10 @@ void SelfPlay::generate_game(int variant, bool verbose)
                 sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
             }
             size_t idx = 0;
-            if (mctsAgent->get_num_phases() > 0) {
+            // only let the appropriate exporter save the current sample
+            if (mctsAgent->get_num_phases() > 1) {
                 idx = state->get_phase(mctsAgent->get_num_phases(), searchSettings->gamePhaseDefinition);
             }
-            // TODO: Only let the appropriate exporter save the current sample
             exporters[idx]->save_sample(state.get(), evalInfo);
             ++generatedSamples;
         }
