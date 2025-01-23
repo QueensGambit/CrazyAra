@@ -35,6 +35,13 @@ RawNetAgent::RawNetAgent(const vector<unique_ptr<NeuralNetAPI>>& nets, const Pla
 {
 }
 
+size_t RawNetAgent::select_nn_index() {
+    if (nets.size() == 1) {
+        return 0;
+    }
+    return phaseToNetsIndex.at(state->get_phase(numPhases, searchSettings->gamePhaseDefinition));
+}
+
 void RawNetAgent::evaluate_board_state()
 {
     evalInfo->legalMoves = state->legal_actions();
@@ -55,7 +62,7 @@ void RawNetAgent::evaluate_board_state()
         return;
     }
     state->get_state_planes(true, inputPlanes, nets.front()->get_version());
-    nets[phaseToNetsIndex.at(state->get_phase(numPhases, searchSettings->gamePhaseDefinition))]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
