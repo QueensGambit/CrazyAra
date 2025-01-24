@@ -232,7 +232,7 @@ class FileIO:
                 os.remove(file)
         else:
             for phase_idx in range(self.number_phases):
-                file_list = glob.glob(os.path.join(self.weight_dir, f"/phase{phase_idx}/model-*"))
+                file_list = glob.glob(os.path.join(self.weight_dir, f"phase{phase_idx}/model-*"))
                 for file in file_list:
                     os.remove(file)
 
@@ -243,6 +243,7 @@ class FileIO:
         :param device_name: The currently active device name (context_device-id)
         :return:
         """
+        # TODO: Compress the data for all phases
         data = zarr.load(self.binary_dir + "data_" + device_name + ".zarr")
 
         export_dir, time_stamp = self.create_export_dir(device_name)
