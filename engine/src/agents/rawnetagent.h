@@ -41,6 +41,14 @@ using namespace crazyara;
 
 class RawNetAgent: public Agent
 {
+private:
+    /**
+     * @brief select_nn_index Returns the index according to phaseToNetsIndex.
+     * If no phases is enabled, 0 will be returned.
+     * @return phaseToNetsIndex index or 0
+     */
+    size_t select_nn_index();
+
 public:
     const SearchSettings* searchSettings;
 
