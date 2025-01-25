@@ -236,17 +236,15 @@ class FileIO:
                 for file in file_list:
                     os.remove(file)
 
-    def compress_dataset(self, device_name: str):
+    def _compress_single_dataset(self, phase: str, device_name: str):
         """
-        Loads the uncompressed data file, selects all sample until the index specified in "startIdx.txt",
-        compresses it and exports it.
-        :param device_name: The currently active device name (context_device-id)
-        :return:
+        Loads a single uncompressed data file, selects all samples, compresses it and exports it.
+        :param phase: Phase to use, e.g. "phase0/", "phase1". Is empty string for no phase ("").
+        :return: export_dir: str
         """
-        # TODO: Compress the data for all phases
-        data = zarr.load(self.binary_dir + "data_" + device_name + ".zarr")
+        data = zarr.load(self.binary_dir + phase + "data_" + device_name + ".zarr")
 
-        export_dir, time_stamp = self.create_export_dir(device_name)
+        export_dir, time_stamp = self.create_export_dir(phase, device_name)
         zarr_path = export_dir + time_stamp + ".zip"
         nan_detected = compress_zarr_dataset(data, zarr_path, start_idx=0)
         if nan_detected is True:
@@ -254,18 +252,36 @@ class FileIO:
             new_export_dir = self.binary_dir + time_stamp
             os.rename(export_dir, new_export_dir)
             export_dir = new_export_dir
-        self.move_game_data_to_export_dir(export_dir, device_name)
 
-    def create_export_dir(self, device_name: str) -> (str, str):
+        return export_dir
+
+    def compress_dataset(self, device_name: str):
+        """
+        Calls _compress_single_dataset() for each phase or a single time for no phases.
+        Also moves the game data to export directory.
+        :param device_name: The currently active device name (context_device-id)
+        :return:
+        """
+        if self.is_moe:
+            for phase_idx in range(self.number_phases):
+                export_dir = self._compress_single_dataset(f"phase{phase_idx}", device_name)
+                if phase_idx == 0:
+                    self.move_game_data_to_export_dir(export_dir, device_name)
+        else:
+            export_dir = self._compress_single_dataset("", device_name)
+            self.move_game_data_to_export_dir(export_dir, device_name)
+
+    def create_export_dir(self, phase: str, device_name: str) -> (str, str):
         """
         Create a directory in the 'export_dir_gen_data' path,
         where the name consists of the current date, time and device ID.
+        :param phase: Phase to use, e.g. "phase0/", "phase1". Is empty string for no phase ("").
         :param device_name: The currently active device name (context_device-id)
         :return: Path of the created directory; Time stamp used while creating
         """
         # include current timestamp in dataset export file
         time_stamp = datetime.datetime.fromtimestamp(time.time()).strftime(self.timestamp_format)
-        time_stamp_dir = f'{self.export_dir_gen_data}{time_stamp}-{device_name}/'
+        time_stamp_dir = f'{self.export_dir_gen_data}{phase}{time_stamp}-{device_name}/'
         # create a directory of the current time_stamp
         if not os.path.exists(time_stamp_dir):
             os.makedirs(time_stamp_dir)
