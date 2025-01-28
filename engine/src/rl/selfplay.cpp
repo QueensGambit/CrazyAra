@@ -113,7 +113,11 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSett
     gamePGN.round = "?";
     gamePGN.is960 = is960;
     for (size_t idx = 0; idx < mctsAgent->get_num_phases(); ++idx) {
-        this->exporters.push_back(make_unique<TrainDataExporter>(string("phase") + std::to_string( idx ) + string("/data_") + mctsAgent->get_device_name() + string(".zarr"),
+        string fileNameExport = string("data_") + mctsAgent->get_device_name() + string(".zarr");
+        if (mctsAgent->get_num_phases() > 1) {
+            fileNameExport = string("phase") + std::to_string(idx) + string("/") + fileNameExport;
+        }
+        this->exporters.push_back(make_unique<TrainDataExporter>(fileNameExport,
                                                                  mctsAgent->get_num_phases(),
                                                                  searchSettings->gamePhaseDefinition,
                                                                  rlSettings->numberChunks, rlSettings->chunkSize));
