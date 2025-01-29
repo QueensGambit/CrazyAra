@@ -264,7 +264,7 @@ class FileIO:
         """
         if self.is_moe:
             for phase_idx in range(self.number_phases):
-                export_dir = self._compress_single_dataset(f"phase{phase_idx}", device_name)
+                export_dir = self._compress_single_dataset(f"phase{phase_idx}/", device_name)
                 if phase_idx == 0:
                     self.move_game_data_to_export_dir(export_dir, device_name)
         else:
