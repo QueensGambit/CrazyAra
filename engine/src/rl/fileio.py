@@ -306,7 +306,11 @@ class FileIO:
         Returns the amount of file that have been generated since the last training run.
         :return: nb_training_files: int
         """
-        return len(glob.glob(self.export_dir_gen_data + "**/*.zip"))
+        if self.is_moe:
+            phase = "phase0/"
+        else:
+            phase = ""
+        return len(glob.glob(self.export_dir_gen_data + phase + "**/*.zip"))
 
     def move_game_data_to_export_dir(self, export_dir: str, device_name: str):
         """
