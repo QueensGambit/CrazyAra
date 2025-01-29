@@ -206,7 +206,7 @@ void SelfPlay::generate_game(int variant, bool verbose)
         exporters[idx]->new_game();
     }
 
-    generatedSamples = 0;
+    const size_t generatedSamplesBeforeGame = generatedSamples;
     const bool allowResignation = is_resignation_allowed();
     do {
         searchLimits->startTime = now();
@@ -225,7 +225,6 @@ void SelfPlay::generate_game(int variant, bool verbose)
             mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         }
 
-        // TODO: decide externally when to start the export
         if (!isQuickSearch && generatedSamples < max_samples_per_iteration()) {
             if (rlSettings->lowPolicyClipThreshold > 0) {
                 sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
@@ -256,7 +255,7 @@ void SelfPlay::generate_game(int variant, bool verbose)
     // measure time statistics
     if (verbose) {
         const float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
-        speed_statistic_report(elapsedTimeMin, generatedSamples);
+        speed_statistic_report(elapsedTimeMin, generatedSamples - generatedSamplesBeforeGame);
     }
     ++gameIdx;
 }
@@ -367,12 +366,12 @@ size_t SelfPlay::max_samples_per_iteration() const
 
 void SelfPlay::go(size_t numberOfGames, int variant)
 {
+    generatedSamples = 0;
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
     gamePGN.black = mctsAgent->get_name();
 
     if (numberOfGames == 0) {
-        // TODO: decide externally when to stop generating games and when the sample size is filled
         while(generatedSamples < max_samples_per_iteration()) {
             generate_game(variant, true);
         }
