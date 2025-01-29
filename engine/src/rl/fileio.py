@@ -152,7 +152,7 @@ class FileIO:
             for directory in [self.export_dir_gen_data, self.train_dir, self.val_dir, self.train_dir_archive,
                               self.val_dir_archive, self.model_contender_dir, self.model_dir_archive]:
                 for phase_idx in range(self.number_phases):
-                    create_dir(directory + f"/phase{phase_idx}")
+                    create_dir(directory + f"phase{phase_idx}")
 
     def _include_data_from_replay_memory(self, nb_files: int, fraction_for_selection: float):
         """
@@ -292,7 +292,11 @@ class FileIO:
         """
         Return the filename of the current active model weight (.tar) file for pytorch
         """
-        model_params = glob.glob(self.model_dir + "/*.tar")
+        if self.is_moe:
+            phase = "phase0"
+        else:
+            phase = ""
+        model_params = glob.glob(self.model_dir + phase + "/*.tar")
         if len(model_params) == 0:
             raise FileNotFoundError(f'No model file found in {self.model_dir}')
         return model_params[0]
