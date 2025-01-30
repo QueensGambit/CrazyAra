@@ -377,7 +377,7 @@ class FileIO:
             move_all_files(from_dir, to_dir)
         else:
             for phase_idx in range(self.number_phases):
-                move_all_files(from_dir + f"/phase{phase_idx}", to_dir + f"/phase{phase_idx}")
+                move_all_files(from_dir + f"phase{phase_idx}/", to_dir + f"phase{phase_idx}/")
 
     def replace_current_model_with_contender(self):
         """
