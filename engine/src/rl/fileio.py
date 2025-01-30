@@ -293,10 +293,11 @@ class FileIO:
         :param phase: Phase to use. Empty string "" if self.moe is False
         Return the filename of the current active model weight (.tar) file for pytorch
         """
-        if phase is None and self.is_moe:
-            phase = "phase0"
-        else:
-            phase = ""
+        if phase is None:
+            if self.is_moe:
+                phase = "phase0"
+            else:
+                phase = ""
 
         model_params = glob.glob(self.model_dir + phase + "/*.tar")
         if len(model_params) == 0:
