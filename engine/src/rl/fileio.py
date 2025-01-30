@@ -348,7 +348,7 @@ class FileIO:
         if did_contender_win:
             self._move_train_val_data_into_archive()
         # move last contender into archive
-        move_all_files(self.model_contender_dir, self.model_dir_archive)
+        self._move_all_files_wrapper(self.model_contender_dir, self.model_dir_archive)
 
         self._move_generated_data_to_train_val()
         # We don’t need them anymore; the last model from last training has already been saved
