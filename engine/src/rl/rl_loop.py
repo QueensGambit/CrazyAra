@@ -131,7 +131,7 @@ class RLLoop:
             for phase_idx in range(nb_train_iterations):
 
                 if self.file_io.is_moe:
-                    model_export_dir = self.file_io.model_contender_dir + f"/phase{phase_idx}/"
+                    model_export_dir = self.file_io.model_contender_dir + f"phase{phase_idx}/"
                     phase = f"phase{phase_idx}"
                 else:
                     model_export_dir = self.file_io.model_contender_dir
