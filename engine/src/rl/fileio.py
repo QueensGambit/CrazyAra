@@ -288,11 +288,18 @@ class FileIO:
 
         return time_stamp_dir, time_stamp
 
-    def get_current_model_tar_file(self) -> str:
+    def get_current_model_tar_file(self, phase=None) -> str:
         """
+        :param phase: Phase to use. Should be "" if no MoE is used and otherwise e.g. "phase2".
+        For None default "phase0" or "" will be used.
         Return the filename of the current active model weight (.tar) file for pytorch
         """
-        model_params = glob.glob(self.model_dir + "/*.tar")
+        if phase is None:
+            if self.is_moe:
+                phase = "phase0"
+            else:
+                phase = ""
+        model_params = glob.glob(self.model_dir + phase + "/*.tar")
         if len(model_params) == 0:
             raise FileNotFoundError(f'No model file found in {self.model_dir}')
         return model_params[0]
