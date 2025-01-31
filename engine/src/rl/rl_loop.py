@@ -127,14 +127,14 @@ class RLLoop:
             queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
 
-            nb_train_iterations = 1 if self.file_io.number_phases is None else self.file_io.number_phases
+            nb_train_iterations = 1 if not self.file_io.is_moe else self.file_io.number_phases
             for phase_idx in range(nb_train_iterations):
 
                 main_config["planes_train_dir"] = self.file_io.binary_dir + f"export/train/{self.file_io.uci_variant}/"
                 main_config["planes_val_dir"] = self.file_io.binary_dir + f"export/val/{self.file_io.uci_variant}/"
 
                 if self.file_io.is_moe:
-                    model_export_dir = self.file_io.model_contender_dir + f"/phase{phase_idx}"
+                    model_export_dir = self.file_io.model_contender_dir + f"phase{phase_idx}"
                     main_config["planes_train_dir"] += f"phase{phase_idx}/"
                     main_config["planes_val_dir"] += f"phase{phase_idx}/"
                     phase = f"phase{phase_idx}"

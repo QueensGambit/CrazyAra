@@ -152,7 +152,7 @@ class FileIO:
             for directory in [self.export_dir_gen_data, self.train_dir, self.val_dir, self.train_dir_archive,
                               self.val_dir_archive, self.model_contender_dir, self.model_dir_archive]:
                 for phase_idx in range(self.number_phases):
-                    create_dir(directory + f"/phase{phase_idx}")
+                    create_dir(directory + f"phase{phase_idx}")
 
     def _include_data_from_replay_memory(self, nb_files: int, fraction_for_selection: float):
         """
@@ -309,7 +309,11 @@ class FileIO:
         Returns the amount of file that have been generated since the last training run.
         :return: nb_training_files: int
         """
-        return len(glob.glob(self.export_dir_gen_data + "**/*.zip"))
+        if self.is_moe:
+            phase = "phase0/"
+        else:
+            phase = ""
+        return len(glob.glob(self.export_dir_gen_data + phase + "**/*.zip"))
 
     def move_game_data_to_export_dir(self, export_dir: str, device_name: str):
         """
@@ -344,7 +348,7 @@ class FileIO:
         if did_contender_win:
             self._move_train_val_data_into_archive()
         # move last contender into archive
-        move_all_files(self.model_contender_dir, self.model_dir_archive)
+        self._move_all_files_wrapper(self.model_contender_dir, self.model_dir_archive)
 
         self._move_generated_data_to_train_val()
         # We don’t need them anymore; the last model from last training has already been saved
@@ -373,7 +377,7 @@ class FileIO:
             move_all_files(from_dir, to_dir)
         else:
             for phase_idx in range(self.number_phases):
-                move_all_files(from_dir + f"/phase{phase_idx}", to_dir + f"/phase{phase_idx}")
+                move_all_files(from_dir + f"phase{phase_idx}/", to_dir + f"phase{phase_idx}/")
 
     def replace_current_model_with_contender(self):
         """
