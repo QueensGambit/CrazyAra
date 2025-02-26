@@ -246,7 +246,10 @@ class FileIO:
 
         export_dir, time_stamp = self.create_export_dir(phase, device_name)
         zarr_path = export_dir + time_stamp + ".zip"
-        nan_detected = compress_zarr_dataset(data, zarr_path, start_idx=0)
+
+        end_idx = self._retrieve_end_idx(data)
+
+        nan_detected = compress_zarr_dataset(data, zarr_path, start_idx=0, end_idx=end_idx)
         if nan_detected is True:
             logging.error("NaN value detected in file %s.zip" % time_stamp)
             new_export_dir = self.binary_dir + time_stamp
@@ -254,6 +257,23 @@ class FileIO:
             export_dir = new_export_dir
 
         return export_dir
+
+    def _retrieve_end_idx(self, data):
+        """
+        Checks the y_policy sum in the data for is_moe is False and
+        returns the first occurence of only 0s.
+        An end_idx of 0 means the whole dataset will be used
+        :param data: Zarr data object
+        :return: end_idx
+        """
+        if self.is_moe is False:
+            return 0
+
+        sum_y_policy = data['y_policy'].sum(axis=1)
+        potential_end_idx = sum_y_policy.argmin()
+        if sum_y_policy[potential_end_idx] == 0:
+            return potential_end_idx
+        return 0
 
     def compress_dataset(self, device_name: str):
         """
