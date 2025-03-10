@@ -154,14 +154,33 @@ class FileIO:
                 for phase_idx in range(self.number_phases):
                     create_dir(directory + f"phase{phase_idx}")
 
-    def _include_data_from_replay_memory(self, nb_files: int, fraction_for_selection: float):
+    def _include_data_from_replay_memory_wrapper(self, nb_files: int, fraction_for_selection: float):
         """
+        Wrapper for _include_data_from_replay_memory() which handles MoE and non MoE cases.
+        :param nb_files: Number of files to include from replay memory into training
+        :param fraction_for_selection: Proportion for selecting files from the replay memory
+        """
+
+        if not self.is_moe:
+            self._include_data_from_replay_memory(self.train_dir_archive, self.train_dir, nb_files,
+                                                  fraction_for_selection)
+        else:
+            for phase_idx in range(self.number_phases):
+                self._include_data_from_replay_memory(self.train_dir_archive + f"phase{phase_idx}/",
+                                                      self.train_dir + f"phase{phase_idx}/", nb_files,
+                                                      fraction_for_selection)
+
+    def _include_data_from_replay_memory(self, from_dir: str, to_dir: str, nb_files: int, fraction_for_selection: float):
+        """
+        Moves data from the from_dir directory to the to_dir directory.
+        :param from_dir: Usually train_dir_archive
+        :param to_dir: Usually train_dir
         :param nb_files: Number of files to include from replay memory into training
         :param fraction_for_selection: Proportion for selecting files from the replay memory
         :return:
         """
         # get all file/folder names ignoring hidden files
-        folder_names = [folder_name for folder_name in os.listdir(self.train_dir_archive)
+        folder_names = [folder_name for folder_name in os.listdir(from_dir)
                         if not folder_name.startswith('.')]
 
         if len(folder_names) < nb_files:
@@ -183,7 +202,7 @@ class FileIO:
 
         # move selected files into train dir
         for index in list(indices):
-            os.rename(self.train_dir_archive + folder_names[index], self.train_dir + folder_names[index])
+            os.rename(from_dir + folder_names[index], to_dir + folder_names[index])
 
     def _move_generated_data_to_train_val(self):
         """
@@ -373,7 +392,7 @@ class FileIO:
         self._move_generated_data_to_train_val()
         # We don’t need them anymore; the last model from last training has already been saved
         self._remove_files_in_weight_dir()
-        self._include_data_from_replay_memory(rm_nb_files, rm_fraction_for_selection)
+        self._include_data_from_replay_memory_wrapper(rm_nb_files, rm_fraction_for_selection)
 
     def remove_intermediate_weight_files(self):
         """
