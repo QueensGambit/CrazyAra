@@ -76,7 +76,7 @@ def check_for_moe(model_dir: str):
     number_phases = 0
     is_moe = False
     for entry in os.listdir(model_dir):
-        if entry.startswith("phase"):
+        if entry.startswith("phase") and "None" not in entry:
             number_phases += 1
             is_moe = True
     if not is_moe:
