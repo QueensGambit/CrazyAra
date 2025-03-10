@@ -582,9 +582,13 @@ void CrazyAra::fill_nn_vectors(const string& modelDirectory, vector<unique_ptr<N
 
     // analyse directory to get num phases
     for (const auto& entry : fs::directory_iterator(modelDirectory)) {
-        std::cout << entry.path().generic_string() << std::endl;
-
-        fill_single_nn_vector(entry.path().generic_string(), netSingleVector, netBatchesVector);
+        std::string curPath = entry.path().generic_string();
+        if (!std::isdigit(curPath.back())) {
+            // skip "phaseNone"
+            continue;
+        }
+        info_string(curPath);
+        fill_single_nn_vector(curPath, netSingleVector, netBatchesVector);
     }
 }
 
