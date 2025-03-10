@@ -28,6 +28,8 @@ class RLConfig:
     # The UCI_Variant. Must be in ["3check", "atomic", "chess", "crazyhouse",
     # "giveaway" (= antichess), "horde", "kingofthehill", "racingkings"]
     uci_variant: str = f'chess'
+    # Whether to use Staged learning v2.0 for MoE training, i.e. first train on full data and then each phase separately
+    use_moe_staged_learning: bool = False
 
 
 @dataclass

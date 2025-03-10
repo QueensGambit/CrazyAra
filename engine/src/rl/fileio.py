@@ -89,7 +89,7 @@ class FileIO:
     Class to facilitate creation of directories, reading of file
     names and moving of files during Reinforcement Learning.
     """
-    def __init__(self, orig_binary_name: str, binary_dir: str, uci_variant: str):
+    def __init__(self, orig_binary_name: str, binary_dir: str, uci_variant: str, use_moe_staged_learning: bool):
         """
         Creates all necessary directories and sets all path variables.
         If no '*.param' file can be found in the 'binary-dir/model/' directory,
@@ -97,6 +97,7 @@ class FileIO:
         """
         self.binary_dir = binary_dir
         self.uci_variant = uci_variant
+        self.use_moe_staged_learning = use_moe_staged_learning
 
         # If there is no model in 'model/', we assume that the model and every
         # other path has an additional '<variant>' folder
@@ -153,6 +154,8 @@ class FileIO:
                               self.val_dir_archive, self.model_contender_dir, self.model_dir_archive]:
                 for phase_idx in range(self.number_phases):
                     create_dir(directory + f"phase{phase_idx}")
+            if self.use_moe_staged_learning:
+                create_dir(self.model_contender_dir + "phaseNone")
 
     def _include_data_from_replay_memory_wrapper(self, nb_files: int, fraction_for_selection: float):
         """
@@ -327,9 +330,10 @@ class FileIO:
 
         return time_stamp_dir, time_stamp
 
-    def get_current_model_tar_file(self, phase=None) -> str:
+    def get_current_model_tar_file(self, phase=None, base_dir=None) -> str:
         """
         :param phase: Phase to use. Should be "" if no MoE is used and otherwise e.g. "phase2".
+        :param base_dir: Should be self.model_dir in the normal case
         For None default "phase0" or "" will be used.
         Return the filename of the current active model weight (.tar) file for pytorch
         """
@@ -338,7 +342,9 @@ class FileIO:
                 phase = "phase0"
             else:
                 phase = ""
-        model_params = glob.glob(self.model_dir + phase + "/*.tar")
+        if base_dir is None:
+            base_dir = self.model_dir
+        model_params = glob.glob(base_dir + phase + "/*.tar")
         if len(model_params) == 0:
             raise FileNotFoundError(f'No model file found in {self.model_dir}')
         return model_params[0]
@@ -417,6 +423,12 @@ class FileIO:
         else:
             for phase_idx in range(self.number_phases):
                 move_all_files(from_dir + f"phase{phase_idx}/", to_dir + f"phase{phase_idx}/")
+
+            if self.use_moe_staged_learning:
+                from_dir_final = from_dir + "phaseNone/"
+                to_dir_final = to_dir + "phaseNone/"
+                if os.path.isdir(from_dir_final) and os.path.isdir(to_dir_final):
+                    move_all_files(from_dir_final, to_dir_final)
 
     def replace_current_model_with_contender(self):
         """

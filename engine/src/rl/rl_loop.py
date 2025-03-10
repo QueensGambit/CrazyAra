@@ -49,7 +49,8 @@ class RLLoop:
         self.rl_config = rl_config
 
         self.file_io = FileIO(orig_binary_name=self.rl_config.binary_name, binary_dir=self.rl_config.binary_dir,
-                              uci_variant=self.rl_config.uci_variant)
+                              uci_variant=self.rl_config.uci_variant,
+                              use_moe_staged_learning=self.rl_config.use_moe_staged_learning)
         self.binary_io = None
 
         if nb_arena_games % 2 == 1:
@@ -124,32 +125,23 @@ class RLLoop:
             self.file_io.prepare_data_for_training(self.rl_config.rm_nb_files, self.rl_config.rm_fraction_for_selection,
                                                    self.did_contender_win)
             # start training using a process to ensure memory clearing afterwards
-            queue = Queue()  # start a subprocess to be memory efficient
             self.tc.device_id = self.args.device_id
 
             nb_train_iterations = 1 if not self.file_io.is_moe else self.file_io.number_phases
+
+            if self.rl_config.use_moe_staged_learning:
+                # train one model on full data
+                self._update_network_wrapper(phase_idx=None)
+
+            load_model_filename = None
+            if self.rl_config.use_moe_staged_learning:
+                load_model_filename = self.file_io.get_current_model_tar_file(phase="phaseNone",
+                                                                              base_dir=self.file_io.model_contender_dir)
+
+            # use reverse ordering so that the default model (0) updates as last
+            # and other GPUs only update their model if the full training has finished.
             for phase_idx in reversed(range(nb_train_iterations)):
-                if self.file_io.is_moe:
-                    phase = f"phase{phase_idx}/"
-                else:
-                    phase = ""
-
-                main_config["planes_train_dir"] = self.file_io.binary_dir + f"export/train/{self.file_io.uci_variant}/" + phase
-                main_config["planes_val_dir"] = self.file_io.binary_dir + f"export/val/{self.file_io.uci_variant}/" + phase
-                model_export_dir = self.file_io.model_contender_dir + phase
-
-                process = Process(target=update_network, args=(queue, self.nn_update_index,
-                                                               self.file_io.get_current_model_tar_file(phase),
-                                                               not self.args.no_onnx_export,
-                                                               main_config, self.tc,
-                                                               model_export_dir))
-
-                logging.info("Start Training")
-                if self.file_io.is_moe:
-                    logging.info(f"Phase {phase_idx}")
-                process.start()
-                self.tc.k_steps = queue.get() + 1
-                process.join()  # this blocks until the process terminates
+                self._update_network_wrapper(phase_idx, load_model_filename)
 
             if self.tc.max_lr > self.tc.min_lr:
                 self.tc.max_lr = max(self.tc.max_lr - self.lr_reduction, self.tc.min_lr * 10)
@@ -174,6 +166,40 @@ class RLLoop:
             self.current_binary_name = change_binary_name(self.file_io.binary_dir, self.current_binary_name,
                                                           self.rtpt._get_title(), self.nn_update_index)
             self.initialize()
+
+    def _update_network_wrapper(self, phase_idx, load_model_filename=None):
+        """
+        Creates a process for update_network.
+        :param phase_idx: Phase index
+        :param load_model_filename: The neural model to load for training.
+        """
+        phase = ""
+        if self.file_io.is_moe:
+            phase = f"phase{phase_idx}/"
+
+        suffix = phase
+        if phase == "phaseNone":
+            suffix = "**"
+
+        main_config["planes_train_dir"] = self.file_io.binary_dir + f"export/train/{self.file_io.uci_variant}/" + suffix
+        main_config["planes_val_dir"] = self.file_io.binary_dir + f"export/val/{self.file_io.uci_variant}/" + suffix
+
+        if load_model_filename is None:
+            load_model_filename = self.file_io.get_current_model_tar_file(phase)
+        model_export_dir = self.file_io.model_contender_dir + phase
+
+        queue = Queue()  # start a subprocess to be memory efficient
+        process = Process(target=update_network, args=(queue, self.nn_update_index,
+                                                       load_model_filename,
+                                                       not self.args.no_onnx_export,
+                                                       main_config, self.tc,
+                                                       model_export_dir))
+        logging.info("Start Training")
+        if self.file_io.is_moe:
+            logging.info(f"Phase {phase_idx}")
+        process.start()
+        self.tc.k_steps = queue.get() + 1
+        process.join()  # this blocks until the process terminates
 
 
 def parse_args(cmd_args: list):
