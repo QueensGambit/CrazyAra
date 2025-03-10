@@ -49,8 +49,7 @@ class RLLoop:
         self.rl_config = rl_config
 
         self.file_io = FileIO(orig_binary_name=self.rl_config.binary_name, binary_dir=self.rl_config.binary_dir,
-                              uci_variant=self.rl_config.uci_variant,
-                              use_moe_staged_learning=self.rl_config.use_moe_staged_learning)
+                              uci_variant=self.rl_config.uci_variant)
         self.binary_io = None
 
         if nb_arena_games % 2 == 1:
@@ -129,12 +128,12 @@ class RLLoop:
 
             nb_train_iterations = 1 if not self.file_io.is_moe else self.file_io.number_phases
 
-            if self.rl_config.use_moe_staged_learning:
+            if self.file_io.use_moe_staged_learning:
                 # train one model on full data
                 self._update_network_wrapper(phase_idx=None)
 
             load_model_filename = None
-            if self.rl_config.use_moe_staged_learning:
+            if self.file_io.use_moe_staged_learning:
                 load_model_filename = self.file_io.get_current_model_tar_file(phase="phaseNone",
                                                                               base_dir=self.file_io.model_contender_dir)
 

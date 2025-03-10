@@ -89,7 +89,7 @@ class FileIO:
     Class to facilitate creation of directories, reading of file
     names and moving of files during Reinforcement Learning.
     """
-    def __init__(self, orig_binary_name: str, binary_dir: str, uci_variant: str, use_moe_staged_learning: bool):
+    def __init__(self, orig_binary_name: str, binary_dir: str, uci_variant: str):
         """
         Creates all necessary directories and sets all path variables.
         If no '*.param' file can be found in the 'binary-dir/model/' directory,
@@ -97,7 +97,6 @@ class FileIO:
         """
         self.binary_dir = binary_dir
         self.uci_variant = uci_variant
-        self.use_moe_staged_learning = use_moe_staged_learning
 
         # If there is no model in 'model/', we assume that the model and every
         # other path has an additional '<variant>' folder
@@ -121,8 +120,14 @@ class FileIO:
         self.timestamp_format = "%Y-%m-%d-%H-%M-%S"
 
         self.is_moe, self.number_phases = check_for_moe(self.model_dir)
+
+        # Whether to use Staged learning v2.0 for MoE training,
+        # i.e. first train on full data and then each phase separately
+        self.use_moe_staged_learning = True if os.path.isdir(self.model_dir + "phaseNone") else False
+
         if self.is_moe:
             logging.info(f"Mixture of experts detected with {self.number_phases} phases.")
+            logging.info(f"Use MoE staged learning is {self.use_moe_staged_learning}.")
         else:
             logging.info("No mixture of experts detected.")
         self._create_directories()
