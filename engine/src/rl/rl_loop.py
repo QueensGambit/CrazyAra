@@ -178,7 +178,7 @@ class RLLoop:
 
         suffix = phase
         if phase_idx is None:
-            suffix = "**"
+            suffix = "**/"
 
         main_config["planes_train_dir"] = self.file_io.binary_dir + f"export/train/{self.file_io.uci_variant}/" + suffix
         main_config["planes_val_dir"] = self.file_io.binary_dir + f"export/val/{self.file_io.uci_variant}/" + suffix
