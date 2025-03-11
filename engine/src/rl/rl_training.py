@@ -62,6 +62,7 @@ def update_network(queue, nn_update_idx: int, tar_filename: Path, convert_to_onn
     train_objects.momentum_schedule = MomentumSchedule(train_objects.lr_schedule, train_config.min_lr, train_config.max_lr,
                                          train_config.min_momentum, train_config.max_momentum)
 
+    logging.info(f"Load checkpoint {tar_filename}")
     net = _get_net(input_shape, tar_filename, train_config)
     train_objects.metrics = get_metrics(train_config)
 
