@@ -161,6 +161,7 @@ class FileIO:
                     create_dir(directory + f"phase{phase_idx}")
             if self.use_moe_staged_learning:
                 create_dir(self.model_contender_dir + "phaseNone")
+                create_dir(self.model_dir_archive + "phaseNone")
 
     def _include_data_from_replay_memory_wrapper(self, nb_files: int, fraction_for_selection: float):
         """
