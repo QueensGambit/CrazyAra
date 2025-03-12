@@ -176,12 +176,14 @@ class RLLoop:
         if self.file_io.is_moe:
             phase = f"phase{phase_idx}/"
 
-        suffix = phase
-        if phase_idx is None:
-            suffix = "**/"
+        suffix_train = phase
+        suffix_val = phase
+        if phase_idx is None:  # staged learning
+            suffix_train = "**/"
+            suffix_val = f"phase{self.file_io.number_phases // 2}/"
 
-        main_config["planes_train_dir"] = self.file_io.binary_dir + f"export/train/{self.file_io.uci_variant}/" + suffix
-        main_config["planes_val_dir"] = self.file_io.binary_dir + f"export/val/{self.file_io.uci_variant}/" + suffix
+        main_config["planes_train_dir"] = self.file_io.binary_dir + f"export/train/{self.file_io.uci_variant}/" + suffix_train
+        main_config["planes_val_dir"] = self.file_io.binary_dir + f"export/val/{self.file_io.uci_variant}/" + suffix_val
 
         if load_model_filename is None:
             load_model_filename = self.file_io.get_current_model_tar_file(phase)
