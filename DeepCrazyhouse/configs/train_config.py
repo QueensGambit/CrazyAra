@@ -71,7 +71,7 @@ class TrainConfig:
     info_model_type: str = "model_type defines the Model type that used during training (e.g. resnet, vit, risev2," \
                            " risev3, alphavile, alphavile-tiny, alphavile-small, alphavile-normal, alphavile-large," \
                            " NextViT)"
-    model_type: str = "resnet"
+    model_type: str = "risev3"
 
     info_k_steps_initial: str = "k_steps_initial defines how many steps have been trained before (k_steps_initial != 0 if" \
                            " you continue training from a checkpoint)" \
@@ -197,7 +197,7 @@ def rl_train_config():
     tc.wdl_loss_factor = 0.499 if tc.use_plys_to_end else 0.5
 
     tc.nb_training_epochs = 1  # define how many epochs the network will be trained
-    tc.q_value_ratio = 0.15
+    tc.q_value_ratio = 0  # previously 0.15
     tc.sparse_policy_label = False
 
     return tc

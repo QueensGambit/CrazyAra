@@ -103,6 +103,11 @@ void TrainDataExporter::save_cur_phase(const StateObj* pos)
 }
 
 void TrainDataExporter::export_game_samples(Result result) {
+    if (curSampleIdx == 0) {
+        info_string("No samples have been recorded, skip export.");
+        return;
+    }
+
     if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;

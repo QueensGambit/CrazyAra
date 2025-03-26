@@ -82,7 +82,7 @@ string load_random_fen(string filepath)
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
                    const RLSettings* rlSettings, OptionsMap& options):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchSettings(searchSettings), searchLimits(searchLimits), playSettings(playSettings),
-    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options)
+    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
 {
     is960 = options["UCI_Chess960"];
     string suffix960 = "";
@@ -112,10 +112,16 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSett
     gamePGN.site = "Darmstadt, GER";
     gamePGN.round = "?";
     gamePGN.is960 = is960;
-    this->exporter = new TrainDataExporter(string("data_") + mctsAgent->get_device_name() + string(".zarr"),
-                                           mctsAgent->get_num_phases(),
-                                           searchSettings->gamePhaseDefinition,
-                                           rlSettings->numberChunks, rlSettings->chunkSize);
+    for (size_t idx = 0; idx < mctsAgent->get_num_phases(); ++idx) {
+        string fileNameExport = string("data_") + mctsAgent->get_device_name() + string(".zarr");
+        if (mctsAgent->get_num_phases() > 1) {
+            fileNameExport = string("phase") + std::to_string(idx) + string("/") + fileNameExport;
+        }
+        this->exporters.push_back(make_unique<TrainDataExporter>(fileNameExport,
+                                                                 mctsAgent->get_num_phases(),
+                                                                 searchSettings->gamePhaseDefinition,
+                                                                 rlSettings->numberChunks, rlSettings->chunkSize));
+    }
     filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");
     filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");
     fileNameGameIdx = string("gameIdx_") + mctsAgent->get_device_name() + string(".txt");
@@ -135,7 +141,6 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSett
 
 SelfPlay::~SelfPlay()
 {
-    delete exporter;
 }
 
 void SelfPlay::adjust_node_count(SearchLimits* searchLimits, int randInt)
@@ -197,9 +202,11 @@ void SelfPlay::generate_game(int variant, bool verbose)
     unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature, startingFen);
     EvalInfo evalInfo;
     Result gameResult;
-    exporter->new_game();
+    for (size_t idx = 0; idx < this->exporters.size(); ++idx) {
+        exporters[idx]->new_game();
+    }
 
-    size_t generatedSamples = 0;
+    const size_t generatedSamplesBeforeGame = generatedSamples;
     const bool allowResignation = is_resignation_allowed();
     do {
         searchLimits->startTime = now();
@@ -218,11 +225,16 @@ void SelfPlay::generate_game(int variant, bool verbose)
             mctsAgent->apply_move_to_tree(evalInfo.bestMove, true);
         }
 
-        if (!isQuickSearch && !exporter->is_file_full()) {
+        if (!isQuickSearch && generatedSamples < max_samples_per_iteration()) {
             if (rlSettings->lowPolicyClipThreshold > 0) {
                 sharpen_distribution(evalInfo.policyProbSmall, rlSettings->lowPolicyClipThreshold);
             }
-            exporter->save_sample(state.get(), evalInfo);
+            size_t idx = 0;
+            // only let the appropriate exporter save the current sample
+            if (mctsAgent->get_num_phases() > 1) {
+                idx = state->get_phase(mctsAgent->get_num_phases(), searchSettings->gamePhaseDefinition);
+            }
+            exporters[idx]->save_sample(state.get(), evalInfo);
             ++generatedSamples;
         }
         play_move_and_update(evalInfo, state.get(), gamePGN, gameResult);
@@ -232,7 +244,9 @@ void SelfPlay::generate_game(int variant, bool verbose)
     while(gameResult == NO_RESULT);
 
     // export all training samples of the generated game
-    exporter->export_game_samples(gameResult);
+    for (size_t idx = 0; idx < this->exporters.size(); ++idx) {
+        exporters[idx]->export_game_samples(gameResult);
+    }
 
     set_game_result_to_pgn(gameResult);
     write_game_to_pgn(filenamePGNSelfplay, verbose);
@@ -241,7 +255,7 @@ void SelfPlay::generate_game(int variant, bool verbose)
     // measure time statistics
     if (verbose) {
         const float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
-        speed_statistic_report(elapsedTimeMin, generatedSamples);
+        speed_statistic_report(elapsedTimeMin, generatedSamples - generatedSamplesBeforeGame);
     }
     ++gameIdx;
 }
@@ -345,14 +359,20 @@ void SelfPlay::export_number_generated_games() const
 }
 
 
+size_t SelfPlay::max_samples_per_iteration() const
+{
+    return rlSettings->numberChunks * rlSettings->chunkSize;
+}
+
 void SelfPlay::go(size_t numberOfGames, int variant)
 {
+    generatedSamples = 0;
     reset_speed_statistics();
     gamePGN.white = mctsAgent->get_name();
     gamePGN.black = mctsAgent->get_name();
 
     if (numberOfGames == 0) {
-        while(!exporter->is_file_full()) {
+        while(generatedSamples < max_samples_per_iteration()) {
             generate_game(variant, true);
         }
     }

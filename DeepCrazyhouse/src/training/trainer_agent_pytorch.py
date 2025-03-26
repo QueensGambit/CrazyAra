@@ -58,6 +58,9 @@ class TrainerAgentPytorch:
         """
         self.additional_loaders = additional_loaders
         self.tc = train_config
+        if self.tc.use_wdl and self.tc.q_value_ratio != 0:
+            raise Exception("q_value_ratio must be 0 for use_wdl = True.")
+
         self.to = train_objects
         if self.to.metrics is None:
             self.to.metrics = {}
