@@ -12,7 +12,7 @@ Adjust the paths accordingly.
 # define the default dir where the training data in plane representation is located
 # e.g. for supervised learning default_dir = "/data/planes/"
 default_dir = "/data/kingbase2019_lite_pgn_months/"
-phase = None  # current phase to use, set to None to treat everything as a single phase
+phase = None  # current phase to use, set to None to treat everything as a single phase. Otherwise use integer e.g. 0, 1, 2 to define the phase to use.
 # type of phase definition, either "lichess" or "movecountX" with X determining the number of phases
 phase_definition = "lichess"
 
