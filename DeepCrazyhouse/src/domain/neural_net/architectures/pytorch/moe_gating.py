@@ -55,3 +55,13 @@ class MoEGatingNet(torch.nn.Module):
         out = self.final_body(out).view(-1, self.nb_flatten)
         return self.head(out)
 
+
+def get_moe_gating_model(args):
+    """
+    Wrapper definition for the MoE-Gating model
+    :param args: Argument dictionary
+    :return: pytorch model object
+    """
+
+    model = MoEGatingNet()
+    return model

@@ -70,7 +70,7 @@ class TrainConfig:
 
     info_model_type: str = "model_type defines the Model type that used during training (e.g. resnet, vit, risev2," \
                            " risev3, alphavile, alphavile-tiny, alphavile-small, alphavile-normal, alphavile-large," \
-                           " NextViT)"
+                           " NextViT, moe-gating)"
     model_type: str = "risev3"
 
     info_k_steps_initial: str = "k_steps_initial defines how many steps have been trained before (k_steps_initial != 0 if" \

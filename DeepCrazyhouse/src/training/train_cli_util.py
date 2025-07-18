@@ -30,6 +30,7 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vision_transform
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vit_configs import get_b8_config
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official import NextVit, get_next_vit_model
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.a0_resnet import AlphaZeroResnet, get_alpha_zero_model
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.moe_gating import get_moe_gating_model
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.alpha_vile import get_alpha_vile_model
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.configs.model_config import ModelConfig
@@ -159,6 +160,8 @@ def get_default_model(model_type: str, args: Args):
         return get_alpha_vile_model(args, model_size='large')
     elif model_type == 'nextVit':
         return get_next_vit_model(args)
+    elif model_type == 'moe-gating':
+        return get_moe_gating_model(args)
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
 
