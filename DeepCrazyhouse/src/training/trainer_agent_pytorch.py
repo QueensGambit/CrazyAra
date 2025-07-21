@@ -381,6 +381,10 @@ class TrainerAgentPytorch:
             value_out, policy_out, _, wdl_out, plys_out = self._model(data)
             wdl_loss = self.wdl_loss(wdl_out, wdl_label, sample_weights)
             ply_loss = self.ply_loss(torch.flatten(plys_out), plys_label, sample_weights)
+        elif self.tc.model_type == "moe-gating":
+            # only use phase
+            phase_out = self._model(data)
+            value_out = policy_out = 0
         else:
             value_out, policy_out = self._model(data)
         # policy_out = policy_out.softmax(dim=1)
@@ -392,6 +396,8 @@ class TrainerAgentPytorch:
                     self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss +
                     self.tc.wdl_loss_factor * wdl_loss + self.tc.plys_to_end_loss_factor * ply_loss
             )
+        elif self.tc.model_type == "moe-gating":
+            combined_loss = self.policy_loss(phase_out, phase_vector)
         else:
             combined_loss = (
                     self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
