@@ -317,8 +317,7 @@ class TrainerAgentPytorch:
             phase_weights=self.to.phase_weights,
             sparse_policy_label=self.tc.sparse_policy_label,
             apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
-            use_wdl=self.tc.use_wdl,
-            use_plys_to_end=self.tc.use_plys_to_end,
+            train_config=self.tc
         )
 
         print("starting val eval")
@@ -331,8 +330,7 @@ class TrainerAgentPytorch:
             phase_weights=self.to.phase_weights,
             sparse_policy_label=self.tc.sparse_policy_label,
             apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
-            use_wdl=self.tc.use_wdl,
-            use_plys_to_end=self.tc.use_plys_to_end,
+            train_config=self.tc
         )
 
         # do additional evaluations based on self.additional_loaders
@@ -349,8 +347,7 @@ class TrainerAgentPytorch:
                     phase_weights={k: 1.0 for k, v in self.to.phase_weights.items()},  # use no weighting
                     sparse_policy_label=self.tc.sparse_policy_label,
                     apply_select_policy_from_plane=self.tc.select_policy_from_plane and not self.tc.is_policy_from_plane_data,
-                    use_wdl=self.tc.use_wdl,
-                    use_plys_to_end=self.tc.use_plys_to_end,
+                    train_config=self.tc
                 )
                 additional_metric_values[dataset_name] = metric_values
 
@@ -686,7 +683,7 @@ def reset_metrics(metrics):
 
 
 def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weights, sparse_policy_label=False,
-                     apply_select_policy_from_plane=True, use_wdl=False, use_plys_to_end=False):
+                     apply_select_policy_from_plane=True, train_config: TrainConfig = None):
     """
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
     The metric results are returned as a dictionary object.
@@ -702,6 +699,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
     :param sparse_policy_label: Should be set to true if the policy uses one-hot encoded targets
      (e.g. supervised learning)
     :param apply_select_policy_from_plane: If true, given policy label is converted to policy map index
+    :param train_config: Train config object
     :return: Metric values
     """
     reset_metrics(metrics)
@@ -709,7 +707,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
     with torch.no_grad():  # operations inside don't track history
         print("eval iterator length:", len(data_iterator), "eval phase weights:", phase_weights)
         for i, batch in enumerate(data_iterator):
-            if use_wdl and use_plys_to_end:
+            if train_config.use_wdl and train_config.use_plys_to_end:
                 data, value_label, policy_label, wdl_label, plys_label, phase_vector = batch
                 plys_label = plys_label.to(ctx)
                 wdl_label = wdl_label.to(ctx).long()
@@ -719,14 +717,18 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
             value_label = value_label.to(ctx)
             policy_label = policy_label.to(ctx)
             sample_weights = torch.Tensor([phase_weights.get(phase.item(), 1.0) for phase in phase_vector])
+            phase_vector = phase_vector.to(ctx)
             sample_weights = sample_weights.to(ctx)
 
-            if use_wdl and use_plys_to_end:
+            if train_config.use_wdl and train_config.use_plys_to_end:
                 value_out, policy_out, _, wdl_out, plys_out = model(data)
                 metrics["wdl_loss"].update(preds=wdl_out, labels=wdl_label, sample_weights=sample_weights)
                 metrics["wdl_acc"].update(preds=wdl_out.argmax(axis=1), labels=wdl_label, sample_weights=sample_weights)
                 metrics["plys_to_end_loss"].update(preds=torch.flatten(plys_out), labels=plys_label,
                                                    sample_weights=sample_weights)
+            elif train_config.model_type == "moe-gating":
+                phase_out = model(data)
+                metrics["phase_acc"].update(preds=phase_out.argmax(axis=1), labels=phase_vector, sample_weights=sample_weights)
             else:
                 value_out, policy_out = model(data)
 
