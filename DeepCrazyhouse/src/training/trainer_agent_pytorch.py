@@ -48,8 +48,8 @@ class TrainerAgentPytorch:
     ):
         """
         Class for training the neural network.
-        :param net: The NN with loaded parameters that shall be trained.
-        :param val_data: The validation data loaded with gluon DataLoader.
+        :param model: The NN with loaded parameters that shall be trained.
+        :param val_loader: The validation data loaded with gluon DataLoader.
         :param train_config: An instance of the TrainConfig data class.
         :param train_objects: Am instance pf the TrainObject data class.
         :param use_rtpt: If True, an RTPT object will be created and modified within this class.
@@ -747,6 +747,9 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
                 break
 
     metric_values = {"loss": 0.01 * metrics["value_loss"].compute() + 0.99 * metrics["policy_loss"].compute()}
+
+    if train_config.model_type == "moe-gating":
+        metric_values["loss"] = metrics["phase_acc"].compute()
 
     for metric_name in metrics:
         metric_values[metric_name] = metrics[metric_name].compute()
