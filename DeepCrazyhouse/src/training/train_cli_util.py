@@ -254,7 +254,7 @@ def convert_model_to_onnx(input_shape, k_steps_best, model, model_name, train_co
         dummy_input = torch.zeros(1, input_shape[0], input_shape[1], input_shape[2]).to(ctx)
         export_to_onnx(model, 1, dummy_input,
                        Path(train_config.export_dir) / Path("best-model"), model_prefix, train_config.use_wdl and
-                       train_config.use_plys_to_end, True)
+                       train_config.use_plys_to_end, True, use_gating=train_config.model_type == "moe-gating")
 
 
 def fill_train_objects(train_config: TrainConfig, train_objects: TrainObjects) -> None:

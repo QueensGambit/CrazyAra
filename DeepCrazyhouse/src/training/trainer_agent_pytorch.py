@@ -228,7 +228,8 @@ class TrainerAgentPytorch:
                                                        dummy_input,
                                                        Path(self.tc.export_dir) / Path("weights"), model_prefix,
                                                        self.tc.use_wdl and self.tc.use_plys_to_end,
-                                                       True)
+                                                       True,
+                                                       use_gating=self.tc.model_type == "moe-gating")
 
                                 self.patience_cnt = 0  # reset the patience counter
                             # print the elapsed time
@@ -520,7 +521,7 @@ def save_torch_state(model: nn.Module, optimizer: Optimizer, path: Path):
 
 
 def export_model(model, batch_sizes, input_shape, dir=Path('.'), torch_cpu=True, torch_cuda=True, onnx=True,
-                 verbose=False):
+                 verbose=False, use_gating=False):
     """
     Exports the model in ONNX and Torch Script Module.
 
@@ -532,6 +533,7 @@ def export_model(model, batch_sizes, input_shape, dir=Path('.'), torch_cpu=True,
     :param torch_cuda: Whether to export as script module with cuda inputs
     :param onnx: Whether to export as onnx
     :param verbose: Print debug information
+    :param use_gating: If the gating model is active
     """
 
     if dir.exists():
@@ -568,7 +570,7 @@ def export_model(model, batch_sizes, input_shape, dir=Path('.'), torch_cpu=True,
         if onnx:
             dummy_input = dummy_input.cpu()
             model = model.cpu()
-            export_to_onnx(model, batch_size, dummy_input, onnx_dir)
+            export_to_onnx(model, batch_size, dummy_input, onnx_dir, use_gating=use_gating)
 
         if torch_cpu:
             dummy_input = dummy_input.cpu()
@@ -589,7 +591,7 @@ def export_model(model, batch_sizes, input_shape, dir=Path('.'), torch_cpu=True,
 
 
 def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path, model_prefix: str,
-                   has_auxiliary_output: bool, dynamic_batch_size: bool, input_version=None) -> None:
+                   has_auxiliary_output: bool, dynamic_batch_size: bool, input_version=None, use_gating=False) -> None:
     """
     Exports the model to ONNX format to allow later import in TensorRT.
 
@@ -602,14 +604,17 @@ def export_to_onnx(model, batch_size: int, dummy_input: torch.Tensor, dir: Path,
     :param dynamic_batch_size: Whether to export model with dynamic batch size
     :param input_version: Can be used to specify the input representation version e.g. "3.0" for chess models.
     If none, the version will be read from the main_config file instead. It is used for labelling the onnx file.
+    :param use_gating: If the gating network is active
     :return:
     """
+    input_names = ["data"]
+
     if has_auxiliary_output:
-        input_names = ["data"]
         output_names = [main_config["value_output"], main_config["policy_output"], main_config["auxiliary_output"],
                         main_config["wdl_output"], main_config["plys_to_end_output"]]
+    elif use_gating:
+        output_names = [main_config["phase_output"]]
     else:
-        input_names = ["data"]
         output_names = [main_config["value_output"], main_config["policy_output"]]
 
     if dynamic_batch_size:
