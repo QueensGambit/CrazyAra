@@ -386,8 +386,10 @@ class TrainerAgentPytorch:
         else:
             value_out, policy_out = self._model(data)
         # policy_out = policy_out.softmax(dim=1)
-        value_loss = self.value_loss(torch.flatten(value_out), value_label, sample_weights)
-        policy_loss = self.policy_loss(policy_out, policy_label, sample_weights)
+        if self.tc.model_type != "moe-gating":
+            value_loss = self.value_loss(torch.flatten(value_out), value_label, sample_weights)
+            policy_loss = self.policy_loss(policy_out, policy_label, sample_weights)
+
         # weight the components of the combined loss
         if self.tc.use_wdl and self.tc.use_wdl:
             combined_loss = (
