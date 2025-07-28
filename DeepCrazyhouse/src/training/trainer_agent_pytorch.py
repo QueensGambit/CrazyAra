@@ -738,28 +738,30 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
                                                    sample_weights=sample_weights)
             elif train_config.model_type == "moe-gating":
                 phase_out = model(data)
+                metrics["phase_loss"].update(preds=phase_out, labels=phase_vector, sample_weights=sample_weights)
                 metrics["phase_acc"].update(preds=phase_out.argmax(axis=1), labels=phase_vector, sample_weights=sample_weights)
             else:
                 value_out, policy_out = model(data)
 
             # update the metrics
-            metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label,
-                                         sample_weights=sample_weights)
-            metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
-                                          labels=policy_label, sample_weights=sample_weights)
-            metrics["value_acc_sign"].update(preds=torch.flatten(value_out), labels=value_label,
+            if train_config.model_type != "moe-gating":
+                metrics["value_loss"].update(preds=torch.flatten(value_out), labels=value_label,
                                              sample_weights=sample_weights)
-            metrics["policy_acc"].update(preds=policy_out.argmax(axis=1),
-                                         labels=policy_label, sample_weights=sample_weights)
+                metrics["policy_loss"].update(preds=policy_out, #.softmax(dim=1),
+                                              labels=policy_label, sample_weights=sample_weights)
+                metrics["value_acc_sign"].update(preds=torch.flatten(value_out), labels=value_label,
+                                                 sample_weights=sample_weights)
+                metrics["policy_acc"].update(preds=policy_out.argmax(axis=1),
+                                             labels=policy_label, sample_weights=sample_weights)
 
             # stop after evaluating x batches (only recommended to use this for the train set evaluation)
             if nb_batches and i+1 == nb_batches:
                 break
 
-    metric_values = {"loss": 0.01 * metrics["value_loss"].compute() + 0.99 * metrics["policy_loss"].compute()}
-
     if train_config.model_type == "moe-gating":
-        metric_values["loss"] = metrics["phase_acc"].compute()
+        metric_values = {"loss": metrics["phase_loss"].compute()}
+    else:
+        metric_values = {"loss": 0.01 * metrics["value_loss"].compute() + 0.99 * metrics["policy_loss"].compute()}
 
     for metric_name in metrics:
         metric_values[metric_name] = metrics[metric_name].compute()
