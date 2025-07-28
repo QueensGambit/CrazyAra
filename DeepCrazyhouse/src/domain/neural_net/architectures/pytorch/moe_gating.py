@@ -23,7 +23,7 @@ class MoEGatingNet(torch.nn.Module):
         nb_input_channels=52,
         board_height=8,
         board_width=8,
-        num_res_blocks=3,
+        num_res_blocks=0,
         phase_head_channels=3,
         act_type="relu",
     ):
