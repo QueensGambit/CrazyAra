@@ -368,6 +368,7 @@ class TrainerAgentPytorch:
         policy_label = policy_label.to(self._ctx)
         sample_weights = torch.Tensor([self.to.phase_weights[phase.item()] for phase in phase_vector])
         sample_weights = sample_weights.to(self._ctx)
+        phase_vector = phase_vector.to(self._ctx)
         if self.tc.sparse_policy_label:
             policy_label = policy_label.long()
         # update a dummy metric to see a proper progress bar
