@@ -155,7 +155,7 @@ class TrainerAgentPytorch:
                             )
                             if self.nb_spikes >= self.tc.max_spikes:
                                 self.val_loss = val_metric_values["loss"]
-                                self.val_p_acc = val_metric_values["policy_acc"]
+                                self.val_p_acc = val_metric_values["policy_acc"] if self.tc.model_type != "moe-gating" else val_metric_values["phase_acc"]
                                 logging.debug("The maximum number of spikes has been reached. Stop training.")
                                 # finally stop training because the number of lr drops has been achieved
                                 print()
@@ -206,7 +206,7 @@ class TrainerAgentPytorch:
                             if self.val_loss_best is None or val_metric_values["loss"] < self.val_loss_best:
                                 # update val_loss_best
                                 self.val_loss_best = val_metric_values["loss"]
-                                self.val_p_acc_best = val_metric_values["policy_acc"]
+                                self.val_p_acc_best = val_metric_values["policy_acc"] if self.tc.model_type != "moe-gating" else val_metric_values["phase_acc"]
                                 self.val_metric_values_best = val_metric_values
                                 self.k_steps_best = self.k_steps
 
