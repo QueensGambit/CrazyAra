@@ -19,7 +19,7 @@ class MoEGatingNet(torch.nn.Module):
     def __init__(
         self,
         n_labels=3,
-        channels=64,
+        channels=8,
         nb_input_channels=52,
         board_height=8,
         board_width=8,
