@@ -40,7 +40,7 @@ class MoEGatingNet(torch.nn.Module):
                                *res_blocks)
         self.final_body = Sequential(Conv2d(in_channels=channels, out_channels=phase_head_channels, kernel_size=(3, 3),
                                             padding=(1, 1), bias=False),
-                                     BatchNorm2d(num_features=channels),
+                                     BatchNorm2d(num_features=phase_head_channels),
                                      get_act(act_type))
         self.head = Sequential(Linear(in_features=self.nb_flatten, out_features=n_labels))
 
