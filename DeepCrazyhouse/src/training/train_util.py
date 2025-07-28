@@ -91,6 +91,9 @@ def _get_pytorch_metrics(train_config):
         metrics_pytorch['wdl_acc'] = pytorch_metrics.Accuracy(True)
     if train_config.use_plys_to_end:
         metrics_pytorch['plys_to_end_loss'] = pytorch_metrics.MSE()
+    if train_config.model_type == "moe-gating":
+        metrics_pytorch['phase_loss'] = pytorch_metrics.CrossEntropy(True)
+        metrics_pytorch['phase_acc'] = pytorch_metrics.Accuracy(True)
 
     return metrics_pytorch
 

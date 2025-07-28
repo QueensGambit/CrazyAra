@@ -698,7 +698,7 @@ def evaluate_metrics(metrics, data_iterator, model, nb_batches, ctx, phase_weigh
     Runs inference of the network on a data_iterator object and evaluates the given metrics.
     The metric results are returned as a dictionary object.
 
-    :param metrics: List of mxnet metrics which must have the
+    :param metrics: List of metrics which must have the
     names ['value_loss', 'policy_loss', 'value_acc_sign', 'policy_acc']
     :param data_iterator: Pytorch data iterator object
     :param model: Pytorch model handle
