@@ -397,7 +397,7 @@ class TrainerAgentPytorch:
                     self.tc.wdl_loss_factor * wdl_loss + self.tc.plys_to_end_loss_factor * ply_loss
             )
         elif self.tc.model_type == "moe-gating":
-            combined_loss = self.policy_loss(phase_out, phase_vector)
+            combined_loss = self.policy_loss(phase_out, phase_vector, sample_weights)
         else:
             combined_loss = (
                     self.tc.val_loss_factor * value_loss + self.tc.policy_loss_factor * policy_loss
