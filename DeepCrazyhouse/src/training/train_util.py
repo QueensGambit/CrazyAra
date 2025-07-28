@@ -80,12 +80,14 @@ def _get_gluon_metrics(train_config):
 
 def _get_pytorch_metrics(train_config):
     import DeepCrazyhouse.src.training.metrics_pytorch as pytorch_metrics
-    metrics_pytorch = {
-        'value_loss': pytorch_metrics.MSE(),
-        'policy_loss': pytorch_metrics.CrossEntropy(train_config.sparse_policy_label),
-        'value_acc_sign': pytorch_metrics.AccuracySign(),
-        'policy_acc': pytorch_metrics.Accuracy(train_config.sparse_policy_label)
-    }
+    metrics_pytorch = {}
+    if train_config.model_type != "moe-gating":
+        metrics_pytorch = {
+            'value_loss': pytorch_metrics.MSE(),
+            'policy_loss': pytorch_metrics.CrossEntropy(train_config.sparse_policy_label),
+            'value_acc_sign': pytorch_metrics.AccuracySign(),
+            'policy_acc': pytorch_metrics.Accuracy(train_config.sparse_policy_label)
+        }
     if train_config.use_wdl:
         metrics_pytorch['wdl_loss'] = pytorch_metrics.CrossEntropy(True)
         metrics_pytorch['wdl_acc'] = pytorch_metrics.Accuracy(True)
