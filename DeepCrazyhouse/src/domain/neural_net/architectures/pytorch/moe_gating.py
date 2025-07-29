@@ -19,11 +19,9 @@ class MoEGatingNet(torch.nn.Module):
     def __init__(
         self,
         n_labels=3,
-        channels=3,
         nb_input_channels=52,
         board_height=8,
         board_width=8,
-        num_res_blocks=0,
         phase_head_channels=3,
         act_type="relu",
     ):
@@ -31,13 +29,6 @@ class MoEGatingNet(torch.nn.Module):
 
         self.nb_flatten = (phase_head_channels * board_width * board_height) // 4
 
-        res_blocks = []
-        for i in range(num_res_blocks):
-            res_blocks.append(ResidualBlock(channels, act_type, use_se=False))
-
-        #self.body = Sequential(_Stem(channels=channels, act_type=act_type,
-        #                             nb_input_channels=nb_input_channels),
-        #                       *res_blocks)
         self.final_body = Sequential(Conv2d(in_channels=nb_input_channels, out_channels=phase_head_channels, kernel_size=(3, 3),
                                             padding=(1, 1), bias=False),
                                      MaxPool2d((2, 2), stride=2),
@@ -52,7 +43,6 @@ class MoEGatingNet(torch.nn.Module):
         :param x: Input to the ResidualBlock
         :return: Value & Policy Output
         """
-        #out = self.body(x)
         out = self.final_body(x).view(-1, self.nb_flatten)
         return self.head(out)
 
