@@ -84,6 +84,7 @@ private:
     unique_ptr<MCTSAgent> mctsAgent;
     vector<unique_ptr<NeuralNetAPI>> netSingleVector;
     vector<vector<unique_ptr<NeuralNetAPI>>> netBatchesVector;
+    unique_ptr<NeuralNetAPI> netGating;
 #ifdef USE_RL
     vector<unique_ptr<NeuralNetAPI>> netSingleContenderVector;
     unique_ptr<MCTSAgent> mctsAgentContender;

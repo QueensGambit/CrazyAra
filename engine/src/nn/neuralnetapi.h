@@ -237,6 +237,13 @@ public:
     virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) = 0;
 
     /**
+     * @brief predict_phase Runs a prediction of the gating network to decide how to combine the multiple networks.
+     * @param inputPlanes Pointer to the input planes of a single board position
+     * @param phaseOutput Phase prediction array indicating the probability for each phase
+     */
+    virtual void predict_phase(float* inputPlanes, float* phaseOutput) const;
+
+    /**
      * @brief is_neural_network_valid Runs validation checks of the neural network architecture by comparing input and output shape of the loaded graph to the pre-defined constants.
      * @return True, if neural network is valid else false.
      */

@@ -131,6 +131,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Model_Directory"]               << Option((string("model/") + engineName + "/" + get_first_variant_with_model()).c_str());
 #else
     o["Model_Directory"]               << Option(string("model/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT()).c_str());
+    o["Model_Directory_Gating"]        << Option(string("model/" + engineName + "/" + StateConstants::DEFAULT_UCI_VARIANT() + "/gating").c_str());
 #endif
     o["Move_Overhead"]                 << Option(20, 0, 5000);
     o["MultiPV"]                       << Option(1, 1, 99999);

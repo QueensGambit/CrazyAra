@@ -85,11 +85,12 @@ private:
 public:
     /**
      * @brief SearchThread
+     * @param netGating Pointer to the gating network to combine the network outputs
      * @param netBatchVector vector of Network API objects which provide the prediction of the neural network
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(const NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

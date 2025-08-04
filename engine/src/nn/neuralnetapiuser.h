@@ -37,6 +37,7 @@
 class NeuralNetAPIUser
 {
 protected:
+    const NeuralNetAPI* netGating;  // gating network that decides how to combine the network outputs
     vector<NeuralNetAPI*> nets; // vector of net objects
     unsigned int numPhases;
     std::map<GamePhase, int> phaseToNetsIndex;  // maps a GamePhase to the index of the net that should be used
@@ -45,12 +46,13 @@ protected:
     float* inputPlanes;
     // stores the corresponding value-Outputs and probability-Outputs of the nodes stored in the vector "newNodes"
     // sufficient memory according to the batch-size will be allocated in the constructor
+    float* phaseOutputs;
     float* valueOutputs;
     float* probOutputs;
     float* auxiliaryOutputs;
 
 public:
-    NeuralNetAPIUser(const vector<unique_ptr<NeuralNetAPI>>& netsNew);
+    NeuralNetAPIUser(const NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& netsNew);
     ~NeuralNetAPIUser();
     NeuralNetAPIUser(NeuralNetAPIUser&) = delete;
 

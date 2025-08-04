@@ -611,6 +611,7 @@ bool CrazyAra::is_ready()
 #endif
 
         fill_nn_vectors(Options["Model_Directory"], netSingleVector, netBatchesVector);
+        netGating = create_new_net(Options["Model_Directory_Gating"], int(Options["First_Device_ID"]), searchSettings.batchSize);
 
         mctsAgent = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingleVector, &playSettings, false, &searchSettings);
