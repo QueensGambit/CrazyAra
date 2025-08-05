@@ -52,7 +52,7 @@ protected:
     float* auxiliaryOutputs;
 
 public:
-    NeuralNetAPIUser(const NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& netsNew);
+    NeuralNetAPIUser(NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& netsNew);
     ~NeuralNetAPIUser();
     NeuralNetAPIUser(NeuralNetAPIUser&) = delete;
 

@@ -31,7 +31,7 @@
 #include "common.h"
 #endif
 
-NeuralNetAPIUser::NeuralNetAPIUser(const NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& netsNew) :
+NeuralNetAPIUser::NeuralNetAPIUser(NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& netsNew) :
     netGating(netGating),
     auxiliaryOutputs(nullptr)
 {
@@ -54,7 +54,7 @@ NeuralNetAPIUser::NeuralNetAPIUser(const NeuralNetAPI* netGating, const vector<u
 #else
      CHECK(cudaMallocHost((void**) &inputPlanes, nets.front()->get_batch_size() * StateConstants::NB_VALUES_TOTAL() * sizeof(float)));
 #endif
-    CHECK(cudaMallocHost((void**) &gatingOutputs, nets.front()->get_batch_size() * numPhases * sizeof(float)));
+    CHECK(cudaMallocHost((void**) &phaseOutputs, nets.front()->get_batch_size() * numPhases * sizeof(float)));
     CHECK(cudaMallocHost((void**) &valueOutputs, nets.front()->get_batch_size() * sizeof(float)));
     CHECK(cudaMallocHost((void**) &probOutputs, nets.front()->get_batch_size() * nets.front()->get_nb_policy_values() * sizeof(float)));
     if (nets.front()->has_auxiliary_outputs()) {
@@ -81,7 +81,7 @@ NeuralNetAPIUser::~NeuralNetAPIUser()
 {
 #ifdef TENSORRT
     CHECK(cudaFreeHost(inputPlanes));
-    CHECK(cudaFreeHost(gatingOutputs));
+    CHECK(cudaFreeHost(phaseOutputs));
     CHECK(cudaFreeHost(valueOutputs));
     CHECK(cudaFreeHost(probOutputs));
 #ifdef DYNAMIC_NN_ARCH
