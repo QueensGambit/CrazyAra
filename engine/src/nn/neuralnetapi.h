@@ -152,6 +152,7 @@ protected:
     int deviceID;
     unsigned int batchSize;
     bool enableTensorrt;
+    bool isGatingNet;
     // defines the name for the model based on the loaded .params file
     string modelName;
     // defines the device (e.g. GPU or CPU) and its respective deviceID
@@ -198,9 +199,10 @@ public:
      * @param deviceID Device ID to use for computation. Only used for gpu context.
      * @param batchSize Constant batch size which is used for inference
      * @param modelDirectory Directory where the network architecture is stored (.json file) and
+     * @param isGatingNet Defines if the loaded network is a gating network
      * where parameters a.k.a weights of the neural are stored (.params file) are stored
      */
-    NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt);
+    NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt, bool isGatingNet);
 
     /**
      * @brief is_policy_map Returns true if the policy outputs is defined in policy map representation else false
@@ -233,15 +235,9 @@ public:
      * @param value Value prediction for the board by the neural network
      * @param probOutputs Policy array of the raw network output (including illegal moves). It's assumend that the memory has already been allocated.
      * @param auxiliaryOutputs Array of optional auxiliary outputs
+     * @param phaseOutput Phase prediction array indicating the probability for each phase (only used for isGatingNet == true)
      */
-    virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) = 0;
-
-    /**
-     * @brief predict_phase Runs a prediction of the gating network to decide how to combine the multiple networks.
-     * @param inputPlanes Pointer to the input planes of a single board position
-     * @param phaseOutput Phase prediction array indicating the probability for each phase
-     */
-    virtual void predict_phase(float* inputPlanes, float* phaseOutput) const;
+    virtual void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs, float* phaseOutput) = 0;
 
     /**
      * @brief is_neural_network_valid Runs validation checks of the neural network architecture by comparing input and output shape of the loaded graph to the pre-defined constants.

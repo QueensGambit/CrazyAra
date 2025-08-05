@@ -405,10 +405,10 @@ void SearchThread::thread_iteration()
     create_mini_batch();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-        // query the gating network to check how to combine the network outputs
-        netGating->predict_phase(inputPlanes, phaseOutputs);
+        // query the gating network to check how to combine the network outputs (only the phase output will be written here)
+        netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
         // query the network that corresponds to the majority phase
-        nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+        nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
         set_nn_results_to_child_nodes();
     }
 #endif

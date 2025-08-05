@@ -66,10 +66,11 @@ private:
     int idxValueOutput;
     int idxPolicyOutput;
     int idxAuxiliaryOutput;
+    int idxPhaseOutput;
 
     // device memory, for input, value output and policy output, auxiliary outputs
-    void* deviceMemory[4];
-    size_t memorySizes[4];
+    void* deviceMemory[5];
+    size_t memorySizes[5];
 
     // input and output dimension of the network
     Precision precision;
@@ -93,7 +94,7 @@ public:
     TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, const string& strPrecision);
     ~TensorrtAPI();
 
-    void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs) override;
+    void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs, float* phaseOutput) override;
 
 #ifndef TENSORRT10
     /**

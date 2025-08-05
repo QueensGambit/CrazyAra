@@ -287,7 +287,7 @@ private:
      * @param batchSize Mini batch size used for inference.
      * @return Pointer to the newly created object
      */
-    unique_ptr<NeuralNetAPI> create_new_net(const string& modelDirectory, int deviceId, unsigned int batchSize);
+    unique_ptr<NeuralNetAPI> create_new_net(const string& modelDirectory, int deviceId, unsigned int batchSize, bool isGatingNet);
 
     /**
      * @brief fill_single_nn_vector Fills a single phase in netSingleVector and netBatchesVector with a loaded neural network.

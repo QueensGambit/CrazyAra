@@ -547,14 +547,14 @@ void CrazyAra::init()
 
 void CrazyAra::fill_single_nn_vector(const string& modelDirectory, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector)
 {
-    unique_ptr<NeuralNetAPI> netSingleTmp = create_new_net(modelDirectory, int(Options["First_Device_ID"]), 1);
+    unique_ptr<NeuralNetAPI> netSingleTmp = create_new_net(modelDirectory, int(Options["First_Device_ID"]), 1, false);
     netSingleTmp->validate_neural_network();
     netSingleVector.push_back(std::move(netSingleTmp));
 
     size_t idx = 0;
     for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
         for (size_t i = 0; i < size_t(Options["Threads"]); ++i) {
-            unique_ptr<NeuralNetAPI> netBatchesTmp = create_new_net(modelDirectory, deviceId, searchSettings.batchSize);
+            unique_ptr<NeuralNetAPI> netBatchesTmp = create_new_net(modelDirectory, deviceId, searchSettings.batchSize, false);
             netBatchesTmp->validate_neural_network();
             netBatchesVector[idx].push_back(std::move(netBatchesTmp));
             ++idx;
@@ -611,7 +611,7 @@ bool CrazyAra::is_ready()
 #endif
 
         fill_nn_vectors(Options["Model_Directory"], netSingleVector, netBatchesVector);
-        netGating = create_new_net(Options["Model_Directory_Gating"], int(Options["First_Device_ID"]), searchSettings.batchSize);
+        netGating = create_new_net(Options["Model_Directory_Gating"], int(Options["First_Device_ID"]), searchSettings.batchSize, true);
 
         mctsAgent = create_new_mcts_agent(netSingleVector, netBatchesVector, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netSingleVector, &playSettings, false, &searchSettings);
@@ -648,7 +648,7 @@ string CrazyAra::engine_info()
     return ss.str();
 }
 
-unique_ptr<NeuralNetAPI> CrazyAra::create_new_net(const string& modelDirectory, int deviceId, unsigned int batchSize)
+unique_ptr<NeuralNetAPI> CrazyAra::create_new_net(const string& modelDirectory, int deviceId, unsigned int batchSize, bool isGatingNet)
 {
 #ifdef MXNET
     #ifdef TENSORRT
@@ -656,11 +656,11 @@ unique_ptr<NeuralNetAPI> CrazyAra::create_new_net(const string& modelDirectory, 
     #else
         const bool useTensorRT = false;
     #endif
-    return make_unique<MXNetAPI>(Options["Context"], deviceId, batchSize, modelDirectory, Options["Precision"], useTensorRT);
+    return make_unique<MXNetAPI>(Options["Context"], deviceId, batchSize, modelDirectory, Options["Precision"], useTensorRT, isGatingNet);
 #elif defined TENSORRT
-    return make_unique<TensorrtAPI>(deviceId, batchSize, modelDirectory, Options["Precision"]);
+    return make_unique<TensorrtAPI>(deviceId, batchSize, modelDirectory, Options["Precision"], isGatingNet);
 #elif defined OPENVINO
-    return make_unique<OpenVinoAPI>(deviceId, batchSize, modelDirectory, Options["Threads_NN_Inference"]);
+    return make_unique<OpenVinoAPI>(deviceId, batchSize, modelDirectory, Options["Threads_NN_Inference"], isGatingNet);
 #endif
     return nullptr;
 }

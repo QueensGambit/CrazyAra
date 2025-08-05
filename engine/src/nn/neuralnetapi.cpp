@@ -98,10 +98,11 @@ void NeuralNetAPI::initialize()
     bind_executor();
 }
 
-NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt):
+NeuralNetAPI::NeuralNetAPI(const string& ctx, int deviceID, unsigned int batchSize, const string& modelDirectory, bool enableTensorrt, bool isGatingNet):
     deviceID(deviceID),
     batchSize(batchSize),
     enableTensorrt(enableTensorrt),
+    isGatingNet(isGatingNet),
     modelName(""),
     nbNNInputValues(0),  // will be set dynamically in initialize_nn_design()
     nbNNAuxiliaryOutputs(0),  // will be set dynamically in initialize_nn_design()

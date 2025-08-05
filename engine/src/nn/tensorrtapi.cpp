@@ -40,8 +40,8 @@
 
 using namespace sample;
 
-TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision):
-    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true),
+TensorrtAPI::TensorrtAPI(int deviceID, unsigned int batchSize, const string &modelDirectory, const string& strPrecision, bool isGatingNet):
+    NeuralNetAPI("gpu", deviceID, batchSize, modelDirectory, true, isGatingNet),
     idxInput(nnDesign.inputIdx),
     idxValueOutput(nnDesign.valueOutputIdx + nnDesign.nbInputs),
     idxPolicyOutput(nnDesign.policyOutputIdx + nnDesign.nbInputs),
@@ -192,7 +192,7 @@ void TensorrtAPI::bind_executor()
     CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
 }
 
-void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs)
+void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs, float* phaseOutput)
 {
     // select the requested device
     cudaSetDevice(deviceID);
@@ -202,8 +202,10 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
 
 #ifdef TENSORRT10
     context->setTensorAddress(nnDesign.inputLayerName.c_str(), deviceMemory[idxInput]);
-    context->setTensorAddress(nnDesign.valueOutputName.c_str(), deviceMemory[idxValueOutput]);
-    context->setTensorAddress(nnDesign.policySoftmaxOutputName.c_str(), deviceMemory[idxPolicyOutput]);
+    if (!netGating) {
+        context->setTensorAddress(nnDesign.valueOutputName.c_str(), deviceMemory[idxValueOutput]);
+        context->setTensorAddress(nnDesign.policySoftmaxOutputName.c_str(), deviceMemory[idxPolicyOutput]);
+    }
 #ifdef DYNAMIC_NN_ARCH
     if (has_auxiliary_outputs()) {
 #else
@@ -212,6 +214,9 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
         context->setTensorAddress(nnDesign.auxiliaryOutputName.c_str(), deviceMemory[idxAuxiliaryOutput]);
     }
 #endif
+    if (netGating) {
+        context->setTensorAddress(nnDesign.phaseOutputName.c_str(), deviceMemory[idxPhaseOutput]);
+    }
 
     // run inference for given data
 #ifdef TENSORRT10
@@ -220,11 +225,13 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
     context->enqueueV2(deviceMemory, stream, nullptr);
 #endif
 
-    // copy output from device back to host
-    CHECK(cudaMemcpyAsync(valueOutput, deviceMemory[idxValueOutput],
-                          memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
-    CHECK(cudaMemcpyAsync(probOutputs, deviceMemory[idxPolicyOutput],
-                          memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
+    if (!netGating) {
+        // copy output from device back to host
+        CHECK(cudaMemcpyAsync(valueOutput, deviceMemory[idxValueOutput],
+                              memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
+        CHECK(cudaMemcpyAsync(probOutputs, deviceMemory[idxPolicyOutput],
+                              memorySizes[idxPolicyOutput], cudaMemcpyDeviceToHost, stream));
+    }
 #ifdef DYNAMIC_NN_ARCH
     if (has_auxiliary_outputs()) {
 #else
@@ -232,6 +239,10 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
 #endif
         CHECK(cudaMemcpyAsync(auxiliaryOutputs, deviceMemory[idxAuxiliaryOutput],
                               memorySizes[idxAuxiliaryOutput], cudaMemcpyDeviceToHost, stream));
+    }
+    if (netGating) {
+        CHECK(cudaMemcpyAsync(phaseOutputs, deviceMemory[idxPhaseOutput],
+                              memorySizes[idxPhaseOutput], cudaMemcpyDeviceToHost, stream));
     }
     cudaStreamSynchronize(stream);
 }
