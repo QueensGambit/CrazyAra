@@ -202,7 +202,7 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
 
 #ifdef TENSORRT10
     context->setTensorAddress(nnDesign.inputLayerName.c_str(), deviceMemory[idxInput]);
-    if (!netGating) {
+    if (!isGatingNet) {
         context->setTensorAddress(nnDesign.valueOutputName.c_str(), deviceMemory[idxValueOutput]);
         context->setTensorAddress(nnDesign.policySoftmaxOutputName.c_str(), deviceMemory[idxPolicyOutput]);
     }
@@ -214,7 +214,7 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
         context->setTensorAddress(nnDesign.auxiliaryOutputName.c_str(), deviceMemory[idxAuxiliaryOutput]);
     }
 #endif
-    if (netGating) {
+    if (isGatingNet) {
         context->setTensorAddress(nnDesign.phaseOutputName.c_str(), deviceMemory[idxPhaseOutput]);
     }
 
@@ -225,7 +225,7 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
     context->enqueueV2(deviceMemory, stream, nullptr);
 #endif
 
-    if (!netGating) {
+    if (!isGatingNet) {
         // copy output from device back to host
         CHECK(cudaMemcpyAsync(valueOutput, deviceMemory[idxValueOutput],
                               memorySizes[idxValueOutput], cudaMemcpyDeviceToHost, stream));
@@ -240,7 +240,7 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
         CHECK(cudaMemcpyAsync(auxiliaryOutputs, deviceMemory[idxAuxiliaryOutput],
                               memorySizes[idxAuxiliaryOutput], cudaMemcpyDeviceToHost, stream));
     }
-    if (netGating) {
+    if (isGatingNet) {
         CHECK(cudaMemcpyAsync(phaseOutputs, deviceMemory[idxPhaseOutput],
                               memorySizes[idxPhaseOutput], cudaMemcpyDeviceToHost, stream));
     }

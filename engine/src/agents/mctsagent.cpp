@@ -34,9 +34,9 @@
 #include "../node.h"
 #include "../util/communication.h"
 
-MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
+MCTSAgent::MCTSAgent(NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
                      SearchSettings* searchSettings, PlaySettings* playSettings):
-    Agent(netSingleVector, playSettings, true),
+    Agent(netGating, netSingleVector, playSettings, true),
     searchSettings(searchSettings),
     rootNode(nullptr),
     rootState(nullptr),
@@ -171,7 +171,7 @@ void MCTSAgent::set_root_node_predictions()
         GamePhase currentPhase = state->get_phase(numPhases, searchSettings->gamePhaseDefinition);
         netIdx = phaseToNetsIndex.at(currentPhase);
     }
-    nets[netIdx]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    nets[netIdx]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
     size_t tbHits = 0;
     fill_nn_results(0, nets[netIdx]->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
                     rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());

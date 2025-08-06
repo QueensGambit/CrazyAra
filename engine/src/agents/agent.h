@@ -72,7 +72,7 @@ protected:
     bool isRunning;
 
 public:
-    Agent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose);
+    Agent(NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose);
 
     /**
      * @brief perform_action Selects an action based on the evaluation result

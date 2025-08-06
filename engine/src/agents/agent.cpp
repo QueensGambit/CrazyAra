@@ -57,8 +57,8 @@ void Agent::set_must_wait(bool value)
     mustWait = value;
 }
 
-Agent::Agent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose):
-    NeuralNetAPIUser(nets),
+Agent::Agent(NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose):
+    NeuralNetAPIUser(netGating, nets),
     playSettings(playSettings), mustWait(true), verbose(verbose), isRunning(false)
 {
 }

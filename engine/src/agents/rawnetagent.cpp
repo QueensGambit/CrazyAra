@@ -29,8 +29,8 @@
 
 using blaze::HybridVector;
 
-RawNetAgent::RawNetAgent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose, const SearchSettings* searchSettings):
-    Agent(nets, playSettings, verbose),
+RawNetAgent::RawNetAgent(NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose, const SearchSettings* searchSettings):
+    Agent(netGating, nets, playSettings, verbose),
     searchSettings(searchSettings)
 {
 }
@@ -62,7 +62,7 @@ void RawNetAgent::evaluate_board_state()
         return;
     }
     state->get_state_planes(true, inputPlanes, nets.front()->get_version());
-    nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
     state->set_auxiliary_outputs(auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());

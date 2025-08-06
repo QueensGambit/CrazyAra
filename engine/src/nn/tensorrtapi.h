@@ -90,8 +90,9 @@ public:
      * @param modelDirectory Directory where the network architecture is stored (.json file) and
      * where parameters a.k.a weights of the neural are stored (.params file) are stored
      * @param precision Inference precision type. Available options: float32, float16, int8 (float32 is default).
+     * @param isGatingNet Defines if the current object is a gating network
      */
-    TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, const string& strPrecision);
+    TensorrtAPI(int deviceID, unsigned int batchSize, const string& modelDirectory, const string& strPrecision, bool isGatingNet);
     ~TensorrtAPI();
 
     void predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs, float* phaseOutput) override;

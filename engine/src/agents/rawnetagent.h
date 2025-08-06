@@ -52,7 +52,7 @@ private:
 public:
     const SearchSettings* searchSettings;
 
-    RawNetAgent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose, const SearchSettings* searchSettings);
+    RawNetAgent(NeuralNetAPI* netGating, const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose, const SearchSettings* searchSettings);
     RawNetAgent(const RawNetAgent&) = delete;
     RawNetAgent& operator=(RawNetAgent const&) = delete;
 
