@@ -613,8 +613,8 @@ bool CrazyAra::is_ready()
         fill_nn_vectors(Options["Model_Directory"], netSingleVector, netBatchesVector);
         netGating = create_new_net(Options["Model_Directory_Gating"], int(Options["First_Device_ID"]), searchSettings.batchSize, true);
 
-        mctsAgent = create_new_mcts_agent(netGating, netSingleVector, netBatchesVector, &searchSettings);
-        rawAgent = make_unique<RawNetAgent>(netGating, netSingleVector, &playSettings, false, &searchSettings);
+        mctsAgent = create_new_mcts_agent(netGating.get(), netSingleVector, netBatchesVector, &searchSettings);
+        rawAgent = make_unique<RawNetAgent>(netGating.get(), netSingleVector, &playSettings, false, &searchSettings);
         StateConstants::init(mctsAgent->is_policy_map(), Options["UCI_Chess960"]);
 
         timeoutThread.kill();
