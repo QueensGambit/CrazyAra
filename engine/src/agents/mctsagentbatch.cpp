@@ -38,9 +38,9 @@
 #include "util/gcthread.h"
 
 
-MCTSAgentBatch::MCTSAgentBatch(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, 
+MCTSAgentBatch::MCTSAgentBatch(NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
                      SearchSettings* searchSettings, PlaySettings* playSettings, int noa, bool sN):
-    MCTSAgent(netSingleVector, netBatchesVector, searchSettings, playSettings)
+    MCTSAgent(netGating, netSingleVector, netBatchesVector, searchSettings, playSettings)
     {
         numberOfAgents = noa;
         splitNodes = sN;

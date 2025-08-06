@@ -37,9 +37,9 @@
 #include "util/gcthread.h"
 
 
-MCTSAgentTrueSight::MCTSAgentTrueSight(vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
+MCTSAgentTrueSight::MCTSAgentTrueSight(NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
                      SearchSettings* searchSettings, PlaySettings* playSettings):
-    MCTSAgent(netSingleVector, netBatchesVector, searchSettings, playSettings)
+    MCTSAgent(netGating, netSingleVector, netBatchesVector, searchSettings, playSettings)
     {
         
     }
