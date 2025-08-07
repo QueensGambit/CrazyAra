@@ -192,7 +192,7 @@ void TensorrtAPI::bind_executor()
     CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
 }
 
-void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs, float* phaseOutput)
+void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs, float* phaseOutputs)
 {
     // select the requested device
     cudaSetDevice(deviceID);
