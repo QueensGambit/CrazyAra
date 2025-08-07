@@ -138,16 +138,20 @@ void TensorrtAPI::init_nn_design()
     }
     set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
 
-    set_shape(nnDesign.valueOutputShape, engine->getBindingDimensions(idxValueOutput));
-    set_shape(nnDesign.policyOutputShape, engine->getBindingDimensions(idxPolicyOutput));
+    if (!isGatingNet) {
+        set_shape(nnDesign.valueOutputShape, engine->getBindingDimensions(idxValueOutput));
+        set_shape(nnDesign.policyOutputShape, engine->getBindingDimensions(idxPolicyOutput));
+    }
 
     if (nnDesign.hasAuxiliaryOutputs) {
         set_shape(nnDesign.auxiliaryOutputShape, engine->getBindingDimensions(idxAuxiliaryOutput));
     }
 #else
     set_shape(nnDesign.inputShape, engine->getTensorShape(nnDesign.inputLayerName.c_str()));
-    set_shape(nnDesign.valueOutputShape, engine->getTensorShape(nnDesign.valueOutputName.c_str()));
-    set_shape(nnDesign.policyOutputShape, engine->getTensorShape(nnDesign.policySoftmaxOutputName.c_str()));
+    if (!isGatingNet) {
+        set_shape(nnDesign.valueOutputShape, engine->getTensorShape(nnDesign.valueOutputName.c_str()));
+        set_shape(nnDesign.policyOutputShape, engine->getTensorShape(nnDesign.policySoftmaxOutputName.c_str()));
+    }
     if (nnDesign.hasAuxiliaryOutputs) {
         set_shape(nnDesign.auxiliaryOutputShape, engine->getTensorShape(nnDesign.auxiliaryOutputName.c_str()));
     }
@@ -176,8 +180,15 @@ void TensorrtAPI::bind_executor()
 #else
     memorySizes[idxInput] = batchSize * StateConstants::NB_VALUES_TOTAL() * sizeof(float);
 #endif
-    memorySizes[idxValueOutput] = batchSize * sizeof(float);
-    memorySizes[idxPolicyOutput] = batchSize * get_nb_policy_values() * sizeof(float);
+    if (!isGatingNet) {
+        memorySizes[idxValueOutput] = batchSize * sizeof(float);
+        memorySizes[idxPolicyOutput] = batchSize * get_nb_policy_values() * sizeof(float);
+    }
+    if (isGating) {
+        // TODO: Don't hardcode num phases to 3
+        memorySizes[idxPhaseOutput] = batchSize * 3 * sizeof(float);
+    }
+
 #ifdef DYNAMIC_NN_ARCH
     if (nnDesign.hasAuxiliaryOutputs) {
         memorySizes[idxAuxiliaryOutput] = batchSize * get_nb_auxiliary_outputs() * sizeof (float);
@@ -188,8 +199,13 @@ void TensorrtAPI::bind_executor()
         CHECK(cudaMalloc(&deviceMemory[idxAuxiliaryOutput], memorySizes[idxAuxiliaryOutput]));
     }
     CHECK(cudaMalloc(&deviceMemory[idxInput], memorySizes[idxInput]));
-    CHECK(cudaMalloc(&deviceMemory[idxValueOutput], memorySizes[idxValueOutput]));
-    CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
+    if (!isGatingNet) {
+        CHECK(cudaMalloc(&deviceMemory[idxValueOutput], memorySizes[idxValueOutput]));
+        CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
+    }
+    if (isGating) {
+        CHECK(cudaMalloc(&deviceMemory[idxPhaseOutput], memorySizes[idxPhaseOutput]));
+    }
 }
 
 void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOutputs, float* auxiliaryOutputs, float* phaseOutputs)
@@ -213,10 +229,10 @@ void TensorrtAPI::predict(float* inputPlanes, float* valueOutput, float* probOut
 #endif
         context->setTensorAddress(nnDesign.auxiliaryOutputName.c_str(), deviceMemory[idxAuxiliaryOutput]);
     }
-#endif
     if (isGatingNet) {
         context->setTensorAddress(nnDesign.phaseOutputName.c_str(), deviceMemory[idxPhaseOutput]);
     }
+#endif
 
     // run inference for given data
 #ifdef TENSORRT10
