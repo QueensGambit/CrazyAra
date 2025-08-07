@@ -184,7 +184,7 @@ void TensorrtAPI::bind_executor()
         memorySizes[idxValueOutput] = batchSize * sizeof(float);
         memorySizes[idxPolicyOutput] = batchSize * get_nb_policy_values() * sizeof(float);
     }
-    if (isGating) {
+    if (isGatingNet) {
         // TODO: Don't hardcode num phases to 3
         memorySizes[idxPhaseOutput] = batchSize * 3 * sizeof(float);
     }
@@ -203,7 +203,7 @@ void TensorrtAPI::bind_executor()
         CHECK(cudaMalloc(&deviceMemory[idxValueOutput], memorySizes[idxValueOutput]));
         CHECK(cudaMalloc(&deviceMemory[idxPolicyOutput], memorySizes[idxPolicyOutput]));
     }
-    if (isGating) {
+    if (isGatingNet) {
         CHECK(cudaMalloc(&deviceMemory[idxPhaseOutput], memorySizes[idxPhaseOutput]));
     }
 }
