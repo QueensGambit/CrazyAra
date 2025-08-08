@@ -96,29 +96,39 @@ bool TensorrtAPI::retrieve_indices_by_name(bool verbose)
         info_string_important("Layer name '" + nnDesign.inputLayerName + "' not found.");
         return false;
     }
-    idxValueOutput = engine->getBindingIndex(nnDesign.valueOutputName.c_str());
-    if (idxValueOutput == -1) {
-        info_string_important("Layer name '" + nnDesign.valueOutputName + "' not found.");
-        return false;
-    }
-    idxPolicyOutput = engine->getBindingIndex(nnDesign.policySoftmaxOutputName.c_str());
-    if (idxPolicyOutput == -1) {
-        info_string_important("Layer name '" + nnDesign.policySoftmaxOutputName + "' not found.");
-        return false;
-    }
-    if (nnDesign.hasAuxiliaryOutputs) {
-        idxAuxiliaryOutput = engine->getBindingIndex(nnDesign.auxiliaryOutputName.c_str());
-        if (idxAuxiliaryOutput == -1) {
-            info_string_important("Layer name '" + nnDesign.auxiliaryOutputName + "' not found.");
+    if (isGatingNet) {
+        idxPhaseOutput = engine->getBindingIndex(nnDesign.phaseOutputName.c_str());
+        if (idxPhaseOutput == -1) {
+            info_string_important("Layer name '" + nnDesign.phaseOutputName + "' not found.");
             return false;
         }
     }
-    if (verbose) {
-        info_string("Found 'idxInput' at index", idxInput);
-        info_string("Found 'idxValueOutput' at index", idxValueOutput);
-        info_string("Found 'idxPolicyOutput' at index", idxPolicyOutput);
+    if (!isGatingNet) {
+        idxValueOutput = engine->getBindingIndex(nnDesign.valueOutputName.c_str());
+        if (idxValueOutput == -1) {
+            info_string_important("Layer name '" + nnDesign.valueOutputName + "' not found.");
+            return false;
+        }
+        idxPolicyOutput = engine->getBindingIndex(nnDesign.policySoftmaxOutputName.c_str());
+        if (idxPolicyOutput == -1) {
+            info_string_important("Layer name '" + nnDesign.policySoftmaxOutputName + "' not found.");
+            return false;
+        }
         if (nnDesign.hasAuxiliaryOutputs) {
-            info_string("Found 'idxAuxiliaryOutput' at index", idxAuxiliaryOutput);
+            idxAuxiliaryOutput = engine->getBindingIndex(nnDesign.auxiliaryOutputName.c_str());
+            if (idxAuxiliaryOutput == -1) {
+                info_string_important("Layer name '" + nnDesign.auxiliaryOutputName + "' not found.");
+                return false;
+            }
+        }
+
+        if (verbose) {
+            info_string("Found 'idxInput' at index", idxInput);
+            info_string("Found 'idxValueOutput' at index", idxValueOutput);
+            info_string("Found 'idxPolicyOutput' at index", idxPolicyOutput);
+            if (nnDesign.hasAuxiliaryOutputs) {
+                info_string("Found 'idxAuxiliaryOutput' at index", idxAuxiliaryOutput);
+            }
         }
     }
     return true;
