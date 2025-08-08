@@ -406,7 +406,9 @@ void SearchThread::thread_iteration()
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
         // query the gating network to check how to combine the network outputs (only the phase output will be written here)
-        // netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+        netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+        cout << "phaseOutputs:" << phaseOutputs[0] << " "<< phaseOutputs[1] << " " << phaseOutputs[2];
+
         // query the network that corresponds to the majority phase
         nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
         set_nn_results_to_child_nodes();
