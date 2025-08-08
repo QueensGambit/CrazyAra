@@ -390,19 +390,28 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
 {
     // add a softmax layer to the ONNX model
     int policyOutputIdx = -1;
-    for (int idx = 0; idx < network->getNbOutputs(); ++idx) {
-        if (string(network->getOutput(idx)->getName()) == nnDesign.policyOutputName) {
-            policyOutputIdx = idx;
-            break;
+    int phaseOutputIdx = 0;
+    if (!isGatingNet) {
+        for (int idx = 0; idx < network->getNbOutputs(); ++idx) {
+            if (string(network->getOutput(idx)->getName()) == nnDesign.policyOutputName) {
+                policyOutputIdx = idx;
+                break;
+            }
+        }
+        if (policyOutputIdx == -1) {
+            info_string("Did not find policy output with name '" + nnDesign.policyOutputName + "'");
+            info_string("Setting policyOutputIdx to:", nnDesign.policyOutputIdx);
+            policyOutputIdx = nnDesign.policyOutputIdx;
         }
     }
-    if (policyOutputIdx == -1) {
-        info_string("Did not find policy output with name '" + nnDesign.policyOutputName + "'");
-        info_string("Setting policyOutputIdx to:", nnDesign.policyOutputIdx);
-        policyOutputIdx = nnDesign.policyOutputIdx;
+
+    ISoftMaxLayer* softmaxLayer;
+    if (!isGatingNet) {
+        softmaxLayer = network->addSoftMax(*network->getOutput(policyOutputIdx));
+    } else {
+        softmaxLayer = network->addSoftMax(*network->getOutput(phaseOutputIdx));
     }
 
-    ISoftMaxLayer* softmaxLayer = network->addSoftMax(*network->getOutput(policyOutputIdx));
     // set the softmax axis to 1
     softmaxLayer->setAxes(1 << 1);
 
@@ -414,9 +423,16 @@ void TensorrtAPI::configure_network(SampleUniquePtr<nvinfer1::INetworkDefinition
 //    fix_layer_precision(network->getLayer(2), nvinfer1::DataType::kFLOAT);
 
     // set the softmax layer output as the new output
-    network->unmarkOutput(*network->getOutput(policyOutputIdx));
-    network->markOutput(*softmaxLayer->getOutput(0));
-    softmaxLayer->getOutput(0)->setName(nnDesign.policySoftmaxOutputName.c_str());
+    if (!isGatingNet) {
+        network->unmarkOutput(*network->getOutput(policyOutputIdx));
+        network->markOutput(*softmaxLayer->getOutput(0));
+        softmaxLayer->getOutput(0)->setName(nnDesign.policySoftmaxOutputName.c_str());
+    }
+    if (isGatingNet) {
+        network->unmarkOutput(*network->getOutput(phaseOutputIdx));
+        network->markOutput(*softmaxLayer->getOutput(0));
+        softmaxLayer->getOutput(0)->setName(nnDesign.phaseSoftmaxOutputName.c_str());
+    }
 }
 
 void write_buffer(void* buffer, size_t bufferSize, const string& filePath) {

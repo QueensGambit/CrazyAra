@@ -64,10 +64,12 @@ struct NeuralNetDesign {
     string valueOutputName = "value_out";  // may be adjusted using "valueOutputIdx" if not found
     const string auxiliaryOutputName = "auxiliary_out";
     const string phaseOutputName = "phase_out";
+    const string phaseSoftmaxOutputName = "phase_softmax";
     const int inputIdx = 0;
     const int valueOutputIdx = 0;
     const int policyOutputIdx = 1;
     const int auxiliaryOutputIdx = 2;
+    const int phaseOutputIdx = 0;
     Shape inputShape;
     Shape valueOutputShape;
     Shape policyOutputShape;
