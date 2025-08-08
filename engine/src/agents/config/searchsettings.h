@@ -94,6 +94,8 @@ struct SearchSettings
     double virtualOffsetStrenght;
     // Defines the type of game phase definition to be used
     GamePhaseDefinition gamePhaseDefinition;
+    // Define the option to activate the gating network
+    bool useGatingNetwork;
     SearchSettings();
 
 };

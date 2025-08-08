@@ -52,7 +52,8 @@ SearchSettings::SearchSettings():
         virtualStyle(VIRTUAL_VISIT),
         virtualMixThreshold(1000),
         virtualOffsetStrenght(0.001),
-        gamePhaseDefinition(MOVECOUNT)
+        gamePhaseDefinition(MOVECOUNT),
+        useGatingNetwork(true)
 {
 
 }

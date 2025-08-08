@@ -191,6 +191,7 @@ void OptionsUCI::init(OptionsMap &o)
     // we repeat e.g. "crazyhouse" in the list because of problem in XBoard/Winboard CrazyAra#23
     o["UCI_Variant"]                   << Option(StateConstants::DEFAULT_UCI_VARIANT().c_str(), {StateConstants::DEFAULT_UCI_VARIANT().c_str(), StateConstants::DEFAULT_UCI_VARIANT().c_str()});
 #endif
+    o["Use_Gating_Network"]            << Option(true);
     o["Use_Raw_Network"]               << Option(false);
     o["Virtual_Style"]                 << Option("virtual_mix", { "virtual_loss", "virtual_visit", "virtual_offset", "virtual_mix" });
     o["Virtual_Mix_Threshold"]         << Option(1000, 1, 99999999);

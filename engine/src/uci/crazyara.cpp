@@ -756,6 +756,7 @@ void CrazyAra::init_search_settings()
     searchSettings.nodePolicyTemperature = Options["Centi_Node_Temperature"] / 100.0f;
     searchSettings.randomMoveFactor = Options["Centi_Random_Move_Factor"]  / 100.0f;
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
+    searchSettings.useGatingNetwork = Options["Use_Gating_Network"];
     useRawNetwork = Options["Use_Raw_Network"];
     searchSettings.useNPSTimemanager = Options["Use_NPS_Time_Manager"];
     if (string(Options["SyzygyPath"]).empty() || string(Options["SyzygyPath"]) == "<empty>") {
