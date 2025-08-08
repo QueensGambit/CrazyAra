@@ -145,6 +145,7 @@ void TensorrtAPI::init_nn_design()
         idxValueOutput = nnDesign.valueOutputIdx + nnDesign.nbInputs;
         idxPolicyOutput = nnDesign.policyOutputIdx + nnDesign.nbInputs;
         idxAuxiliaryOutput = nnDesign.auxiliaryOutputIdx + nnDesign.nbInputs;
+        idxPhaseOutput = nnDesign.phaseOutputIdx + nnDesign.nbInputs;
     }
     set_shape(nnDesign.inputShape, engine->getBindingDimensions(idxInput));
 
