@@ -34,6 +34,7 @@
 #include <climits>
 #include "util/blazeutil.h"
 #include <fstream>
+#include <blaze/Math.h>
 
 
 size_t SearchThread::get_max_depth() const
@@ -405,15 +406,37 @@ void SearchThread::thread_iteration()
     create_mini_batch();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-        // query the gating network to check how to combine the network outputs (only the phase output will be written here)
-        netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
-        //cout << "phaseOutputs:" << phaseOutputs[0] << " "<< phaseOutputs[1] << " " << phaseOutputs[2] << " ";
         if (searchSettings->useGatingNetwork) {
-            // TODO: combine the outputs of multiple neural networks
+            // query the gating network to check how to combine the network outputs (only the phase output will be written here)
+            netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+            blaze::DynamicMatrix<float> phaseOutputsGatingNet(nets.front()->get_batch_size(), 3, phaseOutputs);
+            //cout << "phaseOutputs:" << phaseOutputs[0] << " "<< phaseOutputs[1] << " " << phaseOutputs[2] << " ";
+            nets[phaseToNetsIndex[0]]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+            blaze::DynamicVector<float> valueOutputsNet0(nets.front()->get_batch_size(), valueOutputs);
+            blaze::DynamicMatrix<float> probOutputsNet0(nets.front()->get_batch_size(), nets.front()->get_nb_policy_values(), probOutputs);
+            nets[phaseToNetsIndex[1]]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+            blaze::DynamicVector<float> valueOutputsNet1(nets.front()->get_batch_size(), valueOutputs);
+            blaze::DynamicMatrix<float> probOutputsNet1(nets.front()->get_batch_size(), nets.front()->get_nb_policy_values(), probOutputs);
+            nets[phaseToNetsIndex[2]]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+            blaze::DynamicVector<float> valueOutputsNet2(nets.front()->get_batch_size(), valueOutputs);
+            blaze::DynamicMatrix<float> probOutputsNet2(nets.front()->get_batch_size(), nets.front()->get_nb_policy_values(), probOutputs);
+            // combine the outputs of multiple neural networks and copy back the data
+            blaze::DynamicVector<float> combinedValueOutputs(nets.front()->get_batch_size());
+            for (int batchIdx = 0; batchIdx < nets.front()->get_batch_size(); ++batchIdx) {
+                valueOutputs[batchIdx] = phaseOutputsGatingNet.at(batchIdx, 0) * valueOutputsNet0.at(batchIdx) + phaseOutputsGatingNet.at(batchIdx, 1) * valueOutputsNet1.at(batchIdx) + phaseOutputsGatingNet.at(batchIdx, 2) * valueOutputsNet2.at(batchIdx);
+            }
+            blaze::DynamicMatrix<float> combinedProbOutputs(nets.front()->get_batch_size(), nets.front()->get_nb_policy_values());
+            for (int batchIdx = 0; batchIdx < nets.front()->get_batch_size(); ++batchIdx) {
+                for (int colIdx = 0; colIdx < nets.front()->get_nb_policy_values(); ++colIdx) {
+                    probOutputs[batchIdx * nets.front()->get_nb_policy_values() + colIdx] = phaseOutputsGatingNet.at(batchIdx, 0) * probOutputsNet0.at(batchIdx, colIdx) + phaseOutputsGatingNet.at(batchIdx, 1) * probOutputsNet1.at(batchIdx, colIdx) + phaseOutputsGatingNet.at(batchIdx, 2) * probOutputsNet2.at(batchIdx, colIdx);
+                }
+            }
         }
 
-        // query the network that corresponds to the majority phase
-        nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+        if (!searchSettings->useGatingNetwork) {
+            // query the network that corresponds to the majority phase
+            nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+        }
         set_nn_results_to_child_nodes();
     }
 #endif
