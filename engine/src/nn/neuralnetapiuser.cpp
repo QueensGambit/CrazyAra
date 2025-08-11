@@ -118,8 +118,9 @@ unsigned int NeuralNetAPIUser::get_num_phases() const
     return numPhases;
 }
 
-void NeuralNetAPIUser::predict(bool useGatingNetwork, size_t majorityNNIndex, size_t batchSize)
+void NeuralNetAPIUser::predict(bool useGatingNetwork, size_t majorityNNIndex)
 {
+    size_t batchSize = nets.front()->get_batch_size();
     if (useGatingNetwork) {
         // query the gating network to check how to combine the network outputs (only the phase output will be written here)
         netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);

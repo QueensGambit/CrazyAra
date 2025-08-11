@@ -611,9 +611,10 @@ bool CrazyAra::is_ready()
 #endif
 
         fill_nn_vectors(Options["Model_Directory"], netSingleVector, netBatchesVector);
+        netGatingSingle = create_new_net(Options["Model_Directory_Gating"], int(Options["First_Device_ID"]), 1, true);
         netGating = create_new_net(Options["Model_Directory_Gating"], int(Options["First_Device_ID"]), searchSettings.batchSize, true);
 
-        mctsAgent = create_new_mcts_agent(netGating.get(), netSingleVector, netBatchesVector, &searchSettings);
+        mctsAgent = create_new_mcts_agent(netGatingSingle.get(), netGating.get(), netSingleVector, netBatchesVector, &searchSettings);
         rawAgent = make_unique<RawNetAgent>(netGating.get(), netSingleVector, &playSettings, false, &searchSettings);
         StateConstants::init(mctsAgent->is_policy_map(), Options["UCI_Chess960"]);
 
@@ -695,32 +696,32 @@ void CrazyAra::set_uci_option(istringstream &is, StateObj& state)
     }
 }
 
-unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, SearchSettings* searchSettings, MCTSAgentType type)
+unique_ptr<MCTSAgent> CrazyAra::create_new_mcts_agent(NeuralNetAPI* netGatingSingle, NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, SearchSettings* searchSettings, MCTSAgentType type)
 {
     switch (type) {
     case MCTSAgentType::kDefault:
-        return make_unique<MCTSAgent>(netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings);
+        return make_unique<MCTSAgent>(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings);
     case MCTSAgentType::kBatch1:
         info_string("TYP 1 -> Batch 1");
-        return make_unique<MCTSAgentBatch>(netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 1, false);
+        return make_unique<MCTSAgentBatch>(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 1, false);
     case MCTSAgentType::kBatch3:
         info_string("TYP 2 -> Batch 3");
-        return make_unique<MCTSAgentBatch>(netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 3, false);
+        return make_unique<MCTSAgentBatch>(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 3, false);
     case MCTSAgentType::kBatch5:
         info_string("TYP 3 -> Batch 5");
-        return make_unique<MCTSAgentBatch>(netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 5, false);
+        return make_unique<MCTSAgentBatch>(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 5, false);
     case MCTSAgentType::kBatch3_reducedNodes:
         info_string("TYP 4 -> Batch 3 Split");
-        return make_unique<MCTSAgentBatch>(netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 3, true);
+        return make_unique<MCTSAgentBatch>(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 3, true);
     case MCTSAgentType::kBatch5_reducedNodes:
         info_string("TYP 5 -> Batch 5 Split");
-        return make_unique<MCTSAgentBatch>(netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 5, true);
+        return make_unique<MCTSAgentBatch>(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings , 5, true);
     case MCTSAgentType::kTrueSight:
         info_string("TYP 6 -> TrueSight");
-        return make_unique<MCTSAgentTrueSight>(netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings);
+        return make_unique<MCTSAgentTrueSight>(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings);
     case MCTSAgentType::kRandom:
         info_string("TYP 7 -> Random");
-        return make_unique<MCTSAgentRandom>(netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings);
+        return make_unique<MCTSAgentRandom>(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, &playSettings);
     
     default:
       info_string("Unknown MCTSAgentType");

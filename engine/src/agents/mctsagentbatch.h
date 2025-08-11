@@ -53,7 +53,7 @@ public:
   bool splitNodes;
 
 public:
-    MCTSAgentBatch(NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
+    MCTSAgentBatch(NeuralNetAPI* netGatingSingle, NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
               vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
               SearchSettings* searchSettings,
               PlaySettings* playSettings,

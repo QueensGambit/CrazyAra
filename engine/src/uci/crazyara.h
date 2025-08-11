@@ -84,6 +84,7 @@ private:
     unique_ptr<MCTSAgent> mctsAgent;
     vector<unique_ptr<NeuralNetAPI>> netSingleVector;
     vector<vector<unique_ptr<NeuralNetAPI>>> netBatchesVector;
+    unique_ptr<NeuralNetAPI> netGatingSingle;
     unique_ptr<NeuralNetAPI> netGating;
 #ifdef USE_RL
     vector<unique_ptr<NeuralNetAPI>> netSingleContenderVector;
@@ -270,6 +271,7 @@ private:
 
     /**
      * @brief create_new_mcts_agent Factory method to create a new MCTSAgent when loading new neural network weights
+     * @param netGatingSingle Pointer to the gating network for a single batch size
      * @param netGating Pointer to the gating network
      * @param netSingleVector Neural networks with batch-size 1. They will be loaded from file.
      * @param netBatchesVector Neural networks handes with a batch-size defined by the uci options. They will be loaded from file.
@@ -277,7 +279,7 @@ private:
      * @param type Which type of agent should be used, default is 0. 
      * @return Pointer to the new MCTSAgent object
      */
-    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, SearchSettings* searchSettings, MCTSAgentType type = MCTSAgentType::kDefault);
+    unique_ptr<MCTSAgent> create_new_mcts_agent(NeuralNetAPI* netGatingSingle, NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector, SearchSettings* searchSettings, MCTSAgentType type = MCTSAgentType::kDefault);
 
     /**
      * @brief create_new_net Factory to create and load a new model from a given directory
