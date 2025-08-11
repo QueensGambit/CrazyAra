@@ -39,7 +39,7 @@
 
 MCTSAgentRandom::MCTSAgentRandom(NeuralNetAPI* netGatingSingle, NeuralNetAPI* netGating, vector<unique_ptr<NeuralNetAPI>>& netSingleVector, vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
                      SearchSettings* searchSettings, PlaySettings* playSettings):
-    MCTSAgent(netGatingSingle, netSingleVector, netBatchesVector, searchSettings, playSettings)
+    MCTSAgent(netGatingSingle, netGating, netSingleVector, netBatchesVector, searchSettings, playSettings)
     {
 
     }
