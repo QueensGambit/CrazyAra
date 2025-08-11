@@ -124,7 +124,7 @@ void NeuralNetAPIUser::predict(bool useGatingNetwork, size_t majorityNNIndex, si
         // query the gating network to check how to combine the network outputs (only the phase output will be written here)
         netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
         blaze::DynamicMatrix<float> phaseOutputsGatingNet(batchSize, 3, phaseOutputs);
-        //cout << "phaseOutputs:" << phaseOutputs[0] << " "<< phaseOutputs[1] << " " << phaseOutputs[2] << " ";
+        // cout << "phaseOutputs:" << phaseOutputs[0] << " "<< phaseOutputs[1] << " " << phaseOutputs[2] << " ";
         nets[phaseToNetsIndex[0]]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
         blaze::DynamicVector<float> valueOutputsNet0(batchSize, valueOutputs);
         blaze::DynamicMatrix<float> probOutputsNet0(batchSize, nets.front()->get_nb_policy_values(), probOutputs);
@@ -148,6 +148,9 @@ void NeuralNetAPIUser::predict(bool useGatingNetwork, size_t majorityNNIndex, si
     }
 
     if (!useGatingNetwork) {
+        netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
+        blaze::DynamicMatrix<float> phaseOutputsGatingNet(batchSize, 3, phaseOutputs);
+        cout << "phaseOutputs:" << phaseOutputs[0] << " "<< phaseOutputs[1] << " " << phaseOutputs[2] << " ";
         // query the network that corresponds to the majority phase
         nets[majorityNNIndex]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
     }

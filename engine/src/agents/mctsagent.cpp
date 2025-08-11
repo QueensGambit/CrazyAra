@@ -172,7 +172,7 @@ void MCTSAgent::set_root_node_predictions()
         netIdx = phaseToNetsIndex.at(currentPhase);
     }
     //nets[netIdx]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
-    this->predict(searchSettings->useGatingNetwork, netIdx, 1);
+    this->predict(!searchSettings->useGatingNetwork, netIdx, 1);
     size_t tbHits = 0;
     fill_nn_results(0, nets[netIdx]->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
                     rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
