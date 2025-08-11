@@ -68,6 +68,14 @@ public:
      * @return numPhases
      */
     unsigned int get_num_phases() const;
+
+    /**
+     * @brief predict Runs the prediction to fill the valueOutputs, probabilityOutputs, (auxiliaryOutputs) and phaseOutputs.
+     * Works for both having a gating network and no gating network.
+     * @param useGatingNetwork If a gating network shall be used for the prediction.
+     * @param majorityNNIndex The majority neural network index.
+     */
+    void predict(bool useGatingNetwork, size_t majorityNNIndex);
 };
 
 #endif // NEURALNETAPIUSER_H
