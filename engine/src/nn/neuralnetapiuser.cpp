@@ -149,9 +149,6 @@ void NeuralNetAPIUser::predict(bool useGatingNetwork, size_t majorityNNIndex)
     }
 
     if (!useGatingNetwork) {
-        netGating->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
-        blaze::DynamicMatrix<float> phaseOutputsGatingNet(batchSize, 3, phaseOutputs);
-        cout << "phaseOutputs:" << phaseOutputs[0] << " "<< phaseOutputs[1] << " " << phaseOutputs[2] << " ";
         // query the network that corresponds to the majority phase
         nets[majorityNNIndex]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs, phaseOutputs);
     }
