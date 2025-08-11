@@ -37,27 +37,6 @@ int main(int argc, char* argv[]) {
 #ifdef XIANGQI
     variants.init();
 #endif
-
-    // DEBUG CODE
-    float* valueOutputs = new float[3];
-    valueOutputs[0] = 0;
-    valueOutputs[1] = 0;
-    valueOutputs[2] = 0;
-    blaze::DynamicVector<float> valueOutputsNet0(3, valueOutputs);
-    valueOutputs[0] = 1;
-    valueOutputs[1] = 1;
-    valueOutputs[2] = 1;
-    blaze::DynamicVector<float> valueOutputsNet1(3, valueOutputs);
-    valueOutputs[0] = 2;
-    valueOutputs[1] = 2;
-    valueOutputs[2] = 2;
-    blaze::DynamicVector<float> valueOutputsNet2(3, valueOutputs);
-
-    info_string("valueOutputsNet0:", valueOutputsNet0);
-    info_string("valueOutputsNet1:", valueOutputsNet1);
-    info_string("valueOutputsNet2:", valueOutputsNet2);
-    // DEBUG CODE
-
     CrazyAra crazyara;
     crazyara.init();
     crazyara.welcome();
