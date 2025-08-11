@@ -74,8 +74,9 @@ public:
      * Works for both having a gating network and no gating network.
      * @param useGatingNetwork If a gating network shall be used for the prediction.
      * @param majorityNNIndex The majority neural network index.
+     * @param batchSize Mini batch size used for inference.
      */
-    void predict(bool useGatingNetwork, size_t majorityNNIndex);
+    void predict(bool useGatingNetwork, size_t majorityNNIndex, size_t batchSize);
 };
 
 #endif // NEURALNETAPIUSER_H

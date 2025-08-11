@@ -406,7 +406,7 @@ void SearchThread::thread_iteration()
     create_mini_batch();
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
-        this->predict(searchSettings->useGatingNetwork, select_nn_index());
+        this->predict(searchSettings->useGatingNetwork, select_nn_index(), nets.front()->get_batch_size());
         set_nn_results_to_child_nodes();
     }
 #endif
