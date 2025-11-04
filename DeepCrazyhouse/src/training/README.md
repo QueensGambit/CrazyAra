@@ -23,7 +23,7 @@ Use `train_cli.py` to conduct a training run.
 
 An example call is:
 ```
-$ train_cli.py --model-type resnet --name-initials XY --use-custom-architecture False --export-dir /data/training_run
+$ train_cli.py --model-type resnet --name-initials XY --use-custom-architecture False --device-id 0 --export-dir /data/training_run
 ```
 
 ### Tensorboard
