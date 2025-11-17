@@ -214,6 +214,53 @@ def get_rise_v33_model(args):
     return model
 
 
+def get_rise_v33_large_model(args):
+    """
+    Wrapper definition for RISEv3.3 large.
+    The model has 17,879,540 parameters, compared to 5,755,348 parameters for the standard RISEv3 model.
+    :return: pytorch model object
+    """
+    kernels = [3] * 36
+    kernels[7] = 5
+    kernels[11] = 5
+    kernels[12] = 5
+    kernels[13] = 5
+
+    kernels[7+15] = 5
+    kernels[11+15] = 5
+    kernels[12+15] = 5
+    kernels[13+15] = 5
+
+    se_types = [None] * len(kernels)
+    se_types[5] = "eca_se"
+    se_types[8] = "eca_se"
+    se_types[12] = "eca_se"
+    se_types[13] = "eca_se"
+    se_types[14] = "eca_se"
+
+    se_types[5+15] = "eca_se"
+    se_types[8+15] = "eca_se"
+    se_types[12+15] = "eca_se"
+    se_types[13+15] = "eca_se"
+    se_types[14+15] = "eca_se"
+
+    act_types = ['relu'] * len(kernels)
+
+    model = RiseV3(nb_input_channels=args.input_shape[0],
+                   board_height=args.input_shape[1], board_width=args.input_shape[2],
+                   channels=256, channels_operating_init=224,
+                   channel_expansion=32, act_types=act_types, channels_value_head=8,
+                   value_fc_size=256,
+                   channels_policy_head=args.channels_policy_head, dropout_rate=0,
+                   select_policy_from_plane=args.select_policy_from_plane,
+                   kernels=kernels, se_types=se_types, use_avg_features=False,
+                   n_labels=args.n_labels, use_wdl=args.use_wdl,
+                   use_plys_to_end=args.use_plys_to_end,
+                   use_mlp_wdl_ply=args.use_mlp_wdl_ply
+                   )
+    return model
+
+
 def get_rise_v2_model(args):
     """
     Wrapper definition for RISEv2.0
