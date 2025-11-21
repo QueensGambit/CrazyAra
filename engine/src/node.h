@@ -37,6 +37,7 @@
 
 #include "agents/config/searchsettings.h"
 #include "nodedata.h"
+#include "spinlock.h"
 
 
 using blaze::HybridVector;
@@ -97,7 +98,7 @@ inline VirtualStyle get_virtual_style(const SearchSettings* searchSettings, uint
 class Node
 {
 private:
-    mutex mtx;
+    Spinlock spinlock;
 
     DynamicVector<float> policyProbSmall;
     vector<Action> legalActions;

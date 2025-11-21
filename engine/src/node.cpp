@@ -30,7 +30,6 @@
 #include "../util/communication.h"
 #include "evalinfo.h"
 
-
 bool Node::is_sorted() const
 {
     return sorted;
@@ -939,12 +938,12 @@ void Node::make_to_root()
 
 void Node::lock()
 {
-    mtx.lock();
+    spinlock.lock();
 }
 
 void Node::unlock()
 {
-    mtx.unlock();
+    spinlock.unlock();
 }
 
 void Node::apply_dirichlet_noise_to_prior_policy(const SearchSettings* searchSettings)
