@@ -37,6 +37,7 @@
 
 #include "agents/config/searchsettings.h"
 #include "nodedata.h"
+#include "spinlock.h"
 
 
 using blaze::HybridVector;

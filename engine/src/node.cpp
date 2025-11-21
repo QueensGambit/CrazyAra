@@ -30,7 +30,6 @@
 #include "../util/communication.h"
 #include "evalinfo.h"
 
-
 bool Node::is_sorted() const
 {
     return sorted;
