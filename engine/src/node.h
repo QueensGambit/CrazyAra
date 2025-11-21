@@ -97,7 +97,7 @@ inline VirtualStyle get_virtual_style(const SearchSettings* searchSettings, uint
 class Node
 {
 private:
-    mutex mtx;
+    Spinlock spinlock;
 
     DynamicVector<float> policyProbSmall;
     vector<Action> legalActions;

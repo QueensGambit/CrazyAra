@@ -33,6 +33,7 @@
 #include <unordered_map>
 #include <blaze/Math.h>
 #include "agents/config/searchsettings.h"
+#include <atomic>
 
 using blaze::HybridVector;
 using blaze::DynamicVector;
@@ -120,5 +121,35 @@ public:
     void reserve_initial_space();
 };
 
+
+struct Spinlock
+{
+    // A std::atomic_flag is the only guaranteed lock-free atomic primitive in C++11
+    std::atomic_flag flag = ATOMIC_FLAG_INIT;
+
+    void lock()
+    {
+        // Waits in a loop (spins) until the flag is cleared, and then sets it atomically.
+        // memory_order_acquire: Ensures that all memory accesses before the unlock
+        // are visible to this thread.
+        while (flag.test_and_set(std::memory_order_acquire))
+        {
+            // Optional: Here, _mm_pause() (x86/64) could be inserted to save power
+            // and relieve bus bandwidth during busy-waiting.
+        }
+    }
+
+    void unlock()
+    {
+        // memory_order_release: Ensures that all changes become visible
+        // before the lock is released.
+        flag.clear(std::memory_order_release);
+    }
+
+    // Adds try_lock, in case std::lock_guard requires it for metadata
+    bool try_lock() {
+        return !flag.test_and_set(std::memory_order_acquire);
+    }
+};
 
 #endif // NODEDATA_H
