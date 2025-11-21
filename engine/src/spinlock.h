@@ -29,7 +29,7 @@ struct Spinlock
 
     void lock()
     {
-        uint8_t spin_count = 0;
+        uint_fast8_t spin_count = 0;
 
         // Waits in a loop (spins) until the flag is cleared, and then sets it atomically.
         while (flag.test_and_set(std::memory_order_acquire))
