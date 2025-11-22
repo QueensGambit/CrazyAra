@@ -65,6 +65,13 @@ MCTSAgent::~MCTSAgent()
     }
 }
 
+MCTSAgent::MCTSAgent(const MCTSAgent& other):
+    Agent(other)
+{
+    this->searchSettings = other.searchSettings;
+    this->playSettings = other.playSettings;
+}
+
 Node* MCTSAgent::get_opponents_next_root() const
 {
     return opponentsNextRoot.get();
@@ -77,7 +84,7 @@ Node* MCTSAgent::get_root_node() const
 
 string MCTSAgent::get_device_name() const
 {
-    return nets.front()->get_device_name();
+    return nnUser->nets.front()->get_device_name();
 }
 
 float MCTSAgent::get_dirichlet_noise() const
@@ -165,15 +172,15 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
 
 void MCTSAgent::set_root_node_predictions()
 {
-    state->get_state_planes(true, inputPlanes, nets.front()->get_version());
+    state->get_state_planes(true, nnUser->inputPlanes, nnUser->nets.front()->get_version());
     size_t netIdx = 0;
-    if (nets.size() > 1) {
-        GamePhase currentPhase = state->get_phase(numPhases, searchSettings->gamePhaseDefinition);
-        netIdx = phaseToNetsIndex.at(currentPhase);
+    if (nnUser->nets.size() > 1) {
+        GamePhase currentPhase = state->get_phase(nnUser->numPhases, searchSettings->gamePhaseDefinition);
+        netIdx = nnUser->phaseToNetsIndex.at(currentPhase);
     }
-    nets[netIdx]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+    nnUser->nets[netIdx]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
     size_t tbHits = 0;
-    fill_nn_results(0, nets[netIdx]->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
+    fill_nn_results(0, nnUser->nets[netIdx]->is_policy_map(), nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs, rootNode.get(), tbHits,
                     rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
 }
 
@@ -260,12 +267,12 @@ void MCTSAgent::clear_game_history()
 
 bool MCTSAgent::is_policy_map()
 {
-    return nets.front()->is_policy_map();
+    return nnUser->nets.front()->is_policy_map();
 }
 
 string MCTSAgent::get_name() const
 {
-    return engineName + "-" + engineVersion + "-" + nets.front()->get_model_name();
+    return engineName + "-" + engineVersion + "-" + nnUser->nets.front()->get_model_name();
 }
 
 void MCTSAgent::update_stats()

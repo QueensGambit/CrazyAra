@@ -57,10 +57,25 @@ void Agent::set_must_wait(bool value)
     mustWait = value;
 }
 
-Agent::Agent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose):
-    NeuralNetAPIUser(nets),
-    playSettings(playSettings), mustWait(true), verbose(verbose), isRunning(false)
+void Agent::set_id(size_t value)
 {
+    id = value;
+}
+
+Agent::Agent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose):
+    playSettings(playSettings), mustWait(true), verbose(verbose), isRunning(false), id(0)
+{
+    nnUser = make_shared<NeuralNetAPIUser>(nets);
+}
+
+Agent::Agent(const Agent& other)
+{
+    nnUser = other.nnUser;
+    playSettings = other.playSettings;
+    mustWait = other.mustWait;
+    verbose = other.verbose;
+    isRunning = other.isRunning;
+    id = other.id;
 }
 
 void Agent::set_search_settings(StateObj *pos, SearchLimits *searchLimits, EvalInfo* evalInfo)
@@ -106,6 +121,11 @@ void Agent::perform_action()
         info_bestmove(StateConstants::action_to_uci(evalInfo->bestMove, state->is_chess960()));
     #endif
     isRunning = false;
+}
+
+NeuralNetAPIUser* Agent::get_nn_user() const
+{
+    return nnUser.get();
 }
 
 void run_agent_thread(Agent* agent)

@@ -44,9 +44,9 @@ size_t SearchThread::get_max_depth() const
 SearchThread::SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
     NeuralNetAPIUser(netBatchVector),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
-    newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
-    newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
-    transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
+    newNodes(make_unique<FixedVector<Node*>>(searchSettings->get_local_batch_size())),
+    newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->get_local_batch_size())),
+    transpositionValues(make_unique<FixedVector<float>>(searchSettings->get_local_batch_size()*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
     terminalNodeCache(searchSettings->batchSize*2),

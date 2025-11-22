@@ -81,13 +81,14 @@ public:
 
     unique_ptr<ThreadManager> threadManager;
     bool reachedTablebases;
+
 public:
     MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
               const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
               SearchSettings* searchSettings,
               PlaySettings* playSettings);
     ~MCTSAgent();
-    MCTSAgent(const MCTSAgent&) = delete;
+    MCTSAgent(const MCTSAgent& other);
     MCTSAgent& operator=(MCTSAgent const&) = delete;
 
     void evaluate_board_state() override;

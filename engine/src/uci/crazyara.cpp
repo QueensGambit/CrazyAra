@@ -169,7 +169,7 @@ void CrazyAra::inference(istringstream &is)
     info_string("running", warmupIterations, "warmup iteration...");
     info_string("running", iterations, "iterations...");
     info_string("batch-size:", searchSettings.batchSize);
-    mctsAgent->run_inference(warmupIterations);
+    mctsAgent->get_nn_user()->run_inference(warmupIterations);
     const chrono::steady_clock::time_point start = chrono::steady_clock::now();
     mctsAgent->searchThreads.front()->run_inference(iterations);
     const chrono::steady_clock::time_point end = chrono::steady_clock::now();
@@ -355,8 +355,18 @@ void CrazyAra::activeuci()
 #ifdef USE_RL
 void CrazyAra::selfplay(istringstream &is)
 {
+    const size_t NUMBER_OF_PARALLEL_GAMES = Options["Number_Parallel_Games"];
+    const size_t GLOBAL_BATCH_SIZE = Options["Batch_Size"];
+
     prepare_search_config_structs();
-    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options);
+
+    for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
+        unique_ptr<MCTSAgent> localMCTSAgent = make_unique<MCTSAgent>(*mctsAgent.get()); // Deep Copy
+        localMCTSAgent.set_id(idx);
+        unique_ptr<RawNetAgent> localRawAgent = make_unique<RawNetAgent>(*rawAgent.get());   // Deep Copy
+        localRawAgent.set_id(idx);
+        SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options);
+    }
     size_t numberOfGames;
     is >> numberOfGames;
     selfPlay.go(numberOfGames, variant);
@@ -757,6 +767,7 @@ void CrazyAra::init_search_settings()
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
     searchSettings.useNPSTimemanager = Options["Use_NPS_Time_Manager"];
+    searchSettings.numberParallelGames = Options["Number_Parallel_Games"];
     if (string(Options["SyzygyPath"]).empty() || string(Options["SyzygyPath"]) == "<empty>") {
         searchSettings.useTablebase = false;
     }

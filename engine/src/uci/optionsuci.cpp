@@ -140,6 +140,9 @@ void OptionsUCI::init(OptionsMap &o)
     o["Nodes"]                         << Option(0, 0, 99999999);
 #endif
     o["Nodes_Limit"]                   << Option(0, 0, 999999999);
+#ifdef USE_RL
+    o["Number_Parallel_Games"]         << Option(8, 1, 999);
+#endif
 #ifdef TENSORRT
     o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
 #else

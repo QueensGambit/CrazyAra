@@ -148,10 +148,10 @@ private:
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
-     * @param pngFileName Filename to export
+     * @param pgnFileName Filename to export
      * @param verbose If true, game will also be printed to stdout
      */
-    void write_game_to_pgn(const std::string& pngFileName, bool verbose);
+    void write_game_to_pgn(const std::string& pgnFileName, bool verbose);
 
     /**
      * @brief set_game_result Sets the game result to the gamePGN object

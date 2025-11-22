@@ -54,10 +54,10 @@ MCTSAgentBatch::~MCTSAgentBatch()
 }
 
 string MCTSAgentBatch::get_name() const
-{   
-    string ret = "MCTSBatch-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + nets.front()->get_model_name();
+{
+    string ret = "MCTSBatch-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + nnUser->nets.front()->get_model_name();
     if(splitNodes){
-        ret = "MCTSBatch-Split-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + nets.front()->get_model_name();
+        ret = "MCTSBatch-Split-" + std::to_string(numberOfAgents) + "-" + engineVersion + "-" + nnUser->nets.front()->get_model_name();
     }
     return ret;
 }

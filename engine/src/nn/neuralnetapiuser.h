@@ -36,7 +36,7 @@
  */
 class NeuralNetAPIUser
 {
-protected:
+public:
     vector<NeuralNetAPI*> nets; // vector of net objects
     unsigned int numPhases;
     std::map<GamePhase, int> phaseToNetsIndex;  // maps a GamePhase to the index of the net that should be used

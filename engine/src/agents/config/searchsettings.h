@@ -50,9 +50,9 @@ enum GamePhaseDefinition {
 
 struct SearchSettings
 {
-    uint16_t multiPV;
+    uint_fast16_t multiPV;
     size_t threads;
-    unsigned int batchSize;
+    uint_fast32_t batchSize;
     float dirichletEpsilon;
     float dirichletAlpha;
     // policy temperature which can be applied on the every nodes' policy
@@ -94,8 +94,13 @@ struct SearchSettings
     double virtualOffsetStrenght;
     // Defines the type of game phase definition to be used
     GamePhaseDefinition gamePhaseDefinition;
+    // Number of games to generate in parallel
+    uint_fast32_t numberParallelGames;
     SearchSettings();
 
+    uint_fast32_t get_local_batch_size() const {
+        return batchSize / numberParallelGames;
+    }
 };
 
 #endif // SEARCHSETTINGS_H

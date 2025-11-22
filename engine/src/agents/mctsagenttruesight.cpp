@@ -52,8 +52,8 @@ MCTSAgentTrueSight::~MCTSAgentTrueSight()
 }
 
 string MCTSAgentTrueSight::get_name() const
-{   
-   return "MCTSTrueSight-" + engineVersion + "-" + nets.front()->get_model_name();
+{
+    return "MCTSTrueSight-" + engineVersion + "-" + nnUser->nets.front()->get_model_name();
 }
 
 void MCTSAgentTrueSight::evaluate_board_state()

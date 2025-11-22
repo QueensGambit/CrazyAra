@@ -44,7 +44,7 @@ namespace crazyara {
  * It is assumed that the agent uses a neural network in some way,
  * therefore it inherits from NeuralNetAPIUser.
  */
-class Agent : public NeuralNetAPIUser
+class Agent
 {
 private:
     /**
@@ -71,8 +71,19 @@ protected:
     // boolean which can be triggered by "stop" from std-in to stop the current search
     bool isRunning;
 
+    // the ID is used to schedule multiple agents on a single gpu
+    size_t id;
+
+    // neural net API user, agent with id 0 is the nnUser owner
+    shared_ptr<NeuralNetAPIUser> nnUser;
 public:
     Agent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose);
+
+    /**
+     * @brief Agent Copy constructor
+     * @param other Agent to copy
+     */
+    Agent(const Agent& other);
 
     /**
      * @brief perform_action Selects an action based on the evaluation result
@@ -122,6 +133,17 @@ public:
      */
     void unlock_and_notify();
     void set_must_wait(bool value);
+
+    /**
+     * @brief set_id Sets the ID of the agent. This is used to schedule multiple GPU requests
+     */
+    void set_id(size_t value);
+
+    /**
+     * @brief get_nn_user Getter method for nn user
+     * @return NeuralNetAPIUser* reference
+     */
+    NeuralNetAPIUser* get_nn_user() const;
 };
 }
 
