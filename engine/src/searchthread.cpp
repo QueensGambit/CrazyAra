@@ -41,17 +41,19 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    NeuralNetAPIUser(netBatchVector),
+SearchThread::SearchThread(const size_t agentId, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+    agentId(agentId),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->get_local_batch_size())),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->get_local_batch_size())),
     transpositionValues(make_unique<FixedVector<float>>(searchSettings->get_local_batch_size()*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
-    terminalNodeCache(searchSettings->batchSize*2),
+    terminalNodeCache(searchSettings->get_local_batch_size()*2),
     reachedTablebases(false)
 {
+    nnUser = make_shared<NeuralNetAPIUser>(netBatchVector);
+
     switch (searchSettings->searchPlayerMode) {
     case MODE_SINGLE_PLAYER:
         terminalNodeCache = 1;  // TODO: Check if this is really needed
@@ -161,6 +163,11 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     return currentNode;
 }
 
+unsigned int SearchThread::compute_offset()
+{
+    return agentId * searchSettings->get_local_batch_size() + newNodes->size() * nnUser->nets.front()->get_nb_input_values_total();
+}
+
 Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 {
     description.depth = 0;
@@ -226,9 +233,9 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * nets.front()->get_nb_input_values_total(), nets.front()->get_version());
-                if (numPhases > 1) {
-                    GamePhase currPhase = newState->get_phase(numPhases, searchSettings->gamePhaseDefinition);
+                newState->get_state_planes(true, nnUser->inputPlanes + compute_offset(), nnUser->nets.front()->get_version());
+                if (nnUser->numPhases > 1) {
+                    GamePhase currPhase = newState->get_phase(nnUser->numPhases, searchSettings->gamePhaseDefinition);
                     phaseCountMap[currPhase]++;
                 }
                 // save a reference newly created list in the temporary list for node creation
@@ -304,7 +311,7 @@ void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
     for (auto node: *newNodes) {
-        fill_nn_results(batchIdx, nets.front()->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
+        fill_nn_results(batchIdx, nnUser->nets.front()->is_policy_map(), nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs, node,
                         tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
                         searchSettings, rootNode->is_tablebase());
         ++batchIdx;
@@ -353,7 +360,7 @@ void SearchThread::create_mini_batch()
     size_t numTerminalNodes = 0;
 
     while (!newNodes->is_full() &&
-           collisionTrajectories.size() != searchSettings->batchSize &&
+           collisionTrajectories.size() != searchSettings->get_local_batch_size() &&
            !transpositionValues->is_full() &&
            numTerminalNodes < terminalNodeCache) {
 
@@ -383,7 +390,7 @@ void SearchThread::create_mini_batch()
 
 size_t SearchThread::select_nn_index()
 {
-    if (nets.size() == 1) {
+    if (nnUser->nets.size() == 1) {
         return 0;
     }
     // determine majority class in current batch
@@ -399,7 +406,7 @@ size_t SearchThread::select_nn_index()
     GamePhase majorityPhase = pr->first;
 
     phaseCountMap.clear();
-    return phaseToNetsIndex.at(majorityPhase);
+    return nnUser->phaseToNetsIndex.at(majorityPhase);
 }
 
 void SearchThread::thread_iteration()
@@ -408,8 +415,10 @@ void SearchThread::thread_iteration()
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
 
-        // query the network that corresponds to the majority phase
-        nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
+        if (agentId == 0) {
+            // query the network that corresponds to the majority phase
+            nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+        }
         set_nn_results_to_child_nodes();
     }
 #endif

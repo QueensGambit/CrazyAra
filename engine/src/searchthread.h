@@ -51,12 +51,13 @@ struct NodeDescription
     size_t depth;
 };
 
-class SearchThread : public NeuralNetAPIUser
+class SearchThread
 {
 private:
     Node* rootNode;
     StateObj* rootState;
     unique_ptr<StateObj> newState;
+    shared_ptr<NeuralNetAPIUser> nnUser;
 
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
@@ -82,14 +83,16 @@ private:
     size_t visitsPreSearch;
     uint_fast32_t terminalNodeCache;  // TODO: better add "const" classifier here is possible
     bool reachedTablebases;
+    const size_t agentId;
 public:
     /**
      * @brief SearchThread
+     * @param agentId Agent index which is used to determine the block section in the mini batch
      * @param netBatchVector vector of Network API objects which provide the prediction of the neural network
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(const size_t agentId, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
@@ -203,6 +206,12 @@ private:
      * @return Majority phase index or 0
      */
     size_t select_nn_index();
+
+    /**
+     * @brief compute_offset Helper function that computes the offset for editing the input representation
+     * @return offset
+     */
+    unsigned int compute_offset();
 };
 
 void run_search_thread(SearchThread *t);
