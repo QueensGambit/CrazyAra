@@ -171,7 +171,7 @@ void CrazyAra::inference(istringstream &is)
     info_string("batch-size:", searchSettings.batchSize);
     mctsAgent->get_nn_user()->run_inference(warmupIterations);
     const chrono::steady_clock::time_point start = chrono::steady_clock::now();
-    mctsAgent->searchThreads.front()->nnUser->run_inference(iterations);
+    mctsAgent->searchThreads.front()->run_inference(iterations);
     const chrono::steady_clock::time_point end = chrono::steady_clock::now();
     const size_t elapsedMS = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     info_string("Inference results");

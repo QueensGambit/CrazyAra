@@ -41,8 +41,8 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(const size_t agentId, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    agentId(agentId),
+SearchThread::SearchThread(const size_t agentID, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+    agentID(agentID),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->get_local_batch_size())),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->get_local_batch_size())),
@@ -165,7 +165,7 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
 
 unsigned int SearchThread::compute_offset()
 {
-    return agentId * searchSettings->get_local_batch_size() + newNodes->size() * nnUser->nets.front()->get_nb_input_values_total();
+    return agentID * searchSettings->get_local_batch_size() + newNodes->size() * nnUser->nets.front()->get_nb_input_values_total();
 }
 
 Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
@@ -415,7 +415,7 @@ void SearchThread::thread_iteration()
 #ifndef SEARCH_UCT
     if (newNodes->size() != 0) {
 
-        if (agentId == 0) {
+        if (agentID == 0) {
             // query the network that corresponds to the majority phase
             nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
         }
@@ -481,6 +481,11 @@ ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
         currentNode->set_as_inspected();
     }
     return uint16_t(-1);
+}
+
+void SearchThread::run_inference(uint_fast16_t iterations)
+{
+    nnUser->run_inference(iterations);
 }
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB)

@@ -72,7 +72,7 @@ protected:
     bool isRunning;
 
     // the ID is used to schedule multiple agents on a single gpu
-    size_t id;
+    size_t agentID;
 
     // neural net API user, agent with id 0 is the nnUser owner
     shared_ptr<NeuralNetAPIUser> nnUser;
@@ -137,7 +137,7 @@ public:
     /**
      * @brief set_id Sets the ID of the agent. This is used to schedule multiple GPU requests
      */
-    void set_id(size_t value);
+    void set_agent_id(size_t value);
 
     /**
      * @brief get_nn_user Getter method for nn user

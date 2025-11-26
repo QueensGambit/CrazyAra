@@ -83,16 +83,16 @@ private:
     size_t visitsPreSearch;
     uint_fast32_t terminalNodeCache;  // TODO: better add "const" classifier here is possible
     bool reachedTablebases;
-    const size_t agentId;
+    const size_t agentID;
 public:
     /**
      * @brief SearchThread
-     * @param agentId Agent index which is used to determine the block section in the mini batch
+     * @param agentID Agent index which is used to determine the block section in the mini batch
      * @param netBatchVector vector of Network API objects which provide the prediction of the neural network
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(const size_t agentId, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(const size_t agentID, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
@@ -157,6 +157,12 @@ public:
     size_t get_max_depth() const;
 
     Node* get_starting_node(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
+
+    /**
+     * @brief run_inference Wrapper function for nnUser->run_inference()
+     * @param iterations Number of iterations
+     */
+    void run_inference(uint_fast16_t iterations);
 
 private:
     /**
