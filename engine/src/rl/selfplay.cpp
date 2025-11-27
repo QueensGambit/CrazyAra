@@ -245,13 +245,13 @@ void SelfPlay::generate_game(int variant, bool verbose, std::mutex& selfplayFile
 
     // export all training samples of the generated game
     for (size_t idx = 0; idx < this->exporters.size(); ++idx) {
-        std::lock_guard<std::mutex> lock(file_write_mutex);
+        std::lock_guard<std::mutex> lock(selfplayFileMutex);
         exporters[idx]->export_game_samples(gameResult);
     }
 
     set_game_result_to_pgn(gameResult);
     {
-        std::lock_guard<std::mutex> lock(file_write_mutex);
+        std::lock_guard<std::mutex> lock(selfplayFileMutex);
         write_game_to_pgn(filenamePGNSelfplay, verbose);
     }
     clean_up(gamePGN, mctsAgent);
@@ -377,12 +377,12 @@ void SelfPlay::go(size_t numberOfGames, int variant, std::mutex& selfplayFileMut
 
     if (numberOfGames == 0) {
         while(generatedSamples < max_samples_per_iteration()) {
-            generate_game(variant, true);
+            generate_game(variant, true, selfplayFileMutex);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(variant, true);
+            generate_game(variant, true, selfplayFileMutex);
         }
     }
     export_number_generated_games();

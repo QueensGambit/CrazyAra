@@ -31,7 +31,7 @@
 
 void TrainDataExporter::save_sample(const StateObj* pos, const EvalInfo& eval)
 {
-    if (startIdx+curSampleIdx >= numberSamples) {
+    if (*startIdx+curSampleIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
@@ -133,16 +133,15 @@ void TrainDataExporter::export_game_samples(Result result) {
     save_start_idx();
 }
 
-TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t numberChunks, size_t chunkSize,
-                                     size_t* gameIdx, size_t* startIdx):
+TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t* gameIdx, size_t* startIdx, size_t numberChunks, size_t chunkSize):
     numPhases(numPhases),
     gamePhaseDefinition(gamePhaseDefinition),
+    gameIdx(gameIdx),
+    startIdx(startIdx),
     numberChunks(numberChunks),
     chunkSize(chunkSize),
     numberSamples(numberChunks * chunkSize),
     firstMove(true),
-    gameIdx(gameIdx),
-    startIdx(startIdx),
     curSampleIdx(0)
 {
     // get handle to a File on the filesystem
@@ -164,7 +163,7 @@ size_t TrainDataExporter::get_number_samples() const
 
 bool TrainDataExporter::is_file_full()
 {
-    return startIdx >= numberSamples;
+    return *startIdx >= numberSamples;
 }
 
 void TrainDataExporter::new_game()
@@ -226,7 +225,7 @@ void TrainDataExporter::save_start_idx()
     // gameStartIdx
     // write value to roi
     z5::types::ShapeType offsetStartIdx = { *gameIdx };
-    xt::xarray<int32_t> arrayGameStartIdx({ 1 }, int32_t(startIdx));
+    xt::xarray<int32_t> arrayGameStartIdx({ 1 }, int32_t(*startIdx));
     z5::multiarray::writeSubarray<int32_t>(dStartIndex, arrayGameStartIdx, offsetStartIdx.begin());
 }
 

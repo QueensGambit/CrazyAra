@@ -209,6 +209,12 @@ public:
      * @param curNPS New NPS measurement
      */
     void update_nps_measurement(float curNPS);
+
+    /**
+     * @brief get_num_phases Wrapper method for nnUser->get_num_phases()
+     * @return number of phases
+     */
+    unsigned int get_num_phases();
 private:
     void set_root_node_predictions();
 };

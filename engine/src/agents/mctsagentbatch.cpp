@@ -122,7 +122,7 @@ void MCTSAgentBatch::evaluate_board_state()
         eval.legalMoves = rootNode->get_legal_actions();
 
         vector<size_t> indices;
-        uint16_t maxIdx = min(searchSettings->multiPV, rootNode->get_no_visit_idx());
+        uint_fast16_t maxIdx = min(uint_fast16_t(searchSettings->multiPV), uint_fast16_t(rootNode->get_no_visit_idx()));
 
         if (maxIdx > 1) {
             sort_eval_lists(eval, indices);

@@ -360,16 +360,20 @@ void CrazyAra::selfplay(istringstream &is)
 
     prepare_search_config_structs();
 
+    vector<SelfPlay> selfPlays;
+
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
         unique_ptr<MCTSAgent> localMCTSAgent = make_unique<MCTSAgent>(*mctsAgent.get()); // Deep Copy
-        localMCTSAgent.set_id(idx);
+        localMCTSAgent->set_agent_id(idx);
         unique_ptr<RawNetAgent> localRawAgent = make_unique<RawNetAgent>(*rawAgent.get());   // Deep Copy
-        localRawAgent.set_id(idx);
-        SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options);
+        localRawAgent->set_agent_id(idx);
+        selfPlays.push_back(SelfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options));
     }
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, variant);
+    for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
+        selfPlays[idx].go(numberOfGames, variant, selfplayFileMutex);
+    }
     cout << "readyok" << endl;
 }
 

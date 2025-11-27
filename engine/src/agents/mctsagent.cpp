@@ -234,6 +234,11 @@ void MCTSAgent::update_nps_measurement(float curNPS)
     }
 }
 
+unsigned int MCTSAgent::get_num_phases()
+{
+    return nnUser->get_num_phases();
+}
+
 void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)
 {
     if (!reusedFullTree && rootNode != nullptr && rootNode->is_playout_node()) {
