@@ -108,7 +108,7 @@ void TrainDataExporter::export_game_samples(Result result) {
         return;
     }
 
-    if (startIdx >= numberSamples) {
+    if (*startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
@@ -118,30 +118,31 @@ void TrainDataExporter::export_game_samples(Result result) {
     apply_result_to_plys_to_end();
 
     // write value to roi
-    z5::types::ShapeType offset = { startIdx };
-    z5::types::ShapeType offsetPlanes = { startIdx, 0, 0, 0 };
+    z5::types::ShapeType offset = { *startIdx };
+    z5::types::ShapeType offsetPlanes = { *startIdx, 0, 0, 0 };
     z5::multiarray::writeSubarray<int16_t>(dx, gameX, offsetPlanes.begin());
     z5::multiarray::writeSubarray<int16_t>(dValue, gameValue, offset.begin());
     z5::multiarray::writeSubarray<float>(dbestMoveQ, gameBestMoveQ, offset.begin());
-    z5::types::ShapeType offsetPolicy = { startIdx, 0 };
+    z5::types::ShapeType offsetPolicy = { *startIdx, 0 };
     z5::multiarray::writeSubarray<float>(dPolicy, gamePolicy, offsetPolicy.begin());
     z5::multiarray::writeSubarray<int16_t>(dPlysToEnd, gamePlysToEnd, offset.begin());
     z5::multiarray::writeSubarray<int16_t>(dPhaseVector, gamePhaseVector, offset.begin());
 
-    startIdx += curSampleIdx;
-    gameIdx++;
+    *startIdx += curSampleIdx;
+    *gameIdx++;
     save_start_idx();
 }
 
-TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t numberChunks, size_t chunkSize):
+TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t numberChunks, size_t chunkSize,
+                                     size_t* gameIdx, size_t* startIdx):
     numPhases(numPhases),
     gamePhaseDefinition(gamePhaseDefinition),
     numberChunks(numberChunks),
     chunkSize(chunkSize),
     numberSamples(numberChunks * chunkSize),
     firstMove(true),
-    gameIdx(0),
-    startIdx(0),
+    gameIdx(gameIdx),
+    startIdx(startIdx),
     curSampleIdx(0)
 {
     // get handle to a File on the filesystem
@@ -224,7 +225,7 @@ void TrainDataExporter::save_start_idx()
 {
     // gameStartIdx
     // write value to roi
-    z5::types::ShapeType offsetStartIdx = { gameIdx };
+    z5::types::ShapeType offsetStartIdx = { *gameIdx };
     xt::xarray<int32_t> arrayGameStartIdx({ 1 }, int32_t(startIdx));
     z5::multiarray::writeSubarray<int32_t>(dStartIndex, arrayGameStartIdx, offsetStartIdx.begin());
 }

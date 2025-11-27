@@ -189,7 +189,7 @@ void SelfPlay::reset_search_params(bool isQuickSearch)
     }
 }
 
-void SelfPlay::generate_game(int variant, bool verbose)
+void SelfPlay::generate_game(int variant, bool verbose, std::mutex& selfplayFileMutex)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
 
@@ -245,11 +245,15 @@ void SelfPlay::generate_game(int variant, bool verbose)
 
     // export all training samples of the generated game
     for (size_t idx = 0; idx < this->exporters.size(); ++idx) {
+        std::lock_guard<std::mutex> lock(file_write_mutex);
         exporters[idx]->export_game_samples(gameResult);
     }
 
     set_game_result_to_pgn(gameResult);
-    write_game_to_pgn(filenamePGNSelfplay, verbose);
+    {
+        std::lock_guard<std::mutex> lock(file_write_mutex);
+        write_game_to_pgn(filenamePGNSelfplay, verbose);
+    }
     clean_up(gamePGN, mctsAgent);
 
     // measure time statistics
@@ -364,7 +368,7 @@ size_t SelfPlay::max_samples_per_iteration() const
     return rlSettings->numberChunks * rlSettings->chunkSize;
 }
 
-void SelfPlay::go(size_t numberOfGames, int variant)
+void SelfPlay::go(size_t numberOfGames, int variant, std::mutex& selfplayFileMutex)
 {
     generatedSamples = 0;
     reset_speed_statistics();

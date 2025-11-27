@@ -114,8 +114,9 @@ public:
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
      * @param int variant to generate games for
+     * @param std::mutex& Mutex that coordinates the writing of files and export
      */
-    void go(size_t numberOfGames, int variant);
+    void go(size_t numberOfGames, int variant, std::mutex& selfplayFileMutex);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and
@@ -132,8 +133,9 @@ private:
     /**
      * @brief generate_game Generates a new game in self play mode
      * @param variant Current chess variant
+     * @param selfplayFileMutex Mutex that coordinates writing to files
      */
-    void generate_game(int variant, bool verbose);
+    void generate_game(int variant, bool verbose, std::mutex& selfplayFileMutex);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights

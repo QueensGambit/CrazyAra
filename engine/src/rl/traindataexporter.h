@@ -70,9 +70,9 @@ private:
     bool firstMove;
 
     // current number of games - 1
-    size_t gameIdx;
+    size_t* gameIdx;
     // current sample index to insert
-    size_t startIdx;
+    size_t* startIdx;
     // current sample index of the current game
     size_t curSampleIdx;
 
