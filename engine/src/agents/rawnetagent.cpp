@@ -35,6 +35,12 @@ RawNetAgent::RawNetAgent(const vector<unique_ptr<NeuralNetAPI>>& nets, const Pla
 {
 }
 
+RawNetAgent::RawNetAgent(const RawNetAgent& other):
+Agent(other)
+{
+
+}
+
 size_t RawNetAgent::select_nn_index() {
     if (nnUser->nets.size() == 1) {
         return 0;

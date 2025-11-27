@@ -80,7 +80,7 @@ string load_random_fen(string filepath)
 
 
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
-                   const RLSettings* rlSettings, OptionsMap& options):
+                   const RLSettings* rlSettings, OptionsMap& options, size_t* gameIdx, size_t* startIdx):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchSettings(searchSettings), searchLimits(searchLimits), playSettings(playSettings),
     rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
 {
@@ -112,6 +112,7 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSett
     gamePGN.site = "Darmstadt, GER";
     gamePGN.round = "?";
     gamePGN.is960 = is960;
+
     for (size_t idx = 0; idx < mctsAgent->get_num_phases(); ++idx) {
         string fileNameExport = string("data_") + mctsAgent->get_device_name() + string(".zarr");
         if (mctsAgent->get_num_phases() > 1) {
@@ -120,6 +121,7 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSett
         this->exporters.push_back(make_unique<TrainDataExporter>(fileNameExport,
                                                                  mctsAgent->get_num_phases(),
                                                                  searchSettings->gamePhaseDefinition,
+                                                                 gameIdx, startIdx,
                                                                  rlSettings->numberChunks, rlSettings->chunkSize));
     }
     filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");

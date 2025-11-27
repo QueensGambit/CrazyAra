@@ -362,12 +362,16 @@ void CrazyAra::selfplay(istringstream &is)
 
     vector<SelfPlay> selfPlays;
 
+    // shared resource for all selfplay objects
+    size_t gameIdx = 0;
+    size_t startIdx = 0;
+
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
         unique_ptr<MCTSAgent> localMCTSAgent = make_unique<MCTSAgent>(*mctsAgent.get()); // Deep Copy
         localMCTSAgent->set_agent_id(idx);
         unique_ptr<RawNetAgent> localRawAgent = make_unique<RawNetAgent>(*rawAgent.get());   // Deep Copy
         localRawAgent->set_agent_id(idx);
-        selfPlays.push_back(SelfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options));
+        selfPlays.push_back(SelfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options, &gameIdx, &startIdx));
     }
     size_t numberOfGames;
     is >> numberOfGames;
@@ -380,7 +384,9 @@ void CrazyAra::selfplay(istringstream &is)
 void CrazyAra::arena(istringstream &is)
 {
     prepare_search_config_structs();
-    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options);
+    size_t gameIdx = 0;
+    size_t startIdx = 0;
+    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options, &gameIdx, &startIdx);
     fill_nn_vectors(Options["Model_Directory_Contender"], netSingleContenderVector, netBatchesContenderVector);
     mctsAgentContender = create_new_mcts_agent(netSingleContenderVector, netBatchesContenderVector, &searchSettings);
     size_t numberOfGames;
@@ -434,7 +440,9 @@ void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1
         mcts2 = create_new_mcts_agent(netSingleContenderVector, netBatchesContenderVector, &searchSettings, static_cast<MCTSAgentType>(type));
     }
 
-    SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options);
+    size_t gameIdx = 0;
+    size_t startIdx = 0;
+    SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options, &gameIdx, &startIdx);
     size_t numberOfGames;
     is >> numberOfGames;
     TournamentResult tournamentResult = selfPlay.go_arena(mcts2.get(), numberOfGames, variant);

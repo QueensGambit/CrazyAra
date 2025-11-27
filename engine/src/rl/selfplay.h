@@ -105,10 +105,20 @@ public:
      * @param playSettings Playing setting configuration struct
      * @param RLSettings Additional settings for reinforcement learning usage
      * @param options Object holding all UCI options
+     * @param gameIdx Pointer to the shared game index
+     * @param startIdx Pointer to the shared startIdx
      */
     SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
-             const RLSettings* rlSettings, OptionsMap& options);
+             const RLSettings* rlSettings, OptionsMap& options, size_t* gameIdx, size_t* startIdx);
     ~SelfPlay();
+
+    // avoid copyiing of the SelfplayObject due to owning std::unique_ptr (e.g. TrainDataExporter)
+    SelfPlay(const SelfPlay&) = delete;
+    SelfPlay& operator=(const SelfPlay&) = delete;
+
+    // optional, but recommended: Allow move semantic explicitly
+    SelfPlay(SelfPlay&&) = default;
+    SelfPlay& operator=(SelfPlay&&) = default;
 
     /**
      * @brief go Starts the self play game generation for a given number of games

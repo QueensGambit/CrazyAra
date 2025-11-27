@@ -53,7 +53,7 @@ public:
     const SearchSettings* searchSettings;
 
     RawNetAgent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* playSettings, bool verbose, const SearchSettings* searchSettings);
-    RawNetAgent(const RawNetAgent&) = delete;
+    RawNetAgent(const RawNetAgent& other);
     RawNetAgent& operator=(RawNetAgent const&) = delete;
 
     void evaluate_board_state() override;
