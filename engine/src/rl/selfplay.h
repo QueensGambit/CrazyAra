@@ -210,6 +210,13 @@ private:
      */
     void reset_search_params(bool isQuickSearch);
 };
+
+/**
+ * @brief run_selfplay_thread
+ * @param selfPlay
+ */
+void run_selfplay_thread(Selfplay& selfPlay, size_t numberOfGames, int variant, std::mutex& selfplayFileMutex));
+
 #endif
 
 /**
