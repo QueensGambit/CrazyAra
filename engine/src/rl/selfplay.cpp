@@ -491,4 +491,9 @@ void apply_raw_policy_temp(EvalInfo &eval, float rawPolicyProbTemp)
         apply_temperature(eval.policyProbSmall, temp);
     }
 }
+
+void run_selfplay_thread(Selfplay& selfPlay, size_t numberOfGames, int variant, std::mutex& selfplayFileMutex))
+{
+    selfPlay.go(numberOfGames, variant, selfplayFileMutex);
+}
 #endif
