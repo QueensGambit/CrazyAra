@@ -362,17 +362,19 @@ void CrazyAra::selfplay(istringstream &is)
 
     vector<thread> gameThreads;
     vector<SelfPlay> selfPlays;
+    vector<MCTSAgent> mctsAgents;
+    vector<RawNetAgent> rawAgents;
 
     // shared resource for all selfplay objects
     size_t gameIdx = 0;
     size_t startIdx = 0;
 
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
-        unique_ptr<MCTSAgent> localMCTSAgent = make_unique<MCTSAgent>(*mctsAgent.get()); // Deep Copy
-        localMCTSAgent->set_agent_id(idx);
-        unique_ptr<RawNetAgent> localRawAgent = make_unique<RawNetAgent>(*rawAgent.get());   // Deep Copy
-        localRawAgent->set_agent_id(idx);
-        selfPlays.emplace_back(SelfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options));
+        mctsAgents.emplace_back(MCTSAgent(*mctsAgent.get())); // Deep Copy
+        mctsAgents.back()->set_agent_id(idx);
+        rawAgents.emplace_back(RawNetAgent(*rawAgent.get()));   // Deep Copy
+        rawAgents.back()->set_agent_id(idx);
+        selfPlays.emplace_back(SelfPlay(&rawAgents.back(), &mctsAgents.back(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options, &gameIdx, &startIdx));
     }
     size_t numberOfGames;
     is >> numberOfGames;
