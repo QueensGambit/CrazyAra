@@ -371,15 +371,15 @@ void CrazyAra::selfplay(istringstream &is)
 
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
         mctsAgents.emplace_back(MCTSAgent(*mctsAgent.get())); // Deep Copy
-        mctsAgents.back()->set_agent_id(idx);
+        mctsAgents.back().set_agent_id(idx);
         rawAgents.emplace_back(RawNetAgent(*rawAgent.get()));   // Deep Copy
-        rawAgents.back()->set_agent_id(idx);
+        rawAgents.back().set_agent_id(idx);
         selfPlays.emplace_back(SelfPlay(&rawAgents.back(), &mctsAgents.back(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options, &gameIdx, &startIdx));
     }
     size_t numberOfGames;
     is >> numberOfGames;
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
-        gameThreads.emplace_back(thread(run_selfplay_thread, selfplays[idx], numberOfGames, variant, selfplayFileMutex));
+        gameThreads.emplace_back(thread(run_selfplay_thread, &selfPlays[idx], numberOfGames, variant, &selfplayFileMutex));
     }
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
         gameThreads[idx].join();

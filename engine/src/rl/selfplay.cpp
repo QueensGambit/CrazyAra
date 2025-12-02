@@ -191,7 +191,7 @@ void SelfPlay::reset_search_params(bool isQuickSearch)
     }
 }
 
-void SelfPlay::generate_game(int variant, bool verbose, std::mutex& selfplayFileMutex)
+void SelfPlay::generate_game(int variant, bool verbose, std::mutex* selfplayFileMutex)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
 
@@ -247,13 +247,13 @@ void SelfPlay::generate_game(int variant, bool verbose, std::mutex& selfplayFile
 
     // export all training samples of the generated game
     for (size_t idx = 0; idx < this->exporters.size(); ++idx) {
-        std::lock_guard<std::mutex> lock(selfplayFileMutex);
+        std::lock_guard<std::mutex> lock(*selfplayFileMutex);
         exporters[idx]->export_game_samples(gameResult);
     }
 
     set_game_result_to_pgn(gameResult);
     {
-        std::lock_guard<std::mutex> lock(selfplayFileMutex);
+        std::lock_guard<std::mutex> lock(*selfplayFileMutex);
         write_game_to_pgn(filenamePGNSelfplay, verbose);
     }
     clean_up(gamePGN, mctsAgent);
@@ -370,7 +370,7 @@ size_t SelfPlay::max_samples_per_iteration() const
     return rlSettings->numberChunks * rlSettings->chunkSize;
 }
 
-void SelfPlay::go(size_t numberOfGames, int variant, std::mutex& selfplayFileMutex)
+void SelfPlay::go(size_t numberOfGames, int variant, std::mutex* selfplayFileMutex)
 {
     generatedSamples = 0;
     reset_speed_statistics();
@@ -492,8 +492,8 @@ void apply_raw_policy_temp(EvalInfo &eval, float rawPolicyProbTemp)
     }
 }
 
-void run_selfplay_thread(Selfplay& selfPlay, size_t numberOfGames, int variant, std::mutex& selfplayFileMutex))
+void run_selfplay_thread(SelfPlay* selfPlay, size_t numberOfGames, int variant, std::mutex* selfplayFileMutex)
 {
-    selfPlay.go(numberOfGames, variant, selfplayFileMutex);
+    selfPlay->go(numberOfGames, variant, selfplayFileMutex);
 }
 #endif
