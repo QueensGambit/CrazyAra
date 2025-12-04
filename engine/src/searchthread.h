@@ -84,6 +84,13 @@ private:
     uint_fast32_t terminalNodeCache;  // TODO: better add "const" classifier here is possible
     bool reachedTablebases;
     const size_t agentID;
+
+    // batchCounter that coordinates all search threads
+    size_t* batchCounter;
+    // mutex that protects the batchCounter access
+    mutex* batchMutex;
+    // condition variable for every except one to wait
+    std::condition_variable batchCondition;
 public:
     /**
      * @brief SearchThread
