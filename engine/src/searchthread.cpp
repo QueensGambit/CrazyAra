@@ -41,8 +41,8 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(const size_t agentID, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    agentID(agentID),
+SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+    agentID(agentID), nnUser(nnUser),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->get_local_batch_size())),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->get_local_batch_size())),
@@ -52,8 +52,6 @@ SearchThread::SearchThread(const size_t agentID, const vector<unique_ptr<NeuralN
     terminalNodeCache(searchSettings->get_local_batch_size()*2),
     reachedTablebases(false)
 {
-    nnUser = make_shared<NeuralNetAPIUser>(netBatchVector);
-
     switch (searchSettings->searchPlayerMode) {
     case MODE_SINGLE_PLAYER:
         terminalNodeCache = 1;  // TODO: Check if this is really needed
@@ -494,6 +492,11 @@ ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
 void SearchThread::run_inference(uint_fast16_t iterations)
 {
     nnUser->run_inference(iterations);
+}
+
+shared_ptr<NeuralNetAPIUser> SearchThread::get_nn_user() const
+{
+    return nnUser;
 }
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB)

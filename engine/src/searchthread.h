@@ -95,11 +95,11 @@ public:
     /**
      * @brief SearchThread
      * @param agentID Agent index which is used to determine the block section in the mini batch
-     * @param netBatchVector vector of Network API objects which provide the prediction of the neural network
+     * @param NeuralNetAPIUser Neural network API user object that may store multiple phase networks
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
      */
-    SearchThread(const size_t agentID, const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
@@ -170,6 +170,8 @@ public:
      * @param iterations Number of iterations
      */
     void run_inference(uint_fast16_t iterations);
+
+    shared_ptr<NeuralNetAPIUser> get_nn_user() const;
 
 private:
     /**
