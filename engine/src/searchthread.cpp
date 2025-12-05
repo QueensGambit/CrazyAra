@@ -413,12 +413,20 @@ void SearchThread::thread_iteration()
 {
     create_mini_batch();
 #ifndef SEARCH_UCT
-    if (newNodes->size() != 0) {
-
-        if (agentID == 0) {
+    {
+        std::unique_lock<std::mutex> lock(batchMutex);
+        ++*batchCounter;
+        if (*batchCounter == searchSettings->numberParallelGames) {
             // query the network that corresponds to the majority phase
             nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+            *batchCounter = 0;
+            batchCondition.notify_all();
         }
+        else {
+            batchCondition.wait(lock, [this] {});
+        }
+    }
+    if (newNodes->size() != 0) {
         set_nn_results_to_child_nodes();
     }
 #endif
