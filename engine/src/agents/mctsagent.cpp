@@ -72,7 +72,7 @@ MCTSAgent::MCTSAgent(const MCTSAgent& other):
     this->searchSettings = other.searchSettings;
     this->playSettings = other.playSettings;
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
-        other.searchThreads.emplace_back(new SearchThread(agentID, searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex));
+        this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex));
     }
 
 }

@@ -412,7 +412,7 @@ void SearchThread::thread_iteration()
     create_mini_batch();
 #ifndef SEARCH_UCT
     {
-        std::unique_lock<std::mutex> lock(batchMutex);
+        std::unique_lock<std::mutex> lock(*batchMutex);
         ++*batchCounter;
         if (*batchCounter == searchSettings->numberParallelGames) {
             // query the network that corresponds to the majority phase
@@ -421,7 +421,7 @@ void SearchThread::thread_iteration()
             batchCondition.notify_all();
         }
         else {
-            batchCondition.wait(lock, [this] {});
+            batchCondition.wait(lock);
         }
     }
     if (newNodes->size() != 0) {

@@ -28,13 +28,14 @@
 #ifndef SEARCHTHREAD_H
 #define SEARCHTHREAD_H
 
+#include <mutex>
+#include <condition_variable>
 #include "node.h"
 #include "constants.h"
 #include "neuralnetapi.h"
 #include "config/searchlimits.h"
 #include "util/fixedvector.h"
 #include "nn/neuralnetapiuser.h"
-
 
 enum NodeBackup : uint8_t {
     NODE_COLLISION,
