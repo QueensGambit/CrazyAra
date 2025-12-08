@@ -83,9 +83,9 @@ public:
     bool reachedTablebases;
 
     // batchCounter that coordinates all search threads
-    vector<size_t> batchCounters;
+    vector<shared_ptr<size_t>> batchCounters;
     // mutex that protects the batchCounter access
-    vector<unique_ptr<mutex>> batchMutexes;
+    vector<shared_ptr<mutex>> batchMutexes;
 public:
     MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
               const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,

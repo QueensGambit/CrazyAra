@@ -53,9 +53,9 @@ MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, co
 
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
         shared_ptr<NeuralNetAPIUser> nnUserThread = make_shared<NeuralNetAPIUser>(netBatchesVector[idx]);
-        batchCounters.emplace_back(0);
+        batchCounters.emplace_back(make_shared<size_t>(0));
         batchMutexes.emplace_back();
-        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex, &batchCounters[idx], batchMutexes[idx].get()));
+        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex, batchCounters[idx].get(), batchMutexes[idx].get()));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
@@ -74,8 +74,10 @@ MCTSAgent::MCTSAgent(const MCTSAgent& other):
     this->mapWithMutex.hashTable.reserve(1e6);
     this->searchSettings = other.searchSettings;
     this->playSettings = other.playSettings;
+    this->batchCounters = other.batchCounters;
+    this->batchMutexes = other.batchMutexes;
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
-        this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, &batchCounters[idx], batchMutexes[idx].get()));
+        this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, other.batchCounters[idx].get(), other.batchMutexes[idx].get()));
     }
 }
 
