@@ -286,7 +286,7 @@ bool MCTSAgent::is_policy_map()
 
 string MCTSAgent::get_name() const
 {
-    return engineName + "-" + engineVersion + "-" + nnUser->nets.front()->get_model_name();
+    return engineName + "-" + engineVersion + "-" + nnUser->nets.front()->get_model_name() + "-" + to_string(agentID);
 }
 
 void MCTSAgent::update_stats()
