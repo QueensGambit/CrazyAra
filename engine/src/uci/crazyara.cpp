@@ -356,7 +356,6 @@ void CrazyAra::activeuci()
 void CrazyAra::selfplay(istringstream &is)
 {
     const size_t NUMBER_OF_PARALLEL_GAMES = Options["Number_Parallel_Games"];
-    const size_t GLOBAL_BATCH_SIZE = Options["Batch_Size"];
 
     prepare_search_config_structs();
 

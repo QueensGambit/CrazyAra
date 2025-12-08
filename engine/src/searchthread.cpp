@@ -407,10 +407,14 @@ size_t SearchThread::select_nn_index()
     return nnUser->phaseToNetsIndex.at(majorityPhase);
 }
 
-void SearchThread::thread_iteration()
+void SearchThread::handle_fwd_pass()
 {
-    create_mini_batch();
-#ifndef SEARCH_UCT
+    if (searchSettings->numberParallelGames == 1) {
+        if (newNodes->size() != 0) {
+            nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+        }
+        return;
+    }
     {
         std::unique_lock<std::mutex> lock(*batchMutex);
         ++*batchCounter;
@@ -424,6 +428,13 @@ void SearchThread::thread_iteration()
             batchCondition.wait(lock);
         }
     }
+}
+
+void SearchThread::thread_iteration()
+{
+    create_mini_batch();
+#ifndef SEARCH_UCT
+    handle_fwd_pass();
     if (newNodes->size() != 0) {
         set_nn_results_to_child_nodes();
     }

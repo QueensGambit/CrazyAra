@@ -175,6 +175,12 @@ public:
     shared_ptr<NeuralNetAPIUser> get_nn_user() const;
 
 private:
+
+    /**
+     * @brief handle_fwd_pass Handles the forward pass for neural network prediction
+     */
+    void handle_fwd_pass();
+
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
      */
