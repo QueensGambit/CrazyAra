@@ -53,7 +53,9 @@ MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, co
 
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
         shared_ptr<NeuralNetAPIUser> nnUserThread = make_shared<NeuralNetAPIUser>(netBatchesVector[idx]);
-        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex));
+        batchCounters.emplace_back(0);
+        batchMutexes.emplace_back();
+        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex, &batchCounters[idx], batchMutexes[idx].get()));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
@@ -69,12 +71,12 @@ MCTSAgent::~MCTSAgent()
 MCTSAgent::MCTSAgent(const MCTSAgent& other):
     Agent(other)
 {
+    this->mapWithMutex.hashTable.reserve(1e6);
     this->searchSettings = other.searchSettings;
     this->playSettings = other.playSettings;
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
-        this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex));
+        this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, &batchCounters[idx], batchMutexes[idx].get()));
     }
-
 }
 
 Node* MCTSAgent::get_opponents_next_root() const

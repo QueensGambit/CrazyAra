@@ -41,7 +41,7 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
+SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, mutex* batchMutex):
     agentID(agentID), nnUser(nnUser),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->get_local_batch_size())),
@@ -50,7 +50,9 @@ SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUs
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
     terminalNodeCache(searchSettings->get_local_batch_size()*2),
-    reachedTablebases(false)
+    reachedTablebases(false),
+    batchCounter(batchCounter),
+    batchMutex(batchMutex)
 {
     switch (searchSettings->searchPlayerMode) {
     case MODE_SINGLE_PLAYER:

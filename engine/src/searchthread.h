@@ -99,8 +99,10 @@ public:
      * @param NeuralNetAPIUser Neural network API user object that may store multiple phase networks
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
+     * @param batchCounter BatchCounter that coordinates all search threads
+     * @param batchMutex mutex that protects the batchCounter access
      */
-    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, mutex* batchMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
