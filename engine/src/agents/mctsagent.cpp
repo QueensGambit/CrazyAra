@@ -79,6 +79,7 @@ MCTSAgent::MCTSAgent(const MCTSAgent& other):
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
         this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, other.batchCounters[idx].get(), other.batchMutexes[idx].get()));
     }
+    timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
 }
 
 Node* MCTSAgent::get_opponents_next_root() const
