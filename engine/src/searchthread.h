@@ -102,7 +102,7 @@ public:
      * @param batchCounter BatchCounter that coordinates all search threads
      * @param batchMutex mutex that protects the batchCounter access
      */
-    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, mutex* batchMutex);
+    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, recursive_mutex* batchMutex);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
