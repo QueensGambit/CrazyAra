@@ -83,7 +83,7 @@ private:
     size_t visitsPreSearch;
     uint_fast32_t terminalNodeCache;  // TODO: better add "const" classifier here is possible
     bool reachedTablebases;
-    const size_t agentID;
+    size_t agentID;
 
     ReusableBarrier* batchBarrier;  // non-owning
 public:
@@ -171,6 +171,7 @@ public:
 
     shared_ptr<NeuralNetAPIUser> get_nn_user() const;
 
+    void set_agent_id(size_t value);
 private:
 
     /**

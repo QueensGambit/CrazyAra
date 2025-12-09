@@ -74,6 +74,7 @@ MCTSAgent::MCTSAgent(const MCTSAgent& other):
     this->searchSettings = other.searchSettings;
     this->playSettings = other.playSettings;
     this->batchBarriers = other.batchBarriers;
+    this->agentID = other.agentID;
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
         this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, other.batchBarriers[idx].get()));
     }
@@ -245,6 +246,14 @@ void MCTSAgent::update_nps_measurement(float curNPS)
 unsigned int MCTSAgent::get_num_phases()
 {
     return nnUser->get_num_phases();
+}
+
+void MCTSAgent::set_agent_id(size_t value)
+{
+    agentID = value;
+    for (auto searchThread : searchThreads) {
+        searchThread->set_agent_id(value);
+    }
 }
 
 void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)

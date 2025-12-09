@@ -517,6 +517,11 @@ shared_ptr<NeuralNetAPIUser> SearchThread::get_nn_user() const
     return nnUser;
 }
 
+void SearchThread::set_agent_id(size_t value)
+{
+    agentID = value;
+}
+
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB)
 {
 #ifdef MCTS_TB_SUPPORT

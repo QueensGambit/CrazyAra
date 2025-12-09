@@ -216,6 +216,9 @@ public:
      * @return number of phases
      */
     unsigned int get_num_phases();
+
+    void set_agent_id(size_t value);
+
 private:
     void set_root_node_predictions();
 };
