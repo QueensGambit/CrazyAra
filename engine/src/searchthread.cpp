@@ -428,9 +428,9 @@ void SearchThread::handle_fwd_pass()
         }
         return;
     }
+    cout << "*batchCounter: " << *batchCounter << endl;
     std::unique_lock<std::mutex> lock(*batchMutex);
     ++*batchCounter;
-    cout << "*batchCounter: " << *batchCounter << endl;
     if (*batchCounter == searchSettings->numberParallelGames) {
         // query the network that corresponds to the majority phase
         nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
