@@ -428,7 +428,7 @@ void SearchThread::handle_fwd_pass()
         return;
     }
     {
-        std::unique_lock<std::mutex> lock(*batchMutex);
+        std::unique_lock<std::recursive_mutex> lock(*batchMutex);
         ++*batchCounter;
         cout << "*batchCounter: " << *batchCounter << endl;
         if (*batchCounter == searchSettings->numberParallelGames) {
