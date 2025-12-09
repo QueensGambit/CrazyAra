@@ -89,7 +89,7 @@ private:
     // batchCounter that coordinates all search threads
     size_t* batchCounter;
     // mutex that protects the batchCounter access
-    mutex* batchMutex;
+    recursive_mutex* batchMutex;
     // condition variable for every except one to wait
     std::condition_variable batchCondition;
 public:
