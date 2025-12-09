@@ -201,7 +201,9 @@ void SelfPlay::generate_game(int variant, bool verbose, std::mutex* selfplayFile
     srand(unsigned(int(time(nullptr))));
     // load position from file if epd filepath was set
     string startingFen = load_random_fen(rlSettings->epdFilePath);
+    selfplayFileMutex->lock();
     unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature, startingFen);
+    selfplayFileMutex->unlock();
     EvalInfo evalInfo;
     Result gameResult;
     for (size_t idx = 0; idx < this->exporters.size(); ++idx) {

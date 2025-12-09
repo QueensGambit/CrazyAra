@@ -165,7 +165,7 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
 
 unsigned int SearchThread::compute_offset()
 {
-    return agentID * searchSettings->get_local_batch_size() + newNodes->size() * nnUser->nets.front()->get_nb_input_values_total();
+    return agentID * searchSettings->get_local_batch_size() * nnUser->nets.front()->get_nb_input_values_total() + newNodes->size() * nnUser->nets.front()->get_nb_input_values_total();
 }
 
 Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
@@ -310,8 +310,18 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
 void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
+    size_t policyOffset;
+    if (nnUser->nets.front()->is_policy_map()) {
+        policyOffset = agentID * searchSettings->get_local_batch_size() * StateConstants::NB_LABELS_POLICY_MAP();
+    }
+    else {
+        policyOffset = agentID * searchSettings->get_local_batch_size() * StateConstants::NB_LABELS();
+    }
+
     for (auto node: *newNodes) {
-        fill_nn_results(batchIdx, nnUser->nets.front()->is_policy_map(), nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs, node,
+        fill_nn_results(batchIdx, nnUser->nets.front()->is_policy_map(), nnUser->valueOutputs + agentID * searchSettings->get_local_batch_size(),
+                        nnUser->probOutputs + policyOffset,
+                        nnUser->auxiliaryOutputs + agentID * searchSettings->get_local_batch_size() * StateConstants::NB_AUXILIARY_OUTPUTS(), node,
                         tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
                         searchSettings, rootNode->is_tablebase());
         ++batchIdx;
