@@ -164,7 +164,7 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
 
 unsigned int SearchThread::compute_offset()
 {
-    return agentID * searchSettings->get_local_batch_size() * nnUser->nets.front()->get_nb_input_values_total() + newNodes->size() * nnUser->nets.front()->get_nb_input_values_total();
+    return (agentID * searchSettings->get_local_batch_size() + newNodes->size()) * nnUser->nets.front()->get_nb_input_values_total();
 }
 
 Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
