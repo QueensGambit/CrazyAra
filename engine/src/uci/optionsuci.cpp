@@ -67,7 +67,7 @@ void OptionsUCI::init(OptionsMap &o)
 {
     o["Allow_Early_Stopping"]          << Option(true);
 #ifdef USE_RL
-    o["Batch_Size"]                    << Option(8, 1, 8192);
+    o["Batch_Size"]                    << Option(64, 1, 8192);
 #else
 #ifdef OPENVINO
     o["Batch_Size"]                    << Option(16, 1, 8192);
