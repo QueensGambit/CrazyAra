@@ -28,8 +28,7 @@
 #ifndef SEARCHTHREAD_H
 #define SEARCHTHREAD_H
 
-#include <mutex>
-#include <condition_variable>
+#include <barrier>
 #include "node.h"
 #include "constants.h"
 #include "neuralnetapi.h"
@@ -92,6 +91,8 @@ private:
     mutex* batchMutex;
     // condition variable for every except one to wait
     condition_variable* batchCondition;
+
+    barrier<>* batchBarrier;  // non-owning
 public:
     /**
      * @brief SearchThread
@@ -103,7 +104,7 @@ public:
      * @param batchMutex mutex that protects the batchCounter access
      * @param batchCondition Condition variable which manages waiting and running
      */
-    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, mutex* batchMutex, condition_variable* batchCondition);
+    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, mutex* batchMutex, condition_variable* batchCondition, barrier<>* batchBarrier);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

@@ -88,6 +88,8 @@ public:
     vector<shared_ptr<mutex>> batchMutexes;
     // condition variable that manages waiting
     vector<shared_ptr<condition_variable>> batchConditions;
+
+    vector<shared_ptr<barrier<>>> batchBarriers;
 public:
     MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
               const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
