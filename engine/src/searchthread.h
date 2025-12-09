@@ -89,9 +89,9 @@ private:
     // batchCounter that coordinates all search threads
     size_t* batchCounter;
     // mutex that protects the batchCounter access
-    recursive_mutex* batchMutex;
+    mutex* batchMutex;
     // condition variable for every except one to wait
-    std::condition_variable batchCondition;
+    condition_variable* batchCondition;
 public:
     /**
      * @brief SearchThread
@@ -101,8 +101,9 @@ public:
      * @param MapWithMutex Handle to the hash table
      * @param batchCounter BatchCounter that coordinates all search threads
      * @param batchMutex mutex that protects the batchCounter access
+     * @param batchCondition Condition variable which manages waiting and running
      */
-    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, recursive_mutex* batchMutex);
+    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, mutex* batchMutex, condition_variable* batchCondition);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.

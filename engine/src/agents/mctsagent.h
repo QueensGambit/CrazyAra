@@ -85,7 +85,9 @@ public:
     // batchCounter that coordinates all search threads
     vector<shared_ptr<size_t>> batchCounters;
     // mutex that protects the batchCounter access
-    vector<shared_ptr<recursive_mutex>> batchMutexes;
+    vector<shared_ptr<mutex>> batchMutexes;
+    // condition variable that manages waiting
+    vector<shared_ptr<condition_variable>> batchConditions;
 public:
     MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
               const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
