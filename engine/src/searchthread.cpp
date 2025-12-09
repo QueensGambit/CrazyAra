@@ -41,7 +41,7 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, mutex* batchMutex, condition_variable* batchCondition, ReusableBarrier* batchBarrier):
+SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier):
     agentID(agentID), nnUser(nnUser),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->get_local_batch_size())),
@@ -51,9 +51,6 @@ SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUs
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
     terminalNodeCache(searchSettings->get_local_batch_size()*2),
     reachedTablebases(false),
-    batchCounter(batchCounter),
-    batchMutex(batchMutex),
-    batchCondition(batchCondition),
     batchBarrier(batchBarrier)
 {
     switch (searchSettings->searchPlayerMode) {
@@ -429,23 +426,14 @@ void SearchThread::handle_fwd_pass()
         }
         return;
     }
-    //cout << "*batchCounter: " << *batchCounter << endl;
-    //std::unique_lock<std::mutex> lock(*batchMutex);
-    //*batchCounter = *batchCounter + 1;
     // Wait for all threads to arrive, one thread performs inference
     batchBarrier->arrive_and_wait();
 
     // Only thread 0 runs inference
     if (agentID == 0) {
-    //if (*batchCounter == searchSettings->numberParallelGames) {
         // query the network that corresponds to the majority phase
         nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
-        //*batchCounter = 0;
-        //batchCondition->notify_all();
     }
-    //else {
-    //    batchCondition->wait(lock);
-    //}
     batchBarrier->arrive_and_wait();
 }
 

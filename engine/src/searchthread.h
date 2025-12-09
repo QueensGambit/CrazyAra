@@ -85,13 +85,6 @@ private:
     bool reachedTablebases;
     const size_t agentID;
 
-    // batchCounter that coordinates all search threads
-    size_t* batchCounter;
-    // mutex that protects the batchCounter access
-    mutex* batchMutex;
-    // condition variable for every except one to wait
-    condition_variable* batchCondition;
-
     ReusableBarrier* batchBarrier;  // non-owning
 public:
     /**
@@ -104,7 +97,7 @@ public:
      * @param batchMutex mutex that protects the batchCounter access
      * @param batchCondition Condition variable which manages waiting and running
      */
-    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, size_t* batchCounter, mutex* batchMutex, condition_variable* batchCondition, ReusableBarrier* batchBarrier);
+    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
