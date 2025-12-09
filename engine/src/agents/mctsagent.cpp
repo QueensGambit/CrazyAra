@@ -56,8 +56,8 @@ MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, co
         batchCounters.emplace_back(make_shared<size_t>(0));
         batchMutexes.emplace_back();
         batchConditions.emplace_back();
-        batchBarriers.emplace_back(make_shared<barrier<>>(searchSettings->numberParallelGames));
-        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex, batchCounters[idx].get(), batchMutexes[idx].get(), batchConditions[idx].get()));
+        batchBarriers.emplace_back(make_shared<ReusableBarrier>(searchSettings->numberParallelGames));
+        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex, batchCounters[idx].get(), batchMutexes[idx].get(), batchConditions[idx].get(), batchBarriers[idx].get()));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
