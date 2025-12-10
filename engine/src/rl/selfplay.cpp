@@ -474,7 +474,7 @@ unique_ptr<StateObj> init_starting_state_from_fixed_move(GamePGN &gamePGN, int v
 size_t clip_ply(size_t ply, size_t maxPly)
 {
     if (ply > maxPly) {
-        return size_t(rand()) % maxPly;
+        return min(ply, maxPly);
     }
     return ply;
 }
