@@ -457,7 +457,7 @@ void SearchThread::handle_fwd_pass()
            result.valueOutputs.size() * sizeof(float));
     memcpy(nnUser->probOutputs + policyOffset,
            result.probOutputs.data(),
-           policySize * result.valueOutputs.size() * sizeof(float));
+           result.probOutputs.size() * sizeof(float));
     if (result.auxiliaryOutputs.size() != 0) {
         memcpy(nnUser->auxiliaryOutputs,
                result.auxiliaryOutputs.data(),
