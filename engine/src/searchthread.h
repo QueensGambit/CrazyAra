@@ -175,6 +175,7 @@ public:
     shared_ptr<NeuralNetAPIUser> get_nn_user() const;
 
     void set_agent_id(size_t value);
+    
 private:
 
     /**
@@ -263,5 +264,7 @@ inline void random_playout(Node* currentNode, ChildIdx& childIdx);
  * @return random depth while the probability of choosing higher depths decreases exponetially
  */
 size_t get_random_depth();
+
+void fwd_pass_queue(InferenceQueue* inferenceQueue, NeuralNetAPIUser* nnUser, size_t batchCount, size_t agentID, const SearchSettings* searchSettings);
 
 #endif // SEARCHTHREAD_H

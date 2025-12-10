@@ -89,6 +89,7 @@ MCTSAgent::MCTSAgent(const MCTSAgent& other):
     this->playSettings = other.playSettings;
     this->batchBarriers = other.batchBarriers;
     this->agentID = other.agentID;
+    this->inferenceQueue = other.inferenceQueue;
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
         this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, other.batchBarriers[idx].get(), other.inferenceQueue.get()));
     }
@@ -201,7 +202,13 @@ void MCTSAgent::set_root_node_predictions()
         GamePhase currentPhase = state->get_phase(nnUser->numPhases, searchSettings->gamePhaseDefinition);
         netIdx = nnUser->phaseToNetsIndex.at(currentPhase);
     }
-    nnUser->nets[netIdx]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+    if (searchSettings->numberParallelGames == 1) {
+        nnUser->nets[netIdx]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+    }
+    else {
+        fwd_pass_queue(inferenceQueue.get(), nnUser.get(), 1, agentID, searchSettings);
+    }
+
     size_t tbHits = 0;
     fill_nn_results(0, nnUser->nets[netIdx]->is_policy_map(), nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs, rootNode.get(), tbHits,
                     rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());

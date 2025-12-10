@@ -419,21 +419,12 @@ size_t SearchThread::select_nn_index()
     return nnUser->phaseToNetsIndex.at(majorityPhase);
 }
 
-void SearchThread::handle_fwd_pass()
+void fwd_pass_queue(InferenceQueue* inferenceQueue, NeuralNetAPIUser* nnUser, size_t batchCount, size_t agentID, const SearchSettings* searchSettings)
 {
-    if (newNodes->size() == 0) {
-        return;
-    }
-    if (searchSettings->numberParallelGames == 1) {
-        nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
-        return;
-    }
-
-    // allocate a small local input buffer of size inputSize (float vector)
     InferenceRequest request;
     request.inputPlanes = nnUser->inputPlanes + agentID * searchSettings->get_local_batch_size() * StateConstants::NB_VALUES_TOTAL();
     request.inputSize = StateConstants::NB_VALUES_TOTAL();
-    request.batchCount  = newNodes->size();
+    request.batchCount  = batchCount;
     request.agentID = agentID;
 
     auto future = request.promise.get_future();
@@ -463,6 +454,20 @@ void SearchThread::handle_fwd_pass()
                result.auxiliaryOutputs.data(),
                StateConstants::NB_AUXILIARY_OUTPUTS() * result.valueOutputs.size() * sizeof(float));
     }
+}
+
+void SearchThread::handle_fwd_pass()
+{
+    if (newNodes->size() == 0) {
+        return;
+    }
+    if (searchSettings->numberParallelGames == 1) {
+        nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+        return;
+    }
+
+    // allocate a small local input buffer of size inputSize (float vector)
+    fwd_pass_queue(inferenceQueue, nnUser.get(), newNodes->size(), agentID, searchSettings);
 
     /*
     // Wait for all threads to arrive, one thread performs inference
