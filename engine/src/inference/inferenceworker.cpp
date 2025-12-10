@@ -64,41 +64,41 @@ void InferenceWorker::stop() {
 }
 
 void InferenceWorker::run() {
-    std::vector<InferenceRequest> batch;
-    batch.reserve(maxBatchSize);
+    std::vector<InferenceRequest> batches;
+    batches.reserve(maxBatchSize);
 
     while (running) {
-        batch.clear();
+        batches.clear();
 
         InferenceRequest firstReq;
         // block until we get the first job or termination
         if (!queue->pop_blocking(firstReq)) {
             break; // terminated
         }
-        batch.push_back(std::move(firstReq));
+        batches.push_back(std::move(firstReq));
 
         // Gather more requests up to maxBatchSize with short non-blocking loop
         InferenceRequest req;
         auto start = std::chrono::steady_clock::now();
-        while (batch.size() < maxBatchSize) {
+        while (batches.size() < maxBatchSize) {
             // try immediate pop first
             if (queue->try_pop(req)) {
-                batch.push_back(std::move(req));
+                batches.push_back(std::move(req));
                 continue;
             }
             // otherwise wait up to gatherTimeout to accumulate more
             if (queue->pop_with_timeout(req, gatherTimeout)) {
-                batch.push_back(std::move(req));
+                batches.push_back(std::move(req));
                 continue;
             }
             break; // no more requests within timeout
         }
 
         // Determine per-request inputSize consistency
-        size_t inputSize = batch[0].inputSize;
+        size_t inputSize = batches[0].inputSize;
         bool allSame = true;
-        for (size_t i = 1; i < batch.size(); ++i) {
-            if (batch[i].inputSize != inputSize) {
+        for (size_t i = 1; i < batches.size(); ++i) {
+            if (batches[i].inputSize != inputSize) {
                 allSame = false;
                 break;
             }
@@ -109,7 +109,7 @@ void InferenceWorker::run() {
 
         // Build contiguous host input buffer: batch_count * inputSize
         size_t writeIndex = 0;
-        for (InferenceRequest& request : batch) {
+        for (InferenceRequest& request : batches) {
             for (size_t i = 0; i < request.batchCount; i++) {
                 memcpy(nnUser->inputPlanes + (writeIndex + i) * request.inputSize,
                        request.inputPlanes + i * request.inputSize,
@@ -125,7 +125,7 @@ void InferenceWorker::run() {
         nnUser->nets[0]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
 
         // -- deliver results to each requester via promise --
-        for (InferenceRequest& request : batch) {
+        for (InferenceRequest& request : batches) {
             InferenceResult res;
             res.valueOutputs.resize(request.batchCount);
             res.probOutputs.resize(request.batchCount * policySize);

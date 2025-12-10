@@ -62,7 +62,13 @@ MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, co
 
     auto nnUser = make_shared<NeuralNetAPIUser>(netBatchesVector[0]);
     size_t maxBatchSize = searchSettings->get_local_batch_size() * searchSettings->numberParallelGames; // or tuned
-    size_t policySize = StateConstants::NB_LABELS();
+    size_t policySize;
+    if (nnUser->nets.front()->is_policy_map()) {
+        policySize = StateConstants::NB_LABELS_POLICY_MAP();
+    }
+    else {
+        policySize = StateConstants::NB_LABELS();
+    }
     size_t auxSize = StateConstants::NB_AUXILIARY_OUTPUTS();
     inferenceWorker = std::make_unique<InferenceWorker>(inferenceQueue, nnUser, maxBatchSize, policySize, auxSize);
     inferenceWorker->start();
