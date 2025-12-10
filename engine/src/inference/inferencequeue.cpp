@@ -62,16 +62,3 @@ bool InferenceQueue::empty() const {
     return queue.empty();
 }
 
-template<typename Rep, typename Period>
-bool InferenceQueue::pop_with_timeout(InferenceRequest &out, std::chrono::duration<Rep, Period> timeout) {
-    std::unique_lock<std::mutex> lock(mutex);
-    if (!conditionVariable.wait_for(lock, timeout, [&]{ return !queue.empty() || terminated; })) {
-        return false; // timeout
-    }
-    if (terminated && queue.empty()) {
-        return false;
-    }
-    out = std::move(queue.front());
-    queue.pop_front();
-    return true;
-}
