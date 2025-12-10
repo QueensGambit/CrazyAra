@@ -50,14 +50,22 @@ MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, co
     reachedTablebases(false)
 {
     mapWithMutex.hashTable.reserve(1e6);
+    inferenceQueue = std::make_shared<InferenceQueue>();
 
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
         shared_ptr<NeuralNetAPIUser> nnUserThread = make_shared<NeuralNetAPIUser>(netBatchesVector[idx]);
         batchBarriers.emplace_back(make_shared<ReusableBarrier>(searchSettings->numberParallelGames));
-        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex, batchBarriers[idx].get()));
+        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex, batchBarriers[idx].get(), inferenceQueue.get()));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
+
+    auto nnUser = make_shared<NeuralNetAPIUser>(netBatchesVector[0]);
+    size_t maxBatchSize = searchSettings->get_local_batch_size() * searchSettings->numberParallelGames; // or tuned
+    size_t policySize = StateConstants::NB_LABELS();
+    size_t auxSize = StateConstants::NB_AUXILIARY_OUTPUTS();
+    inferenceWorker = std::make_unique<InferenceWorker>(inferenceQueue, nnUser, maxBatchSize, policySize, auxSize);
+    inferenceWorker->start();
 }
 
 MCTSAgent::~MCTSAgent()
@@ -76,7 +84,7 @@ MCTSAgent::MCTSAgent(const MCTSAgent& other):
     this->batchBarriers = other.batchBarriers;
     this->agentID = other.agentID;
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
-        this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, other.batchBarriers[idx].get()));
+        this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, other.batchBarriers[idx].get(), other.inferenceQueue.get()));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
 }

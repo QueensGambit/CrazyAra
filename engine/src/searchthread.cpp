@@ -41,7 +41,7 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier):
+SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier, InferenceQueue* inferenceQueue):
     agentID(agentID), nnUser(nnUser),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->get_local_batch_size())),
@@ -51,7 +51,8 @@ SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUs
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
     terminalNodeCache(searchSettings->get_local_batch_size()*2),
     reachedTablebases(false),
-    batchBarrier(batchBarrier)
+    batchBarrier(batchBarrier),
+    inferenceQueue(inferenceQueue)
 {
     switch (searchSettings->searchPlayerMode) {
     case MODE_SINGLE_PLAYER:
@@ -426,6 +427,43 @@ void SearchThread::handle_fwd_pass()
         }
         return;
     }
+
+    // allocate a small local input buffer of size inputSize (float vector)
+    InferenceRequest request;
+    request.inputPlanes = nnUser->inputPlanes;
+    request.inputSize = StateConstants::NB_VALUES_TOTAL();
+    request.batchCount  = newNodes->size();
+    request.agentID = agentID;
+
+    auto future = request.promise.get_future();
+    inferenceQueue->push(std::move(request));
+    // do other CPU work here if possible
+    InferenceResult result = future.get();
+
+    // copy back inference results
+    size_t policyOffset;
+    size_t policySize;
+    if (nnUser->nets.front()->is_policy_map()) {
+        policyOffset = agentID * searchSettings->get_local_batch_size() * StateConstants::NB_LABELS_POLICY_MAP();
+        policySize = StateConstants::NB_LABELS_POLICY_MAP();
+    }
+    else {
+        policyOffset = agentID * searchSettings->get_local_batch_size() * StateConstants::NB_LABELS();
+        policySize = StateConstants::NB_LABELS();
+    }
+    memcpy(nnUser->valueOutputs + agentID * searchSettings->get_local_batch_size(),
+           result.valueOutputs.data(),
+           result.valueOutputs.size() * sizeof(float));
+    memcpy(nnUser->probOutputs + policyOffset,
+           result.probOutputs.data(),
+           policySize * result.valueOutputs.size() * sizeof(float));
+    if (result.auxiliaryOutputs.size() != 0) {
+        memcpy(nnUser->auxiliaryOutputs,
+               result.auxiliaryOutputs.data(),
+               StateConstants::NB_AUXILIARY_OUTPUTS() * result.valueOutputs.size() * sizeof(float));
+    }
+
+    /*
     // Wait for all threads to arrive, one thread performs inference
     batchBarrier->arrive_and_wait();
 
@@ -435,6 +473,7 @@ void SearchThread::handle_fwd_pass()
         nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
     }
     batchBarrier->arrive_and_wait();
+    */
 }
 
 void SearchThread::thread_iteration()

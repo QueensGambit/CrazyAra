@@ -45,6 +45,8 @@
 #include "../manager/timemanager.h"
 #include "../manager/threadmanager.h"
 #include "util/gcthread.h"
+#include "../inference/inferencequeue.h"
+#include "../inference/inferenceworker.h".h"
 
 using namespace crazyara;
 
@@ -83,6 +85,8 @@ public:
     bool reachedTablebases;
 
     vector<shared_ptr<ReusableBarrier>> batchBarriers;
+    shared_ptr<InferenceQueue> inferenceQueue;
+    shared_ptr<InferenceWorker> inferenceWorker;
 public:
     MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
               const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,

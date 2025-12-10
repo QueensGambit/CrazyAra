@@ -35,6 +35,7 @@
 #include "util/fixedvector.h"
 #include "nn/neuralnetapiuser.h"
 #include "util/reusablebarrier.h"
+#include "inference/inferencequeue.h"
 
 enum NodeBackup : uint8_t {
     NODE_COLLISION,
@@ -86,6 +87,7 @@ private:
     size_t agentID;
 
     ReusableBarrier* batchBarrier;  // non-owning
+    InferenceQueue* inferenceQueue;
 public:
     /**
      * @brief SearchThread
@@ -96,8 +98,9 @@ public:
      * @param batchCounter BatchCounter that coordinates all search threads
      * @param batchMutex mutex that protects the batchCounter access
      * @param batchCondition Condition variable which manages waiting and running
+     * @param inferenceQueue Queue that manages inference requests
      */
-    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier);
+    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier, InferenceQueue* inferenceQueue);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
