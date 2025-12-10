@@ -46,7 +46,7 @@
 #include "../manager/threadmanager.h"
 #include "util/gcthread.h"
 #include "../inference/inferencequeue.h"
-#include "../inference/inferenceworker.h".h"
+#include "../inference/inferenceworker.h"
 
 using namespace crazyara;
 
