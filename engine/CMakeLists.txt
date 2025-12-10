@@ -147,6 +147,8 @@ file(GLOB source_files
     "src/agents/util/*.h"
     "src/nn/*.cpp"
     "src/nn/*.h"
+    "src/inference/*.cpp"
+    "src/inference/*.h"
     "src/nn/util/*.cpp"
     "src/nn/util/*.h"
     "src/manager/*.cpp"
