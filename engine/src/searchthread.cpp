@@ -421,16 +421,17 @@ size_t SearchThread::select_nn_index()
 
 void SearchThread::handle_fwd_pass()
 {
+    if (newNodes->size() == 0) {
+        return;
+    }
     if (searchSettings->numberParallelGames == 1) {
-        if (newNodes->size() != 0) {
-            nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
-        }
+        nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
         return;
     }
 
     // allocate a small local input buffer of size inputSize (float vector)
     InferenceRequest request;
-    request.inputPlanes = nnUser->inputPlanes;
+    request.inputPlanes = nnUser->inputPlanes + agentID * searchSettings->get_local_batch_size() * StateConstants::NB_VALUES_TOTAL();
     request.inputSize = StateConstants::NB_VALUES_TOTAL();
     request.batchCount  = newNodes->size();
     request.agentID = agentID;
