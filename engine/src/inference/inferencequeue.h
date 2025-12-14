@@ -44,7 +44,7 @@ struct InferenceResult {
 struct InferenceRequest {
     // The inputPlanes must point to a caller-owned contiguous float buffer of size inputSize
     // The worker will copy from this pointer into the NN global input buffer.
-    const float* inputPlanes; // pointer to input floats
+    std::vector<float> inputData;
     size_t inputSize; // number of floats at inputPlanes
     size_t batchCount;  // number of local batches
 

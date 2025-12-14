@@ -419,41 +419,68 @@ size_t SearchThread::select_nn_index()
     return nnUser->phaseToNetsIndex.at(majorityPhase);
 }
 
-void fwd_pass_queue(InferenceQueue* inferenceQueue, NeuralNetAPIUser* nnUser, size_t batchCount, size_t agentID, const SearchSettings* searchSettings)
+// === PATCHED fwd_pass_queue() ===
+// Fix: InferenceRequest OWNS its input data (no pointer aliasing)
+
+void fwd_pass_queue(InferenceQueue* inferenceQueue,
+                    NeuralNetAPIUser* nnUser,
+                    size_t batchCount,
+                    size_t agentID,
+                    const SearchSettings* searchSettings)
 {
     InferenceRequest request;
-    request.inputPlanes = nnUser->inputPlanes + agentID * searchSettings->get_local_batch_size() * StateConstants::NB_VALUES_TOTAL();
-    request.inputSize = StateConstants::NB_VALUES_TOTAL();
-    request.batchCount  = batchCount;
-    request.agentID = agentID;
 
+    // --- basic metadata ---
+    request.inputSize  = StateConstants::NB_VALUES_TOTAL();
+    request.batchCount = batchCount;
+    request.agentID    = agentID;
+
+    // --- OWNED input buffer ---
+    const size_t localBatchSize = searchSettings->get_local_batch_size();
+    const size_t elems = batchCount * request.inputSize;
+
+    request.inputData.resize(elems);
+
+    const float* src = nnUser->inputPlanes
+        + agentID * localBatchSize * request.inputSize;
+
+    memcpy(request.inputData.data(),
+           src,
+           elems * sizeof(float));
+
+    // --- enqueue & wait synchronously ---
     auto future = request.promise.get_future();
     inferenceQueue->push(std::move(request));
-    // do other CPU work here if possible
+
     InferenceResult result = future.get();
 
-    // copy back inference results
+    // --- copy results back into NN buffers (legacy compatibility) ---
     size_t policySize;
     if (nnUser->nets.front()->is_policy_map()) {
         policySize = StateConstants::NB_LABELS_POLICY_MAP();
-    }
-    else {
+    } else {
         policySize = StateConstants::NB_LABELS();
     }
-    size_t policyOffset = agentID * searchSettings->get_local_batch_size() * policySize;
 
-    memcpy(nnUser->valueOutputs + agentID * searchSettings->get_local_batch_size(),
+    const size_t valueOffset  = agentID * localBatchSize;
+    const size_t policyOffset = agentID * localBatchSize * policySize;
+
+    memcpy(nnUser->valueOutputs + valueOffset,
            result.valueOutputs.data(),
            result.valueOutputs.size() * sizeof(float));
+
     memcpy(nnUser->probOutputs + policyOffset,
            result.probOutputs.data(),
            result.probOutputs.size() * sizeof(float));
-    if (result.auxiliaryOutputs.size() != 0) {
-        memcpy(nnUser->auxiliaryOutputs,
+
+    if (!result.auxiliaryOutputs.empty()) {
+        memcpy(nnUser->auxiliaryOutputs
+                   + agentID * localBatchSize * StateConstants::NB_AUXILIARY_OUTPUTS(),
                result.auxiliaryOutputs.data(),
-               StateConstants::NB_AUXILIARY_OUTPUTS() * result.valueOutputs.size() * sizeof(float));
+               result.auxiliaryOutputs.size() * sizeof(float));
     }
 }
+
 
 void SearchThread::handle_fwd_pass()
 {

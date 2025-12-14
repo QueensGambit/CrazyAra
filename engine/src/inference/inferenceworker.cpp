@@ -112,7 +112,7 @@ void InferenceWorker::run() {
         for (InferenceRequest& request : batches) {
             for (size_t i = 0; i < request.batchCount; i++) {
                 memcpy(nnUser->inputPlanes + (writeIndex + i) * request.inputSize,
-                       request.inputPlanes + i * request.inputSize,
+                       request.inputData.data() + i * request.inputSize,
                        request.inputSize * sizeof(float));
             }
             request.outputOffset = writeIndex;
