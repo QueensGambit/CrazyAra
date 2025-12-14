@@ -79,7 +79,7 @@ private:
     string filenamePGNSelfplay;
     string filenamePGNArena;
     string fileNameGameIdx;
-    size_t gameIdx;
+    size_t* gameIdx;
     float gamesPerMin;
     float samplesPerMin;
     size_t backupNodes;

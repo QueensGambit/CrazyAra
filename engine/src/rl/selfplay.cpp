@@ -82,7 +82,7 @@ string load_random_fen(string filepath)
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
                    const RLSettings* rlSettings, OptionsMap& options, size_t* gameIdx, size_t* startIdx):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchSettings(searchSettings), searchLimits(searchLimits), playSettings(playSettings),
-    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
+    rlSettings(rlSettings), gameIdx(gameIdx), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
 {
     is960 = options["UCI_Chess960"];
     string suffix960 = "";
@@ -265,7 +265,6 @@ void SelfPlay::generate_game(int variant, bool verbose, std::mutex* selfplayFile
         const float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
         speed_statistic_report(elapsedTimeMin, generatedSamples - generatedSamplesBeforeGame);
     }
-    ++gameIdx;
 }
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, int variant, bool verbose, const string& fen)
@@ -339,7 +338,7 @@ void SelfPlay::set_game_result_to_pgn(Result res)
 
 void SelfPlay::reset_speed_statistics()
 {
-    gameIdx = 0;
+    *gameIdx = 0;
     gamesPerMin = 0;
     samplesPerMin = 0;
 }
@@ -347,13 +346,13 @@ void SelfPlay::reset_speed_statistics()
 void SelfPlay::speed_statistic_report(float elapsedTimeMin, size_t generatedSamples)
 {
     // compute running cumulative average
-    gamesPerMin = (gameIdx * gamesPerMin + (1 / elapsedTimeMin)) / (gameIdx + 1);
-    samplesPerMin = (gameIdx * samplesPerMin + (generatedSamples / elapsedTimeMin)) / (gameIdx + 1);
+    gamesPerMin = (*gameIdx * gamesPerMin + (1 / elapsedTimeMin)) / (*gameIdx + 1);
+    samplesPerMin = (*gameIdx * samplesPerMin + (generatedSamples / elapsedTimeMin)) / (*gameIdx + 1);
 
     cout << "    games    |  games/min  | samples/min " << endl
          << "-------------+-------------+-------------" << endl
          << std::setprecision(5)
-         << setw(13) << gameIdx << '|'
+         << setw(13) << *gameIdx << '|'
          << setw(13) << gamesPerMin << '|'
          << setw(13) << samplesPerMin << endl << endl;
 }
@@ -362,7 +361,7 @@ void SelfPlay::export_number_generated_games() const
 {
     ofstream gameIdxFile;
     gameIdxFile.open(fileNameGameIdx);
-    gameIdxFile << gameIdx;
+    gameIdxFile << *gameIdx;
     gameIdxFile.close();
 }
 
@@ -375,7 +374,10 @@ size_t SelfPlay::max_samples_per_iteration() const
 void SelfPlay::go(size_t numberOfGames, int variant, std::mutex* selfplayFileMutex)
 {
     generatedSamples = 0;
-    reset_speed_statistics();
+    {
+        std::lock_guard<std::mutex> lock(*selfplayFileMutex);
+        reset_speed_statistics();
+    }
     gamePGN.white = mctsAgent->get_name();
     gamePGN.black = mctsAgent->get_name();
 

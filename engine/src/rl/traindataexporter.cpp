@@ -129,7 +129,7 @@ void TrainDataExporter::export_game_samples(Result result) {
     z5::multiarray::writeSubarray<int16_t>(dPhaseVector, gamePhaseVector, offset.begin());
 
     *startIdx += curSampleIdx;
-    *gameIdx++;
+    *gameIdx = *gameIdx + 1;
     save_start_idx();
 }
 
