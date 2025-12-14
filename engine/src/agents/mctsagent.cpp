@@ -206,7 +206,7 @@ void MCTSAgent::set_root_node_predictions()
         nnUser->nets[netIdx]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
     }
     else {
-        fwd_pass_queue(inferenceQueue.get(), nnUser.get(), 1, agentID, searchSettings);
+        fwd_pass_queue(inferenceQueue.get(), nnUser.get(), 1, 0, searchSettings);
     }
 
     size_t tbHits = 0;

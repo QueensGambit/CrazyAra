@@ -51,6 +51,7 @@ public:
 
 public:
     NeuralNetAPIUser(const vector<unique_ptr<NeuralNetAPI>>& netsNew);
+    NeuralNetAPIUser(const vector<NeuralNetAPI*> netsNew);
     ~NeuralNetAPIUser();
     NeuralNetAPIUser(NeuralNetAPIUser&) = delete;
 
@@ -66,6 +67,11 @@ public:
      * @return numPhases
      */
     unsigned int get_num_phases() const;
+
+    /**
+     * @brief init_members Initialize member and allocates memory.
+     */
+    void init_members();
 };
 
 #endif // NEURALNETAPIUSER_H

@@ -70,7 +70,7 @@ Agent::Agent(const vector<unique_ptr<NeuralNetAPI>>& nets, const PlaySettings* p
 
 Agent::Agent(const Agent& other)
 {
-    nnUser = other.nnUser;
+    nnUser = make_shared<NeuralNetAPIUser>(other.nnUser->nets);
     playSettings = other.playSettings;
     mustWait = other.mustWait;
     verbose = other.verbose;
