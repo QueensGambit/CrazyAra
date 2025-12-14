@@ -433,16 +433,15 @@ void fwd_pass_queue(InferenceQueue* inferenceQueue, NeuralNetAPIUser* nnUser, si
     InferenceResult result = future.get();
 
     // copy back inference results
-    size_t policyOffset;
     size_t policySize;
     if (nnUser->nets.front()->is_policy_map()) {
-        policyOffset = agentID * searchSettings->get_local_batch_size() * StateConstants::NB_LABELS_POLICY_MAP();
         policySize = StateConstants::NB_LABELS_POLICY_MAP();
     }
     else {
-        policyOffset = agentID * searchSettings->get_local_batch_size() * StateConstants::NB_LABELS();
         policySize = StateConstants::NB_LABELS();
     }
+    size_t policyOffset = agentID * searchSettings->get_local_batch_size() * policySize;
+
     memcpy(nnUser->valueOutputs + agentID * searchSettings->get_local_batch_size(),
            result.valueOutputs.data(),
            result.valueOutputs.size() * sizeof(float));
