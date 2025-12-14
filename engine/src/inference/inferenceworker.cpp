@@ -79,7 +79,6 @@ void InferenceWorker::run() {
 
         // Gather more requests up to maxBatchSize with short non-blocking loop
         InferenceRequest req;
-        auto start = std::chrono::steady_clock::now();
         while (batches.size() < maxBatchSize) {
             // try immediate pop first
             if (queue->try_pop(req)) {
@@ -118,7 +117,6 @@ void InferenceWorker::run() {
             request.outputOffset = writeIndex;
             writeIndex += request.batchCount;
         }
-        size_t totalBatch = writeIndex;
 
         // --- Perform NN inference on hostInput ---
         // TODO: select_nn_index()
