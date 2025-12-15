@@ -24,7 +24,7 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS,
 from DeepCrazyhouse.configs.main_config import main_config
 # architectures
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import RiseV3, \
-    get_rise_v2_model, get_rise_v33_model
+    get_rise_v2_model, get_rise_v33_model, get_rise_v33_large_model
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vision_transformer import VisionTransformer,\
     get_vision_transformer_model
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vit_configs import get_b8_config
@@ -147,6 +147,8 @@ def get_default_model(model_type: str, args: Args):
         return get_rise_v2_model(args)
     elif model_type == 'risev3':
         return get_rise_v33_model(args)
+    elif model_type == 'risev3-large':
+        return get_rise_v33_large_model(args)
     elif model_type == 'alphavile':
         return get_alpha_vile_model(args)
     elif model_type == 'alphavile-tiny':
