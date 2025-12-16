@@ -108,7 +108,7 @@ void TrainDataExporter::export_game_samples(Result result) {
         return;
     }
 
-    if (*startIdx >= numberSamples) {
+    if (*startIdx+curSampleIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
