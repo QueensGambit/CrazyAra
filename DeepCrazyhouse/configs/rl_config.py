@@ -37,7 +37,7 @@ class UCIConfig:
     The options will be passed to the binary before game generation starts.
     """
     Allow_Early_Stopping: bool = False
-    Batch_Size: int = 8
+    Batch_Size: int = 64
     Centi_Dirichlet_Alpha: int = 30  # default: 20
     Centi_Dirichlet_Epsilon: int = 25
     Centi_Epsilon_Checks: int = 0
@@ -53,6 +53,7 @@ class UCIConfig:
     MeanInitPly: int = 0  # default: 15
     Milli_Policy_Clip_Thresh: int = 10
     Nodes: int = 800
+    Number_Parallel_Games: int = 8
     Reuse_Tree: str = False
     Search_Type: str = f'mcts'
     Selfplay_Chunk_Size: int = 128  # default: 128
