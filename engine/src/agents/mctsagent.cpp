@@ -196,22 +196,45 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
 
 void MCTSAgent::set_root_node_predictions()
 {
-    state->get_state_planes(true, nnUser->inputPlanes, nnUser->nets.front()->get_version());
-    size_t netIdx = 0;
-    if (nnUser->nets.size() > 1) {
-        GamePhase currentPhase = state->get_phase(nnUser->numPhases, searchSettings->gamePhaseDefinition);
-        netIdx = nnUser->phaseToNetsIndex.at(currentPhase);
-    }
     if (searchSettings->numberParallelGames == 1) {
+        state->get_state_planes(true, nnUser->inputPlanes, nnUser->nets.front()->get_version());
+        size_t netIdx = 0;
+        if (nnUser->nets.size() > 1) {
+            GamePhase currentPhase = state->get_phase(nnUser->numPhases, searchSettings->gamePhaseDefinition);
+            netIdx = nnUser->phaseToNetsIndex.at(currentPhase);
+        }
+
         nnUser->nets[netIdx]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+        size_t tbHits = 0;
+        fill_nn_results(0, nnUser->nets[netIdx]->is_policy_map(), nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs, rootNode.get(), tbHits,
+                        rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
     }
     else {
-        fwd_pass_queue(inferenceQueue.get(), nnUser.get(), 1, 0, searchSettings);
+        InferenceRequest request;
+
+        // --- basic metadata ---
+        request.inputSize  = StateConstants::NB_VALUES_TOTAL();
+        request.batchCount = 1;
+        request.agentID    = agentID;
+
+        // --- OWNED input buffer ---
+        const size_t localBatchSize = searchSettings->get_local_batch_size();
+        const size_t elems = request.inputSize;
+
+        request.inputData.resize(elems);
+
+        state->get_state_planes(true, request.inputData.data(), nnUser->nets.front()->get_version());
+
+        // --- enqueue & wait synchronously ---
+        auto future = request.promise.get_future();
+        inferenceQueue->push(std::move(request));
+
+        InferenceResult result = future.get();
+        size_t tbHits = 0;
+        fill_nn_results(0, nnUser->nets[0]->is_policy_map(), result.valueOutputs.data(), result.probOutputs.data(), result.auxiliaryOutputs.data(), rootNode.get(), tbHits,
+                        rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
     }
 
-    size_t tbHits = 0;
-    fill_nn_results(0, nnUser->nets[netIdx]->is_policy_map(), nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs, rootNode.get(), tbHits,
-                    rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
 }
 
 void MCTSAgent::create_new_root_node(StateObj* state)
