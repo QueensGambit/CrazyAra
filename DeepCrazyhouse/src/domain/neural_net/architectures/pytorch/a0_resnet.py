@@ -181,3 +181,19 @@ def get_alpha_zero_model(args):
                             use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end,
                             use_mlp_wdl_ply=args.use_mlp_wdl_ply)
     return model
+
+
+def get_alpha_zero_model_small(args):
+    """
+    Wrapper definition for the AlphaZero model (small version)
+    :param args: Argument dictionary
+    :return: pytorch model object
+    """
+
+    model = AlphaZeroResnet(channels=128, channels_value_head=4,
+                            channels_policy_head=args.channels_policy_head,
+                            value_fc_size=128, num_res_blocks=10, act_type='relu',
+                            n_labels=args.n_labels, select_policy_from_plane=args.select_policy_from_plane,
+                            use_wdl=args.use_wdl, use_plys_to_end=args.use_plys_to_end,
+                            use_mlp_wdl_ply=args.use_mlp_wdl_ply)
+    return model

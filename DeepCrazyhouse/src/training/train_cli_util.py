@@ -29,7 +29,8 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vision_transform
     get_vision_transformer_model
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vit_configs import get_b8_config
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official import NextVit, get_next_vit_model
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.a0_resnet import AlphaZeroResnet, get_alpha_zero_model
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.a0_resnet import AlphaZeroResnet, get_alpha_zero_model,\
+    get_alpha_zero_model_small
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.alpha_vile import get_alpha_vile_model
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.configs.model_config import ModelConfig
@@ -141,6 +142,8 @@ def get_default_model(model_type: str, args: Args):
     """Returns a pytorch object based on the given model_type."""
     if model_type == 'resnet':
         return get_alpha_zero_model(args)
+    elif model_type == 'resnet-small':
+        return get_alpha_zero_model_small(args)
     elif model_type == 'vit':
         return get_vision_transformer_model(args)
     elif model_type == 'risev2':

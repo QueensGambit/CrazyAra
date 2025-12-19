@@ -68,9 +68,9 @@ class TrainConfig:
                                            "tensorboard."
     log_metrics_to_tensorboard: bool = True
 
-    info_model_type: str = "model_type defines the Model type that used during training (e.g. resnet, vit, risev2," \
-                           " risev3, risev3-large, alphavile, alphavile-tiny, alphavile-small, alphavile-normal," \
-                           " alphavile-large, NextViT)"
+    info_model_type: str = "model_type defines the Model type that used during training (e.g. resnet, resnet-small," \
+                           " vit, risev2, risev3, risev3-large, alphavile, alphavile-tiny, alphavile-small," \
+                           " alphavile-normal, alphavile-large, NextViT)"
     model_type: str = "risev3-large"
 
     info_k_steps_initial: str = "k_steps_initial defines how many steps have been trained before (k_steps_initial != 0 if" \
