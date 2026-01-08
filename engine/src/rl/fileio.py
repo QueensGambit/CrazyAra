@@ -8,6 +8,7 @@ Contains the main class to handle files and directories during Reinforcement Lea
 Additionally, a function to compress zarr datasets is provided.
 """
 import os
+import shutil
 import glob
 import zarr
 import time
@@ -289,7 +290,7 @@ class FileIO:
     def _retrieve_end_idx(self, data):
         """
         Checks the y_policy sum in the data for is_moe is False and
-        returns the first occurence of only 0s.
+        returns the first occurrence of only 0s.
         An end_idx of 0 means the whole dataset will be used
         :param data: Zarr data object
         :return: end_idx
@@ -302,6 +303,176 @@ class FileIO:
         if sum_y_policy[potential_end_idx] == 0:
             return potential_end_idx
         return 0
+
+    def _merge_pgn_files(self, output_filename: str, input_prefix: str, num_files: int):
+        """
+        Merges the content of all small pgn files to a single file.
+        :param output_filename: File in which all content will be exported
+        :param input_prefix: Input prefix (e.g. "games_gpu0")
+        :param num_files: Number of individual files
+        :return:
+        """
+        with open(self.binary_dir + output_filename, 'wb') as outfile:
+            for i in range(num_files):
+                input_filename = self.binary_dir + f"{input_prefix}_{i}.pgn"
+
+                if os.path.exists(input_filename):
+                    with open(input_filename, 'rb') as infile:
+                        shutil.copyfileobj(infile, outfile)
+                else:
+                    raise FileNotFoundError(f'Error: {input_filename} was not found')
+
+
+    def _merge_game_idx_files(self, output_filename: str, input_prefix: str, num_files: int):
+        """
+        Reads numbers from multiple files, sums them up and exports the result.
+
+        :param output_filename: File in which the sum will be exported to.
+        :param input_prefix: Input prefix (e.g. "gameIdx_gpu0")
+        :param num_files: Number of individual files
+        :return:
+        """
+        total_count = 0
+
+        for i in range(num_files):
+            input_filename = self.binary_dir + f"{input_prefix}_{i}.txt"
+
+            if os.path.exists(input_filename):
+                try:
+                    with open(input_filename, 'r') as infile:
+                        content = infile.read().strip()
+                        if content:
+                            total_count += int(content)
+                except ValueError:
+                    raise ValueError(f"The content of {input_filename} is not a valid number.")
+            else:
+                raise FileNotFoundError(f'Error: {input_filename} was not found')
+
+        # write final result to file
+        with open(self.binary_dir + output_filename, 'w') as outfile:
+            outfile.write(str(total_count))
+
+    def _remove_individual_files(self, file_prefix: str, suffix, num_files):
+        """
+        Removes the individual files.
+        :param file_prefix: File prefix (e.g. "games_gpu0")
+        :param suffix: file type
+        :param num_files: Number of files
+        :return:
+        """
+        for i in range(num_files):
+            filename = self.binary_dir + f"{file_prefix}_{i}.{suffix}"
+            os.remove(filename)
+
+    def _merge_and_compress_zarr_datasets(self, input_prefix, output_path, num_files, compression='lz4', clevel=5):
+        """
+        Combines multiple uncompressed Zarr directories into a single compressed ZipStore.
+
+        :param input_prefix: The prefix before the index (e.g., "data_gpu0")
+        :param output_path: Path for the final compressed file (e.g., "data_gpu0_final.zip")
+        :param num_files: Number of input files to process
+        :param compression: Compression algorithm for Blosc
+        :param clevel: Compression level (1-9)
+        :return: export_dir
+        """
+        # 1. Gather all existing input paths
+        input_paths = [self.binary_dir + f"{input_prefix}_{i}.zarr" for i in range(num_files)]
+        sources = []
+
+        for path in input_paths:
+            if os.path.exists(path):
+                sources.append(zarr.open(path, mode='r'))
+            else:
+                logging.warning(f"Source file not found: {path}")
+
+        if not sources:
+            logging.error("No source files found to merge.")
+            return False
+
+        export_dir, time_stamp = self.create_export_dir(phase, device_name)
+        zarr_path = export_dir + time_stamp + ".zip"
+
+        # 2. Setup compressor and destination store
+        compressor = Blosc(cname=compression, clevel=clevel, shuffle=Blosc.SHUFFLE)
+        store = zarr.ZipStore(zarr_path, mode="w")
+        target_group = zarr.group(store=store)
+
+        # Get keys from the first source (e.g., 'input_planes', 'value_targets', etc.)
+        keys = list(sources[0].keys())
+        nan_detected = False
+
+        for key in keys:
+            logging.info(f"Merging key: {key}...")
+
+            # Calculate the total number of samples (sum of first dimension)
+            total_rows = sum(src[key].shape[0] for src in sources)
+
+            # Determine target shape and chunking
+            # Chunks are set to 128 for the first dimension, as per your requirements
+            original_shape = list(sources[0][key].shape)
+            target_shape = original_shape.copy()
+            target_shape[0] = total_rows
+
+            chunk_shape = original_shape.copy()
+            chunk_shape[0] = 128
+
+            # 3. Create the empty dataset in the target file
+            target_ds = target_group.create_dataset(
+                name=key,
+                shape=tuple(target_shape),
+                chunks=tuple(chunk_shape),
+                dtype=sources[0][key].dtype,
+                compression=compressor,
+                synchronizer=zarr.ThreadSynchronizer()
+            )
+
+            # 4. Copy data from sources into the target slice-by-slice
+            current_offset = 0
+            for src in sources:
+                data_chunk = src[key][:]  # Load source data into memory
+
+                # Check for data integrity
+                if np.isnan(data_chunk).any():
+                    nan_detected = True
+                    logging.warning(f"NaN detected in {key} of a source file!")
+
+                num_rows = data_chunk.shape[0]
+                # Write to the specific pre-calculated slice in the destination
+                target_ds[current_offset: current_offset + num_rows] = data_chunk
+                current_offset += num_rows
+
+        store.close()
+        logging.info(f"Successfully exported compressed dataset to: {output_path}")
+        return export_dir
+
+    def combine_dataset_and_files(self, device_name: str, number_parallel_games: int):
+        """
+        Combines the dataset as well as pgn and txt-files into a single file each.
+        :param device_name: The currently active device name (context_device-id)
+        :param number_parallel_games: How many separate files have been generated
+        :return:
+        """
+
+        self._merge_pgn_files(
+            output_filename=f"games_{device_name}.pgn",
+            input_prefix=f"games_{device_name}",
+            num_files=number_parallel_games
+        )
+
+        self._merge_game_idx_files(
+            output_filename=f"gameIdx_{device_name}.txt",
+            input_prefix=f"gameIdx_{device_name}",
+            num_files=8
+        )
+
+        export_dir = self._merge_and_compress_zarr_datasets(input_prefix=f"data_{device_name}",
+                                                           output_path=f"data_{device_name}.zip",
+                                                           num_files=number_parallel_games)
+
+        self._remove_individual_files(f"games_{device_name}", "pgn", number_parallel_games)
+        self._remove_individual_files(f"gameIdx_{device_name}", "txt", number_parallel_games)
+
+        self.move_game_data_to_export_dir(export_dir, device_name)
 
     def compress_dataset(self, device_name: str):
         """

@@ -24,7 +24,7 @@ from engine.src.rl.binaryio import BinaryIO
 from engine.src.rl.fileio import FileIO
 from DeepCrazyhouse.configs.main_config import main_config
 from DeepCrazyhouse.configs.train_config import rl_train_config
-from DeepCrazyhouse.configs.rl_config import RLConfig, UCIConfigArena
+from DeepCrazyhouse.configs.rl_config import RLConfig, UCIConfigArena, UCIConfig
 from engine.src.rl.rl_training import update_network
 
 
@@ -245,6 +245,7 @@ def main():
     """
     args = parse_args(sys.argv[1:])
     rl_config = RLConfig()
+    uci_config = UCIConfig()
 
     if not os.path.exists(rl_config.binary_dir):
         raise Exception(f'Your given binary_dir: {rl_config.binary_dir} does not exist. '
@@ -285,6 +286,8 @@ def main():
             break
 
         rl_loop.binary_io.generate_games()
+        if uci_config.Number_Parallel_Games > 1:
+            rl_loop.file_io.combine_dataset_and_files(rl_loop.device_name, uci_config.Number_Parallel_Games)
         rl_loop.file_io.compress_dataset(rl_loop.device_name)
 
 
