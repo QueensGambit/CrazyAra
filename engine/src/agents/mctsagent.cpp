@@ -292,6 +292,11 @@ unsigned int MCTSAgent::get_num_phases()
     return nnUser->get_num_phases();
 }
 
+size_t MCTSAgent::get_agent_id()
+{
+    return agentID;
+}
+
 void MCTSAgent::set_agent_id(size_t value)
 {
     agentID = value;

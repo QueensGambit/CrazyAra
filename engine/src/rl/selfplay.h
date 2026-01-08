@@ -79,7 +79,7 @@ private:
     string filenamePGNSelfplay;
     string filenamePGNArena;
     string fileNameGameIdx;
-    size_t* gameIdx;
+    size_t gameIdx;
     float gamesPerMin;
     float samplesPerMin;
     size_t backupNodes;
@@ -109,7 +109,7 @@ public:
      * @param startIdx Pointer to the shared startIdx
      */
     SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
-             const RLSettings* rlSettings, OptionsMap& options, size_t* gameIdx, size_t* startIdx);
+             const RLSettings* rlSettings, OptionsMap& options);
     ~SelfPlay();
 
     // avoid copyiing of the SelfplayObject due to owning std::unique_ptr (e.g. TrainDataExporter)
@@ -126,7 +126,7 @@ public:
      * @param int variant to generate games for
      * @param std::mutex& Mutex that coordinates the writing of files and export
      */
-    void go(size_t numberOfGames, int variant, std::mutex* selfplayFileMutex);
+    void go(size_t numberOfGames, int variant);
 
     /**
      * @brief go_arena Starts comparision matches between the original mctsAgent with the old NN weights and

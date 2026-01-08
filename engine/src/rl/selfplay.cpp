@@ -113,20 +113,24 @@ SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSett
     gamePGN.round = "?";
     gamePGN.is960 = is960;
 
+    string agentSpecifier = "";
+    if (searchSettings->numberParallelGames > 1) {
+        agentSpecifier = string("_") + std::to_string(mctsAgent->get_agent_id());
+    }
+
     for (size_t idx = 0; idx < mctsAgent->get_num_phases(); ++idx) {
-        string fileNameExport = string("data_") + mctsAgent->get_device_name() + string(".zarr");
+        string fileNameExport = string("data_") + mctsAgent->get_device_name() + agentSpecifier + string(".zarr");
         if (mctsAgent->get_num_phases() > 1) {
             fileNameExport = string("phase") + std::to_string(idx) + string("/") + fileNameExport;
         }
         this->exporters.push_back(make_unique<TrainDataExporter>(fileNameExport,
                                                                  mctsAgent->get_num_phases(),
                                                                  searchSettings->gamePhaseDefinition,
-                                                                 gameIdx, startIdx,
-                                                                 rlSettings->numberChunks, rlSettings->chunkSize));
+                                                                 rlSettings->numberChunks / searchSettings->numberParallelGames, rlSettings->chunkSize));
     }
-    filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + string(".pgn");
-    filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + string(".pgn");
-    fileNameGameIdx = string("gameIdx_") + mctsAgent->get_device_name() + string(".txt");
+    filenamePGNSelfplay = string("games_") + mctsAgent->get_device_name() + agentSpecifier + string(".pgn");
+    filenamePGNArena = string("arena_games_")+ mctsAgent->get_device_name() + agentSpecifier + string(".pgn");
+    fileNameGameIdx = string("gameIdx_") + mctsAgent->get_device_name() + agentSpecifier + string(".txt");
 
     // delete content of files
     ofstream pgnFile;
@@ -191,7 +195,7 @@ void SelfPlay::reset_search_params(bool isQuickSearch)
     }
 }
 
-void SelfPlay::generate_game(int variant, bool verbose, std::mutex* selfplayFileMutex)
+void SelfPlay::generate_game(int variant, bool verbose)
 {
     chrono::steady_clock::time_point gameStartTime = chrono::steady_clock::now();
 
@@ -249,15 +253,12 @@ void SelfPlay::generate_game(int variant, bool verbose, std::mutex* selfplayFile
 
     // export all training samples of the generated game
     for (size_t idx = 0; idx < this->exporters.size(); ++idx) {
-        std::lock_guard<std::mutex> lock(*selfplayFileMutex);
         exporters[idx]->export_game_samples(gameResult);
     }
 
     set_game_result_to_pgn(gameResult);
-    {
-        std::lock_guard<std::mutex> lock(*selfplayFileMutex);
-        write_game_to_pgn(filenamePGNSelfplay, verbose);
-    }
+    write_game_to_pgn(filenamePGNSelfplay, verbose);
+
     clean_up(gamePGN, mctsAgent);
 
     // measure time statistics
@@ -338,7 +339,7 @@ void SelfPlay::set_game_result_to_pgn(Result res)
 
 void SelfPlay::reset_speed_statistics()
 {
-    *gameIdx = 0;
+    gameIdx = 0;
     gamesPerMin = 0;
     samplesPerMin = 0;
 }
@@ -346,13 +347,13 @@ void SelfPlay::reset_speed_statistics()
 void SelfPlay::speed_statistic_report(float elapsedTimeMin, size_t generatedSamples)
 {
     // compute running cumulative average
-    gamesPerMin = (*gameIdx * gamesPerMin + (1 / elapsedTimeMin)) / (*gameIdx + 1);
-    samplesPerMin = (*gameIdx * samplesPerMin + (generatedSamples / elapsedTimeMin)) / (*gameIdx + 1);
+    gamesPerMin = (gameIdx * gamesPerMin + (1 / elapsedTimeMin)) / (gameIdx + 1);
+    samplesPerMin = (gameIdx * samplesPerMin + (generatedSamples / elapsedTimeMin)) / (gameIdx + 1);
 
     cout << "    games    |  games/min  | samples/min " << endl
          << "-------------+-------------+-------------" << endl
          << std::setprecision(5)
-         << setw(13) << *gameIdx << '|'
+         << setw(13) << gameIdx << '|'
          << setw(13) << gamesPerMin << '|'
          << setw(13) << samplesPerMin << endl << endl;
 }
@@ -361,7 +362,7 @@ void SelfPlay::export_number_generated_games() const
 {
     ofstream gameIdxFile;
     gameIdxFile.open(fileNameGameIdx);
-    gameIdxFile << *gameIdx;
+    gameIdxFile << gameIdx;
     gameIdxFile.close();
 }
 
@@ -371,24 +372,22 @@ size_t SelfPlay::max_samples_per_iteration() const
     return rlSettings->numberChunks * rlSettings->chunkSize;
 }
 
-void SelfPlay::go(size_t numberOfGames, int variant, std::mutex* selfplayFileMutex)
+void SelfPlay::go(size_t numberOfGames, int variant)
 {
     generatedSamples = 0;
-    {
-        std::lock_guard<std::mutex> lock(*selfplayFileMutex);
-        reset_speed_statistics();
-    }
+    reset_speed_statistics();
+
     gamePGN.white = mctsAgent->get_name();
     gamePGN.black = mctsAgent->get_name();
 
     if (numberOfGames == 0) {
         while(generatedSamples < max_samples_per_iteration()) {
-            generate_game(variant, true, selfplayFileMutex);
+            generate_game(variant, true);
         }
     }
     else {
         for (size_t idx = 0; idx < numberOfGames; ++idx) {
-            generate_game(variant, true, selfplayFileMutex);
+            generate_game(variant, true);
         }
     }
     export_number_generated_games();
@@ -496,8 +495,8 @@ void apply_raw_policy_temp(EvalInfo &eval, float rawPolicyProbTemp)
     }
 }
 
-void run_selfplay_thread(SelfPlay* selfPlay, size_t numberOfGames, int variant, std::mutex* selfplayFileMutex)
+void run_selfplay_thread(SelfPlay* selfPlay, size_t numberOfGames, int variant)
 {
-    selfPlay->go(numberOfGames, variant, selfplayFileMutex);
+    selfPlay->go(numberOfGames, variant);
 }
 #endif

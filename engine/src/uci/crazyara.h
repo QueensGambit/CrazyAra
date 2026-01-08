@@ -89,8 +89,6 @@ private:
     unique_ptr<MCTSAgent> mctsAgentContender;
     vector<vector<unique_ptr<NeuralNetAPI>>> netBatchesContenderVector;
     RLSettings rlSettings;
-    // global for writing and exporting data
-    std::mutex selfplayFileMutex;
 #endif
     SearchSettings searchSettings;
     SearchLimits searchLimits;

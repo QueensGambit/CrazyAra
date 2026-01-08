@@ -31,7 +31,7 @@
 
 void TrainDataExporter::save_sample(const StateObj* pos, const EvalInfo& eval)
 {
-    if (*startIdx+curSampleIdx >= numberSamples) {
+    if (startIdx+curSampleIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
@@ -108,7 +108,7 @@ void TrainDataExporter::export_game_samples(Result result) {
         return;
     }
 
-    if (*startIdx+curSampleIdx >= numberSamples) {
+    if (startIdx >= numberSamples) {
         info_string("Extended number of maximum samples");
         return;
     }
@@ -118,26 +118,26 @@ void TrainDataExporter::export_game_samples(Result result) {
     apply_result_to_plys_to_end();
 
     // write value to roi
-    z5::types::ShapeType offset = { *startIdx };
-    z5::types::ShapeType offsetPlanes = { *startIdx, 0, 0, 0 };
+    z5::types::ShapeType offset = { startIdx };
+    z5::types::ShapeType offsetPlanes = { startIdx, 0, 0, 0 };
     z5::multiarray::writeSubarray<int16_t>(dx, gameX, offsetPlanes.begin());
     z5::multiarray::writeSubarray<int16_t>(dValue, gameValue, offset.begin());
     z5::multiarray::writeSubarray<float>(dbestMoveQ, gameBestMoveQ, offset.begin());
-    z5::types::ShapeType offsetPolicy = { *startIdx, 0 };
+    z5::types::ShapeType offsetPolicy = { startIdx, 0 };
     z5::multiarray::writeSubarray<float>(dPolicy, gamePolicy, offsetPolicy.begin());
     z5::multiarray::writeSubarray<int16_t>(dPlysToEnd, gamePlysToEnd, offset.begin());
     z5::multiarray::writeSubarray<int16_t>(dPhaseVector, gamePhaseVector, offset.begin());
 
-    *startIdx += curSampleIdx;
-    *gameIdx = *gameIdx + 1;
+    startIdx += curSampleIdx;
+    gameIdx++;
     save_start_idx();
 }
 
-TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t* gameIdx, size_t* startIdx, size_t numberChunks, size_t chunkSize):
+TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t numberChunks, size_t chunkSize):
     numPhases(numPhases),
     gamePhaseDefinition(gamePhaseDefinition),
-    gameIdx(gameIdx),
-    startIdx(startIdx),
+    gameIdx(0),
+    startIdx(0),
     numberChunks(numberChunks),
     chunkSize(chunkSize),
     numberSamples(numberChunks * chunkSize),
@@ -163,7 +163,7 @@ size_t TrainDataExporter::get_number_samples() const
 
 bool TrainDataExporter::is_file_full()
 {
-    return *startIdx >= numberSamples;
+    return startIdx >= numberSamples;
 }
 
 void TrainDataExporter::new_game()
@@ -224,8 +224,8 @@ void TrainDataExporter::save_start_idx()
 {
     // gameStartIdx
     // write value to roi
-    z5::types::ShapeType offsetStartIdx = { *gameIdx };
-    xt::xarray<int32_t> arrayGameStartIdx({ 1 }, int32_t(*startIdx));
+    z5::types::ShapeType offsetStartIdx = { gameIdx };
+    xt::xarray<int32_t> arrayGameStartIdx({ 1 }, int32_t(startIdx));
     z5::multiarray::writeSubarray<int32_t>(dStartIndex, arrayGameStartIdx, offsetStartIdx.begin());
 }
 

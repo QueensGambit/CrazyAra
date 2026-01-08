@@ -221,6 +221,7 @@ public:
      */
     unsigned int get_num_phases();
 
+    size_t get_agent_id();
     void set_agent_id(size_t value);
 
 private:
