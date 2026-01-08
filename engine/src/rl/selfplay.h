@@ -105,8 +105,6 @@ public:
      * @param playSettings Playing setting configuration struct
      * @param RLSettings Additional settings for reinforcement learning usage
      * @param options Object holding all UCI options
-     * @param gameIdx Pointer to the shared game index
-     * @param startIdx Pointer to the shared startIdx
      */
     SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
              const RLSettings* rlSettings, OptionsMap& options);
@@ -145,7 +143,7 @@ private:
      * @param variant Current chess variant
      * @param selfplayFileMutex Mutex that coordinates writing to files
      */
-    void generate_game(int variant, bool verbose, std::mutex* selfplayFileMutex);
+    void generate_game(int variant, bool verbose);
 
     /**
      * @brief generate_arena_game Generates a game of the current NN weights vs the new acquired weights
@@ -226,9 +224,8 @@ private:
  * @param selfPlay selfplay object
  * @param numberOfGames How many games should be generated
  * @param variant What (chess) variant to play
- * @param selfplayFileMutex Common mutex that coordinates the writing to files
  */
-void run_selfplay_thread(SelfPlay* selfPlay, size_t numberOfGames, int variant, std::mutex* selfplayFileMutex);
+void run_selfplay_thread(SelfPlay* selfPlay, size_t numberOfGames, int variant);
 
 #endif
 

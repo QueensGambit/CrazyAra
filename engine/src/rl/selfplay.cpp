@@ -80,9 +80,9 @@ string load_random_fen(string filepath)
 
 
 SelfPlay::SelfPlay(RawNetAgent* rawAgent, MCTSAgent* mctsAgent, const SearchSettings* searchSettings, SearchLimits* searchLimits, const PlaySettings* playSettings,
-                   const RLSettings* rlSettings, OptionsMap& options, size_t* gameIdx, size_t* startIdx):
+                   const RLSettings* rlSettings, OptionsMap& options):
     rawAgent(rawAgent), mctsAgent(mctsAgent), searchSettings(searchSettings), searchLimits(searchLimits), playSettings(playSettings),
-    rlSettings(rlSettings), gameIdx(gameIdx), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
+    rlSettings(rlSettings), gameIdx(0), gamesPerMin(0), samplesPerMin(0), options(options), generatedSamples(0)
 {
     is960 = options["UCI_Chess960"];
     string suffix960 = "";
@@ -205,9 +205,7 @@ void SelfPlay::generate_game(int variant, bool verbose)
     srand(unsigned(int(time(nullptr))));
     // load position from file if epd filepath was set
     string startingFen = load_random_fen(rlSettings->epdFilePath);
-    selfplayFileMutex->lock();
     unique_ptr<StateObj> state = init_starting_state_from_raw_policy(*rawAgent, ply, gamePGN, variant, is960, rlSettings->rawPolicyProbabilityTemperature, startingFen);
-    selfplayFileMutex->unlock();
     EvalInfo evalInfo;
     Result gameResult;
     for (size_t idx = 0; idx < this->exporters.size(); ++idx) {

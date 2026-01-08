@@ -374,7 +374,7 @@ void CrazyAra::selfplay(istringstream &is)
     size_t numberOfGames;
     is >> numberOfGames;
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
-        gameThreads.emplace_back(thread(run_selfplay_thread, selfPlays[idx].get(), numberOfGames / NUMBER_OF_PARALLEL_GAMES, variant, &selfplayFileMutex));
+        gameThreads.emplace_back(thread(run_selfplay_thread, selfPlays[idx].get(), numberOfGames / NUMBER_OF_PARALLEL_GAMES, variant));
     }
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
         gameThreads[idx].join();
@@ -385,9 +385,7 @@ void CrazyAra::selfplay(istringstream &is)
 void CrazyAra::arena(istringstream &is)
 {
     prepare_search_config_structs();
-    size_t gameIdx = 0;
-    size_t startIdx = 0;
-    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options, &gameIdx, &startIdx);
+    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options);
     fill_nn_vectors(Options["Model_Directory_Contender"], netSingleContenderVector, netBatchesContenderVector);
     mctsAgentContender = create_new_mcts_agent(netSingleContenderVector, netBatchesContenderVector, &searchSettings);
     size_t numberOfGames;
@@ -441,9 +439,7 @@ void CrazyAra::multimodel_arena(istringstream &is, const string &modelDirectory1
         mcts2 = create_new_mcts_agent(netSingleContenderVector, netBatchesContenderVector, &searchSettings, static_cast<MCTSAgentType>(type));
     }
 
-    size_t gameIdx = 0;
-    size_t startIdx = 0;
-    SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options, &gameIdx, &startIdx);
+    SelfPlay selfPlay(rawAgent.get(), mcts1.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options);
     size_t numberOfGames;
     is >> numberOfGames;
     TournamentResult tournamentResult = selfPlay.go_arena(mcts2.get(), numberOfGames, variant);
