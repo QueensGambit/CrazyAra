@@ -312,16 +312,16 @@ void SearchThread::set_nn_results_to_child_nodes()
     size_t batchIdx = 0;
     size_t policyOffset;
     if (nnUser->nets.front()->is_policy_map()) {
-        policyOffset = agentID * searchSettings->get_local_batch_size() * StateConstants::NB_LABELS_POLICY_MAP();
+        policyOffset = agentID * searchSettings->batchSize * StateConstants::NB_LABELS_POLICY_MAP();
     }
     else {
-        policyOffset = agentID * searchSettings->get_local_batch_size() * StateConstants::NB_LABELS();
+        policyOffset = agentID * searchSettings->batchSize * StateConstants::NB_LABELS();
     }
 
     for (auto node: *newNodes) {
-        fill_nn_results(batchIdx, nnUser->nets.front()->is_policy_map(), nnUser->valueOutputs + agentID * searchSettings->get_local_batch_size(),
+        fill_nn_results(batchIdx, nnUser->nets.front()->is_policy_map(), nnUser->valueOutputs + agentID * searchSettings->batchSize,
                         nnUser->probOutputs + policyOffset,
-                        nnUser->auxiliaryOutputs + agentID * searchSettings->get_local_batch_size() * StateConstants::NB_AUXILIARY_OUTPUTS(), node,
+                        nnUser->auxiliaryOutputs + agentID * searchSettings->batchSize * StateConstants::NB_AUXILIARY_OUTPUTS(), node,
                         tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
                         searchSettings, rootNode->is_tablebase());
         ++batchIdx;
@@ -370,7 +370,7 @@ void SearchThread::create_mini_batch()
     size_t numTerminalNodes = 0;
 
     while (!newNodes->is_full() &&
-           collisionTrajectories.size() != searchSettings->get_local_batch_size() &&
+           collisionTrajectories.size() != searchSettings->batchSize &&
            !transpositionValues->is_full() &&
            numTerminalNodes < terminalNodeCache) {
 
@@ -436,7 +436,7 @@ void fwd_pass_queue(InferenceQueue* inferenceQueue,
     request.agentID    = agentID;
 
     // --- OWNED input buffer ---
-    const size_t localBatchSize = searchSettings->get_local_batch_size();
+    const size_t localBatchSize = searchSettings->batchSize;
     const size_t elems = batchCount * request.inputSize;
 
     request.inputData.resize(elems);
