@@ -218,7 +218,7 @@ void MCTSAgent::set_root_node_predictions()
         request.agentID    = agentID;
 
         // --- OWNED input buffer ---
-        const size_t localBatchSize = searchSettings->get_local_batch_size();
+        const size_t localBatchSize = searchSettings->batchSize;
         const size_t elems = request.inputSize;
 
         request.inputData.resize(elems);
