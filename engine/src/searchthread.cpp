@@ -44,12 +44,12 @@ size_t SearchThread::get_max_depth() const
 SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier, InferenceQueue* inferenceQueue):
     agentID(agentID), nnUser(nnUser),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
-    newNodes(make_unique<FixedVector<Node*>>(searchSettings->get_local_batch_size())),
-    newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->get_local_batch_size())),
-    transpositionValues(make_unique<FixedVector<float>>(searchSettings->get_local_batch_size()*2)),
+    newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
+    newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
+    transpositionValues(make_unique<FixedVector<float>>(searchSettings->batchSize*2)),
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
-    terminalNodeCache(searchSettings->get_local_batch_size()*2),
+    terminalNodeCache(searchSettings->batchSize*2),
     reachedTablebases(false),
     batchBarrier(batchBarrier),
     inferenceQueue(inferenceQueue)
@@ -165,7 +165,7 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
 
 unsigned int SearchThread::compute_offset()
 {
-    return (agentID * searchSettings->get_local_batch_size() + newNodes->size()) * nnUser->nets.front()->get_nb_input_values_total();
+    return (agentID * searchSettings->batchSize + newNodes->size()) * nnUser->nets.front()->get_nb_input_values_total();
 }
 
 Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)

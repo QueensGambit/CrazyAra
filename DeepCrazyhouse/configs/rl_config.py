@@ -37,7 +37,7 @@ class UCIConfig:
     The options will be passed to the binary before game generation starts.
     """
     Allow_Early_Stopping: bool = False
-    Batch_Size: int = 64
+    Batch_Size: int = 8
     Centi_Dirichlet_Alpha: int = 30  # default: 20
     Centi_Dirichlet_Epsilon: int = 25
     Centi_Epsilon_Checks: int = 0

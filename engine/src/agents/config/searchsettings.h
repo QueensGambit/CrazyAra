@@ -98,8 +98,8 @@ struct SearchSettings
     uint_fast32_t numberParallelGames;
     SearchSettings();
 
-    uint_fast32_t get_local_batch_size() const {
-        return batchSize / numberParallelGames;
+    uint_fast32_t get_main_batch_size() const {
+        return batchSize * numberParallelGames;
     }
 };
 

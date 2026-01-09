@@ -168,7 +168,7 @@ void CrazyAra::inference(istringstream &is)
     }
     info_string("running", warmupIterations, "warmup iteration...");
     info_string("running", iterations, "iterations...");
-    info_string("batch-size:", searchSettings.batchSize);
+    info_string("main batch-size:", searchSettings.get_main_batch_size());
     mctsAgent->get_nn_user()->run_inference(warmupIterations);
     const chrono::steady_clock::time_point start = chrono::steady_clock::now();
     mctsAgent->searchThreads.front()->run_inference(iterations);
@@ -177,7 +177,7 @@ void CrazyAra::inference(istringstream &is)
     info_string("Inference results");
     info_string("-----------------");
     info_string("Elapsed time:", elapsedMS/1000.0, "s");
-    info_string("Evaluations per second:", (iterations/double(elapsedMS))*1000*searchSettings.batchSize, "nps");
+    info_string("Evaluations per second:", (iterations/double(elapsedMS))*1000*searchSettings.get_main_batch_size(), "nps");
 }
 
 void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
@@ -573,7 +573,7 @@ void CrazyAra::fill_single_nn_vector(const string& modelDirectory, vector<unique
     size_t idx = 0;
     for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
         for (size_t i = 0; i < size_t(Options["Threads"]); ++i) {
-            unique_ptr<NeuralNetAPI> netBatchesTmp = create_new_net(modelDirectory, deviceId, searchSettings.batchSize);
+            unique_ptr<NeuralNetAPI> netBatchesTmp = create_new_net(modelDirectory, deviceId, searchSettings.get_main_batch_size());
             netBatchesTmp->validate_neural_network();
             netBatchesVector[idx].push_back(std::move(netBatchesTmp));
             ++idx;
