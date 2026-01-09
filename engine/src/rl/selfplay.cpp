@@ -368,7 +368,7 @@ void SelfPlay::export_number_generated_games() const
 
 size_t SelfPlay::max_samples_per_iteration() const
 {
-    return rlSettings->numberChunks * rlSettings->chunkSize;
+    return (rlSettings->numberChunks / searchSettings->numberParallelGames) * rlSettings->chunkSize;
 }
 
 void SelfPlay::go(size_t numberOfGames, int variant)
