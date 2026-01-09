@@ -364,12 +364,12 @@ class FileIO:
             filename = self.binary_dir + f"{file_prefix}_{i}.{suffix}"
             os.remove(filename)
 
-    def _merge_and_compress_zarr_datasets(self, input_prefix, output_path, num_files, compression='lz4', clevel=5):
+    def _merge_and_compress_zarr_datasets(self, device_name, input_prefix: str, num_files: int, compression='lz4', clevel=5):
         """
         Combines multiple uncompressed Zarr directories into a single compressed ZipStore.
 
+        :param device_name: Device name (e.g. "gpu0")
         :param input_prefix: The prefix before the index (e.g., "data_gpu0")
-        :param output_path: Path for the final compressed file (e.g., "data_gpu0_final.zip")
         :param num_files: Number of input files to process
         :param compression: Compression algorithm for Blosc
         :param clevel: Compression level (1-9)
@@ -389,7 +389,7 @@ class FileIO:
             logging.error("No source files found to merge.")
             return False
 
-        export_dir, time_stamp = self.create_export_dir(phase, device_name)
+        export_dir, time_stamp = self.create_export_dir("", device_name)
         zarr_path = export_dir + time_stamp + ".zip"
 
         # 2. Setup compressor and destination store
@@ -434,22 +434,28 @@ class FileIO:
                 # Check for data integrity
                 if np.isnan(data_chunk).any():
                     nan_detected = True
-                    logging.warning(f"NaN detected in {key} of a source file!")
+                    logging.error(f"NaN detected in {key} of a source file!")
 
                 num_rows = data_chunk.shape[0]
                 # Write to the specific pre-calculated slice in the destination
                 target_ds[current_offset: current_offset + num_rows] = data_chunk
                 current_offset += num_rows
 
+        if nan_detected is True:
+            logging.error("NaN value detected in file %s.zip" % time_stamp)
+            new_export_dir = self.binary_dir + time_stamp
+            os.rename(export_dir, new_export_dir)
+            export_dir = new_export_dir
+
         store.close()
-        logging.info(f"Successfully exported compressed dataset to: {output_path}")
+        logging.info(f"Successfully exported compressed dataset to: {zarr_path}")
         return export_dir
 
     def combine_dataset_and_files(self, device_name: str, number_parallel_games: int):
         """
         Combines the dataset as well as pgn and txt-files into a single file each.
         :param device_name: The currently active device name (context_device-id)
-        :param number_parallel_games: How many separate files have been generated
+        :param number_parallel_games: How many files have been generated
         :return:
         """
 
@@ -462,12 +468,12 @@ class FileIO:
         self._merge_game_idx_files(
             output_filename=f"gameIdx_{device_name}.txt",
             input_prefix=f"gameIdx_{device_name}",
-            num_files=8
+            num_files=number_parallel_games
         )
 
-        export_dir = self._merge_and_compress_zarr_datasets(input_prefix=f"data_{device_name}",
-                                                           output_path=f"data_{device_name}.zip",
-                                                           num_files=number_parallel_games)
+        export_dir = self._merge_and_compress_zarr_datasets(device_name=device_name,
+                                                            input_prefix=f"data_{device_name}",
+                                                            num_files=number_parallel_games)
 
         self._remove_individual_files(f"games_{device_name}", "pgn", number_parallel_games)
         self._remove_individual_files(f"gameIdx_{device_name}", "txt", number_parallel_games)

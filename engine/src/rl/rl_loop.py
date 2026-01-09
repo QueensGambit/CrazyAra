@@ -288,7 +288,8 @@ def main():
         rl_loop.binary_io.generate_games()
         if uci_config.Number_Parallel_Games > 1:
             rl_loop.file_io.combine_dataset_and_files(rl_loop.device_name, uci_config.Number_Parallel_Games)
-        rl_loop.file_io.compress_dataset(rl_loop.device_name)
+        else:
+            rl_loop.file_io.compress_dataset(rl_loop.device_name)
 
 
 if __name__ == "__main__":
