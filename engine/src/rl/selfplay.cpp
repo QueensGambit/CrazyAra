@@ -264,6 +264,7 @@ void SelfPlay::generate_game(int variant, bool verbose)
         const float elapsedTimeMin = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - gameStartTime).count() / 60000.f;
         speed_statistic_report(elapsedTimeMin, generatedSamples - generatedSamplesBeforeGame);
     }
+    ++gameIdx;
 }
 
 Result SelfPlay::generate_arena_game(MCTSAgent* whitePlayer, MCTSAgent* blackPlayer, int variant, bool verbose, const string& fen)
