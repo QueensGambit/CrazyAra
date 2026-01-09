@@ -374,7 +374,7 @@ void CrazyAra::selfplay(istringstream &is)
     size_t numberOfGames;
     is >> numberOfGames;
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
-        gameThreads.emplace_back(thread(run_selfplay_thread, selfPlays[idx].get(), numberOfGames / NUMBER_OF_PARALLEL_GAMES, variant));
+        gameThreads.emplace_back(thread(run_selfplay_thread, selfPlays[idx].get(), numberOfGames, variant));
     }
     for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
         gameThreads[idx].join();
