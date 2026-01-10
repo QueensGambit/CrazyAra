@@ -402,7 +402,7 @@ class FileIO:
         nan_detected = False
 
         for key in keys:
-            logging.info(f"Merging key: {key}...")
+            logging.debug(f"Merging key: {key}...")
 
             # Calculate the total number of samples (sum of first dimension)
             total_rows = sum(src[key].shape[0] for src in sources)
