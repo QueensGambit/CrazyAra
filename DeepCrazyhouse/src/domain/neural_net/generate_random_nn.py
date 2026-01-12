@@ -8,22 +8,13 @@ Command-line tool to generate a random initialized neural network and export ONN
 """
 import os
 import argparse
-import mxnet as mx
 import torch
 from pathlib import Path
 import logging
-import numpy as np
 import sys
 sys.path.insert(0, '../../../../')
-from DeepCrazyhouse.src.domain.neural_net.architectures.mxnet_alpha_zero import get_alpha_zero_symbol
-from DeepCrazyhouse.src.domain.neural_net.architectures.rise_mobile_v3 import get_rise_v33_symbol
-from DeepCrazyhouse.src.domain.neural_net.architectures.rise_mobile_v2 import get_rise_v2_symbol
-from DeepCrazyhouse.src.domain.neural_net.onnx.convert_to_onnx import convert_mxnet_model_to_onnx
 from DeepCrazyhouse.src.domain.variants.constants import NB_LABELS, NB_POLICY_MAP_CHANNELS, NB_CHANNELS_TOTAL,\
     BOARD_WIDTH, BOARD_HEIGHT
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import get_rise_v33_model, get_rise_v2_model
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.a0_resnet import get_alpha_zero_model
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.alpha_vile import get_alpha_vile_model
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.training.trainer_agent_pytorch import save_torch_state, export_to_onnx, get_context
@@ -93,45 +84,6 @@ def parse_args(cmd_args: list):
     # convert list to tuple
     args.input_shape = tuple(args.input_shape)
     return args
-
-
-def generate_random_nn_mnxet(args):
-    """
-    Generates a new neural network model with random parameter initialization and exports it to ONNX.
-    """
-    if args.model_type == "alpha_zero":
-        symbol = get_alpha_zero_symbol(args)
-    elif args.model_type == "risev2":
-        symbol = get_rise_v2_symbol(args)
-    elif args.model_type == "risev3.3":
-        symbol = get_rise_v33_symbol(args)
-    else:
-        raise NotImplementedError
-
-    x_dummy = np.zeros(shape=(1, args.input_shape[0], args.input_shape[1], args.input_shape[2]))
-    y_value_dummy = np.zeros(shape=(1, 1))
-    if args.select_policy_from_plane:
-        y_policy_dummy = np.zeros(shape=(1, args.channels_policy_head + args.input_shape[1] * args.input_shape[2]))
-    else:
-        y_policy_dummy = np.zeros(shape=(1, args.n_labels))
-    data_iter = mx.io.NDArrayIter({'data': x_dummy}, {'value_label': y_value_dummy,
-                                                      'policy_label': y_policy_dummy.argmax(axis=1)}, 1)
-
-    model = mx.mod.Module(symbol=symbol, context=mx.cpu(), label_names=['value_label', 'policy_label'])
-    model.bind(for_training=True, data_shapes=[('data', x_dummy.shape)],
-               label_shapes=data_iter.provide_label)
-    model.init_params(mx.initializer.Xavier(rnd_type='uniform', factor_type='avg', magnitude=2.24))
-
-    prefix = args.export_dir + args.model_type
-    sym_file = prefix + "-symbol.json"
-    params_file = prefix + "-" + "%04d.params" % 0
-
-    # the export function saves both the architecture and the weights
-    model.save_checkpoint(prefix, epoch=0)
-
-    # if convert_to_onnx:
-    convert_mxnet_model_to_onnx(sym_file, params_file, ["value_out_output", "policy_out_output"], args.input_shape,
-                                [1, 8, 16], False)
 
 
 def generate_random_nn_pytorch(args, train_config: TrainConfig):
