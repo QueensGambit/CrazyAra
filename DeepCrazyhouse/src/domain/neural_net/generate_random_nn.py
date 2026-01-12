@@ -27,6 +27,7 @@ from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.alpha_vile impor
 from DeepCrazyhouse.src.runtime.color_logger import enable_color_logging
 from DeepCrazyhouse.configs.train_config import TrainConfig
 from DeepCrazyhouse.src.training.trainer_agent_pytorch import save_torch_state, export_to_onnx, get_context
+from DeepCrazyhouse.src.training.train_cli_util import get_default_model
 
 enable_color_logging()
 
@@ -40,7 +41,7 @@ def parse_args(cmd_args: list):
     parser = argparse.ArgumentParser(description='Command-line tool to generate a random initialized neural network'
                                                  ' and export MXNet and ONNX weights.')
     parser.add_argument("--model-type", type=str, default="risev2",
-                        help="available model types [alpha_zero, risev2, risev3.3, alpha_vile] (default: risev2)")
+                        help="available model types [alpha_zero, risev2, risev3.3, alpha_vile, ... (see train_config.py: model_type)] (default: risev2)")
     parser.add_argument("--channels-policy-head", type=int, default=None,
                         help=" (default: None)")
     parser.add_argument("--n-labels", type=int, default=None,
@@ -137,16 +138,7 @@ def generate_random_nn_pytorch(args, train_config: TrainConfig):
     """
     Generates a new neural network model with random parameter initialization and exports it to ONNX.
     """
-    if args.model_type == "alpha_zero":
-        model = get_alpha_zero_model(args)
-    elif args.model_type == "risev2":
-        model = get_rise_v2_model(args)
-    elif args.model_type == "risev3.3":
-        model = get_rise_v33_model(args)
-    elif args.model_type == "alpha_vil":
-        model = get_alpha_vile_model(args)
-    else:
-        raise NotImplementedError
+    model = get_default_model(args.model_type, args)
 
     if args.context == "gpu" and torch.cuda.is_available():
         model.cuda(torch.device(f"cuda:{args.device_id}"))
