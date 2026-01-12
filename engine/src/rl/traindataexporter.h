@@ -152,6 +152,8 @@ public:
      * @param fileNameExport File name of the uncompressed data to be exported in (e.g. "data.zarr")
      * @param numPhases Number of game phases to support for exporting
      * @param gamePhaseDefinition Game phase definition to use
+     * @param gameIdx Pointer to the shared game counter
+     * @param startIdx Pointer to the shared index to export data
      * @param numberChunks Defines how many chunks a single file should contain.
      * The product of the number of chunks and its chunk size yields the total number of samples of a file.
      * @param chunkSize Defines the chunk size of a single chunk

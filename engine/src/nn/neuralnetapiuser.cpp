@@ -37,6 +37,20 @@ NeuralNetAPIUser::NeuralNetAPIUser(const vector<unique_ptr<NeuralNetAPI>>& netsN
     for (size_t idx = 0; idx < netsNew.size(); idx++) {
         nets.push_back(netsNew[idx].get());
     }
+    init_members();
+}
+
+NeuralNetAPIUser::NeuralNetAPIUser(const vector<NeuralNetAPI *> netsNew) :
+    auxiliaryOutputs(nullptr)
+{
+    for (size_t idx = 0; idx < netsNew.size(); idx++) {
+        nets.push_back(netsNew[idx]);
+    }
+    init_members();
+}
+
+void NeuralNetAPIUser::init_members()
+{
     numPhases = nets.size();
     for (unsigned int i = 0; i < numPhases; i++)
     {
@@ -45,7 +59,7 @@ NeuralNetAPIUser::NeuralNetAPIUser(const vector<unique_ptr<NeuralNetAPI>>& netsN
         assert(phaseToNetsIndex.count(phaseOfNetI) == 0); // no net should have the same phase as another net
         phaseToNetsIndex[phaseOfNetI] = i;
     }
-    
+
     // allocate memory for all predictions and results
 #ifdef TENSORRT
 #ifdef DYNAMIC_NN_ARCH

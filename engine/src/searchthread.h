@@ -34,7 +34,8 @@
 #include "config/searchlimits.h"
 #include "util/fixedvector.h"
 #include "nn/neuralnetapiuser.h"
-
+#include "util/reusablebarrier.h"
+#include "inference/inferencequeue.h"
 
 enum NodeBackup : uint8_t {
     NODE_COLLISION,
@@ -51,12 +52,13 @@ struct NodeDescription
     size_t depth;
 };
 
-class SearchThread : public NeuralNetAPIUser
+class SearchThread
 {
 private:
     Node* rootNode;
     StateObj* rootState;
     unique_ptr<StateObj> newState;
+    shared_ptr<NeuralNetAPIUser> nnUser;
 
     // list of all node objects which have been selected for expansion
     unique_ptr<FixedVector<Node*>> newNodes;
@@ -82,14 +84,23 @@ private:
     size_t visitsPreSearch;
     uint_fast32_t terminalNodeCache;  // TODO: better add "const" classifier here is possible
     bool reachedTablebases;
+    size_t agentID;
+
+    ReusableBarrier* batchBarrier;  // non-owning
+    InferenceQueue* inferenceQueue;
 public:
     /**
      * @brief SearchThread
-     * @param netBatchVector vector of Network API objects which provide the prediction of the neural network
+     * @param agentID Agent index which is used to determine the block section in the mini batch
+     * @param NeuralNetAPIUser Neural network API user object that may store multiple phase networks
      * @param searchSettings Given settings for this search run
      * @param MapWithMutex Handle to the hash table
+     * @param batchCounter BatchCounter that coordinates all search threads
+     * @param batchMutex mutex that protects the batchCounter access
+     * @param batchCondition Condition variable which manages waiting and running
+     * @param inferenceQueue Queue that manages inference requests
      */
-    SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex);
+    SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier, InferenceQueue* inferenceQueue);
 
     /**
      * @brief create_mini_batch Creates a mini-batch of new unexplored nodes.
@@ -155,7 +166,23 @@ public:
 
     Node* get_starting_node(Node* currentNode, NodeDescription& description, ChildIdx& childIdx);
 
+    /**
+     * @brief run_inference Wrapper function for nnUser->run_inference()
+     * @param iterations Number of iterations
+     */
+    void run_inference(uint_fast16_t iterations);
+
+    shared_ptr<NeuralNetAPIUser> get_nn_user() const;
+
+    void set_agent_id(size_t value);
+    
 private:
+
+    /**
+     * @brief handle_fwd_pass Handles the forward pass for neural network prediction
+     */
+    void handle_fwd_pass();
+
     /**
      * @brief set_nn_results_to_child_nodes Sets the neural network value evaluation and policy prediction vector for every newly expanded nodes
      */
@@ -203,6 +230,12 @@ private:
      * @return Majority phase index or 0
      */
     size_t select_nn_index();
+
+    /**
+     * @brief compute_offset Helper function that computes the offset for editing the input representation
+     * @return offset
+     */
+    unsigned int compute_offset();
 };
 
 void run_search_thread(SearchThread *t);
@@ -231,5 +264,7 @@ inline void random_playout(Node* currentNode, ChildIdx& childIdx);
  * @return random depth while the probability of choosing higher depths decreases exponetially
  */
 size_t get_random_depth();
+
+void fwd_pass_queue(InferenceQueue* inferenceQueue, NeuralNetAPIUser* nnUser, size_t batchCount, size_t agentID, const SearchSettings* searchSettings);
 
 #endif // SEARCHTHREAD_H

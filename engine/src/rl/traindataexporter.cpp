@@ -136,12 +136,12 @@ void TrainDataExporter::export_game_samples(Result result) {
 TrainDataExporter::TrainDataExporter(const string& fileName, unsigned int numPhases, GamePhaseDefinition gamePhaseDefinition, size_t numberChunks, size_t chunkSize):
     numPhases(numPhases),
     gamePhaseDefinition(gamePhaseDefinition),
+    gameIdx(0),
+    startIdx(0),
     numberChunks(numberChunks),
     chunkSize(chunkSize),
     numberSamples(numberChunks * chunkSize),
     firstMove(true),
-    gameIdx(0),
-    startIdx(0),
     curSampleIdx(0)
 {
     // get handle to a File on the filesystem

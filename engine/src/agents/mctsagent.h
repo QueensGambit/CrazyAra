@@ -45,6 +45,8 @@
 #include "../manager/timemanager.h"
 #include "../manager/threadmanager.h"
 #include "util/gcthread.h"
+#include "../inference/inferencequeue.h"
+#include "../inference/inferenceworker.h"
 
 using namespace crazyara;
 
@@ -81,13 +83,17 @@ public:
 
     unique_ptr<ThreadManager> threadManager;
     bool reachedTablebases;
+
+    vector<shared_ptr<ReusableBarrier>> batchBarriers;
+    shared_ptr<InferenceQueue> inferenceQueue;
+    shared_ptr<InferenceWorker> inferenceWorker;
 public:
     MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector,
               const vector<vector<unique_ptr<NeuralNetAPI>>>& netBatchesVector,
               SearchSettings* searchSettings,
               PlaySettings* playSettings);
     ~MCTSAgent();
-    MCTSAgent(const MCTSAgent&) = delete;
+    MCTSAgent(const MCTSAgent& other);
     MCTSAgent& operator=(MCTSAgent const&) = delete;
 
     void evaluate_board_state() override;
@@ -208,6 +214,16 @@ public:
      * @param curNPS New NPS measurement
      */
     void update_nps_measurement(float curNPS);
+
+    /**
+     * @brief get_num_phases Wrapper method for nnUser->get_num_phases()
+     * @return number of phases
+     */
+    unsigned int get_num_phases();
+
+    size_t get_agent_id();
+    void set_agent_id(size_t value);
+
 private:
     void set_root_node_predictions();
 };

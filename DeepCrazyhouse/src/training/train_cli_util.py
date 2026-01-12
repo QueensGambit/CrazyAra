@@ -24,12 +24,13 @@ from DeepCrazyhouse.src.domain.variants.constants import NB_POLICY_MAP_CHANNELS,
 from DeepCrazyhouse.configs.main_config import main_config
 # architectures
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.rise_mobile_v3 import RiseV3, \
-    get_rise_v2_model, get_rise_v33_model
+    get_rise_v2_model, get_rise_v33_model, get_rise_v33_large_model
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vision_transformer import VisionTransformer,\
     get_vision_transformer_model
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.vit_configs import get_b8_config
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.next_vit_official import NextVit, get_next_vit_model
-from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.a0_resnet import AlphaZeroResnet, get_alpha_zero_model
+from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.a0_resnet import AlphaZeroResnet, get_alpha_zero_model,\
+    get_alpha_zero_model_small
 from DeepCrazyhouse.src.domain.neural_net.architectures.pytorch.alpha_vile import get_alpha_vile_model
 from DeepCrazyhouse.configs.train_config import TrainConfig, TrainObjects
 from DeepCrazyhouse.configs.model_config import ModelConfig
@@ -141,12 +142,16 @@ def get_default_model(model_type: str, args: Args):
     """Returns a pytorch object based on the given model_type."""
     if model_type == 'resnet':
         return get_alpha_zero_model(args)
+    elif model_type == 'resnet-small':
+        return get_alpha_zero_model_small(args)
     elif model_type == 'vit':
         return get_vision_transformer_model(args)
     elif model_type == 'risev2':
         return get_rise_v2_model(args)
     elif model_type == 'risev3':
         return get_rise_v33_model(args)
+    elif model_type == 'risev3-large':
+        return get_rise_v33_large_model(args)
     elif model_type == 'alphavile':
         return get_alpha_vile_model(args)
     elif model_type == 'alphavile-tiny':

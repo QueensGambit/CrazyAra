@@ -41,8 +41,8 @@ size_t SearchThread::get_max_depth() const
     return depthMax;
 }
 
-SearchThread::SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVector, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex):
-    NeuralNetAPIUser(netBatchVector),
+SearchThread::SearchThread(const size_t agentID, const shared_ptr<NeuralNetAPIUser> nnUser, const SearchSettings* searchSettings, MapWithMutex* mapWithMutex, ReusableBarrier* batchBarrier, InferenceQueue* inferenceQueue):
+    agentID(agentID), nnUser(nnUser),
     rootNode(nullptr), rootState(nullptr), newState(nullptr),  // will be be set via setter methods
     newNodes(make_unique<FixedVector<Node*>>(searchSettings->batchSize)),
     newNodeSideToMove(make_unique<FixedVector<SideToMove>>(searchSettings->batchSize)),
@@ -50,7 +50,9 @@ SearchThread::SearchThread(const vector<unique_ptr<NeuralNetAPI>>& netBatchVecto
     isRunning(true), mapWithMutex(mapWithMutex), searchSettings(searchSettings),
     tbHits(0), depthSum(0), depthMax(0), visitsPreSearch(0),
     terminalNodeCache(searchSettings->batchSize*2),
-    reachedTablebases(false)
+    reachedTablebases(false),
+    batchBarrier(batchBarrier),
+    inferenceQueue(inferenceQueue)
 {
     switch (searchSettings->searchPlayerMode) {
     case MODE_SINGLE_PLAYER:
@@ -161,6 +163,11 @@ Node* SearchThread::get_starting_node(Node* currentNode, NodeDescription& descri
     return currentNode;
 }
 
+unsigned int SearchThread::compute_offset()
+{
+    return (agentID * searchSettings->batchSize + newNodes->size()) * nnUser->nets.front()->get_nb_input_values_total();
+}
+
 Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 {
     description.depth = 0;
@@ -226,9 +233,9 @@ Node* SearchThread::get_new_child_to_evaluate(NodeDescription& description)
 #else
                 // fill a new board in the input_planes vector
                 // we shift the index by nbNNInputValues each time
-                newState->get_state_planes(true, inputPlanes + newNodes->size() * nets.front()->get_nb_input_values_total(), nets.front()->get_version());
-                if (numPhases > 1) {
-                    GamePhase currPhase = newState->get_phase(numPhases, searchSettings->gamePhaseDefinition);
+                newState->get_state_planes(true, nnUser->inputPlanes + compute_offset(), nnUser->nets.front()->get_version());
+                if (nnUser->numPhases > 1) {
+                    GamePhase currPhase = newState->get_phase(nnUser->numPhases, searchSettings->gamePhaseDefinition);
                     phaseCountMap[currPhase]++;
                 }
                 // save a reference newly created list in the temporary list for node creation
@@ -303,8 +310,18 @@ void fill_nn_results(size_t batchIdx, bool isPolicyMap, const float* valueOutput
 void SearchThread::set_nn_results_to_child_nodes()
 {
     size_t batchIdx = 0;
+    size_t policyOffset;
+    if (nnUser->nets.front()->is_policy_map()) {
+        policyOffset = agentID * searchSettings->batchSize * StateConstants::NB_LABELS_POLICY_MAP();
+    }
+    else {
+        policyOffset = agentID * searchSettings->batchSize * StateConstants::NB_LABELS();
+    }
+
     for (auto node: *newNodes) {
-        fill_nn_results(batchIdx, nets.front()->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, node,
+        fill_nn_results(batchIdx, nnUser->nets.front()->is_policy_map(), nnUser->valueOutputs + agentID * searchSettings->batchSize,
+                        nnUser->probOutputs + policyOffset,
+                        nnUser->auxiliaryOutputs + agentID * searchSettings->batchSize * StateConstants::NB_AUXILIARY_OUTPUTS(), node,
                         tbHits, rootState->mirror_policy(newNodeSideToMove->get_element(batchIdx)),
                         searchSettings, rootNode->is_tablebase());
         ++batchIdx;
@@ -383,7 +400,7 @@ void SearchThread::create_mini_batch()
 
 size_t SearchThread::select_nn_index()
 {
-    if (nets.size() == 1) {
+    if (nnUser->nets.size() == 1) {
         return 0;
     }
     // determine majority class in current batch
@@ -399,17 +416,104 @@ size_t SearchThread::select_nn_index()
     GamePhase majorityPhase = pr->first;
 
     phaseCountMap.clear();
-    return phaseToNetsIndex.at(majorityPhase);
+    return nnUser->phaseToNetsIndex.at(majorityPhase);
+}
+
+// === PATCHED fwd_pass_queue() ===
+// Fix: InferenceRequest OWNS its input data (no pointer aliasing)
+
+void fwd_pass_queue(InferenceQueue* inferenceQueue,
+                    NeuralNetAPIUser* nnUser,
+                    size_t batchCount,
+                    size_t agentID,
+                    const SearchSettings* searchSettings)
+{
+    InferenceRequest request;
+
+    // --- basic metadata ---
+    request.inputSize  = StateConstants::NB_VALUES_TOTAL();
+    request.batchCount = batchCount;
+    request.agentID    = agentID;
+
+    // --- OWNED input buffer ---
+    const size_t localBatchSize = searchSettings->batchSize;
+    const size_t elems = batchCount * request.inputSize;
+
+    request.inputData.resize(elems);
+
+    const float* src = nnUser->inputPlanes
+        + agentID * localBatchSize * request.inputSize;
+
+    memcpy(request.inputData.data(),
+           src,
+           elems * sizeof(float));
+
+    // --- enqueue & wait synchronously ---
+    auto future = request.promise.get_future();
+    inferenceQueue->push(std::move(request));
+
+    InferenceResult result = future.get();
+
+    // --- copy results back into NN buffers (legacy compatibility) ---
+    size_t policySize;
+    if (nnUser->nets.front()->is_policy_map()) {
+        policySize = StateConstants::NB_LABELS_POLICY_MAP();
+    } else {
+        policySize = StateConstants::NB_LABELS();
+    }
+
+    const size_t valueOffset  = agentID * localBatchSize;
+    const size_t policyOffset = agentID * localBatchSize * policySize;
+
+    memcpy(nnUser->valueOutputs + valueOffset,
+           result.valueOutputs.data(),
+           result.valueOutputs.size() * sizeof(float));
+
+    memcpy(nnUser->probOutputs + policyOffset,
+           result.probOutputs.data(),
+           result.probOutputs.size() * sizeof(float));
+
+    if (!result.auxiliaryOutputs.empty()) {
+        memcpy(nnUser->auxiliaryOutputs
+                   + agentID * localBatchSize * StateConstants::NB_AUXILIARY_OUTPUTS(),
+               result.auxiliaryOutputs.data(),
+               result.auxiliaryOutputs.size() * sizeof(float));
+    }
+}
+
+
+void SearchThread::handle_fwd_pass()
+{
+    if (newNodes->size() == 0) {
+        return;
+    }
+    if (searchSettings->numberParallelGames == 1) {
+        nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+        return;
+    }
+
+    // allocate a small local input buffer of size inputSize (float vector)
+    fwd_pass_queue(inferenceQueue, nnUser.get(), newNodes->size(), agentID, searchSettings);
+
+    /*
+    // Wait for all threads to arrive, one thread performs inference
+    batchBarrier->arrive_and_wait();
+
+    // Only thread 0 runs inference
+    if (agentID == 0) {
+        // query the network that corresponds to the majority phase
+        nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+    }
+    batchBarrier->arrive_and_wait();
+    */
 }
 
 void SearchThread::thread_iteration()
 {
     create_mini_batch();
 #ifndef SEARCH_UCT
+    handle_fwd_pass();
     if (newNodes->size() != 0) {
-
-        // query the network that corresponds to the majority phase
-        nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
         set_nn_results_to_child_nodes();
     }
 #endif
@@ -472,6 +576,21 @@ ChildIdx SearchThread::select_enhanced_move(Node* currentNode) const {
         currentNode->set_as_inspected();
     }
     return uint16_t(-1);
+}
+
+void SearchThread::run_inference(uint_fast16_t iterations)
+{
+    nnUser->run_inference(iterations);
+}
+
+shared_ptr<NeuralNetAPIUser> SearchThread::get_nn_user() const
+{
+    return nnUser;
+}
+
+void SearchThread::set_agent_id(size_t value)
+{
+    agentID = value;
 }
 
 void node_assign_value(Node *node, const float* valueOutputs, size_t& tbHits, size_t batchIdx, bool isRootNodeTB)

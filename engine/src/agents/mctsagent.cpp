@@ -50,12 +50,28 @@ MCTSAgent::MCTSAgent(const vector<unique_ptr<NeuralNetAPI>>& netSingleVector, co
     reachedTablebases(false)
 {
     mapWithMutex.hashTable.reserve(1e6);
+    inferenceQueue = std::make_shared<InferenceQueue>();
 
     for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
-        searchThreads.emplace_back(new SearchThread(netBatchesVector[idx], searchSettings, &mapWithMutex));
+        shared_ptr<NeuralNetAPIUser> nnUserThread = make_shared<NeuralNetAPIUser>(netBatchesVector[idx]);
+        batchBarriers.emplace_back(make_shared<ReusableBarrier>(searchSettings->numberParallelGames));
+        searchThreads.emplace_back(new SearchThread(agentID, nnUserThread, searchSettings, &mapWithMutex, batchBarriers[idx].get(), inferenceQueue.get()));
     }
     timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
     generator = default_random_engine(r());
+
+    auto nnUser = make_shared<NeuralNetAPIUser>(netBatchesVector[0]);
+    size_t maxBatchSize = searchSettings->numberParallelGames; // or tuned
+    size_t policySize;
+    if (nnUser->nets.front()->is_policy_map()) {
+        policySize = StateConstants::NB_LABELS_POLICY_MAP();
+    }
+    else {
+        policySize = StateConstants::NB_LABELS();
+    }
+    size_t auxSize = StateConstants::NB_AUXILIARY_OUTPUTS();
+    inferenceWorker = std::make_unique<InferenceWorker>(inferenceQueue, nnUser, maxBatchSize, policySize, auxSize);
+    inferenceWorker->start();
 }
 
 MCTSAgent::~MCTSAgent()
@@ -63,6 +79,21 @@ MCTSAgent::~MCTSAgent()
     for (auto searchThread : searchThreads) {
         delete searchThread;
     }
+}
+
+MCTSAgent::MCTSAgent(const MCTSAgent& other):
+    Agent(other)
+{
+    this->mapWithMutex.hashTable.reserve(1e6);
+    this->searchSettings = other.searchSettings;
+    this->playSettings = other.playSettings;
+    this->batchBarriers = other.batchBarriers;
+    this->agentID = other.agentID;
+    this->inferenceQueue = other.inferenceQueue;
+    for (size_t idx = 0; idx < searchSettings->threads; ++idx) {
+        this->searchThreads.emplace_back(new SearchThread(agentID, other.searchThreads[idx]->get_nn_user(), searchSettings, &mapWithMutex, other.batchBarriers[idx].get(), other.inferenceQueue.get()));
+    }
+    timeManager = make_unique<TimeManager>(searchSettings->randomMoveFactor);
 }
 
 Node* MCTSAgent::get_opponents_next_root() const
@@ -77,7 +108,7 @@ Node* MCTSAgent::get_root_node() const
 
 string MCTSAgent::get_device_name() const
 {
-    return nets.front()->get_device_name();
+    return nnUser->nets.front()->get_device_name();
 }
 
 float MCTSAgent::get_dirichlet_noise() const
@@ -165,16 +196,45 @@ shared_ptr<Node> MCTSAgent::get_root_node_from_tree(StateObj *state)
 
 void MCTSAgent::set_root_node_predictions()
 {
-    state->get_state_planes(true, inputPlanes, nets.front()->get_version());
-    size_t netIdx = 0;
-    if (nets.size() > 1) {
-        GamePhase currentPhase = state->get_phase(numPhases, searchSettings->gamePhaseDefinition);
-        netIdx = phaseToNetsIndex.at(currentPhase);
+    if (searchSettings->numberParallelGames == 1) {
+        state->get_state_planes(true, nnUser->inputPlanes, nnUser->nets.front()->get_version());
+        size_t netIdx = 0;
+        if (nnUser->nets.size() > 1) {
+            GamePhase currentPhase = state->get_phase(nnUser->numPhases, searchSettings->gamePhaseDefinition);
+            netIdx = nnUser->phaseToNetsIndex.at(currentPhase);
+        }
+
+        nnUser->nets[netIdx]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+        size_t tbHits = 0;
+        fill_nn_results(0, nnUser->nets[netIdx]->is_policy_map(), nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs, rootNode.get(), tbHits,
+                        rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
     }
-    nets[netIdx]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
-    size_t tbHits = 0;
-    fill_nn_results(0, nets[netIdx]->is_policy_map(), valueOutputs, probOutputs, auxiliaryOutputs, rootNode.get(), tbHits,
-                    rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
+    else {
+        InferenceRequest request;
+
+        // --- basic metadata ---
+        request.inputSize  = StateConstants::NB_VALUES_TOTAL();
+        request.batchCount = 1;
+        request.agentID    = agentID;
+
+        // --- OWNED input buffer ---
+        const size_t localBatchSize = searchSettings->batchSize;
+        const size_t elems = request.inputSize;
+
+        request.inputData.resize(elems);
+
+        state->get_state_planes(true, request.inputData.data(), nnUser->nets.front()->get_version());
+
+        // --- enqueue & wait synchronously ---
+        auto future = request.promise.get_future();
+        inferenceQueue->push(std::move(request));
+
+        InferenceResult result = future.get();
+        size_t tbHits = 0;
+        fill_nn_results(0, nnUser->nets[0]->is_policy_map(), result.valueOutputs.data(), result.probOutputs.data(), result.auxiliaryOutputs.data(), rootNode.get(), tbHits,
+                        rootState->mirror_policy(state->side_to_move()), searchSettings, rootNode->is_tablebase());
+    }
+
 }
 
 void MCTSAgent::create_new_root_node(StateObj* state)
@@ -227,6 +287,24 @@ void MCTSAgent::update_nps_measurement(float curNPS)
     }
 }
 
+unsigned int MCTSAgent::get_num_phases()
+{
+    return nnUser->get_num_phases();
+}
+
+size_t MCTSAgent::get_agent_id()
+{
+    return agentID;
+}
+
+void MCTSAgent::set_agent_id(size_t value)
+{
+    agentID = value;
+    for (auto searchThread : searchThreads) {
+        searchThread->set_agent_id(value);
+    }
+}
+
 void MCTSAgent::apply_move_to_tree(Action move, bool ownMove)
 {
     if (!reusedFullTree && rootNode != nullptr && rootNode->is_playout_node()) {
@@ -260,12 +338,12 @@ void MCTSAgent::clear_game_history()
 
 bool MCTSAgent::is_policy_map()
 {
-    return nets.front()->is_policy_map();
+    return nnUser->nets.front()->is_policy_map();
 }
 
 string MCTSAgent::get_name() const
 {
-    return engineName + "-" + engineVersion + "-" + nets.front()->get_model_name();
+    return engineName + "-" + engineVersion + "-" + nnUser->nets.front()->get_model_name() + "-" + to_string(agentID);
 }
 
 void MCTSAgent::update_stats()

@@ -35,11 +35,17 @@ RawNetAgent::RawNetAgent(const vector<unique_ptr<NeuralNetAPI>>& nets, const Pla
 {
 }
 
+RawNetAgent::RawNetAgent(const RawNetAgent& other):
+Agent(other)
+{
+
+}
+
 size_t RawNetAgent::select_nn_index() {
-    if (nets.size() == 1) {
+    if (nnUser->nets.size() == 1) {
         return 0;
     }
-    return phaseToNetsIndex.at(state->get_phase(numPhases, searchSettings->gamePhaseDefinition));
+    return nnUser->phaseToNetsIndex.at(state->get_phase(nnUser->numPhases, searchSettings->gamePhaseDefinition));
 }
 
 void RawNetAgent::evaluate_board_state()
@@ -61,17 +67,17 @@ void RawNetAgent::evaluate_board_state()
         evalInfo->pv[0] = {evalInfo->legalMoves[0]};
         return;
     }
-    state->get_state_planes(true, inputPlanes, nets.front()->get_version());
-    nets[select_nn_index()]->predict(inputPlanes, valueOutputs, probOutputs, auxiliaryOutputs);
-    state->set_auxiliary_outputs(auxiliaryOutputs);
+    state->get_state_planes(true, nnUser->inputPlanes, nnUser->nets.front()->get_version());
+    nnUser->nets[select_nn_index()]->predict(nnUser->inputPlanes, nnUser->valueOutputs, nnUser->probOutputs, nnUser->auxiliaryOutputs);
+    state->set_auxiliary_outputs(nnUser->auxiliaryOutputs);
 
     evalInfo->policyProbSmall.resize(evalInfo->legalMoves.size());
-    get_probs_of_move_list(0, probOutputs, evalInfo->legalMoves, state->mirror_policy(state->side_to_move()),
-                           !nets.front()->is_policy_map(), evalInfo->policyProbSmall, nets.front()->is_policy_map());
+    get_probs_of_move_list(0, nnUser->probOutputs, evalInfo->legalMoves, state->mirror_policy(state->side_to_move()),
+                           !nnUser->nets.front()->is_policy_map(), evalInfo->policyProbSmall, nnUser->nets.front()->is_policy_map());
     size_t selIdx = argmax(evalInfo->policyProbSmall);
     Action bestmove = evalInfo->legalMoves[selIdx];
 
-    evalInfo->centipawns[0] = value_to_centipawn(valueOutputs[0]);
+    evalInfo->centipawns[0] = value_to_centipawn(nnUser->valueOutputs[0]);
     evalInfo->movesToMate[0] = 0;
     evalInfo->depth = 1;
     evalInfo->selDepth = 1;

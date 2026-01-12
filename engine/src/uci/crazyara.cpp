@@ -168,8 +168,8 @@ void CrazyAra::inference(istringstream &is)
     }
     info_string("running", warmupIterations, "warmup iteration...");
     info_string("running", iterations, "iterations...");
-    info_string("batch-size:", searchSettings.batchSize);
-    mctsAgent->run_inference(warmupIterations);
+    info_string("main batch-size:", searchSettings.get_main_batch_size());
+    mctsAgent->get_nn_user()->run_inference(warmupIterations);
     const chrono::steady_clock::time_point start = chrono::steady_clock::now();
     mctsAgent->searchThreads.front()->run_inference(iterations);
     const chrono::steady_clock::time_point end = chrono::steady_clock::now();
@@ -177,7 +177,7 @@ void CrazyAra::inference(istringstream &is)
     info_string("Inference results");
     info_string("-----------------");
     info_string("Elapsed time:", elapsedMS/1000.0, "s");
-    info_string("Evaluations per second:", (iterations/double(elapsedMS))*1000*searchSettings.batchSize, "nps");
+    info_string("Evaluations per second:", (iterations/double(elapsedMS))*1000*searchSettings.get_main_batch_size(), "nps");
 }
 
 void CrazyAra::go(StateObj* state, istringstream &is,  EvalInfo& evalInfo)
@@ -355,11 +355,30 @@ void CrazyAra::activeuci()
 #ifdef USE_RL
 void CrazyAra::selfplay(istringstream &is)
 {
+    const size_t NUMBER_OF_PARALLEL_GAMES = Options["Number_Parallel_Games"];
+
     prepare_search_config_structs();
-    SelfPlay selfPlay(rawAgent.get(), mctsAgent.get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options);
+
+    vector<thread> gameThreads;
+    vector<unique_ptr<SelfPlay>> selfPlays;
+    vector<unique_ptr<MCTSAgent>> mctsAgents;
+    vector<unique_ptr<RawNetAgent>> rawAgents;
+
+    for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
+        mctsAgents.emplace_back(make_unique<MCTSAgent>(*mctsAgent.get())); // Deep Copy
+        mctsAgents[idx]->set_agent_id(idx);
+        rawAgents.emplace_back(make_unique<RawNetAgent>(*rawAgent.get()));   // Deep Copy
+        rawAgents[idx]->set_agent_id(idx);
+        selfPlays.emplace_back(make_unique<SelfPlay>(rawAgents[idx].get(), mctsAgents[idx].get(), &searchSettings, &searchLimits, &playSettings, &rlSettings, Options));
+    }
     size_t numberOfGames;
     is >> numberOfGames;
-    selfPlay.go(numberOfGames, variant);
+    for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
+        gameThreads.emplace_back(thread(run_selfplay_thread, selfPlays[idx].get(), numberOfGames, variant));
+    }
+    for (size_t idx = 0; idx < NUMBER_OF_PARALLEL_GAMES; ++idx) {
+        gameThreads[idx].join();
+    }
     cout << "readyok" << endl;
 }
 
@@ -554,7 +573,7 @@ void CrazyAra::fill_single_nn_vector(const string& modelDirectory, vector<unique
     size_t idx = 0;
     for (int deviceId = int(Options["First_Device_ID"]); deviceId <= int(Options["Last_Device_ID"]); ++deviceId) {
         for (size_t i = 0; i < size_t(Options["Threads"]); ++i) {
-            unique_ptr<NeuralNetAPI> netBatchesTmp = create_new_net(modelDirectory, deviceId, searchSettings.batchSize);
+            unique_ptr<NeuralNetAPI> netBatchesTmp = create_new_net(modelDirectory, deviceId, searchSettings.get_main_batch_size());
             netBatchesTmp->validate_neural_network();
             netBatchesVector[idx].push_back(std::move(netBatchesTmp));
             ++idx;
@@ -757,6 +776,7 @@ void CrazyAra::init_search_settings()
     searchSettings.allowEarlyStopping = Options["Allow_Early_Stopping"];
     useRawNetwork = Options["Use_Raw_Network"];
     searchSettings.useNPSTimemanager = Options["Use_NPS_Time_Manager"];
+    searchSettings.numberParallelGames = Options["Number_Parallel_Games"];
     if (string(Options["SyzygyPath"]).empty() || string(Options["SyzygyPath"]) == "<empty>") {
         searchSettings.useTablebase = false;
     }

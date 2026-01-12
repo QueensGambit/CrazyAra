@@ -140,6 +140,9 @@ void OptionsUCI::init(OptionsMap &o)
     o["Nodes"]                         << Option(0, 0, 99999999);
 #endif
     o["Nodes_Limit"]                   << Option(0, 0, 999999999);
+#ifdef USE_RL
+    o["Number_Parallel_Games"]         << Option(8, 1, 999);
+#endif
 #ifdef TENSORRT
     o["Precision"]                     << Option("float16", {"float32", "float16", "int8"});
 #else
@@ -204,7 +207,7 @@ void OptionsUCI::init(OptionsMap &o)
     o["Centi_Resign_Probability"]      << Option(90, 0, 100);
     o["Centi_Resign_Threshold"]        << Option(-90, -100, 100);
     o["EPD_File_Path"]                 << Option("<empty>");
-    o["MaxInitPly"]                    << Option(30, 0, 99999);
+    o["MaxInitPly"]                    << Option(0, 0, 99999);  // 30
     o["MeanInitPly"]                   << Option(15, 0, 99999);
 #ifdef MODE_LICHESS
     o["Model_Directory_Contender"]     << Option((string("model_contender/" + engineName + "/") + get_first_variant_with_model()).c_str());

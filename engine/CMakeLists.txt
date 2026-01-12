@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(USE_PROFILING             "Build with profiling"   OFF)
 option(USE_RL                    "Build with reinforcement learning support"  OFF)
@@ -146,6 +147,8 @@ file(GLOB source_files
     "src/agents/util/*.h"
     "src/nn/*.cpp"
     "src/nn/*.h"
+    "src/inference/*.cpp"
+    "src/inference/*.h"
     "src/nn/util/*.cpp"
     "src/nn/util/*.h"
     "src/manager/*.cpp"

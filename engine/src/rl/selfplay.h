@@ -110,10 +110,19 @@ public:
              const RLSettings* rlSettings, OptionsMap& options);
     ~SelfPlay();
 
+    // avoid copyiing of the SelfplayObject due to owning std::unique_ptr (e.g. TrainDataExporter)
+    SelfPlay(const SelfPlay&) = delete;
+    SelfPlay& operator=(const SelfPlay&) = delete;
+
+    // optional, but recommended: Allow move semantic explicitly
+    SelfPlay(SelfPlay&&) = default;
+    SelfPlay& operator=(SelfPlay&&) = default;
+
     /**
      * @brief go Starts the self play game generation for a given number of games
      * @param numberOfGames Number of games to generate
      * @param int variant to generate games for
+     * @param std::mutex& Mutex that coordinates the writing of files and export
      */
     void go(size_t numberOfGames, int variant);
 
@@ -132,6 +141,7 @@ private:
     /**
      * @brief generate_game Generates a new game in self play mode
      * @param variant Current chess variant
+     * @param selfplayFileMutex Mutex that coordinates writing to files
      */
     void generate_game(int variant, bool verbose);
 
@@ -148,10 +158,10 @@ private:
 
     /**
      * @brief write_game_to_pgn Writes the game log to a pgn file
-     * @param pngFileName Filename to export
+     * @param pgnFileName Filename to export
      * @param verbose If true, game will also be printed to stdout
      */
-    void write_game_to_pgn(const std::string& pngFileName, bool verbose);
+    void write_game_to_pgn(const std::string& pgnFileName, bool verbose);
 
     /**
      * @brief set_game_result Sets the game result to the gamePGN object
@@ -208,6 +218,15 @@ private:
      */
     void reset_search_params(bool isQuickSearch);
 };
+
+/**
+ * @brief run_selfplay_thread
+ * @param selfPlay selfplay object
+ * @param numberOfGames How many games should be generated
+ * @param variant What (chess) variant to play
+ */
+void run_selfplay_thread(SelfPlay* selfPlay, size_t numberOfGames, int variant);
+
 #endif
 
 /**
